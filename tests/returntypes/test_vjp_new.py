@@ -30,7 +30,7 @@ class TestComputeVJP:
         dy = np.array(1.0)
         jac = np.array(0.2)
 
-        vjp = qml.gradients.compute_vjp_single(dy, jac)
+        vjp = qml.gradients.compute_vjp_single_new(dy, jac)
 
         assert isinstance(vjp, np.ndarray)
         assert np.allclose(vjp, 0.2)
@@ -40,7 +40,7 @@ class TestComputeVJP:
         dy = np.array([1, 2])
         jac = np.array([0.3, 0.3])
 
-        vjp = qml.gradients.compute_vjp_single(dy, jac)
+        vjp = qml.gradients.compute_vjp_single_new(dy, jac)
 
         assert isinstance(vjp, np.ndarray)
         assert np.allclose(vjp, 0.9)
@@ -50,7 +50,7 @@ class TestComputeVJP:
         dy = np.array(1.0)
         jac = tuple([np.array(0.1), np.array(0.2)])
 
-        vjp = qml.gradients.compute_vjp_single(dy, jac)
+        vjp = qml.gradients.compute_vjp_single_new(dy, jac)
 
         assert isinstance(vjp, np.ndarray)
         assert np.allclose(vjp, [0.1, 0.2])
@@ -60,7 +60,7 @@ class TestComputeVJP:
         dy = np.array([1.0, 0.5])
         jac = tuple([np.array([0.1, 0.3]), np.array([0.2, 0.4])])
 
-        vjp = qml.gradients.compute_vjp_single(dy, jac)
+        vjp = qml.gradients.compute_vjp_single_new(dy, jac)
 
         assert isinstance(vjp, np.ndarray)
         assert np.allclose(vjp, [0.25, 0.4])
@@ -70,7 +70,7 @@ class TestComputeVJP:
         dy = tuple([np.array([1.0]), np.array([1.0, 0.5])])
         jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
 
-        vjp = qml.gradients.compute_vjp_multi(dy, jac)
+        vjp = qml.gradients.compute_vjp_multi_new(dy, jac)
 
         assert isinstance(vjp, np.ndarray)
         assert np.allclose(vjp, [0.75])
@@ -85,7 +85,7 @@ class TestComputeVJP:
             ]
         )
 
-        vjp = qml.gradients.compute_vjp_multi(dy, jac)
+        vjp = qml.gradients.compute_vjp_multi_new(dy, jac)
 
         assert isinstance(vjp, np.ndarray)
         assert np.allclose(vjp, [0.75, 1.1])
@@ -106,7 +106,7 @@ class TestComputeVJP:
         dy = np.array([[1.0, 2.0], [3.0, 4.0]])
         jac = None
 
-        vjp = qml.gradients.compute_vjp_single(dy, jac)
+        vjp = qml.gradients.compute_vjp_single_new(dy, jac)
         assert vjp is None
 
     def test_jacobian_is_none_multi(self):
@@ -115,7 +115,7 @@ class TestComputeVJP:
         dy = np.array([[1.0, 2.0], [3.0, 4.0]])
         jac = None
 
-        vjp = qml.gradients.compute_vjp_multi(dy, jac)
+        vjp = qml.gradients.compute_vjp_multi_new(dy, jac)
         assert vjp is None
 
     def test_zero_dy_single_measurement_single_params(self):
@@ -123,7 +123,7 @@ class TestComputeVJP:
         dy = np.zeros([1])
         jac = np.array(0.1)
 
-        vjp = qml.gradients.compute_vjp_single(dy, jac)
+        vjp = qml.gradients.compute_vjp_single_new(dy, jac)
         assert np.all(vjp == np.zeros([1]))
 
     def test_zero_dy_single_measurement_multi_params(self):
@@ -131,7 +131,7 @@ class TestComputeVJP:
         dy = np.zeros([2])
         jac = tuple([np.array(0.1), np.array(0.2)])
 
-        vjp = qml.gradients.compute_vjp_single(dy, jac)
+        vjp = qml.gradients.compute_vjp_single_new(dy, jac)
         assert np.all(vjp == np.zeros([2]))
 
     def test_zero_dy_multi(self):
@@ -144,7 +144,7 @@ class TestComputeVJP:
             ]
         )
 
-        vjp = qml.gradients.compute_vjp_multi(dy, jac)
+        vjp = qml.gradients.compute_vjp_multi_new(dy, jac)
         assert np.all(vjp == np.zeros([3]))
 
     @pytest.mark.torch
@@ -162,7 +162,7 @@ class TestComputeVJP:
         dy = tuple([a, b])
         jac = tuple([torch.ones((1), dtype=dtype2), torch.ones((2), dtype=dtype2)])
 
-        assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype1
+        assert qml.gradients.compute_vjp_multi_new(dy, jac)[0].dtype == dtype1
 
     @pytest.mark.tf
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
@@ -181,7 +181,7 @@ class TestComputeVJP:
         dy = tuple([a, b])
         jac = tuple([tf.ones((1), dtype=dtype2), tf.ones((2), dtype=dtype2)])
 
-        assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype
+        assert qml.gradients.compute_vjp_multi_new(dy, jac)[0].dtype == dtype
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
@@ -199,7 +199,7 @@ class TestComputeVJP:
 
         dy = tuple([jax.numpy.array(1, dtype=dtype1), jax.numpy.array([1, 1], dtype=dtype1)])
         jac = tuple([jax.numpy.array(1, dtype=dtype2), jax.numpy.array([1, 1], dtype=dtype2)])
-        assert qml.gradients.compute_vjp_multi(dy, jac)[0].dtype == dtype
+        assert qml.gradients.compute_vjp_multi_new(dy, jac)[0].dtype == dtype
 
 
 class TestVJP:
