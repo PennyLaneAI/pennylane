@@ -85,9 +85,8 @@ class CircuitGraph:
         ops (Iterable[.Operator]): quantum operators constituting the circuit, in temporal order
         obs (Iterable[.MeasurementProcess]): terminal measurements, in temporal order
         wires (.Wires): The addressable wire registers of the device that will be executing this graph
-        par_info (dict[int, dict[str, .Operation or int]]): Parameter information. Keys are
-            parameter indices (in the order they appear on the tape), and values are a
-            dictionary containing the corresponding operation and operation parameter index.
+        par_info (list[dict]): Parameter information. For each index, the entry is a dictionary containing an operation
+        and an index into that operation's parameters.
         trainable_params (set[int]): A set containing the indices of parameters that support
             differentiability. The indices provided match the order of appearence in the
             quantum circuit.
@@ -420,7 +419,7 @@ class CircuitGraph:
         current = Layer([], [])
         layers = [current]
 
-        for idx, info in self.par_info.items():
+        for idx, info in enumerate(self.par_info):
             if idx in self.trainable_params:
                 op = info["op"]
 
