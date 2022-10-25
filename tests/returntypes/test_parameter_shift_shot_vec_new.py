@@ -16,11 +16,10 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import _get_operation_recipe, _put_zeros_in_pdA2_involutory
-from pennylane.devices import DefaultQubit
-from pennylane.operation import Observable, AnyWires
-
+from pennylane.operation import AnyWires, Observable
 
 shot_vec_tol = 10e-3
 herm_shot_vec_tol = 0.5
@@ -2020,7 +2019,7 @@ class TestParameterShiftRule:
     #             self.R_DTYPE = SpecialObservable
 
     #         def expval(self, observable, **kwargs):
-    #             if self.analytic and isinstance(observable, SpecialObservable):
+    #             if self.shots is None and isinstance(observable, SpecialObservable):
     #                 val = super().expval(qml.PauliZ(wires=0), **kwargs)
     #                 return SpecialObject(val)
 

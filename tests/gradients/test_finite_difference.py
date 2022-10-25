@@ -16,12 +16,11 @@ Tests for the gradients.finite_difference module.
 """
 import pytest
 
-from pennylane import numpy as np
-
 import pennylane as qml
-from pennylane.gradients import finite_diff, finite_diff_coeffs, generate_shifted_tapes
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
-from pennylane.operation import Observable, AnyWires
+from pennylane.gradients import finite_diff, finite_diff_coeffs, generate_shifted_tapes
+from pennylane.operation import AnyWires, Observable
 
 
 class TestCoeffs:
@@ -399,7 +398,7 @@ class TestFiniteDiff:
                 self.R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
-                if self.analytic and isinstance(observable, SpecialObservable):
+                if self.shots is None and isinstance(observable, SpecialObservable):
                     val = super().expval(qml.PauliZ(wires=0), **kwargs)
                     return SpecialObject(val)
 
