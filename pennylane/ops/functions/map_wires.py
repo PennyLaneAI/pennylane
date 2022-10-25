@@ -22,11 +22,11 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape
 
 
 def map_wires(
-    input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable],
+    input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable],
     wire_map: dict,
     queue=False,
     replace=False,
@@ -81,12 +81,12 @@ def map_wires(
             return new_op
         return input.map_wires(wire_map=wire_map)
 
-    if isinstance(input, QuantumTape):
-        with QuantumTape() as new_tape:
-            for op in list(input):
-                _ = qml.map_wires(op, wire_map=wire_map, queue=True)
+    if isinstance(input, QuantumScript):
+        ops = [qml.map_wires(op, wire_map) for op in input._ops]  # pylint: disable=protected-access
+        measurements = [qml.map_wires(m, wire_map) for m in input.measurements]
+        prep = [qml.map_wires(p, wire_map) for p in input._prep]  # pylint: disable=protected-access
 
-        return new_tape
+        return QuantumScript(ops=ops, measurements=measurements, prep=prep)
 
     if callable(input):
 
