@@ -97,7 +97,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             gradient_kwargs,
             _n=_n,
             max_diff=max_diff,
-            mode=mode
+            mode=mode,
         )
 
     parameters = []
@@ -217,7 +217,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     return _execute(*parameters)
 
 
-def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
+def _execute_new(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
+):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
@@ -273,13 +275,11 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
 
         return tuple(tf.convert_to_tensor(x_) for x_ in x)
 
-    for i, tape in enumerate(tapes):
+    for i in range(len(res)):
         # convert output to TensorFlow tensors
 
-        if any(
-            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-            for m in tape.measurements
-        ):
+        # skip in the case of counts
+        if isinstance(res[i], dict):
             continue
 
         res[i] = _to_tensors(res[i])
@@ -304,11 +304,12 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
             dy_nested = []
             for i, tape in enumerate(tapes):
                 num_meas = len(tape.measurements)
-                tape_dy = dy[start:start + num_meas]
+                tape_dy = dy[start : start + num_meas]
                 if num_meas == 1:
                     dy_nested.append(tape_dy[0])
                 else:
                     dy_nested.append(tape_dy)
+                start += num_meas
 
             dy = dy_nested
 
@@ -332,7 +333,6 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
                                 dy,
                                 gradient_fn,
                                 reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
-                                # reduction=lambda vjps, x: vjps.append(qml.math.unstack(x)),
                                 gradient_kwargs=gradient_kwargs,
                             )
 

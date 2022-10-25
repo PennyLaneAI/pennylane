@@ -62,7 +62,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             gradient_kwargs,
             _n=_n,
             max_diff=max_diff,
-            mode=mode
+            mode=mode,
         )
 
     all_params = []
@@ -250,7 +250,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     return _execute(*all_params)
 
 
-def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
+def _execute_new(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
+):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
@@ -332,7 +334,7 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
 
             return tuple(tf.convert_to_tensor(x_) for x_ in x)
 
-        print('res forward', res)
+        print("res forward", res)
 
         for i in range(len(tapes)):
             # convert output to TensorFlow tensors
@@ -358,14 +360,16 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
 
             # whether the tapes contain multiple measurements
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-            dy = dy[:len(tapes)]
+            dy = dy[: len(tapes)]
 
             if mode == "forward":
                 # Jacobians were computed on the forward pass (mode="forward")
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
                 len_dy = len(dy)
                 vjps = tf.numpy_function(
-                    func=lambda *args: _compute_vjp_new(args[:len_dy], args[len_dy:-len_dy], args[-len_dy:]),
+                    func=lambda *args: _compute_vjp_new(
+                        args[:len_dy], args[len_dy:-len_dy], args[-len_dy:]
+                    ),
                     inp=dy + jacs + multi_measurements,
                     Tout=[tf.float64] * len(parameters),
                 )
@@ -466,7 +470,7 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
             variables = tfkwargs.get("variables", None)
             return (vjps, variables) if variables is not None else vjps
 
-        print('res execute', res)
+        print("res execute", res)
 
         return res, grad_fn
 
