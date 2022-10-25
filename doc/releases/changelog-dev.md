@@ -203,6 +203,10 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug where `qml.sample()` and `qml.counts()` would input incorrect results when mixed with measurements whose
+  operators do not qubit-wise commute with computational basis projectors.
+  [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
+
 * `ControlledQubitUnitary.pow` now copies over the `control_values`.
   [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
 
