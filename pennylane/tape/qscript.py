@@ -373,10 +373,11 @@ class QuantumScript:
         self.all_sampled = all(is_sample_type)
 
     def _update_par_info(self):
-        """Update the parameter information dictionary.
+        """Update the parameter information list. Each entry in the list with an operation and an index
+        into that operation's data.
 
         Sets:
-            _par_info (dict): Parameter information dictionary
+            _par_info (list): Parameter information list.
         """
         self._par_info = []
         for op in self.operations:
