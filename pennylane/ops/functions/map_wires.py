@@ -45,6 +45,19 @@ def map_wires(
     Returns:
         (.Operator, pennylane.QNode, .QuantumTape, or Callable): input with changed wires
 
+    .. note::
+
+        `qml.map_wires` can be used as a decorator with the help of the functools module:
+
+        >>> @functools.partial(qml.map_wires, wire_map=wire_map)
+        ... @qml.qnode(dev)
+        ... def func(x):
+        ...     qml.RX(x, wires=0)
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> print(qml.draw(func)(0.1))
+        10: ──RX(0.10)─┤  <Z>
+
+
     **Example**
 
     Given an operator, ``qml.map_wires`` returns a copy of the operator with its wires changed:
