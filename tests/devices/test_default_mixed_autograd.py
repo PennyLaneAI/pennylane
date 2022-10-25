@@ -24,19 +24,6 @@ from pennylane import DeviceError
 
 
 @pytest.mark.autograd
-def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
-
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
-        qml.device("default.mixed", wires=1, shots=1, analytic=True)
-
-
-@pytest.mark.autograd
 class TestQNodeIntegration:
     """Integration tests for default.mixed.autograd. This test ensures it integrates
     properly with the PennyLane UI, in particular the QNode."""

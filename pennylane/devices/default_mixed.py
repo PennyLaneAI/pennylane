@@ -34,7 +34,7 @@ from pennylane import (
     Snapshot,
 )
 from pennylane import numpy as np
-from pennylane.measurements import Counts, AllCounts, MutualInfo, Sample, State, VnEntropy
+from pennylane.measurements import AllCounts, Counts, MutualInfo, Sample, State, VnEntropy
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
@@ -160,14 +160,7 @@ class DefaultMixed(QubitDevice):
         return res
 
     def __init__(
-        self,
-        wires,
-        *,
-        r_dtype=np.float64,
-        c_dtype=np.complex128,
-        shots=None,
-        analytic=None,
-        readout_prob=None,
+        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, readout_prob=None
     ):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
@@ -185,7 +178,7 @@ class DefaultMixed(QubitDevice):
                 raise ValueError("The readout error probability should be in the range [0,1].")
 
         # call QubitDevice init
-        super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
+        super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype)
         self._debugger = None
 
         # Create the initial state.

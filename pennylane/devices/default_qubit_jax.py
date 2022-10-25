@@ -20,8 +20,8 @@ import pennylane as qml
 from pennylane.devices import DefaultQubit
 
 try:
-    import jax.numpy as jnp
     import jax
+    import jax.numpy as jnp
     from jax.config import config as jax_config
 
 except ImportError as e:  # pragma: no cover
@@ -155,14 +155,14 @@ class DefaultQubitJax(DefaultQubit):
     _size = staticmethod(jnp.size)
     _ndim = staticmethod(jnp.ndim)
 
-    def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
+    def __init__(self, wires, *, shots=None, prng_key=None):
         if jax_config.read("jax_enable_x64"):
             c_dtype = jnp.complex128
             r_dtype = jnp.float64
         else:
             c_dtype = jnp.complex64
             r_dtype = jnp.float32
-        super().__init__(wires, r_dtype=r_dtype, c_dtype=c_dtype, shots=shots, analytic=analytic)
+        super().__init__(wires, r_dtype=r_dtype, c_dtype=c_dtype, shots=shots)
 
         # prevent using special apply methods for these gates due to slowdown in jax
         # implementation

@@ -17,13 +17,13 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQutrit` device.
 import math
 
 import pytest
+from gate_data import GELL_MANN, OMEGA, TADD, TCLOCK, TSHIFT, TSWAP
+
 import pennylane as qml
-from pennylane import numpy as np, DeviceError
+from pennylane import DeviceError
+from pennylane import numpy as np
 from pennylane.devices.default_qutrit import DefaultQutrit
-from pennylane.wires import Wires, WireError
-
-from gate_data import OMEGA, TSHIFT, TCLOCK, TSWAP, TADD, GELL_MANN
-
+from pennylane.wires import WireError, Wires
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
@@ -35,18 +35,6 @@ U_thadamard_01 = np.multiply(
 U_x_02 = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]], dtype=np.complex128)
 
 U_z_12 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]], dtype=np.complex128)
-
-
-def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
-
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
-        qml.device("default.qutrit", wires=1, shots=1, analytic=True)
 
 
 def test_dtype_errors():

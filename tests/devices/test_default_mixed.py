@@ -15,25 +15,25 @@
 Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 """
 
+import numpy as np
 import pytest
+
 import pennylane as qml
-from pennylane import QubitStateVector, BasisState, DeviceError
+from pennylane import BasisState, DeviceError, QubitStateVector
 from pennylane.devices import DefaultMixed
 from pennylane.ops import (
-    Identity,
-    PauliZ,
-    CZ,
-    PauliX,
-    Hadamard,
     CNOT,
+    CZ,
     AmplitudeDamping,
     DepolarizingChannel,
-    ResetError,
+    Hadamard,
+    Identity,
     PauliError,
+    PauliX,
+    PauliZ,
+    ResetError,
 )
 from pennylane.wires import Wires
-
-import numpy as np
 
 INV_SQRT2 = 1 / np.sqrt(2)
 
@@ -1137,14 +1137,3 @@ class TestInit:
         """Tests that an error is raised if the device is initialized with more than 23 wires"""
         with pytest.raises(ValueError, match="This device does not currently"):
             qml.device("default.mixed", wires=24)
-
-    def test_analytic_deprecation(self):
-        """Tests if the kwarg `analytic` is used and displays error message."""
-        msg = "The analytic argument has been replaced by shots=None. "
-        msg += "Please use shots=None instead of analytic=True."
-
-        with pytest.raises(
-            DeviceError,
-            match=msg,
-        ):
-            qml.device("default.mixed", wires=1, shots=1, analytic=True)

@@ -184,16 +184,6 @@ def device(scope="function"):
 #####################################################
 
 
-@pytest.mark.torch
-def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
-
-    with pytest.raises(DeviceError, match=msg):
-        qml.device("default.qubit.torch", wires=1, shots=1, analytic=True)
-
-
 #####################################################
 # Helper Method Test
 #####################################################

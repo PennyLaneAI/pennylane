@@ -18,17 +18,18 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
-import itertools
 import functools
+import itertools
 from string import ascii_letters as ABC
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
+from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
+
 from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
@@ -163,10 +164,8 @@ class DefaultQubit(QubitDevice):
         "Exp",
     }
 
-    def __init__(
-        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
-    ):
-        super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
+    def __init__(self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None):
+        super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype)
         self._debugger = None
 
         # Create the initial state. Internally, we store the

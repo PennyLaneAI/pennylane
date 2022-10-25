@@ -86,18 +86,6 @@ PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
-def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
-
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
-        qml.device("default.qubit", wires=1, shots=1, analytic=True)
-
-
 def test_dtype_errors():
     """Test that if an incorrect dtype is provided to the device then an error is raised."""
     with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):

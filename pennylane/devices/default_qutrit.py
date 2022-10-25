@@ -19,12 +19,14 @@ It implements the :class:`~pennylane._device.Device` methods as well as some bui
 simulation of qutrit-based quantum computing.
 """
 import functools
+
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
 from pennylane import QutritDevice
-from pennylane.wires import WireError
 from pennylane.devices.default_qubit import _get_slice
+from pennylane.wires import WireError
+
 from .._version import __version__
 
 # tolerance for numerical errors
@@ -69,16 +71,8 @@ class DefaultQutrit(QutritDevice):
         "Identity",
     }
 
-    def __init__(
-        self,
-        wires,
-        *,
-        r_dtype=np.float64,
-        c_dtype=np.complex128,
-        shots=None,
-        analytic=None,
-    ):
-        super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
+    def __init__(self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None):
+        super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype)
         self._debugger = None
 
         # Create the initial state. Internally, we store the

@@ -15,6 +15,7 @@
 reference plugin.
 """
 import itertools
+
 import numpy as np
 import semantic_version
 
@@ -35,6 +36,7 @@ except ImportError as e:
 
 
 from pennylane.math.single_dispatch import _ndim_tf
+
 from . import DefaultQubit
 from .default_qubit import tolerance
 
@@ -159,11 +161,11 @@ class DefaultQubitTF(DefaultQubit):
 
         return res
 
-    def __init__(self, wires, *, shots=None, analytic=None):
+    def __init__(self, wires, *, shots=None):
         r_dtype = tf.float64
         c_dtype = tf.complex128
 
-        super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
+        super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]

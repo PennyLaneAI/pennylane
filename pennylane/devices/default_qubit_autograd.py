@@ -15,7 +15,6 @@
 reference plugin.
 """
 from pennylane import numpy as np
-
 from pennylane.devices import DefaultQubit
 
 
@@ -62,7 +61,7 @@ class DefaultQubitAutograd(DefaultQubit):
       used as the device backend.
 
     * Only exact expectation values, variances, and probabilities are differentiable.
-      When instantiating the device with ``analytic=False``, differentiating QNode
+      When instantiating the device with ``shots!=None``, differentiating QNode
       outputs will result in an error.
 
     Args:
@@ -109,10 +108,10 @@ class DefaultQubitAutograd(DefaultQubit):
     def _const_mul(constant, array):
         return constant * array
 
-    def __init__(self, wires, *, shots=None, analytic=None):
+    def __init__(self, wires, *, shots=None):
         r_dtype = np.float64
         c_dtype = np.complex128
-        super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
+        super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype)
 
         # prevent using special apply methods for these gates due to slowdown in Autograd
         # implementation

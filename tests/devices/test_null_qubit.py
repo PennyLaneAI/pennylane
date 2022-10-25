@@ -18,14 +18,14 @@ import cmath
 
 # pylint: disable=protected-access,cell-var-from-loop
 import math
+from collections import defaultdict
 
 import pytest
-import pennylane as qml
-from pennylane import numpy as np, DeviceError
-from pennylane.devices.null_qubit import NullQubit
-from pennylane import Tracker
 
-from collections import defaultdict
+import pennylane as qml
+from pennylane import DeviceError, Tracker
+from pennylane import numpy as np
+from pennylane.devices.null_qubit import NullQubit
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
@@ -36,18 +36,6 @@ def nullqubit_device(request):
         )
 
     return _device
-
-
-def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
-
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
-        qml.device("null.qubit", wires=1, shots=1, analytic=True)
 
 
 def test_dtype_errors():

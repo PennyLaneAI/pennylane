@@ -198,10 +198,8 @@ class QubitDevice(Device):
         "Prod",
     }
 
-    def __init__(
-        self, wires=1, shots=None, *, r_dtype=np.float64, c_dtype=np.complex128, analytic=None
-    ):
-        super().__init__(wires=wires, shots=shots, analytic=analytic)
+    def __init__(self, wires=1, shots=None, *, r_dtype=np.float64, c_dtype=np.complex128):
+        super().__init__(wires=wires, shots=shots)
 
         if "float" not in str(r_dtype):
             raise DeviceError("Real datatype must be a floating point type.")
@@ -384,7 +382,7 @@ class QubitDevice(Device):
         )
 
         # compute the required statistics
-        if not self.analytic and self._shot_vector is not None:
+        if self._shot_vector is not None:
             results = self._collect_shotvector_results(circuit, counts_exist)
         else:
             results = self.statistics(circuit.observables, circuit=circuit)

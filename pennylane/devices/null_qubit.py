@@ -16,11 +16,12 @@ The null.qubit device is a no-op device for benchmarking PennyLane's auxiliary f
 """
 from collections import defaultdict
 
-from pennylane.ops.qubit.attributes import diagonal_in_z_basis
-
 from pennylane import QubitDevice
 from pennylane import numpy as np
+from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+
 from .._version import __version__
+
 
 # pylint: disable=unused-argument, no-self-use
 class NullQubit(QubitDevice):
@@ -116,21 +117,12 @@ class NullQubit(QubitDevice):
     }
 
     def __init__(self, wires, *args, **kwargs):
-        defaultKwargs = {
-            "shots": None,
-            "analytic": None,
-            "r_dtype": np.float64,
-            "c_dtype": np.complex128,
-        }
-        kwargs = {**defaultKwargs, **kwargs}
+        defaultKwargs = {"shots": None, "r_dtype": np.float64, "c_dtype": np.complex128}
+        kwargs = defaultKwargs | kwargs
 
         self._operation_calls = defaultdict(int)
         super().__init__(
-            wires,
-            shots=kwargs["shots"],
-            r_dtype=kwargs["r_dtype"],
-            c_dtype=kwargs["c_dtype"],
-            analytic=kwargs["analytic"],
+            wires, shots=kwargs["shots"], r_dtype=kwargs["r_dtype"], c_dtype=kwargs["c_dtype"]
         )
         self._debugger = None
 

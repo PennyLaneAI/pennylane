@@ -15,6 +15,7 @@
 reference plugin.
 """
 import warnings
+
 import semantic_version
 
 try:
@@ -28,7 +29,9 @@ except ImportError as e:
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
+
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+
 from . import DefaultQubit
 
 
@@ -154,7 +157,7 @@ class DefaultQubitTorch(DefaultQubit):
     _size = staticmethod(torch.numel)
     _ndim = staticmethod(lambda tensor: tensor.ndim)
 
-    def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
+    def __init__(self, wires, *, shots=None, torch_device=None):
 
         # Store if the user specified a Torch device. Otherwise the execute
         # method attempts to infer the Torch device from the gate parameters.
@@ -164,7 +167,7 @@ class DefaultQubitTorch(DefaultQubit):
         r_dtype = torch.float64
         c_dtype = torch.complex128
 
-        super().__init__(wires, r_dtype=r_dtype, c_dtype=c_dtype, shots=shots, analytic=analytic)
+        super().__init__(wires, r_dtype=r_dtype, c_dtype=c_dtype, shots=shots)
 
         # Move state to torch device (e.g. CPU, GPU, XLA, ...)
         self._state.requires_grad = True

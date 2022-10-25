@@ -24,19 +24,6 @@ from pennylane.devices.default_qubit_jax import DefaultQubitJax
 
 
 @pytest.mark.jax
-def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
-
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
-        qml.device("default.qubit.jax", wires=1, shots=1, analytic=True)
-
-
-@pytest.mark.jax
 class TestQNodeIntegration:
     """Integration tests for default.qubit.jax. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""

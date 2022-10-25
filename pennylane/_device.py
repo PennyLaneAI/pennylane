@@ -25,22 +25,17 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
+    Expectation,
+    MidMeasure,
+    Probability,
     Sample,
+    ShadowExpval,
     State,
     Variance,
-    Expectation,
-    Probability,
-    MidMeasure,
-    ShadowExpval,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -123,14 +118,9 @@ class Device(abc.ABC):
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
-    def __init__(self, wires=1, shots=1000, *, analytic=None):
+    def __init__(self, wires=1, shots=1000):
 
         self.shots = shots
-
-        if analytic is not None:
-            msg = "The analytic argument has been replaced by shots=None. "
-            msg += "Please use shots=None instead of analytic=True."
-            raise DeviceError(msg)
 
         if not isinstance(wires, Iterable):
             # interpret wires as the number of consecutive wires
@@ -211,13 +201,6 @@ class Device(abc.ABC):
         """Number of circuit evaluations/random samples used to estimate
         expectation values of observables"""
         return self._shots
-
-    @property
-    def analytic(self):
-        """Whether shots is None or not. Kept for backwards compatability."""
-        if self._shots is None:
-            return True
-        return False
 
     @property
     def wires(self):
