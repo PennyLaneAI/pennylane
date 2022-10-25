@@ -256,14 +256,10 @@ class Hamiltonian(Observable):
         [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
 
         The coefficients are differentiable and can be stored as tensors:
-
-        # >>> import tensorflow as tf
-        # >>> t = qml.Hamiltonian.compute_terms([tf.Variable(1.), tf.Variable(2.)], ops=[qml.PauliX(0), qml.PauliZ(0)])
-        # >>> t[0]
-
         >>> import tensorflow as tf
         >>> H = qml.Hamiltonian([tf.Variable(1.), tf.Variable(2.)], [qml.PauliX(0), qml.PauliZ(0)])
         >>> t = H.terms()
+
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
