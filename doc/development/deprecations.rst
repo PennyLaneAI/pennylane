@@ -1,7 +1,10 @@
-.. _pending_deprecations:
+.. _deprecations:
+
+Deprecations
+============
 
 Pending Deprecations
-====================
+--------------------
 
 * In-place inversion is now deprecated. This includes ``op.inv()`` and ``op.inverse=value``. Please
   use ``qml.adjoint`` or ``qml.pow`` instead. 
@@ -63,7 +66,7 @@ Pending Deprecations
 
 
 Completed Deprecation Cycles
-============================
+----------------------------
 
 * The ``ObservableReturnTypes`` ``Sample``, ``Variance``, ``Expectation``, ``Probability``, ``State``, and ``MidMeasure``
   have been moved to ``measurements`` from ``operation``.
