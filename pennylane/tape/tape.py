@@ -168,7 +168,6 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
         qscript.samples_computational_basis and len(qscript.measurements) > 1
     )
     if need_to_validate_comp_basis_sampling:
-        # TODO: edge case: multiple obs=None measurement
         _validate_computational_basis_sampling(qscript.measurements)
 
     if qscript._obs_sharing_wires:
