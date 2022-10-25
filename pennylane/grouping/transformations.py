@@ -143,7 +143,6 @@ def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branc
     diag_terms = []
 
     paulis_with_identity = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)
-
     for term in qwc_grouping:
         diag_terms.append(diagonalize_pauli_word(term))
         if isinstance(term, Tensor):
