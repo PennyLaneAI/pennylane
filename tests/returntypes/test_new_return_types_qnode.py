@@ -1140,6 +1140,35 @@ class TestIntegrationMultipleReturns:
         assert res[0].shape == ()
         assert res[1].shape == (4,)
 
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("comp_basis_sampling", [qml.sample(), qml.counts()])
+    def test_sample_counts_no_obs(self, device, comp_basis_sampling):
+        """Measuring qml.sample()/qml.counts() works with other measurements even with the same wire being measured."""
+        shot_num = 1000
+        num_wires = 2
+        dev = qml.device(device, wires=num_wires, shots=shot_num)
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.apply(comp_basis_sampling), qml.expval(qml.PauliZ(0)), qml.probs(wires=[0])
+
+        qnode = qml.QNode(circuit, dev, diff_method=None)
+        res = qnode(0.5)
+
+        assert isinstance(res, tuple)
+
+        if comp_basis_sampling.return_type == qml.measurements.Sample:
+            assert res[0].shape == (shot_num, num_wires)
+        else:
+            assert isinstance(res[0], dict)
+
+        assert isinstance(res[1], qml.numpy.ndarray)
+        assert res[1].shape == ()
+        assert isinstance(res[2], qml.numpy.ndarray)
+        assert res[2].shape == (2,)
+
 
 devices = ["default.qubit.tf", "default.mixed"]
 
