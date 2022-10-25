@@ -80,7 +80,7 @@ def _validate_computational_basis_sampling(measurements):
         for cb_obs in comp_basis_obs:
             wires = (
                 cb_obs.wires
-                if cb_obs.wires is not None
+                if cb_obs.wires != qml.wires.Wires([])
                 else qml.wires.Wires.all_wires([m.wires for m in measurements])
             )
             with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
