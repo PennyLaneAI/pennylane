@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for for Hartree-Fock functions.
+Unit tests for Hartree-Fock functions.
 """
 import autograd
 import pytest
