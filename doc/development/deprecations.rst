@@ -71,7 +71,7 @@ Completed Deprecation Cycles
   - Deprecated in v0.23
   - Removed in v0.27
 
-* The ``qml.utils.expand`` function is now removed; ``qml.operation.expand_matrix`` should be used
+* The ``qml.utils.expand`` function is now removed; ``qml.math.expand_matrix`` should be used
   instead.
 
   - Deprecated in v0.24
