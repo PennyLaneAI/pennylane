@@ -18,13 +18,13 @@ import sys
 
 import autograd
 import pytest
-from pennylane import numpy as np
-from pennylane.operation import Observable, AnyWires
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces import execute
+from pennylane.operation import AnyWires, Observable
 
 pytestmark = pytest.mark.autograd
 
@@ -1243,7 +1243,7 @@ class DeviceSupportingSpecialObservable(DefaultQubit):
         return capabilities
 
     def expval(self, observable, **kwargs):
-        if self.analytic and isinstance(observable, SpecialObservable):
+        if self.shots is None and isinstance(observable, SpecialObservable):
             val = super().expval(qml.PauliZ(wires=0), **kwargs)
             return SpecialObject(val)
 

@@ -118,8 +118,7 @@ class NullQubit(QubitDevice):
 
     def __init__(self, wires, *args, **kwargs):
         defaultKwargs = {"shots": None, "r_dtype": np.float64, "c_dtype": np.complex128}
-        kwargs = defaultKwargs | kwargs
-
+        kwargs = {**defaultKwargs, **kwargs}
         self._operation_calls = defaultdict(int)
         super().__init__(
             wires, shots=kwargs["shots"], r_dtype=kwargs["r_dtype"], c_dtype=kwargs["c_dtype"]
