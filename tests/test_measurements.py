@@ -20,7 +20,6 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import (
-    AllCounts,
     Counts,
     Expectation,
     MeasurementProcess,
@@ -38,10 +37,6 @@ from pennylane.measurements import (
     sample,
     state,
     var,
-    VnEntropy,
-    MutualInfo,
-    Shadow,
-    ShadowExpval,
 )
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
@@ -1313,46 +1308,6 @@ class TestExpansion:
 
         m = MeasurementProcess(Expectation, wires=qml.wires.Wires([0, 1]), eigvals=np.ones(4))
         assert m.has_decomposition is False
-
-    @pytest.mark.parametrize(
-        "return_type, kwargs",
-        [
-            (Sample, None),
-            (Sample, {"wires": ["a", 1]}),
-            (AllCounts, None),
-            (AllCounts, {"wires": ["a", 1]}),
-            (Counts, None),
-            (Counts, {"wires": ["a", 1]}),
-        ],
-    )
-    def test_is_comp_basis_sample_true(self, return_type, kwargs):
-        """Test that measurements of Paulis report to have a decomposition."""
-        if kwargs is None:
-            m = MeasurementProcess(return_type, obs=None)
-        else:
-            m = MeasurementProcess(return_type, **kwargs)
-        assert m.is_comp_basis_sample is True
-
-    @pytest.mark.parametrize(
-        "return_type, arg",
-        [
-            (Expectation, {"obs": qml.PauliX(2)}),
-            (Variance, {"obs": qml.PauliX("a")}),
-            (Probability, {"obs": qml.PauliX("b")}),
-            (Probability, {"wires": ["a", 1]}),
-            (Sample, {"obs": qml.PauliX("a")}),
-            (Counts, {"obs": qml.PauliX("a")}),
-            (State, {}),
-            (VnEntropy, {"wires": ["a", 1]}),
-            (MutualInfo, {"wires": [["a", 1], ["b", 2]]}),
-            (Shadow, {"wires": [["a", 1], ["b", 2]]}),
-            (ShadowExpval, {"obs": qml.PauliX("a")}),
-        ],
-    )
-    def test_is_comp_basis_sample_false(self, return_type, arg):
-        """Test that measurements of Paulis report to have a decomposition."""
-        m = MeasurementProcess(return_type, **arg)
-        assert m.is_comp_basis_sample is False
 
 
 class TestDiagonalizingGates:
