@@ -380,11 +380,7 @@ class QuantumScript:
                 into that operation's data.
 
                 Sets:
-        <<<<<<< HEAD
-                    _par_info (list): Parameter information list.
-        =======
                     _par_info (list): Parameter information
-        >>>>>>> de95f7b2c764f10df1cab8877903d8ffcf55b5d7
         """
         self._par_info = []
         for op in self.operations:
