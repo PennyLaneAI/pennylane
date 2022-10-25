@@ -50,7 +50,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Improvements</h3>
 
-* Added the `def samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track
+* Added the `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track
   if computational basis samples are being generated.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 
