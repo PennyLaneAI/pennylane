@@ -35,35 +35,35 @@ class FlipSign(Operation):
         wires (array[int]): number of wires that the operator acts on
 
 
-    .. details::
-        :title: Usage Details
+    **Example**
 
-        The template is used inside a qnode.
-        The number of shots has to be explicitly set on the device when using sample-based measurements:
+    This template changes the sign of the basic state passed as an argument.
+    In this example when passing the element [1,0] we will change the sign of the third element.
+    We could pass directly element 3 and get the same result
 
-        .. code-block:: python
+    .. code-block:: python
 
-            basis_state = [1, 0]
+        basis_state = [1, 0]
 
-            dev = qml.device("default.qubit", wires=2)
-
-
-            @qml.qnode(dev)
-            def circuit():
-                for wire in list(range(2)):
-                    qml.Hadamard(wires=wire)
-                qml.FlipSign(basis_state, wires=list(range(2)))
-                return qml.state()
+        dev = qml.device("default.qubit", wires=2)
 
 
-            circuit()
+        @qml.qnode(dev)
+        def circuit():
+            for wire in list(range(2)):
+                qml.Hadamard(wires=wire)
+            qml.FlipSign(basis_state, wires=list(range(2)))
+            return qml.state()
 
-        The result for the above circuit is:
 
-        .. code-block:: python
+        circuit()
 
-            >>> print(circuit())
-            [ 0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
+    The result for the above circuit is:
+
+    .. code-block:: python
+
+        >>> print(circuit())
+        [ 0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
 
     """
 
