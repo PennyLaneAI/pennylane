@@ -46,9 +46,9 @@ def _compute_vjp_new(dy, jacs, multi_measurements):
 
     for dy_, jac_, multi in zip(dy, jacs, multi_measurements):
         if multi:
-            vjp = qml.gradients.compute_vjp_multi(dy_, jac_)
+            vjp = qml.gradients.compute_vjp_multi_new(dy_, jac_)
         else:
-            vjp = qml.gradients.compute_vjp_single(dy_, jac_)
+            vjp = qml.gradients.compute_vjp_single_new(dy_, jac_)
 
         if not context.executing_eagerly():
             vjp = qml.math.unstack(vjp)
@@ -275,14 +275,14 @@ def _execute_new(
 
         return tuple(tf.convert_to_tensor(x_) for x_ in x)
 
-    for i in range(len(res)):
+    for i, r in enumerate(res):
         # convert output to TensorFlow tensors
 
         # skip in the case of counts
         if isinstance(res[i], dict):
             continue
 
-        res[i] = _to_tensors(res[i])
+        res[i] = _to_tensors(r)
 
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
@@ -302,7 +302,7 @@ def _execute_new(
             # reconstruct the nested structure of dy
             start = 0
             dy_nested = []
-            for i, tape in enumerate(tapes):
+            for tape in tapes:
                 num_meas = len(tape.measurements)
                 tape_dy = dy[start : start + num_meas]
                 if num_meas == 1:
