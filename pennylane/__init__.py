@@ -32,7 +32,7 @@ import pennylane.math
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
-import pennylane.pauli as pauli
+from pennylane import pauli
 import pennylane.resource
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
