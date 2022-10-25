@@ -14,16 +14,17 @@
 """
 This module contains the base quantum tape.
 """
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
 import contextlib
 import copy
-
-# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
 from threading import RLock
+from warnings import warn
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, AllCounts, Probability
+from pennylane.measurements import AllCounts, Counts, Probability, Sample
 from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
+
 from .qscript import QuantumScript
 
 
