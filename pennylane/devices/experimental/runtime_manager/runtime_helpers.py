@@ -5,9 +5,7 @@ from ..device_interface.device_helpers import DeviceType
 class FnType(IntEnum):
     """Enum datatype to aid organisation of registration function types"""
     PREPROCESS = auto()
-    PREPROCESS_TRACED = auto()
     EXECUTE = auto()
-    POSTPROCESS_TRACED = auto()
     POSTPROCESS = auto()
     GRADIENT = auto()
     VJP = auto()
@@ -21,14 +19,10 @@ class ExecutionConfig:
         shots (bool): Indicate whether finite-shots are enabled.
         grad (bool): Indicate whether gradients are enabled.
         preproc (Union[None, Callable]): Provides support for a preprocessing function outside of the gradient tracking logic.
-        preproc_traced (Union[None, Callable]): Provides support for a preprocessing function inside of the gradient tracking logic.
         postproc (Union[None, Callable]): Provides support for a postprocessing function outside of the gradient tracking logic.
-        postproc_traced (Union[None, Callable]): Provides support for a postprocessing function inside of the gradient tracking logic.
     """
     device_type: DeviceType = DeviceType.UNKNOWN
     shots: int = 0
     grad: Union[None, Callable] = None
     preproc: Union[None, Callable] = None
-    preproc_traced: Union[None, Callable] = None
     postproc: Union[None, Callable] = None
-    postproc_traced: Union[None, Callable] = None

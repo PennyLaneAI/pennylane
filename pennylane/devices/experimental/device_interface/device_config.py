@@ -8,11 +8,11 @@ class DeviceConfig:
     """Configuration dataclass to aid in device setup and initialization.
 
     Args:
-        shots (bool): Indicate whether finite-shots are enabled.
+        --- shots (bool): Indicate whether finite-shots are enabled.
         grad (bool): Indicate whether gradients are enabled.
         device_type (DeviceType): Indicate the type of the given device.
     """
 
-    shots: bool = False
+    # ---shots: bool = False
     state_access: bool = False
     device_type: DeviceType = DeviceType.UNKNOWN

@@ -5,6 +5,8 @@ from pennylane.operation import Operation
 
 from .device_config import *
 
+
+# To be purged!
 class AbstractDeviceDriver(ABC):
     def __init__(self, device_config: DeviceConfig):
         self.device_config = device_config
@@ -14,3 +16,5 @@ class AbstractDeviceDriver(ABC):
 
     def query_support(self) -> DeviceConfig:
         self.device_config
+
+

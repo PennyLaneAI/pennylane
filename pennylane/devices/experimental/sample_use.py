@@ -2,7 +2,7 @@ import pennylane as qml
 import numpy as np
 
 # Create a device which holds a simulator
-dev1 = qml.devices.experimental.test_device_python_sim.TestDevicePythonSim()
+dev1 = qml.devices.experimental.custom_device_3.python_device.TestDevicePythonSim()
 
 #Prepare a an example circuit
 prep = [qml.BasisState(np.array([1,1]), wires=(0,1))]
