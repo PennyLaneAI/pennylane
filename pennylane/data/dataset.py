@@ -29,8 +29,16 @@ class Dataset(ABC):
     and an efficient state-preparation circuit for that state.
 
     Args:
-        dtype (string): the type of the dataset, e.g., `qchem`, `qspin`, etc.
-        **kwargs: variable-length keyworded arguments specifying the data to be stored in the dataset
+        args (list): For internal use only. These will be ignored if called with standard=False
+        standard (bool): For internal use only. See below for behaviour if this is set to True
+        **kwargs (dict): variable-length keyworded arguments specifying the data to be stored in the dataset
+
+    Note on the ``standard`` kwarg:
+        A "standard" Dataset uses previously existing, downloadable quantum data. This special instance of
+        the Dataset class makes some assumptions for folder management and file downloading. As such, the
+        Dataset class should not be invoked directly with ``standard=True``. Instead, call :meth:`~.data.load`
+
+    .. seealso:: :meth:`~.data.load`
 
     **Example**
 
@@ -75,7 +83,7 @@ class Dataset(ABC):
         + (1) [Z1]
     """
 
-    _standard_argnames = ["data_type", "folder", "attr_prefix"]
+    _standard_argnames = ["data_type", "data_folder", "attr_prefix"]
 
     def __std_init__(self, data_type, folder, attr_prefix):
         """Constructor for standardized datasets."""
@@ -99,6 +107,7 @@ class Dataset(ABC):
             setattr(self, key, val)
 
     def __init__(self, *args, standard=False, **kwargs):
+        """Dispatching constructor for direct invocation with kwargs or from qml.data.load()"""
         if standard:
             if len(args) != len(self._standard_argnames):
                 raise TypeError(
@@ -197,7 +206,7 @@ class Dataset(ABC):
                 raise attr_error
             filepath = self.__get_filename_for_attribute(name)
             if os.path.exists(filepath):
-                # TODO: setattr?
+                # TODO: setattr
                 filedata = self._read_file(filepath)
                 if name in filedata:
                     return filedata[name]
@@ -213,10 +222,3 @@ class Dataset(ABC):
                 docstring += f"\t{arg} ({argtype}): {argdoc}\n"
             docstring += f"\nReturns:\n\tDataset({self._dtype})"
         self.__doc__ = docstring  # pylint:disable=attribute-defined-outside-init
-
-
-def from_file(filepath):
-    """Create a new dataset from a file."""
-    dataset = Dataset()
-    dataset.read(filepath)
-    return dataset

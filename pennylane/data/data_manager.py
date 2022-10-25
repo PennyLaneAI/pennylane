@@ -17,8 +17,9 @@ Contains the Dataset utility functions.
 # pylint:disable=too-many-arguments,global-statement
 from concurrent.futures import ThreadPoolExecutor, wait
 import os
-import requests
 import sys
+
+import requests
 from pennylane.data.dataset import Dataset
 
 S3_URL = "https://xanadu-quantum-datasets-test.s3.amazonaws.com"
@@ -35,7 +36,7 @@ def _validate_params(data_type, description, attributes):
     data = _data_struct.get(data_type)
     if not data:
         raise ValueError(
-            f"Currently we have data hosted from types: {list(_data_struct)}, but got {data_type}."
+            f"Currently the hosted datasets are of types: {list(_data_struct)}, but got {data_type}."
         )
 
     params_needed = data["params"]
@@ -44,7 +45,8 @@ def _validate_params(data_type, description, attributes):
             f"Supported parameter values for {data_type} are {params_needed}, but got {list(description)}."
         )
 
-    def panic_if_invalid(node, params_left):
+    def validate_structure(node, params_left):
+        """Recursively validates that all values in `description` exist in the dataset."""
         param = params_left[0]
         params_left = params_left[1:]
         details = description[param]
@@ -53,16 +55,16 @@ def _validate_params(data_type, description, attributes):
                 if not params_left:
                     return
                 for child in node.values():
-                    panic_if_invalid(child, params_left)
+                    validate_structure(child, params_left)
             elif detail not in node:
                 sys.tracebacklimit = 0  # the recursive stack is disorienting
                 raise ValueError(
                     f"{param} value of '{detail}' not available. Available values are {list(node)}"
                 )
             elif params_left:
-                panic_if_invalid(node[detail], params_left)
+                validate_structure(node[detail], params_left)
 
-    panic_if_invalid(_foldermap[data_type], params_needed)
+    validate_structure(_foldermap[data_type], params_needed)
 
     if not isinstance(attributes, list):
         raise TypeError(f"Arg 'attributes' should be a list, but got {type(attributes).__name__}.")
@@ -216,7 +218,23 @@ def load(
     return data_files
 
 
-def list_datasets():
+def _direc_to_dict(path):
+    r"""Helper function to create dictionary structure from directory path"""
+    for root, dirs, _ in os.walk(path):
+        if not dirs:
+            return None
+        tree = {x: _direc_to_dict(os.path.join(root, x)) for x in dirs}
+        vals = [x is None for x in tree.values()]
+        if all(vals):
+            return list(dirs)
+        if any(vals):
+            for key, val in tree.items():
+                if val is None:
+                    tree.update({key: []})
+        return tree
+
+
+def list_datasets(path=None):
     r"""Returns a list of datasets and their sizes
 
     Return:
@@ -236,22 +254,8 @@ def list_datasets():
         }
     """
 
+    if path:
+        return _direc_to_dict(path)
     if not _foldermap:
         _refresh_foldermap()
     return _foldermap.copy()
-
-
-def list_local_datasets(path):
-    r"""Helper function to create dictionary structure from directory path"""
-    for root, dirs, _ in os.walk(path):
-        if not dirs:
-            return None
-        tree = {x: list_local_datasets(os.path.join(root, x)) for x in dirs}
-        vals = [x is None for x in tree.values()]
-        if all(vals):
-            return list(dirs)
-        if any(vals):
-            for key, val in tree.items():
-                if val is None:
-                    tree.update({key: []})
-        return tree

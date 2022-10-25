@@ -139,7 +139,7 @@ class TestValidateParams:
                 ValueError,
                 r"Supported key values for qchem are \['molecule', 'hamiltonian', 'sparse_hamiltonian', 'hf_state', 'full'\], but got \['foo'\].",
             ),
-        ]
+        ],
     )
     def test_attributes_must_be_list(self, attributes, error_type, error_message):
         with pytest.raises(error_type, match=error_message):
@@ -164,13 +164,23 @@ class TestValidateParams:
             ),
             (
                 "qspin",
-                {"sysname": ["Heisenberg"], "periodicity": ["closed"], "lattice": ["chain"], "layout": ["1x4"]},
-                ["full", "ground_states"]
+                {
+                    "sysname": ["Heisenberg"],
+                    "periodicity": ["closed"],
+                    "lattice": ["chain"],
+                    "layout": ["1x4"],
+                },
+                ["full", "ground_states"],
             ),
             (
                 "qspin",
-                {"sysname": ["full"], "periodicity": ["closed"], "lattice": ["full"], "layout": ["full"]},
-                ["full", "ground_states"]
+                {
+                    "sysname": ["full"],
+                    "periodicity": ["closed"],
+                    "lattice": ["full"],
+                    "layout": ["full"],
+                },
+                ["full", "ground_states"],
             ),
         ],
     )
