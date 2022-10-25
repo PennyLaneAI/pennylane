@@ -499,7 +499,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
         # map the params
         self.trainable_params = [parameter_mapping[i] for i in self.trainable_params]
-        self._par_info = {parameter_mapping[k]: v for k, v in self._par_info.items()}
+        _par_info_dict = {parameter_mapping[k]: v for k, v in enumerate(self._par_info)}
+        self._par_info = [_par_info_dict[i] for i in range(len(_par_info_dict))]
 
         for idx, op in enumerate(self._ops):
             self._ops[idx] = qml.adjoint(op, lazy=False)
