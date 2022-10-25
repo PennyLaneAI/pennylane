@@ -7,7 +7,7 @@ Quantum Datasets
 =================
 
 PennyLane provides the :mod:`~.data` module to access quantum datasets comprising of quantum
-chemsitry data and quantum many-body spin systems data. It contains the functionalities to
+chemistry data and quantum many-body spin systems data. It contains the functionalities to
 download these datasets from a server, store and manipulate it locally. It also provides tools
 for users to build such datasets themselves using the :class:`~.pennylane.qdata.QuantumData` class.
 Here we explain the structure of the hosted data and how can it be used inside PennyLane.
