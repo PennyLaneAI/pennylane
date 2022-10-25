@@ -581,24 +581,6 @@ class Operator(abc.ABC):
                 return qml.math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
-    @staticmethod
-    def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument
-        r"""Representation of the operator as a linear combination of other operators (static method).
-
-        .. math:: O = \sum_i c_i O_i
-
-        .. seealso:: :meth:`~.Operator.terms`
-
-        Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the
-                ``hyperparameters`` attribute
-
-        Returns:
-            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients and list of operations
-        """
-        raise TermsUndefinedError
-
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
 
@@ -612,7 +594,7 @@ class Operator(abc.ABC):
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
-        return self.compute_terms(*self.parameters, **self.hyperparameters)
+        raise TermsUndefinedError
 
     @property
     @abc.abstractmethod

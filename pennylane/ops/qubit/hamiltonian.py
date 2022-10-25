@@ -237,8 +237,7 @@ class Hamiltonian(Observable):
         """
         return self._ops
 
-    @staticmethod
-    def compute_terms(*coeffs, ops):  # pylint: disable=arguments-differ
+    def terms(self):
         r"""Representation of the operator as a linear combination of other operators (static method).
 
          .. math:: O = \sum_i c_i O_i
@@ -264,7 +263,8 @@ class Hamiltonian(Observable):
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return coeffs, ops
+
+        return self._coeffs, self._ops
 
     @property
     def wires(self):
