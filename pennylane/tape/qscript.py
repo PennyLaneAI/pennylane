@@ -378,7 +378,9 @@ class QuantumScript:
         ]
         self.is_sampled = any(is_sample_type)
         self.all_sampled = all(is_sample_type)
-        self.samples_computational_basis = any(o.is_comp_basis_sample for o in self.measurements)
+        self.samples_computational_basis = any(
+            o.samples_computational_basis for o in self.measurements
+        )
 
     def _update_par_info(self):
         """Update the parameter information dictionary.

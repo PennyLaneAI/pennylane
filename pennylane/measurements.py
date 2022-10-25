@@ -586,7 +586,7 @@ class MeasurementProcess:
         return self.obs.has_diagonalizing_gates
 
     @property
-    def is_comp_basis_sample(self):
+    def samples_computational_basis(self):
         r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
         computational basis states.
         """

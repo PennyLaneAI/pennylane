@@ -143,7 +143,12 @@ class TestUpdate:
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0)), sample_ms])
         assert qs.is_sampled is True
         assert qs.all_sampled is False
-        assert qs.samples_computational_basis is True
+
+        shadow_mp = sample_ms.return_type not in (
+            qml.measurements.Shadow,
+            qml.measurements.ShadowExpval,
+        )
+        assert qs.samples_computational_basis is (True if shadow_mp else False)
 
         qs = QuantumScript(measurements=[sample_ms, sample_ms, qml.sample()])
         assert qs.is_sampled is True

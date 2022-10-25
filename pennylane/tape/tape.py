@@ -74,7 +74,9 @@ def _validate_computational_basis_sampling(measurements):
             qml.PauliZ(wires) if len(wires) == 1 else qml.prod(*[qml.PauliZ(w) for w in wires])
         )
 
-    all_obs_minus_comp_basis_sampling = [o for o in measurements if not o.is_comp_basis_sample]
+    all_obs_minus_comp_basis_sampling = [
+        o for o in measurements if not o.samples_computational_basis
+    ]
     should_raise = any(
         not qml.grouping.utils.are_pauli_words_qwc([obs.obs, all_wire_pauliz])
         for obs in all_obs_minus_comp_basis_sampling
@@ -150,7 +152,7 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original qscript in place.
     need_to_validate_comp_basis_sampling = (
-        qscript.comp_basis_sampled and len(qscript.measurements) > 1
+        qscript.samples_computational_basis and len(qscript.measurements) > 1
     )
     if need_to_validate_comp_basis_sampling:
         # TODO: edge case: multiple obs=None measurement
@@ -232,6 +234,7 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     new_qscript.num_wires = qscript.num_wires
     new_qscript.is_sampled = qscript.is_sampled
     new_qscript.all_sampled = qscript.all_sampled
+    new_qscript.samples_computational_basis = qscript.samples_computational_basis
     new_qscript._batch_size = qscript.batch_size
     new_qscript._output_dim = qscript.output_dim
     new_qscript._qfunc_output = qscript._qfunc_output
