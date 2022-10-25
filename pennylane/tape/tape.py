@@ -68,24 +68,21 @@ def _err_msg_for_some_meas_not_qwc(measurements):
 def _validate_computational_basis_sampling(measurements):
     """Auxiliary function for validating computational basis state sampling with other measurements considering the
     qubit-wise commutativity relation."""
-    wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
-    with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
-        all_wire_pauliz = (
-            qml.PauliZ(wires) if len(wires) == 1 else qml.prod(*[qml.PauliZ(w) for w in wires])
-        )
-
     all_obs_minus_comp_basis_sampling = [
         o for o in measurements if not o.samples_computational_basis
     ]
+    if all_obs_minus_comp_basis_sampling:
+        wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
+        with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
+            all_wire_pauliz = (
+                qml.PauliZ(wires) if len(wires) == 1 else qml.prod(*[qml.PauliZ(w) for w in wires])
+            )
 
-    should_raise = False
-    for obs in all_obs_minus_comp_basis_sampling:
-        if obs.obs is not None:
-            should_raise = qml.grouping.utils.are_pauli_words_qwc([obs.obs, all_wire_pauliz])
-
-        if should_raise:
-            _err_msg_for_some_meas_not_qwc(measurements)
-            return
+        for obs in all_obs_minus_comp_basis_sampling:
+            if obs.obs is not None and not qml.grouping.utils.are_pauli_words_qwc(
+                [obs.obs, all_wire_pauliz]
+            ):
+                raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
 
 
 # TODO: move this function to its own file and rename
