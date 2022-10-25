@@ -134,8 +134,6 @@ class Sum(CompositeOp):
 
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_terms`
-
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
