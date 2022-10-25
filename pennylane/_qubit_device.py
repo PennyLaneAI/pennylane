@@ -389,7 +389,7 @@ class QubitDevice(Device):
         )
 
         # compute the required statistics
-        if not circuit.analytic and circuit.shot_vector is not None:
+        if not self.analytic and circuit.shot_vector is not None:
             results = self._collect_shotvector_results(circuit, counts_exist)
         else:
             results = self.statistics(circuit=circuit)
