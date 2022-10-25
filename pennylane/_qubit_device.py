@@ -282,24 +282,6 @@ class QubitDevice(Device):
 
         return results
 
-    @staticmethod
-    def _validation(circuit):
-        pass
-        # raw_sampled_ops = False
-        # for o in circuit.measurements:
-        #     if o.return_type in (qml.measurements.Sample, qml.measurements.Counts) and o.obs is None:
-        #         raw_sampled_ops = True
-        #         break
-
-        # if raw_sampled_ops:
-        #     measured_wires = qml.wires.Wires.all_wires([m.wires for m in circuit.measurements])
-        #     all_pauliz = qml.prod(*[qml.PauliZ(wire) for wire in measured_wires])
-        #     if any(not qml.is_commuting(obs, all_pauliz) for obs in circuit.observables):
-        #         raise qml.QuantumFunctionError(
-        #             f"Computational basis measurements do not commute with some of the "
-        #             f"other measurements being performed:\n {circuit.measurements}"
-        #         )
-
     def _execute_new(self, circuit, **kwargs):
         """New execute (update of return type) function, it executes a queue of quantum operations on the device and
         then measure the given observables. More case will be added in future PRs, for the moment it only supports
@@ -332,10 +314,8 @@ class QubitDevice(Device):
         # apply all circuit operations
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
-        # check for commutativity in sampled observables and generate computational basis samples
+        # generate computational basis samples
         if self.shots is not None:
-            self._validation(circuit)
-            print('Before gen samples')
             self._samples = self.generate_samples()
 
         # compute the required statistics
@@ -396,7 +376,6 @@ class QubitDevice(Device):
 
         # generate computational basis samples
         if self.shots is not None or circuit.is_sampled:
-            self._validation(circuit)
             self._samples = self.generate_samples()
 
         ret_types = [m.return_type for m in circuit.measurements]
