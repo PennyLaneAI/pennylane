@@ -377,10 +377,10 @@ class QuantumScript:
 
     def _update_par_info(self):
         """Update the parameter information list. Each entry in the list with an operation and an index
-                into that operation's data.
+        into that operation's data.
 
-                Sets:
-                    _par_info (list): Parameter information
+        Sets:
+            _par_info (list): Parameter information
         """
         self._par_info = []
         for op in self.operations:
