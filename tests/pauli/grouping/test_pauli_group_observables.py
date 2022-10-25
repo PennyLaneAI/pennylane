@@ -326,7 +326,7 @@ class TestDifferentiable:
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
         def group(coeffs, select=None):
-            _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+            _, grouped_coeffs = group_observables(obs, coeffs)
             return grouped_coeffs[select]
 
         jac_fn = qml.jacobian(group)
@@ -345,7 +345,7 @@ class TestDifferentiable:
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
         def group(coeffs, select=None):
-            _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+            _, grouped_coeffs = group_observables(obs, coeffs)
             return grouped_coeffs[select]
 
         jac_fn = jax.jacobian(group)
@@ -363,7 +363,7 @@ class TestDifferentiable:
 
         def group(coeffs, select_group=None, select_index=None):
             # we return a scalar, since torch is best at computing gradients
-            _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+            _, grouped_coeffs = group_observables(obs, coeffs)
             return grouped_coeffs[select_group][select_index]
 
         coeffs = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
@@ -389,7 +389,7 @@ class TestDifferentiable:
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
         def group(coeffs, select=None):
-            _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+            _, grouped_coeffs = group_observables(obs, coeffs)
             return grouped_coeffs[select]
 
         coeffs = tf.Variable([1.0, 2.0, 3.0], dtype=tf.double)

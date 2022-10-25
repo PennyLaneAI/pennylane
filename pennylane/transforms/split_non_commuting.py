@@ -155,7 +155,7 @@ def split_non_commuting(tape):
         )
 
     # If there is more than one group of commuting observables, split tapes
-    groups, group_coeffs = qml.grouping.group_observables(obs_list, range(len(obs_list)))
+    groups, group_coeffs = qml.pauli.grouping.group_observables(obs_list, range(len(obs_list)))
     if len(groups) > 1:
         # make one tape per commuting group
         tapes = []

@@ -34,7 +34,7 @@ def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
 
     # todo: directly compute the
     # indices, instead of extracting groups of observables first
-    observable_groups = qml.grouping.group_observables(
+    observable_groups = qml.pauli.grouping.group_observables(
         observables, coefficients=None, grouping_type=grouping_type, method=method
     )
 
