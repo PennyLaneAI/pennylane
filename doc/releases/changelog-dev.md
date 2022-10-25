@@ -144,6 +144,9 @@ Users can specify the control wires as well as the values to control the operati
 
 * New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
+
+* `ControlledQubitUnitary` now has a `control_values` property.
+  [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
   
 <h3>Breaking changes</h3>
 
@@ -203,6 +206,9 @@ Users can specify the control wires as well as the values to control the operati
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
 <h3>Bug fixes</h3>
+
+* `ControlledQubitUnitary.pow` now copies over the `control_values`.
+  [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
 
 * The evaluation of QNodes that return either `vn_entropy` or `mutual_info` raises an
   informative error message when using devices that define a vector of shots.
