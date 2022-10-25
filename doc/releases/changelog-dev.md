@@ -77,12 +77,11 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   >>> mapped_circuit = qml.map_wires(circuit, wire_map)
   >>> mapped_circuit()
   tensor([0.92885434, 0.07114566], requires_grad=True)
-  >>> list(mapped_circuit.tape)
-  [RX(0.54, wires=[10]),
-  PauliX(wires=[11]),
-  PauliZ(wires=[12]),
-  RY(1.23, wires=[13]),
-  probs(wires=[10])]
+  >>> print(qml.draw(mapped_circuit)())
+  10: ──RX(0.54)─┤  Probs
+  11: ──X────────┤       
+  12: ──Z────────┤       
+  13: ──RY(1.23)─┤  
   ```
 
 <h3>Improvements</h3>
