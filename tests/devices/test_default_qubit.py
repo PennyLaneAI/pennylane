@@ -2594,5 +2594,5 @@ class TestDenseMatrixDecompositionThreshold:
     def test_threshold(self, op, n_wires, condition):
 
         wires = np.linspace(0, n_wires - 1, n_wires, dtype=int)
-        Full_op = op(wires=wires)
-        assert DefaultQubit.stopping_condition.__get__(Full_op)(Full_op) == condition
+        op = op(wires=wires)
+        assert DefaultQubit.stopping_condition.__get__(op)(op) == condition
