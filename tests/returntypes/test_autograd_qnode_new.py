@@ -428,9 +428,15 @@ class TestQNode:
         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
             np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
         )
+        assert isinstance(res, np.ndarray)
+        assert res.shape == ()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.grad(circuit)(a, p)
+
+        assert isinstance(res, np.ndarray)
+        assert len(res) == 3
+
         expected = np.array(
             [
                 np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
@@ -651,7 +657,9 @@ class TestQubitIntegration:
             return autograd.numpy.hstack(circuit(x, y))
 
         res = qml.jacobian(cost)(x, y)
-        assert isinstance(res, tuple) and len(res) == 2
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
         assert res[0].shape == (3,)
         assert res[1].shape == (3,)
 
@@ -687,22 +695,37 @@ class TestQubitIntegration:
         )
 
         assert isinstance(res, tuple)
+        assert len(res) == 2
 
+        assert isinstance(res[0], np.ndarray)
+        assert res[0].shape == ()
         assert np.allclose(res[0], expected_var, atol=tol, rtol=0)
+
+        assert isinstance(res[1], np.ndarray)
+        assert res[1].shape == (2,)
         assert np.allclose(res[1], expected_probs, atol=tol, rtol=0)
 
         def cost(x, y):
             return autograd.numpy.hstack(circuit(x, y))
 
-        res = qml.jacobian(cost)(x, y)
+        jac = qml.jacobian(cost)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
 
         expected = (
             np.array([np.sin(2 * x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
             np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
         )
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2
+
+        assert isinstance(jac[0], np.ndarray)
+        assert jac[0].shape == (3,)
+        assert np.allclose(jac[0], expected[0], atol=tol, rtol=0)
+
+        assert isinstance(jac[1], np.ndarray)
+        assert jac[1].shape == (3,)
+        assert np.allclose(jac[1], expected[1], atol=tol, rtol=0)
 
     def test_chained_qnodes(self, dev_name, diff_method, mode):
         """Test that the gradient of chained QNodes works without error"""
@@ -860,7 +883,10 @@ class TestQubitIntegration:
             np.sin(a) * np.sin(b) - np.cos(a) * np.cos(b),
         ]
 
-        assert np.allclose(g2, expected_g2, atol=10e-2, rtol=0)
+        if diff_method in {"finite-diff"}:
+            tol = 10e-2
+
+        assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
 
     def test_hessian(self, dev_name, diff_method, mode, tol):
         """Test hessian calculation of a scalar valued QNode"""
@@ -881,12 +907,18 @@ class TestQubitIntegration:
         a, b = x
 
         expected_res = np.cos(a) * np.cos(b)
+
+        assert isinstance(res, np.ndarray)
+        assert res.shape == ()
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         grad_fn = qml.grad(circuit)
         g = grad_fn(x)
 
         expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
+
+        assert isinstance(g, np.ndarray)
+        assert g.shape == (2,)
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
         hess = qml.jacobian(grad_fn)(x)
@@ -896,7 +928,13 @@ class TestQubitIntegration:
             [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
         ]
 
-        assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+        assert isinstance(hess, np.ndarray)
+        assert hess.shape == (2, 2)
+
+        if diff_method in {"finite-diff"}:
+            tol = 10e-2
+
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_unused_parameter(self, dev_name, diff_method, mode, tol):
         """Test hessian calculation of a scalar valued QNode"""
@@ -926,7 +964,11 @@ class TestQubitIntegration:
             [-np.cos(a), 0],
             [0, 0],
         ]
-        assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+
+        if diff_method in {"finite-diff"}:
+            tol = 10e-2
+
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued(self, dev_name, diff_method, mode, tol):
         """Test hessian calculation of a vector valued QNode"""
@@ -948,16 +990,22 @@ class TestQubitIntegration:
         a, b = x
 
         expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
+
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (2,)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = qml.jacobian(circuit)
-        res = jac_fn(x)
+        jac = jac_fn(x)
 
         expected_res = [
             [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
             [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
         ]
-        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        assert isinstance(jac, np.ndarray)
+        assert jac.shape == (2, 2)
+        assert np.allclose(jac, expected_res, atol=tol, rtol=0)
 
         hess = qml.jacobian(jac_fn)(x)
 
@@ -971,7 +1019,14 @@ class TestQubitIntegration:
                 [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
             ],
         ]
-        assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+
+        assert isinstance(hess, np.ndarray)
+        assert hess.shape == (2, 2, 2)
+
+        if diff_method in {"finite-diff"}:
+            tol = 10e-2
+
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_postprocessing(self, dev_name, diff_method, mode, tol):
         """Test hessian calculation of a vector valued QNode with post-processing"""
@@ -995,6 +1050,9 @@ class TestQubitIntegration:
         a, b = x
 
         expected_res = x @ [np.cos(a) * np.cos(b), np.cos(a) * np.cos(b)]
+
+        assert isinstance(res, np.ndarray)
+        assert res.shape == ()
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         hess = qml.jacobian(qml.grad(cost_fn))(x)
@@ -1009,7 +1067,13 @@ class TestQubitIntegration:
                 -(np.cos(a) * ((a + b) * np.cos(b) + 2 * np.sin(b))),
             ],
         ]
-        assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+
+        assert hess.shape == (2, 2)
+
+        if diff_method in {"finite-diff"}:
+            tol = 10e-2
+
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_separate_args(self, dev_name, diff_method, mode, mocker, tol):
         """Test hessian calculation of a vector valued QNode that has separate input arguments"""
@@ -1029,6 +1093,8 @@ class TestQubitIntegration:
         res = circuit(a, b)
 
         expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (2,)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = qml.jacobian(circuit)
@@ -1039,7 +1105,10 @@ class TestQubitIntegration:
             [-0.5 * np.sin(a) * np.cos(b), 0.5 * np.sin(a) * np.cos(b)],
             [-0.5 * np.cos(a) * np.sin(b), 0.5 * np.cos(a) * np.sin(b)],
         )
+        assert g[0].shape == (2,)
         assert np.allclose(g[0], expected_g[0], atol=tol, rtol=0)
+
+        assert g[1].shape == (2,)
         assert np.allclose(g[1], expected_g[1], atol=tol, rtol=0)
 
         spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
@@ -1063,9 +1132,13 @@ class TestQubitIntegration:
             [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
             [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
         )
+
+        if diff_method in {"finite-diff"}:
+            tol = 10e-2
+
         for hess, exp_hess in zip([hess_a, hess_b], [exp_hess_a, exp_hess_b]):
-            assert np.allclose(hess[0], exp_hess[0], atol=10e-2, rtol=0)
-            assert np.allclose(hess[1], exp_hess[1], atol=10e-2, rtol=0)
+            assert np.allclose(hess[0], exp_hess[0], atol=tol, rtol=0)
+            assert np.allclose(hess[1], exp_hess[1], atol=tol, rtol=0)
 
     def test_hessian_ragged(self, dev_name, diff_method, mode, tol):
         """Test hessian calculation of a ragged QNode"""
@@ -1112,7 +1185,11 @@ class TestQubitIntegration:
                 [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
             ],
         ]
-        assert np.allclose(hess, expected_hess, atol=10e-2, rtol=0)
+
+        if diff_method in {"finite-diff"}:
+            tol = 10e-2
+
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_state(self, dev_name, diff_method, mode, tol):
         """Test that the state can be returned and differentiated"""
@@ -1144,6 +1221,13 @@ class TestQubitIntegration:
 
         res = qml.jacobian(cost_fn)(x, y)
         expected = np.array([-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2])
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert isinstance(res[0], np.ndarray)
+        assert res[0].shape == ()
+        assert isinstance(res[1], np.ndarray)
+        assert res[1].shape == ()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_projector(self, dev_name, diff_method, mode, tol):
@@ -1164,9 +1248,11 @@ class TestQubitIntegration:
 
         res = circuit(x, y)
         expected = 0.25 * np.sin(x / 2) ** 2 * (3 + np.cos(2 * y) + 2 * np.cos(x) * np.sin(y) ** 2)
+        assert isinstance(res, np.ndarray)
+        assert res.shape == ()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = qml.jacobian(circuit)(x, y)
+        jac = qml.jacobian(circuit)(x, y)
         expected = np.array(
             [
                 [
@@ -1175,7 +1261,17 @@ class TestQubitIntegration:
                 ]
             ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2
+
+        assert isinstance(jac[0], np.ndarray)
+        assert jac[0].shape == ()
+
+        assert isinstance(jac[1], np.ndarray)
+        assert jac[1].shape == ()
+
+        assert np.allclose(jac, expected, atol=tol, rtol=0)
 
 
 @pytest.mark.xfail(reason="CV variable needs to be update for the new return types.")
@@ -1354,6 +1450,7 @@ class TestTapeExpansion:
             assert np.allclose(grad2_w_c, expected)
 
     @pytest.mark.xfail(reason="Update expand hamiltonian processing function.")
+    @pytest.mark.slow
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_finite_shots(
         self, dev_name, diff_method, mode, max_diff, mocker
@@ -1439,6 +1536,8 @@ class TestSample:
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         res = circuit()
+
+        assert isinstance(res, tuple)
         assert len(res) == 2
 
         assert res[0].shape == (10,)
@@ -1461,7 +1560,9 @@ class TestSample:
 
         result = circuit()
 
+        assert isinstance(result, tuple)
         assert len(result) == 3
+
         assert np.array_equal(result[0].shape, (n_sample,))
         assert isinstance(result[1], np.ndarray)
         assert isinstance(result[2], np.ndarray)
@@ -1499,6 +1600,7 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tuple)
+        assert len(result) == 3
 
         assert result[0].shape == (10,)
         assert isinstance(result[0], np.ndarray)
@@ -1624,8 +1726,7 @@ class TestReturn:
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
         self, dev_name, diff_method, mode
     ):
-        """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
-        the correct dimension"""
+        """For a multi dimensional measurement (probs), check that a single array is returned."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
 
@@ -1695,7 +1796,7 @@ class TestReturn:
         assert jac[0].shape == (5,)
 
         assert isinstance(jac[1], np.ndarray)
-        assert jac[0].shape == (5,)
+        assert jac[1].shape == (5,)
 
     def test_jacobian_multiple_measurement_multiple_param_array(self, dev_name, diff_method, mode):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
