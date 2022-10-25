@@ -70,24 +70,7 @@ class TestComputeJVP:
         jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
 
         jvp = qml.gradients.compute_jvp_multi(tangent, jac)
-
-        assert isinstance(jvp, tuple)
-        assert len(jvp) == 2
-
-        assert isinstance(jvp[0], np.ndarray)
-        assert np.allclose(jvp[0], [0.6])
-
-        assert isinstance(jvp[1], np.ndarray)
-        assert np.allclose(jvp[1], [0.4, 1.0])
-
-    def test_compute_multiple_measurement_multi_dim_single_params(self):
-        """Test that the correct JVP is returned"""
-        tangent = np.array([2.0])
-
-        jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
-
-        jvp = qml.gradients.compute_jvp_multi(tangent, jac)
-
+        print(jvp)
         assert isinstance(jvp, tuple)
         assert len(jvp) == 2
 

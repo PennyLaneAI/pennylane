@@ -38,14 +38,51 @@ def _convert(jac, tangent):
 
 def compute_jvp_single(tangent, jac):
     """Convenience function to compute the Jacobian vector product for a given
-    vector of gradient outputs and a Jacobian for a single measurement tape.
+    tangent vector and a Jacobian for a single measurement tape.
+
     Args:
-        dy (tensor_like): vector of gradient outputs
+        tangent (list, tensor_like): tangent vector
         jac (tensor_like, tuple): Jacobian matrix
     Returns:
         tensor_like: the Jacobian vector product
 
     **Examples**
+
+    1. For a single parameter and a single measurement without shape (e.g. expval, var):
+
+    .. code-block:: pycon
+
+        >>> tangent = np.array([1.0])
+        >>> jac = np.array(0.2)
+        >>> qml.gradients.compute_jvp_single(tangent, jac)
+        np.array(0.2)
+
+    2. For a single parameter and a single measurment with shape (e.g. probs):
+
+    .. code-block:: pycon
+
+        >>> tangent = np.array([2.0])
+        >>> jac = np.array([0.3, 0.3])
+        >>> qml.gradients.compute_jvp_single(tangent, jac)
+        np.array([0.6, 0.6])
+
+    3. For multiple parameters (in this case 2 parameters) and a single measurement without shape (e.g. expval, var):
+
+    .. code-block:: pycon
+
+        >>> tangent = np.array([1.0, 2.0])
+        >>> jac = tuple([np.array(0.1), np.array(0.2)])
+        >>> qml.gradients.compute_jvp_single(tangent, jac)
+        np.array(0.5)
+
+    4. For multiple parameters (in this case 2 parameters) and a single measurement with shape (e.g. probs):
+
+    .. code-block:: pycon
+
+        >>> tangent = np.array([1.0, 0.5])
+        >>> jac = tuple([np.array([0.1, 0.3]), np.array([0.2, 0.4])])
+        >>> qml.gradients.compute_jvp_single(tangent, jac)
+        np.array([0.2, 0.5])
 
     """
     if jac is None:
@@ -56,38 +93,54 @@ def compute_jvp_single(tangent, jac):
 
     # Single measurement with a single param
     if not isinstance(jac, tuple):
+        tangent = math.reshape(tangent, (1,))
         # Single measurement with no dimension e.g. expval
         if jac.shape == ():
             jac = math.reshape(jac, (1,))
-            tangent = math.reshape(tangent, (1,))
-            res = math.tensordot(jac, tangent, [[0], [0]])
         # Single measurement with dimension e.g. probs
         else:
-            tangent = math.reshape(tangent, (1,))
             jac = math.reshape(jac, (1, len(jac)))
-            res = math.tensordot(jac, tangent, [[0], [0]])
+        res = math.tensordot(jac, tangent, [[0], [0]])
     # Single measurement with multiple params
     else:
+        jac = qml.math.stack(jac)
         # Single measurement with no dimension e.g. expval
         if jac[0].shape == ():
-            jac = qml.math.stack(jac)
             res = qml.math.tensordot(jac, tangent, 1)
         # Single measurement with dimension e.g. probs
         else:
-            jac = qml.math.stack(jac)
             res = qml.math.tensordot(jac, tangent, [[0], [0]])
     return res
 
 
 def compute_jvp_multi(tangent, jac):
-    """Convenience function to compute the vector-Jacobian product for a given
+    """Convenience function to compute the Jacobian vector product for a given
     vector of gradient outputs and a Jacobian for a multiple measurements tape.
+
     Args:
-        dy (tensor_like): vector of gradient outputs
+        tangent (tensor_like, list): tangent vector
         jac (tensor_like, tuple): Jacobian matrix
     Returns:
-        tensor_like: the vector-Jacobian product
+        tensor_like: the Jacobian vector product
+
     **Examples**
+
+    1. For a single parameter and multiple measurement (one without shape and one with shape, e.g. expval and probs):
+
+    .. code-block:: pycon
+        >>> tangent = np.array([2.0])
+        >>> jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
+        >>> qml.gradients.compute_jvp_multi(tangent, jac)
+        (np.array([0.6]), np.array([0.4, 1. ]))
+
+    2. For multiple parameters (in this case 2 parameters) and multiple measurement (one without shape and one with
+    shape, e.g. expval and probs):
+
+    .. code-block:: pycon
+        >>> tangent = np.array([1.0, 2.0])
+        >>> jac = tuple([tuple([np.array([0.3]), np.array([0.4])]), tuple([np.array([0.2, 0.5]), np.array([0.3, 0.8])]),])
+        >>> qml.gradients.compute_jvp_multi(tangent, jac)
+        (np.array([1.1]), np.array([0.8, 2.1]))
 
     """
     if jac is None:
@@ -106,18 +159,20 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
-        tangent (tensor_like): Gradient-output vector. Must have shape
-            matching the output shape of the corresponding tape.
+        tangent (tensor_like, list): Gradient-output vector. Must have shape
+            matching the number of trainable parameters.
         gradient_fn (callable): the gradient transform to use to differentiate
             the tape
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
 
     Returns:
-        tensor_like or None: Vector-Jacobian product. Returns None if the tape
+        tensor_like or tuple or None: Jacobian vector product. Returns None if the tape
         has no trainable parameters.
 
     **Example**
+
+    #TODO: add examples
 
     """
     gradient_kwargs = gradient_kwargs or {}
@@ -181,12 +236,12 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
 
     Args:
         tapes (Sequence[.QuantumTape]): sequence of quantum tapes to differentiate
-        dys (Sequence[tensor_like]): Sequence of gradient-output vectors ``dy``. Must be the
+        tangentss (Sequence[tensor_like]): Sequence of gradient-output vectors ``dy``. Must be the
             same length as ``tapes``. Each ``dy`` tensor should have shape
             matching the output shape of the corresponding tape.
         gradient_fn (callable): the gradient transform to use to differentiate
             the tapes
-        reduction (str): Determines how the vector-Jacobian products are returned.
+        reduction (str): Determines how the Jacobian-vector products are returned.
             If ``append``, then the output of the function will be of the form
             ``List[tensor_like]``, with each element corresponding to the VJP of each
             input tape. If ``extend``, then the output VJPs will be concatenated.
@@ -194,11 +249,12 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
             determining the gradients of tapes
 
     Returns:
-        List[tensor_like or None]: list of vector-Jacobian products. ``None`` elements corresponds
+        List[tensor_like or None]: list of Jacobian vector products. ``None`` elements corresponds
         to tapes with no trainable parameters.
 
     **Example**
 
+    # TODO: add examples
     """
     gradient_kwargs = gradient_kwargs or {}
     reshape_info = []
