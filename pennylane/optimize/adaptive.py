@@ -54,7 +54,7 @@ class AdaptiveOptimizer:
     Args:
         paramopt_steps (float): number of steps for optimizing the parameter of a selected gate
 
-    **Examples:**
+    **Example**
 
     This examples shows an implementation of the
     `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_ algorithm for building an
@@ -71,7 +71,7 @@ class AdaptiveOptimizer:
     ...                      [1.87262415, -0.00815842, 0.0]], requires_grad=False)
     >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge = 1)
 
-    The collection of gates to grow the circuit adaptively contntains aa singles and doubles
+    The collection of gates to grow the circuit adaptively contains all single and double
     excitations:
 
     >>> n_electrons = 2
@@ -155,7 +155,7 @@ class AdaptiveOptimizer:
         r"""Update the circuit with one step of the optimizer.
 
         Args:
-            circuit (.QNode): user defined circuit returning an expectation value
+            circuit (.QNode): user-defined circuit returning an expectation value
             operator_pool (list[Operator]): list of the gates to be used for adaptive optimization
 
         Returns:
@@ -168,7 +168,7 @@ class AdaptiveOptimizer:
         objective function value prior to the step.
 
         Args:
-            circuit (.QNode): user defined circuit returning an expectation value
+            circuit (.QNode): user-defined circuit returning an expectation value
             operator_pool (list[Operator]): list of the gates to be used for adaptive optimization
             drain_pool (bool): flag to remove selected gates from the operator pool
 
