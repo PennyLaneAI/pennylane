@@ -39,7 +39,7 @@ def append_gate(tape, params, gates):
 
 
 class AdaptiveOptimizer:
-    r"""Adaptive optimizer.
+    r"""Optimizer for building fully trained quantum circuits by adding gates adaptively.
 
     Quantum circuits can be built by adding gates
     `adaptively <https://www.nature.com/articles/s41467-019-10988-2>`_. The adaptive optimizer
@@ -53,7 +53,8 @@ class AdaptiveOptimizer:
     algorithms such as `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_.
 
     Args:
-        paramopt_steps (float): number of steps for optimizing the parameter of a selected gate
+        param_steps (float): number of steps for optimizing the parameter of a selected gate
+        stepsize (float): step size for optimizing the parameter of a selected gate
 
     **Example**
 
@@ -105,36 +106,37 @@ class AdaptiveOptimizer:
 
     .. code-block :: pycon
 
-    Energy: -1.246549938420637
-    0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
-    1: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
-    2: ─├BasisState(M0)─│─────────┤ ├<𝓗>
-    3: ─├BasisState(M0)─│─────────┤ ├<𝓗>
-    4: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
-    5: ─╰BasisState(M0)─╰G²(0.20)─┤ ╰<𝓗>
-    Largest Gradient: 0.14399872776755085
+        Energy: -1.246549938420637
+        0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
+        1: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
+        2: ─├BasisState(M0)─│─────────┤ ├<𝓗>
+        3: ─├BasisState(M0)─│─────────┤ ├<𝓗>
+        4: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
+        5: ─╰BasisState(M0)─╰G²(0.20)─┤ ╰<𝓗>
+        Largest Gradient: 0.14399872776755085
 
-    Energy: -1.2613740231529604
-    0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
-    1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
-    2: ─├BasisState(M0)─│─────────├G²(0.19)─┤ ├<𝓗>
-    3: ─├BasisState(M0)─│─────────╰G²(0.19)─┤ ├<𝓗>
-    4: ─├BasisState(M0)─├G²(0.20)───────────┤ ├<𝓗>
-    5: ─╰BasisState(M0)─╰G²(0.20)───────────┤ ╰<𝓗>
-    Largest Gradient: 0.1349349562423238
+        Energy: -1.2613740231529604
+        0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
+        1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
+        2: ─├BasisState(M0)─│─────────├G²(0.19)─┤ ├<𝓗>
+        3: ─├BasisState(M0)─│─────────╰G²(0.19)─┤ ├<𝓗>
+        4: ─├BasisState(M0)─├G²(0.20)───────────┤ ├<𝓗>
+        5: ─╰BasisState(M0)─╰G²(0.20)───────────┤ ╰<𝓗>
+        Largest Gradient: 0.1349349562423238
 
-    Energy: -1.2743971719780331
-    0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)──────────┤ ╭<𝓗>
-    1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(0.00)─┤ ├<𝓗>
-    2: ─├BasisState(M0)─│─────────├G²(0.19)─│────────┤ ├<𝓗>
-    3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(0.00)─┤ ├<𝓗>
-    4: ─├BasisState(M0)─├G²(0.20)────────────────────┤ ├<𝓗>
-    5: ─╰BasisState(M0)─╰G²(0.20)────────────────────┤ ╰<𝓗>
-    Largest Gradient: 0.00040841755397108586
+        Energy: -1.2743971719780331
+        0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)──────────┤ ╭<𝓗>
+        1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(0.00)─┤ ├<𝓗>
+        2: ─├BasisState(M0)─│─────────├G²(0.19)─│────────┤ ├<𝓗>
+        3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(0.00)─┤ ├<𝓗>
+        4: ─├BasisState(M0)─├G²(0.20)────────────────────┤ ├<𝓗>
+        5: ─╰BasisState(M0)─╰G²(0.20)────────────────────┤ ╰<𝓗>
+        Largest Gradient: 0.00040841755397108586
     """
 
-    def __init__(self, paramopt_steps=10):
-        self.paramopt_steps = paramopt_steps
+    def __init__(self, param_steps=10, stepsize=0.5):
+        self.param_steps = param_steps
+        self.stepsize = stepsize
 
     @staticmethod
     def _circuit(params, gates, initial_circuit):
@@ -195,10 +197,10 @@ class AdaptiveOptimizer:
         grads = qml.grad(qnode)(params, gates=operator_pool, initial_circuit=circuit.func)
 
         selected_gates = [operator_pool[np.argmax(abs(grads))]]
-        optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
+        optimizer = qml.GradientDescentOptimizer(stepsize=self.stepsize)
         params = np.zeros(len(selected_gates))
 
-        for _ in range(self.paramopt_steps):
+        for _ in range(self.param_steps):
             params, _ = optimizer.step_and_cost(
                 qnode, params, gates=selected_gates, initial_circuit=circuit.func
             )
