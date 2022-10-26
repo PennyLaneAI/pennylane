@@ -16,5 +16,3 @@ class AbstractDeviceDriver(ABC):
 
     def query_support(self) -> DeviceConfig:
         self.device_config
-
-

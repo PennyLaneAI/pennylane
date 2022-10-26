@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from .device_helpers import DeviceType
 
+
 @dataclass
 class DeviceConfig:
     """Class for setup, configuration and tracking the supported feature-set and enabled features for a given device"""

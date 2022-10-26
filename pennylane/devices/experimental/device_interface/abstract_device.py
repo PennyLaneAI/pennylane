@@ -9,6 +9,7 @@ from .device_config import DeviceConfig
 # Runtime specific utilities, such as pre and postprocessing annotations
 from ..runtime_manager.runtime_helpers import FnType
 
+
 class AbstractDevice(metaclass=RegistrationsMetaclass):
     """
     This abstract device interface enables direct and dynamic function registration for pre-processing, post-processing, gradients, VJPs, and arbitrary functionality.
@@ -22,35 +23,42 @@ class AbstractDevice(metaclass=RegistrationsMetaclass):
         """Decorator to register gradient methods of a device
         (contain developer-facing details here).
         """
+
         def wrapper(fn):
             grad_registrations = cls.registrations.setdefault(FnType.GRADIENT, {})
             grad_registrations.update({order: fn})
             cls.registrations[FnType.GRADIENT] = grad_registrations
+
         return wrapper
-    
+
     @classmethod
-    def register_execute(cls, ) -> Callable:
+    def register_execute(
+        cls,
+    ) -> Callable:
         """Decorator to register gradient methods of a device
         (contain developer-facing details here).
         """
+
         def wrapper(fn):
             exe_registrations = cls.registrations.setdefault(FnType.EXECUTE, fn)
             cls.registrations[FnType.EXECUTE] = exe_registrations
+
         return wrapper
-    
+
     @classmethod
     def register_fn(cls, fn_label: str, fn_type: FnType = FnType.UNKNOWN, **kwargs) -> Callable:
-        """Decorator to register arbitrary pre or post processing functions
-        """
+        """Decorator to register arbitrary pre or post processing functions"""
+
         def wrapper(fn):
             fn_registrations = cls.registrations.setdefault(fn_type, {})
-            fn_registrations.update({fn_label : fn})
+            fn_registrations.update({fn_label: fn})
             if len(kwargs) > 0:
                 fn_registrations.update(kwargs)
             cls.registrations[fn_type] = fn_registrations
+
         return wrapper
 
-    def gradient(self, qscript: QuantumScript, order: int=1):
+    def gradient(self, qscript: QuantumScript, order: int = 1):
         """Main gradient method, contains validation and post-processing
         so that device developers do not need to replicate all the
         internal pieces. Contain 'user' facing details here."""
@@ -65,7 +73,7 @@ class AbstractDevice(metaclass=RegistrationsMetaclass):
 
         # perform post-processing
         return grad
-    
+
     def vjp(self, qscript: QuantumScript):
         """VJP method. Added through registration"""
 
