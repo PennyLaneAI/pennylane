@@ -11,3 +11,6 @@ class TestDevicePythonSim(AbstractDevice):
 
     def execute(self, qscript: Union[QuantumScript, List[QuantumScript]]):
         return self._private_sim.execute(qscript)
+
+    def capabilities(self) -> DeviceConfig:
+        return self.dev_config

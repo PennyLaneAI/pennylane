@@ -31,9 +31,9 @@ package QML <<PennyLane catch all>> {
 
     class QNode {
         +device: Device
-        +runtime_manager: RTManager
+        '+runtime_manager: RTManager
         +qscript: QuantumScript
-        +QNode(dev: str, dev_config: DeviceConfig)(qscript: QuantumScript, rt_config: RuntimeExecutionConfig)
+        +QNode(dev: str, dev_config: DeviceConfig)(qscript: QuantumScript) 
     }
 
     package DeviceInterface <<Folder>> {
@@ -44,7 +44,7 @@ package QML <<PennyLane catch all>> {
         }
         class DeviceConfig <<dataclass>>{
             +device_type: DeviceType
-            +misc
+            +misc_options
         }
         abstract class AbstractDeviceDriver{
             Low-level platform interface.
@@ -57,49 +57,20 @@ package QML <<PennyLane catch all>> {
             {abstract} execute(qscript: Union[QuantumScript, List[QuantumScript]]): Result
             {abstract} gradient(qscript: QuantumScript, order: int): Result
             {abstract} vjp(qscript: QuantumScript): Result
+            {abstract} pre(qscript: QuantumScript): Tuple(Union[QuantumScript, List[QuantumScript]], Union[Callable, None])
+            {abstract} post(result: Union[Result, List[Result]], proc_fn: Union[Callable, None]): Result
         }
 
         abstract class AbstractDevice{
             -q_resource: DeviceDriver
-            -runtime_mgr: RTManager <<optionally here or QNode>>
+            '-runtime_mgr: RTManager <<optionally here or QNode>>
             +register_execute(fn: Callable)
             +register_grad(fn: Callable, grad_order: int)
             +register_vjp(fn: Callable)
+            +register_pre(fn: Callable)
+            +register_post(fn: Callable)
+            +get_capabilities(): DeviceConfig
         }
-
-        package RuntimeManager <<Folder>> {
-            class RTManager{
-                -device: AbstractDevice
-                -rt_config: RuntimeExecutionConfig
-                +device_setup(device_name: str, dev_config: DeviceConfig)
-                +runtime_setup(rt_exec: RuntimeExecutionConfig)
-                +execute(qscript: Union[QuantumScript, List[QuantumScript]]): Result
-            }
-
-            class FnType <<Enum>>{
-                PREPROCESS
-                'PREPROCESS_TRACED
-                EXECUTE
-                'POSTPROCESS_TRACED
-                POSTPROCESS
-                GRADIENT
-                VJP
-                UNKNOWN
-            }
-
-            class RuntimeExecutionConfig {
-                +device_type: DeviceType
-                +shots: int
-                -preproc: Union[None, Callable]
-                '-preproc_traced: Union[None, Callable]
-                -postproc: Union[None, Callable]
-                '-postproc_traced: Union[None, Callable]
-                +dispatch(query: FnType): Union[None, Callable]
-                +register_pre(fn: Union[None, Callable])
-                +register_post(fn: Union[None, Callable])
-            }
-        }
-
     }
 
     package CustomDevice <<Folder>> {
@@ -124,8 +95,8 @@ package QML <<PennyLane catch all>> {
     CustomDevice --|> AbstractDevice
     CustomDevice -r- CustomDeviceDriver
 
-    RuntimeExecutionConfig .r.> FnType
-    RTManager -- RuntimeExecutionConfig
+    'RuntimeExecutionConfig .r.> FnType
+    'RTManager -- RuntimeExecutionConfig
     'Manager ..> DeviceFactory
     'Manager ..> AbstractDevice
     'Manager ..> Result
