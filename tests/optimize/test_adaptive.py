@@ -103,8 +103,57 @@ pool = [
     ],
 )
 def test_step_and_cost(circuit, energy_ref, pool):
-    """Test that step function returns the correct cost."""
+    """Test that step_and_cost function returns the correct cost."""
     opt = qml.AdaptiveOptimizer()
     for i in range(4):
         circuit, energy, gradient = opt.step_and_cost(circuit, pool, drain_pool=True)
     assert np.allclose(energy, energy_ref)
+
+
+@pytest.mark.parametrize(
+    "circuit",
+    [
+        (initial_circuit),
+    ],
+)
+def test_largest_gradient(circuit):
+    """Test that step function selects the gate with the largest gradient."""
+
+    pool = [
+        qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3]),
+        qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 5]),
+        qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 3, 4]),
+        qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 4, 5]),
+        qml.SingleExcitation(np.array(0.0), wires=[0, 2]),
+        qml.SingleExcitation(np.array(0.0), wires=[0, 4]),
+        qml.SingleExcitation(np.array(0.0), wires=[1, 3]),
+        qml.SingleExcitation(np.array(0.0), wires=[1, 5]),
+    ]
+
+    opt = qml.AdaptiveOptimizer()
+    circuit = opt.step(circuit, pool)
+    _ = circuit()
+    selected_gate = circuit.tape.operations[-1]
+
+    #  the reference gate is obtained manually
+    assert selected_gate.name == "DoubleExcitation"
+    assert circuit.tape.operations[-1].wires == qml.wires.Wires([0, 1, 4, 5])
+
+
+@pytest.mark.parametrize(
+    "circuit",
+    [
+        (initial_circuit),
+    ],
+)
+def test_append_gate(circuit):
+    """Test that append_gate properly adds a gate to a circuit."""
+
+    param = np.array([0.0])
+    gate = qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3])
+
+    final_circuit = qml.optimize.adaptive.append_gate(param, [gate])(initial_circuit.func)
+    qnode = qml.QNode(final_circuit, dev)
+    _ = qnode()
+
+    assert qml.equal(qnode.tape.operations[-1], gate)
