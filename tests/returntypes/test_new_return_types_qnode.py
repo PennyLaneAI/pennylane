@@ -416,7 +416,7 @@ class TestIntegrationSingleReturnTensorFlow:
         """Test the sample measurement."""
         import tensorflow as tf
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for Tf.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -630,7 +630,7 @@ class TestIntegrationSingleReturnTorch:
         """Test the sample measurement."""
         import torch
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for Torch.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -1289,7 +1289,7 @@ class TestIntegrationMultipleReturnsTensorflow:
         """Test the expval and sample measurements together."""
         import tensorflow as tf
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample must be reworked with interfaces.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -1552,7 +1552,7 @@ class TestIntegrationMultipleReturnsTorch:
         """Test the expval and sample measurements together."""
         import torch
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for interfaces.")
 
         dev = qml.device(device, wires=2, shots=shots)

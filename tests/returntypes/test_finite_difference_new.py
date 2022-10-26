@@ -317,15 +317,15 @@ class TestFiniteDiff:
         assert len(result[0]) == 3
 
         assert isinstance(result[0][0], numpy.ndarray)
-        assert result[0][0].shape == (1,)
+        assert result[0][0].shape == ()
         assert np.allclose(result[0][0], 0)
 
         assert isinstance(result[0][1], numpy.ndarray)
-        assert result[0][1].shape == (1,)
+        assert result[0][1].shape == ()
         assert np.allclose(result[0][1], 0)
 
         assert isinstance(result[0][2], numpy.ndarray)
-        assert result[0][2].shape == (1,)
+        assert result[0][2].shape == ()
         assert np.allclose(result[0][2], 0)
 
         # Second elem
