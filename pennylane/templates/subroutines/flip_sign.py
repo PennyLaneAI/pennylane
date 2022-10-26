@@ -38,8 +38,8 @@ class FlipSign(Operation):
     **Example**
 
     This template changes the sign of the basic state passed as an argument.
-    In this example when passing the element [1,0] we will change the sign of the third element.
-    We could pass directly element 3 and get the same result
+    In this example when passing the element [1,0] we will change the sign of the state :math:`|10\rangle`.
+    We could pass directly the integer 2 and get the same result since its binary representation is the above.
 
     .. code-block:: python
 
