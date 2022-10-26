@@ -209,6 +209,19 @@ class QueuingManager:
         return cls.active_context().get_info(obj) if cls.recording() else None
 
 
+class WrappedObj:
+    """Wraps an object making its hash depend on its identity."""
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __eq__(self, other):
+        return id(self.obj) == id(other.obj)
+
+    def __hash__(self):
+        return id(self.obj)
+
+
 class AnnotatedQueue:
     """Lightweight class that maintains a basic queue of operations, in addition
     to metadata annotations."""
@@ -232,16 +245,17 @@ class AnnotatedQueue:
 
     def append(self, obj, **kwargs):
         """Append ``obj`` into the queue with ``kwargs`` metadata."""
-        self._queue[obj] = kwargs
+        self._queue[WrappedObj(obj)] = kwargs
 
     def remove(self, obj):
         """Remove ``obj`` from the queue.  Raises ``KeyError`` if ``obj`` is not already in the queue."""
-        del self._queue[obj]
+        del self._queue[WrappedObj(obj)]
 
     def update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
-        if obj in self._queue:
-            self._queue[obj].update(kwargs)
+        wrapped_obj = WrappedObj(obj)
+        if wrapped_obj in self._queue:
+            self._queue[wrapped_obj].update(kwargs)
 
     def safe_update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
@@ -254,15 +268,16 @@ class AnnotatedQueue:
 
     def get_info(self, obj):
         """Retrieve the metadata for ``obj``.  Raises a ``QueuingError`` if obj is not in the queue."""
-        if obj not in self._queue:
+        wrappedobj = WrappedObj(obj)
+        if wrappedobj not in self._queue:
             raise QueuingError(f"Object {obj} not in the queue.")
 
-        return self._queue[obj]
+        return self._queue[wrappedobj]
 
     @property
     def queue(self):
         """Returns a list of objects in the annotated queue"""
-        return list(self._queue.keys())
+        return [obj.obj for obj in self._queue.keys()]
 
 
 def apply(op, context=QueuingManager):
@@ -369,7 +384,8 @@ def apply(op, context=QueuingManager):
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
-    if op in getattr(context, "queue", QueuingManager.active_context().queue):
+    # pylint: disable=protected-access
+    if WrappedObj(op) in getattr(context, "queue", QueuingManager.active_context()._queue):
         # Queuing contexts can only contain unique objects.
         # If the object to be queued already exists, copy it.
         op = copy.copy(op)

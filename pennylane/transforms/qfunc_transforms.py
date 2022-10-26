@@ -84,7 +84,7 @@ class NonQueuingTape(qml.queuing.AnnotatedQueue):
         super()._process_queue()  # pylint:disable=no-member
 
         for obj, info in self._queue.items():
-            qml.queuing.QueuingManager.append(obj, **info)
+            qml.queuing.QueuingManager.append(obj.obj, **info)
 
         qml.queuing.QueuingManager.remove(self)
 

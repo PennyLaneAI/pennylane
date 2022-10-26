@@ -1116,7 +1116,7 @@ class TestTensor:
         assert len(tape.queue) == 1
         assert tape.queue[0] is T
 
-        assert tape._queue[T] == {"owns": (op1, op2)}
+        assert tape.get_info(T) == {"owns": (op1, op2)}
 
     def test_queuing(self):
         """Test the queuing of a Tensor object."""
@@ -1131,9 +1131,9 @@ class TestTensor:
         assert tape.queue[1] is op2
         assert tape.queue[2] is T
 
-        assert tape._queue[op1] == {"owner": T}
-        assert tape._queue[op2] == {"owner": T}
-        assert tape._queue[T] == {"owns": (op1, op2)}
+        assert tape.get_info(op1) == {"owner": T}
+        assert tape.get_info(op2) == {"owner": T}
+        assert tape.get_info(T) == {"owns": (op1, op2)}
 
     def test_queuing_observable_matmul(self):
         """Test queuing when tensor constructed with matmul."""
@@ -1144,9 +1144,9 @@ class TestTensor:
             t = op1 @ op2
 
         assert len(tape.queue) == 3
-        assert tape._queue[op1] == {"owner": t}
-        assert tape._queue[op2] == {"owner": t}
-        assert tape._queue[t] == {"owns": (op1, op2)}
+        assert tape.get_info(op1) == {"owner": t}
+        assert tape.get_info(op2) == {"owner": t}
+        assert tape.get_info(t) == {"owns": (op1, op2)}
 
     def test_queuing_tensor_matmul(self):
         """Tests the tensor-specific matmul method updates queuing metadata."""
@@ -1159,8 +1159,8 @@ class TestTensor:
             op3 = qml.PauliZ(2)
             t2 = t @ op3
 
-        assert tape._queue[t2] == {"owns": (op1, op2, op3)}
-        assert tape._queue[op3] == {"owner": t2}
+        assert tape.get_info(t2) == {"owns": (op1, op2, op3)}
+        assert tape.get_info(op3) == {"owner": t2}
 
     def test_queuing_tensor_matmul_components_outside(self):
         """Tests the tensor-specific matmul method when components are defined outside the
@@ -1175,8 +1175,8 @@ class TestTensor:
             t2 = t1 @ op3
 
         assert len(tape._queue) == 2
-        assert tape._queue[op3] == {"owner": t2}
-        assert tape._queue[t2] == {"owns": (op1, op2, op3)}
+        assert tape.get_info(op3) == {"owner": t2}
+        assert tape.get_info(t2) == {"owns": (op1, op2, op3)}
 
     def test_queuing_tensor_rmatmul(self):
         """Tests tensor-specific rmatmul updates queuing metatadata."""
@@ -1191,8 +1191,8 @@ class TestTensor:
 
             t2 = op3 @ t1
 
-        assert tape._queue[op3] == {"owner": t2}
-        assert tape._queue[t2] == {"owns": (op3, op1, op2)}
+        assert tape.get_info(op3) == {"owner": t2}
+        assert tape.get_info(t2) == {"owns": (op3, op1, op2)}
 
     def test_name(self):
         """Test that the names of the observables are
@@ -1583,21 +1583,21 @@ class TestTensor:
         ann_queue = tape._queue
 
         # the pruned tensor became the owner of Paulis
-        assert ann_queue[a]["owner"] == T_pruned
-        assert ann_queue[b]["owner"] == T_pruned
+        assert tape.get_info(a)["owner"] == T_pruned
+        assert tape.get_info(b)["owner"] == T_pruned
 
         # the Identity is still owned by the original Tensor
-        assert ann_queue[c]["owner"] == T
+        assert tape.get_info(c)["owner"] == T
         # the original tensor still owns all three observables
         # but is not owned by a measurement
-        assert ann_queue[T]["owns"] == (a, b, c)
-        assert not hasattr(ann_queue[T], "owner")
+        assert tape.get_info(T)["owns"] == (a, b, c)
+        assert not hasattr(tape.get_info(T), "owner")
 
         # the pruned tensor is owned by the measurement
         # and owns the two Paulis
-        assert ann_queue[T_pruned]["owner"] == m
-        assert ann_queue[T_pruned]["owns"] == (a, b)
-        assert ann_queue[m]["owns"] == T_pruned
+        assert tape.get_info(T_pruned)["owner"] == m
+        assert tape.get_info(T_pruned)["owns"] == (a, b)
+        assert tape.get_info(m)["owns"] == T_pruned
 
     def test_prune_while_queueing_return_obs(self):
         """Tests that pruning a tensor to an observable in a tape context registers

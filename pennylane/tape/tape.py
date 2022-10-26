@@ -401,7 +401,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         current_list = "_prep"
 
         for obj, info in self._queue.items():
-
+            obj = obj.obj
             if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
                 if list_order[obj._queue_category] > list_order[current_list]:
                     current_list = obj._queue_category
