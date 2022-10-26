@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Adaptive optimizer"""
-# pylint: disable= no-value-for-parameter
+# pylint: disable= no-value-for-parameter, protected-access
 import pennylane as qml
 
 from pennylane import numpy as np
