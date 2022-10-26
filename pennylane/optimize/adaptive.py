@@ -145,10 +145,10 @@ class AdaptiveOptimizer:
         Args:
             params (array[float]): parameters of the gates to be added
             gates (list[Operator]): list of the gates to be added
-            initial_circuit (function): user defined circuit that returns an expectation value
+            initial_circuit (function): user-defined circuit that returns an expectation value
 
         Returns:
-            function: user defined circuit with appended gates
+            function: user-defined circuit with appended gates
         """
         final_circuit = append_gate(params, gates)(initial_circuit)
 
