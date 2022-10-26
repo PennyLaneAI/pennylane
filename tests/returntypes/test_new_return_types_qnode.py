@@ -2682,6 +2682,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         with tf.GradientTape() as tape:
             out = circuit(x)
+            out = tf.stack(out)
 
         res = tape.jacobian(out, x)
 
@@ -2710,6 +2711,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         with tf.GradientTape() as tape:
             out = circuit(x)
+            out = tf.stack(out)
 
         res = tape.jacobian(out, x)
 
@@ -2831,6 +2833,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         with tf.GradientTape() as tape:
             out = circuit(x)
+            out = tf.stack(out)
 
         res = tape.jacobian(out, x)
 
@@ -2963,6 +2966,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         with tf.GradientTape() as tape:
             out = circuit(x)
+            out = tf.concat([tf.expand_dims(out[0], 0), out[1], tf.expand_dims(out[2], 0)], 0)
 
         res = tape.jacobian(out, x)
 

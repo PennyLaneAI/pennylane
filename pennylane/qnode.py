@@ -637,10 +637,11 @@ class QNode:
 
             # Autograd or tensorflow: they do not support tuple return with backpropagation
             backprop = False
-            if not isinstance(
-                self._qfunc_output, qml.measurements.MeasurementProcess
-            ) and self.interface in ("tf", "autograd"):
-                backprop = any(qml.math.in_backprop(x) for x in res)
+            if not isinstance(self._qfunc_output, qml.measurements.MeasurementProcess):
+                if self.interface == "autograd":
+                    backprop = any(qml.math.in_backprop(x) for x in res)
+                elif self.interface == "tf":
+                    backprop = qml.math.in_backprop(res)
             if self.gradient_fn == "backprop" and backprop:
                 res = self.device._asarray(res)
 

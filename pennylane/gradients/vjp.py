@@ -37,7 +37,7 @@ def _convert(jac, dy_row):
     return jac
 
 
-def compute_vjp_single_new(dy, jac):
+def compute_vjp_single_new(dy, jac, num=None):
     """Convenience function to compute the vector-Jacobian product for a given
     vector of gradient outputs and a Jacobian for a single measurement tape.
 
@@ -93,6 +93,9 @@ def compute_vjp_single_new(dy, jac):
 
     dy_row = qml.math.reshape(dy, [-1])
 
+    if num is None:
+        num = qml.math.shape(dy_row)[0]
+
     if not isinstance(dy_row, np.ndarray):
         jac = _convert(jac, dy_row)
 
@@ -114,7 +117,7 @@ def compute_vjp_single_new(dy, jac):
             res = qml.math.zeros((1, 0))
             return res
         # Single measurement with no dimension e.g. expval or with dimension e.g. probs
-        if dy.shape == ():
+        if num == 1:
             jac = qml.math.squeeze(jac)
         jac = qml.math.reshape(jac, (-1, 1))
         res = qml.math.tensordot(jac, dy_row, [[0], [0]])
@@ -125,8 +128,8 @@ def compute_vjp_single_new(dy, jac):
             res = qml.math.zeros((1, 0))
             return res
         # Single measurement with no dimension e.g. expval
-        if dy.shape == ():
-            jac = qml.math.reshape(qml.math.stack(jac), (1, len(jac)))
+        if num == 1:
+            jac = qml.math.reshape(qml.math.stack(jac), (1, -1))
             res = qml.math.tensordot(jac, dy_row, [[0], [0]])
 
         # Single measurement with dimension e.g. probs
@@ -136,7 +139,7 @@ def compute_vjp_single_new(dy, jac):
     return res
 
 
-def compute_vjp_multi_new(dy, jac):
+def compute_vjp_multi_new(dy, jac, num=None):
     """Convenience function to compute the vector-Jacobian product for a given
     vector of gradient outputs and a Jacobian for a tape with multiple measurements.
 
@@ -171,21 +174,23 @@ def compute_vjp_multi_new(dy, jac):
     """
     if jac is None:
         return None
+
     # Single parameter
     if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
         res = []
         for d, j_ in zip(dy, jac):
-            res.append(compute_vjp_single_new(d, j_))
-        res = qml.math.stack([qml.math.sum(res)])
+            res.append(compute_vjp_single_new(d, j_, num=num))
+        res = qml.math.sum(qml.math.stack(res), axis=0)
     # Multiple parameters
     else:
         res = []
         for d, j_ in zip(dy, jac):
             sub_res = []
             for j in j_:
-                sub_res.append(qml.math.squeeze(compute_vjp_single_new(d, j)))
+                sub_res.append(qml.math.squeeze(compute_vjp_single_new(d, j, num=num)))
             res.append(sub_res)
-        res = qml.math.stack([qml.math.sum(x) for x in zip(*res)])
+        res = qml.math.stack([qml.math.stack(r) for r in res])
+        res = qml.math.sum(res, axis=0)
     return res
 
 
@@ -349,7 +354,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
                 return qml.math.cast_like(res, dy)
 
             return [], func
-    except (AttributeError, TypeError):
+    except (AttributeError, TypeError, NotImplementedError):
         pass
 
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
@@ -360,8 +365,8 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
         if qml.active_return():
             multi = len(tape.measurements) > 1
             if multi:
-                return compute_vjp_multi_new(dy, jac)
-            return compute_vjp_single_new(dy, jac)
+                return compute_vjp_multi_new(dy, jac, num=num)
+            return compute_vjp_single_new(dy, jac, num=num)
         return compute_vjp(dy, jac, num=num)
 
     return gradient_tapes, processing_fn
