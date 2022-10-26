@@ -26,9 +26,10 @@ from pennylane.pauli.utils import (
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
+from pennylane.wires import Wires
+
 from .graph_colouring import largest_first, recursive_largest_first
 
-from pennylane.wires import Wires
 
 GROUPING_TYPES = frozenset(["qwc", "commuting", "anticommuting"])
 GRAPH_COLOURING_METHODS = {"lf": largest_first, "rlf": recursive_largest_first}
