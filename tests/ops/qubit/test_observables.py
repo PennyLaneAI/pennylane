@@ -156,6 +156,12 @@ class TestHermitian:
         with pytest.raises(ValueError, match="must be a square matrix"):
             qml.Hermitian(H[1:], wires=0)
 
+        H1 = np.array([[1]]) / np.sqrt(2)
+
+        # test matrix with incorrect dimensions
+        with pytest.raises(ValueError, match="Expected input matrix to have shape"):
+            qml.Hermitian(H1, wires=[0])
+
         # test non-Hermitian matrix
         H2 = H.copy()
         H2[0, 1] = 2
@@ -385,7 +391,7 @@ class TestHermitian:
 
     def test_hermitian_empty_wire_list_error(self):
         """Tests that the hermitian operator raises an error when instantiated with wires=[]."""
-        herm_mat = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        herm_mat = np.array([]).reshape((0, 0))
 
         with pytest.raises(ValueError, match="wrong number of wires"):
             qml.Hermitian(herm_mat, wires=[])
