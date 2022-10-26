@@ -227,10 +227,6 @@ def _direc_to_dict(path):
         vals = [x is None for x in tree.values()]
         if all(vals):
             return list(dirs)
-        if any(vals):
-            for key, val in tree.items():
-                if val is None:
-                    tree.update({key: []})
         return tree
 
 
