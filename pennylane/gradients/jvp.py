@@ -205,7 +205,8 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
                 return res
 
             return [], func
-    except (AttributeError, TypeError):
+        # TODO remove the pragma in PR #3170
+    except (AttributeError, TypeError):  # pragma: no cover
         pass
 
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
