@@ -432,6 +432,7 @@ def _expval_hessian_param_shift_tuple(
             res = results[start : start + len(coeffs)]
             start = start + len(coeffs)
 
+            unshifted_coeff = unshifted_coeffs.get((i, j), None)
             hessian = []
             for m in range(num_measurements):
 
@@ -443,7 +444,6 @@ def _expval_hessian_param_shift_tuple(
                 # then compute the hessian via parameter-shift
                 coeffs = qml.math.convert_like(coeffs, measure_res)
                 hess = qml.math.tensordot(measure_res, coeffs, [[0], [0]])
-                unshifted_coeff = unshifted_coeffs.get((i, j), None)
 
                 if unshifted_coeff is not None:
                     hess = hess + unshifted_coeff * r0[m]
