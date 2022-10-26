@@ -59,6 +59,8 @@ package QML <<PennyLane catch all>> {
             {abstract} vjp(qscript: QuantumScript): Result
             {abstract} pre(qscript: QuantumScript): Tuple(Union[QuantumScript, List[QuantumScript]], Union[Callable, None])
             {abstract} post(result: Union[Result, List[Result]], proc_fn: Union[Callable, None]): Result
+            {abstract} get_capabilities(): DeviceConfig
+
         }
 
         abstract class AbstractDevice{
@@ -69,7 +71,6 @@ package QML <<PennyLane catch all>> {
             +register_vjp(fn: Callable)
             +register_pre(fn: Callable)
             +register_post(fn: Callable)
-            +get_capabilities(): DeviceConfig
         }
     }
 
