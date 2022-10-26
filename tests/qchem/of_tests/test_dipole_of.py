@@ -239,7 +239,8 @@ def test_dipole(symbols, coords, charge, hf_state, exp_dipole, tol, tmpdir):
     def circuit(param, wires):
         qml.BasisState(hf_state, wires=wires)
 
-    dipole = np.array([qml.ExpvalCost(circuit, obs, dev)(0.0) for obs in dip_obs])
+    with pytest.warns(UserWarning, match="is deprecated,"):
+        dipole = np.array([qml.ExpvalCost(circuit, obs, dev)(0.0) for obs in dip_obs])
 
     assert np.allclose(dipole, exp_dipole, **tol)
 

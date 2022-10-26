@@ -16,7 +16,7 @@
 from functools import partial
 
 from pennylane import apply
-from pennylane.tape import stop_recording
+from pennylane.queuing import QueuingManager
 from pennylane.ops import __all__ as all_ops
 
 from pennylane.transforms import single_tape_transform, qfunc_transform
@@ -90,8 +90,8 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.40)────╭X──────────RX(0.20)─╭X────┤  <Z>
-    1: ──H───────────╭X─╰C───────────────────╰C─╭C─┤
-    2: ──H──RZ(0.40)─╰C──RZ(-0.40)──RX(0.30)──Y─╰Y─┤
+    1: ──H───────────╭X─╰●───────────────────╰●─╭●─┤
+    2: ──H──RZ(0.40)─╰●──RZ(-0.40)──RX(0.30)──Y─╰Y─┤
 
     We can compile it down to a smaller set of gates using the ``qml.compile``
     transform.
@@ -100,8 +100,8 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
     >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
     0: ──H──RX(0.60)─────────────────┤  <Z>
-    1: ──H─╭X──────────────────╭C────┤
-    2: ──H─╰C─────────RX(0.30)─╰Y──Y─┤
+    1: ──H─╭X──────────────────╭●────┤
+    2: ──H─╰●─────────RX(0.30)─╰Y──Y─┤
 
     You can change up the set of transforms by passing a custom ``pipeline`` to
     ``qml.compile``. The pipeline is a list of transform functions. Furthermore,
@@ -128,11 +128,11 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     .. code-block::
 
         0: ──RZ(1.57)──RX(1.57)──RZ(1.57)──RX(0.60)─────────────────────────────────────────────────────
-        1: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭X─────────RZ(1.57)─────────────────────────────────────────╭C
-        2: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╰C─────────RX(0.30)──RZ(1.57)──RY(3.14)──RZ(1.57)──RY(1.57)─╰X
+        1: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭X─────────RZ(1.57)─────────────────────────────────────────╭●
+        2: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╰●─────────RX(0.30)──RZ(1.57)──RY(3.14)──RZ(1.57)──RY(1.57)─╰X
 
         ────────────────┤  <Z>
-        ─────────────╭C─┤
+        ─────────────╭●─┤
         ───RY(-1.57)─╰X─┤
 
     """
@@ -153,7 +153,7 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     # First, though, we have to stop whatever tape may be recording so that we
     # don't queue anything as a result of the expansion or transform pipeline
 
-    with stop_recording():
+    with QueuingManager.stop_recording():
         if basis_set is not None:
             expanded_tape = tape.expand(
                 depth=expand_depth, stop_at=lambda obj: obj.name in basis_set
@@ -161,7 +161,9 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
         else:
             # Expands out anything that is not a single operation (i.e., the templates)
             # expand barriers when `only_visual=True`
-            stop_at = lambda obj: (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+            def stop_at(obj):
+                return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+
             expanded_tape = tape.expand(stop_at=stop_at)
 
         # Apply the full set of compilation transforms num_passes times

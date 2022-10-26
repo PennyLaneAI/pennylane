@@ -16,22 +16,21 @@ This submodule applies the symbolic operation that indicates the adjoint of an o
 """
 from functools import wraps
 
-from pennylane.operation import Operator, AdjointUndefinedError
-from pennylane.queuing import QueuingContext
-from pennylane.tape import QuantumTape, stop_recording
+from pennylane.operation import Operator
+from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumTape
 
 from .adjoint_class import Adjoint
 
 
 def _single_op_eager(op, update_queue=False):
-    try:
+    if op.has_adjoint:
         adj = op.adjoint()
         if update_queue:
-            QueuingContext.safe_update_info(op, owner=adj)
-            QueuingContext.append(adj, owns=op)
+            QueuingManager.update_info(op, owner=adj)
+            QueuingManager.append(adj, owns=op)
         return adj
-    except AdjointUndefinedError:
-        return Adjoint(op)
+    return Adjoint(op)
 
 
 # pylint: disable=no-member
@@ -55,7 +54,7 @@ def adjoint(fn, lazy=True):
 
         The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and observables may have different adjoint and inverse operators.
 
-    .. seealso:: :class:`~.ops.arithmetic.Adjoint` and :meth:`~.operation.Operator.adjoint`
+    .. seealso:: :class:`~.ops.op_math.Adjoint` and :meth:`.Operator.adjoint`
 
     **Example**
 
@@ -100,8 +99,8 @@ def adjoint(fn, lazy=True):
         :title: Lazy Evaluation
 
         When ``lazy=False``, the function first attempts operation-specific decomposition of the
-        adjoint via the :meth:`.operation.Operator.adjoint` method. Only if an Operator doesn't have
-        an :meth:`.operation.Operator.adjoint` method is the object wrapped with the :class:`~.ops.arithmetic.Adjoint`
+        adjoint via the :meth:`.Operator.adjoint` method. Only if an Operator doesn't have
+        an :meth:`.Operator.adjoint` method is the object wrapped with the :class:`~.ops.op_math.Adjoint`
         wrapper class.
 
         >>> qml.adjoint(qml.PauliZ(0), lazy=False)
@@ -123,7 +122,7 @@ def adjoint(fn, lazy=True):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        with stop_recording(), QuantumTape() as tape:
+        with QueuingManager.stop_recording(), QuantumTape() as tape:
             fn(*args, **kwargs)
 
         if lazy:

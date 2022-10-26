@@ -23,7 +23,7 @@ QNodes can interface with any of the supported numerical and machine learning li
 :doc:`JAX <interfaces/jax>`---indicated by providing an optional ``interface`` argument
 when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with
 library-specific data structures (e.g., NumPy and JAX arrays or Pytorch/TensorFlow tensors) and
-:doc:`optimizers <optimizers>`.
+:doc:`optimizers <interfaces>`.
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
 introduced in more detail in the section on :doc:`interfaces <interfaces>`.
@@ -97,6 +97,11 @@ the available options that can be passed to the device loader.
     For example, check out the ``'lightning.qubit'`` `plugin <https://github.com/PennyLaneAI/pennylane-lightning>`_,
     which is a fast state-vector simulator supporting GPUs.
 
+.. note::
+
+    For details on saving device configurations, please visit the
+    :doc:`configurations page</introduction/configuration>`.
+
 Device options
 ^^^^^^^^^^^^^^
 
@@ -120,7 +125,7 @@ Alternatively, you can use custom labels by passing an iterable that contains un
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=['ancilla', 'q1', 'q2'])
+    dev_unique_wires = qml.device('default.qubit', wires=['aux', 'q1', 'q2'])
 
 In the quantum function you can now use your own labels to address wires:
 
@@ -128,7 +133,7 @@ In the quantum function you can now use your own labels to address wires:
 
     def my_quantum_function(x, y):
         qml.RZ(x, wires='q1')
-        qml.CNOT(wires=['ancilla' ,'q1'])
+        qml.CNOT(wires=['aux' ,'q1'])
         qml.RY(y, wires='q2')
         return qml.expval(qml.PauliZ('q2'))
 
@@ -193,7 +198,7 @@ A QNode can be explicitly created as follows:
 
 .. code-block:: python
 
-    circuit = qml.QNode(my_quantum_function, dev)
+    circuit = qml.QNode(my_quantum_function, dev_unique_wires)
 
 The QNode can be used to compute the result of a quantum circuit as if it was a standard Python
 function. It takes the same arguments as the original quantum function:
@@ -205,12 +210,14 @@ To view the quantum circuit given specific parameter values, we can use the :fun
 transform,
 
 >>> print(qml.draw(circuit)(np.pi/4, 0.7))
-wire1: ──RZ(0.79)─╭C───────────┤     
-wire2: ───────────╰X──RY(0.70)─┤  <Z>
+aux: ───────────╭●─┤     
+ q1: ──RZ(0.79)─╰X─┤     
+ q2: ──RY(0.70)────┤  <Z>
 
 or the :func:`~.pennylane.draw_mpl` transform:
 
 >>> import matplotlib.pyplot as plt
+>>> qml.drawer.use_style("black_white")
 >>> fig, ax = qml.draw_mpl(circuit)(np.pi/4, 0.7)
 >>> plt.show()
 

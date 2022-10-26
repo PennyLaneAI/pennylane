@@ -22,6 +22,10 @@ def broadcast_expand(tape):
     r"""Expand a broadcasted tape into multiple tapes
     and a function that stacks and squeezes the results.
 
+    .. warning::
+
+        Currently, not all templates have been updated to support broadcasting.
+
     Args:
         tape (.QuantumTape): Broadcasted tape to be expanded
 
@@ -57,7 +61,7 @@ def broadcast_expand(tape):
     with broadcasting axis of length ``3`` passed to ``qml.RX``:
 
     >>> x = pnp.array([0.2, 0.6, 1.0], requires_grad=True)
-    >>> qml.draw(expanded_circuit)(x)
+    >>> print(qml.draw(expanded_circuit)(x))
     0: ──RX(0.20)─┤  <Z>
     0: ──RX(0.60)─┤  <Z>
     0: ──RX(1.00)─┤  <Z>
@@ -71,13 +75,11 @@ def broadcast_expand(tape):
     We also can call the transform manually on a tape:
 
     >>> with qml.tape.QuantumTape() as tape:
-    >>>     qml.RX(np.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)
+    >>>     qml.RX(pnp.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)
     >>>     qml.expval(qml.PauliZ(0))
     >>> tapes, fn = qml.transforms.broadcast_expand(tape)
     >>> tapes
-    [<QuantumTape: wires=[0], params=1>,
-     <QuantumTape: wires=[0], params=1>,
-     <QuantumTape: wires=[0], params=1>]
+    [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0], params=1>]
     >>> fn(qml.execute(tapes, qml.device("default.qubit", wires=1), None))
     array([0.98006658, 0.82533561, 0.54030231])
     """

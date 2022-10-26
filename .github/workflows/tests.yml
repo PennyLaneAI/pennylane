@@ -7,8 +7,8 @@ on:
 
 
 env:
-  TF_VERSION: 2.6.0
-  TORCH_VERSION: 1.10.0+cpu
+  TF_VERSION: 2.10.0
+  TORCH_VERSION: 1.11.0+cpu
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
 
 
@@ -22,8 +22,11 @@ jobs:
           - {python-version: 3.7, suite: 'torch'}
           - {python-version: 3.7, suite: 'tf'}
           - {python-version: 3.8, suite: 'tf'}
+          - {python-version: '3.10', suite: 'tf'}
           - {python-version: 3.8, suite: 'torch'}
+          - {python-version: '3.10', suite: 'torch'}
           - {python-version: 3.8, suite: 'jax'}
+          - {python-version: '3.10', suite: 'jax'}
           - {python-version: 3.7, suite: 'autograd'}
           - {python-version: 3.8, suite: 'autograd'}
           - {python-version: 3.9, suite: 'autograd'}
@@ -53,9 +56,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-ci.txt
-          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Conditionally install PyTorch
         if: matrix.config.suite == 'torch'
@@ -73,7 +76,6 @@ jobs:
 
       - name: Install PennyLane
         run: |
-          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
@@ -86,10 +88,10 @@ jobs:
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+      - uses: actions/upload-artifact@v2
         with:
-          file: ./coverage.xml
+          name: core-interfaces-coverage-${{ matrix.config.suite }}-${{ matrix.config.python-version }}
+          path: ./coverage.xml
 
   all-interfaces-tests:
     runs-on: ubuntu-latest
@@ -111,9 +113,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-ci.txt
-          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Install PyTorch
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
@@ -126,7 +128,6 @@ jobs:
 
       - name: Install PennyLane
         run: |
-          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
@@ -137,12 +138,12 @@ jobs:
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+      - uses: actions/upload-artifact@v2
         with:
-          file: ./coverage.xml
+          name: all-interfaces-coverage
+          path: ./coverage.xml
 
-  qcut:
+  qcut-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -162,9 +163,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-ci.txt
-          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Install PyTorch
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
@@ -180,7 +181,6 @@ jobs:
 
       - name: Install PennyLane
         run: |
-          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
@@ -191,12 +191,63 @@ jobs:
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+      - uses: actions/upload-artifact@v2
         with:
-          file: ./coverage.xml
+          name: qcut-coverage
+          path: ./coverage.xml
 
-  qchem:
+  # Testing the new return types suite
+  return-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install PyTorch
+        run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install TensorFlow
+        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
+
+      - name: Install JAX
+        run: pip3 install jax jaxlib
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests/returntypes --cov=pennylane $COVERAGE_FLAGS -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: return-coverage
+          path: ./coverage.xml
+
+  qchem-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -218,16 +269,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-ci.txt
-          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Install openfermionpyscf
         run: pip3 install openfermionpyscf
 
       - name: Install PennyLane
         run: |
-          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
@@ -238,10 +288,10 @@ jobs:
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+      - uses: actions/upload-artifact@v2
         with:
-          file: ./coverage.xml
+          name: qchem-coverage
+          path: ./coverage.xml
 
   device-tests:
     runs-on: ubuntu-latest
@@ -272,9 +322,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-ci.txt
-          pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
 
       - name: Conditionally install PyTorch
         if: contains(matrix.config.device, 'torch')
@@ -290,7 +340,6 @@ jobs:
 
       - name: Install PennyLane
         run: |
-          pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
@@ -304,7 +353,20 @@ jobs:
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+      - uses: actions/upload-artifact@v2
         with:
-          file: ./coverage.xml
+          name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
+          path: ./coverage.xml
+
+  upload-to-codecov:
+      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, return-tests, qchem-tests, device-tests]
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+        - name: Download reports from tests
+          uses: actions/download-artifact@v2
+        - name: Upload to Codecov
+          uses: codecov/codecov-action@v3
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}

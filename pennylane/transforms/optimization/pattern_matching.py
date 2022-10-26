@@ -82,26 +82,26 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     >>> print(qml.draw(qnode)())
-    0: ──S──Z─╭C──────────┤  <X>
-    1: ──S────╰Z──S─╭C────┤
+    0: ──S──Z─╭●──────────┤  <X>
+    1: ──S────╰Z──S─╭●────┤
     2: ──S──────────╰Z──S─┤
 
     >>> print(qml.draw(optimized_qnode)())
-    0: ──S⁻¹─╭C────┤  <X>
-    1: ──Z───╰Z─╭C─┤
-    2: ──Z──────╰Z─┤
+    0: ──S†─╭●────┤  <X>
+    1: ──Z──╰Z─╭●─┤
+    2: ──Z─────╰Z─┤
 
     Note that with this pattern we also replace a ``pennylane.S``, ``pennylane.PauliZ`` sequence by ``pennylane.S``.
     If one would like avoiding this, it possible to give a custom quantum cost dictionary with a negative cost for
     ``pennylane.PauliZ``.
 
-    >>> my_cost = {"PauliZ": -1 , "S": 1, "S.inv": 1}
+    >>> my_cost = {"PauliZ": -1 , "S": 1, "Adjoint(S)": 1}
     >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern], custom_quantum_cost=my_cost)(circuit)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     >>> print(qml.draw(optimized_qnode)())
-    0: ──S──Z─╭C────┤  <X>
-    1: ──Z────╰Z─╭C─┤
+    0: ──S──Z─╭●────┤  <X>
+    1: ──Z────╰Z─╭●─┤
     2: ──Z───────╰Z─┤
 
     Now we can consider a more complicated example with the following quantum circuit to be optimized
@@ -150,17 +150,17 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
 
     >>> print(qml.draw(qnode)())
     0: ─╭X──────────╭X────┤  <X>
-    1: ─│──╭C─╭X──Z─│──╭C─┤
-    2: ─│──│──╰C─╭C─├C─│──┤
-    3: ─├C─│───H─╰X─╰C─│──┤
-    4: ─╰C─╰X──────────╰X─┤
+    1: ─│──╭●─╭X──Z─│──╭●─┤
+    2: ─│──│──╰●─╭●─├●─│──┤
+    3: ─├●─│───H─╰X─╰●─│──┤
+    4: ─╰●─╰X──────────╰X─┤
 
     >>> print(qml.draw(optimized_qnode)())
     0: ─╭X──────────╭X─┤  <X>
     1: ─│─────╭X──Z─│──┤
-    2: ─│──╭C─╰C─╭C─├C─┤
-    3: ─├C─│───H─╰X─╰C─┤
-    4: ─╰C─╰X──────────┤
+    2: ─│──╭●─╰●─╭●─├●─┤
+    3: ─├●─│───H─╰X─╰●─┤
+    4: ─╰●─╰X──────────┤
 
     .. seealso:: :func:`~.pattern_matching`
 

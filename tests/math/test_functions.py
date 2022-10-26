@@ -13,17 +13,16 @@
 # limitations under the License.
 """Unit tests for the TensorBox functional API in pennylane.fn.fn
 """
-from functools import partial
 import itertools
+from functools import partial
+
 import numpy as onp
 import pytest
-
-import pennylane as qml
-from pennylane import numpy as np
-from pennylane import math as fn
 from autograd.numpy.numpy_boxes import ArrayBox
 
-import semantic_version
+import pennylane as qml
+from pennylane import math as fn
+from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -35,7 +34,7 @@ sci = pytest.importorskip("scipy")
 
 
 class TestGetMultiTensorbox:
-    """Tests for the _multi_dispatch utility function"""
+    """Tests for the get_interface utility function"""
 
     def test_exception_tensorflow_and_torch(self):
         """Test that an exception is raised if the sequence of tensors contains
@@ -45,7 +44,17 @@ class TestGetMultiTensorbox:
         z = torch.tensor([0.6])
 
         with pytest.raises(ValueError, match="Tensors contain mixed types"):
-            fn._multi_dispatch([x, y, z])
+            fn.get_interface(x, y, z)
+
+    def test_exception_tensorflow_and_jax(self):
+        """Test that an exception is raised if the sequence of tensors contains
+        tensors from incompatible dispatch libraries"""
+        x = tf.Variable([1.0, 2.0, 3.0])
+        y = onp.array([0.5, 0.1])
+        z = jnp.array([0.6])
+
+        with pytest.raises(ValueError, match="Tensors contain mixed types"):
+            fn.get_interface(x, y, z)
 
     def test_warning_tensorflow_and_autograd(self):
         """Test that a warning is raised if the sequence of tensors contains
@@ -54,7 +63,7 @@ class TestGetMultiTensorbox:
         y = np.array([0.5, 0.1])
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
-            fn._multi_dispatch([x, y])
+            fn.get_interface(x, y)
 
     def test_warning_torch_and_autograd(self):
         """Test that a warning is raised if the sequence of tensors contains
@@ -63,7 +72,16 @@ class TestGetMultiTensorbox:
         y = np.array([0.5, 0.1])
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
-            fn._multi_dispatch([x, y])
+            fn.get_interface(x, y)
+
+    def test_warning_jax_and_autograd(self):
+        """Test that a warning is raised if the sequence of tensors contains
+        both jax and autograd tensors."""
+        x = jnp.array([1.0, 2.0, 3.0])
+        y = np.array([0.5, 0.1])
+
+        with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
+            fn.get_interface(x, y)
 
     @pytest.mark.filterwarnings("error:Contains tensors of types {.+}; dispatch will prioritize")
     def test_no_warning_scipy_and_autograd(self):
@@ -72,14 +90,14 @@ class TestGetMultiTensorbox:
         x = sci.sparse.eye(3)
         y = np.array([0.5, 0.1])
 
-        fn._multi_dispatch([x, y])
+        fn.get_interface(x, y)
 
     def test_return_tensorflow_box(self):
         """Test that TensorFlow is correctly identified as the dispatching library."""
         x = tf.Variable([1.0, 2.0, 3.0])
         y = onp.array([0.5, 0.1])
 
-        res = fn._multi_dispatch([y, x])
+        res = fn.get_interface(y, x)
         assert res == "tensorflow"
 
     def test_return_torch_box(self):
@@ -87,7 +105,7 @@ class TestGetMultiTensorbox:
         x = torch.tensor([1.0, 2.0, 3.0])
         y = onp.array([0.5, 0.1])
 
-        res = fn._multi_dispatch([y, x])
+        res = fn.get_interface(y, x)
         assert res == "torch"
 
     def test_return_autograd_box(self):
@@ -95,15 +113,23 @@ class TestGetMultiTensorbox:
         x = np.array([1.0, 2.0, 3.0])
         y = [0.5, 0.1]
 
-        res = fn._multi_dispatch([y, x])
+        res = fn.get_interface(y, x)
         assert res == "autograd"
+
+    def test_return_jax_box(self):
+        """Test that jax is correctly identified as the dispatching library."""
+        x = jnp.array([1.0, 2.0, 3.0])
+        y = [0.5, 0.1]
+
+        res = fn.get_interface(y, x)
+        assert res == "jax"
 
     def test_return_numpy_box(self):
         """Test that NumPy is correctly identified as the dispatching library."""
         x = onp.array([1.0, 2.0, 3.0])
         y = [0.5, 0.1]
 
-        res = fn._multi_dispatch([y, x])
+        res = fn.get_interface(y, x)
         assert res == "numpy"
 
 
@@ -152,7 +178,12 @@ def test_allequal(t1, t2):
     assert res == expected
 
 
-@pytest.mark.parametrize("t1,t2", list(itertools.combinations(test_data, r=2)))
+@pytest.mark.parametrize(
+    "t1,t2",
+    list(
+        itertools.combinations(test_data + [torch.tensor([1.0, 2.0, 3.0], requires_grad=True)], r=2)
+    ),
+)
 def test_allclose(t1, t2):
     """Test that the allclose function works for a variety of inputs."""
     res = fn.allclose(t1, t2)
@@ -1100,6 +1131,118 @@ class TestRequiresGrad:
         """Test that an error is raised if the interface is unknown"""
         with pytest.raises(ValueError, match="unknown object"):
             fn.requires_grad(type("hello", tuple(), {})())
+
+
+class TestInBackprop:
+    """Tests for the in_backprop function"""
+
+    @pytest.mark.slow
+    def test_jax(self):
+        """The value of in_backprop for JAX DeviceArrays depends on the argnums argument"""
+        res = None
+
+        def cost_fn(t, s):
+            nonlocal res
+            res = [fn.in_backprop(t), fn.in_backprop(s)]
+            return jnp.sum(t * s)
+
+        t = jnp.array([1.0, 2.0, 3.0])
+        s = jnp.array([-2.0, -3.0, -4.0])
+
+        jax.grad(cost_fn, argnums=0)(t, s)
+        assert res == [True, False]
+
+        jax.grad(cost_fn, argnums=1)(t, s)
+        assert res == [False, True]
+
+        jax.grad(cost_fn, argnums=[0, 1])(t, s)
+        assert res == [True, True]
+
+    def test_autograd_backwards(self):
+        """The value of in_backprop for Autograd tensors corresponds to the requires_grad attribute during the backwards pass."""
+        res = None
+
+        def cost_fn(t, s):
+            nonlocal res
+            res = [fn.in_backprop(t), fn.in_backprop(s)]
+            return np.sum(t * s)
+
+        t = np.array([1.0, 2.0, 3.0], requires_grad=True)
+        s = np.array([-2.0, -3.0, -4.0], requires_grad=True)
+
+        qml.grad(cost_fn)(t, s)
+        assert res == [True, True]
+
+        t.requires_grad = False
+        s.requires_grad = True
+        qml.grad(cost_fn)(t, s)
+        assert res == [False, True]
+
+        t.requires_grad = True
+        s.requires_grad = False
+        qml.grad(cost_fn)(t, s)
+        assert res == [True, False]
+
+        t.requires_grad = False
+        s.requires_grad = False
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            qml.grad(cost_fn)(t, s)
+        assert res == [False, False]
+
+    def test_tf(self):
+        """The value of in_backprop for TensorFlow tensors is True *if* they are being watched by a gradient tape"""
+        t1 = tf.Variable([1.0, 2.0])
+        t2 = tf.constant([1.0, 2.0])
+        assert not fn.in_backprop(t1)
+        assert not fn.in_backprop(t2)
+
+        with tf.GradientTape():
+            # variables are automatically watched within a context,
+            # but constants are not
+            assert fn.in_backprop(t1)
+            assert not fn.in_backprop(t2)
+
+        with tf.GradientTape() as tape:
+            # watching makes all tensors trainable
+            tape.watch([t1, t2])
+            assert fn.in_backprop(t1)
+            assert fn.in_backprop(t2)
+
+    def test_tf_autograph(self):
+        """TensorFlow tensors will True *if* they are being watched by a gradient tape with Autograph."""
+        t1 = tf.Variable([1.0, 2.0])
+        t2 = tf.constant([1.0, 2.0])
+        assert not fn.in_backprop(t1)
+        assert not fn.in_backprop(t2)
+
+        @tf.function
+        def f_pow(x):
+            return tf.math.pow(x, 3)
+
+        with tf.GradientTape():
+            # variables are automatically watched within a context,
+            # but constants are not
+            y = f_pow(t1)
+            assert fn.in_backprop(t1)
+            assert not fn.in_backprop(t2)
+
+        with tf.GradientTape() as tape:
+            # watching makes all tensors trainable
+            tape.watch([t1, t2])
+            y = f_pow(t1)
+            assert fn.in_backprop(t1)
+            assert fn.in_backprop(t2)
+
+    @pytest.mark.torch
+    def test_unknown_interface_in_backprop(self):
+        """Test that an error is raised if the interface is unknown"""
+        import torch
+
+        with pytest.raises(ValueError, match="is in backpropagation."):
+            fn.in_backprop(torch.tensor([0.1]))
+
+        with pytest.raises(ValueError, match="is in backpropagation."):
+            fn.in_backprop(type("hello", tuple(), {})())
 
 
 shape_test_data = [
@@ -2265,4 +2408,30 @@ class TestSortFunction:
         assert all(result == test_output)
 
 
-ones_functions = [onp.ones, np.ones, jnp.ones, torch.ones, tf.ones]
+class TestExpm:
+
+    _compare_mat = None
+
+    def get_compare_mat(self):
+        """Computes expm via taylor expansion."""
+        if self._compare_mat is None:
+            mat = qml.RX.compute_matrix(0.3)
+            out = np.eye(2, dtype=complex)
+            coeff = 1
+            for i in range(1, 8):
+                coeff *= i
+                out += np.linalg.matrix_power(mat, i) / coeff
+
+            self._compare_mat = out
+
+        return self._compare_mat
+
+    @pytest.mark.parametrize(
+        "phi", [qml.numpy.array(0.3), torch.tensor(0.3), tf.Variable(0.3), jnp.array(0.3)]
+    )
+    def test_expm(self, phi):
+        """Test expm function for all interfaces against taylor expansion approximation."""
+        orig_mat = qml.RX.compute_matrix(phi)
+        exp_mat = qml.math.expm(orig_mat)
+
+        assert qml.math.allclose(exp_mat, self.get_compare_mat(), atol=1e-4)

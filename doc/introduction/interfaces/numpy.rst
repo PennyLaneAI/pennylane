@@ -167,21 +167,41 @@ the following QNode that accepts two arguments ``data`` and ``weights``:
         return qml.expval(qml.PauliZ(0))
 
     rng = np.random.default_rng(seed=42)  # make the results reproducable
-    data = rng.random([2 ** 3], requires_grad=True)
-    weights = np.array([0.1, 0.2, 0.3], requires_grad=False)
+    data = rng.random([2 ** 3], requires_grad=False)
+    weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
 When we compute the derivative, arguments with ``requires_grad=False`` as well as arguments
 passed as keyword arguments are ignored by :func:`~.grad`, which in this case means no gradient
 is computed at all:
 
 >>> qml.grad(circuit)(data, weights=weights)
+UserWarning: Attempted to differentiate a function with no trainable parameters. If this is unintended, please add trainable parameters via the 'requires_grad' attribute or 'argnum' keyword.
 ()
 
 Optimization
 ------------
 
 To optimize your hybrid classical-quantum model using the NumPy interface,
-use the provided :ref:`PennyLane optimizers <intro_ref_opt>`.
+use the provided optimizers:
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.AdagradOptimizer
+    ~pennylane.AdamOptimizer
+    ~pennylane.GradientDescentOptimizer
+    ~pennylane.LieAlgebraOptimizer
+    ~pennylane.MomentumOptimizer
+    ~pennylane.NesterovMomentumOptimizer
+    ~pennylane.QNGOptimizer
+    ~pennylane.RMSPropOptimizer
+    ~pennylane.RotosolveOptimizer
+    ~pennylane.RotoselectOptimizer
+    ~pennylane.ShotAdaptiveOptimizer
+
+:html:`</div>`
 
 For example, we can optimize a NumPy-interfacing QNode (below) such that the weights ``x``
 lead to a final expectation value of 0.5:

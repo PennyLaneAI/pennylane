@@ -102,9 +102,9 @@ def cancel_inverses(tape):
     >>> dev = qml.device('default.qubit', wires=3)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(1, 2, 3))
-    0: ──H──────H──────RZ(3)─────╭C──┤ ⟨Z⟩
-    1: ──H──────RY(2)──X──────X──│───┤
-    2: ──RX(1)──RX(2)────────────╰X──┤
+    0: ──H─────────H─────────RZ(3.00)─╭●────┤  <Z>
+    1: ──H─────────RY(2.00)──X────────│───X─┤
+    2: ──RX(1.00)──RX(2.00)───────────╰X────┤
 
     We can see that there are two adjacent Hadamards on the first qubit that
     should cancel each other out. Similarly, there are two Pauli-X gates on the
@@ -114,9 +114,10 @@ def cancel_inverses(tape):
     >>> optimized_qfunc = cancel_inverses(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-    0: ──RZ(3)─────────╭C──┤ ⟨Z⟩
-    1: ──H──────RY(2)──│───┤
-    2: ──RX(1)──RX(2)──╰X──┤
+    0: ──RZ(3.00)───────────╭●─┤  <Z>
+    1: ──H─────────RY(2.00)─│──┤
+    2: ──RX(1.00)──RX(2.00)─╰X─┤
+
     """
     # Make a working copy of the list to traverse
     list_copy = tape.operations.copy()

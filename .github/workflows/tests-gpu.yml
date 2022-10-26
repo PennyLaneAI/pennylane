@@ -1,0 +1,122 @@
+name: GPU Tests
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - labeled
+      - synchronize
+
+concurrency:
+  group: gpu-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TORCH_VERSION: 1.11.0+cu113
+
+jobs:
+  gpu-tests:
+    runs-on:
+      - self-hosted
+      - ubuntu-22.04
+      - gpu
+
+    if: >-
+      ${{
+        github.event_name == 'push' ||
+        (
+          github.event_name == 'pull_request' &&
+          contains(github.event.pull_request.labels.*.name, 'gpu') &&
+          github.event.pull_request.state == 'open'
+        )
+      }}
+
+    strategy:
+      max-parallel: 2
+      matrix:
+        python-version:
+          - 3.7
+          - 3.8
+          - 3.9
+          - '3.10'
+
+    env:
+      SUITE: gpu
+
+    steps:
+      - name: Update PATH and LD_LIBRARY_PATH
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "/usr/local/cuda/bin" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" >> $GITHUB_ENV
+
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        id: setup_python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Since the self-hosted runner can be re-used. It is best to set up all package
+      # installations in a virtual environment that gets cleaned at the end of each workflow run
+      - name: Setup Python virtual environment
+        id: setup_venv
+        env:
+          VENV_NAME: venv_${{ steps.setup_python.outputs.python-version }}_${{ github.sha }}
+        run: |
+          # Clear any pre-existing venvs
+          rm -rf venv_*
+
+          # Create new venv for this workflow_run
+          python --version
+          python -m venv ${{ env.VENV_NAME }}
+
+          # Add the venv to PATH for subsequent steps
+          echo ${{ env.VENV_NAME }}/bin >> $GITHUB_PATH
+
+          # Adding venv name as an output for subsequent steps to reference if needed
+          echo "::set-output name=venv_name::${{ env.VENV_NAME }}"
+
+      - name: Display Python-Path
+        run: |
+          which python
+          which pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install Torch
+        run: |
+          python -m pip install torch==${{ env.TORCH_VERSION }} -f https://download.pytorch.org/whl/cu113/torch_stable.html
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Install Lightning-master
+        run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
+
+      - name: Run tests
+        run: python -m pytest -m "${{ env.SUITE }}" tests
+
+      # Cleans up the working directory so subsequent jobs on same runner get a clean working directory
+      # This step runs even if any of the previous steps fail
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf ${{ steps.setup_venv.outputs.venv_name }}
+          rm -rf *
+          rm -rf .git
+          rm -rf .gitignore
+          rm -rf .github

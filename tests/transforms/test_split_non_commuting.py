@@ -19,6 +19,7 @@ import pennylane as qml
 import pennylane.numpy as pnp
 
 from pennylane.transforms import split_non_commuting
+from pennylane.qinfo.transforms import _make_probs, _compute_cfim
 
 ### example tape with 3 commuting groups [[0,3],[1,4],[2,5]]
 with qml.tape.QuantumTape() as non_commuting_tape3:
@@ -144,7 +145,6 @@ exp_grad = np.array(
 )
 
 
-@pytest.mark.all_inferfaces
 class TestAutodiffSplitNonCommuting:
     """Autodiff tests for all frameworks"""
 

@@ -144,6 +144,7 @@ observables_list = [
         PauliX("b") @ PauliZ("a"),
         PauliZ("a") @ PauliZ("b") @ PauliZ("c"),
     ],
+    [PauliX([(0, 0)]), PauliZ([(0, 0)])],
 ]
 
 qwc_sols = [
@@ -167,6 +168,7 @@ qwc_sols = [
         [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
         [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
     ],
+    [[PauliX([(0, 0)])], [PauliZ([(0, 0)])]],
 ]
 
 commuting_sols = [
@@ -190,6 +192,7 @@ commuting_sols = [
         [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
         [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
     ],
+    [[PauliX([(0, 0)])], [PauliZ([(0, 0)])]],
 ]
 
 anticommuting_sols = [
@@ -215,6 +218,7 @@ anticommuting_sols = [
         ],
         [PauliX(wires=["a"]), PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
     ],
+    [[PauliX([(0, 0)]), PauliZ([(0, 0)])]],
 ]
 
 
@@ -223,7 +227,7 @@ class TestGroupObservables:
     Tests for ``group_observables`` function using QWC, commuting, and anticommuting partitioning.
     """
 
-    qwc_tuples = [(obs, qwc_sols[i]) for i, obs in enumerate(observables_list)]
+    qwc_tuples = [(obs, sol) for obs, sol in zip(observables_list, qwc_sols)]
 
     @pytest.mark.parametrize("observables,qwc_partitions_sol", qwc_tuples)
     def test_qwc_partitioning(self, observables, qwc_partitions_sol):
@@ -242,7 +246,7 @@ class TestGroupObservables:
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, qwc_partitions_sol[i][j])
 
-    com_tuples = [(obs, commuting_sols[i]) for i, obs in enumerate(observables_list)]
+    com_tuples = [(obs, sol) for obs, sol in zip(observables_list, commuting_sols)]
 
     @pytest.mark.parametrize("observables,com_partitions_sol", com_tuples)
     def test_commuting_partitioning(self, observables, com_partitions_sol):
@@ -261,7 +265,7 @@ class TestGroupObservables:
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, com_partitions_sol[i][j])
 
-    anticom_tuples = [(obs, anticommuting_sols[i]) for i, obs in enumerate(observables_list)]
+    anticom_tuples = [(obs, sols) for obs, sols in zip(observables_list, anticommuting_sols)]
 
     @pytest.mark.parametrize("observables,anticom_partitions_sol", anticom_tuples)
     def test_anticommuting_partitioning(self, observables, anticom_partitions_sol):

@@ -63,9 +63,9 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
     >>> dev = qml.device('default.qubit', wires=3)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(1, 2, 3))
-     0: ───RX(1)──RX(2)──────────╭RZ(3)──┤ ⟨Z⟩
-     1: ──╭C──────RY(2)──RY(-2)──│───────┤
-     2: ──╰X──────H──────────────╰C──────┤
+    0: ──RX(1.00)──RX(2.00)─╭RZ(3.00)────────────┤  <Z>
+    1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
+    2: ─╰X─────────H────────╰●───────────────────┤
 
     By inspection, we can combine the two ``RX`` rotations on the first qubit.
     On the second qubit, we have a cumulative angle of 0, and the gates will cancel.
@@ -73,9 +73,9 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
     >>> optimized_qfunc = merge_rotations()(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-     0: ───RX(3)─────╭RZ(3)──┤ ⟨Z⟩
-     1: ──╭C─────────│───────┤
-     2: ──╰X──────H──╰C──────┤
+    0: ──RX(3.00)────╭RZ(3.00)─┤  <Z>
+    1: ─╭●───────────│─────────┤
+    2: ─╰X─────────H─╰●────────┤
 
     It is also possible to explicitly specify which rotations ``merge_rotations`` should
     be merged using the ``include_gates`` argument. For example, if in the above
@@ -84,9 +84,10 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
     >>> optimized_qfunc = merge_rotations(include_gates=["RX"])(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(1, 2, 3))
-     0: ───RX(3)─────────────────╭RZ(3)──┤ ⟨Z⟩
-     1: ──╭C──────RY(2)──RY(-2)──│───────┤
-     2: ──╰X──────H──────────────╰C──────┤
+    0: ──RX(3.00)───────────╭RZ(3.00)────────────┤  <Z>
+    1: ─╭●─────────RY(2.00)─│──────────RY(-2.00)─┤
+    2: ─╰X─────────H────────╰●───────────────────┤
+
     """
     # Expand away adjoint ops
     expanded_tape = tape.expand(stop_at=lambda obj: not isinstance(obj, Adjoint))

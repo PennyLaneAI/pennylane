@@ -37,6 +37,7 @@ terminal_meas = [
     qml.var(qml.PauliX("b")),
     qml.state(),
     qml.density_matrix(wires=[2, 3]),
+    qml.density_matrix(wires=["b", -231]),
 ]
 
 
@@ -250,27 +251,17 @@ class TestOtherTransforms:
         assert ops[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
-        assert isinstance(ops[1].then_op, qml.transforms.control.ControlledOperation)
-
-        assert len(ops[1].then_op.subtape.operations) == 1
-        controlled_op = ops[1].then_op.subtape.operations[0]
-        assert isinstance(controlled_op, qml.RX)
-        assert controlled_op.data == [r]
-        assert controlled_op.wires == target_wire
+        assert isinstance(ops[1].then_op, qml.ops.op_math.Controlled)
+        assert qml.equal(ops[1].then_op.base, qml.RX(r, wires=2))
 
         assert isinstance(ops[2], qml.transforms.condition.Conditional)
-        assert isinstance(ops[2].then_op, qml.transforms.control.ControlledOperation)
-
-        assert len(ops[2].then_op.subtape.operations) == 1
-        controlled_op = ops[2].then_op.subtape.operations[0]
-        assert isinstance(controlled_op, qml.RY)
-        assert controlled_op.data == [r]
-        assert controlled_op.wires == target_wire
+        assert isinstance(ops[2].then_op, qml.ops.op_math.Controlled)
+        assert qml.equal(ops[2].then_op.base, qml.RY(r, wires=2))
 
         assert len(tape.measurements) == 1
         assert tape.measurements[0] is terminal_measurement
 
-    def test_ctrl_operationss_with_cond(self, terminal_measurement):
+    def test_ctrl_operations_with_cond(self, terminal_measurement):
         """Test that qml.cond operationss Conditional operations as expected with
         qml.ctrl."""
         r = 1.234
@@ -283,21 +274,16 @@ class TestOtherTransforms:
         ops = tape.operations
         target_wire = qml.wires.Wires(2)
 
-        assert len(ops) == 2
+        assert len(ops) == 3
         assert ops[0].return_type == qml.measurements.MidMeasure
 
-        assert isinstance(ops[1], qml.transforms.control.ControlledOperation)
-        assert len(ops[1].subtape.operations) == 2
+        assert isinstance(ops[1], qml.ops.op_math.Controlled)
+        assert isinstance(ops[1].base, qml.transforms.condition.Conditional)
+        assert qml.equal(ops[1].base.then_op, qml.RX(1.234, wires=0))
 
-        op1 = ops[1].subtape.operations[0]
-        assert isinstance(op1, qml.transforms.condition.Conditional)
-        assert isinstance(op1.then_op, qml.RX)
-        assert op1.then_op.data == [r]
-
-        op2 = ops[1].subtape.operations[1]
-        assert isinstance(op2, qml.transforms.condition.Conditional)
-        assert isinstance(op2.then_op, qml.RY)
-        assert op1.then_op.data == [r]
+        assert isinstance(ops[2], qml.ops.op_math.Controlled)
+        assert isinstance(ops[2].base, qml.transforms.condition.Conditional)
+        assert qml.equal(ops[2].base.then_op, qml.RY(r, wires=0))
 
         assert len(tape.measurements) == 1
         assert tape.measurements[0] is terminal_measurement

@@ -15,6 +15,8 @@
 Unit tests for functions needed for qubit tapering.
 """
 import functools
+from lib2to3.pytree import convert
+from pennylane.ops.functions.eigvals import eigvals
 
 import pytest
 import scipy
@@ -29,6 +31,7 @@ from pennylane.qchem.tapering import (
     clifford,
     optimal_sector,
     taper_hf,
+    taper_operation,
 )
 
 
@@ -629,3 +632,425 @@ def test_taper_obs(symbols, geometry, charge):
             @ scipy.sparse.coo_matrix(state_tapered).T
         ).toarray()
         assert np.isclose(obs_val, obs_val_tapered)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge", "generators", "paulixops", "paulix_sector", "num_commuting"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
+            0,
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+            ],
+            [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            (1, -1, -1),
+            (0, 1),
+        ),
+        (
+            ["He", "H"],
+            np.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]],
+                requires_grad=True,
+            ),
+            1,
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3)]),
+            ],
+            [qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            (-1, -1),
+            (2, 1),
+        ),
+        (
+            ["H", "H", "H"],
+            np.array(
+                [[-0.84586466, 0.0, 0.0], [0.84586466, 0.0, 0.0], [0.0, 1.46508057, 0.0]],
+                requires_grad=True,
+            ),
+            1,
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
+            ],
+            [qml.PauliX(wires=[4]), qml.PauliX(wires=[5])],
+            (-1, -1),
+            (4, 4),
+        ),
+    ],
+)
+def test_taper_excitations(
+    symbols, geometry, charge, generators, paulixops, paulix_sector, num_commuting
+):
+    r"""Test that the tapered excitation operators using :func:`~.taper_operation`
+    are consistent with the tapered Hartree-Fock state."""
+
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    num_electrons, num_wires = mol.n_electrons, 2 * mol.n_orbitals
+    hf_state = np.where(np.arange(num_wires) < num_electrons, 1, 0)
+    hf_tapered = taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires)
+
+    observables = [
+        qml.qchem.diff_hamiltonian(mol)(geometry),
+        qml.qchem.particle_number(num_wires),
+        qml.qchem.spin2(num_electrons, num_wires),
+        qml.qchem.spinz(num_wires),
+    ]
+    tapered_obs = [
+        qml.taper(observale, generators, paulixops, paulix_sector) for observale in observables
+    ]
+
+    o = np.array([1, 0])
+    l = np.array([0, 1])
+    state = functools.reduce(lambda i, j: np.kron(i, j), [l if s else o for s in hf_state])
+    state_tapered = functools.reduce(
+        lambda i, j: np.kron(i, j), [l if s else o for s in hf_tapered]
+    )
+
+    singles, doubles = qml.qchem.excitations(num_electrons, num_wires)
+    exc_fnc = [qml.SingleExcitation, qml.DoubleExcitation]
+    exc_obs, exc_tap = [[], []], [[], []]
+    for idx, exc in enumerate([singles, doubles]):
+        exc_obs[idx] = [exc_fnc[idx](np.pi, wires=wire) for wire in exc]
+        exc_tap[idx] = [
+            taper_operation(op, generators, paulixops, paulix_sector, range(num_wires))
+            for op in exc_obs[idx]
+        ]
+        exc_obs[idx] = [x for i, x in enumerate(exc_obs[idx]) if exc_tap[idx][i]]
+        exc_tap[idx] = [x for x in exc_tap[idx] if x]
+        assert len(exc_tap[idx]) == num_commuting[idx]
+
+    obs_all, obs_tap = exc_obs[0] + exc_obs[1], exc_tap[0] + exc_tap[1]
+    for op_all, op_tap in zip(obs_all, obs_tap):
+        if op_tap:
+
+            excited_state = np.matmul(qml.matrix(op_all, wire_order=range(len(hf_state))), state)
+            ob_tap_mat = functools.reduce(
+                lambda i, j: np.matmul(i, j),
+                [qml.matrix(op, wire_order=range(len(hf_tapered))) for op in op_tap],
+            )
+            excited_state_tapered = np.matmul(ob_tap_mat, state_tapered)
+            # check if tapered excitation gates remains spin and particle-number conserving,
+            # and also evolves the tapered-state to have consistent energy values
+            for obs, tap_obs in zip(observables, tapered_obs):
+                expec_val = (
+                    scipy.sparse.coo_matrix(excited_state)
+                    @ qml.utils.sparse_hamiltonian(obs)
+                    @ scipy.sparse.coo_matrix(excited_state).getH()
+                ).toarray()
+                expec_val_tapered = (
+                    scipy.sparse.coo_matrix(excited_state_tapered)
+                    @ qml.utils.sparse_hamiltonian(tap_obs)
+                    @ scipy.sparse.coo_matrix(excited_state_tapered).getH()
+                ).toarray()
+                assert np.isclose(expec_val, expec_val_tapered)
+
+
+@pytest.mark.parametrize(
+    ("operation", "op_gen", "message_match"),
+    [
+        (qml.U2(1, 1, 2), None, "is not implemented, please provide it with 'op_gen' args"),
+        (
+            qml.U2(1, 1, 2),
+            np.identity(16),
+            "Generator for the operation needs to be a qml.Hamiltonian",
+        ),
+        (
+            qml.U2(1, 1, 2),
+            qml.Hamiltonian([1], [qml.Identity(2)]),
+            "doesn't seem to be the correct generator for the",
+        ),
+    ],
+)
+def test_inconsistent_taper_ops(operation, op_gen, message_match):
+    r"""Test that an error is raised if a set of inconsistent arguments is input"""
+
+    symbols, geometry, charge = (
+        ["He", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        1,
+    )
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
+    wire_order = hamiltonian.wires
+
+    with pytest.raises(Exception, match=message_match):
+        taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen)
+
+
+@pytest.mark.parametrize(
+    ("operation", "op_gen"),
+    [
+        (qml.PauliX(1), qml.Hamiltonian((np.pi / 2,), [qml.PauliX(wires=[1])])),
+        (qml.PauliY(2), qml.Hamiltonian((np.pi / 2,), [qml.PauliY(wires=[2])])),
+        (qml.PauliZ(3), qml.Hamiltonian((np.pi / 2,), [qml.PauliZ(wires=[3])])),
+        (
+            qml.OrbitalRotation(np.pi, wires=[0, 1, 2, 3]),
+            qml.Hamiltonian(
+                (0.25, -0.25, 0.25, -0.25),
+                [
+                    qml.PauliX(wires=[0]) @ qml.PauliY(wires=[2]),
+                    qml.PauliY(wires=[0]) @ qml.PauliX(wires=[2]),
+                    qml.PauliX(wires=[1]) @ qml.PauliY(wires=[3]),
+                    qml.PauliY(wires=[1]) @ qml.PauliX(wires=[3]),
+                ],
+            ),
+        ),
+    ],
+)
+def test_consistent_taper_ops(operation, op_gen):
+    r"""Test that operations are tapered consistently when their generators are provided manually and when they are constructed internally"""
+
+    symbols, geometry, charge = (
+        ["He", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        1,
+    )
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
+    wire_order = hamiltonian.wires
+
+    taper_op1 = taper_operation(
+        operation, generators, paulixops, paulix_sector, wire_order, op_gen=None
+    )
+    taper_op2 = taper_operation(
+        operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen
+    )
+    assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op1, taper_op2)])
+
+    tape1, tape2 = qml.tape.QuantumTape(), qml.tape.QuantumTape()
+    with tape1:
+        taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=None)
+    with tape2:
+        taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen)
+
+    taper_circuit1 = [x for x in tape1.circuit if x.label() != "I"]
+    taper_circuit2 = [x for x in tape2.circuit if x.label() != "I"]
+
+    assert len(taper_op1) == len(taper_circuit1) and len(taper_op2) == len(taper_circuit2)
+    assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_circuit1, taper_op1)])
+    assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_circuit2, taper_op2)])
+
+    if taper_op1:
+        observables = [
+            hamiltonian,  # for energy
+            functools.reduce(
+                lambda i, j: i + j, [qml.PauliZ(wire) for wire in hamiltonian.wires]
+            ),  # for local-cost 1
+            functools.reduce(
+                lambda i, j: i + j,
+                [qml.PauliZ(wire) @ qml.PauliZ(wire + 1) for wire in hamiltonian.wires],
+            ),  # for local-cost 2
+        ]
+        tapered_obs = [
+            qml.taper(observale, generators, paulixops, paulix_sector) for observale in observables
+        ]
+
+        hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
+        hf_tapered = taper_hf(
+            generators, paulixops, paulix_sector, mol.n_electrons, len(hamiltonian.wires)
+        )
+        o, l = np.array([1, 0]), np.array([0, 1])
+        state = functools.reduce(lambda i, j: np.kron(i, j), [l if s else o for s in hf_state])
+        state_tapered = functools.reduce(
+            lambda i, j: np.kron(i, j), [l if s else o for s in hf_tapered]
+        )
+        evolved_state = np.matmul(qml.matrix(operation, wire_order=range(len(hf_state))), state)
+        ob_tap_mat = functools.reduce(
+            lambda i, j: np.matmul(i, j),
+            [qml.matrix(op, wire_order=range(len(hf_tapered))) for op in taper_op1],
+        )
+        evolved_state_tapered = np.matmul(ob_tap_mat, state_tapered)
+
+        for obs, tap_obs in zip(observables, tapered_obs):
+            expec_val = (
+                scipy.sparse.coo_matrix(evolved_state)
+                @ scipy.sparse.coo_matrix(qml.matrix(obs, wire_order=range(len(hf_state))))
+                @ scipy.sparse.coo_matrix(evolved_state).getH()
+            ).toarray()
+            expec_val_tapered = (
+                scipy.sparse.coo_matrix(evolved_state_tapered)
+                @ scipy.sparse.coo_matrix(qml.matrix(tap_obs, wire_order=range(len(hf_tapered))))
+                @ scipy.sparse.coo_matrix(evolved_state_tapered).getH()
+            ).toarray()
+            assert np.isclose(expec_val, expec_val_tapered)
+
+
+@pytest.mark.parametrize(
+    ("operation", "op_wires", "op_gen"),
+    [
+        (qml.RZ, [3], None),
+        (qml.RY, [2], qml.Hamiltonian([-0.5], [qml.PauliY(wires=[2])])),
+        (qml.SingleExcitation, [0, 2], None),
+        (
+            qml.OrbitalRotation,
+            [0, 1, 2, 3],
+            lambda wires: qml.Hamiltonian(
+                (0.25, -0.25, 0.25, -0.25),
+                [
+                    qml.PauliX(wires=wires[0]) @ qml.PauliY(wires=wires[2]),
+                    qml.PauliY(wires=wires[0]) @ qml.PauliX(wires=wires[2]),
+                    qml.PauliX(wires=wires[1]) @ qml.PauliY(wires=wires[3]),
+                    qml.PauliY(wires=wires[1]) @ qml.PauliX(wires=wires[3]),
+                ],
+            ),
+        ),
+    ],
+)
+def test_taper_callable_ops(operation, op_wires, op_gen):
+    """Test that operation callables can be used to obtain their consistent taperings"""
+
+    symbols, geometry, charge = (
+        ["He", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        1,
+    )
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
+    wire_order = hamiltonian.wires
+
+    taper_op_fn = taper_operation(
+        operation, generators, paulixops, paulix_sector, wire_order, op_wires, op_gen
+    )
+    assert callable(taper_op_fn)
+
+    for params in [0.0, 1.3, np.pi / 2, 2.37, np.pi]:
+        if callable(op_gen):
+            op_gen = op_gen(op_wires)
+        taper_op = taper_operation(
+            operation(params, wires=op_wires),
+            generators,
+            paulixops,
+            paulix_sector,
+            wire_order,
+            op_wires=op_wires,
+            op_gen=op_gen,
+        )
+        assert np.all(
+            [qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op_fn(params), taper_op)]
+        )
+
+
+@pytest.mark.parametrize(
+    ("operation", "op_wires", "op_gen"),
+    [
+        (
+            lambda phi, wires: qml.QubitUnitary(
+                qml.math.array(
+                    [
+                        [qml.math.cos(phi / 2), 0, 0, -1j * qml.math.sin(phi / 2)],
+                        [0, qml.math.cos(phi / 2), -1j * qml.math.sin(phi / 2), 0],
+                        [0, -1j * qml.math.sin(phi / 2), qml.math.cos(phi / 2), 0],
+                        [-1j * qml.math.sin(phi / 2), 0, 0, qml.math.cos(phi / 2)],
+                    ]
+                ),
+                wires=wires,
+            ),
+            [0, 2],
+            lambda phi, wires: qml.Hamiltonian(
+                [-0.5 * phi], [qml.PauliX(wires=wires[0]) @ qml.PauliX(wires=wires[1])]
+            ),
+        ),
+    ],
+)
+def test_taper_matrix_ops(operation, op_wires, op_gen):
+    """Test that taper_operation can be used with gate operation built using matrices"""
+
+    symbols, geometry, charge = (
+        ["He", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        1,
+    )
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
+    wire_order = hamiltonian.wires
+
+    taper_op1 = taper_operation(
+        qml.IsingXX,
+        generators,
+        paulixops,
+        paulix_sector,
+        wire_order,
+        op_wires=op_wires,
+    )
+    assert callable(taper_op1)
+
+    for params in [0.0, 1.3, np.pi / 2, 2.37, np.pi]:
+        taper_op2 = taper_operation(
+            operation(params, wires=op_wires),
+            generators,
+            paulixops,
+            paulix_sector,
+            wire_order,
+            op_wires=op_wires,
+            op_gen=functools.partial(op_gen, phi=params),
+        )
+        assert np.all(
+            [qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op1(params), taper_op2)]
+        )
+
+
+@pytest.mark.parametrize(
+    ("operation", "op_wires", "op_gen", "message_match"),
+    [
+        (
+            qml.SingleExcitation,
+            None,
+            None,
+            "Wires for the operation must be provided with 'op_wires' args if either of 'operation' or 'op_gen' is a callable",
+        ),
+        (
+            qml.OrbitalRotation,
+            [0, 1, 2, 3],
+            lambda: qml.Hamiltonian(
+                (0.25, -0.25, 0.25, -0.25),
+                [
+                    qml.PauliX(wires=[0]) @ qml.PauliY(wires=[2]),
+                    qml.PauliY(wires=[0]) @ qml.PauliX(wires=[2]),
+                    qml.PauliX(wires=[1]) @ qml.PauliY(wires=[3]),
+                    qml.PauliY(wires=[1]) @ qml.PauliX(wires=[3]),
+                ],
+            ),
+            "Generator function provided with 'op_gen' should have 'wires' as its only required keyword argument.",
+        ),
+    ],
+)
+def test_inconsistent_callable_ops(operation, op_wires, op_gen, message_match):
+    r"""Test that an error is raised if a set of inconsistent arguments is input"""
+
+    symbols, geometry, charge = (
+        ["He", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]]),
+        1,
+    )
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
+    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
+    wire_order = hamiltonian.wires
+
+    with pytest.raises(Exception, match=message_match):
+        taper_operation(
+            operation, generators, paulixops, paulix_sector, wire_order, op_wires, op_gen
+        )

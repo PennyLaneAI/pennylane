@@ -70,8 +70,8 @@ def _add_barrier(drawer, layer, mapped_wires, op):
 def _add_wirecut(drawer, layer, mapped_wires, op):
     ymin = min(mapped_wires) - 0.5
     ymax = max(mapped_wires) + 0.5
-    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax)
-    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax)
+    drawer.ax.text(layer - 0.35, y=max(mapped_wires), s="✂", fontsize=40)
+    drawer.ax.vlines(layer, ymin=ymin, ymax=ymax, linestyle="--")
 
 
 special_cases = {
@@ -86,7 +86,7 @@ special_cases = {
 }
 """Dictionary mapping special case classes to functions for drawing them."""
 
-
+# pylint: disable=too-many-branches
 def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
     """Produces a matplotlib graphic from a tape.
 
@@ -280,11 +280,23 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
                 specialfunc(drawer, layer, mapped_wires, op)
 
             else:
-                control_wires = [wire_map[w] for w in op.control_wires]
-                target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
+                op_control_wires = getattr(op, "control_wires", [])
+                control_wires = [wire_map[w] for w in op_control_wires]
+                target_wires = [wire_map[w] for w in op.wires if w not in op_control_wires]
+                control_values = op.hyperparameters.get("control_values", None)
+
+                if control_values is None:
+                    control_values = [True for _ in control_wires]
+                elif isinstance(control_values[0], str):
+                    control_values = [(i == "1") for i in control_values]
 
                 if len(control_wires) != 0:
-                    drawer.ctrl(layer, control_wires, wires_target=target_wires)
+                    drawer.ctrl(
+                        layer,
+                        control_wires,
+                        wires_target=target_wires,
+                        control_values=control_values,
+                    )
                 drawer.box_gate(
                     layer,
                     target_wires,
