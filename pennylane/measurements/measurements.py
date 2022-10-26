@@ -21,8 +21,8 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 import uuid
-from collections.abc import Iterable
 import warnings
+from collections.abc import Iterable
 from enum import Enum
 from typing import Generic, TypeVar
 
