@@ -39,31 +39,38 @@ def _convert(jac, tangent):
 def compute_jvp_single(tangent, jac):
     """Convenience function to compute the Jacobian vector product for a given
     tangent vector and a Jacobian for a single measurement tape.
+
     Args:
         tangent (list, tensor_like): tangent vector
         jac (tensor_like, tuple): Jacobian matrix
     Returns:
         tensor_like: the Jacobian vector product
+
     **Examples**
+
     1. For a single parameter and a single measurement without shape (e.g. expval, var):
+
     .. code-block:: pycon
         >>> tangent = np.array([1.0])
         >>> jac = np.array(0.2)
         >>> qml.gradients.compute_jvp_single(tangent, jac)
         np.array(0.2)
     2. For a single parameter and a single measurment with shape (e.g. probs):
+
     .. code-block:: pycon
         >>> tangent = np.array([2.0])
         >>> jac = np.array([0.3, 0.3])
         >>> qml.gradients.compute_jvp_single(tangent, jac)
         np.array([0.6, 0.6])
     3. For multiple parameters (in this case 2 parameters) and a single measurement without shape (e.g. expval, var):
+
     .. code-block:: pycon
         >>> tangent = np.array([1.0, 2.0])
         >>> jac = tuple([np.array(0.1), np.array(0.2)])
         >>> qml.gradients.compute_jvp_single(tangent, jac)
         np.array(0.5)
     4. For multiple parameters (in this case 2 parameters) and a single measurement with shape (e.g. probs):
+
     .. code-block:: pycon
         >>> tangent = np.array([1.0, 0.5])
         >>> jac = tuple([np.array([0.1, 0.3]), np.array([0.2, 0.4])])
@@ -101,13 +108,17 @@ def compute_jvp_single(tangent, jac):
 def compute_jvp_multi(tangent, jac):
     """Convenience function to compute the Jacobian vector product for a given
     vector of gradient outputs and a Jacobian for a multiple measurements tape.
+
     Args:
         tangent (tensor_like, list): tangent vector
         jac (tensor_like, tuple): Jacobian matrix
     Returns:
         tensor_like: the Jacobian vector product
+
     **Examples**
+
     1. For a single parameter and multiple measurement (one without shape and one with shape, e.g. expval and probs):
+
     .. code-block:: pycon
         >>> tangent = np.array([2.0])
         >>> jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
@@ -115,6 +126,7 @@ def compute_jvp_multi(tangent, jac):
         (np.array([0.6]), np.array([0.4, 1. ]))
     2. For multiple parameters (in this case 2 parameters) and multiple measurement (one without shape and one with
     shape, e.g. expval and probs):
+
     .. code-block:: pycon
         >>> tangent = np.array([1.0, 2.0])
         >>> jac = tuple([tuple([np.array([0.3]), np.array([0.4])]), tuple([np.array([0.2, 0.5]), np.array([0.3, 0.8])]),])
