@@ -20,7 +20,7 @@ from copy import copy
 import numpy as np
 import pennylane as qml
 
-from pennylane.pauli.grouping.graph_colouring import largest_first, recursive_largest_first
+from .graph_colouring import largest_first, recursive_largest_first
 from pennylane.pauli.utils import (
     are_identical_pauli_words,
     binary_to_pauli,
