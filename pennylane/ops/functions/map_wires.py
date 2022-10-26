@@ -43,7 +43,7 @@ def map_wires(
             replaced by its mapped version. Defaults to False.
 
     Returns:
-        (.Operator, pennylane.QNode, .QuantumTape, or Callable): input with changed wires
+        (.Operator, pennylane.QNode, .QuantumScript, or Callable): input with changed wires
 
     .. note::
 
