@@ -1327,7 +1327,7 @@ def cut_circuit_mc(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
+    fragment_tapes = [qml.map_wires(t, dict(zip(tape.wires, device_wires))) for t in fragment_tapes]
 
     configurations, settings = expand_fragment_tapes_mc(
         fragment_tapes, communication_graph, shots=shots
@@ -2056,7 +2056,7 @@ def cut_circuit(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
+    fragment_tapes = [qml.map_wires(t, dict(zip(tape.wires, device_wires))) for t in fragment_tapes]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
     configurations = []
@@ -2189,6 +2189,12 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
      0: ──RX(0.5)──╭●──╭┤ ⟨Z ⊗ Z⟩
      1: ──RY(0.6)──╰X──╰┤ ⟨Z ⊗ Z⟩
     """
+    warnings.warn(
+        "The method remap_tape_wires is deprecated. Use "
+        "qml.map_wires(tape, dict(zip(tape.wires, wires))) instead.",
+        UserWarning,
+    )
+
     if len(tape.wires) > len(wires):
         raise ValueError(
             f"Attempting to run a {len(tape.wires)}-wire circuit on a "
