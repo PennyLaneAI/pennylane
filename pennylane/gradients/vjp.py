@@ -125,7 +125,7 @@ def compute_vjp_single_new(dy, jac):
             res = qml.math.zeros((1, 0))
             return res
         # Single measurement with no dimension e.g. expval
-        if dy.shape == ():
+        if qml.math.shape(dy) == ():
             jac = qml.math.reshape(
                 qml.math.stack(jac), (1, (qml.math.shape(qml.math.stack(jac))[0]))
             )
@@ -173,7 +173,7 @@ def compute_vjp_multi_new(dy, jac):
     """
     if jac is None:
         return None
-    
+
     # Single parameter
     if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
         res = []

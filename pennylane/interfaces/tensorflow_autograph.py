@@ -327,13 +327,6 @@ def _execute_new(
             # Forward pass: execute the tapes
             res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-        # convert all arrays to tensors
-        def _to_tensors(x):
-            if not isinstance(x, tuple):
-                return tf.convert_to_tensor(x)
-
-            return tuple(tf.convert_to_tensor(x_) for x_ in x)
-
         for i, tape in enumerate(tapes):
             # convert output to TensorFlow tensors
             res[i] = tf.convert_to_tensor(res[i])
@@ -342,6 +335,10 @@ def _execute_new(
                 res[i] = tf.cast(res[i], tf.int64)
 
             output_sizes.append(tf.size(res[i]))
+
+        if jacs:
+            for i, jac in enumerate(jacs):
+                jacs[i] = tf.convert_to_tensor(jac)
 
         return res + jacs + output_sizes
 
@@ -352,7 +349,7 @@ def _execute_new(
         output_sizes = res[-len(tapes) :]
 
         if mode == "forward":
-            jacs = res[len(tapes) : 2 * len(tapes)]
+            jacs = res[len(tapes) : -len(tapes)]
 
         res = res[: len(tapes)]
 
@@ -368,11 +365,23 @@ def _execute_new(
                 # Jacobians were computed on the forward pass (mode="forward")
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
                 len_dy = len(dy)
-                print('execute dy', dy, jacs)
+
+                def _backward(*args):
+                    dy = args[:len_dy]
+                    jacs = args[len_dy:-len_dy]
+                    multi_measurements = args[-len_dy:]
+
+                    new_jacs = []
+                    for i, jac in enumerate(jacs):
+                        if tf.rank(jac) > 0:
+                            new_jacs.append(tuple(tf.unstack(jac)))
+                        else:
+                            new_jacs.append(jac)
+
+                    return _compute_vjp_new(dy, tuple(new_jacs), multi_measurements)
+
                 vjps = tf.numpy_function(
-                    func=lambda *args: _compute_vjp_new(
-                        args[:len_dy], args[len_dy:-len_dy], args[-len_dy:]
-                    ),
+                    func=_backward,
                     inp=list(dy) + list(jacs) + multi_measurements,
                     Tout=[tf.float64] * len(parameters),
                 )
@@ -450,10 +459,10 @@ def _execute_new(
                     len_all_params = len(all_params)
 
                     def _backward(*all_params):
-                        dy = all_params[len_all_params:-len_all_params]
+                        dy = all_params[len_all_params : -len(tapes)]
+                        multi_measurements = all_params[-len(tapes) :]
                         all_params = all_params[:len_all_params]
                         params_unwrapped = _nest_params(all_params)
-                        multi_measurements = all_params[-len_all_params:]
 
                         with qml.tape.Unwrap(*tapes, params=params_unwrapped):
                             jac = gradient_fn(tapes, **gradient_kwargs)
@@ -466,8 +475,6 @@ def _execute_new(
                         inp=list(all_params) + list(dy) + multi_measurements,
                         Tout=[tf.float64] * len(parameters),
                     )
-
-            print('execute vjps', vjps)
 
             vjps = iter(vjps)
             vjps = [next(vjps) if x in trainable else None for x in range(len(all_params))]

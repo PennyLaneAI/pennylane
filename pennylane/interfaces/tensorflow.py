@@ -44,6 +44,10 @@ def _compute_vjp_new(dy, jacs, multi_measurements):
     # for a list of dy's and Jacobian matrices.
     vjps = []
 
+    # if not context.executing_eagerly():
+    #     if len(dy) == 1 and len(jacs) > 1:
+    #         jacs = (jacs,)
+
     for dy_, jac_, multi in zip(dy, jacs, multi_measurements):
         if multi:
             vjp = qml.gradients.compute_vjp_multi_new(dy_, jac_)
