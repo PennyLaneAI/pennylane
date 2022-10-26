@@ -28,6 +28,7 @@ from .measurements import (
     MeasurementShapeError,
     MeasurementValue,
     MeasurementValueError,
+    ObservableReturnTypes,
 )
 from .mid_measure import MidMeasure, measure
 from .mutual_info import MutualInfo, mutual_info
