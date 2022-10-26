@@ -1317,20 +1317,17 @@ class TestExpansion:
     @pytest.mark.parametrize(
         "return_type, kwargs",
         [
-            (Sample, None),
+            (Sample, {}),
             (Sample, {"wires": ["a", 1]}),
-            (AllCounts, None),
+            (AllCounts, {}),
             (AllCounts, {"wires": ["a", 1]}),
-            (Counts, None),
+            (Counts, {}),
             (Counts, {"wires": ["a", 1]}),
         ],
     )
     def test_samples_computational_basis_true(self, return_type, kwargs):
         """Test that measurements of Paulis report to have a decomposition."""
-        if kwargs is None:
-            m = MeasurementProcess(return_type, obs=None)
-        else:
-            m = MeasurementProcess(return_type, **kwargs)
+        m = MeasurementProcess(return_type, **kwargs)
         assert m.samples_computational_basis is True
 
     @pytest.mark.parametrize(
