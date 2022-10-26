@@ -35,8 +35,8 @@ def map_wires(
     wire map.
 
     Args:
-        input (.Operator, pennylane.QNode, .QuantumTape, or Callable): an operator, quantum node,
-            tape or function that applies quantum operations
+        input (.Operator, pennylane.QNode, .QuantumScript, or Callable): an operator, quantum node,
+            quantum script, or function that applies quantum operations
         wire_map (dict): dictionary containing the old wires as keys and the new wires as values
         queue (bool): Whether or not to queue the object when recording. Defaults to False.
         replace (bool): When ``queue=True``, if ``replace=True`` the input operators will be
