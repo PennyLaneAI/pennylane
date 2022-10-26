@@ -186,10 +186,8 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
 
     num_measurements = len(tape.measurements)
     if num_measurements == 1:
-
         if not shot_vector:
             return _single_meas_grad(res, coeffs, unshifted_coeff, r0)
-
         num_shot_components = len(shots)
         g = []
 
@@ -204,8 +202,7 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
 
     g = []
     if not shot_vector:
-        g = _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
-        return tuple(g)
+        return _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
 
     num_shot_components = len(shots)
 
@@ -312,6 +309,14 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return qml.math.stack([coeffs, mults, shifts]).T
 
 
+def _swap_two_axes(grads, first_axis_size, second_axis_size):
+    if first_axis_size == 1:
+        return tuple(grads[0][i] for i in range(second_axis_size))
+    return tuple(
+        tuple(grads[j][i] for j in range(first_axis_size)) for i in range(second_axis_size)
+    )
+
+
 def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, num_shot_vec_components):
     """Reorder the axes for gradient results obtained for a tape with a single measurement from a device that defined a
     shot vector.
@@ -344,16 +349,7 @@ def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, num_shot_ve
         2. Num params
         3. Measurement shape
     """
-    new_grad = []
-    for i in range(num_shot_vec_components):
-        shot_vec_grad = []
-        for j in range(num_params):
-            shot_vec_grad.append(grads[j][i])
-
-        shot_vec_grad = tuple(shot_vec_grad) if num_params > 1 else shot_vec_grad[0]
-        new_grad.append(shot_vec_grad)
-
-    return new_grad
+    return _swap_two_axes(grads, num_params, num_shot_vec_components)
 
 
 def _reorder_grad_axes_multi_measure(
@@ -408,14 +404,7 @@ def _reorder_grad_axes_multi_measure(
     """
     multi_param = num_params > 1
     if not shot_vector_multi_measure:
-        new_grad = []
-        for i in range(num_measurements):
-            measurement_grad = []
-            for j in range(num_params):
-                measurement_grad.append(grads[j][i])
-
-            measurement_grad = tuple(measurement_grad) if multi_param else measurement_grad[0]
-            new_grad.append(measurement_grad)
+        new_grad = _swap_two_axes(grads, num_params, num_measurements)
     else:
         new_grad = []
         for i in range(num_shot_vec_components):
@@ -559,10 +548,10 @@ def _expval_param_shift_tuple(
         num_params = len(tape.trainable_params)
         num_shot_vec_components = len(shots) if shot_vector else None
         if single_measure and shot_vector:
-            grads = _reorder_grad_axes_single_measure_shot_vector(
+            return _reorder_grad_axes_single_measure_shot_vector(
                 grads, num_params, num_shot_vec_components
             )
-        elif not single_measure:
+        if not single_measure:
             shot_vector_multi_measure = not single_measure and shot_vector
             num_measurements = len(tape.measurements)
             grads = _reorder_grad_axes_multi_measure(

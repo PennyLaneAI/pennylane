@@ -181,12 +181,15 @@ def _all_zero_grad_new(tape, shots=None):
     for m in tape.measurements:
         # TODO: Update shape for CV variables
         if m.return_type is qml.measurements.Probability:
-            dim = 2 ** len(m.wires)
+            shape = 2 ** len(m.wires)
         else:
-            dim = 1
+            shape = ()
 
-        sub_list_zeros = [qml.math.zeros(dim) for _ in range(len(tape.trainable_params))]
-        sub_list_zeros = tuple(sub_list_zeros)
+        if len(tape.trainable_params) == 1:
+            sub_list_zeros = qml.math.zeros(shape)
+        else:
+            sub_list_zeros = [qml.math.zeros(shape) for _ in range(len(tape.trainable_params))]
+            sub_list_zeros = tuple(sub_list_zeros)
 
         list_zeros.append(sub_list_zeros)
 
@@ -359,7 +362,7 @@ def _finite_diff_new(
             if c0 is not None:
                 if len(tape.measurements) == 1:
                     c = qml.math.convert_like(c0, r0)
-                    pre_grads = pre_grads + c * r0
+                    pre_grads = [pre_grads[0] + c * r0]
                 else:
                     for i in range(len(tape.measurements)):
                         r_i = r0[i]
@@ -378,7 +381,6 @@ def _finite_diff_new(
                 pre_grads = qml.math.convert_like(pre_grads[0] * coeff_div, coeff_div)
 
             grads.append(pre_grads)
-
         # Single measurement
         if len(tape.measurements) == 1:
             if len(tape.trainable_params) == 1:
