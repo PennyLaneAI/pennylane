@@ -48,8 +48,9 @@ class AdaptiveOptimizer:
     the gates to the circuit and computing the circuit gradients with respect to the gate
     parameters. The algorithm then retains the gate which has the largest gradient and optimizes its
     parameter. The processes of growing the circuit is repeated until the computed gradients
-    converge within a given threshold. The adaptive optimizer can be used to implement algorithms
-    such as `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_.
+    converge to zero within a given threshold. The optimizer returns the fully trained and
+    adaptively-built circuit. The adaptive optimizer can be used to implement
+    algorithms such as `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_.
 
     Args:
         paramopt_steps (float): number of steps for optimizing the parameter of a selected gate
