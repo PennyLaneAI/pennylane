@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
 import pytest
+from functools import partial
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -880,9 +881,8 @@ class TestParameterShiftRule:
                 qml.var(qml.PauliX(1))
                 qml.expval(qml.PauliZ(2))
 
-            tapes, fn = param_shift(
-                tape, fallback_fn=qml.gradients.finite_diff, shots=fallback_shot_vec
-            )
+            finite_diff = partial(qml.gradients.finite_diff, h=10e-2)
+            tapes, fn = param_shift(tape, fallback_fn=finite_diff, shots=fallback_shot_vec)
             assert len(tapes) == 5
 
             # check that the fallback method was called for the specified argnums
@@ -938,7 +938,8 @@ class TestParameterShiftRule:
                 RX(params[1], wires=[0])
                 qml.expval(qml.PauliZ(0))
 
-            tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff, shots=shot_vec)
+            finite_diff = partial(qml.gradients.finite_diff, h=10e-2)
+            tapes, fn = param_shift(tape, fallback_fn=finite_diff, shots=shot_vec)
             assert len(tapes) == 4
 
             # check that the fallback method was called for the specified argnums
@@ -987,9 +988,8 @@ class TestParameterShiftRule:
                 qml.expval(qml.PauliZ(0))
                 qml.probs(wires=[0, 1])
 
-            tapes, fn = param_shift(
-                tape, fallback_fn=qml.gradients.finite_diff, shots=fallback_shot_vec
-            )
+            finite_diff = partial(qml.gradients.finite_diff, h=10e-2)
+            tapes, fn = param_shift(tape, fallback_fn=finite_diff, shots=fallback_shot_vec)
             assert len(tapes) == 4
 
             # check that the fallback method was called for the specified argnums
@@ -1081,23 +1081,27 @@ class TestParameterShiftRule:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tapes, fn = param_shift(
-            tape, fallback_fn=qml.gradients.finite_diff, shots=fallback_shot_vec
-        )
+        finite_diff = partial(qml.gradients.finite_diff, h=10e-2)
+        tapes, fn = param_shift(tape, fallback_fn=finite_diff, shots=fallback_shot_vec)
         assert len(tapes) == 1 + 2
 
         # check that the fallback method was called for all argnums
         spy_fd.assert_called()
         spy_ps.assert_not_called()
 
-        res = fn(dev.batch_execute(tapes))
+        all_res = fn(dev.batch_execute(tapes))
+        assert len(all_res) == len(fallback_shot_vec)
+        assert isinstance(all_res, tuple)
 
-        assert isinstance(res, tuple)
-        assert res[0].shape == ()
-        assert res[1].shape == ()
+        expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
+        for res in all_res:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+            assert res[0].shape == ()
+            assert res[1].shape == ()
 
-        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
-        assert np.allclose(res, expected, atol=shot_vec_tol, rtol=0)
+            assert np.allclose(res[0], expected[0], atol=fallback_shot_vec, rtol=0)
+            assert np.allclose(res[1], expected[1], atol=fallback_shot_vec, rtol=0)
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape

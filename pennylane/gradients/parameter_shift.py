@@ -1447,9 +1447,10 @@ def _param_shift_new(
 
     if unsupported_params:
         if not argnum:
-            return fallback_fn(tape)
+            # If shots were provided, assume that the fallback function also takes that arg
+            return fallback_fn(tape) if shots is None else fallback_fn(tape, shots=shots)
 
-        g_tapes, fallback_proc_fn = fallback_fn(tape, argnum=unsupported_params, h=10e-2)
+        g_tapes, fallback_proc_fn = fallback_fn(tape, argnum=unsupported_params)
         gradient_tapes.extend(g_tapes)
         fallback_len = len(g_tapes)
 
