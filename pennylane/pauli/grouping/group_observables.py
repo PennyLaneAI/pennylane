@@ -20,13 +20,14 @@ from copy import copy
 import numpy as np
 import pennylane as qml
 
-from .graph_colouring import largest_first, recursive_largest_first
 from pennylane.pauli.utils import (
     are_identical_pauli_words,
     binary_to_pauli,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
+from .graph_colouring import largest_first, recursive_largest_first
+
 from pennylane.wires import Wires
 
 GROUPING_TYPES = frozenset(["qwc", "commuting", "anticommuting"])
