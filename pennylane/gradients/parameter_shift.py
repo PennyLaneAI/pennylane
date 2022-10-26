@@ -1449,7 +1449,7 @@ def _param_shift_new(
         if not argnum:
             return fallback_fn(tape)
 
-        g_tapes, fallback_proc_fn = fallback_fn(tape, argnum=unsupported_params)
+        g_tapes, fallback_proc_fn = fallback_fn(tape, argnum=unsupported_params, h=10e-2)
         gradient_tapes.extend(g_tapes)
         fallback_len = len(g_tapes)
 
@@ -1508,19 +1508,16 @@ def _param_shift_new(
                 return _single_grad(unsupported_grads, supported_grads)
 
             num_shot_vec_components = len(shots) if shot_vector else None
-            num_measurements = len(tape.measurements)
-            multi_measure = num_measurements > 1
+            num_params = len(tape.trainable_params)
 
-            unsupported_grads = fallback_proc_fn(unsupported_grads)
             supported_grads = fn(supported_grads)
-            print(unsupported_grads, supported_grads)
 
             final_grad = []
-            # for unsup_grad, sup_grad in zip(unsupported_grads, supported_grads):
             for idx in range(num_shot_vec_components):
-                unsup = [u[idx] for u in unsupported_grads]
-                sup = [s[idx] for s in supported_grads]
-                final_grad.append(_single_grad(unsup, sup))
+                u_grads = [unsupported_grads[par_idx][idx] for par_idx in range(num_params)]
+                u_grads = fallback_proc_fn(u_grads)
+                sup = supported_grads[idx]
+                final_grad.append(_single_grad(u_grads, sup))
             return tuple(final_grad)
 
         return gradient_tapes, processing_fn
