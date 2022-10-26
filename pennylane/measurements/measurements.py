@@ -18,11 +18,9 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 # pylint: disable=too-many-instance-attributes
+import contextlib
 import copy
 import functools
-import uuid
-import warnings
-from collections.abc import Iterable
 from enum import Enum
 from typing import Generic, TypeVar
 
@@ -31,6 +29,15 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+
+from .expval import Expectation
+from .mid_measure import MidMeasure
+from .mutual_info import MutualInfo
+from .probs import Probability
+from .sample import Sample
+from .state import State
+from .var import Variance
+from .vn_entropy import VnEntropy
 
 # =============================================================================
 # ObservableReturnTypes types
@@ -56,52 +63,6 @@ class ObservableReturnTypes(Enum):
     def __repr__(self):
         """String representation of the return types."""
         return str(self.value)
-
-
-Sample = ObservableReturnTypes.Sample
-"""Enum: An enumeration which represents sampling an observable."""
-
-Counts = ObservableReturnTypes.Counts
-"""Enum: An enumeration which represents returning the number of times
- each of the observed outcomes occurred in sampling."""
-
-AllCounts = ObservableReturnTypes.AllCounts
-"""Enum: An enumeration which represents returning the number of times
- each of the possible outcomes occurred in sampling, including 0 counts
- for unobserved outcomes."""
-
-Variance = ObservableReturnTypes.Variance
-"""Enum: An enumeration which represents returning the variance of
-an observable on specified wires."""
-
-Expectation = ObservableReturnTypes.Expectation
-"""Enum: An enumeration which represents returning the expectation
-value of an observable on specified wires."""
-
-Probability = ObservableReturnTypes.Probability
-"""Enum: An enumeration which represents returning probabilities
-of all computational basis states."""
-
-State = ObservableReturnTypes.State
-"""Enum: An enumeration which represents returning the state in the computational basis."""
-
-MidMeasure = ObservableReturnTypes.MidMeasure
-"""Enum: An enumeration which represents returning sampling the computational
-basis in the middle of the circuit."""
-
-VnEntropy = ObservableReturnTypes.VnEntropy
-"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
-
-MutualInfo = ObservableReturnTypes.MutualInfo
-"""Enum: An enumeration which represents returning the mutual information before measurements."""
-
-Shadow = ObservableReturnTypes.Shadow
-"""Enum: An enumeration which represents returning the bitstrings and recipes from
-the classical shadow protocol"""
-
-ShadowExpval = ObservableReturnTypes.ShadowExpval
-"""Enum: An enumeration which represents returning the estimated expectation value
-from a classical shadow measurement"""
 
 
 class MeasurementShapeError(ValueError):
@@ -189,13 +150,11 @@ class MeasurementProcess:
             if self.obs is None:
 
                 # Computational basis samples
-                numeric_type = int
-            else:
-                int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
-                tensor_terms = [self.obs] if not hasattr(self.obs, "obs") else self.obs.obs
-                every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
-                numeric_type = int if every_term_standard else float
-            return numeric_type
+                return int
+            int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
+            tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
+            every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
+            return int if every_term_standard else float
 
         raise qml.QuantumFunctionError(
             "Cannot deduce the numeric type of the measurement process with unrecognized "
@@ -243,9 +202,7 @@ class MeasurementProcess:
         if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
             shape = (1,)
 
-        density_matrix_return = self.return_type == State and self.wires
-
-        if density_matrix_return:
+        if self.return_type == State and self.wires:
             dim = 2 ** len(self.wires)
             shape = (1, dim, dim)
 
@@ -278,13 +235,8 @@ class MeasurementProcess:
 
         if self.return_type == Sample:
             len_wires = len(device.wires)
-
-            if self.obs is not None:
-                # qml.sample(some_observable) case
-                return (1, device.shots)
-
-            # qml.sample() case
-            return (1, device.shots, len_wires)
+            # qml.sample(some_observable) case  // qml.sample() case
+            return (1, device.shots) if self.obs is not None else (1, device.shots, len_wires)
 
         raise qml.QuantumFunctionError(
             "Cannot deduce the shape of the measurement process with unrecognized return_type "
@@ -324,9 +276,7 @@ class MeasurementProcess:
         if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
             shape = ()
 
-        density_matrix_return = self.return_type == State and self.wires
-
-        if density_matrix_return:
+        if self.return_type == State and self.wires:
             dim = 2 ** len(self.wires)
             shape = (dim, dim)
 
@@ -383,7 +333,7 @@ class MeasurementProcess:
 
         shot_vector = device._shot_vector
         # pylint: disable=consider-using-generator
-        num_shot_elements = sum([s.copies for s in shot_vector])
+        num_shot_elements = sum(s.copies for s in shot_vector)
         shape = ()
 
         if main_shape is not None:
@@ -432,7 +382,7 @@ class MeasurementProcess:
         """
         shot_vector = device._shot_vector
         # pylint: disable=consider-using-generator
-        num_shot_elements = sum([s.copies for s in shot_vector])
+        num_shot_elements = sum(s.copies for s in shot_vector)
         shape = ()
 
         if main_shape is not None:
@@ -530,10 +480,7 @@ class MeasurementProcess:
         if self.obs is not None:
             return self.obs.wires
 
-        if not isinstance(self._wires, list):
-            return self._wires
-
-        return Wires.all_wires(self._wires)
+        return Wires.all_wires(self._wires) if isinstance(self._wires, list) else self._wires
 
     @property
     def raw_wires(self):
@@ -566,11 +513,8 @@ class MeasurementProcess:
             array: eigvals representation
         """
         if self.obs is not None:
-            try:
+            with contextlib.suppress(qml.operation.EigvalsUndefinedError):
                 return self.obs.eigvals()
-            except qml.operation.EigvalsUndefinedError:
-                pass
-
         return self._eigvals
 
     @property
@@ -578,12 +522,10 @@ class MeasurementProcess:
         r"""Bool: Whether or not the MeasurementProcess returns a defined decomposition
         when calling ``expand``.
         """
-        if self.obs is None:
-            return False
         # If self.obs is not None, `expand` queues the diagonalizing gates of self.obs,
         # which we have to check to be defined. The subsequent creation of the new
         # `MeasurementProcess` within `expand` should never fail with the given parameters.
-        return self.obs.has_diagonalizing_gates
+        return False if self.obs is None else self.obs.has_diagonalizing_gates
 
     def expand(self):
         """Expand the measurement of an observable to a unitary
@@ -680,845 +622,6 @@ class MeasurementProcess:
         return MeasurementProcess(return_type=self.return_type, obs=self.obs.simplify())
 
 
-class ShadowMeasurementProcess(MeasurementProcess):
-    """Represents a classical shadow measurement process occurring at the end of a
-    quantum variational circuit.
-
-    This has the same arguments as the base class MeasurementProcess, plus other additional
-    arguments specific to the classical shadow protocol.
-
-    Args:
-        args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
-        seed (Union[int, None]): The seed used to generate the random measurements
-        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
-            to compute the expectation value over. Only used when ``return_type`` is ``ShadowExpval``.
-        k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
-            ``k=1`` corresponds to simply taking the mean over all measurements. Only used
-            when ``return_type`` is ``ShadowExpval``.
-        kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
-    """
-
-    def __init__(self, *args, seed=None, H=None, k=1, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.seed = seed
-        self.H = H
-        self.k = k
-
-    @property
-    def numeric_type(self):
-        """The Python numeric type of the measurement result.
-
-        Returns:
-            type: This is ``int`` when the return type is ``Shadow``,
-            and ``float`` when the return type is ``ShadowExpval``.
-        """
-        if self.return_type is Shadow:
-            return int
-
-        return float
-
-    def shape(self, device=None):
-        """The expected output shape of the ShadowMeasurementProcess.
-
-        Args:
-            device (.Device): a PennyLane device to use for determining the shape
-
-        Returns:
-            tuple: the output shape; this is ``(2, T, n)`` when the return type
-            is ``Shadow``, where ``T`` is the number of device shots and ``n`` is
-            the number of measured wires, and is a scalar when the return type
-            is ``ShadowExpval``
-
-        Raises:
-            MeasurementShapeError: when a device is not provided and the return
-            type is ``Shadow``, since the output shape is dependent on the device.
-        """
-        # the return value of expval is always a scalar
-        if self.return_type is ShadowExpval:
-            return (1,)
-
-        # otherwise, the return type requires a device
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of a classical "
-                "shadow measurement process."
-            )
-
-        # the first entry of the tensor represents the measured bits,
-        # and the second indicate the indices of the unitaries used
-        return (1, 2, device.shots, len(self.wires))
-
-    @property
-    def wires(self):
-        r"""The wires the measurement process acts on.
-
-        This is the union of all the Wires objects of the measurement.
-        """
-        if self.return_type is Shadow:
-            return self._wires
-
-        if isinstance(self.H, Iterable):
-            return qml.wires.Wires.all_wires([h.wires for h in self.H])
-
-        return self.H.wires
-
-    def __copy__(self):
-        obj = super().__copy__()
-        obj.seed = self.seed
-        obj.H = self.H
-        obj.k = self.k
-        return obj
-
-
-def expval(op):
-    r"""Expectation value of the supplied observable.
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(0))
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    -0.4794255386042029
-
-    Args:
-        op (Observable): a quantum observable object
-
-    Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
-    """
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
-
-    return MeasurementProcess(Expectation, obs=op)
-
-
-def var(op):
-    r"""Variance of the supplied observable.
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliY(0))
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    0.7701511529340698
-
-    Args:
-        op (Observable): a quantum observable object
-
-    Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
-    """
-    if not op.is_hermitian:
-        warnings.warn(f"{op.name} might not be hermitian.")
-    return MeasurementProcess(Variance, obs=op)
-
-
-def sample(op=None, wires=None):
-    r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device,
-    returning raw samples. If no observable is provided then basis state samples are returned
-    directly from the device.
-
-    Note that the output shape of this measurement process depends on the shots
-    specified on the device.
-
-    Args:
-        op (Observable or None): a quantum observable object
-        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
-            op is ``None``
-
-    Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
-        ValueError: Cannot set wires if an observable is provided
-
-    The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
-    The probability of drawing eigenvalue :math:`\lambda_i` is given by
-    :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
-    is the corresponding basis state from the observable's eigenbasis.
-
-    **Example**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2, shots=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliY(0))
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    array([ 1.,  1.,  1., -1.])
-
-    If no observable is provided, then the raw basis state samples obtained
-    from device are returned (e.g., for a qubit device, samples from the
-    computational device are returned). In this case, ``wires`` can be specified
-    so that sample results only include measurement results of the qubits of interest.
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2, shots=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample()
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    array([[0, 1],
-           [0, 0],
-           [1, 1],
-           [0, 0]])
-
-    .. note::
-
-        QNodes that return samples cannot, in general, be differentiated, since the derivative
-        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
-        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
-        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
-        observable ``obs``.
-    """
-    if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        warnings.warn(f"{op.name} might not be hermitian.")
-
-    if wires is not None:
-        if op is not None:
-            raise ValueError(
-                "Cannot specify the wires to sample if an observable is "
-                "provided. The wires to sample will be determined directly from the observable."
-            )
-        wires = qml.wires.Wires(wires)
-
-    return MeasurementProcess(Sample, obs=op, wires=wires)
-
-
-def counts(op=None, wires=None, all_outcomes=False):
-    r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device,
-    returning the number of counts for each sample. If no observable is provided then basis state
-    samples are returned directly from the device.
-
-    Note that the output shape of this measurement process depends on the shots
-    specified on the device.
-
-    Args:
-        op (Observable or None): a quantum observable object
-        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
-            op is None
-        all_outcomes(bool): determines whether the returned dict will contain only the observed
-            outcomes (default), or whether it will display all possible outcomes for the system
-
-    Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
-        ValueError: Cannot set wires if an observable is provided
-
-    The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
-    The probability of drawing eigenvalue :math:`\lambda_i` is given by
-    :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
-    is the corresponding basis state from the observable's eigenbasis.
-
-    **Example**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2, shots=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.counts(qml.PauliY(0))
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    {-1: 2, 1: 2}
-
-    If no observable is provided, then the raw basis state samples obtained
-    from device are returned (e.g., for a qubit device, samples from the
-    computational device are returned). In this case, ``wires`` can be specified
-    so that sample results only include measurement results of the qubits of interest.
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2, shots=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.counts()
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    {'00': 3, '01': 1}
-
-    By default, outcomes that were not observed will not be included in the dictionary.
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2, shots=4)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.PauliX(wires=0)
-            return qml.counts()
-
-    Executing this QNode shows only the observed outcomes:
-
-    >>> circuit()
-    {'01': 4}
-
-    Passing all_outcomes=True will create a dictionary that displays all possible outcomes:
-
-    .. code-block:: python3
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.PauliX(wires=0)
-            return qml.counts(all_outcomes=True)
-
-    Executing this QNode shows counts for all states:
-
-    >>> circuit()
-    {'00': 0, '01': 0, '10': 4, '11': 0}
-
-    .. note::
-
-        QNodes that return samples cannot, in general, be differentiated, since the derivative
-        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
-        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in
-        which case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
-        observable ``obs``.
-    """
-    if op is not None and not op.is_hermitian:  # None type is also allowed for op
-        warnings.warn(f"{op.name} might not be hermitian.")
-
-    if wires is not None:
-        if op is not None:
-            raise ValueError(
-                "Cannot specify the wires to sample if an observable is "
-                "provided. The wires to sample will be determined directly from the observable."
-            )
-        wires = qml.wires.Wires(wires)
-
-    if all_outcomes:
-        return MeasurementProcess(AllCounts, obs=op, wires=wires)
-
-    return MeasurementProcess(Counts, obs=op, wires=wires)
-
-
-def probs(wires=None, op=None):
-    r"""Probability of each computational basis state.
-
-    This measurement function accepts either a wire specification or
-    an observable. Passing wires to the function
-    instructs the QNode to return a flat array containing the
-    probabilities :math:`|\langle i | \psi \rangle |^2` of measuring
-    the computational basis state :math:`| i \rangle` given the current
-    state :math:`| \psi \rangle`.
-
-    Marginal probabilities may also be requested by restricting
-    the wires to a subset of the full system; the size of the
-    returned array will be ``[2**len(wires)]``.
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=1)
-            return qml.probs(wires=[0, 1])
-
-    Executing this QNode:
-
-    >>> circuit()
-    array([0.5, 0.5, 0. , 0. ])
-
-    The returned array is in lexicographic order, so corresponds
-    to a :math:`50\%` chance of measuring either :math:`|00\rangle`
-    or :math:`|01\rangle`.
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        H = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.PauliZ(wires=0)
-            qml.PauliX(wires=1)
-            return qml.probs(op=qml.Hermitian(H, wires=0))
-
-    >>> circuit()
-
-    array([0.14644661 0.85355339])
-
-    The returned array is in lexicographic order, so corresponds
-    to a :math:`14.6\%` chance of measuring the rotated :math:`|0\rangle` state
-    and :math:`85.4\%` of measuring the rotated :math:`|1\rangle` state.
-
-    Note that the output shape of this measurement process depends on whether
-    the device simulates qubit or continuous variable quantum systems.
-
-    Args:
-        wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable): Observable (with a diagonalzing_gates attribute) that rotates
-         the computational basis
-    """
-    # pylint: disable=protected-access
-
-    if wires is None and op is None:
-        raise qml.QuantumFunctionError(
-            "qml.probs requires either the wires or the observable to be passed."
-        )
-
-    if isinstance(op, qml.Hamiltonian):
-        raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
-
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
-        raise qml.QuantumFunctionError(
-            "Symbolic Operations are not supported for rotating probabilities yet."
-        )
-
-    if op is not None and not qml.operation.defines_diagonalizing_gates(op):
-        raise qml.QuantumFunctionError(
-            f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
-        )
-
-    if wires is not None:
-        if op is not None:
-            raise qml.QuantumFunctionError(
-                "Cannot specify the wires to probs if an observable is "
-                "provided. The wires for probs will be determined directly from the observable."
-            )
-        return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
-    return MeasurementProcess(Probability, obs=op)
-
-
-def state():
-    r"""Quantum state in the computational basis.
-
-    This function accepts no observables and instead instructs the QNode to return its state. A
-    ``wires`` argument should *not* be provided since ``state()`` always returns a pure state
-    describing all wires in the device.
-
-    Note that the output shape of this measurement process depends on the
-    number of wires defined for the device.
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=1)
-            return qml.state()
-
-    Executing this QNode:
-
-    >>> circuit()
-    array([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j])
-
-    The returned array is in lexicographic order. Hence, we have a :math:`1/\sqrt{2}` amplitude
-    in both :math:`|00\rangle` and :math:`|01\rangle`.
-
-    .. note::
-
-        Differentiating :func:`~.state` is currently only supported when using the
-        classical backpropagation differentiation method (``diff_method="backprop"``) with a
-        compatible device.
-
-    .. details::
-        :title: Usage Details
-
-        A QNode with the ``qml.state`` output can be used in a cost function with
-        is then differentiated:
-
-        >>> dev = qml.device('default.qubit', wires=2)
-        >>> qml.qnode(dev, diff_method="backprop")
-        ... def test(x):
-        ...     qml.RY(x, wires=[0])
-        ...     return qml.state()
-        >>> def cost(x):
-        ...     return np.abs(test(x)[0])
-        >>> cost(x)
-        tensor(0.98877108, requires_grad=True)
-        >>> qml.grad(cost)(x)
-        -0.07471906623679961
-    """
-    # pylint: disable=protected-access
-    return MeasurementProcess(State)
-
-
-def density_matrix(wires):
-    r"""Quantum density matrix in the computational basis.
-
-    This function accepts no observables and instead instructs the QNode to return its density
-    matrix or reduced density matrix. The ``wires`` argument gives the possibility
-    to trace out a part of the system. It can result in obtaining a mixed state, which can be
-    only represented by the reduced density matrix.
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.PauliY(wires=0)
-            qml.Hadamard(wires=1)
-            return qml.density_matrix([0])
-
-    Executing this QNode:
-
-    >>> circuit()
-    array([[0.+0.j 0.+0.j]
-        [0.+0.j 1.+0.j]])
-
-    The returned matrix is the reduced density matrix, where system 1 is traced out.
-
-    Args:
-        wires (Sequence[int] or int): the wires of the subsystem
-
-    .. note::
-
-        Calculating the derivative of :func:`~.density_matrix` is currently only supported when
-        using the classical backpropagation differentiation method (``diff_method="backprop"``)
-        with a compatible device.
-    """
-    # pylint: disable=protected-access
-    wires = qml.wires.Wires(wires)
-    return MeasurementProcess(State, wires=wires)
-
-
-def vn_entropy(wires, log_base=None):
-    r"""Von Neumann entropy of the system prior to measurement.
-
-    .. math::
-        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
-
-    Args:
-        wires (Sequence[int] or int): The wires of the subsystem
-        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit_entropy(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.vn_entropy(wires=[0])
-
-    Executing this QNode:
-
-    >>> circuit_entropy(np.pi/2)
-    0.6931472
-
-    It is also possible to get the gradient of the previous QNode:
-
-    >>> param = np.array(np.pi/4, requires_grad=True)
-    >>> qml.grad(circuit_entropy)(param)
-    0.6232252401402305
-
-    .. note::
-
-        Calculating the derivative of :func:`~.vn_entropy` is currently supported when
-        using the classical backpropagation differentiation method (``diff_method="backprop"``)
-        with a compatible device and finite differences (``diff_method="finite-diff"``).
-
-    .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
-    """
-    wires = qml.wires.Wires(wires)
-    return MeasurementProcess(VnEntropy, wires=wires, log_base=log_base)
-
-
-def mutual_info(wires0, wires1, log_base=None):
-    r"""Mutual information between the subsystems prior to measurement:
-
-    .. math::
-
-        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
-
-    where :math:`S` is the von Neumann entropy.
-
-    The mutual information is a measure of correlation between two subsystems.
-    More specifically, it quantifies the amount of information obtained about
-    one system by measuring the other system.
-
-    Args:
-        wires0 (Sequence[int] or int): the wires of the first subsystem
-        wires1 (Sequence[int] or int): the wires of the second subsystem
-        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit_mutual(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.mutual_info(wires0=[0], wires1=[1])
-
-    Executing this QNode:
-
-    >>> circuit_mutual(np.pi/2)
-    1.3862943611198906
-
-    It is also possible to get the gradient of the previous QNode:
-
-    >>> param = np.array(np.pi/4, requires_grad=True)
-    >>> qml.grad(circuit_mutual)(param)
-    1.2464504802804612
-
-    .. note::
-
-        Calculating the derivative of :func:`~.mutual_info` is currently supported when
-        using the classical backpropagation differentiation method (``diff_method="backprop"``)
-        with a compatible device and finite differences (``diff_method="finite-diff"``).
-
-    .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.math.mutual_info`
-    """
-    # the subsystems cannot overlap
-    if [wire for wire in wires0 if wire in wires1]:
-        raise qml.QuantumFunctionError(
-            "Subsystems for computing mutual information must not overlap."
-        )
-
-    wires0 = qml.wires.Wires(wires0)
-    wires1 = qml.wires.Wires(wires1)
-    return MeasurementProcess(MutualInfo, wires=[wires0, wires1], log_base=log_base)
-
-
-def classical_shadow(wires, seed_recipes=True):
-    """
-    The classical shadow measurement protocol.
-
-    The protocol is described in detail in the paper `Predicting Many Properties of a Quantum System from Very Few Measurements <https://arxiv.org/abs/2002.08953>`_.
-    This measurement process returns the randomized Pauli measurements (the ``recipes``)
-    that are performed for each qubit and snapshot as an integer:
-
-    - 0 for Pauli X,
-    - 1 for Pauli Y, and
-    - 2 for Pauli Z.
-
-    It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
-    is sampled, and 1 if the -1 eigenvalue is sampled.
-
-    The device shots are used to specify the number of snapshots. If ``T`` is the number
-    of shots and ``n`` is the number of qubits, then both the measured bits and the
-    Pauli measurements have shape ``(T, n)``.
-
-    Args:
-        wires (Sequence[int]): the wires to perform Pauli measurements on
-        seed_recipes (bool): If True, a seed will be generated that
-            is used for the randomly sampled Pauli measurements. This is to
-            ensure that the same recipes are used when a tape containing this
-            measurement is copied. Different seeds are still generated for
-            different constructed tapes.
-
-    **Example**
-
-    Consider the following QNode that prepares a Bell state and performs a classical
-    shadow measurement:
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2, shots=5)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.classical_shadow(wires=[0, 1])
-
-    Executing this QNode produces the sampled bits and the Pauli measurements used:
-
-    >>> bits, recipes = circuit()
-    >>> bits
-    tensor([[0, 0],
-            [1, 0],
-            [1, 0],
-            [0, 0],
-            [0, 1]], dtype=uint8, requires_grad=True)
-    >>> recipes
-    tensor([[2, 2],
-            [0, 2],
-            [1, 0],
-            [0, 2],
-            [0, 2]], dtype=uint8, requires_grad=True)
-
-    .. details::
-        :title: Usage Details
-
-        Consider again the QNode in the above example. Since the Pauli observables are
-        randomly sampled, executing this QNode again would produce different bits and Pauli recipes:
-
-        >>> bits, recipes = circuit()
-        >>> bits
-        tensor([[0, 1],
-                [0, 1],
-                [0, 0],
-                [0, 1],
-                [1, 1]], dtype=uint8, requires_grad=True)
-        >>> recipes
-        tensor([[1, 0],
-                [2, 1],
-                [2, 2],
-                [1, 0],
-                [0, 0]], dtype=uint8, requires_grad=True)
-
-        To use the same Pauli recipes for different executions, the :class:`~.tape.QuantumTape`
-        interface should be used instead:
-
-        .. code-block:: python3
-
-            dev = qml.device("default.qubit", wires=2, shots=5)
-
-            with qml.tape.QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.classical_shadow(wires=[0, 1])
-
-        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
-        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
-        >>> np.all(recipes1 == recipes2)
-        True
-        >>> np.all(bits1 == bits2)
-        False
-
-        If using different Pauli recipes is desired for the :class:`~.tape.QuantumTape` interface,
-        the ``seed_recipes`` flag should be explicitly set to ``False``:
-
-        .. code-block:: python3
-
-            dev = qml.device("default.qubit", wires=2, shots=5)
-
-            with qml.tape.QuantumTape() as tape:
-                qml.Hadamard(wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.classical_shadow(wires=[0, 1], seed_recipes=False)
-
-        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
-        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
-        >>> np.all(recipes1 == recipes2)
-        False
-        >>> np.all(bits1 == bits2)
-        False
-    """
-    wires = qml.wires.Wires(wires)
-
-    seed = np.random.randint(2**30) if seed_recipes else None
-    return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
-
-
-def shadow_expval(H, k=1, seed_recipes=True):
-    r"""Compute expectation values using classical shadows in a differentiable manner.
-
-    The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
-    This corresponds to the case ``k=1``. In the original work, `2002.08953 <https://arxiv.org/abs/2002.08953>`_, it has been proposed to split the ``T`` measurements into ``k`` equal
-    parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
-
-    Args:
-        H (Union[Iterable, :class:`~.pennylane.Hamiltonian`, :class:`~.pennylane.operation.Tensor`]): Observable or
-            iterable of observables to compute the expectation value over.
-        k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
-        seed_recipes (bool): If True, a seed will be generated that
-            is used for the randomly sampled Pauli measurements. This is to
-            ensure that the same recipes are used when a tape containing this
-            measurement is copied. Different seeds are still generated for
-            different constructed tapes.
-
-    Returns:
-        float: expectation value estimate.
-
-    .. note::
-
-        This measurement uses the measurement :func:`~.pennylane.classical_shadow` and the class :class:`~.pennylane.ClassicalShadow` for post-processing
-        internally to compute expectation values. In order to compute correct gradients using PennyLane's automatic differentiation,
-        you need to use this measurement.
-
-    **Example**
-
-    .. code-block:: python3
-
-        H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
-
-        dev = qml.device("default.qubit", wires=range(2), shots=10000)
-        @qml.qnode(dev)
-        def qnode(x, obs):
-            qml.Hadamard(0)
-            qml.CNOT((0,1))
-            qml.RX(x, wires=0)
-            return qml.shadow_expval(obs)
-
-        x = np.array(0.5, requires_grad=True)
-
-    We can compute the expectation value of H as well as its gradient in the usual way.
-
-    >>> qnode(x, H)
-    tensor(1.827, requires_grad=True)
-    >>> qml.grad(qnode)(x, H)
-    -0.44999999999999984
-
-    In `shadow_expval`, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
-    to include all observables that you want to estimate from a single measurement in the same execution.
-
-    >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-    >>> qnode(x, Hs)
-    [ 1.88586e+00,  4.50000e-03,  1.32000e-03, -1.92000e-03]
-    >>> qml.jacobian(qnode)(x, Hs)
-    [-0.48312, -0.00198, -0.00375,  0.00168]
-    """
-    seed = np.random.randint(2**30) if seed_recipes else None
-    return ShadowMeasurementProcess(ShadowExpval, H=H, seed=seed, k=k)
-
-
 T = TypeVar("T")
 
 
@@ -1597,52 +700,3 @@ class MeasurementValue(Generic[T]):
     def measurements(self):
         """List of all measurements this MeasurementValue depends on."""
         return [self._depends_on]
-
-
-def measure(wires):
-    """Perform a mid-circuit measurement in the computational basis on the
-    supplied qubit.
-
-    Measurement outcomes can be obtained and used to conditionally apply
-    operations.
-
-    If a device doesn't support mid-circuit measurements natively, then the
-    QNode will apply the :func:`defer_measurements` transform.
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def func(x, y):
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            m_0 = qml.measure(1)
-
-            qml.cond(m_0, qml.RY)(y, wires=0)
-            return qml.probs(wires=[0])
-
-    Executing this QNode:
-
-    >>> pars = np.array([0.643, 0.246], requires_grad=True)
-    >>> func(*pars)
-    tensor([0.90165331, 0.09834669], requires_grad=True)
-
-    Args:
-        wires (Wires): The wire of the qubit the measurement process applies to.
-
-    Raises:
-        QuantumFunctionError: if multiple wires were specified
-    """
-    wire = qml.wires.Wires(wires)
-    if len(wire) > 1:
-        raise qml.QuantumFunctionError(
-            "Only a single qubit can be measured in the middle of the circuit"
-        )
-
-    # Create a UUID and a map between MP and MV to support serialization
-    measurement_id = str(uuid.uuid4())[:8]
-    MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
-    return MeasurementValue(measurement_id)
