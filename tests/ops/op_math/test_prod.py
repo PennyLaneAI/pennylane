@@ -14,8 +14,6 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
-from copy import copy
-
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -23,7 +21,7 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
@@ -321,7 +319,10 @@ class TestMatrix:
         mat1, mat2 = compare_and_expand_mat(mat1, mat2)
         true_mat = mat1 @ mat2
 
-        prod_op = Prod(op1(wires=range(op1.num_wires)), op2(wires=range(op2.num_wires)))
+        prod_op = Prod(
+            op1(wires=0 if op1.num_wires is AnyWires else range(op1.num_wires)),
+            op2(wires=0 if op2.num_wires is AnyWires else range(op2.num_wires)),
+        )
         prod_mat = prod_op.matrix()
 
         assert np.allclose(prod_mat, true_mat)
@@ -695,7 +696,7 @@ class TestProperties:
         eig_vals = eig_decomp["eigval"]
 
         true_eigvecs = qnp.tensor(
-            [  # the eigvecs ordered according to eigvals ordered smallest --> largest
+            [
                 [0.0, 0.0, 1.0, 0.0],
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
@@ -882,17 +883,16 @@ class TestSimplify:
             qml.PauliX(0),
             qml.PauliZ(3),
         )
-        final_op = qml.prod(*[qml.Identity(wire) for wire in range(6)])
+        final_op = qml.Identity(range(7))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, Prod)
-        for s1, s2 in zip(final_op.operands, simplified_op.operands):
-            assert s1.name == s2.name
-            assert s1.wires == s2.wires
-            assert s1.data == s2.data
-            assert s1.arithmetic_depth == s2.arithmetic_depth
+        assert isinstance(simplified_op, qml.Identity)
+        assert final_op.name == simplified_op.name
+        assert final_op.wires == simplified_op.wires
+        assert final_op.data == simplified_op.data
+        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
 
     def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
         """Test that the simplify method removes grouped elements with zero coeff."""
