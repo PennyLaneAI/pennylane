@@ -361,18 +361,19 @@ def _execute_new(
             parameter values and output gradient dy"""
 
             # whether the tapes contain multiple measurements
-            multi_measurements = tuple(len(tape.measurements) > 1 for tape in tapes)
+            multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
             dy = dy[: len(tapes)]
 
             if mode == "forward":
                 # Jacobians were computed on the forward pass (mode="forward")
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
                 len_dy = len(dy)
+                print('execute dy', dy, jacs)
                 vjps = tf.numpy_function(
                     func=lambda *args: _compute_vjp_new(
                         args[:len_dy], args[len_dy:-len_dy], args[-len_dy:]
                     ),
-                    inp=dy + jacs + multi_measurements,
+                    inp=list(dy) + list(jacs) + multi_measurements,
                     Tout=[tf.float64] * len(parameters),
                 )
 
@@ -462,9 +463,11 @@ def _execute_new(
 
                     vjps = tf.numpy_function(
                         func=_backward,
-                        inp=list(all_params) + dy + multi_measurements,
+                        inp=list(all_params) + list(dy) + multi_measurements,
                         Tout=[tf.float64] * len(parameters),
                     )
+
+            print('execute vjps', vjps)
 
             vjps = iter(vjps)
             vjps = [next(vjps) if x in trainable else None for x in range(len(all_params))]
