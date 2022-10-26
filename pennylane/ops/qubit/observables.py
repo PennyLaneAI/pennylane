@@ -69,7 +69,7 @@ class Hermitian(Observable):
     def __init__(self, A, wires, do_queue=True, id=None):
         A = qml.math.asarray(A)
         if not qml.math.is_abstract(A):
-            if isinstance(wires, Sequence):
+            if isinstance(wires, Sequence) and not isinstance(wires, str):
                 if len(wires) == 0:
                     raise ValueError(
                         "Hermitian: wrong number of wires. At least one wire has to be given."
