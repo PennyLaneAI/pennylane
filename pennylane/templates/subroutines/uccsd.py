@@ -132,10 +132,6 @@ class UCCSD(Operation):
             # Define the qnode
             @qml.qnode(dev)
             def circuit(params, wires, s_wires, d_wires, hf_state):
-
-                # Flip the HF state
-                hf_state = np.flip(hf_state)
-
                 qml.UCCSD(params, wires, s_wires, d_wires, hf_state)
                 return qml.expval(H)
 
@@ -146,7 +142,7 @@ class UCCSD(Operation):
             optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
 
             # Optimize the circuit parameters and compute the energy
-            for n in range(20):
+            for n in range(21):
                 params, energy = optimizer.step_and_cost(circuit, params,
                 wires=range(qubits), s_wires=s_wires, d_wires=d_wires, hf_state=hf_state)
                 if n % 2 == 0:
@@ -233,9 +229,7 @@ class UCCSD(Operation):
         """
         op_list = []
 
-        init_state_flipped = np.flip(init_state)
-
-        op_list.append(BasisState(init_state_flipped, wires=wires))
+        op_list.append(BasisState(init_state, wires=wires))
 
         for i, (w1, w2) in enumerate(d_wires):
             op_list.append(
