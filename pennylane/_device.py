@@ -35,7 +35,7 @@ from pennylane.measurements import (
     Variance,
 )
 from pennylane.operation import Observable, Operation, Tensor
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumTape
 from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
@@ -398,7 +398,7 @@ class Device(abc.ABC):
         return cls._capabilities
 
     # pylint: disable=too-many-branches,unused-argument
-    def execute(self, queue: QuantumScript, observables, parameters=None, **kwargs):
+    def execute(self, queue, observables, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
@@ -406,7 +406,7 @@ class Device(abc.ABC):
         :meth:`expval`, :meth:`var`, :meth:`sample`, :meth:`post_measure`, and :meth:`execution_context`.
 
         Args:
-            queue (Iterable[~.tape.QuantumScript]): operations to execute on the device
+            queue (Iterable[~.operation.Operation]): operations to execute on the device
             observables (Iterable[~.operation.Observable]): observables to measure and return
             parameters (dict[int, list[ParameterDependency]]): Mapping from free parameter index to the list of
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
@@ -421,8 +421,6 @@ class Device(abc.ABC):
         Returns:
             array[float]: measured value(s)
         """
-        if queue.shots is None and self.shots is not None:
-            queue.shots = self.raw_shots
         self.check_validity(queue, observables)
         self._op_queue = queue
         self._obs_queue = observables
