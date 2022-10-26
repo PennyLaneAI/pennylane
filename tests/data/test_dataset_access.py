@@ -249,7 +249,7 @@ class TestLoadHelpers:
                 "qchem/H2/STO-3G/0.48/H2_STO-3G_0.48_molecule.dat",
                 "qchem/H2/6-31G/0.50/H2_6-31G_0.50_molecule.dat",
             ]
-            actual_args_used = [i.args[1] for i in submit_mock.call_args_list]
+            actual_args_used = [i[0][1] for i in submit_mock.call_args_list]  # [args][second arg]
             assert sorted(expected_args_used) == sorted(actual_args_used)
             assert wait_mock.called_once_with([True, True])
 
@@ -269,7 +269,7 @@ class TestLoadHelpers:
             )
             assert submit_mock.call_count == 1
             assert (
-                submit_mock.call_args_list[0].args[1]
+                submit_mock.call_args_list[0][0][1]  # [first call][args][second arg]
                 == "qchem/H2/STO-3G/0.48/H2_STO-3G_0.48_molecule.dat"
             )
 
@@ -421,7 +421,7 @@ class TestLoad:
         assert len(datasets) == 2
         assert generate_mock.call_count == 3
         arglist = generate_mock.call_args_list
-        assert arglist[0].args == (
+        assert arglist[0][0] == (  # [first call][args]
             {"H2": {"6-31G": ["0.46", "1.16"]}},
             [["H2"], ["6-31G"], ["full"]],  # 0.46 was removed from the last list!
         )
@@ -461,6 +461,7 @@ class TestLoad:
 @patch.object(requests, "get", get_mock)
 def test_list_datasets(tmp_path):
     """Test that list_datasets returns either the S3 foldermap, or the local tree."""
+    qml.data.data_manager._foldermap = {}
     assert qml.data.list_datasets() == _folder_map
 
     first = qml.data.Dataset(foo="this")
