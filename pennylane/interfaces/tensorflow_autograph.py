@@ -476,6 +476,9 @@ def _execute_new(
                         Tout=[tf.float64] * len(parameters),
                     )
 
+            if not isinstance(vjps, (list, tuple)):
+                vjps = [vjps]
+
             vjps = iter(vjps)
             vjps = [next(vjps) if x in trainable else None for x in range(len(all_params))]
 

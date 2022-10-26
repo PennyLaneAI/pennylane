@@ -1341,6 +1341,25 @@ class TestSample:
         assert np.array_equal(result.shape, (3, n_sample))
         assert result.dtype == tf.int64
 
+    def test_counts(self):
+        """Test counts works as expected for TF"""
+        dev = qml.device("default.qubit", wires=2, shots=100)
+
+        @qnode(dev, interface="tf")
+        def circuit():
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.counts(qml.PauliZ(0))
+
+        res = circuit()
+
+        assert isinstance(res, dict)
+        assert list(res.keys()) == [-1, 1]
+        assert isinstance(res[-1], tf.Tensor)
+        assert isinstance(res[1], tf.Tensor)
+        assert res[-1].shape == ()
+        assert res[1].shape == ()
+
 
 @pytest.mark.parametrize(
     "decorator, interface", [(tf.function, "tf"), (lambda x: x, "tf-autograph")]
@@ -1426,12 +1445,10 @@ class TestAutograph:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("mode", ["forward", "backward"])
-    def test_autograph_adjoint(self, mode, decorator, interface, tol):
+    def test_autograph_adjoint_multi_params(self, mode, decorator, interface, tol):
         """Test that a parameter-shift vQNode can be compiled
         using @tf.function, and differentiated to second order"""
         dev = qml.device("default.qubit", wires=1)
-        x = tf.Variable(0.543, dtype=tf.float64)
-        y = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
         @qnode(dev, diff_method="adjoint", interface=interface, mode=mode)
@@ -1451,6 +1468,30 @@ class TestAutograph:
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("mode", ["forward", "backward"])
+    def test_autograph_adjoint_single_param(self, mode, decorator, interface, tol):
+        """Test that a parameter-shift vQNode can be compiled
+        using @tf.function, and differentiated to second order"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @decorator
+        @qnode(dev, diff_method="adjoint", interface=interface, mode=mode)
+        def circuit(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = tf.Variable(1.0, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            res = circuit(x)
+        g = tape.gradient(res, x)
+
+        expected_res = tf.cos(x)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = -tf.sin(x)
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
     def test_autograph_hessian(self, decorator, interface, tol):

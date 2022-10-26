@@ -293,12 +293,6 @@ def _execute_new(
             # whether the tapes contain multiple measurements
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
-            # if len(tapes) == 1 and len(tapes[0].measurements) > 1:
-            #     dy = [dy]
-
-            if not isinstance(dy, tuple):
-                dy = (dy,)
-
             # reconstruct the nested structure of dy
             start = 0
             dy_nested = []
