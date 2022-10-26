@@ -311,6 +311,9 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        if circuit.shots is None and self.shots is not None:
+            circuit.shots = self.raw_shots
+
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
@@ -389,7 +392,7 @@ class QubitDevice(Device):
         )
 
         # compute the required statistics
-        if not self.analytic and circuit.shot_vector is not None:
+        if circuit.shot_vector is not None:
             results = self._collect_shotvector_results(circuit, counts_exist)
         else:
             results = self.statistics(circuit=circuit)
