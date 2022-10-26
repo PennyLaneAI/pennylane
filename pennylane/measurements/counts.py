@@ -19,17 +19,7 @@ import warnings
 
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, ObservableReturnTypes
-
-Counts = ObservableReturnTypes.Counts
-"""Enum: An enumeration which represents returning the number of times
- each of the observed outcomes occurred in sampling."""
-
-
-AllCounts = ObservableReturnTypes.AllCounts
-"""Enum: An enumeration which represents returning the number of times
- each of the possible outcomes occurred in sampling, including 0 counts
- for unobserved outcomes."""
+from .measurements import AllCounts, Counts, MeasurementProcess
 
 
 def counts(op=None, wires=None, all_outcomes=False):

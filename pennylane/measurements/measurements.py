@@ -30,15 +30,6 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .expval import Expectation
-from .mid_measure import MidMeasure
-from .mutual_info import MutualInfo
-from .probs import Probability
-from .sample import Sample
-from .state import State
-from .var import Variance
-from .vn_entropy import VnEntropy
-
 # =============================================================================
 # ObservableReturnTypes types
 # =============================================================================
@@ -63,6 +54,52 @@ class ObservableReturnTypes(Enum):
     def __repr__(self):
         """String representation of the return types."""
         return str(self.value)
+
+
+Sample = ObservableReturnTypes.Sample
+"""Enum: An enumeration which represents sampling an observable."""
+
+Counts = ObservableReturnTypes.Counts
+"""Enum: An enumeration which represents returning the number of times
+ each of the observed outcomes occurred in sampling."""
+
+AllCounts = ObservableReturnTypes.AllCounts
+"""Enum: An enumeration which represents returning the number of times
+ each of the possible outcomes occurred in sampling, including 0 counts
+ for unobserved outcomes."""
+
+Variance = ObservableReturnTypes.Variance
+"""Enum: An enumeration which represents returning the variance of
+an observable on specified wires."""
+
+Expectation = ObservableReturnTypes.Expectation
+"""Enum: An enumeration which represents returning the expectation
+value of an observable on specified wires."""
+
+Probability = ObservableReturnTypes.Probability
+"""Enum: An enumeration which represents returning probabilities
+of all computational basis states."""
+
+State = ObservableReturnTypes.State
+"""Enum: An enumeration which represents returning the state in the computational basis."""
+
+MidMeasure = ObservableReturnTypes.MidMeasure
+"""Enum: An enumeration which represents returning sampling the computational
+basis in the middle of the circuit."""
+
+VnEntropy = ObservableReturnTypes.VnEntropy
+"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
+
+MutualInfo = ObservableReturnTypes.MutualInfo
+"""Enum: An enumeration which represents returning the mutual information before measurements."""
+
+Shadow = ObservableReturnTypes.Shadow
+"""Enum: An enumeration which represents returning the bitstrings and recipes from
+the classical shadow protocol"""
+
+ShadowExpval = ObservableReturnTypes.ShadowExpval
+"""Enum: An enumeration which represents returning the estimated expectation value
+from a classical shadow measurement"""
 
 
 class MeasurementShapeError(ValueError):

@@ -17,10 +17,7 @@ This module contains the qml.state measurement.
 """
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, ObservableReturnTypes
-
-State = ObservableReturnTypes.State
-"""Enum: An enumeration which represents returning the state in the computational basis."""
+from .measurements import MeasurementProcess, State
 
 
 def state():

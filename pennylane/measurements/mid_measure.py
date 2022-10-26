@@ -20,11 +20,7 @@ import uuid
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, MeasurementValue, ObservableReturnTypes
-
-MidMeasure = ObservableReturnTypes.MidMeasure
-"""Enum: An enumeration which represents returning sampling the computational
-basis in the middle of the circuit."""
+from .measurements import MeasurementProcess, MeasurementValue, MidMeasure
 
 
 def measure(wires):  # TODO: Change name to mid_measure

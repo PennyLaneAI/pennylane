@@ -19,10 +19,7 @@ import warnings
 
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, ObservableReturnTypes
-
-Sample = ObservableReturnTypes.Sample
-"""Enum: An enumeration which represents sampling an observable."""
+from .measurements import MeasurementProcess, Sample
 
 
 def sample(op=None, wires=None):

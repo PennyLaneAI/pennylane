@@ -19,11 +19,7 @@ import warnings
 
 from pennylane.operation import Operator
 
-from .measurements import MeasurementProcess, ObservableReturnTypes
-
-Expectation = ObservableReturnTypes.Expectation
-"""Enum: An enumeration which represents returning the expectation
-value of an observable on specified wires."""
+from .measurements import Expectation, MeasurementProcess
 
 
 def expval(op: Operator):

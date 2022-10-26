@@ -17,10 +17,7 @@ This module contains the qml.mutual_info measurement.
 """
 import pennylane as qml
 
-from .measurements import MeasurementProcess, ObservableReturnTypes
-
-MutualInfo = ObservableReturnTypes.MutualInfo
-"""Enum: An enumeration which represents returning the mutual information before measurements."""
+from .measurements import MeasurementProcess, MutualInfo
 
 
 def mutual_info(wires0, wires1, log_base=None):

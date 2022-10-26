@@ -19,11 +19,7 @@ import warnings
 
 from pennylane.operation import Operator
 
-from .measurements import MeasurementProcess, ObservableReturnTypes
-
-Variance = ObservableReturnTypes.Variance
-"""Enum: An enumeration which represents returning the variance of
-an observable on specified wires."""
+from .measurements import MeasurementProcess, Variance
 
 
 def var(op: Operator):

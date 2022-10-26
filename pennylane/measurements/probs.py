@@ -17,11 +17,7 @@ This module contains the qml.probs measurement.
 """
 import pennylane as qml
 
-from .measurements import MeasurementProcess, ObservableReturnTypes
-
-Probability = ObservableReturnTypes.Probability
-"""Enum: An enumeration which represents returning probabilities
-of all computational basis states."""
+from .measurements import MeasurementProcess, Probability
 
 
 def probs(wires=None, op=None):

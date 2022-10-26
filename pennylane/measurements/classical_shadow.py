@@ -21,15 +21,7 @@ import numpy as np
 
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, MeasurementShapeError, ObservableReturnTypes
-
-Shadow = ObservableReturnTypes.Shadow
-"""Enum: An enumeration which represents returning the bitstrings and recipes from
-the classical shadow protocol"""
-
-ShadowExpval = ObservableReturnTypes.ShadowExpval
-"""Enum: An enumeration which represents returning the estimated expectation value
-from a classical shadow measurement"""
+from .measurements import MeasurementProcess, MeasurementShapeError, Shadow, ShadowExpval
 
 
 def shadow_expval(H, k=1, seed_recipes=True):

@@ -17,10 +17,7 @@ This module contains the qml.vn_entropy measurement.
 """
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, ObservableReturnTypes
-
-VnEntropy = ObservableReturnTypes.VnEntropy
-"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
+from .measurements import MeasurementProcess, VnEntropy
 
 
 def vn_entropy(wires, log_base=None):
