@@ -20,19 +20,20 @@ from pennylane.operation import Operation, AnyWires
 
 
 class FlipSign(Operation):
-    r"""FlipSign operator flips the sign for a given basic state.
+    r"""Flips the sign of a given basis state.
 
-    In a nutshell, this class perform the following operation:
+    This template performs the following operation:
 
     FlipSign(n) :math:`|m\rangle = -|m\rangle` if :math:`m = n`
 
     FlipSign(n) :math:`|m\rangle = |m\rangle` if :math:`m \not = n`,
 
-    where n is the basic state to flip and m is the input.
+    where n is the basis state to flip and m is the input.
 
     Args:
-        n (array[int] or int): binary array or integer value representing the state to flip the sign
-        wires (array[int]): number of wires that the operator acts on
+        n (array[int] or int): binary array or integer value representing the state on which to
+            flip the sign
+        wires (array[int]): wires that the template acts on
 
 
     **Example**
