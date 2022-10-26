@@ -372,7 +372,7 @@ def _execute_new(
                     multi_measurements = args[-len_dy:]
 
                     new_jacs = []
-                    for i, jac in enumerate(jacs):
+                    for jac in jacs:
                         if tf.rank(jac) > 0:
                             new_jacs.append(tuple(tf.unstack(jac)))
                         else:
