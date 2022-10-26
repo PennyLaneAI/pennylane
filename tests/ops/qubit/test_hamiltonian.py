@@ -22,6 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.wires import Wires
+from collections.abc import Iterable
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -930,7 +931,7 @@ class TestHamiltonian:
         ops = [qml.PauliX(0), qml.PauliZ(1)]
         h = qml.Hamiltonian(coeffs, ops)
         c, o = h.terms()
-        assert isinstance(c, tuple)
+        assert isinstance(c, Iterable)
         assert isinstance(o, list)
         assert all(isinstance(item, np.ndarray) for item in c)
         assert all(item.requires_grad for item in c)
