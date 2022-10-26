@@ -450,7 +450,7 @@ def _vjp_new(
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward") or the Jacobian was cached
             # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = _compute_vjps(jacs, dy, multi_measurements)
+            vjps = _compute_vjps_autograd(jacs, dy, multi_measurements)
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -502,7 +502,7 @@ def _vjp_new(
                 with qml.tape.Unwrap(*tapes):
                     jacs = gradient_fn(tapes, **gradient_kwargs)
 
-                vjps = _compute_vjps(jacs, dy, multi_measurements)
+                vjps = _compute_vjps_autograd(jacs, dy, multi_measurements)
 
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
@@ -516,7 +516,7 @@ def _vjp_new(
     return grad_fn
 
 
-def _compute_vjps(jacs, dy, multi_measurements):
+def _compute_vjps_autograd(jacs, dy, multi_measurements):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     vjps = []
     for i, multi in enumerate(multi_measurements):

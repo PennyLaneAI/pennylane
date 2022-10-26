@@ -88,8 +88,6 @@ def compute_vjp_single_new(dy, jac):
         np.array([0.5, 1.1])
 
     """
-    print('compute vjp', dy, jac, dy.shape)
-
     if jac is None:
         return None
 
@@ -175,7 +173,7 @@ def compute_vjp_multi_new(dy, jac):
     """
     if jac is None:
         return None
-
+    
     # Single parameter
     if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
         res = []

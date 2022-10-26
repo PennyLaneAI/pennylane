@@ -417,7 +417,7 @@ class TestVJPGradients:
         tape.trainable_params = {0, 1}
         tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
         vjp = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="torch"))
-        print(vjp)
+
         assert np.allclose(vjp.detach(), expected(params.detach()), atol=tol, rtol=0)
 
         cost = vjp[0]

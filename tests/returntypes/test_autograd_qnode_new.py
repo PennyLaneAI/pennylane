@@ -1630,8 +1630,12 @@ class TestReturn:
 
         grad = qml.grad(circuit)(a)
 
-        if diff_method == "backprop":
-            pytest.skip("CI check differs from local results.")
+        import sys
+
+        python_version = sys.version_info.minor
+        if diff_method == "backprop" and python_version > 7:
+            # Since numpy 1.23.0
+            assert isinstance(grad, np.ndarray)
         else:
             assert isinstance(grad, float)
 

@@ -201,6 +201,8 @@ class TestBatchTransformExecution:
 
         res = qml.execute([tape], dev, None, device_batch_transform=True)
         spy.assert_called()
+
+        assert isinstance(res[0], float)
         assert np.allclose(res[0], np.cos(y), atol=0.1)
 
 
@@ -462,7 +464,11 @@ class TestAutogradExecuteIntegration:
         expected = fn(dev.batch_execute(tapes))
 
         assert expected.shape == ()
+<<<<<<< HEAD
         assert np.allclose(res, np.squeeze(expected), atol=tol, rtol=0)
+=======
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+>>>>>>> master
 
     def test_jacobian(self, execute_kwargs, tol):
         """Test jacobian calculation"""
@@ -676,11 +682,21 @@ class TestAutogradExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
         res = cost(a, U, device=dev)
+<<<<<<< HEAD
         assert np.allclose(res, -np.cos(a), atol=tol, rtol=0)
 
         jac_fn = qml.jacobian(cost)
         res = jac_fn(a, U, device=dev)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
+=======
+        assert isinstance(res, np.ndarray)
+        assert np.allclose(res, -np.cos(a), atol=tol, rtol=0)
+
+        jac_fn = qml.jacobian(cost)
+        jac = jac_fn(a, U, device=dev)
+        assert isinstance(jac, np.ndarray)
+        assert np.allclose(jac, np.sin(a), atol=tol, rtol=0)
+>>>>>>> master
 
     def test_differentiable_expand(self, execute_kwargs, tol):
         """Test that operation and nested tapes expansion
@@ -846,13 +862,23 @@ class TestAutogradExecuteIntegration:
 
             return execute([tape], device, **execute_kwargs)[0]
 
+<<<<<<< HEAD
         dev = qml.device("default.qubit", wires=2, shots=10)
+=======
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+>>>>>>> master
         x = np.array(0.543, requires_grad=True)
         res = cost(x, device=dev)
         assert isinstance(res, tuple)
         assert len(res) == 2
+<<<<<<< HEAD
         assert res[0].shape == (10,)
         assert res[1].shape == (10,)
+=======
+        assert res[0].shape == (shots,)
+        assert res[1].shape == (shots,)
+>>>>>>> master
 
 
 class TestHigherOrderDerivatives:
@@ -1181,6 +1207,10 @@ class TestHamiltonianWorkflows:
         )
 
     def test_multiple_hamiltonians_not_trainable(self, cost_fn, execute_kwargs, tol):
+<<<<<<< HEAD
+=======
+        """Test hamiltonian with no trainable parameters."""
+>>>>>>> master
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=False)
         coeffs2 = np.array([0.7], requires_grad=False)
         weights = np.array([0.4, 0.5], requires_grad=True)
@@ -1195,6 +1225,10 @@ class TestHamiltonianWorkflows:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, tol):
+<<<<<<< HEAD
+=======
+        """Test hamiltonian with trainable parameters."""
+>>>>>>> master
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = np.array([0.7], requires_grad=True)
         weights = np.array([0.4, 0.5], requires_grad=True)
@@ -1210,7 +1244,15 @@ class TestHamiltonianWorkflows:
 
 
 class TestCustomJacobian:
+<<<<<<< HEAD
     def test_custom_jacobians(self):
+=======
+    """Test for custom Jacobian."""
+
+    def test_custom_jacobians(self):
+        """Test custom Jacobian device methood"""
+
+>>>>>>> master
         class CustomJacobianDevice(DefaultQubit):
             @classmethod
             def capabilities(cls):
@@ -1235,7 +1277,11 @@ class TestCustomJacobian:
         d_out = d_circuit(params)
         assert np.allclose(d_out, np.array([1.0, 2.0, 3.0, 4.0]))
 
+<<<<<<< HEAD
     def test_custom_jacobians_2(self):
+=======
+    def test_custom_jacobians_param_shift(self):
+>>>>>>> master
         """Test computing the gradient using the parameter-shift
         rule with a device that provides a jacobian"""
 

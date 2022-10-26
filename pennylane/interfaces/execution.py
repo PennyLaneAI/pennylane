@@ -310,7 +310,7 @@ def _execute_new(
             tapes = [tape1, tape2]
 
             # execute both tapes in a batch on the given device
-            res = qml.execute(tapes, dev, qml.gradients.param_shift, max_diff=2)
+            res = qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift, max_diff=2)
 
             return res[0] + res[1][0] - res[1][1]
 
