@@ -128,6 +128,7 @@ def compute_jvp_multi(tangent, jac):
         >>> jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
         >>> qml.gradients.compute_jvp_multi(tangent, jac)
         (np.array([0.6]), np.array([0.4, 1. ]))
+
     2. For multiple parameters (in this case 2 parameters) and multiple measurement (one without shape and one with
     shape, e.g. expval and probs):
 
