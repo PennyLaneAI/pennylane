@@ -164,10 +164,7 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original qscript in place.
-    need_to_validate_comp_basis_sampling = (
-        qscript.samples_computational_basis and len(qscript.measurements) > 1
-    )
-    if need_to_validate_comp_basis_sampling:
+    if qscript.samples_computational_basis and len(qscript.measurements) > 1:
         _validate_computational_basis_sampling(qscript.measurements)
 
     if qscript._obs_sharing_wires:
