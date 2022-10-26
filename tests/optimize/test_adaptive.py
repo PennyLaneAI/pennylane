@@ -107,6 +107,8 @@ def test_step_and_cost(circuit, energy_ref, pool):
     opt = qml.AdaptiveOptimizer()
     for i in range(4):
         circuit, energy, gradient = opt.step_and_cost(circuit, pool, drain_pool=True)
+
+    print(energy, energy_ref)
     assert np.allclose(energy, energy_ref)
 
 
@@ -157,3 +159,28 @@ def test_append_gate(circuit):
     _ = qnode()
 
     assert qml.equal(qnode.tape.operations[-1], gate)
+
+
+@qml.qnode(dev)
+def qubit_rotation_circuit():
+    return qml.expval(qml.PauliZ(0))
+
+
+@pytest.mark.parametrize(
+    "circuit",
+    [
+        (qubit_rotation_circuit),
+    ],
+)
+def test_qubit_rotation(circuit):
+    """Test that step function returns correct results for a qubit rotation circuit."""
+
+    pool = [qml.RX(np.array([1.0]), wires=0)]
+    opt = qml.AdaptiveOptimizer(param_steps=20)
+    circuit = opt.step(circuit, pool, params_zero=False)
+    expval = circuit()
+    param = circuit.tape.operations[-1].parameters[0]
+
+    #  rotation aroind X with np.pi gives expval(Z) = -1
+    assert np.allclose(expval, -1)
+    assert np.allclose(param, np.pi)

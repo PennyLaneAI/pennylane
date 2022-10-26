@@ -154,19 +154,20 @@ class AdaptiveOptimizer:
 
         return final_circuit()
 
-    def step(self, circuit, operator_pool):
+    def step(self, circuit, operator_pool, params_zero=True):
         r"""Update the circuit with one step of the optimizer.
 
         Args:
             circuit (.QNode): user-defined circuit returning an expectation value
             operator_pool (list[Operator]): list of the gates to be used for adaptive optimization
+            params_zero (bool): flag to initiate circuit parameters at zero
 
         Returns:
            .QNode: the optimized circuit
         """
-        return self.step_and_cost(circuit, operator_pool)[0]
+        return self.step_and_cost(circuit, operator_pool, params_zero=params_zero)[0]
 
-    def step_and_cost(self, circuit, operator_pool, drain_pool=False):
+    def step_and_cost(self, circuit, operator_pool, drain_pool=False, params_zero=True):
         r"""Update the circuit with one step of the optimizer and return the corresponding
         objective function value prior to the step.
 
@@ -174,6 +175,7 @@ class AdaptiveOptimizer:
             circuit (.QNode): user-defined circuit returning an expectation value
             operator_pool (list[Operator]): list of the gates to be used for adaptive optimization
             drain_pool (bool): flag to remove selected gates from the operator pool
+            params_zero (bool): flag to initiate circuit parameters at zero
 
         Returns:
             tuple[.QNode, float]: the optimized circuit and the objective function output prior
@@ -198,7 +200,13 @@ class AdaptiveOptimizer:
 
         selected_gates = [operator_pool[np.argmax(abs(grads))]]
         optimizer = qml.GradientDescentOptimizer(stepsize=self.stepsize)
-        params = np.zeros(len(selected_gates))
+
+        if params_zero:
+            params = np.zeros(len(selected_gates))
+        else:
+            params = np.array(
+                [gate.parameters[0]._value for gate in selected_gates], requires_grad=True
+            )
 
         for _ in range(self.param_steps):
             params, _ = optimizer.step_and_cost(
