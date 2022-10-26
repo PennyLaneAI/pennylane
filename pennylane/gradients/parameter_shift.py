@@ -18,6 +18,7 @@ of a qubit-based quantum tape.
 # pylint: disable=protected-access,too-many-arguments,too-many-statements
 import warnings
 from collections.abc import Sequence
+from functools import partial
 
 import numpy as np
 
@@ -1435,9 +1436,11 @@ def _param_shift_new(
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
     if unsupported_params:
+        # If shots were provided, assume that the fallback function also takes that arg
+
+        fallback_fn = fallback_fn if shots is None else partial(fallback_fn, shots=shots)
         if not argnum:
-            # If shots were provided, assume that the fallback function also takes that arg
-            return fallback_fn(tape) if shots is None else fallback_fn(tape, shots=shots)
+            return fallback_fn(tape)
 
         g_tapes, fallback_proc_fn = fallback_fn(tape, argnum=unsupported_params)
         gradient_tapes.extend(g_tapes)
@@ -1486,8 +1489,6 @@ def _param_shift_new(
         # the quantum results separately, once for the fallback
         # function and once for the parameter-shift rule, and recombine.
         def processing_fn(results):
-            num_params = len(tape.trainable_params)
-
             unsupported_grads = results[:fallback_len]
             supported_grads = results[fallback_len:]
 
@@ -1498,14 +1499,13 @@ def _param_shift_new(
                 return _single_grad(unsupported_grads, supported_grads)
 
             num_shot_vec_components = len(shots) if shot_vector else None
-            num_params = len(tape.trainable_params)
 
             supported_grads = fn(supported_grads)
+            unsupported_grads = fallback_proc_fn(unsupported_grads)
 
             final_grad = []
             for idx in range(num_shot_vec_components):
-                u_grads = [unsupported_grads[par_idx][idx] for par_idx in range(num_params)]
-                u_grads = fallback_proc_fn(u_grads)
+                u_grads = unsupported_grads[idx]
                 sup = supported_grads[idx]
                 final_grad.append(_single_grad(u_grads, sup))
             return tuple(final_grad)
