@@ -299,8 +299,11 @@ def _execute_new(
                 qml.probs(wires=0)
             tapes = [tape1, tape2]
             # execute both tapes in a batch on the given device
-            res = qml.execute(tapes, dev, qml.gradients.param_shift, max_diff=2)
+
+            res = qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift, max_diff=2)
+
             return res[0] + res[1][0] - res[1][1]
+
     In this cost function, two **independent** quantum tapes are being
     constructed; one returning an expectation value, the other probabilities.
     We then batch execute the two tapes, and reduce the results to obtain
@@ -310,6 +313,7 @@ def _execute_new(
     >>> x = np.array([0.5], requires_grad=True)
     >>> cost_fn(params, x)
     1.93050682
+
     Since the ``execute`` function is differentiable, we can
     also compute the gradient:
     >>> qml.grad(cost_fn)(params, x)
@@ -447,6 +451,7 @@ def _execute_new(
         elif mapped_interface == "jax":
             _execute = _get_jax_execute_fn_new(interface, tapes)
             res = _execute(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
+
     except ImportError as e:
         raise qml.QuantumFunctionError(
             f"{mapped_interface} not found. Please install the latest "

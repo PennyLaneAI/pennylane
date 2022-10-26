@@ -374,7 +374,6 @@ def _finite_diff_new(
                 pre_grads = qml.math.convert_like(pre_grads[0] * coeff_div, coeff_div)
 
             grads.append(pre_grads)
-
         # Single measurement
         if len(tape.measurements) == 1:
             if len(tape.trainable_params) == 1:
