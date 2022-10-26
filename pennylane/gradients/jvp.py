@@ -55,6 +55,7 @@ def compute_jvp_single(tangent, jac):
         >>> jac = np.array(0.2)
         >>> qml.gradients.compute_jvp_single(tangent, jac)
         np.array(0.2)
+
     2. For a single parameter and a single measurment with shape (e.g. probs):
 
     .. code-block:: pycon
@@ -62,6 +63,7 @@ def compute_jvp_single(tangent, jac):
         >>> jac = np.array([0.3, 0.3])
         >>> qml.gradients.compute_jvp_single(tangent, jac)
         np.array([0.6, 0.6])
+
     3. For multiple parameters (in this case 2 parameters) and a single measurement without shape (e.g. expval, var):
 
     .. code-block:: pycon
@@ -69,6 +71,7 @@ def compute_jvp_single(tangent, jac):
         >>> jac = tuple([np.array(0.1), np.array(0.2)])
         >>> qml.gradients.compute_jvp_single(tangent, jac)
         np.array(0.5)
+
     4. For multiple parameters (in this case 2 parameters) and a single measurement with shape (e.g. probs):
 
     .. code-block:: pycon
@@ -76,6 +79,7 @@ def compute_jvp_single(tangent, jac):
         >>> jac = tuple([np.array([0.1, 0.3]), np.array([0.2, 0.4])])
         >>> qml.gradients.compute_jvp_single(tangent, jac)
         np.array([0.2, 0.5])
+
     """
     if jac is None:
         return None
