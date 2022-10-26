@@ -334,11 +334,13 @@ def _execute_new(
 
             return tuple(tf.convert_to_tensor(x_) for x_ in x)
 
-        print("res forward", res)
-
-        for i in range(len(tapes)):
+        for i, tape in enumerate(tapes):
             # convert output to TensorFlow tensors
-            res[i] = _to_tensors(res[i])
+            res[i] = tf.convert_to_tensor(res[i])
+
+            if tape.all_sampled:
+                res[i] = tf.cast(res[i], tf.int64)
+
             output_sizes.append(tf.size(res[i]))
 
         return res + jacs + output_sizes
@@ -359,7 +361,7 @@ def _execute_new(
             parameter values and output gradient dy"""
 
             # whether the tapes contain multiple measurements
-            multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
+            multi_measurements = tuple(len(tape.measurements) > 1 for tape in tapes)
             dy = dy[: len(tapes)]
 
             if mode == "forward":
@@ -403,7 +405,7 @@ def _execute_new(
 
                         vjps = tf.py_function(
                             func=_backward,
-                            inp=list(all_params) + dy,
+                            inp=list(all_params) + list(dy),
                             Tout=[tf.float64] * len(parameters),
                         )
 
@@ -455,7 +457,7 @@ def _execute_new(
                         with qml.tape.Unwrap(*tapes, params=params_unwrapped):
                             jac = gradient_fn(tapes, **gradient_kwargs)
 
-                        vjps = _compute_vjp(dy, jac, multi_measurements)
+                        vjps = _compute_vjp_new(dy, jac, multi_measurements)
                         return vjps
 
                     vjps = tf.numpy_function(
@@ -469,8 +471,6 @@ def _execute_new(
 
             variables = tfkwargs.get("variables", None)
             return (vjps, variables) if variables is not None else vjps
-
-        print("res execute", res)
 
         return res, grad_fn
 

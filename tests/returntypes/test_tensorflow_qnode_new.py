@@ -1342,7 +1342,6 @@ class TestSample:
         assert result.dtype == tf.int64
 
 
-@pytest.mark.skip("TODO")
 @pytest.mark.parametrize(
     "decorator, interface", [(tf.function, "tf"), (lambda x: x, "tf-autograph")]
 )
@@ -1520,9 +1519,10 @@ class TestAutograph:
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))]
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         res = circuit()
+        res = tf.stack(res)
 
         assert res.shape == (2, 10)
         assert isinstance(res, tf.Tensor)

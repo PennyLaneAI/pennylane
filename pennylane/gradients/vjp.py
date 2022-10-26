@@ -88,6 +88,8 @@ def compute_vjp_single_new(dy, jac):
         np.array([0.5, 1.1])
 
     """
+    print('compute vjp', dy, jac, dy.shape)
+
     if jac is None:
         return None
 
