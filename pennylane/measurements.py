@@ -1481,7 +1481,8 @@ def shadow_expval(H, k=1, seed_recipes=True):
     parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
 
     Args:
-        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
+        H (Union[Iterable, :class:`~.pennylane.Hamiltonian`, :class:`~.pennylane.operation.Tensor`]): Observable or
+            iterable of observables to compute the expectation value over.
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
         seed_recipes (bool): If True, a seed will be generated that
             is used for the randomly sampled Pauli measurements. This is to
