@@ -243,7 +243,6 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     new_qscript.num_wires = qscript.num_wires
     new_qscript.is_sampled = qscript.is_sampled
     new_qscript.all_sampled = qscript.all_sampled
-    new_qscript.samples_computational_basis = qscript.samples_computational_basis
     new_qscript._batch_size = qscript.batch_size
     new_qscript._output_dim = qscript.output_dim
     new_qscript._qfunc_output = qscript._qfunc_output
