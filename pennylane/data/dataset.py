@@ -207,9 +207,7 @@ class Dataset(ABC):
             filepath = self.__get_filename_for_attribute(name)
             if os.path.exists(filepath):
                 # TODO: setattr
-                filedata = self._read_file(filepath)
-                if name in filedata:
-                    return filedata[name]
+                return self._read_file(filepath)[name]
             # TODO: download the file here?
             raise attr_error
 
