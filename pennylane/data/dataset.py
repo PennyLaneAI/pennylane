@@ -187,26 +187,24 @@ class Dataset(ABC):
         """List the attributes saved on the Dataset"""
         return list(self.attrs)
 
-    @classmethod
-    def from_dataset(cls, dataset):
-        """Builds a dataset from another dataset. Copies the data from another :class:`~pennylane.data.Dataset`.
+    def __copy__(self):
+        cls = self.__class__
 
-        Args:
-            dataset (Dataset): the dataset to copy
+        if not self._is_standard:
+            return cls(**self.attrs)
 
-        Returns:
-            Dataset: a new dataset containing the same keys and values as the original
+        copied = cls.__new__(cls)
+        copied._is_standard = True
+        copied._dtype = self._dtype
+        copied._folder = self._folder
+        copied._prefix = self._prefix
+        copied._prefix_len = self._prefix_len
+        copied._fullfile = self._fullfile
+        copied.__doc__ = self.__doc__
+        for key, val in self.attrs.items():
+            setattr(copied, f"{key}", val)
 
-        **Example**
-
-            >>> original_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
-            >>> new_dataset = qml.data.Dataset.from_dataset(original_dataset)
-            >>> print(vars(original_dataset))
-            {'dtype': None, '__doc__': '', 'kw1': 1, 'kw2': '2', 'kw3': [3]}
-            >>> print(vars(new_dataset))
-            {'dtype': None, '__doc__': '', 'kw1': 1, 'kw2': '2', 'kw3': [3]}
-        """
-        return cls(**dataset.attrs)
+        return copied
 
     # The methods below are intended for use only by standard Dataset objects
     def __get_filename_for_attribute(self, attribute):

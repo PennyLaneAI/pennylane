@@ -15,6 +15,7 @@
 Unit tests for the :class:`pennylane.data.Dataset` class and its functions.
 """
 # pylint:disable=protected-access
+from copy import copy
 import os
 import pytest
 import pennylane as qml
@@ -56,12 +57,33 @@ def test_read_dataset(tmp_path):
     assert test_dataset.kw3 == [3]
 
 
-def test_from_dataset():
+def test_copy_non_standard():
     """Test that datasets can be built from other datasets."""
     test_dataset = qml.data.Dataset(dtype="test_data", kw1=1, kw2="2", kw3=[3])
-    new_dataset = qml.data.Dataset.from_dataset(test_dataset)
-
+    new_dataset = copy(test_dataset)
     assert new_dataset.attrs == test_dataset.attrs
+    assert new_dataset._is_standard == False
+
+
+def test_copy_standard(tmp_path):
+    """Test that standard datasets can be built from other standard datasets."""
+    filepath = tmp_path / "myset_full.dat"
+    qml.data.Dataset._write_file({"molecule": 1, "hf_state": 2}, str(filepath))
+    test_dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", standard=True)
+    new_dataset = copy(test_dataset)
+
+    assert new_dataset._is_standard == test_dataset._is_standard
+    assert new_dataset._dtype == test_dataset._dtype
+    assert new_dataset._folder == test_dataset._folder
+    assert new_dataset._prefix == test_dataset._prefix
+    assert new_dataset._prefix_len == test_dataset._prefix_len
+    assert new_dataset._fullfile == test_dataset._fullfile
+    assert new_dataset.__doc__ == test_dataset.__doc__
+    assert new_dataset.attrs == test_dataset.attrs
+    assert new_dataset.attrs == {"molecule": None, "hf_state": None}
+    assert new_dataset.molecule == 1
+    assert new_dataset.hf_state == 2
+    assert new_dataset.attrs == {"molecule": 1, "hf_state": 2}
 
 
 def test_invalid_init():
@@ -138,8 +160,10 @@ def test_lazy_load_until_access_non_full(tmp_path):
 def test_lazy_load_until_access_full(tmp_path):
     """Test that Datasets do not load values until accessed with full files."""
     filename = str(tmp_path / "myset_full.dat")
-    qml.data.Dataset._write_file({"hf_state": 2}, filename)
+    qml.data.Dataset._write_file({"molecule": 1, "hf_state": 2}, filename)
     dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", standard=True)
-    assert dataset.attrs == {"hf_state": None}
+    assert dataset.attrs == {"molecule": None, "hf_state": None}
+    assert dataset.molecule == 1
+    assert dataset.attrs == {"molecule": 1, "hf_state": None}
     assert dataset.hf_state == 2
-    assert dataset.attrs == {"hf_state": 2}
+    assert dataset.attrs == {"molecule": 1, "hf_state": 2}
