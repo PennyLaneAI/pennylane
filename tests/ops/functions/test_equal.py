@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as npp
+from pennylane.measurements import MeasurementProcess, ObservableReturnTypes
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qml.RX,
@@ -122,6 +123,9 @@ PARAMETRIZED_MEASUREMENTS = [
     qml.state(),
     qml.vn_entropy(wires=0),
     qml.mutual_info(wires0=[0], wires1=[1]),
+    qml.classical_shadow(wires=[0,1]),
+    qml.shadow_expval(H=qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]), k=2),
+    MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1,-1])
 ]
 PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
     itertools.combinations(
