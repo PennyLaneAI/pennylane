@@ -23,8 +23,9 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import MutualInfo, State, VnEntropy
+from pennylane.tape import QuantumTape
 
-from .finite_difference import finite_diff, _all_zero_grad_new, _no_trainable_grad_new
+from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new, finite_diff
 from .general_shift_rules import (
     _iterate_shift_rule,
     frequencies_to_period,
@@ -169,7 +170,7 @@ def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
     return tuple(g)
 
 
-def _evaluate_gradient_new(tape, res, data, r0, shots):
+def _evaluate_gradient_new(tape: QuantumTape, res, data, r0, shots):
     """Use shifted tape evaluations and parameter-shift rule coefficients
     to evaluate a gradient result.
 
@@ -256,7 +257,7 @@ def _evaluate_gradient(res, data, broadcast, r0, scalar_qfunc_output):
     return g
 
 
-def _get_operation_recipe(tape, t_idx, shifts, order=1):
+def _get_operation_recipe(tape: QuantumTape, t_idx, shifts, order=1):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
     t_idx on tape.
@@ -424,7 +425,13 @@ def _reorder_grad_axes_multi_measure(
 
 
 def _expval_param_shift_tuple(
-    tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False, shots=None
+    tape: QuantumTape,
+    argnum=None,
+    shifts=None,
+    gradient_recipes=None,
+    f0=None,
+    broadcast=False,
+    shots=None,
 ):
     r"""Generate the parameter-shift tapes and postprocessing methods required
         to compute the gradient of a gate parameter with respect to an
@@ -499,7 +506,7 @@ def _expval_param_shift_tuple(
         )
         coeffs, multipliers, op_shifts = recipe.T
 
-        g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
+        g_tapes = generate_shifted_tapes(tape, coeffs, idx, op_shifts, multipliers, broadcast)
         gradient_tapes.extend(g_tapes)
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
@@ -570,7 +577,13 @@ def _expval_param_shift_tuple(
 
 
 def expval_param_shift(
-    tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False, shots=None
+    tape: QuantumTape,
+    argnum=None,
+    shifts=None,
+    gradient_recipes=None,
+    f0=None,
+    broadcast=False,
+    shots=None,
 ):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
@@ -659,7 +672,7 @@ def expval_param_shift(
         #
         # Note: this is an issue both with the existing and the new return type system
 
-        g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers, broadcast)
+        g_tapes = generate_shifted_tapes(tape, coeffs, idx, op_shifts, multipliers, broadcast)
         gradient_tapes.extend(g_tapes)
 
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
@@ -894,7 +907,13 @@ def _create_variance_proc_fn(
 
 
 def _var_param_shift_tuple(
-    tape, argnum, shifts=None, gradient_recipes=None, f0=None, broadcast=False, shots=None
+    tape: QuantumTape,
+    argnum,
+    shifts=None,
+    gradient_recipes=None,
+    f0=None,
+    broadcast=False,
+    shots=None,
 ):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to a
@@ -1003,7 +1022,13 @@ def _var_param_shift_tuple(
 
 
 def var_param_shift(
-    tape, argnum, shifts=None, gradient_recipes=None, f0=None, broadcast=False, shots=None
+    tape: QuantumTape,
+    argnum,
+    shifts=None,
+    gradient_recipes=None,
+    f0=None,
+    broadcast=False,
+    shots=None,
 ):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to a
@@ -1161,7 +1186,7 @@ def var_param_shift(
 # TODO: docstrings & mention shots arg
 @gradient_transform
 def _param_shift_new(
-    tape,
+    tape: QuantumTape,
     argnum=None,
     shifts=None,
     gradient_recipes=None,
@@ -1510,7 +1535,7 @@ def _param_shift_new(
 
 @gradient_transform
 def param_shift(
-    tape,
+    tape: QuantumTape,
     argnum=None,
     shifts=None,
     gradient_recipes=None,

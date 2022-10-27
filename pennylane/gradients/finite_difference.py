@@ -25,13 +25,13 @@ from scipy.special import factorial
 
 import pennylane as qml
 
-from .gradient_transform import (
-    gradient_transform,
-    grad_method_validation,
-    choose_grad_methods,
-    gradient_analysis,
-)
 from .general_shift_rules import generate_shifted_tapes
+from .gradient_transform import (
+    choose_grad_methods,
+    grad_method_validation,
+    gradient_analysis,
+    gradient_transform,
+)
 
 
 @functools.lru_cache(maxsize=None)
@@ -299,7 +299,7 @@ def _finite_diff_new(
             shapes.append(0)
             continue
 
-        g_tapes = generate_shifted_tapes(tape, i, shifts * h)
+        g_tapes = generate_shifted_tapes(tape, coeffs, i, shifts * h)
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
 
@@ -567,7 +567,7 @@ def finite_diff(
             shapes.append(0)
             continue
 
-        g_tapes = generate_shifted_tapes(tape, i, shifts * h)
+        g_tapes = generate_shifted_tapes(tape, coeffs, i, shifts * h)
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
 

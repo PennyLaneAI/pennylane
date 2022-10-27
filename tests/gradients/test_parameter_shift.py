@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module."""
-import pytest
 from collections.abc import Sequence
+
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import _get_operation_recipe
-from pennylane.devices import DefaultQubit
-from pennylane.operation import Observable, AnyWires
+from pennylane.operation import AnyWires, Observable
 
 
 class TestGetOperationRecipe:
@@ -491,7 +492,7 @@ class TestParamShiftBroadcast:
         during the Jacobian computation."""
         spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.tape.QuantumTape(distribute_shots=True, shots=1000) as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])  # does not have any impact on the expval
             qml.expval(qml.PauliZ(0))
@@ -505,7 +506,8 @@ class TestParamShiftBroadcast:
         assert res.shape == (1, 2)
 
         # only called for parameter 0
-        assert spy.call_args[0][0:2] == (tape, [0])
+        assert spy.call_args[0][0] == tape
+        assert spy.call_args[0][0] == [0]
 
     def test_with_gradient_recipes(self):
         """Test that the function behaves as expected"""

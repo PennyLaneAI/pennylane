@@ -15,24 +15,21 @@
 This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
-import warnings
 import itertools as it
+import warnings
 from collections.abc import Sequence
 
 import pennylane as qml
 from pennylane import numpy as np
 
-from .gradient_transform import (
-    gradient_analysis,
-    grad_method_validation,
-)
-from .hessian_transform import hessian_transform
-from .parameter_shift import _get_operation_recipe
 from .general_shift_rules import (
     _combine_shift_rules,
-    generate_shifted_tapes,
     generate_multishifted_tapes,
+    generate_shifted_tapes,
 )
+from .gradient_transform import grad_method_validation, gradient_analysis
+from .hessian_transform import hessian_transform
+from .parameter_shift import _get_operation_recipe
 
 
 def _process_argnum(argnum, tape):
@@ -174,7 +171,7 @@ def _generate_diag_tapes(tape, idx, diag_recipes, add_unshifted, tapes, coeffs):
         unshifted_coeff = None
 
     # Create the shifted tapes for the diagonal entry and store them along with coefficients
-    new_tapes = generate_shifted_tapes(tape, idx, s, m)
+    new_tapes = generate_shifted_tapes(tape, c, idx, s, m)
     tapes.extend(new_tapes)
     coeffs.append(c)
 

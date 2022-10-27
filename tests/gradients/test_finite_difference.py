@@ -16,12 +16,11 @@ Tests for the gradients.finite_difference module.
 """
 import pytest
 
-from pennylane import numpy as np
-
 import pennylane as qml
-from pennylane.gradients import finite_diff, finite_diff_coeffs, generate_shifted_tapes
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
-from pennylane.operation import Observable, AnyWires
+from pennylane.gradients import finite_diff, finite_diff_coeffs
+from pennylane.operation import AnyWires, Observable
 
 
 class TestCoeffs:
@@ -138,7 +137,8 @@ class TestFiniteDiff:
         assert len(spy.call_args_list) == 1
 
         # only called for parameter 0
-        assert spy.call_args[0][0:2] == (tape, 0)
+        assert spy.call_args[0][0] == tape
+        assert spy.call_args[0][2] == 0
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):

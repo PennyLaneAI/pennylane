@@ -24,14 +24,10 @@ import numpy as np
 
 import pennylane as qml
 
-from .gradient_transform import (
-    gradient_transform,
-    grad_method_validation,
-    choose_grad_methods,
-)
 from .finite_difference import finite_diff
-from .parameter_shift import expval_param_shift, _get_operation_recipe
-from .general_shift_rules import process_shifts, generate_shifted_tapes
+from .general_shift_rules import generate_shifted_tapes, process_shifts
+from .gradient_transform import choose_grad_methods, grad_method_validation, gradient_transform
+from .parameter_shift import _get_operation_recipe, expval_param_shift
 
 
 def _grad_method(tape, idx):
@@ -351,7 +347,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
                 "gradient recipe of more than two terms."
             )
 
-        shifted_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers)
+        shifted_tapes = generate_shifted_tapes(tape, coeffs, idx, op_shifts, multipliers)
 
         # evaluate transformed observables at the original parameter point
         # first build the Heisenberg picture transformation matrix Z

@@ -12,20 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.general_shift_rules module."""
+import numpy as np
 import pytest
 
-import numpy as np
 import pennylane as qml
-
 from pennylane.gradients.general_shift_rules import (
+    _get_shift_rule,
+    _iterate_shift_rule_with_multipliers,
     eigvals_to_frequencies,
     frequencies_to_period,
-    generate_shift_rule,
-    _get_shift_rule,
     generate_multi_shift_rule,
-    generate_shifted_tapes,
     generate_multishifted_tapes,
-    _iterate_shift_rule_with_multipliers,
+    generate_shift_rule,
+    generate_shifted_tapes,
 )
 
 
@@ -407,7 +406,8 @@ class TestGenerateShiftedTapes:
 
         tape.trainable_params = {0, 2}
         shifts = [0.1, -0.2, 1.6]
-        res = generate_shifted_tapes(tape, 1, shifts)
+        coeffs = [1, 1, 1]
+        res = generate_shifted_tapes(tape, coeffs, 1, shifts)
 
         assert len(res) == len(shifts)
         assert res[0].get_parameters(trainable_only=False) == [1.0, 2.0, 3.1, 4.0]
@@ -427,7 +427,8 @@ class TestGenerateShiftedTapes:
         tape.trainable_params = {0, 2}
         shifts = [0.3, 0.6]
         multipliers = [0.2, 0.5]
-        res = generate_shifted_tapes(tape, 0, shifts, multipliers)
+        coeffs = [1, 1]
+        res = generate_shifted_tapes(tape, coeffs, 0, shifts, multipliers)
 
         assert len(res) == 2
         assert res[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]

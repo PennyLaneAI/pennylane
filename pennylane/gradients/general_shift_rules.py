@@ -14,12 +14,16 @@
 """Contains a function for generating generalized parameter shift rules and
 helper methods for processing shift rules as well as for creating tapes with
 shifted parameters."""
+# pylint: disable=too-many-arguments
 import functools
 import itertools
 import warnings
+from typing import Sequence
 
 import numpy as np
+
 import pennylane as qml
+from pennylane.tape.tape import QuantumTape
 
 
 def process_shifts(rule, tol=1e-10, batch_duplicates=True):
@@ -378,12 +382,21 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     return _combine_shift_rules(rules)
 
 
-def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=False):
+def generate_shifted_tapes(
+    tape: QuantumTape,
+    coeffs: Sequence[float],
+    index: int,
+    shifts: Sequence[float],
+    multipliers: Sequence[float] = None,
+    broadcast: bool = False,
+):
     r"""Generate a list of tapes or a single broadcasted tape, where one marked
     trainable parameter has been shifted by the provided shift values.
 
     Args:
         tape (.QuantumTape): input quantum tape
+        coeffs (Sequence[float]): Sequence of coefficients.
+            The length determines how many parameter-shifted tapes are created.
         index (int): index of the trainable parameter to shift
         shifts (Sequence[float or int]): sequence of shift values.
             The length determines how many parameter-shifted tapes are created.
@@ -403,7 +416,10 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
             the ``batch_size`` of the returned tape matches the length of ``shifts``.
     """
 
-    def _copy_and_shift_params(tape, params, idx, shift, mult):
+    total_shots = tape.shots
+    M = np.sum(np.abs(coeffs))
+
+    def _copy_and_shift_params(tape: QuantumTape, params, idx, shift, mult, coeff):
         """Create a copy of a tape and of parameters, and set the new tape to the parameters
         rescaled and shifted as indicated by ``idx``, ``mult`` and ``shift``."""
         new_params = params.copy()
@@ -412,6 +428,10 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
         ) + qml.math.convert_like(shift, new_params[idx])
 
         shifted_tape = tape.copy(copy_operations=True)
+        if tape.distribute_shots and total_shots is not None:
+            shots = np.floor(total_shots * (np.abs(coeff) / M))
+            shots = [int(shot) for shot in shots] if np.shape(shots) != () else int(shots)
+            shifted_tape.shots = shots
         shifted_tape.set_parameters(new_params)
         return shifted_tape
 
@@ -420,11 +440,11 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None, broadcast=Fals
         multipliers = np.ones_like(shifts)
 
     if broadcast:
-        return (_copy_and_shift_params(tape, params, index, shifts, multipliers),)
+        return (_copy_and_shift_params(tape, params, index, shifts, multipliers, coeffs),)
 
     return tuple(
-        _copy_and_shift_params(tape, params, index, shift, multiplier)
-        for shift, multiplier in zip(shifts, multipliers)
+        _copy_and_shift_params(tape, params, index, shift, multiplier, coeff)
+        for shift, multiplier, coeff in zip(shifts, multipliers, coeffs)
     )
 
 
