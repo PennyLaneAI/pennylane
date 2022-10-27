@@ -376,11 +376,12 @@ def _execute_fwd(
     return res
 
 
-def execute_new(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use for the shots vectors.
         execute_fn (callable): The execution function used to execute the tapes
             during the forward pass. This function must return a tuple ``(results, jacobians)``.
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
@@ -406,6 +407,9 @@ def execute_new(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
+    if device.shot_vector:
+        gradient_kwargs["shots"] = device.shot_vector
+
     if gradient_fn is None:
         # PennyLane forward execution
         return _execute_fwd_new(
@@ -420,6 +424,7 @@ def execute_new(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=
     return _execute_bwd_new(
         parameters,
         tapes=tapes,
+        device=device,
         execute_fn=execute_fn,
         gradient_fn=gradient_fn,
         gradient_kwargs=gradient_kwargs,
@@ -486,6 +491,7 @@ def _compute_jvps(jacs, tangents, multi_measurements):
 def _execute_bwd_new(
     params,
     tapes,
+    device,
     execute_fn,
     gradient_fn,
     gradient_kwargs,
@@ -504,7 +510,11 @@ def _execute_bwd_new(
 
         with qml.tape.Unwrap(*new_tapes):
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
-        res = _to_jax(res)
+
+        if device.shot_vector:
+            res = _to_jax_shot_vector(res)
+        else:
+            res = _to_jax(res)
 
         return res
 
@@ -536,6 +546,7 @@ def _execute_bwd_new(
                 jvps = processing_fn(
                     execute_new(
                         jvp_tapes,
+                        device,
                         execute_fn,
                         gradient_fn,
                         gradient_kwargs,
@@ -549,7 +560,6 @@ def _execute_bwd_new(
                 jacs = gradient_fn(new_tapes, **gradient_kwargs)
             multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
             jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
-
         return execute_wrapper(primals[0]), jvps
 
     return execute_wrapper(params)
@@ -571,4 +581,14 @@ def _to_jax(res):
             for r_i in r:
                 sub_r.append(jnp.array(r_i))
             res_.append(tuple(sub_r))
+    return res_
+
+
+def _to_jax_shot_vector(res):
+    res_ = []
+    for r in res:
+        sub_res_ = []
+        for r_ in r:
+            sub_res_.append(_to_jax([r_])[0])
+        res_.append(tuple(sub_res_))
     return res_

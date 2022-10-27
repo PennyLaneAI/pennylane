@@ -450,7 +450,9 @@ def _execute_new(
             )  # pragma: no cover
         elif mapped_interface == "jax":
             _execute = _get_jax_execute_fn_new(interface, tapes)
-            res = _execute(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
+            res = _execute(
+                tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+            )
 
     except ImportError as e:
         raise qml.QuantumFunctionError(

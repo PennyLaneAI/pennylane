@@ -15,6 +15,7 @@
 This module contains functions for computing the Jacobian vector product
 of tapes.
 """
+from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
@@ -223,9 +224,26 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
     def processing_fn(results):
         # postprocess results to compute the Jacobian
         jac = fn(results)
+        shots = gradient_kwargs.get("shots")
+        shot_vector = isinstance(shots, Sequence)
+
+        # Jacobian without shot vectors
+        if not shot_vector:
+            if multi_m:
+                return compute_jvp_multi(tangent, jac)
+            return compute_jvp_single(tangent, jac)
+
+        # The jacoobian is calculated for shot vectors
+        num_shot_components = len(shots)
+        jvps = []
         if multi_m:
-            return compute_jvp_multi(tangent, jac)
-        return compute_jvp_single(tangent, jac)
+            for i in range(num_shot_components):
+                jvps.append(compute_jvp_multi(tangent, jac[i]))
+        else:
+            for i in range(num_shot_components):
+                jvps.append(compute_jvp_single(tangent, jac[i]))
+
+        return tuple(jvps)
 
     return gradient_tapes, processing_fn
 
