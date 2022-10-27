@@ -25,22 +25,19 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
+    Expectation,
+    MidMeasure,
+    Probability,
     Sample,
+    ShadowExpval,
     State,
     Variance,
-    Expectation,
-    Probability,
-    MidMeasure,
-    ShadowExpval,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.ops import Hamiltonian, Sum
+from pennylane.tape import QuantumTape
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -687,7 +684,7 @@ class Device(abc.ABC):
 
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
-    def batch_transform(self, circuit):
+    def batch_transform(self, circuit: QuantumTape):
         """Apply a differentiable batch transform for preprocessing a circuit
         prior to execution. This method is called directly by the QNode, and
         should be overwritten if the device requires a transform that
@@ -713,22 +710,22 @@ class Device(abc.ABC):
             the sequence of circuits to be executed, and a post-processing function
             to be applied to the list of evaluated circuit results.
         """
-        supports_hamiltonian = self.supports_observable("Hamiltonian")
+        supports_sum = self.supports_observable("Hamiltonian")
         finite_shots = self.shots is not None
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in circuit.observables
-            if obs.name == "Hamiltonian"
+            if isinstance(obs, Hamiltonian)
         )
 
-        hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
+        sum_in_obs = any(isinstance(obs, (Hamiltonian, Sum)) for obs in circuit.observables)
 
         return_types = [m.return_type for m in circuit.observables]
 
         is_shadow = ShadowExpval in return_types
 
-        if hamiltonian_in_obs and (
-            (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known
+        if sum_in_obs and (
+            (not supports_sum or (finite_shots and not is_shadow)) or grouping_known
         ):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
@@ -743,7 +740,7 @@ class Device(abc.ABC):
                 ) from e
         elif (
             len(circuit._obs_sharing_wires) > 0
-            and not hamiltonian_in_obs
+            and not sum_in_obs
             and all(
                 t not in return_types
                 for t in [
