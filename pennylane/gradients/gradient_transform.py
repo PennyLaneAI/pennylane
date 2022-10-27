@@ -53,7 +53,7 @@ def gradient_analysis(tape, use_graph=True, grad_fn=None):
     if grad_fn is not None:
         tape._gradient_fn = grad_fn
 
-    for idx, info in tape._par_info.items():
+    for idx, info in enumerate(tape._par_info):
 
         if idx not in tape.trainable_params:
             # non-trainable parameters do not require a grad_method
@@ -101,7 +101,7 @@ def grad_method_validation(method, tape):
 
     diff_methods = {
         idx: info["grad_method"]
-        for idx, info in tape._par_info.items()  # pylint: disable=protected-access
+        for idx, info in enumerate(tape._par_info)  # pylint: disable=protected-access
         if idx in tape.trainable_params
     }
 
