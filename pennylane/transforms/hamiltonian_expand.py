@@ -16,7 +16,6 @@ Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
 import pennylane as qml
-from pennylane.ops import Sum
 
 
 def hamiltonian_expand(tape, group=True):
@@ -122,7 +121,7 @@ def hamiltonian_expand(tape, group=True):
     hamiltonian = tape.measurements[0].obs
 
     if (
-        not isinstance(hamiltonian, (qml.Hamiltonian, Sum))
+        not isinstance(hamiltonian, qml.Hamiltonian)
         or len(tape.measurements) > 1
         or tape.measurements[0].return_type != qml.measurements.Expectation
     ):
