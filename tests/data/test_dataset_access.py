@@ -427,8 +427,8 @@ class TestLoad:
         )
 
         # these test that _generate_folders carried on as expected
-        assert arglist[1].args == ({"6-31G": ["0.46", "1.16"]}, [["6-31G"], ["full"]])
-        assert arglist[2].args == (["0.46", "1.16"], [["full"]])
+        assert arglist[1][0] == ({"6-31G": ["0.46", "1.16"]}, [["6-31G"], ["full"]])
+        assert arglist[2][0] == (["0.46", "1.16"], [["full"]])
 
         # assert that the "molecule" attribute was dropped
         assert sorted(glob(os.path.join(dest, "**/*.dat"), recursive=True)) == [
