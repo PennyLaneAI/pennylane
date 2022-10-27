@@ -89,7 +89,8 @@ class Dataset(ABC):
         """Constructor for standardized datasets."""
         self._dtype = data_type
         self._folder = folder.rstrip("/")
-        self._prefix = os.path.join(self._folder, attr_prefix.rstrip("/")) + "_{}.dat"
+        self._prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
+        self._prefix_len = len(attr_prefix) + 1
         self.__doc__ = ""
 
         self._fullfile = self._prefix.format("full")
@@ -97,9 +98,7 @@ class Dataset(ABC):
             self._fullfile = None
 
         for f in glob(self._folder + "/*.dat"):
-            data = self._read_file(f)
-            for attr, value in data.items():
-                setattr(self, f"{attr}", value)
+            self.read(f)
 
     def __base_init__(self, **kwargs):
         """Constructor for user-defined datasets."""
@@ -148,8 +147,14 @@ class Dataset(ABC):
         >>> new_dataset.read('./path/to/file/file_name.dat')
         """
         data = self._read_file(filepath)
-        for key, val in data.items():
-            setattr(self, f"{key}", val)
+        attribute = "full"  # set 'full' by default so non-standard datasets read keys and values
+        if self._is_standard:
+            attribute = self.__get_attribute_from_filename(filepath)
+        if attribute == "full":
+            for attr, value in data.items():
+                setattr(self, f"{attr}", value)
+        else:
+            setattr(self, f"{attribute}", data)
 
     def write(self, filepath, protocol=4):
         """Writes the dataset to a file as a dictionary.
@@ -197,6 +202,9 @@ class Dataset(ABC):
     # The methods below are intended for use only by standard Dataset objects
     def __get_filename_for_attribute(self, attribute):
         return self._fullfile if self._fullfile else self._prefix.format(attribute)
+
+    def __get_attribute_from_filename(self, filename):
+        return os.path.basename(filename)[self._prefix_len : -4]
 
     def __getattribute__(self, name):
         try:

@@ -17,7 +17,6 @@ Contains the Dataset utility functions.
 # pylint:disable=too-many-arguments,global-statement
 from concurrent.futures import ThreadPoolExecutor, wait
 import os
-import sys
 
 import requests
 from pennylane.data.dataset import Dataset
@@ -57,7 +56,8 @@ def _validate_params(data_type, description, attributes):
                 for child in node.values():
                     validate_structure(child, params_left)
             elif detail not in node:
-                sys.tracebacklimit = 0  # the recursive stack is disorienting
+                # TODO: shorten this limit without permanently changing it
+                # sys.tracebacklimit = 0  # the recursive stack is disorienting
                 raise ValueError(
                     f"{param} value of '{detail}' not available. Available values are {list(node)}"
                 )

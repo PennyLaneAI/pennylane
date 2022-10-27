@@ -19,6 +19,8 @@ from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import MagicMock, patch
 from glob import glob
 import os
+import dill
+import zstd
 
 import pytest
 import requests
@@ -72,7 +74,12 @@ def submit_download_mock(_self, _fetch_and_save, filename, dest_folder):
     """Patch to write a nonsense dataset rather than a downloaded one."""
     # If filename == foo/bar/x_y_z_attr.dat, content == "x_y_z_attr"
     content = os.path.splitext(os.path.basename(filename))[0]
-    qml.data.Dataset(molecule=content).write(os.path.join(dest_folder, filename))
+    if content.split("_")[-1] == "full":
+        content = {"molecule": content}
+    pickled_data = dill.dumps(content, protocol=4)
+    compressed_pickle = zstd.compress(pickled_data)
+    with open(os.path.join(dest_folder, filename), "wb") as f:
+        f.write(compressed_pickle)
 
 
 @patch.object(qml.data.data_manager, "_foldermap", _folder_map)
