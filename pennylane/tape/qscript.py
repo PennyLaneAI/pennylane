@@ -18,12 +18,19 @@ executed by a device.
 # pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
 
 import contextlib
-from collections import Counter, defaultdict
 import copy
+from collections import Counter, defaultdict
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts
+from pennylane.measurements import (
+    AllCounts,
+    Counts,
+    MeasurementProcess,
+    Sample,
+    Shadow,
+    ShadowExpval,
+)
 from pennylane.operation import Operator
 
 _empty_wires = qml.wires.Wires([])
@@ -256,11 +263,11 @@ class QuantumScript:
         return self._prep + self._ops
 
     @property
-    def observables(self):
+    def observables(self) -> List[MeasurementProcess]:
         """Returns the observables on the quantum script.
 
         Returns:
-            list[.Operator]]: list of observables
+            list[.MeasurementProcess]]: list of observables
 
         **Example**
 
@@ -269,12 +276,9 @@ class QuantumScript:
         >>> qscript.observables
         [expval(PauliZ(wires=[0]))]
         """
-        # TODO: modify this property once devices
-        # have been refactored to accept and understand recieving
-        # measurement processes rather than specific observables.
         obs = []
 
-        for m in self._measurements:
+        for m in self.measurements:
             if m.obs is not None:
                 m.obs.return_type = m.return_type
                 obs.append(m.obs)
@@ -284,7 +288,7 @@ class QuantumScript:
         return obs
 
     @property
-    def measurements(self):
+    def measurements(self) -> List[MeasurementProcess]:
         """Returns the measurements on the quantum script.
 
         Returns:
@@ -824,12 +828,12 @@ class QuantumScript:
 
         output_shape = tuple()
 
-        if len(self._measurements) == 1:
-            output_shape = self._single_measurement_shape(self._measurements[0], device)
+        if len(self.measurements) == 1:
+            output_shape = self._single_measurement_shape(self.measurements[0], device)
         else:
-            num_measurements = len({meas.return_type for meas in self._measurements})
+            num_measurements = len({meas.return_type for meas in self.measurements})
             if num_measurements == 1:
-                output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
+                output_shape = self._multi_homogenous_measurement_shape(self.measurements, device)
             else:
                 raise ValueError(
                     "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
@@ -866,7 +870,7 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
-        shapes = tuple(meas_process.shape(device) for meas_process in self._measurements)
+        shapes = tuple(meas_process.shape(device) for meas_process in self.measurements)
 
         if len(shapes) == 1:
             return shapes[0]
@@ -898,7 +902,7 @@ class QuantumScript:
         """
         if qml.active_return():
             return self._numeric_type_new
-        measurement_types = {meas.return_type for meas in self._measurements}
+        measurement_types = {meas.return_type for meas in self.measurements}
         if len(measurement_types) > 1:
             raise ValueError(
                 "Getting the numeric type of a quantum script that contains multiple types of measurements is unsupported."
@@ -907,9 +911,9 @@ class QuantumScript:
         # Note: if one of the sample measurements contains outputs that
         # are real, then the entire result will be real
         if list(measurement_types)[0] == qml.measurements.Sample:
-            return next((float for mp in self._measurements if mp.numeric_type is float), int)
+            return next((float for mp in self.measurements if mp.numeric_type is float), int)
 
-        return self._measurements[0].numeric_type
+        return self.measurements[0].numeric_type
 
     @property
     def _numeric_type_new(self):
@@ -930,7 +934,7 @@ class QuantumScript:
             >>> qs.numeric_type
             complex
         """
-        types = tuple(observable.numeric_type for observable in self._measurements)
+        types = tuple(observable.numeric_type for observable in self.measurements)
 
         return types[0] if len(types) == 1 else types
 
@@ -956,14 +960,14 @@ class QuantumScript:
             # unless modified.
             _prep = [copy.copy(op) for op in self._prep]
             _ops = [copy.copy(op) for op in self._ops]
-            _measurements = [copy.copy(op) for op in self._measurements]
+            _measurements = [copy.copy(op) for op in self.measurements]
         else:
             # Perform a shallow copy of the state prep, operation, and measurement queues. The
             # operations within the queues will be references to the original tape operations;
             # changing the original operations will always alter the operations on the copied tape.
             _prep = self._prep.copy()
             _ops = self._ops.copy()
-            _measurements = self._measurements.copy()
+            _measurements = self.measurements.copy()
 
         new_qscript = self.__class__(ops=_ops, measurements=_measurements, prep=_prep)
         new_qscript._graph = None if copy_operations else self._graph
@@ -1047,7 +1051,7 @@ class QuantumScript:
         """
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
-        adj = self.__class__(ops=ops_adj, measurements=self._measurements, prep=self._prep)
+        adj = self.__class__(ops=ops_adj, measurements=self.measurements, prep=self._prep)
         if self.do_queue:
             qml.QueuingManager.append(adj)
         return adj
