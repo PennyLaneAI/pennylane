@@ -17,13 +17,13 @@ This module contains the qml.equal function.
 # pylint: disable=too-many-arguments,too-many-return-statements
 from typing import Union
 import pennylane as qml
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
 from pennylane.operation import Operator
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess],
-    op2: Union[Operator, MeasurementProcess],
+    op1: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
+    op2: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -32,8 +32,8 @@ def equal(
     r"""Function for determining operator or measurement equality.
 
     Args:
-        op1 (.Operator or .MeasurementProcess): First operator or MeasurementProcess to compare
-        op2 (.Operator or .MeasurementProcess): Second operator or MeasurementProcess to compare
+        op1 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): First object to compare
+        op2 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``
         rtol (float, optional): Relative tolerance for parameters
@@ -85,6 +85,9 @@ def equal(
 
     if op1.__class__ is MeasurementProcess:
         return equal_measurements(op1, op2)
+    
+    if op1.__class__ is ShadowMeasurementProcess:
+        return equal_shadow_measurements(op1, op2)
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
@@ -121,7 +124,16 @@ def equal_measurements(op1, op2):
     return_types_match = op1.return_type == op2.return_type
     observables_match = op1.obs == op2.obs
     wires_match = op1.wires == op2.wires
+    eigvals_match = op1.eigvals == op2.eigvals #TODO add test case for eigvals and logbase
+    log_base_match = op1.log_base == op2.log_base
 
-    if return_types_match and observables_match and wires_match:
-        return True
-    return False
+    return return_types_match and observables_match and wires_match and eigvals_match and log_base_match
+
+def equal_shadow_measurements(op1, op2):
+    """Determine whether two ShadowMeasurementProcess objects are equal"""
+    return_types_match = op1.return_type == op2.return_type
+    wires_match = op1.wires == op2.wires
+    H_match = op1.H == op2.H
+    k_match = op1.k == op2.k
+
+    return return_types_match and wires_match and H_match and k_match
