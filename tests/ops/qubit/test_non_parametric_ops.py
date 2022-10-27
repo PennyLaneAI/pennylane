@@ -28,12 +28,8 @@ from pennylane import math
 from pennylane.operation import AnyWires
 from pennylane.wires import Wires
 
-<<<<<<< HEAD
 from tests.gate_data import I, X, Y, Z, H, CNOT, SWAP, ISWAP, SISWAP, CZ, S, T, CSWAP, Toffoli, ECR
 
-
-=======
->>>>>>> bf6e5c92cbef0f9c877b316d50b6d736055ce657
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
     (qml.Identity, I),
