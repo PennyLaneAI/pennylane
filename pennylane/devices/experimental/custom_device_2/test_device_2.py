@@ -1,4 +1,4 @@
-import pennylane
+import pennylane as qml
 from ..device_interface import *
 
 from pennylane.tape.qscript import QuantumScript
