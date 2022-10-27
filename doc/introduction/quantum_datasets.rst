@@ -11,8 +11,10 @@ The data module provides functionality to access, store and manipulate the quant
 Loading Datasets in PennyLane
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We can then download data of the desired type with the :func: `~pennylande.data.load` function, and if the data that has already been downloaded will be loaded from the disk. We make sure to include all of the necessary attributes for the desired data. 
-For 'qchem' this includes the `molname`, `basis` and `bondlength`, and for 'qspin' this includes `sys_name`, `periodic`, `lattice` and `layout`. Ideally, the :func:`~pennylande.data.load` returns a list with the desired data which can then be used within
+We can download data of the desired type with the :func: `~pennylande.data.load` function. If the data that has already been downloaded,
+it will be loaded from the disk instead. We must include all of the necessary attributes for the desired data.
+For 'qchem' this includes the molname, basis and bondlength, and for 'qspin' this includes sys_name, periodic, lattice and layout. 
+Ideally, the :func:`~pennylande.data.load` returns a list with the desired data which can then be used within
 the usual PennyLane workflow.
 
 .. code-block:: python
