@@ -31,7 +31,7 @@ from pennylane.measurements import (
     Shadow,
     ShadowExpval,
 )
-from pennylane.operation import Operator
+from pennylane.operation import Observable, Operator
 
 _empty_wires = qml.wires.Wires([])
 
@@ -263,11 +263,11 @@ class QuantumScript:
         return self._prep + self._ops
 
     @property
-    def observables(self) -> List[MeasurementProcess]:
+    def observables(self) -> List[MeasurementProcess, Observable]:
         """Returns the observables on the quantum script.
 
         Returns:
-            list[.MeasurementProcess]]: list of observables
+            list[.MeasurementProcess, .Observable]]: list of observables
 
         **Example**
 
