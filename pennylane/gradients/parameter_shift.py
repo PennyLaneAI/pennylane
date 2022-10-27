@@ -146,6 +146,7 @@ def _single_meas_grad(result, coeffs, unshifted_coeff, r0):
 
     If an unshifted term exists, its contribution is added to the gradient.
     """
+    result = qml.math.stack(result)
     coeffs = qml.math.convert_like(coeffs, result)
     g = qml.math.tensordot(result, coeffs, [[0], [0]])
     if unshifted_coeff is not None:
