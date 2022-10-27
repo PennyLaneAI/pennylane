@@ -21,8 +21,8 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 import uuid
-from collections.abc import Iterable
 import warnings
+from collections.abc import Iterable
 from enum import Enum
 from typing import Generic, TypeVar
 
@@ -129,7 +129,13 @@ class MeasurementProcess:
     # pylint: disable=too-many-arguments
 
     def __init__(
-        self, return_type, obs: Operator = None, wires=None, eigvals=None, id=None, log_base=None
+        self,
+        return_type: ObservableReturnTypes,
+        obs: Operator = None,
+        wires=None,
+        eigvals=None,
+        id=None,
+        log_base=None,
     ):
         self.return_type = return_type
         self.obs = obs
