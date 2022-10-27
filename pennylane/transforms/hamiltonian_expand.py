@@ -16,9 +16,12 @@ Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
 import pennylane as qml
+from pennylane.measurements import Expectation
+from pennylane.ops import SProd, Sum
+from pennylane.tape import QuantumScript
 
 
-def hamiltonian_expand(tape, group=True):
+def hamiltonian_expand(tape: QuantumScript, group=True):
     r"""
     Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
     and provides a function to recombine the results.
@@ -182,6 +185,45 @@ def hamiltonian_expand(tape, group=True):
             qml.expval(o)
 
         tapes.append(new_tape)
+
+    # pylint: disable=function-redefined
+    def processing_fn(res):
+        dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
+        return qml.math.sum(qml.math.stack(dot_products), axis=0)
+
+    return tapes, processing_fn
+
+
+def sum_expand(tape: QuantumScript):
+    """Splits a tape measuring a Sum expectation into mutliple tapes of summand expectations,
+    and provides a function to recombine the results.
+
+    Args:
+        tape (.QuantumTape): the tape used when calculating the expectation value
+            of the Hamiltonian
+
+    Returns:
+        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions to compute the expectation value.
+    """
+    sum_op = tape.measurements[0].obs
+    if (
+        not isinstance(sum_op, Sum)
+        or len(tape.measurements) > 1
+        or tape.measurements[0].return_type != Expectation
+    ):
+        raise ValueError("Passed tape must end in `qml.expval(S)`, where S is of type `Sum`")
+    # make one tape per summand
+    tapes = []
+    coeffs = []
+    for summand in sum_op.operands:
+        if isinstance(summand, SProd):
+            coeffs.append(summand.scalar)
+            summand = summand.base
+        else:
+            coeffs.append(1.0)
+        tapes.append(QuantumScript(ops=tape.operations, measurements=[qml.expval(summand)]))
 
     # pylint: disable=function-redefined
     def processing_fn(res):

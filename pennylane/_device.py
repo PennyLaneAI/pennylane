@@ -25,22 +25,19 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
+    Expectation,
+    MidMeasure,
+    Probability,
     Sample,
+    ShadowExpval,
     State,
     Variance,
-    Expectation,
-    Probability,
-    MidMeasure,
-    ShadowExpval,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.ops import Hamiltonian, Sum
+from pennylane.tape import QuantumTape
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -687,7 +684,7 @@ class Device(abc.ABC):
 
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
-    def batch_transform(self, circuit):
+    def batch_transform(self, circuit: QuantumTape):
         """Apply a differentiable batch transform for preprocessing a circuit
         prior to execution. This method is called directly by the QNode, and
         should be overwritten if the device requires a transform that
@@ -718,10 +715,11 @@ class Device(abc.ABC):
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in circuit.observables
-            if obs.name == "Hamiltonian"
+            if isinstance(obs, Hamiltonian)
         )
 
-        hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
+        hamiltonian_in_obs = any(isinstance(obs, Hamiltonian) for obs in circuit.observables)
+        sum_in_obs = any(isinstance(obs, Sum) for obs in circuit.observables)
 
         return_types = [m.return_type for m in circuit.observables]
 
@@ -736,6 +734,14 @@ class Device(abc.ABC):
             # split tape into multiple tapes of diagonalizable known observables.
             try:
                 circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
+
+            except ValueError as e:
+                raise ValueError(
+                    "Can only return the expectation of a single Hamiltonian observable"
+                ) from e
+        elif sum_in_obs and not is_shadow:
+            try:
+                circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
 
             except ValueError as e:
                 raise ValueError(
