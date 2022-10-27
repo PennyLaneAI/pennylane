@@ -1,343 +1,252 @@
 :orphan:
 
-# Release 0.26.0-dev (development release)
+# Release 0.27.0-dev (development release)
 
 <h3>New features since last release</h3>
 
-* Embedding templates now support parameter broadcasting.
-  [(#2810)](https://github.com/PennyLaneAI/pennylane/pull/2810)
+* The `qml.qchem.basis_rotation` function is added to the `qchem` module. This function returns
+  grouped coefficients, grouped observables and basis rotation transformation matrices needed to
+  construct a qubit Hamiltonian in the rotated basis of molecular orbitals. In this basis, the
+  one-electron integral matrix and the symmetric matrices obtained from factorizing the two-electron
+  integrals tensor are diagonal.
+  ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
 
-  Embedding templates like `AmplitudeEmbedding` or `IQPEmbedding` now support
-  parameter broadcasting with a leading broadcasting dimension in their variational
-  parameters. `AmplitudeEmbedding`, for example, would usually use a one-dimensional input
-  vector of features. With broadcasting, we now also can compute
+* Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
+keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
+  ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
 
-  ```pycon
-  >>> features = np.array([
-  ...     [0.5, 0.5, 0., 0., 0.5, 0., 0.5, 0.],
-  ...     [1., 0., 0., 0., 0., 0., 0., 0.],
-  ...     [0.5, 0.5, 0., 0., 0., 0., 0.5, 0.5],
-  ... ])
-  >>> op = qml.AmplitudeEmbedding(features, wires=[1, 5, 2])
-  >>> op.batch_size
-  3
-  ```
-
-  An exception is `BasisEmbedding`, which is not broadcastable.
-
-* Added `QutritDevice` as an abstract base class for qutrit devices.
-  [#2781](https://github.com/PennyLaneAI/pennylane/pull/2781)
-  [#2782](https://github.com/PennyLaneAI/pennylane/pull/2782)
-
-* Added operation `qml.QutritUnitary` for applying user-specified unitary operations on qutrit devices.
-  [(#2699)](https://github.com/PennyLaneAI/pennylane/pull/2699)
-
-* Added `default.qutrit` plugin for pure state simulation of qutrits. Currently supports operation `qml.QutritUnitary` and measurements `qml.state()`, `qml.probs()`.
-  [(#2783)](https://github.com/PennyLaneAI/pennylane/pull/2783)
+* `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
+  symmetries of the Hamiltonian.
+  [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
 
   ```pycon
-  >>> dev = qml.device("default.qutrit", wires=1)
-  >>> @qml.qnode(dev)
-  ... def circuit(U):
-  ...     qml.QutritUnitary(U, wires=0)
-  ...     return qml.probs(wires=0)
-  >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-  >>> print(circuit(U))
-  [0.5 0.5 0. ]
+    >>> symbols = ['He', 'H']
+    >>> geometry =  np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
+    >>> mol = qchem.Molecule(symbols, geometry, charge=1)
+    >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
+    >>> generators = qchem.symmetry_generators(H)
+    >>> paulixops = qchem.paulix_ops(generators, n_qubits)
+    >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
+    >>> tap_op = qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
+    ...                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
+    >>> tap_op(3.14159)
+    [Exp(1.570795j, 'PauliY', wires=[0])]
   ```
 
-* Added `qml.THermitian` observable for measuring user-specified Hermitian matrix observables for qutrit circuits.
-  ([#2784](https://github.com/PennyLaneAI/pennylane/pull/2784))
-
-* Added the `qml.TShift` and `qml.TClock` qutrit operations for qutrit devices, which are the qutrit analogs of the Pauli X and Pauli Z operations.
-  ([#2841](https://github.com/PennyLaneAI/pennylane/pull/2841))
-
-* Added the private `_prod_sort` function that sorts a list of operators by their respective wires
-  taking into account their commutativity property.
-  [(#2995)](https://github.com/PennyLaneAI/pennylane/pull/2995)
-
-**Classical shadows**
-
-* Added the `qml.classical_shadow` measurement process that can now be returned from QNodes.
-
-  The measurement protocol is described in detail in the
-  [classical shadows paper](https://arxiv.org/abs/2002.08953). Calling the QNode
-  will return the randomized Pauli measurements (the `recipes`) that are performed
-  for each qubit, identified as a unique integer:
-
-  * 0 for Pauli X
-  * 1 for Pauli Y
-  * 2 for Pauli Z
-
-  It also returns the measurement results (the `bits`), which is `0` if the 1 eigenvalue
-  is sampled, and `1` if the -1 eigenvalue is sampled.
-
-  For example,
-
-  ```python
-  dev = qml.device("default.qubit", wires=2, shots=5)
-
-  @qml.qnode(dev)
-  def circuit():
-      qml.Hadamard(wires=0)
-      qml.CNOT(wires=[0, 1])
-      return qml.classical_shadow(wires=[0, 1])
-  ```
+  Moreover, the obtained tapered operation can be directly used within a QNode:
 
   ```pycon
-  >>> bits, recipes = circuit()
-  tensor([[0, 0],
-          [1, 0],
-          [1, 0],
-          [0, 0],
-          [0, 1]], dtype=uint8, requires_grad=True)
-  >>> recipes
-  tensor([[2, 2],
-          [0, 2],
-          [1, 0],
-          [0, 2],
-          [0, 2]], dtype=uint8, requires_grad=True)
-  ```
+    >>> dev = qml.device('default.qubit', wires=[0, 1])
+    >>> @qml.qnode(dev)
+    ... def circuit(params):
+    ...     tap_op(params[0])
+    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+    >>> drawer = qml.draw(circuit, show_all_wires=True)
+    >>> print(drawer(params=[3.14159]))
+        0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
+        1: ───────────────────────┤ ╰<Z@Z>
 
-* Added the ``shadow_expval`` measurement for differentiable expectation value estimation using classical shadows.
-
-  ```python
-  H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
-
-  dev = qml.device("default.qubit", wires=range(2), shots=10000)
-  @qml.qnode(dev)
-  def qnode(x, H):
-      qml.Hadamard(0)
-      qml.CNOT((0,1))
-      qml.RX(x, wires=0)
-      return qml.shadow_expval(H)
-
-  x = np.array(0.5, requires_grad=True)
-
-  print(qnode(x, H), qml.grad(qnode)(x, H))
-  ```
-
-* `expand_matrix()` method now allows the sparse matrix representation of an operator to be extended to
-  a larger hilbert space.
-  [(#2998)](https://github.com/PennyLaneAI/pennylane/pull/2998)
-
-  ```pycon
-  >>> from scipy import sparse
-  >>> mat = sparse.csr_matrix([[0, 1], [1, 0]])
-  >>> qml.math.expand_matrix(mat, wires=[1], wire_order=[0,1]).toarray()
-  array([[0., 1., 0., 0.],
-         [1., 0., 0., 0.],
-         [0., 0., 0., 1.],
-         [0., 0., 1., 0.]])
-  ```
-
-* `qml.exp` exponentiates an Operator.  An optional scalar coefficient can multiply the
-  Operator before exponentiation. Internally, this constructor functions creates the new
-  class `qml.ops.op_math.Exp`.
-  [(#2799)](https://github.com/PennyLaneAI/pennylane/pull/2799)
-
-  The function can be used to create either observables or generic rotation gates:
-
-  ```pycon
-  >>> obs = qml.exp(qml.PauliX(0), 3)
-  >>> qml.is_hermitian(obs)
-  True
-  >>> x = 1.234
-  >>> t = qml.PauliX(0) @ qml.PauliX(1) + qml.PauliY(0) @ qml.PauliY(1)
-  >>> isingxy = qml.exp(t, 0.25j * x)
-  >>> qml.math.allclose(isingxy.matrix(), qml.IsingXY(x, wires=(0,1)).matrix())
-  True
-  >>> qml.is_unitary(isingxy)
-  True
   ```
 
 <h3>Improvements</h3>
 
-* Some methods of the `QuantumTape` class have been simplified and reordered to
-  improve both readability and performance. The `Wires.all_wires` method has been rewritten
-  to improve performance.
-  [(#2963)](https://github.com/PennyLaneAI/pennylane/pull/2963)
+* Added a new `pennylane.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now `QuantumTape` inherits from `QuantumScript` as well
+  as `AnnotatedQueue`.
+  This is a developer-facing change, and users should not manipulate `QuantumScript` directly.  Instead, they
+  should continue to rely on `QNode`s.
+  [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
 
-* The `qml.qchem.molecular_hamiltonian` function is modified to support observable grouping.
-  [(#2997)](https://github.com/PennyLaneAI/pennylane/pull/2997)
+* The UCCSD and kUpCCGSD template are modified to remove a redundant flipping of the initial state.
+  [(#3148)](https://github.com/PennyLaneAI/pennylane/pull/3148)
 
-* `qml.ops.op_math.Controlled` now has basic decomposition functionality.
-  [(#2938)](https://github.com/PennyLaneAI/pennylane/pull/2938)
+* `Adjoint` now supports batching if the base operation supports batching.
+  [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
 
-* Automatic circuit cutting is improved by making better partition imbalance derivations.
-  Now it is more likely to generate optimal cuts for larger circuits.
-  [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
+* `OrbitalRotation` is now decomposed into two `SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `SingleExcitation`.
+  [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
 
-* Added `PSWAP` operator.
-  [(#2667)](https://github.com/PennyLaneAI/pennylane/pull/2667)
+* Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
+  whether a corresponding `decomposition` or `adjoint` method is available.
+  [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
 
-* The `qml.simplify` method can now simplify parametrized operations.
-  [(#3012)](https://github.com/PennyLaneAI/pennylane/pull/3012)
+* Structural improvements are made to `QueuingManager`, formerly `QueuingContext`, and `AnnotatedQueue`.
+  [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
+  [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
-  ```pycon
-  >>> op1 = qml.RX(30.0, wires=0)
-  >>> qml.simplify(op1)
-  RX(4.867258771281655, wires=[0])
-  >>> op2 = qml.Rot(np.pi / 2, 5.0, -np.pi / 2, wires=0)
-  >>> qml.simplify(op2)
-  RX(5.0, wires=[0])
-  >>> op3 = qml.RX(4 * np.pi, wires=0)
-  >>> qml.simplify(op3)
-  Identity(wires=[0])
-  ```
+  * `QueuingContext` is renamed to `QueuingManager`.
+  * `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
+  * `QueuingManager` is no longer an abstract base class.
+  * `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
+  * `QueuingManager` is no longer a context manager.
+  * Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and
+     `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
+  * `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
+      is now only available through `QueuingManager`.
+  * `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
+      and `_get_info` methods. The public analogues should be used instead.
+  * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
+      `update_info`.
 
-* The `qml.simplify` method now can compute the adjoint and power of specific operators.
-  [(#2922)](https://github.com/PennyLaneAI/pennylane/pull/2922)
+* `qml.Identity` now accepts multiple wires.
+    [(#3049)](https://github.com/PennyLaneAI/pennylane/pull/3049)
 
-  ```pycon
-  >>> adj_op = qml.adjoint(qml.RX(1, 0))
-  >>> qml.simplify(adj_op)
-  RX(-1, wires=[0])
-  ```
+    ```pycon
+    >>> id_op = qml.Identity([0, 1])
+    >>> id_op.matrix()
+    array([[1., 0., 0., 0.],
+        [0., 1., 0., 0.],
+        [0., 0., 1., 0.],
+        [0., 0., 0., 1.]])
+    >>> id_op.sparse_matrix()
+    <4x4 sparse matrix of type '<class 'numpy.float64'>'
+        with 4 stored elements in Compressed Sparse Row format>
+    >>> id_op.eigvals()
+    array([1., 1., 1., 1.])
+    ```
 
-* Added `sparse_matrix()` support for single qubit observables
-  [(#2964)](https://github.com/PennyLaneAI/pennylane/pull/2964)
+* Added `unitary_check` keyword argument to the constructor of the `QubitUnitary` class which
+  indicates whether the user wants to check for unitarity of the input matrix or not. Its default
+  value is `false`.
+  [(#3063)](https://github.com/PennyLaneAI/pennylane/pull/3063)
 
-* Added the `qml.is_hermitian` and `qml.is_unitary` function checks.
-  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+* Modified the representation of `WireCut` by using `qml.draw_mpl`.
+  [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
-  ```pycon
-  >>> op = qml.PauliX(wires=0)
-  >>> qml.is_hermitian(op)
-  True
-  >>> op2 = qml.RX(0.54, wires=0)
-  >>> qml.is_hermitian(op2)
-  False
-  ```
+* Improved the performance of the `qml.math.expand_matrix` function for dense matrices.
+  [(#3064)](https://github.com/PennyLaneAI/pennylane/pull/3064)
 
-* Internal use of in-place inversion is eliminated in preparation for its deprecation.
-  [(#2965)](https://github.com/PennyLaneAI/pennylane/pull/2965)
+* Improve `qml.math.expand_matrix` method for sparse matrices.
+  [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
-* `qml.is_commuting` is moved to `pennylane/ops/functions` from `pennylane/transforms/commutation_dag.py`.
-  [(#2991)](https://github.com/PennyLaneAI/pennylane/pull/2991)
-
-* `qml.simplify` can now be used to simplify quantum functions, tapes and QNode objects.
-  [(#2978)](https://github.com/PennyLaneAI/pennylane/pull/2978)
-
-  ```python
-    dev = qml.device("default.qubit", wires=2)
-    @qml.simplify
-    @qml.qnode(dev)
-    def circuit():
-      qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
-      return qml.probs(wires=0)
-  ```
+* Added the `map_wires` method to the `Operator` class, which returns a copy of the operator with
+  its wires changed according to the given wire map.
+  [(#3143)](https://github.com/PennyLaneAI/pennylane/pull/3143)
 
   ```pycon
-  >>> circuit()
-  >>> list(circuit.tape)
-  [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
+  >>> op = qml.Toffoli([0, 1, 2])
+  >>> wire_map = {0: 2, 2: 0}
+  >>> op.map_wires(wire_map=wire_map)
+  Toffoli(wires=[2, 1, 0])
   ```
 
-* Added functionality to `qml.simplify` to allow for grouping of like terms in a sum, resolve
-  products of pauli operators and combine rotation angles of identical rotation gates.
-  [(#2982)](https://github.com/PennyLaneAI/pennylane/pull/2982)
+* Adds caching to the `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations.
+  [(#3134)](https://github.com/PennyLaneAI/pennylane/pull/3134)
 
-  ```pycon
-  >>> qml.simplify(qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliX(0), qml.PauliY(1)))
-  Identity(wires=[0]) @ Identity(wires=[1])
-  >>> qml.simplify(qml.op_sum(qml.PauliX(0), qml.PauliY(1), qml.PauliX(0), qml.PauliY(1)))
-  2*(PauliX(wires=[0])) + 2*(PauliY(wires=[1]))
-  >>> qml.simplify(qml.prod(qml.RZ(1, 0), qml.RZ(1, 0)))
-  RZ(2, wires=[0])
-  ```
+* Add details to the output of `Exp.label()`.
+  [(#3126)](https://github.com/PennyLaneAI/pennylane/pull/3126)
 
-* `Controlled` operators now work with `qml.is_commuting`.
-  [(#2994)](https://github.com/PennyLaneAI/pennylane/pull/2994)
+* `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
+  [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
 
-* `Prod` and `Sum` class now support the `sparse_matrix()` method. 
-  [(#3006)](https://github.com/PennyLaneAI/pennylane/pull/3006)
+* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
+  [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
+
+* `ControlledQubitUnitary` now has a `control_values` property.
+  [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
   
-  ```pycon
-  >>> xy = qml.prod(qml.PauliX(1), qml.PauliY(1))
-  >>> op = qml.op_sum(xy, qml.Identity(0))
-  >>>
-  >>> sparse_mat = op.sparse_matrix(wire_order=[0,1])
-  >>> type(sparse_mat)
-  <class 'scipy.sparse.csr.csr_matrix'>
-  >>> print(sparse_mat.toarray())
-  [[1.+1.j 0.+0.j 0.+0.j 0.+0.j]
-  [0.+0.j 1.-1.j 0.+0.j 0.+0.j]
-  [0.+0.j 0.+0.j 1.+1.j 0.+0.j]
-  [0.+0.j 0.+0.j 0.+0.j 1.-1.j]]
-  ```
-
-* `qml.Barrier` with `only_visual=True` now simplifies, via `op.simplify()` to the identity
-  or a product of identities.
-  [(#3016)](https://github.com/PennyLaneAI/pennylane/pull/3016)
-
-* `__repr__` and `label` methods are more correct and meaningful for Operators with an arithmetic
-  depth greater than 0. The `__repr__` for `Controlled` show `control_wires` instead of `wires`.
-  [(#3013)](https://github.com/PennyLaneAI/pennylane/pull/3013)
-
 <h3>Breaking changes</h3>
 
-* Measuring an operator that might not be hermitian as an observable now raises a warning instead of an
-  error. To definitively determine whether or not an operator is hermitian, use `qml.is_hermitian`.
-  [(#2960)](https://github.com/PennyLaneAI/pennylane/pull/2960)
+* `QuantumTape._par_info` is now a list of dictionaries, instead of a dictionary whose keys are integers starting from zero.
+  [(#3185)](https://github.com/PennyLaneAI/pennylane/pull/3185)
 
-* The default `execute` method for the `QubitDevice` base class now calls `self.statistics`
-  with an additional keyword argument `circuit`, which represents the quantum tape
-  being executed.
+* `QueuingContext` is renamed `QueuingManager`.
+  [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
-  Any device that overrides `statistics` should edit the signature of the method to include
-  the new `circuit` keyword argument.
-  [(#2820)](https://github.com/PennyLaneAI/pennylane/pull/2820)
+* `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
+   if the object isn't in the queue.
 
-* The `expand_matrix()` has been moved from `~/operation.py` to
-  `~/math/matrix_manipulation.py`
-  [(#3008)](https://github.com/PennyLaneAI/pennylane/pull/3008)
+* Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
+  [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
+
+* `_multi_dispatch` functionality has been moved inside the `get_interface` function. This function
+  can now be called with one or multiple tensors as arguments.
+  [(#3136)](https://github.com/PennyLaneAI/pennylane/pull/3136)
+
+  ```pycon
+  >>> torch_scalar = torch.tensor(1)
+  >>> torch_tensor = torch.Tensor([2, 3, 4])
+  >>> numpy_tensor = np.array([5, 6, 7])
+  >>> qml.math.get_interface(torch_scalar)
+  'torch'
+  >>> qml.math.get_interface(numpy_tensor)
+  'numpy'
+  ```
+
+  `_multi_dispatch` previously had only one argument which contained a list of the tensors to be
+  dispatched:
+
+  ```pycon
+  >>> qml.math._multi_dispatch([torch_scalar, torch_tensor, numpy_tensor])
+  'torch'
+  ```
+
+  To differentiate whether the user wants to get the interface of a single tensor or multiple
+  tensors, `get_interface` now accepts a different argument per tensor to be dispatched:
+
+  ```pycon
+  >>> qml.math.get_interface(*[torch_scalar, torch_tensor, numpy_tensor])
+  'torch'
+  >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
+  'torch'
+  ```
 
 <h3>Deprecations</h3>
 
-* The `supports_reversible_diff` device capability is unused and has been removed.
-  [(#2993)](https://github.com/PennyLaneAI/pennylane/pull/2993)
+* `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
+  The old functions will still be available untill v0.29.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
+
+* `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
+  [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
 <h3>Documentation</h3>
 
-* Corrects the docstrings for diagonalizing gates for all relevant operations. The docstrings used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis. [(#2981)](https://github.com/PennyLaneAI/pennylane/pull/2981)
+* The code block in the usage details of the UCCSD template is updated.
+  [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
 <h3>Bug fixes</h3>
 
-* Fixes a bug where the tape transform `single_qubit_fusion` computed wrong rotation angles
-  for specific combinations of rotations.
-  [(#3024)](https://github.com/PennyLaneAI/pennylane/pull/3024)
-    
-* Jax gradients now work with a QNode when the quantum function was transformed by `qml.simplify`.
-  [(#3017)](https://github.com/PennyLaneAI/pennylane/pull/3017)
+* `ControlledQubitUnitary.pow` now copies over the `control_values`.
+  [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
 
-* Operators that have `num_wires = AnyWires` or `num_wires = AnyWires` raise an error, with
-  certain exceptions, when instantiated with `wires=[]`.
-  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
+* The evaluation of QNodes that return either `vn_entropy` or `mutual_info` raises an
+  informative error message when using devices that define a vector of shots.
+  [(#3180)](https://github.com/PennyLaneAI/pennylane/pull/3180)
 
-* Fixes a bug where printing `qml.Hamiltonian` with complex coefficients raises `TypeError` in some cases.
-  [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
+* Fixed a bug that made `qml.AmplitudeEmbedding` incompatible with JITting.
+  [(#3166)](https://github.com/PennyLaneAI/pennylane/pull/3166)
+
+* Fixed the `qml.transforms.transpile` transform to work correctly for all two-qubit operations.
+  [(#3104)](https://github.com/PennyLaneAI/pennylane/pull/3104)
+
+* Fixed a bug with the control values of a controlled version of a `ControlledQubitUnitary`.
+  [(#3119)](https://github.com/PennyLaneAI/pennylane/pull/3119)
+
+* Fixed a bug where `qml.math.fidelity(non_trainable_state, trainable_state)` failed unexpectedly.
+  [(#3160)](https://github.com/PennyLaneAI/pennylane/pull/3160)
+
+* Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
+  [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
+
+* Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian 
+  composite operator.
+  [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
-Utkarsh Azad,
-Olivia Di Matteo,
-Josh Izaac,
-Soran Jahangiri,
-Edward Jiang,
-Ankit Khandelwal,
-Korbinian Kottmann,
-Christina Lee,
-Meenu Kumari,
 Albert Mitjans Coma,
-Rashid N H M,
-Zeyue Niu,
+Utkarsh Azad,
+Amintor Dusko,
+Diego Guala,
+Soran Jahangiri,
+Christina Lee,
+Lee J. O'Riordan,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
-Antal Száva
-Cody Wang,
-David Wierichs
+Antal Száva,
+David Wierichs,

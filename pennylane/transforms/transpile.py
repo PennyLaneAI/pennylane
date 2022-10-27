@@ -11,7 +11,7 @@ from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
 from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
-from pennylane.tape import stop_recording
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
@@ -96,13 +96,20 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
             "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
         )
 
+    if any(len(op.wires) > 2 for op in tape.operations):
+        raise NotImplementedError(
+            "The transpile transform only supports gates acting on 1 or 2 qubits."
+        )
+
     gates = []
 
     # we wrap all manipulations inside stop_recording() so that we don't queue anything due to unrolling of templates
     # or newly applied swap gates
-    with stop_recording():
+    with QueuingManager.stop_recording():
         # this unrolls everything in the current tape (in particular templates)
-        stop_at = lambda obj: (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+        def stop_at(obj):
+            return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+
         expanded_tape = tape.expand(stop_at=stop_at)
 
         # make copy of ops
@@ -113,7 +120,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
             op = list_op_copy[0]
 
             # gates which act only on one wire
-            if op.num_wires != 2:
+            if len(op.wires) == 1:
                 gates.append(op)
                 list_op_copy.pop(0)
                 continue

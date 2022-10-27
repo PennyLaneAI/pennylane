@@ -69,6 +69,8 @@ Utility functions
     generate_multi_shift_rule
     eigvals_to_frequencies
     compute_vjp
+    compute_vjp_single_new
+    compute_vjp_multi_new
     batch_vjp
     vjp
 
@@ -186,8 +188,8 @@ tensor([[-0.04673668, -0.09442394, -0.14409127],
     >>> qml.gradients.param_shift(circuit, hybrid=False)(weights)
 
 
-Differentiating gradient transforms
------------------------------------
+Differentiating gradient transforms and higher-order derivatives
+----------------------------------------------------------------
 
 Gradient transforms are themselves differentiable, allowing higher-order
 gradients to be computed:
@@ -214,6 +216,28 @@ array([[[-0.9316158 ,  0.01894799,  0.0289147 ],
         [ 0.01894799, -0.9316158 ,  0.05841749],
         [ 0.0289147 ,  0.05841749, -0.9316158 ]]])
 
+Another way to compute higher-order derivatives is by passing the ``max_diff`` and
+``diff_method`` arguments to the QNode and by successive differentiation:
+
+.. code-block:: python
+
+    @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+    def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(weights[2], wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+>>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> qml.jacobian(qml.jacobian(circuit))(weights)  # hessian
+array([[-0.9316158 ,  0.01894799,  0.0289147 ],
+       [ 0.01894799, -0.9316158 ,  0.05841749],
+       [ 0.0289147 ,  0.05841749, -0.9316158 ]])
+
+Note that the ``max_diff`` argument only applies to gradient transforms and that its default value is ``1``; failing to
+set its value correctly may yield incorrect results for higher-order derivatives. Also, passing
+``diff_method="parameter-shift"`` is equivalent to passing ``diff_method=qml.gradients.param_shift``.
 
 Transforming tapes
 ------------------
@@ -294,7 +318,7 @@ from .finite_difference import finite_diff, finite_diff_coeffs
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
 from .parameter_shift_hessian import param_shift_hessian
-from .vjp import compute_vjp, batch_vjp, vjp
+from .vjp import compute_vjp, batch_vjp, vjp, compute_vjp_multi_new, compute_vjp_single_new
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (
     eigvals_to_frequencies,

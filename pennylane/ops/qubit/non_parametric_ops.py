@@ -19,6 +19,7 @@ not depend on any parameters.
 import cmath
 import warnings
 from copy import copy
+from functools import lru_cache
 
 import numpy as np
 
@@ -59,6 +60,7 @@ class Hadamard(Observable, Operation):
         return base_label or "H"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -79,8 +81,8 @@ class Hadamard(Observable, Operation):
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
-        """Compute the sparse matrix representation"""
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
@@ -201,6 +203,7 @@ class PauliX(Observable, Operation):
         return base_label or "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -222,7 +225,8 @@ class PauliX(Observable, Operation):
         return np.array([[0, 1], [1, 0]])
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, 1], [1, 0]])
 
     @staticmethod
@@ -350,6 +354,7 @@ class PauliY(Observable, Operation):
         return base_label or "Y"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -370,7 +375,8 @@ class PauliY(Observable, Operation):
         return np.array([[0, -1j], [1j, 0]])
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, -1j], [1j, 0]])
 
     @staticmethod
@@ -496,6 +502,7 @@ class PauliZ(Observable, Operation):
         return base_label or "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -516,7 +523,8 @@ class PauliZ(Observable, Operation):
         return np.array([[1, 0], [0, -1]])
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[1, 0], [0, -1]])
 
     @staticmethod
@@ -641,6 +649,7 @@ class S(Operation):
     basis = "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -749,6 +758,7 @@ class T(Operation):
     basis = "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -857,6 +867,7 @@ class SX(Operation):
     basis = "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -976,6 +987,7 @@ class CNOT(Operation):
         return base_label or "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1047,6 +1059,7 @@ class CZ(Operation):
         return base_label or "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1140,6 +1153,7 @@ class CY(Operation):
         return base_label or "Y"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1232,6 +1246,7 @@ class SWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1448,6 +1463,7 @@ class ISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1562,6 +1578,7 @@ class SISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1707,6 +1724,7 @@ class CSWAP(Operation):
         return base_label or "SWAP"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1822,6 +1840,7 @@ class Toffoli(Operation):
         return base_label or "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 

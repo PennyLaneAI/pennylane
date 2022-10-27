@@ -41,12 +41,12 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
             return [qml.Toffoli(op.active_wires)]
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
 
-    try:
-        # Need to use expand because of in-place inversion
-        # revert to decomposition once in-place inversion removed
-        base_decomp = op.base.expand().circuit
-    except qml.operation.DecompositionUndefinedError:
+    if not op.base.has_decomposition:
         return None
+
+    # Need to use expand because of in-place inversion
+    # revert to decomposition once in-place inversion removed
+    base_decomp = op.base.expand().circuit
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
@@ -62,6 +62,7 @@ class Controlled(SymbolicOp):
     Keyword Args:
         control_values (Iterable[Bool]): The values to control on. Must be the same
             length as ``control_wires``. Defaults to ``True`` for all control wires.
+            Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
 
     .. note::
@@ -73,16 +74,16 @@ class Controlled(SymbolicOp):
         an entire tape and does not provide as many representations and attributes as ``Controlled``,
         but :class:`~.ControlledOperation` does decompose.
 
-    .. seealso:: :class:`~.ControlledOp`, :class:`~.ControlledOperation`, and :func:`~.ctrl`
+    .. seealso:: :class:`~.ControlledOp`, and :func:`~.ctrl`
 
     **Example**
 
     >>> base = qml.RX(1.234, 1)
     >>> Controlled(base, (0, 2, 3), control_values=[True, False, True])
-    C(RX)(1.234, wires=[0, 2, 3, 1])
+    Controlled(RX(1.234, wires=[1]), control_wires=[0, 2, 3], control_values=[True, False, True])
     >>> op = Controlled(base, 0, control_values=[0])
     >>> op
-    C(RX)(1.234, wires=[0, 1])
+    Controlled(RX(1.234, wires=[1]), control_wires=[0], control_values=[0])
 
     The operation has both standard :class:`~.operation.Operator` properties
     and ``Controlled`` specific properties:
@@ -103,6 +104,12 @@ class Controlled(SymbolicOp):
 
     >>> op.control_values
     [0]
+
+    Provided control values are converted to booleans internally, so
+    any "truthy" or "falsy" objects work.
+
+    >>> Controlled(base, ("a", "b", "c"), control_values=["", None, 5]).control_values
+    [False, False, True]
 
     Representations for an operator are available if the base class defines them.
     Sparse matrices are available if the base class defines either a sparse matrix
@@ -171,10 +178,14 @@ class Controlled(SymbolicOp):
                 )
                 control_values = [(x == "1") for x in control_values]
 
+            control_values = (
+                [bool(control_values)]
+                if isinstance(control_values, int)
+                else [bool(control_value) for control_value in control_values]
+            )
+
             if len(control_values) != len(control_wires):
                 raise ValueError("control_values should be the same length as control_wires")
-            if not set(control_values).issubset({False, True}):
-                raise ValueError("control_values can only take on True or False")
 
         if len(Wires.shared_wires([base.wires, control_wires])) != 0:
             raise ValueError("The control wires must be different from the base operation wires.")
@@ -191,6 +202,32 @@ class Controlled(SymbolicOp):
         self._name = f"C({base.name})"
 
         super().__init__(base, do_queue, id)
+
+    @property
+    def hash(self):
+        # these gates do not consider global phases in their hash
+        if self.base.name in ("RX", "RY", "RZ", "Rot"):
+            base_params = str(
+                [qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in self.base.data]
+            )
+            base_hash = hash(
+                (
+                    str(self.base.name),
+                    tuple(self.base.wires.tolist()),
+                    base_params,
+                )
+            )
+        else:
+            base_hash = self.base.hash
+        return hash(
+            (
+                "Controlled",
+                base_hash,
+                tuple(self.control_wires.tolist()),
+                tuple(self.control_values),
+                tuple(self.work_wires.tolist()),
+            )
+        )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -312,10 +349,10 @@ class Controlled(SymbolicOp):
 
         try:
             target_mat = self.base.sparse_matrix()
-        except operation.SparseMatrixUndefinedError:
-            try:
+        except operation.SparseMatrixUndefinedError as e:
+            if self.base.has_matrix:
                 target_mat = sparse.lil_matrix(self.base.matrix())
-            except operation.MatrixUndefinedError as e:
+            else:
                 raise operation.SparseMatrixUndefinedError from e
 
         num_target_states = 2 ** len(self.target_wires)
@@ -341,8 +378,25 @@ class Controlled(SymbolicOp):
 
         return qmlmath.concatenate([ones, base_eigvals])
 
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
+
+    @property
+    def has_decomposition(self):
+        if not all(self.control_values):
+            return True
+        if len(self.control_wires) == 1 and hasattr(self.base, "_controlled"):
+            return True
+        if isinstance(self.base, qml.PauliX):
+            return True
+        if self.base.has_decomposition:
+            return True
+
+        return False
 
     def decomposition(self):
         if all(self.control_values):
@@ -369,6 +423,10 @@ class Controlled(SymbolicOp):
         sub_gen = self.base.generator()
         proj_tensor = operation.Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
         return 1.0 * proj_tensor @ sub_gen
+
+    @property
+    def has_adjoint(self):
+        return self.base.has_adjoint
 
     def adjoint(self):
         return Controlled(
@@ -415,6 +473,16 @@ class ControlledOp(Controlled, operation.Operation):
     def __new__(cls, *_, **__):
         # overrides dispatch behavior of ``Controlled``
         return object.__new__(cls)
+
+    # pylint: disable=too-many-function-args
+    def __init__(
+        self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
+    ):
+        super().__init__(base, control_wires, control_values, work_wires, do_queue, id)
+        # check the grad_recipe validity
+        if self.grad_recipe is None:
+            # Make sure grad_recipe is an iterable of correct length instead of None
+            self.grad_recipe = [None] * self.num_params
 
     @property
     def _inverse(self):

@@ -801,9 +801,9 @@ class TestCounts:
         basis_state = "0111"
 
         assert isinstance(res, tuple)
-        assert res[0] == {basis_state: shot_vec[0]}
-        assert res[1] == {basis_state: shot_vec[1]}
-        assert res[2] == {basis_state: shot_vec[2]}
+        assert res[0][basis_state] == shot_vec[0]
+        assert res[1][basis_state] == shot_vec[1]
+        assert res[2][basis_state] == shot_vec[2]
         assert len(res) == len(shot_vec)
         assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
 
@@ -824,9 +824,9 @@ class TestCounts:
         sample = 1
 
         assert isinstance(res, tuple)
-        assert res[0] == {sample: shot_vec[0]}
-        assert res[1] == {sample: shot_vec[1]}
-        assert res[2] == {sample: shot_vec[2]}
+        assert res[0][sample] == shot_vec[0]
+        assert res[1][sample] == shot_vec[1]
+        assert res[2][sample] == shot_vec[2]
         assert len(res) == len(shot_vec)
         assert sum(sum(v for v in res_bin.values()) for res_bin in res) == sum(shot_vec)
 
@@ -866,6 +866,86 @@ class TestCounts:
         counts_term_indices = [i * 2 for i in range(num_shot_bins)]
         for ind in counts_term_indices:
             assert isinstance(res[ind], dict)
+
+    def test_all_outcomes_kwarg_providing_observable(self):
+        """Test that the dictionary keys *all* eigenvalues of the observable,
+        including 0 count values, if observable is given and all_outcomes=True"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            res = qml.counts(qml.PauliZ(0), all_outcomes=True)
+            return res
+
+        res = circuit()
+
+        assert res == {1: n_shots, -1: 0}
+
+    def test_all_outcomes_kwarg_no_observable_no_wires(self):
+        """Test that the dictionary keys are *all* the possible combinations
+        of basis states for the device, including 0 count values, if no wire
+        count and no observable are given and all_outcomes=True"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.counts(all_outcomes=True)
+
+        res = circuit()
+
+        assert res == {"00": n_shots, "01": 0, "10": 0, "11": 0}
+
+    def test_all_outcomes_kwarg_providing_wires_and_no_observable(self):
+        """Test that the dictionary keys are *all* possible combinations
+        of basis states for the specified wires, including 0 count values,
+        if wire count is given and all_outcomes=True"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=4, shots=n_shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.counts(wires=[0, 2], all_outcomes=True)
+
+        res = circuit()
+
+        assert res == {"00": n_shots, "01": 0, "10": 0, "11": 0}
+
+    def test_all_outcomes_hermitian(self):
+        """Tests that the all_outcomes=True option for counts works with the
+        qml.Hermitian observable"""
+
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=n_shots)
+        A = np.array([[1, 0], [0, -1]])
+
+        @qml.qnode(dev)
+        def circuit(x):
+            return qml.counts(qml.Hermitian(x, wires=0), all_outcomes=True)
+
+        res = circuit(A)
+
+        assert res == {-1.0: 0, 1.0: n_shots}
+
+    def test_all_outcomes_multiple_measurements(self):
+        """Tests that the all_outcomes=True option for counts works when
+        multiple measurements are performed"""
+
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.PauliZ(0)), qml.counts(), qml.counts(all_outcomes=True)
+
+        res = circuit()
+
+        assert len(res[0]) == 10
+        assert res[1] == {"00": 10}
+        assert res[2] == {"00": 10, "01": 0, "10": 0, "11": 0}
 
 
 class TestMeasure:
@@ -959,8 +1039,8 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(A) == {"owner": meas_proc}
-        assert q._get_info(meas_proc) == {"owns": (A)}
+        assert q.get_info(A) == {"owner": meas_proc}
+        assert q.get_info(meas_proc) == {"owns": (A)}
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
         """Test that the return_type related info is updated for a measurement
@@ -977,8 +1057,8 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(Herm) == {"owner": meas_proc}
-        assert q._get_info(meas_proc) == {"owns": (Herm)}
+        assert q.get_info(Herm) == {"owner": meas_proc}
+        assert q.get_info(meas_proc) == {"owns": (Herm)}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -1003,9 +1083,9 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(A) == {"owner": tensor_op}
-        assert q._get_info(B) == {"owner": tensor_op}
-        assert q._get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
+        assert q.get_info(A) == {"owner": tensor_op}
+        assert q.get_info(B) == {"owner": tensor_op}
+        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -1033,7 +1113,7 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
+        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
 
 @pytest.mark.parametrize("stat_func", [expval, var, sample])
@@ -1184,6 +1264,50 @@ class TestExpansion:
         be expanded has no observable"""
         with pytest.raises(DecompositionUndefinedError):
             MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1])).expand()
+
+    @pytest.mark.parametrize(
+        "return_type, obs",
+        [
+            (Expectation, qml.PauliX(0) @ qml.PauliY(1)),
+            (Variance, qml.PauliX(0) @ qml.PauliY(1)),
+            (Probability, qml.PauliX(0) @ qml.PauliY(1)),
+            (Expectation, qml.PauliX(5)),
+            (Variance, qml.PauliZ(0) @ qml.Identity(3)),
+            (Probability, qml.PauliZ(0) @ qml.Identity(3)),
+        ],
+    )
+    def test_has_decomposition_true_pauli(self, return_type, obs):
+        """Test that measurements of Paulis report to have a decomposition."""
+        m = MeasurementProcess(return_type, obs=obs)
+        assert m.has_decomposition is True
+
+    def test_has_decomposition_true_hermitian(self):
+        """Test that measurements of Hermitians report to have a decomposition."""
+        H = np.array([[1, 2], [2, 4]])
+        obs = qml.Hermitian(H, wires=["a"])
+        m = MeasurementProcess(Expectation, obs=obs)
+        assert m.has_decomposition is True
+
+    def test_has_decomposition_false_hermitian_wo_diaggates(self):
+        """Test that measurements of Hermitians report to have a decomposition."""
+
+        class HermitianNoDiagGates(qml.Hermitian):
+            @property
+            def has_diagonalizing_gates(self):
+                return False
+
+        H = np.array([[1, 2], [2, 4]])
+        obs = HermitianNoDiagGates(H, wires=["a"])
+        m = MeasurementProcess(Expectation, obs=obs)
+        assert m.has_decomposition is False
+
+    def test_has_decomposition_false_no_observable(self):
+        """Check a MeasurementProcess without observable to report not having a decomposition"""
+        m = MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1]))
+        assert m.has_decomposition is False
+
+        m = MeasurementProcess(Expectation, wires=qml.wires.Wires([0, 1]), eigvals=np.ones(4))
+        assert m.has_decomposition is False
 
 
 class TestDiagonalizingGates:

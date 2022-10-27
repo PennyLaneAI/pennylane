@@ -107,25 +107,11 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.math import expand_matrix
+from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
 from .utils import pauli_eigs
-
-
-def __getattr__(name):
-    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
-    warning_names = {"Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure"}
-    if name in warning_names:
-        obj = getattr(qml.measurements, name)
-        warning_string = f"qml.operation.{name} is deprecated. Please import from qml.measurements.{name} instead"
-        warnings.warn(warning_string, UserWarning)
-        return obj
-    try:
-        return globals()[name]
-    except KeyError as e:
-        raise AttributeError from e
-
 
 # =============================================================================
 # Errors
@@ -589,13 +575,11 @@ class Operator(abc.ABC):
 
         try:
             return self.compute_eigvals(*self.parameters, **self.hyperparameters)
-        except EigvalsUndefinedError:
-            # By default, compute the eigenvalues from the matrix representation.
-            # This will raise a NotImplementedError if the matrix is undefined.
-            try:
+        except EigvalsUndefinedError as e:
+            # By default, compute the eigenvalues from the matrix representation if one is defined.
+            if self.has_matrix:  # pylint: disable=using-constant-test
                 return qml.math.linalg.eigvals(self.matrix())
-            except MatrixUndefinedError as e:
-                raise EigvalsUndefinedError from e
+            raise EigvalsUndefinedError from e
 
     @staticmethod
     def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument
@@ -922,6 +906,20 @@ class Operator(abc.ABC):
         """This property determines if an operator is hermitian."""
         return False
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_decomposition(cls):
+        r"""Bool: Whether or not the Operator returns a defined decomposition.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        # Some operators will overwrite `decomposition` instead of `compute_decomposition`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        return (
+            cls.compute_decomposition != Operator.compute_decomposition
+            or cls.decomposition != Operator.decomposition
+        )
+
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.
 
@@ -960,6 +958,20 @@ class Operator(abc.ABC):
             list[Operator]: decomposition of the operator
         """
         raise DecompositionUndefinedError
+
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_diagonalizing_gates(cls):
+        r"""Bool: Whether or not the Operator returns defined diagonalizing gates.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        # Operators may overwrite `diagonalizing_gates` instead of `compute_diagonalizing_gates`
+        # Currently, those are mostly classes from the operator arithmetic module.
+        return (
+            cls.compute_diagonalizing_gates != Operator.compute_diagonalizing_gates
+            or cls.diagonalizing_gates != Operator.diagonalizing_gates
+        )
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -1049,7 +1061,7 @@ class Operator(abc.ABC):
             return [copy.copy(self)]
         raise PowUndefinedError
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=QueuingManager):
         """Append the operator to the Operator queue."""
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
@@ -1069,6 +1081,15 @@ class Operator(abc.ABC):
         """
         return "_ops"
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_adjoint(cls):
+        r"""Bool: Whether or not the Operator can compute its own adjoint.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.adjoint != Operator.adjoint
+
     def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
@@ -1087,6 +1108,9 @@ class Operator(abc.ABC):
         Returns:
             .QuantumTape: quantum tape
         """
+        if not self.has_decomposition:
+            raise DecompositionUndefinedError
+
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
@@ -1107,6 +1131,20 @@ class Operator(abc.ABC):
         """Arithmetic depth of the operator."""
         return 0
 
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current operator with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Operator: new operator
+        """
+        new_op = copy.copy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        return new_op
+
     def simplify(self) -> "Operator":  # pylint: disable=unused-argument
         """Reduce the depth of nested operators to the minimum.
 
@@ -1120,12 +1158,7 @@ class Operator(abc.ABC):
         if isinstance(other, numbers.Number):
             if other == 0:
                 return self
-            id_op = (
-                qml.prod(*(qml.Identity(w) for w in self.wires))
-                if len(self.wires) > 1
-                else qml.Identity(self.wires[0])
-            )
-            return qml.op_sum(self, qml.s_prod(scalar=other, operator=id_op))
+            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         if isinstance(other, Operator):
             return qml.op_sum(self, other)
         raise ValueError(f"Cannot add Operator and {type(other)}")
@@ -1163,7 +1196,7 @@ class Operator(abc.ABC):
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
         if isinstance(other, numbers.Number):
-            return qml.ops.Pow(base=self, z=other)  # pylint: disable=no-member
+            return qml.pow(self, z=other)
         raise ValueError(f"Cannot raise an Operator with an exponent of type {type(other)}")
 
 
@@ -1365,6 +1398,11 @@ class Operation(Operator):
 
     @inverse.setter
     def inverse(self, boolean):
+        warnings.warn(
+            "In-place inversion with inverse is deprecated. Please use qml.adjoint or"
+            " qml.pow instead.",
+            UserWarning,
+        )
         self._inverse = boolean
 
     def inv(self):
@@ -1721,7 +1759,7 @@ class Tensor(Observable):
 
         return "@".join(ob.label(decimals=decimals) for ob in self.obs)
 
-    def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
+    def queue(self, context=QueuingManager, init=False):  # pylint: disable=arguments-differ
         constituents = self.obs
 
         if init:
@@ -1737,7 +1775,7 @@ class Tensor(Observable):
                 else:
                     raise ValueError("Can only perform tensor products between observables.")
 
-            context.safe_update_info(o, owner=self)
+            context.update_info(o, owner=self)
 
         context.append(self, owns=tuple(constituents))
         return self
@@ -1841,22 +1879,19 @@ class Tensor(Observable):
         else:
             raise ValueError("Can only perform tensor products between observables.")
 
-        if (
-            qml.QueuingContext.recording()
-            and self not in qml.QueuingContext.active_context()._queue
-        ):
-            qml.QueuingContext.append(self)
+        if QueuingManager.recording() and self not in QueuingManager.active_context()._queue:
+            QueuingManager.append(self)
 
-        qml.QueuingContext.safe_update_info(self, owns=tuple(self.obs))
-        qml.QueuingContext.safe_update_info(other, owner=self)
+        QueuingManager.update_info(self, owns=tuple(self.obs))
+        QueuingManager.update_info(other, owner=self)
 
         return self
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
-            qml.QueuingContext.safe_update_info(self, owns=tuple(self.obs))
-            qml.QueuingContext.safe_update_info(other, owner=self)
+            QueuingManager.update_info(self, owns=tuple(self.obs))
+            QueuingManager.update_info(other, owner=self)
             return self
 
         raise ValueError("Can only perform tensor products between observables.")
@@ -1897,6 +1932,12 @@ class Tensor(Observable):
                         self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals())
 
         return self._eigvals_cache
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        r"""Bool: Whether or not the Tensor returns defined diagonalizing gates."""
+        return all(o.has_diagonalizing_gates for o in self.obs)
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
@@ -2118,6 +2159,22 @@ class Tensor(Observable):
 
         obs.return_type = self.return_type
         return obs
+
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current tensor with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Tensor: new tensor
+        """
+        cls = self.__class__
+        new_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
+        new_op.obs = [obs.map_wires(wire_map) for obs in self.obs]
+        new_op._eigvals_cache = self._eigvals_cache
+        return new_op
 
 
 # =============================================================================
@@ -2501,13 +2558,7 @@ def defines_diagonalizing_gates(obj):
     This helper function is useful if the property is to be checked in
     a queuing context, but the resulting gates must not be queued.
     """
-
-    with qml.tape.stop_recording():
-        try:
-            obj.diagonalizing_gates()
-        except DiagGatesUndefinedError:
-            return False
-        return True
+    return obj.has_diagonalizing_gates
 
 
 @qml.BooleanFn

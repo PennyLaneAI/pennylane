@@ -42,6 +42,7 @@ class ObservableReturnTypes(Enum):
 
     Sample = "sample"
     Counts = "counts"
+    AllCounts = "allcounts"
     Variance = "var"
     Expectation = "expval"
     Probability = "probs"
@@ -62,7 +63,12 @@ Sample = ObservableReturnTypes.Sample
 
 Counts = ObservableReturnTypes.Counts
 """Enum: An enumeration which represents returning the number of times
- each sample was obtained."""
+ each of the observed outcomes occurred in sampling."""
+
+AllCounts = ObservableReturnTypes.AllCounts
+"""Enum: An enumeration which represents returning the number of times
+ each of the possible outcomes occurred in sampling, including 0 counts
+ for unobserved outcomes."""
 
 Variance = ObservableReturnTypes.Variance
 """Enum: An enumeration which represents returning the variance of
@@ -227,6 +233,9 @@ class MeasurementProcess:
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
+        if qml.active_return():
+            return self._shape_new(device=device)
+
         shape = None
 
         # First: prepare the shape for return types that do not require a
@@ -283,6 +292,85 @@ class MeasurementProcess:
         )
 
     @functools.lru_cache()
+    def _shape_new(self, device=None):
+        """The expected output shape of the MeasurementProcess.
+
+        Note that the output shape is dependent on the device when:
+
+        * The ``return_type`` is either ``Probability``, ``State`` (from :func:`.state`) or
+          ``Sample``;
+        * The shot vector was defined in the device.
+
+        For example, assuming a device with ``shots=None``, expectation values
+        and variances define ``shape=(,)``, whereas probabilities in the qubit
+        model define ``shape=(2**num_wires)`` where ``num_wires`` is the
+        number of wires the measurement acts on.
+
+        Args:
+            device (.Device): a PennyLane device to use for determining the
+                shape
+
+        Returns:
+            tuple: the output shape
+
+        Raises:
+            QuantumFunctionError: the return type of the measurement process is
+                unrecognized and cannot deduce the numeric type
+        """
+        shape = None
+
+        # First: prepare the shape for return types that do not require a
+        # device
+        if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
+            shape = ()
+
+        density_matrix_return = self.return_type == State and self.wires
+
+        if density_matrix_return:
+            dim = 2 ** len(self.wires)
+            shape = (dim, dim)
+
+        # Determine shape if device with shot vector
+        if device is not None and device._shot_vector is not None:
+            shape = self._shot_vector_shape(device, main_shape=shape)
+
+        # If we have a shape, return it here
+        if shape is not None:
+            return shape
+
+        # Then: handle return types that require a device; no shot vector
+        if device is None and self.return_type in (Probability, State, Sample):
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
+
+        if self.return_type == Probability:
+            len_wires = len(self.wires)
+            dim = self._get_num_basis_states(len_wires, device)
+            return (dim,)
+
+        if self.return_type == State:
+            # Note: qml.density_matrix has its shape defined, so we're handling
+            # the qml.state case; acts on all device wires
+            dim = 2 ** len(device.wires)
+            return (dim,)
+
+        if self.return_type == Sample:
+            if self.obs is not None:
+                # qml.sample(some_observable) case
+                return () if device.shots == 1 else (device.shots,)
+
+            # qml.sample() case
+            len_wires = len(device.wires)
+            return (len_wires,) if device.shots == 1 else (device.shots, len_wires)
+
+        raise qml.QuantumFunctionError(
+            "Cannot deduce the shape of the measurement process with unrecognized return_type "
+            + f"{self.return_type}."
+        )
+
+    @functools.lru_cache()
     def _shot_vector_shape(self, device, main_shape=None):
         """Auxiliary function for getting the output shape when the device has
         the shot vector defined.
@@ -290,6 +378,9 @@ class MeasurementProcess:
         The shape is device dependent even if the return type has a main shape
         pre-defined (e.g., expectation values, states, etc.).
         """
+        if qml.active_return():
+            return self._shot_vector_shape_new(device, main_shape=main_shape)
+
         shot_vector = device._shot_vector
         # pylint: disable=consider-using-generator
         num_shot_elements = sum([s.copies for s in shot_vector])
@@ -328,6 +419,47 @@ class MeasurementProcess:
             # the qml.state case; acts on all device wires
             dim = 2 ** len(device.wires)
             shape = (num_shot_elements, dim)
+
+        return shape
+
+    @functools.lru_cache()
+    def _shot_vector_shape_new(self, device, main_shape=None):
+        """Auxiliary function for getting the output shape when the device has
+        the shot vector defined.
+
+        The shape is device dependent even if the return type has a main shape
+        pre-defined (e.g., expectation values, states, etc.).
+        """
+        shot_vector = device._shot_vector
+        # pylint: disable=consider-using-generator
+        num_shot_elements = sum([s.copies for s in shot_vector])
+        shape = ()
+
+        if main_shape is not None:
+            shape = tuple(main_shape for _ in range(num_shot_elements))
+
+        elif self.return_type == qml.measurements.Probability:
+            dim = self._get_num_basis_states(len(self.wires), device)
+            shape = tuple((dim,) for _ in range(num_shot_elements))
+
+        elif self.return_type == qml.measurements.Sample:
+            if self.obs is not None:
+                shape = tuple(
+                    (shot_val,) if shot_val != 1 else tuple()
+                    for shot_val in device._raw_shot_sequence
+                )
+            else:
+                shape = tuple(
+                    (shot_val, len(device.wires)) if shot_val != 1 else (len(device.wires),)
+                    for shot_val in device._raw_shot_sequence
+                )
+
+        elif self.return_type == qml.measurements.State:
+
+            # Note: qml.density_matrix has its shape defined, so we're handling
+            # the qml.state case; acts on all device wires
+            dim = 2 ** len(device.wires)
+            shape = tuple((dim,) for _ in range(num_shot_elements))
 
         return shape
 
@@ -441,6 +573,18 @@ class MeasurementProcess:
 
         return self._eigvals
 
+    @property
+    def has_decomposition(self):
+        r"""Bool: Whether or not the MeasurementProcess returns a defined decomposition
+        when calling ``expand``.
+        """
+        if self.obs is None:
+            return False
+        # If self.obs is not None, `expand` queues the diagonalizing gates of self.obs,
+        # which we have to check to be defined. The subsequent creation of the new
+        # `MeasurementProcess` within `expand` should never fail with the given parameters.
+        return self.obs.has_diagonalizing_gates
+
     def expand(self):
         """Expand the measurement of an observable to a unitary
         rotation and a measurement in the computational basis.
@@ -483,10 +627,10 @@ class MeasurementProcess:
 
         return tape
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=qml.QueuingManager):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
-            context.safe_update_info(self.obs, owner=self)
+            context.update_info(self.obs, owner=self)
             context.append(self, owns=self.obs)
         else:
             context.append(self)
@@ -591,7 +735,7 @@ class ShadowMeasurementProcess(MeasurementProcess):
         """
         # the return value of expval is always a scalar
         if self.return_type is ShadowExpval:
-            return ()
+            return (1,)
 
         # otherwise, the return type requires a device
         if device is None:
@@ -602,7 +746,7 @@ class ShadowMeasurementProcess(MeasurementProcess):
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
-        return (2, device.shots, len(self.wires))
+        return (1, 2, device.shots, len(self.wires))
 
     @property
     def wires(self):
@@ -703,7 +847,7 @@ def sample(op=None, wires=None):
     Args:
         op (Observable or None): a quantum observable object
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
-        op is None
+            op is ``None``
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
@@ -778,7 +922,7 @@ def sample(op=None, wires=None):
     return MeasurementProcess(Sample, obs=op, wires=wires)
 
 
-def counts(op=None, wires=None):
+def counts(op=None, wires=None, all_outcomes=False):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning the number of counts for each sample. If no observable is provided then basis state
@@ -790,7 +934,9 @@ def counts(op=None, wires=None):
     Args:
         op (Observable or None): a quantum observable object
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
-        op is None
+            op is None
+        all_outcomes(bool): determines whether the returned dict will contain only the observed
+            outcomes (default), or whether it will display all possible outcomes for the system
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
@@ -840,6 +986,36 @@ def counts(op=None, wires=None):
     >>> circuit(0.5)
     {'00': 3, '01': 1}
 
+    By default, outcomes that were not observed will not be included in the dictionary.
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2, shots=4)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.counts()
+
+    Executing this QNode shows only the observed outcomes:
+
+    >>> circuit()
+    {'01': 4}
+
+    Passing all_outcomes=True will create a dictionary that displays all possible outcomes:
+
+    .. code-block:: python3
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.PauliX(wires=0)
+            return qml.counts(all_outcomes=True)
+
+    Executing this QNode shows counts for all states:
+
+    >>> circuit()
+    {'00': 0, '01': 0, '10': 4, '11': 0}
+
     .. note::
 
         QNodes that return samples cannot, in general, be differentiated, since the derivative
@@ -858,6 +1034,9 @@ def counts(op=None, wires=None):
                 "provided. The wires to sample will be determined directly from the observable."
             )
         wires = qml.wires.Wires(wires)
+
+    if all_outcomes:
+        return MeasurementProcess(AllCounts, obs=op, wires=wires)
 
     return MeasurementProcess(Counts, obs=op, wires=wires)
 
@@ -1160,7 +1339,7 @@ def classical_shadow(wires, seed_recipes=True):
     """
     The classical shadow measurement protocol.
 
-    The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
+    The protocol is described in detail in the paper `Predicting Many Properties of a Quantum System from Very Few Measurements <https://arxiv.org/abs/2002.08953>`_.
     This measurement process returns the randomized Pauli measurements (the ``recipes``)
     that are performed for each qubit and snapshot as an integer:
 
@@ -1286,7 +1465,8 @@ def shadow_expval(H, k=1, seed_recipes=True):
     parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
 
     Args:
-        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
+        H (Union[Iterable, :class:`~.pennylane.Hamiltonian`, :class:`~.pennylane.operation.Tensor`]): Observable or
+            iterable of observables to compute the expectation value over.
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
         seed_recipes (bool): If True, a seed will be generated that
             is used for the randomly sampled Pauli measurements. This is to
@@ -1307,7 +1487,7 @@ def shadow_expval(H, k=1, seed_recipes=True):
 
     .. code-block:: python3
 
-        H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+        H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
 
         dev = qml.device("default.qubit", wires=range(2), shots=10000)
         @qml.qnode(dev)

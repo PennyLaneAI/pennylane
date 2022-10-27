@@ -131,16 +131,17 @@ def matrix(op, *, wire_order=None):
 def _matrix(tape, wire_order=None):
     """Defines how matrix works if applied to a tape containing multiple operations."""
     params = tape.get_parameters(trainable_only=False)
-    interface = qml.math._multi_dispatch(params)
+    interface = qml.math.get_interface(*params)
 
     wire_order = wire_order or tape.wires
-    n_wires = len(wire_order)
 
     # initialize the unitary matrix
-    unitary_matrix = qml.math.eye(2**n_wires, like=interface)
+    result = qml.math.eye(2 ** len(wire_order), like=interface)
 
     for op in tape.operations:
         U = matrix(op, wire_order=wire_order)
-        unitary_matrix = qml.math.tensordot(U, unitary_matrix, axes=[[-1], [-2]])
+        # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
+        # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
+        result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
 
-    return unitary_matrix
+    return result

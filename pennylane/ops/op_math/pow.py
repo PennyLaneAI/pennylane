@@ -16,6 +16,7 @@ This submodule defines the symbolic operation that stands for the power of an op
 """
 import copy
 from typing import Union
+from warnings import warn
 
 from scipy.linalg import fractional_matrix_power
 
@@ -29,12 +30,69 @@ from pennylane.operation import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.identity import Identity
-from pennylane.queuing import QueuingContext, apply
+from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
+
+
+def pow(base, z=1, lazy=True, do_queue=True, id=None):
+    """Raise an Operator to a power.
+
+    Args:
+        base (~.operation.Operator): the operator to be raised to a power
+        z=1 (float): the exponent
+
+    Keyword Args:
+        lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
+            and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
+
+    Returns:
+        Operator
+
+    .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
+
+    **Example**
+
+    >>> qml.pow(qml.PauliX(0), 0.5)
+    PauliX(wires=[0])**0.5
+    >>> qml.pow(qml.PauliX(0), 0.5, lazy=False)
+    SX(wires=[0])
+    >>> qml.pow(qml.PauliX(0), 0.1, lazy=False)
+    PauliX(wires=[0])**0.1
+    >>> qml.pow(qml.PauliX(0), 2, lazy=False)
+    Identity(wires=[0])
+
+    Lazy behavior can also be accessed via ``op ** z``.
+
+    """
+    if lazy:
+        return Pow(base, z, do_queue=do_queue, id=id)
+    try:
+        pow_ops = base.pow(z)
+    except PowUndefinedError:
+        return Pow(base, z, do_queue=do_queue, id=id)
+
+    num_ops = len(pow_ops)
+    if num_ops == 0:
+        # needs to be identity (not prod of identities) so device knows to skip
+        pow_op = qml.Identity(base.wires[0], id=id)
+    elif num_ops == 1:
+        pow_op = pow_ops[0]
+    else:
+        pow_op = qml.prod(*pow_ops)
+
+    if do_queue:
+        QueuingManager.update_info(base, owner=pow_op)
+        QueuingManager.update_info(pow_op, owns=base)
+
+    return pow_op
 
 
 # pylint: disable=no-member
@@ -52,6 +110,10 @@ class PowOperation(Operation):
     grad_method = None
 
     def inv(self):
+        warn(
+            "In-place inversion with inv is deprecated. Please use qml.adjoint instead or qml.pow.",
+            UserWarning,
+        )
         self.hyperparameters["z"] *= -1
         self._name = f"{self.base.name}**{self.z}"
         return self
@@ -205,17 +267,32 @@ class Pow(SymbolicOp):
             return base_matrix**z
         raise SparseMatrixUndefinedError
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        if isinstance(self.z, int) and self.z > 0:
+            return True
+        try:
+            self.base.pow(self.z)
+        except PowUndefinedError:
+            return False
+        return True
+
     def decomposition(self):
         try:
             return self.base.pow(self.z)
         except PowUndefinedError as e:
             if isinstance(self.z, int) and self.z > 0:
-                if QueuingContext.recording():
+                if QueuingManager.recording():
                     return [apply(self.base) for _ in range(self.z)]
                 return [copy.copy(self.base) for _ in range(self.z)]
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
             raise DecompositionUndefinedError from e
+
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
@@ -274,11 +351,7 @@ class Pow(SymbolicOp):
         try:
             ops = base.pow(z=self.z)
             if not ops:
-                return (
-                    qml.prod(*(qml.Identity(w) for w in self.wires))
-                    if len(self.wires) > 1
-                    else qml.Identity(self.wires[0])
-                )
+                return qml.Identity(self.wires)
             op = qml.prod(*ops) if len(ops) > 1 else ops[0]
             return op.simplify()
         except PowUndefinedError:

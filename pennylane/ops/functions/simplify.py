@@ -22,8 +22,8 @@ import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.qnode import QNode
-from pennylane.queuing import QueuingContext
-from pennylane.tape import QuantumTape, stop_recording
+from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumTape
 
 
 def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable]):
@@ -49,7 +49,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
     2
     >>> type(sim_op)
     pennylane.ops.op_math.sum.Sum
-    >>> sim_op.summands
+    >>> sim_op.operands
     (Adjoint(RX)(0.54, wires=[0]),
     Adjoint(PauliX)(wires=[0]),
     Adjoint(PauliZ)(wires=[1]))
@@ -76,15 +76,16 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
             qml.adjoint(qml.prod(qml.RX(1, 0) ** 1, qml.RY(1, 0), qml.RZ(1, 0)))
             return qml.probs(wires=0)
     >>> circuit()
-    tensor([[0.64596329, 0.35403671]], requires_grad=True)
+    tensor([0.64596329, 0.35403671], requires_grad=True)
     >>> list(circuit.tape)
-    [RZ(-1, wires=[0]) @ RY(-1, wires=[0]) @ RX(-1, wires=[0]), probs(wires=[0])]
+    [RZ(11.566370614359172, wires=[0]) @ RY(11.566370614359172, wires=[0]) @ RX(11.566370614359172, wires=[0]),
+     probs(wires=[0])]
     """
     if isinstance(input, (Operator, MeasurementProcess)):
-        if QueuingContext.recording():
-            with stop_recording():
+        if QueuingManager.recording():
+            with QueuingManager.stop_recording():
                 new_op = copy(input.simplify())
-            QueuingContext.safe_update_info(input, owner=new_op)
+            QueuingManager.update_info(input, owner=new_op)
             return qml.apply(new_op)
         return input.simplify()
 
@@ -102,7 +103,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
         @wraps(func)
         def qfunc(*args, **kwargs):
             tape = QuantumTape()
-            with stop_recording(), tape:
+            with QueuingManager.stop_recording(), tape:
                 func(*args, **kwargs)
 
             _ = [qml.simplify(op) for op in tape.operations]

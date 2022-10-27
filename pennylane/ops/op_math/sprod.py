@@ -19,7 +19,7 @@ from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.ops.op_math.pow_class import Pow
+from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 
 from .symbolicop import SymbolicOp
@@ -159,6 +159,11 @@ class SProd(SymbolicOp):
         then the scalar product operator is hermitian."""
         return self.base.is_hermitian and not qml.math.iscomplex(self.scalar)
 
+    # pylint: disable=arguments-renamed,invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
@@ -191,6 +196,10 @@ class SProd(SymbolicOp):
 
     def sparse_matrix(self, wire_order=None):
         return self.scalar * self.base.sparse_matrix(wire_order=wire_order)
+
+    @property
+    def has_matrix(self):
+        return isinstance(self.base, qml.Hamiltonian) or self.base.has_matrix
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -245,10 +254,7 @@ class SProd(SymbolicOp):
         new_base = self.base.simplify()
         if isinstance(new_base, Sum):
             return Sum(
-                *(
-                    SProd(scalar=self.scalar, base=summand).simplify()
-                    for summand in new_base.summands
-                )
+                *(SProd(scalar=self.scalar, base=summand).simplify() for summand in new_base)
             )
         if isinstance(new_base, SProd):
             return SProd(scalar=self.scalar, base=new_base).simplify()

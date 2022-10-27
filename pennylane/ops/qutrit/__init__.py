@@ -31,10 +31,13 @@ ops = {
     "QutritUnitary",
     "TShift",
     "TClock",
+    "TAdd",
+    "TSWAP",
 }
 
 obs = {
     "THermitian",
+    "GellMann",
 }
 
 __all__ = list(ops | obs)
