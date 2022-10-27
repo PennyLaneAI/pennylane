@@ -54,6 +54,7 @@ from .multi_dispatch import (
     add,
     iscomplex,
     expm,
+    kron,
 )
 
 from .quantum import cov_matrix, marginal_prob

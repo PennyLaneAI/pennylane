@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
+from copy import copy, deepcopy
+
 import numpy as np
 from scipy import sparse
-from pennylane import math
+from pennylane import math, wires
 
 I = "I"
 X = "X"
@@ -85,7 +87,21 @@ class PauliWord(dict):
         then no operator acts on it, so return the Identity."""
         return I
 
+    def __init__(self, mapping={}):
+        """Strip identities from PauliWord on init!"""
+        mapping = {wire: op for wire, op in mapping.items() if op != I}
+        super().__init__(mapping)
+
+    def __copy__(self):
+        """Copy the PauliWord instance."""
+        return PauliWord({key: val for key, val in self.items()})
+
     def __setitem__(self, key, item):
+        """Restrict setting items after instantiation."""
+        raise NotImplementedError
+
+    def update(self, __m, **kwargs) -> None:
+        """Restrict updating PW after instantiation."""
         raise NotImplementedError
 
     def __hash__(self):
@@ -102,12 +118,19 @@ class PauliWord(dict):
             result(PauliWord): The resulting operator of the multiplication
             coeff(complex): The complex phase factor
         """
-        result, iterator, swapped = (dict(self), other, False) if len(self) > len(other) else (dict(other), self, True)
+        c_self, c_other = (copy(self), copy(other))
+        result, iterator, swapped = (
+            (dict(c_self), c_other, False)
+            if len(self) > len(other)
+            else (dict(c_other), c_self, True)
+        )
         coeff = 1
 
         for wire, term in iterator.items():
             if wire in result:
-                factor, new_op = mul_map[result[wire]][term] if not swapped else mul_map[term][result[wire]]
+                factor, new_op = (
+                    mul_map[result[wire]][term] if not swapped else mul_map[term][result[wire]]
+                )
                 if new_op == I:
                     del result[wire]
                 else:
@@ -123,7 +146,7 @@ class PauliWord(dict):
         """Track wires in a PauliWord."""
         return set(k for k in self.keys())
 
-    def to_mat(self, wire_order=None, format="dense"):
+    def to_mat(self, wire_order, format="dense"):
         """Given a Pauli word, get the matrix representation.
 
         KeywordArgs:
@@ -141,14 +164,13 @@ class PauliWord(dict):
             raise ValueError("Can't get the matrix of an empty PauliWord.")
 
         matrix_map = sparse_mat_map if format != "dense" else mat_map
-        if wire_order is None:
-            wire_order = list(self.wires)
+        kron = sparse.kron if format != "dense" else math.kron
 
         initial_wire = wire_order[0]
         result_matrix = matrix_map[self[initial_wire]]
 
         for wire in wire_order[1:]:
-            result_matrix = math.kron(result_matrix, matrix_map[self[wire]])
+            result_matrix = kron(result_matrix, matrix_map[self[wire]])
 
         return result_matrix
 
@@ -171,7 +193,7 @@ class PauliSentence(dict):
     def __add__(self, other):
         """Add two Pauli sentence together by iterating over the smaller
         one and adding its terms to the larger one."""
-        c_self, c_other = (self, other)
+        c_self, c_other = (copy(self), copy(other))
         smaller_ps, larger_ps = (c_self, c_other) if len(self) < len(other) else (c_other, c_self)
         for key in smaller_ps:
             larger_ps[key] += smaller_ps[key]
@@ -198,9 +220,17 @@ class PauliSentence(dict):
                 rep_str += "= "
             else:
                 rep_str += "+ "
-            rep_str += f"({round(coeff, 2)}) * "
-            for w, op in pw.items():
-                rep_str += f"[{op}({w.labels[0]})]"
+            rep_str += f"({coeff}) * "
+
+            if len(pw) == 0:
+                rep_str += "[()]\n"
+                continue
+
+            for index, (w, op) in enumerate(pw.items()):
+                if index == 0:
+                    rep_str += f"[{op}({w})]"
+                else:
+                    rep_str += f" @ [{op}({w})]"
             rep_str += "\n"
 
         return rep_str
@@ -210,7 +240,7 @@ class PauliSentence(dict):
         """Track wires of the PauliSentence."""
         return set().union(*(pw.wires for pw in self.keys()))
 
-    def to_mat(self, wire_order=None, format="dense"):
+    def to_mat(self, wire_order, format="dense"):
         """Given a Pauli word, get the matrix representation.
 
         KeywordArgs:
@@ -227,11 +257,12 @@ class PauliSentence(dict):
         if len(self) == 0:
             raise ValueError("Can't get the matrix of an empty PauliSentence.")
 
-        if wire_order is None:
-            wire_order = list(self.wires)
-
         mats_and_wires_gen = (
-            (coeff * pw.to_mat(format=format), pw.wires) for pw, coeff in self.items()
+            (
+                coeff * pw.to_mat(wire_order=wires.Wires(list(pw.wires)), format=format),
+                wires.Wires(list(pw.wires)),
+            )
+            for pw, coeff in self.items()
         )
 
         reduced_mat, result_wire_order = math.reduce_matrices(
@@ -242,6 +273,7 @@ class PauliSentence(dict):
 
     def simplify(self, tol=1e-8):
         """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""
-        for pw in self:
+        terms = list(self.keys())
+        for pw in terms:
             if abs(self[pw]) <= tol:
                 del self[pw]

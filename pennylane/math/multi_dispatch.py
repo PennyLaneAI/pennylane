@@ -18,6 +18,7 @@ from collections.abc import Sequence
 
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
+import numpy as onp
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
@@ -150,6 +151,14 @@ def multi_dispatch(argnum=None, tensor_list=None):
         return wrapper
 
     return decorator
+
+
+@multi_dispatch(argnum=[0])
+def kron(*args, like=None, **kwargs):
+    """The kronecker/tensor product of args."""
+    if like == "scipy":
+        return onp.kron(*args, **kwargs)  # Dispatch scipy kron to numpy backed specifically.
+    return np.kron(*args, **kwargs)
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
@@ -754,8 +763,11 @@ def unwrap(values, max_depth=None):
     return [convert(val) for val in values]
 
 
-def add(*args, **kwargs):
+@multi_dispatch(argnum=[0])
+def add(*args, like=None, **kwargs):
     """Add arguments element-wise."""
+    if like == "scipy":
+        return onp.add(*args, **kwargs)  # Dispatch scipy add to numpy backed specifically.
     try:
         return np.add(*args, **kwargs)
     except TypeError:
