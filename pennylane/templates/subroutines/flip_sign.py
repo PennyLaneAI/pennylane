@@ -56,7 +56,6 @@ class FlipSign(Operation):
             qml.FlipSign(basis_state, wires=list(range(2)))
             return qml.state()
 
-
         circuit()
 
     The result for the above circuit is:
