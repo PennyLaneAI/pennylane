@@ -83,8 +83,8 @@ def submit_download_mock(_self, _fetch_and_save, filename, dest_folder):
 class TestValidateParams:
     """Test the _validate_params function."""
 
-    def test_data_type_error(self):
-        """Test that _validate_params fails when an unknown data_type is passed in."""
+    def test_data_name_error(self):
+        """Test that _validate_params fails when an unknown data_name is passed in."""
         with pytest.raises(ValueError, match="Currently the hosted datasets are of types"):
             qml.data.data_manager._validate_params("qspn", {}, [])
 
@@ -163,7 +163,7 @@ class TestValidateParams:
             )
 
     @pytest.mark.parametrize(
-        ("data_type", "description", "attributes"),
+        ("data_name", "description", "attributes"),
         [
             (
                 "qchem",
@@ -197,9 +197,9 @@ class TestValidateParams:
             ),
         ],
     )
-    def test_validate_params_successes(self, data_type, description, attributes):
+    def test_validate_params_successes(self, data_name, description, attributes):
         """Test that the _validate_params method passes with valid parameters."""
-        qml.data.data_manager._validate_params(data_type, description, attributes)
+        qml.data.data_manager._validate_params(data_name, description, attributes)
 
 
 class TestLoadHelpers:

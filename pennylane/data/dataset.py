@@ -83,11 +83,11 @@ class Dataset(ABC):
         + (1) [Z1]
     """
 
-    _standard_argnames = ["data_type", "data_folder", "attr_prefix"]
+    _standard_argnames = ["data_name", "data_folder", "attr_prefix"]
 
-    def __std_init__(self, data_type, folder, attr_prefix):
+    def __std_init__(self, data_name, folder, attr_prefix):
         """Constructor for standardized datasets."""
-        self._dtype = data_type
+        self._dtype = data_name
         self._folder = folder.rstrip("/")
         self._prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
         self._prefix_len = len(attr_prefix) + 1

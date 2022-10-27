@@ -29,13 +29,13 @@ _foldermap = {}
 _data_struct = {}
 
 
-def _validate_params(data_type, description, attributes):
+def _validate_params(data_name, description, attributes):
     """Validate parameters for loading the data."""
 
-    data = _data_struct.get(data_type)
+    data = _data_struct.get(data_name)
     if not data:
         raise ValueError(
-            f"Currently the hosted datasets are of types: {list(_data_struct)}, but got {data_type}."
+            f"Currently the hosted datasets are of types: {list(_data_struct)}, but got {data_name}."
         )
 
     if not isinstance(attributes, list):
@@ -44,13 +44,13 @@ def _validate_params(data_type, description, attributes):
     all_attributes = data["attributes"]
     if not set(attributes).issubset(set(all_attributes)):
         raise ValueError(
-            f"Supported key values for {data_type} are {all_attributes}, but got {attributes}."
+            f"Supported key values for {data_name} are {all_attributes}, but got {attributes}."
         )
 
     params_needed = data["params"]
     if set(description) != set(params_needed):
         raise ValueError(
-            f"Supported parameter values for {data_type} are {params_needed}, but got {list(description)}."
+            f"Supported parameter values for {data_name} are {params_needed}, but got {list(description)}."
         )
 
     def validate_structure(node, params_left):
@@ -73,7 +73,7 @@ def _validate_params(data_type, description, attributes):
             elif params_left:
                 validate_structure(node[detail], params_left)
 
-    validate_structure(_foldermap[data_type], params_needed)
+    validate_structure(_foldermap[data_name], params_needed)
 
 
 def _refresh_foldermap():
@@ -102,11 +102,11 @@ def _fetch_and_save(filename, dest_folder):
         f.write(response.content)
 
 
-def _s3_download(data_type, folders, attributes, dest_folder, force, num_threads):
+def _s3_download(data_name, folders, attributes, dest_folder, force, num_threads):
     """Download a file for each attribute from each folder to the specified destination.
 
     Args:
-        data_type   (str)  : The type of the data required
+        data_name   (str)  : The type of the data required
         folders     (list) : A list of folders corresponding to S3 object prefixes
         attributes  (list) : A list to specify individual data elements that are required
         dest_folder (str)  : Path to the root folder where files should be saved
@@ -116,11 +116,11 @@ def _s3_download(data_type, folders, attributes, dest_folder, force, num_threads
     """
     files = []
     for folder in folders:
-        local_folder = os.path.join(dest_folder, data_type, folder)
+        local_folder = os.path.join(dest_folder, data_name, folder)
         if not os.path.exists(local_folder):
             os.makedirs(local_folder)
 
-        prefix = os.path.join(data_type, folder, f"{folder.replace('/', '_')}_")
+        prefix = os.path.join(data_name, folder, f"{folder.replace('/', '_')}_")
         # TODO: consider combining files within a folder (switch to append)
         files.extend([f"{prefix}{attr}.dat" for attr in attributes])
 
@@ -162,12 +162,12 @@ def _generate_folders(node, folders):
 
 
 def load(
-    data_type, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
+    data_name, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
 ):
     r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object
 
     Args:
-        data_type (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
+        data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
         attributes (list) : An optional list to specify individual data element that are required
         folder_path (str) : Path to the root folder where download takes place.
             By default dataset folder will be created in the working directory
@@ -182,7 +182,7 @@ def load(
 
     _ = lazy
 
-    if data_type not in _foldermap:
+    if data_name not in _foldermap:
         _refresh_foldermap()
     if not _data_struct:
         _refresh_data_struct()
@@ -190,24 +190,24 @@ def load(
         attributes = ["full"]
 
     description = {key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()}
-    _validate_params(data_type, description, attributes)
+    _validate_params(data_name, description, attributes)
     if len(attributes) > 1 and "full" in attributes:
         attributes = ["full"]
     for key, val in description.items():
         if len(val) > 1 and "full" in val:
             description[key] = ["full"]
 
-    data = _data_struct[data_type]
+    data = _data_struct[data_name]
     directory_path = os.path.join(folder_path, "datasets")
 
     folders = [description[param] for param in data["params"]]
-    all_folders = _generate_folders(_foldermap[data_type], folders)
-    _s3_download(data_type, all_folders, attributes, directory_path, force, num_threads)
+    all_folders = _generate_folders(_foldermap[data_name], folders)
+    _s3_download(data_name, all_folders, attributes, directory_path, force, num_threads)
 
     data_files = []
     for folder in all_folders:
-        real_folder = os.path.join(directory_path, data_type, folder)
-        obj = Dataset(data_type, real_folder, folder.replace("/", "_"), standard=True)
+        real_folder = os.path.join(directory_path, data_name, folder)
+        obj = Dataset(data_name, real_folder, folder.replace("/", "_"), standard=True)
         doc_attrs = obj.list_attributes()
         doc_vals = [type(getattr(obj, attr)) for attr in doc_attrs]
         args_idx = [data["attributes"].index(x) for x in doc_attrs]

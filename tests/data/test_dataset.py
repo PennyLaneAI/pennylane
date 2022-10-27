@@ -90,11 +90,11 @@ def test_invalid_init():
     """Test that __init__ fails with invalid arguments."""
     with pytest.raises(
         TypeError,
-        match=r"Standard datasets expect 3 arguments: \['data_type', 'data_folder', 'attr_prefix'\]",
+        match=r"Standard datasets expect 3 arguments: \['data_name', 'data_folder', 'attr_prefix'\]",
     ):
         qml.data.Dataset("first", "second", standard=True)
 
-    with pytest.raises(ValueError, match="Expected data_type to be a str, got int"):
+    with pytest.raises(ValueError, match="Expected data_name to be a str, got int"):
         qml.data.Dataset(1, "some_folder", "some_prefix", standard=True)
 
 
