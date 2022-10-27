@@ -26,11 +26,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.math import expand_matrix, modular_multiplicative_inverse
 from pennylane.operation import AnyWires, Operation
-<<<<<<< HEAD
 
-=======
-from pennylane.ops.qubit.non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
->>>>>>> bf6e5c92cbef0f9c877b316d50b6d736055ce657
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
