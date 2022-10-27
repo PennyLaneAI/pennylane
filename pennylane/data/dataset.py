@@ -16,6 +16,8 @@ Contains the :class:`~pennylane.data.Dataset` class and its associated functions
 """
 
 from abc import ABC
+from glob import glob
+import os
 import dill
 import zstd
 
@@ -27,8 +29,16 @@ class Dataset(ABC):
     and an efficient state-preparation circuit for that state.
 
     Args:
-        dtype (string): the type of the dataset, e.g., `qchem`, `qspin`, etc.
-        **kwargs: variable-length keyworded arguments specifying the data to be stored in the dataset
+        args (list): For internal use only. These will be ignored if called with standard=False
+        standard (bool): For internal use only. See below for behaviour if this is set to True
+        **kwargs (dict): variable-length keyworded arguments specifying the data to be stored in the dataset
+
+    Note on the ``standard`` kwarg:
+        A "standard" Dataset uses previously existing, downloadable quantum data. This special instance of
+        the Dataset class makes some assumptions for folder management and file downloading. As such, the
+        Dataset class should not be invoked directly with ``standard=True``. Instead, call :meth:`~load`
+
+    .. seealso:: :meth:`~load`
 
     **Example**
 
@@ -73,25 +83,57 @@ class Dataset(ABC):
         + (1) [Z1]
     """
 
-    def __init__(self, dtype=None, **kwargs):
-        self.dtype = dtype
+    _standard_argnames = ["data_type", "data_folder", "attr_prefix"]
+
+    def __std_init__(self, data_type, folder, attr_prefix):
+        """Constructor for standardized datasets."""
+        self._dtype = data_type
+        self._folder = folder.rstrip("/")
+        self._prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
+        self._prefix_len = len(attr_prefix) + 1
         self.__doc__ = ""
+
+        self._fullfile = self._prefix.format("full")
+        if not os.path.exists(self._fullfile):
+            self._fullfile = None
+
+        for f in glob(self._folder + "/*.dat"):
+            self.read(f)
+
+    def __base_init__(self, **kwargs):
+        """Constructor for user-defined datasets."""
         for key, val in kwargs.items():
             setattr(self, key, val)
 
-    def __eq__(self, __o):
-        return self.__dict__ == __o.__dict__
+    def __init__(self, *args, standard=False, **kwargs):
+        """Dispatching constructor for direct invocation with kwargs or from qml.data.load()"""
+        if standard:
+            if len(args) != len(self._standard_argnames):
+                raise TypeError(
+                    f"Standard datasets expect {len(self._standard_argnames)} arguments: {self._standard_argnames}"
+                )
+            for name, val in zip(self._standard_argnames, args):
+                if not isinstance(val, str):
+                    raise ValueError(f"Expected {name} to be a str, got {type(val).__name__}")
+            self._is_standard = True
+            self.__std_init__(*args)
+        else:
+            self._is_standard = False
+            self.__base_init__(**kwargs)
+
+    @property
+    def attrs(self):
+        """Returns attributes of the dataset."""
+        return {k: v for k, v in vars(self).items() if k[0] != "_"}
 
     @staticmethod
     def _read_file(filepath):
-        """Loads data previously saved with :func:`~pennylane.data.dataset.write`.
-        Data is read as a dictionary."""
-        with open(filepath, "rb") as file:
-            compressed_pickle = file.read()
+        """Reading the data from a saved file. Returns a dictionary."""
+        with open(filepath, "rb") as f:
+            compressed_pickle = f.read()
 
         depressed_pickle = zstd.decompress(compressed_pickle)
-        data = dill.loads(depressed_pickle)
-        return data
+        return dill.loads(depressed_pickle)
 
     def read(self, filepath):
         """Loads data from a saved file to the current dataset.
@@ -105,19 +147,17 @@ class Dataset(ABC):
         >>> new_dataset.read('./path/to/file/file_name.dat')
         """
         data = self._read_file(filepath)
-        for (key, val) in data.items():
-            setattr(self, f"{key}", val)
-
-    @staticmethod
-    def _write_file(filepath, data, protocol=4):
-        """Writes the input data to a file as a dictionary."""
-        pickled_data = dill.dumps(data, protocol=protocol)  # returns data as a bytes object
-        compressed_pickle = zstd.compress(pickled_data)
-        with open(filepath, "wb") as file:
-            file.write(compressed_pickle)
+        attribute = "full"  # set 'full' by default so non-standard datasets read keys and values
+        if self._is_standard:
+            attribute = self.__get_attribute_from_filename(filepath)
+        if attribute == "full":
+            for attr, value in data.items():
+                setattr(self, f"{attr}", value)
+        else:
+            setattr(self, f"{attribute}", data)
 
     def write(self, filepath, protocol=4):
-        """Writes a dataset to a file as a dictionary.
+        """Writes the dataset to a file as a dictionary.
 
         Args:
             filepath (string): the desired save location and file name
@@ -127,10 +167,16 @@ class Dataset(ABC):
         >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
         >>> new_dataset.write('./path/to/file/file_name.dat')
         """
-        dataset = {}
-        for (key, val) in self.__dict__.items():
-            dataset.update({key: val})
-        self._write_file(filepath=filepath, data=dataset, protocol=protocol)
+        if not os.path.exists(os.path.dirname(filepath)):
+            os.makedirs(os.path.dirname(filepath))
+        pickled_data = dill.dumps(self.attrs, protocol=protocol)
+        compressed_pickle = zstd.compress(pickled_data)
+        with open(filepath, "wb") as f:
+            f.write(compressed_pickle)
+
+    def list_attributes(self):
+        """List the attributes saved on the Dataset"""
+        return list(self.attrs)
 
     @classmethod
     def from_dataset(cls, dataset):
@@ -151,5 +197,34 @@ class Dataset(ABC):
             >>> print(vars(new_dataset))
             {'dtype': None, '__doc__': '', 'kw1': 1, 'kw2': '2', 'kw3': [3]}
         """
-        kwargs = {key: val for (key, val) in dataset.__dict__.items() if key not in ["dtype"]}
-        return cls(dtype=dataset.dtype, **kwargs)
+        return cls(**dataset.attrs)
+
+    # The methods below are intended for use only by standard Dataset objects
+    def __get_filename_for_attribute(self, attribute):
+        return self._fullfile if self._fullfile else self._prefix.format(attribute)
+
+    def __get_attribute_from_filename(self, filename):
+        return os.path.basename(filename)[self._prefix_len : -4]
+
+    def __getattribute__(self, name):
+        try:
+            return super().__getattribute__(name)
+        except AttributeError:
+            if not self._is_standard:
+                raise
+            filepath = self.__get_filename_for_attribute(name)
+            if os.path.exists(filepath):
+                # TODO: setattr
+                return self._read_file(filepath)[name]
+            # TODO: download the file here?
+            raise
+
+    def setdocstr(self, docstr, args=None, argtypes=None, argsdocs=None):
+        """Build the docstring for the Dataset class"""
+        docstring = f"{docstr}\n\n"
+        if args and argsdocs and argtypes:
+            docstring += "Args:\n"
+            for arg, argdoc, argtype in zip(args, argsdocs, argtypes):
+                docstring += f"\t{arg} ({argtype}): {argdoc}\n"
+            docstring += f"\nReturns:\n\tDataset({self._dtype})"
+        self.__doc__ = docstring  # pylint:disable=attribute-defined-outside-init
