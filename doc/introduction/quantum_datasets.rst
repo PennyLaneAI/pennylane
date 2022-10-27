@@ -50,20 +50,24 @@ Since the loaded data items are compatible with PennyLane whenever possible, so 
 Dataset Structure
 ~~~~~~~~~~~~~~~~~~~
 
-PennyLane's quantum dataset currently contains two subcategories: `qchem` and `qspin`, which
-contain data regarding to molecules and spin systems, respectively. Users can use the 
-:func:`~.pennylane.qdata.list_datasets` method to get a snapshot of the currently available.
-This function returns a nested dictionary as we show below. Note that the 
+PennyLane's quantum dataset module currently contains two subcategories: `qchem` and `qspin`.
+These subcategories offer data relating to molecules and spin systems, respectively. Users can call the 
+:func:`~.pennylane.data.list_datasets` function to get a snapshot of the currently available data.
+This function returns a nested dictionary as we show below. Note that this example limits the results
+of the function calls for clarity. Additionally, as more data becomes available, the results of these
+function calls will change.
 
 .. code-block:: python
 
-    >>> print('Level 1:'); pprint(qdata.list_datasets(), depth=1)
-    Level 1:
-    {'qchem': {...}, 'qspin': {...}}
-    >>> print('Level 2:'); pprint(qdata.list_datasets(), depth=2)
-    Level 2:
-    {'qchem': {'H2': {...}, 'LiH': {...}, 'NH3': {...}, ...},
-     'qspin': {'Heisenberg': {...}, 'Ising': {...}, ...}}
+    >>> available_data = qml.data.list_datasets()
+    >>> available_data.keys()
+    dict_keys(['qspin', 'qchem'])
+    >>> available_data['qchem']
+    dict_keys(['H2', 'HeH'])
+    >>> available_data['qchem']['H2']
+    dict_keys(['6-31G'])
+    >>> print(available_data['qchem']['H2']['6-31G'])
+    ['0.46', '1.16', '1.22', ...]
 
 Filtering Datasets
 ~~~~~~~~~~~~~~~~~~~
@@ -81,9 +85,7 @@ In the case that we only wish to download or load portions of a large dataset, w
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qdata.Dataset
-    ~pennylane.qdata.ChemDataset
-    ~pennylane.qdata.SpinDataset
+    ~pennylane.data.Dataset
 
 :html:`</div>`
 
@@ -96,9 +98,7 @@ Utility Functions
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qdata.list_datasets
-    ~pennylane.qdata.get_params
-    ~pennylane.qdata.get_keys
-    ~pennylane.qdata.load
+    ~pennylane.data.list_datasets
+    ~pennylane.data.load
 
 :html:`</div>`
