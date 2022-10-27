@@ -62,7 +62,7 @@ def test_copy_non_standard():
     test_dataset = qml.data.Dataset(dtype="test_data", kw1=1, kw2="2", kw3=[3])
     new_dataset = copy(test_dataset)
     assert new_dataset.attrs == test_dataset.attrs
-    assert new_dataset._is_standard == False
+    assert new_dataset._is_standard is False
 
 
 def test_copy_standard(tmp_path):

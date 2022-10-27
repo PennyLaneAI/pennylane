@@ -187,6 +187,7 @@ class Dataset(ABC):
         """List the attributes saved on the Dataset"""
         return list(self.attrs)
 
+    # pylint: disable=attribute-defined-outside-init
     def __copy__(self):
         cls = self.__class__
 
