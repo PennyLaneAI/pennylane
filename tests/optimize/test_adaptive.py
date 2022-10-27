@@ -102,14 +102,47 @@ pool = [
         (initial_circuit, energy_h3p, pool),
     ],
 )
-def test_step_and_cost(circuit, energy_ref, pool):
-    """Test that step_and_cost function returns the correct cost."""
+def test_step_and_cost_drain(circuit, energy_ref, pool):
+    """Test that step_and_cost function returns the correct results."""
     opt = qml.AdaptiveOptimizer()
     for i in range(4):
         circuit, energy, gradient = opt.step_and_cost(circuit, pool, drain_pool=True)
 
-    print(energy, energy_ref)
+    _ = circuit()
+    selected_excitations = [op.wires for op in circuit.tape.operations[1:]]
+
     assert np.allclose(energy, energy_ref)
+    # assert that the operator pool is drained, no repeated gates in the circuit
+    assert len(set(selected_excitations)) == len(selected_excitations)
+
+
+@pytest.mark.parametrize(
+    "circuit, energy_ref, pool",
+    [
+        (initial_circuit, energy_h3p, pool),
+    ],
+)
+def test_step_and_cost_nodrain(circuit, energy_ref, pool):
+    """Test that step_and_cost function returns the correct results."""
+    opt = qml.AdaptiveOptimizer()
+    for i in range(4):
+        pool = [
+            qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3]),
+            qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 5]),
+            qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 3, 4]),
+            qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 4, 5]),
+            qml.SingleExcitation(np.array(0.0), wires=[0, 2]),
+            qml.SingleExcitation(np.array(0.0), wires=[0, 4]),
+            qml.SingleExcitation(np.array(0.0), wires=[1, 3]),
+            qml.SingleExcitation(np.array(0.0), wires=[1, 5]),
+        ]
+        circuit, energy, gradient = opt.step_and_cost(circuit, pool, drain_pool=False)
+
+    _ = circuit()
+    selected_excitations = [op.wires for op in circuit.tape.operations[1:]]
+
+    assert np.allclose(energy, energy_ref, rtol=1e-4)
+    assert len(set(selected_excitations)) < len(selected_excitations)
 
 
 @pytest.mark.parametrize(
