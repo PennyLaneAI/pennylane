@@ -98,7 +98,7 @@ class Dataset(ABC):
             self._fullfile = None
 
         for f in glob(self._folder + "/*.dat"):
-            self.read(f)
+            self.read(f, lazy=True)
 
     def __base_init__(self, **kwargs):
         """Constructor for user-defined datasets."""
@@ -128,33 +128,45 @@ class Dataset(ABC):
 
     @staticmethod
     def _read_file(filepath):
-        """Reading the data from a saved file. Returns a dictionary."""
+        """Read data from a saved file.
+
+        Returns:
+            A data value for non-standard datasets or full files, otherwise a dictionary
+        """
         with open(filepath, "rb") as f:
             compressed_pickle = f.read()
 
         depressed_pickle = zstd.decompress(compressed_pickle)
         return dill.loads(depressed_pickle)
 
-    def read(self, filepath):
+    def read(self, filepath, lazy=False):
         """Loads data from a saved file to the current dataset.
 
         Args:
-            filepath (string): the desired location and filename to load, e.g. './path/to/file/file_name.dat'.
+            filepath (string): The desired location and filename to load, e.g. './path/to/file/file_name.dat'.
+            lazy (bool): Indicates if only the key of the attribute should be saved to the Dataset instance
 
         **Example**
 
         >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
         >>> new_dataset.read('./path/to/file/file_name.dat')
         """
-        data = self._read_file(filepath)
-        attribute = "full"  # set 'full' by default so non-standard datasets read keys and values
-        if self._is_standard:
-            attribute = self.__get_attribute_from_filename(filepath)
+        # set 'full' for non-standard datasets so they read keys too
+        attribute = self.__get_attribute_from_filename(filepath) if self._is_standard else "full"
         if attribute == "full":
+            data = self._read_file(filepath)
             for attr, value in data.items():
-                setattr(self, f"{attr}", value)
+                setattr(self, f"{attr}", None if lazy else value)
         else:
+            data = None if lazy else self._read_file(filepath)
             setattr(self, f"{attribute}", data)
+
+    @staticmethod
+    def _write_file(data, filepath, protocol=4):
+        pickled_data = dill.dumps(data, protocol=protocol)
+        compressed_pickle = zstd.compress(pickled_data)
+        with open(filepath, "wb") as f:
+            f.write(compressed_pickle)
 
     def write(self, filepath, protocol=4):
         """Writes the dataset to a file as a dictionary.
@@ -169,10 +181,7 @@ class Dataset(ABC):
         """
         if not os.path.exists(os.path.dirname(filepath)):
             os.makedirs(os.path.dirname(filepath))
-        pickled_data = dill.dumps(self.attrs, protocol=protocol)
-        compressed_pickle = zstd.compress(pickled_data)
-        with open(filepath, "wb") as f:
-            f.write(compressed_pickle)
+        self._write_file(self.attrs, filepath, protocol=protocol)
 
     def list_attributes(self):
         """List the attributes saved on the Dataset"""
@@ -208,14 +217,22 @@ class Dataset(ABC):
 
     def __getattribute__(self, name):
         try:
-            return super().__getattribute__(name)
+            val = super().__getattribute__(name)
+            if val is None and self._is_standard and name in self.attrs:
+                raise AttributeError(
+                    f"Dataset has a '{name}' attribute, but it is None and no data file was found"
+                )
+            return val
         except AttributeError:
             if not self._is_standard:
                 raise
             filepath = self.__get_filename_for_attribute(name)
             if os.path.exists(filepath):
-                # TODO: setattr
-                return self._read_file(filepath)[name]
+                value = self._read_file(filepath)
+                if filepath == self._fullfile:
+                    value = value[name]
+                setattr(self, name, value)
+                return value
             # TODO: download the file here?
             raise
 
