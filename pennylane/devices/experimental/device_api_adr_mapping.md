@@ -1,6 +1,6 @@
 # Mapping from ADR 052-device_api_spec to required functionality
 
-See [ADR](https://github.com/PennyLaneAI/adrs/blob/master/documents/052-device_api_spec.md) for explicit details and discussions.
+See [ADR](https://github.com/PennyLaneAI/adrs/blob/master/documents/052-device_api_spec.md) for explicit details and discussions of the device API requirements.
 
 The goal of this document is to identify how the proposed API design will address the series of requirements in the above ADR.
 
@@ -38,3 +38,20 @@ The goal of this document is to identify how the proposed API design will addres
             return tuple(qscript, lambda x: x)
     ```
     Note: This can live inside or outside the device. It is an open question where this will be called --- within `execute` or handled externally, such as by a runtime manager at the `QNode` level.
+
+4. **Devices can be requested to return the forward pass, the Jacobian, or both.**
+    Easily handled through the following methods:
+    ```python
+        def execute(self, payload: Union[QuantumScript, List[QuantumScript]]) -> Union[Result, List[Result]]:
+            ...
+        
+        def grad(self, payload: Union[QuantumScript, List[QuantumScript]], order: int = 1) -> Union[List[Result], List[List[Result]]]:
+            ...
+
+        def execute_and_grad(self, payload: Union[QuantumScript, List[QuantumScript]], order: int = 1) -> Union[Tuple[Result, List[Result]], Tuple[List[Result], List[List[Result]]]]:
+            ...
+    ```
+    Note: Due to the supported result orderings, having a separate datastructure for results would be beneficial to aid in avoiding explicit dependence on each specific return type. This would also clean-up the above API significantly, where all options are internal to the class itself.
+
+5. **Devices can register multiple methods for derivative calculations.**
+    
