@@ -17,7 +17,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
-from pennylane.gradients.parameter_shift import _get_operation_recipe
+from pennylane.gradients.parameter_shift import _get_operation_recipe, _put_zeros_in_pdA2_involutory
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
@@ -260,7 +260,117 @@ class TestParamShift:
 
         assert g_tapes == []
         assert isinstance(res, np.ndarray)
-        assert res.shape == (1, 0)
+        assert res.shape == (0,)
+
+    def test_no_trainable_params_multiple_return_tape(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters with multiple returns."""
+        dev = qml.device("default.qubit", wires=2)
+
+        weights = [0.1, 0.2]
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.probs(wires=[0, 1])
+
+        tape.trainable_params = []
+        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
+            g_tapes, post_processing = qml.gradients.param_shift(tape)
+        res = post_processing(qml.execute(g_tapes, dev, None))
+
+        assert g_tapes == []
+        assert isinstance(res, tuple)
+        for r in res:
+            assert isinstance(r, np.ndarray)
+            assert r.shape == (0,)
+
+    def test_all_zero_diff_methods_tape(self):
+        """Test that the transform works correctly when the diff method for every parameter is
+        identified to be 0, and that no tapes were generated."""
+        dev = qml.device("default.qubit", wires=4)
+
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Rot(*params, wires=0)
+            qml.probs([2, 3])
+
+        g_tapes, post_processing = qml.gradients.param_shift(tape)
+        assert g_tapes == []
+
+        result = post_processing(qml.execute(g_tapes, dev, None))
+
+        assert isinstance(result, tuple)
+
+        assert len(result) == 3
+
+        assert isinstance(result[0], np.ndarray)
+        assert result[0].shape == (4,)
+        assert np.allclose(result[0], 0)
+
+        assert isinstance(result[1], np.ndarray)
+        assert result[1].shape == (4,)
+        assert np.allclose(result[1], 0)
+
+        assert isinstance(result[2], np.ndarray)
+        assert result[2].shape == (4,)
+        assert np.allclose(result[2], 0)
+
+    def test_all_zero_diff_methods_multiple_returns_tape(self):
+        """Test that the transform works correctly when the diff method for every parameter is
+        identified to be 0, and that no tapes were generated."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Rot(*params, wires=0)
+            qml.expval(qml.PauliZ(wires=2))
+            qml.probs([2, 3])
+
+        g_tapes, post_processing = qml.gradients.param_shift(tape)
+        assert g_tapes == []
+
+        result = post_processing(qml.execute(g_tapes, dev, None))
+
+        assert isinstance(result, tuple)
+
+        assert len(result) == 2
+
+        # First elem
+        assert len(result[0]) == 3
+
+        assert isinstance(result[0][0], np.ndarray)
+        assert result[0][0].shape == ()
+        assert np.allclose(result[0][0], 0)
+
+        assert isinstance(result[0][1], np.ndarray)
+        assert result[0][1].shape == ()
+        assert np.allclose(result[0][1], 0)
+
+        assert isinstance(result[0][2], np.ndarray)
+        assert result[0][2].shape == ()
+        assert np.allclose(result[0][2], 0)
+
+        # Second elem
+        assert len(result[0]) == 3
+
+        assert isinstance(result[1][0], np.ndarray)
+        assert result[1][0].shape == (4,)
+        assert np.allclose(result[1][0], 0)
+
+        assert isinstance(result[1][1], np.ndarray)
+        assert result[1][1].shape == (4,)
+        assert np.allclose(result[1][1], 0)
+
+        assert isinstance(result[1][2], np.ndarray)
+        assert result[1][2].shape == (4,)
+        assert np.allclose(result[1][2], 0)
+
+        tapes, _ = qml.gradients.param_shift(tape)
+        assert tapes == []
 
     # TODO: uncomment when QNode decorator uses new qml.execute pipeline
     # @pytest.mark.parametrize("broadcast", [True, False])
@@ -673,10 +783,9 @@ class TestParameterShiftRule:
 
         manualgrad_val = np.subtract(*dev.batch_execute([tape_fwd, tape_bwd])) / 2
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
-        assert isinstance(autograd_val, tuple)
 
-        num_params = len(tape.trainable_params)
-        assert len(autograd_val) == num_params
+        assert isinstance(autograd_val, np.ndarray)
+        assert autograd_val.shape == ()
 
         assert spy.call_args[1]["shifts"] == (shift,)
 
@@ -706,7 +815,6 @@ class TestParameterShiftRule:
         autograd_val = fn(dev.batch_execute(tapes))
         assert isinstance(autograd_val, tuple)
         assert len(autograd_val) == num_params
-        manualgrad_val = np.zeros((1, num_params))
 
         manualgrad_val = []
         for idx in list(np.ndindex(*params.shape)):
@@ -1219,14 +1327,16 @@ class TestParameterShiftRule:
         assert np.allclose(res[1][0], probs_expected[:, 0])
         assert np.allclose(res[1][1], probs_expected[:, 1])
 
-    def test_involutory_variance(self, tol):
-        """Tests qubit observables that are involutory"""
+    def test_involutory_variance_single_param(self, tol):
+        """Tests qubit observables that are involutory with a single trainable param"""
         dev = qml.device("default.qubit", wires=1)
         a = 0.54
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(a, wires=0)
             qml.var(qml.PauliZ(0))
+
+        tape.trainable_params = {0}
 
         res = dev.execute(tape)
         expected = 1 - np.cos(a) ** 2
@@ -1247,8 +1357,49 @@ class TestParameterShiftRule:
         assert gradF == pytest.approx(expected, abs=tol)
         assert gradA == pytest.approx(expected, abs=tol)
 
-    def test_non_involutory_variance(self, tol):
-        """Tests a qubit Hermitian observable that is not involutory"""
+    def test_involutory_variance_multi_param(self, tol):
+        """Tests qubit observables that are involutory with multiple trainable params"""
+        dev = qml.device("default.qubit", wires=1)
+        a = 0.34
+        b = 0.20
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.var(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 1}
+
+        res = dev.execute(tape)
+        expected = 1 - np.cos(a + b) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, tuple)
+
+        assert isinstance(gradA[0], np.ndarray)
+        assert gradA[0].shape == ()
+
+        assert isinstance(gradA[1], np.ndarray)
+        assert gradA[1].shape == ()
+
+        assert len(tapes) == 1 + 2 * 2
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 3
+
+        expected = 2 * np.sin(a + b) * np.cos(a + b)
+        assert gradF[0] == pytest.approx(expected, abs=tol)
+        assert gradA[0] == pytest.approx(expected, abs=tol)
+
+        assert gradF[1] == pytest.approx(expected, abs=tol)
+        assert gradA[1] == pytest.approx(expected, abs=tol)
+
+    def test_non_involutory_variance_single_param(self, tol):
+        """Tests a qubit Hermitian observable that is not involutory with a single trainable parameter"""
         dev = qml.device("default.qubit", wires=1)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
@@ -1277,6 +1428,47 @@ class TestParameterShiftRule:
         expected = -35 * np.sin(2 * a) - 12 * np.cos(2 * a)
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
+
+    def test_non_involutory_variance_multi_param(self, tol):
+        """Tests a qubit Hermitian observable that is not involutory with multiple trainable parameters"""
+        dev = qml.device("default.qubit", wires=1)
+        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        a = 0.34
+        b = 0.20
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.var(qml.Hermitian(A, 0))
+
+        tape.trainable_params = {0, 1}
+
+        res = dev.execute(tape)
+        expected = (39 / 2) - 6 * np.sin(2 * (a + b)) + (35 / 2) * np.cos(2 * (a + b))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
+        assert isinstance(gradA, tuple)
+
+        assert isinstance(gradA[0], np.ndarray)
+        assert gradA[0].shape == ()
+
+        assert isinstance(gradA[1], np.ndarray)
+        assert gradA[1].shape == ()
+        assert len(tapes) == 1 + 4 * 2
+
+        tapes, fn = qml.gradients.finite_diff(tape)
+        gradF = fn(dev.batch_execute(tapes))
+        assert len(tapes) == 3
+
+        expected = -35 * np.sin(2 * (a + b)) - 12 * np.cos(2 * (a + b))
+        assert gradA[0] == pytest.approx(expected, abs=tol)
+        assert gradF[0] == pytest.approx(expected, abs=tol)
+
+        assert gradA[1] == pytest.approx(expected, abs=tol)
+        assert gradF[1] == pytest.approx(expected, abs=tol)
 
     def test_involutory_and_noninvolutory_variance_single_param(self, tol):
         """Tests a qubit Hermitian observable that is not involutory alongside
@@ -1309,6 +1501,8 @@ class TestParameterShiftRule:
 
         expected = [2 * np.sin(a) * np.cos(a), 0]
 
+        assert isinstance(gradA, tuple)
+        assert len(gradA) == 2
         for param_res in gradA:
             assert isinstance(param_res, np.ndarray)
             assert param_res.shape == ()
@@ -1319,49 +1513,232 @@ class TestParameterShiftRule:
         assert gradF[0] == pytest.approx(expected[0], abs=tol)
         assert gradF[1] == pytest.approx(expected[1], abs=tol)
 
-    def test_involutory_and_noninvolutory_variance(self, tol):
-        """Tests a qubit Hermitian observable that is not involutory alongside
-        an involutory observable."""
-        dev = qml.device("default.qubit", wires=2)
+    @pytest.mark.parametrize("ind", [0, 1])
+    def test_var_and_probs_single_param(self, ind, tol):
+        """Tests a qubit Hermitian observable that is not involutory alongside an involutory observable and probs when
+        there's one trainable parameter."""
+        dev = qml.device("default.qubit", wires=4)
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         a = 0.54
 
+        x = 0.543
+        y = -0.654
+
         with qml.tape.QuantumTape() as tape:
+
+            # Ops influencing var res
             qml.RX(a, wires=0)
             qml.RX(a, wires=1)
+
+            # Ops influencing probs res
+            qml.RX(x, wires=[2])
+            qml.RY(y, wires=[3])
+            qml.CNOT(wires=[2, 3])
+
             qml.var(qml.PauliZ(0))
             qml.var(qml.Hermitian(A, 1))
 
-        tape.trainable_params = {0, 1}
+            qml.probs(wires=[2, 3])
 
-        res = dev.execute(tape)
-        expected = [1 - np.cos(a) ** 2, (39 / 2) - 6 * np.sin(2 * a) + (35 / 2) * np.cos(2 * a)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        tape.trainable_params = {ind}
+
+        # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+
+        gradA = fn(dev.batch_execute(tapes))
+
+        assert isinstance(gradA, tuple)
+        assert len(gradA) == 3
+        assert gradA[0].shape == ()
+        assert gradA[1].shape == ()
+        assert gradA[2].shape == (4,)
+
+        # Vars
+        vars_expected = [2 * np.sin(a) * np.cos(a), -35 * np.sin(2 * a) - 12 * np.cos(2 * a)]
+        assert isinstance(gradA[0], np.ndarray)
+        assert np.allclose(gradA[0], vars_expected[0] if ind == 0 else 0)
+
+        assert isinstance(gradA[1], np.ndarray)
+        assert np.allclose(gradA[1], vars_expected[1] if ind == 1 else 0)
+
+        # Probs
+        assert isinstance(gradA[2], np.ndarray)
+        assert np.allclose(gradA[2], 0)
+
+    def test_var_and_probs_multi_params(self, tol):
+        """Tests a qubit Hermitian observable that is not involutory alongside an involutory observable and probs when
+        there are more trainable parameters."""
+        dev = qml.device("default.qubit", wires=4)
+        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        a = 0.54
+
+        x = 0.543
+        y = -0.654
+
+        with qml.tape.QuantumTape() as tape:
+
+            # Ops influencing var res
+            qml.RX(a, wires=0)
+            qml.RX(a, wires=1)
+
+            # Ops influencing probs res
+            qml.RX(x, wires=[2])
+            qml.RY(y, wires=[3])
+            qml.CNOT(wires=[2, 3])
+
+            qml.var(qml.PauliZ(0))
+            qml.var(qml.Hermitian(A, 1))
+
+            qml.probs(wires=[2, 3])
+
+        tape.trainable_params = {0, 1, 2, 3}
 
         # circuit jacobians
         tapes, fn = qml.gradients.param_shift(tape)
         gradA = fn(dev.batch_execute(tapes))
 
         assert isinstance(gradA, tuple)
-        assert len(gradA) == 2
-        for meas_res in gradA:
-            for param_res in meas_res:
-                assert isinstance(param_res, np.ndarray)
-                assert param_res.shape == ()
+        assert len(gradA) == 3
+        var1_res = gradA[0]
+        for param_res in var1_res:
+            assert isinstance(param_res, np.ndarray)
+            assert param_res.shape == ()
 
-        assert len(tapes) == 1 + 2 * 4
+        var2_res = gradA[1]
+        for param_res in var2_res:
+            assert isinstance(param_res, np.ndarray)
+            assert param_res.shape == ()
+
+        probs_res = gradA[2]
+        for param_res in probs_res:
+            assert isinstance(param_res, np.ndarray)
+            assert param_res.shape == (4,)
+
+        # Vars
+        vars_expected = [2 * np.sin(a) * np.cos(a), -35 * np.sin(2 * a) - 12 * np.cos(2 * a)]
+        assert isinstance(gradA[0], tuple)
+        assert np.allclose(gradA[0][0], vars_expected[0])
+        assert np.allclose(gradA[0][1], 0)
+        assert np.allclose(gradA[0][2], 0)
+        assert np.allclose(gradA[0][3], 0)
+
+        assert isinstance(gradA[1], tuple)
+        assert np.allclose(gradA[1][0], 0)
+        assert np.allclose(gradA[1][1], vars_expected[1])
+        assert np.allclose(gradA[1][2], 0)
+        assert np.allclose(gradA[1][3], 0)
+
+        # Probs
+        probs_expected = (
+            np.array(
+                [
+                    [
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                ]
+            )
+            / 2
+        )
+        assert isinstance(gradA[2], tuple)
+        assert np.allclose(gradA[2][0], 0)
+        assert np.allclose(gradA[2][1], 0)
+        assert np.allclose(gradA[2][2], probs_expected[:, 0])
+        assert np.allclose(gradA[2][3], probs_expected[:, 1])
+
+    def test_put_zeros_in_pdA2_involutory(self, tol):
+        """Tests the _process_pdA2_involutory auxiliary function."""
+        params = np.array([0.1, -1.6, np.pi / 5])
+        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[1])
+            qml.expval(qml.PauliZ(0))
+            qml.var(qml.Hermitian(A, 1))
+            qml.var(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 1}
+        involutory_indices = [2]
+
+        pdA2 = (
+            (np.array(-0.09983342), np.array(-4.44643859e-16)),
+            (np.array(-1.24098015e-15), np.array(6.17263875)),
+            (np.array(-1.10652721e-18), np.array(4.44328375e-16)),
+        )
+        res = _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices)
+        assert len(res) == len(pdA2)
+
+        # Expval and non-involutory obs parts are the same as in pdA2
+        assert res[0] == pdA2[0]
+        assert res[1] == pdA2[1]
+
+        # Involutory obs (PauliZ) part is 0
+        assert res[2] == (np.array(0), np.array(0))
+
+    def test_expval_and_variance_single_param(self, tol):
+        """Test an expectation value and the variance of involutory and non-involutory observables work well with a
+        single trainable parameter"""
+        dev = qml.device("default.qubit", wires=3)
+
+        a = 0.54
+        b = -0.423
+        c = 0.123
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.var(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(1))
+            qml.var(qml.PauliZ(2))
+
+        tape.trainable_params = {0}
+
+        res = dev.execute(tape)
+        expected = np.array(
+            [
+                np.sin(a) ** 2,
+                np.cos(a) * np.cos(b),
+                0.25 * (3 - 2 * np.cos(b) ** 2 * np.cos(2 * c) - np.cos(2 * b)),
+            ]
+        )
+
+        assert isinstance(res, tuple)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # # circuit jacobians
+        tapes, fn = qml.gradients.param_shift(tape)
+        gradA = fn(dev.batch_execute(tapes))
 
         tapes, fn = qml.gradients.finite_diff(tape)
         gradF = fn(dev.batch_execute(tapes))
-        assert len(tapes) == 1 + 2
 
-        expected = [2 * np.sin(a) * np.cos(a), -35 * np.sin(2 * a) - 12 * np.cos(2 * a)]
-        assert np.diag(gradA) == pytest.approx(expected, abs=tol)
-        assert np.diag(gradF) == pytest.approx(expected, abs=tol)
+        expected = np.array([2 * np.cos(a) * np.sin(a), -np.cos(b) * np.sin(a), 0])
+        assert isinstance(gradA, tuple)
+        for a_comp, e_comp in zip(gradA, expected):
+            assert isinstance(a_comp, np.ndarray)
+            assert a_comp.shape == ()
+            assert np.allclose(a_comp, e_comp, atol=tol, rtol=0)
+        assert gradF == pytest.approx(expected, abs=tol)
 
-    def test_expval_and_variance(self, tol):
-        """Test that the qnode works for a combination of expectation
-        values and variances"""
+    def test_expval_and_variance_multi_param(self, tol):
+        """Test an expectation value and the variance of involutory and non-involutory observables work well with
+        multiple trainable parameters"""
         dev = qml.device("default.qubit", wires=3)
 
         a = 0.54

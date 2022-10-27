@@ -25,8 +25,10 @@ from pennylane import math
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
+# pylint: disable=too-many-instance-attributes
 
-class CompositeOp(Operator, abc.ABC):
+
+class CompositeOp(Operator):
     """A base class for operators that are composed of other operators.
 
     Args:
@@ -204,10 +206,12 @@ class CompositeOp(Operator, abc.ABC):
             dict[str, array]: dictionary containing the eigenvalues and the
                 eigenvectors of the operator.
         """
+        eigen_func = np.linalg.eigh if self.is_hermitian else np.linalg.eig
+
         if self.hash not in self._eigs:
-            Hmat = self.matrix()
-            Hmat = math.to_numpy(Hmat)
-            w, U = np.linalg.eigh(Hmat)
+            mat = self.matrix()
+            mat = math.to_numpy(mat)
+            w, U = eigen_func(mat)
             self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
         return self._eigs[self.hash]
@@ -314,3 +318,17 @@ class CompositeOp(Operator, abc.ABC):
     @abc.abstractmethod
     def _math_op(self) -> Callable:
         """The function used when combining the operands of the composite operator"""
+
+    def map_wires(self, wire_map: dict):
+        cls = self.__class__
+        new_op = cls.__new__(cls)
+        new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)
+        new_op._wires = Wires(  # pylint: disable=protected-access
+            [wire_map.get(wire, wire) for wire in self.wires]
+        )
+        new_op.data = self.data.copy()
+        for attr, value in vars(self).items():
+            if attr not in {"data", "operands", "_wires"}:
+                setattr(new_op, attr, value)
+
+        return new_op

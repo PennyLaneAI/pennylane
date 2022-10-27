@@ -324,11 +324,7 @@ class Prod(CompositeOp):
         if len(factors) == 1:
             factor = factors[0]
             if len(factor) == 0:
-                op = (
-                    Prod(*(qml.Identity(w) for w in self.wires))
-                    if len(self.wires) > 1
-                    else qml.Identity(self.wires[0])
-                )
+                op = qml.Identity(self.wires)
             else:
                 op = factor[0] if len(factor) == 1 else Prod(*factor)
             return op if global_phase == 1 else qml.s_prod(global_phase, op)
@@ -516,11 +512,7 @@ class _ProductFactorsGrouping:
                         continue
                     if exponent != 1:
                         op = Pow(base=op, z=exponent).simplify()
-                    if isinstance(op, Prod):
-                        self._factors += tuple(
-                            (factor,) for factor in op if not isinstance(factor, qml.Identity)
-                        )
-                    elif not isinstance(op, qml.Identity):
+                    if not isinstance(op, qml.Identity):
                         self._factors += ((op,),)
 
     def _remove_pauli_factors(self, wires: List[int]):
