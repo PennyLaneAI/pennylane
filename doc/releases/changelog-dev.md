@@ -75,6 +75,41 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   Result value: 1.00; Result type: <class 'torch.Tensor'>
   Result value: 1.00; Result type: <class 'tensorflow.python.framework.ops.EagerTensor'>
   Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
+
+* Added the `qml.map_wires` function, that changes the wires of the given operator, `QNode`, queue
+  or quantum function according to the given wire map.
+  [(#3145)](https://github.com/PennyLaneAI/pennylane/pull/3145)
+
+  Using `qml.map_wires` with an operator:
+
+  ```pycon
+  >>> op = qml.RX(0.54, wires=0) + qml.PauliX(1) + (qml.PauliZ(2) @ qml.RY(1.23, wires=3))
+  >>> op
+  (RX(0.54, wires=[0]) + PauliX(wires=[1])) + (PauliZ(wires=[2]) @ RY(1.23, wires=[3]))
+  >>> wire_map = {0: 10, 1: 11, 2: 12, 3: 13}
+  >>> qml.map_wires(op, wire_map)
+  (RX(0.54, wires=[10]) + PauliX(wires=[11])) + (PauliZ(wires=[12]) @ RY(1.23, wires=[13]))
+  ```
+
+  Using `qml.map_wires` with a `QNode`:
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=[10, 11, 12, 13])
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...     qml.RX(0.54, wires=0)
+  ...     qml.PauliX(1)
+  ...     qml.PauliZ(2)
+  ...     qml.RY(1.23, wires=3)
+  ...     return qml.probs(wires=0)
+  >>> mapped_circuit = qml.map_wires(circuit, wire_map)
+  >>> mapped_circuit()
+  tensor([0.92885434, 0.07114566], requires_grad=True)
+  >>> print(qml.draw(mapped_circuit)())
+  10: ──RX(0.54)─┤  Probs
+  11: ──X────────┤       
+  12: ──Z────────┤       
+  13: ──RY(1.23)─┤  
   ```
 
 <h3>Improvements</h3>
