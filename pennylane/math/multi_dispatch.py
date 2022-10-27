@@ -774,7 +774,7 @@ def add(*args, like=None, **kwargs):
     except TypeError:
         # catch arg1 = torch, arg2=numpy error
         # works fine with opposite order
-        return np.add(args[1], args[0], *args[2:], like=like, **kwargs)
+        return np.add(args[1], args[0], *args[2:], **kwargs)
 
 
 @multi_dispatch()
