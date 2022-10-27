@@ -243,9 +243,15 @@ def list_datasets(path=None):
         >>> qml.qdata.list_datasets()
         {
             'qchem': {
-                'H2': {'STO3G': ['0.8']},
-                'LiH': {'STO3G': ['1.1']},
-                'NH3': {'STO3G': ['1.8']}
+                'H2': {
+                    '6-31G': ['0.46', '1.16', '0.58'],
+                    'STO-3G': ['0.46', '1.05']
+                },
+                'HeH': {'STO-3G': ['0.9', '0.74', '0.6', '0.8']}
+            },
+            'qspin': {
+                'Heisenberg': {'closed': {'chain': ['1x4']}},
+                'Ising': {'open': {'chain': ['1x8']}}
             }
         }
     """
