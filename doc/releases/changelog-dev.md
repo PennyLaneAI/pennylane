@@ -204,7 +204,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * The code block in the usage details of the UCCSD template is updated.
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
-* The example of the FlipSign template is updated.
+* The example of the `FlipSign` template is updated.
   [(#3219)](https://github.com/PennyLaneAI/pennylane/pull/3219)
 
 <h3>Bug fixes</h3>
