@@ -2167,7 +2167,6 @@ class MultiControlledX(Operation):
         if len(control_wires) == 1:
             decomp = [qml.CNOT(wires=[control_wires[0], target_wire])]
         elif len(control_wires) == 2:
-
             decomp = [qml.Toffoli(wires=[*control_wires, target_wire])]
         else:
             num_work_wires_needed = len(control_wires) - 2

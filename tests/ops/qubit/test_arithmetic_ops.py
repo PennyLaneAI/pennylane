@@ -246,23 +246,39 @@ class TestIntegerComparator:
     """Tests for the IntegerComparator"""
 
     @pytest.mark.parametrize(
-        "value,geq,wires,expected_error_message",
+        "value,geq,wires,work_wires,expected_error_message",
         [
-            (4.20, False, [0, 1, 2], "The compared value must be an int. Got <class 'float'>."),
-            (2, True, None, "Must specify wires that the operation acts on."),
+            (
+                4.20,
+                False,
+                [0, 1, 2],
+                None,
+                "The compared value must be an int. Got <class 'float'>.",
+            ),
+            (2, True, None, None, "Must specify wires that the operation acts on."),
             (
                 2,
                 True,
                 [1],
+                None,
                 r"IntegerComparator: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
+            ),
+            (
+                2,
+                False,
+                [0, 1, 2],
+                [2],
+                "The work wires must be different from the control and target wires",
             ),
         ],
     )
-    def test_invalid_mixed_polarity_controls(self, value, geq, wires, expected_error_message):
+    def test_invalid_mixed_polarity_controls(
+        self, value, geq, wires, work_wires, expected_error_message
+    ):
         """Test if IntegerComparator properly handles invalid mixed-polarity
         control values."""
         with pytest.raises(ValueError, match=expected_error_message):
-            qml.IntegerComparator(value, geq=geq, wires=wires).matrix()
+            qml.IntegerComparator(value, geq=geq, wires=wires, work_wires=work_wires).matrix()
 
     def test_compute_matrix_geq_True(self):
         """Test compute_matrix for geq=True"""

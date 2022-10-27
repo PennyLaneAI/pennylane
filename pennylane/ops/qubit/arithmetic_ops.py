@@ -364,6 +364,7 @@ class IntegerComparator(Operation):
         value,
         geq=True,
         wires=None,
+        work_wires=None,
         do_queue=True,
     ):
 
@@ -380,10 +381,15 @@ class IntegerComparator(Operation):
                 f"{len(wires)} wire(s) given. Need at least 2."
             )
 
+        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
         total_wires = control_wires + wires
+
+        if Wires.shared_wires([total_wires, work_wires]):
+            raise ValueError("The work wires must be different from the control and target wires")
 
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["target_wires"] = wires
+        self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["value"] = value
         self.hyperparameters["geq"] = geq
         self.geq = geq
@@ -462,7 +468,7 @@ class IntegerComparator(Operation):
         return mat
 
     @staticmethod
-    def compute_decomposition(value, geq=True, wires=None, **kwargs):
+    def compute_decomposition(value, geq=True, wires=None, work_wires=None, **kwargs):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -506,7 +512,6 @@ class IntegerComparator(Operation):
             gates = [Identity(0)]
 
         else:
-            work_wires = Wires("aux") if len(control_wires) > 2 else None
             binary = "0" + str(len(control_wires)) + "b"
             values = range(value, 2 ** (len(control_wires))) if geq else range(value)
             binary = "0" + str(len(control_wires)) + "b"
