@@ -1158,7 +1158,7 @@ class TestProperties:
     def test_wires_match_observable(self):
         """Test that the wires of the measurement process
         match an internal observable"""
-        obs = qml.Hermitian(np.diag([1, 2, 3]), wires=["a", "b", "c"])
+        obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=["a", "b"])
         m = MeasurementProcess(Expectation, obs=obs)
 
         assert np.all(m.wires == obs.wires)
@@ -1166,19 +1166,19 @@ class TestProperties:
     def test_eigvals_match_observable(self):
         """Test that the eigenvalues of the measurement process
         match an internal observable"""
-        obs = qml.Hermitian(np.diag([1, 2, 3]), wires=[0, 1, 2])
+        obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
         m = MeasurementProcess(Expectation, obs=obs)
 
-        assert np.all(m.eigvals() == np.array([1, 2, 3]))
+        assert np.all(m.eigvals() == np.array([1, 2, 3, 4]))
 
         # changing the observable data should be reflected
-        obs.data = [np.diag([5, 6, 7])]
-        assert np.all(m.eigvals() == np.array([5, 6, 7]))
+        obs.data = [np.diag([5, 6, 7, 8])]
+        assert np.all(m.eigvals() == np.array([5, 6, 7, 8]))
 
     def test_error_obs_and_eigvals(self):
         """Test that providing both eigenvalues and an observable
         results in an error"""
-        obs = qml.Hermitian(np.diag([1, 2, 3]), wires=[0, 1, 2])
+        obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
 
         with pytest.raises(ValueError, match="Cannot set the eigenvalues"):
             MeasurementProcess(Expectation, obs=obs, eigvals=[0, 1])
@@ -1186,7 +1186,7 @@ class TestProperties:
     def test_error_obs_and_wires(self):
         """Test that providing both wires and an observable
         results in an error"""
-        obs = qml.Hermitian(np.diag([1, 2, 3]), wires=[0, 1, 2])
+        obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
 
         with pytest.raises(ValueError, match="Cannot set the wires"):
             MeasurementProcess(Expectation, obs=obs, wires=qml.wires.Wires([0, 1]))

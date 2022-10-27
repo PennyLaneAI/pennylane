@@ -21,8 +21,8 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 import uuid
-from collections.abc import Iterable
 import warnings
+from collections.abc import Iterable
 from enum import Enum
 from typing import Generic, TypeVar
 
@@ -129,7 +129,13 @@ class MeasurementProcess:
     # pylint: disable=too-many-arguments
 
     def __init__(
-        self, return_type, obs: Operator = None, wires=None, eigvals=None, id=None, log_base=None
+        self,
+        return_type: ObservableReturnTypes,
+        obs: Operator = None,
+        wires=None,
+        eigvals=None,
+        id=None,
+        log_base=None,
     ):
         self.return_type = return_type
         self.obs = obs
@@ -678,6 +684,22 @@ class MeasurementProcess:
             return self
 
         return MeasurementProcess(return_type=self.return_type, obs=self.obs.simplify())
+
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current measurement process with its wires changed according to
+        the given wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .MeasurementProcess: new measurement process
+        """
+        new_measurement = copy.copy(self)
+        new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        if self.obs is not None:
+            new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
+        return new_measurement
 
 
 class ShadowMeasurementProcess(MeasurementProcess):
@@ -1465,7 +1487,8 @@ def shadow_expval(H, k=1, seed_recipes=True):
     parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
 
     Args:
-        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable to compute the expectation value over.
+        H (Union[Iterable, :class:`~.pennylane.Hamiltonian`, :class:`~.pennylane.operation.Tensor`]): Observable or
+            iterable of observables to compute the expectation value over.
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
         seed_recipes (bool): If True, a seed will be generated that
             is used for the randomly sampled Pauli measurements. This is to
