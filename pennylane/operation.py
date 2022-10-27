@@ -419,7 +419,7 @@ class Operator(abc.ABC):
         return self.hash
 
     def __eq__(self, other):
-        return qml.equal(self, other)
+        return qml.equal(self, other) if self.arithmetic_depth == 0 else other is self
 
     @property
     def hash(self):

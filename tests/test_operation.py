@@ -1580,8 +1580,6 @@ class TestTensor:
             T_pruned = T.prune()
             m = qml.expval(T_pruned)
 
-        ann_queue = tape._queue
-
         # the pruned tensor became the owner of Paulis
         assert tape.get_info(a)["owner"] == T_pruned
         assert tape.get_info(b)["owner"] == T_pruned
@@ -1611,24 +1609,21 @@ class TestTensor:
             T_pruned = T.prune()
             m = qml.expval(T_pruned)
 
-        ann_queue = tape._queue
-
         # the pruned tensor is the Pauli observable
         assert T_pruned == a
         # pruned tensor/Pauli is owned by the measurement
         # since the entry in the dictionary got updated
         # when the pruned tensor's owner was memorized
-        assert ann_queue[a]["owner"] == m
+        assert tape.get_info(a)["owner"] == m
         # the Identity is still owned by the original Tensor
-        assert ann_queue[c]["owner"] == T
+        assert tape.get_info(c)["owner"] == T
 
         # the original tensor still owns both observables
         # but is not owned by a measurement
-        assert ann_queue[T]["owns"] == (a, c)
-        assert not hasattr(ann_queue[T], "owner")
+        assert tape.get_info(T) == {"owns": (a, c)}
 
         # the measurement owns the Pauli/pruned tensor
-        assert ann_queue[m]["owns"] == T_pruned
+        assert tape.get_info(m) == {"owns": T_pruned}
 
     def test_sparse_matrix_no_wires(self):
         """Tests that the correct sparse matrix representation is used."""

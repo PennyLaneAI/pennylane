@@ -586,8 +586,8 @@ class TestQueueing:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Adjoint(base)
 
-        assert tape._queue[base]["owner"] is op
-        assert tape._queue[op]["owns"] is base
+        assert tape.get_info(base)["owner"] is op
+        assert tape.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
@@ -598,7 +598,7 @@ class TestQueueing:
             op = Adjoint(base)
 
         assert len(tape._queue) == 1
-        assert tape._queue[op]["owns"] is base
+        assert tape.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_False(self):

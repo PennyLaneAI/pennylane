@@ -385,7 +385,7 @@ def apply(op, context=QueuingManager):
         raise RuntimeError("No queuing context available to append operation to.")
 
     # pylint: disable=protected-access
-    if WrappedObj(op) in getattr(context, "queue", QueuingManager.active_context()._queue):
+    if WrappedObj(op) in getattr(context, "_queue", QueuingManager.active_context()._queue):
         # Queuing contexts can only contain unique objects.
         # If the object to be queued already exists, copy it.
         op = copy.copy(op)
