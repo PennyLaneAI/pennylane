@@ -20,7 +20,7 @@ executed by a device.
 import contextlib
 import copy
 from collections import Counter, defaultdict
-from typing import List
+from typing import List, Union
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -263,7 +263,7 @@ class QuantumScript:
         return self._prep + self._ops
 
     @property
-    def observables(self) -> List[MeasurementProcess, Observable]:
+    def observables(self) -> List[Union[MeasurementProcess, Observable]]:
         """Returns the observables on the quantum script.
 
         Returns:
