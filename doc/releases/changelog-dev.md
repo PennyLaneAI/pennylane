@@ -75,6 +75,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   Result value: 1.00; Result type: <class 'torch.Tensor'>
   Result value: 1.00; Result type: <class 'tensorflow.python.framework.ops.EagerTensor'>
   Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
+  ```
 
 * Added the `qml.map_wires` function, that changes the wires of the given operator, `QNode`, queue
   or quantum function according to the given wire map.
@@ -292,7 +293,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
   [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
 
-* Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian 
+* Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
 
