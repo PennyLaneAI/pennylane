@@ -121,26 +121,26 @@ class TestValidateParams:
         [
             (
                 {"molname": ["foo"], "basis": ["6-31G"], "bondlength": ["0.46"]},
-                r"molname value of 'foo' not available. Available values are \['H2'\]",
+                r"molname value of 'foo' is not available. Available values are \['H2'\]",
             ),
             (
                 {"molname": ["H2"], "basis": ["foo"], "bondlength": ["0.46"]},
-                r"basis value of 'foo' not available. Available values are \['6-31G'\]",
+                r"basis value of 'foo' is not available. Available values are \['6-31G'\]",
             ),
             (
                 {"molname": ["H2"], "basis": ["6-31G"], "bondlength": ["foo"]},
-                r"bondlength value of 'foo' not available. Available values are \['0.46', '1.16'\]",
+                r"bondlength value of 'foo' is not available. Available values are \['0.46', '1.16'\]",
             ),
             (
                 {"molname": ["H2"], "basis": ["6-31G", "foo"], "bondlength": ["0.46"]},
-                r"basis value of 'foo' not available. Available values are \['6-31G'\]",
+                r"basis value of 'foo' is not available. Available values are \['6-31G'\]",
             ),
         ],
     )
     def test_incorrect_param_values(self, description, error_message):
         """Test that _validate_params fails when an unrecognized parameter value is given."""
         with pytest.raises(ValueError, match=error_message):
-            qml.data.data_manager._validate_params("qchem", description, [])
+            qml.data.data_manager._validate_params("qchem", description, ["full"])
 
     @pytest.mark.parametrize(
         ("attributes", "error_type", "error_message"),
@@ -347,17 +347,18 @@ class TestLoad:
         ):
             qml.data.load("qchem")
         with pytest.raises(
-            ValueError, match=r"molname value of 'foo' not available. Available values are \['H2'\]"
+            ValueError,
+            match=r"molname value of 'foo' is not available. Available values are \['H2'\]",
         ):
             qml.data.load("qchem", molname="foo", basis="bar", bondlength="baz")
         with pytest.raises(
             ValueError,
-            match=r"basis value of 'bar' not available. Available values are \['6-31G'\]",
+            match=r"basis value of 'bar' is not available. Available values are \['6-31G'\]",
         ):
             qml.data.load("qchem", molname="H2", basis="bar", bondlength="baz")
         with pytest.raises(
             ValueError,
-            match=r"bondlength value of 'baz' not available. Available values are \['0.46', '1.16'\]",
+            match=r"bondlength value of 'baz' is not available. Available values are \['0.46', '1.16'\]",
         ):
             qml.data.load("qchem", molname="H2", basis="6-31G", bondlength="baz")
 

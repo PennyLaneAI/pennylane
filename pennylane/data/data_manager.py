@@ -38,6 +38,15 @@ def _validate_params(data_type, description, attributes):
             f"Currently the hosted datasets are of types: {list(_data_struct)}, but got {data_type}."
         )
 
+    if not isinstance(attributes, list):
+        raise TypeError(f"Arg 'attributes' should be a list, but got {type(attributes).__name__}.")
+
+    all_attributes = data["attributes"]
+    if not set(attributes).issubset(set(all_attributes)):
+        raise ValueError(
+            f"Supported key values for {data_type} are {all_attributes}, but got {attributes}."
+        )
+
     params_needed = data["params"]
     if set(description) != set(params_needed):
         raise ValueError(
@@ -65,15 +74,6 @@ def _validate_params(data_type, description, attributes):
                 validate_structure(node[detail], params_left)
 
     validate_structure(_foldermap[data_type], params_needed)
-
-    if not isinstance(attributes, list):
-        raise TypeError(f"Arg 'attributes' should be a list, but got {type(attributes).__name__}.")
-
-    all_attributes = data["attributes"]
-    if not set(attributes).issubset(set(all_attributes)):
-        raise ValueError(
-            f"Supported key values for {data_type} are {all_attributes}, but got {attributes}."
-        )
 
 
 def _refresh_foldermap():
