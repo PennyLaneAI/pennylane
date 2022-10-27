@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
-from copy import copy, deepcopy
+from copy import copy
 
 import numpy as np
 from scipy import sparse
@@ -87,7 +87,7 @@ class PauliWord(dict):
         then no operator acts on it, so return the Identity."""
         return I
 
-    def __init__(self, mapping={}):
+    def __init__(self, mapping={}):  # pylint:disable=dangerous-default-value
         """Strip identities from PauliWord on init!"""
         mapping = {wire: op for wire, op in mapping.items() if op != I}
         super().__init__(mapping)
