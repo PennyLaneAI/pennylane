@@ -27,27 +27,37 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
     >>> generators = qchem.symmetry_generators(H)
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
     >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
-    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]),
-                                generators, paulixops, paulix_sector, wire_order=H.wires)
-    [PauliRot(-3.14159+0.j, 'RY', wires=[0])]
-    ```
+    >>> tap_op = qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
+    ...                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
+    >>> tap_op(3.14159)
+    [Exp(1.570795j, 'PauliY', wires=[0])]
+  ```
 
-  When used within a QNode, this method applies the tapered operation directly:
+  Moreover, the obtained tapered operation can be directly used within a QNode:
 
   ```pycon
     >>> dev = qml.device('default.qubit', wires=[0, 1])
     >>> @qml.qnode(dev)
     ... def circuit(params):
-    ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
-    ...                             generators, paulixops, paulix_sector, H.wires)
+    ...     tap_op(params[0])
     ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
-        0: ─╭RXY(1.570796+0.00j)─╭RYX(1.570796+0.00j)─┤ ╭<Z@Z>
-        1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
+        0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
+        1: ───────────────────────┤ ╰<Z@Z>
+
   ```
 
 <h3>Improvements</h3>
+
+* Added a new `pennylane.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now `QuantumTape` inherits from `QuantumScript` as well
+  as `AnnotatedQueue`.
+  This is a developer-facing change, and users should not manipulate `QuantumScript` directly.  Instead, they
+  should continue to rely on `QNode`s.
+  [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
+
+* The UCCSD and kUpCCGSD template are modified to remove a redundant flipping of the initial state.
+  [(#3148)](https://github.com/PennyLaneAI/pennylane/pull/3148)
 
 * `Adjoint` now supports batching if the base operation supports batching.
   [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
@@ -118,6 +128,16 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   4*(RX(1.23, wires=[0]))
   >>> s_prod.scalar
   tensor(4)
+
+* Added the `map_wires` method to the `Operator` class, which returns a copy of the operator with
+  its wires changed according to the given wire map.
+  [(#3143)](https://github.com/PennyLaneAI/pennylane/pull/3143)
+
+  ```pycon
+  >>> op = qml.Toffoli([0, 1, 2])
+  >>> wire_map = {0: 2, 2: 0}
+  >>> op.map_wires(wire_map=wire_map)
+  Toffoli(wires=[2, 1, 0])
   ```
 
 * Adds caching to the `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations.
@@ -131,8 +151,14 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 * New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
+
+* `ControlledQubitUnitary` now has a `control_values` property.
+  [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
   
 <h3>Breaking changes</h3>
+
+* `QuantumTape._par_info` is now a list of dictionaries, instead of a dictionary whose keys are integers starting from zero.
+  [(#3185)](https://github.com/PennyLaneAI/pennylane/pull/3185)
 
 * `QueuingContext` is renamed `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
@@ -191,6 +217,13 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Bug fixes</h3>
 
+* `ControlledQubitUnitary.pow` now copies over the `control_values`.
+  [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
+
+* The evaluation of QNodes that return either `vn_entropy` or `mutual_info` raises an
+  informative error message when using devices that define a vector of shots.
+  [(#3180)](https://github.com/PennyLaneAI/pennylane/pull/3180)
+
 * Fixed a bug that made `qml.AmplitudeEmbedding` incompatible with JITting.
   [(#3166)](https://github.com/PennyLaneAI/pennylane/pull/3166)
 
@@ -202,6 +235,13 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 * Fixed a bug where `qml.math.fidelity(non_trainable_state, trainable_state)` failed unexpectedly.
   [(#3160)](https://github.com/PennyLaneAI/pennylane/pull/3160)
+
+* Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
+  [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
+
+* Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian 
+  composite operator.
+  [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
 
 <h3>Contributors</h3>
 

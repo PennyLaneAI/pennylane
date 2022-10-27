@@ -1133,6 +1133,20 @@ class Operator(abc.ABC):
         """Arithmetic depth of the operator."""
         return 0
 
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current operator with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Operator: new operator
+        """
+        new_op = copy.copy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        return new_op
+
     def simplify(self) -> "Operator":  # pylint: disable=unused-argument
         """Reduce the depth of nested operators to the minimum.
 
@@ -2153,6 +2167,22 @@ class Tensor(Observable):
 
         obs.return_type = self.return_type
         return obs
+
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current tensor with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Tensor: new tensor
+        """
+        cls = self.__class__
+        new_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
+        new_op.obs = [obs.map_wires(wire_map) for obs in self.obs]
+        new_op._eigvals_cache = self._eigvals_cache
+        return new_op
 
 
 # =============================================================================

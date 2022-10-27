@@ -15,13 +15,14 @@
 Unit tests for the composite operator class of qubit operations
 """
 from copy import copy
+
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as qnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp
+from pennylane.wires import Wires
 
 ops = (
     (qml.PauliX(wires=0), qml.PauliZ(wires=0), qml.Hadamard(wires=0)),
@@ -160,6 +161,16 @@ class TestConstruction:
 
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
+
+    def test_map_wires(self):
+        """Test the map_wires method."""
+        diag_op = ValidOp(*self.simple_operands)
+        wire_map = {0: 5, 1: 7, 2: 9, 3: 11}
+        mapped_op = diag_op.map_wires(wire_map=wire_map)
+
+        assert mapped_op.wires == Wires([5, 7])
+        assert mapped_op[0].wires == Wires(5)
+        assert mapped_op[1].wires == Wires(7)
 
 
 class TestMscMethods:
