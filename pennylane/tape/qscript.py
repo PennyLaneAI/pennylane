@@ -276,6 +276,9 @@ class QuantumScript:
         >>> qscript.observables
         [expval(PauliZ(wires=[0]))]
         """
+        # TODO: modify this property once devices
+        # have been refactored to accept and understand recieving
+        # measurement processes rather than specific observables.
         obs = []
 
         for m in self.measurements:
