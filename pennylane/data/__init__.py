@@ -17,7 +17,7 @@ The data module provides functionality to access, store and manipulate quantum d
 Datasets are generally stored and accessed using the :class:`~pennylane.data.Dataset` class.
 Pre-computed datasets are available for download and can be accessed using the :func:`~pennylane.data.load` function.
 Alternatively, users can easily create, write to disk, and read custom datasets using functions within the
-:class:`~pennylane.data.Dataset` class. 
+:class:`~pennylane.data.Dataset` class.
 """
 
 from .dataset import Dataset
