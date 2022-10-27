@@ -94,7 +94,7 @@ class PauliWord(dict):
 
     def __copy__(self):
         """Copy the PauliWord instance."""
-        return PauliWord({key: val for key, val in self.items()})
+        return PauliWord(dict(self.items()))
 
     def __setitem__(self, key, item):
         """Restrict setting items after instantiation."""
@@ -215,8 +215,8 @@ class PauliSentence(dict):
     def __str__(self):
         """String representation of the PauliSentence."""
         rep_str = ""
-        for index, (pw, coeff) in enumerate(self.items()):
-            if index == 0:
+        for index_i, (pw, coeff) in enumerate(self.items()):
+            if index_i == 0:
                 rep_str += "= "
             else:
                 rep_str += "+ "
@@ -226,8 +226,8 @@ class PauliSentence(dict):
                 rep_str += "[()]\n"
                 continue
 
-            for index, (w, op) in enumerate(pw.items()):
-                if index == 0:
+            for index_j, (w, op) in enumerate(pw.items()):
+                if index_j == 0:
                     rep_str += f"[{op}({w})]"
                 else:
                     rep_str += f" @ [{op}({w})]"

@@ -17,6 +17,7 @@ import functools
 from collections.abc import Sequence
 
 from autograd.numpy.numpy_boxes import ArrayBox
+import autoray as ar
 from autoray import numpy as np
 import numpy as onp
 from numpy import ndarray
@@ -158,7 +159,7 @@ def kron(*args, like=None, **kwargs):
     """The kronecker/tensor product of args."""
     if like == "scipy":
         return onp.kron(*args, **kwargs)  # Dispatch scipy kron to numpy backed specifically.
-    return np.kron(*args, **kwargs)
+    return ar.numpy.kron(*args, like=like, **kwargs)
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
@@ -773,7 +774,7 @@ def add(*args, like=None, **kwargs):
     except TypeError:
         # catch arg1 = torch, arg2=numpy error
         # works fine with opposite order
-        return np.add(args[1], args[0], *args[2:], **kwargs)
+        return np.add(args[1], args[0], *args[2:], like=like, **kwargs)
 
 
 @multi_dispatch()
