@@ -36,9 +36,9 @@ class Dataset(ABC):
     Note on the ``standard`` kwarg:
         A "standard" Dataset uses previously existing, downloadable quantum data. This special instance of
         the Dataset class makes some assumptions for folder management and file downloading. As such, the
-        Dataset class should not be invoked directly with ``standard=True``. Instead, call :meth:`~.data.load`
+        Dataset class should not be invoked directly with ``standard=True``. Instead, call :meth:`~load`
 
-    .. seealso:: :meth:`~.data.load`
+    .. seealso:: :meth:`~load`
 
     **Example**
 
@@ -209,15 +209,15 @@ class Dataset(ABC):
     def __getattribute__(self, name):
         try:
             return super().__getattribute__(name)
-        except AttributeError as attr_error:
+        except AttributeError:
             if not self._is_standard:
-                raise attr_error
+                raise
             filepath = self.__get_filename_for_attribute(name)
             if os.path.exists(filepath):
                 # TODO: setattr
                 return self._read_file(filepath)[name]
             # TODO: download the file here?
-            raise attr_error
+            raise
 
     def setdocstr(self, docstr, args=None, argtypes=None, argsdocs=None):
         """Build the docstring for the Dataset class"""
