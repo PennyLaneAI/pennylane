@@ -170,11 +170,7 @@ def hamiltonian_expand(tape, group=True):
     # make one tape per observable
     tapes = []
     for o in hamiltonian.ops:
-        with tape.__class__() as new_tape:
-            for op in tape.operations:
-                op.queue()
-            qml.expval(o)
-
+        new_tape = tape.__class__(tape.operations, [qml.expval(o)])
         tapes.append(new_tape)
 
     # pylint: disable=function-redefined

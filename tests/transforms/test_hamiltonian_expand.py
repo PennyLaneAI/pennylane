@@ -149,7 +149,12 @@ class TestHamiltonianExpand:
         tapes, fn = qml.transforms.hamiltonian_expand(tape, group=True)
         assert len(tapes) == 2
 
-        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+    def test_number_of_qscripts(self):
+        """Tests the correct number of quantum scripts are produced."""
+
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+
         tapes, fn = qml.transforms.hamiltonian_expand(qs, group=False)
         assert len(tapes) == 3
 
