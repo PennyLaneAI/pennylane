@@ -48,7 +48,6 @@ class FlipSign(Operation):
 
         dev = qml.device("default.qubit", wires=2)
 
-
         @qml.qnode(dev)
         def circuit():
             for wire in list(range(2)):
