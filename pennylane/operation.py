@@ -1152,8 +1152,6 @@ class Operator(abc.ABC):
             if other == 0:
                 return self
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
-        if isinstance(other, Operator):
-            return qml.op_sum(self, other)
         raise ValueError(f"Cannot add Operator and {type(other)}")
 
     __radd__ = __add__
