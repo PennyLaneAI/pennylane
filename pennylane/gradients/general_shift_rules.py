@@ -417,7 +417,7 @@ def generate_shifted_tapes(
     """
 
     total_shots = tape.shots
-    M = np.sum(np.abs(coeffs))
+    M = qml.math.sum(qml.math.abs(coeffs))
 
     def _copy_and_shift_params(tape: QuantumTape, params, idx, shift, mult, coeff):
         """Create a copy of a tape and of parameters, and set the new tape to the parameters
@@ -429,8 +429,8 @@ def generate_shifted_tapes(
 
         shifted_tape = tape.copy(copy_operations=True)
         if tape.distribute_shots and total_shots is not None:
-            shots = np.floor(total_shots * (np.abs(coeff) / M))
-            shots = [int(shot) for shot in shots] if np.shape(shots) != () else int(shots)
+            shots = qml.math.floor(total_shots * (qml.math.abs(coeff) / M))
+            shots = [int(shot) for shot in shots] if qml.math.shape(shots) != () else int(shots)
             shifted_tape.shots = shots
         shifted_tape.set_parameters(new_params)
         return shifted_tape

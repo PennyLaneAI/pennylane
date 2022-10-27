@@ -15,8 +15,6 @@
 Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
-import numpy as np
-
 import pennylane as qml
 from pennylane.tape import QuantumTape
 
@@ -151,7 +149,8 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
         ]
 
         total_shots = tape.shots
-        M = sum(np.abs(coeff_groupings))
+        if tape.distribute_shots:
+            M = sum(qml.math.abs(coeff_groupings))
 
         # make one tape per grouping, measuring the
         # observables in that grouping
@@ -159,7 +158,7 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
         for obs, coeff in zip(obs_groupings, coeff_groupings):
 
             shots = (
-                int(np.floor(total_shots * np.abs(coeff) / M))
+                int(qml.math.floor(total_shots * qml.math.abs(coeff) / M))
                 if tape.distribute_shots
                 else total_shots
             )
