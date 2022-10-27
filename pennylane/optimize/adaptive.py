@@ -99,7 +99,7 @@ class AdaptiveOptimizer:
     ...     circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
     ...     print('Energy:', energy)
     ...     print(qml.draw(circuit)())
-    ...     print('Gradient max:', gradient)
+    ...     print('Largest Gradient:', gradient)
     ...     print()
     ...     if gradient < 1e-3:
     ...         break

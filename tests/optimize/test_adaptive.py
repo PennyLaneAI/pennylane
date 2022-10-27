@@ -175,12 +175,11 @@ def qubit_rotation_circuit():
 def test_qubit_rotation(circuit):
     """Test that step function returns correct results for a qubit rotation circuit."""
 
-    pool = [qml.RX(np.array([1.0]), wires=0)]
+    pool = [qml.RX(np.array([1.0]), wires=0), qml.RZ(np.array([1.0]), wires=0)]
     opt = qml.AdaptiveOptimizer(param_steps=20)
     circuit = opt.step(circuit, pool, params_zero=False)
     expval = circuit()
-    param = circuit.tape.operations[-1].parameters[0]
 
-    #  rotation aroind X with np.pi gives expval(Z) = -1
+    #  rotation around X with np.pi gives expval(Z) = -1
     assert np.allclose(expval, -1)
-    assert np.allclose(param, np.pi)
+    assert qml.equal(circuit.tape.operations[-1], qml.RX(np.array([np.pi]), wires=0))
