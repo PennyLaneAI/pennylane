@@ -213,13 +213,21 @@ class QuantumScript:
     True for its child Quantum Tape."""
 
     def __init__(
-        self, ops=None, measurements=None, prep=None, shots=None, name=None, _update=True
+        self,
+        ops=None,
+        measurements=None,
+        prep=None,
+        shots=None,
+        name=None,
+        _update=True,
+        distribute_shots=False,
     ):  # pylint: disable=too-many-arguments
         self.name = name
         self.shots = shots
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
+        self.distribute_shots = distribute_shots
 
         self._par_info = {}
         """dict[int, dict[str, Operator or int]]: Parameter information. Keys are

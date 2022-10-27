@@ -168,6 +168,7 @@ class QNode:
         cache=True,
         cachesize=10000,
         max_diff=1,
+        distribute_shots=False,
         **gradient_kwargs,
     ):
         if interface not in SUPPORTED_INTERFACES:
@@ -213,7 +214,7 @@ class QNode:
             self.execute_kwargs["expand_fn"] = None
 
         # internal data attributes
-        self._tape = QuantumTape(shots=device.raw_shots)
+        self._tape = QuantumTape(shots=device.raw_shots, distribute_shots=distribute_shots)
         self._qfunc_output = None
         self._user_gradient_kwargs = gradient_kwargs
         self._original_device = device
@@ -566,7 +567,7 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self._tape = QuantumTape(shots=self.raw_shots)
+        self._tape = QuantumTape(shots=self.raw_shots, distribute_shots=self.tape.distribute_shots)
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
@@ -654,7 +655,9 @@ class QNode:
 
                 # pylint: disable=not-callable
                 # update the gradient function
-                self._tape = QuantumTape(shots=override_shots)
+                self._tape = QuantumTape(
+                    shots=override_shots, distribute_shots=self.tape.distribute_shots
+                )
                 self._update_gradient_fn()
 
         # construct the tape

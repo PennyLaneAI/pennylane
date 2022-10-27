@@ -336,10 +336,16 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         distribute_shots=False,
     ):
         self.do_queue = do_queue
-        self.distribute_shots = distribute_shots
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(
-            self, ops, measurements, prep, shots=shots, name=name, _update=_update
+            self,
+            ops,
+            measurements,
+            prep,
+            shots=shots,
+            name=name,
+            _update=_update,
+            distribute_shots=distribute_shots,
         )
 
     def __enter__(self):
