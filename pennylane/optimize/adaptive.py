@@ -93,8 +93,9 @@ class AdaptiveOptimizer:
     The optimizer is instantiated and the circuit is created and optimized adaptively:
 
     >>> opt = AdaptiveOptimizer()
-    >>> params = np.zeros(len(operator_pool))
-    >>> operator_pool = pool_gate(params, operator_pool)
+    >>> singles_excitations = [qml.SingleExcitation(0.0, x) for x in singles]
+    >>> doubles_excitations = [qml.DoubleExcitation(0.0, x) for x in doubles]
+    >>> operator_pool = doubles_excitations + singles_excitations
     >>> for i in range(len(operator_pool)):
     ...     circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
     ...     print('Energy:', energy)
