@@ -2,7 +2,7 @@
 
 This module contains the new device API for PennyLane. The goal is to address several of the following short-comings with the existing device structures:
 
-* Nested inheritence hierarchiesfor existing devices.
+* Nested inheritence hierarchies for existing devices.
 * Inflexible extensions for new features and implementation updates.
 * Lack of support for parallel executions on single or multiple devices.
 
