@@ -66,6 +66,9 @@ class QNode:
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
+            * ``auto``: The QNode automatically detects the interface from the input values of
+              the quantum function.
+
         diff_method (str or .gradient_transform): The method of differentiation to use in the created QNode.
             Can either be a :class:`~.gradient_transform`, which includes all quantum gradient
             transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
