@@ -59,7 +59,7 @@ def _validate_params(data_type, description, attributes):
                 # TODO: shorten this limit without permanently changing it
                 # sys.tracebacklimit = 0  # the recursive stack is disorienting
                 raise ValueError(
-                    f"{param} value of '{detail}' not available. Available values are {list(node)}"
+                    f"{param} value of '{detail}' is not available. Available values are {list(node)}"
                 )
             elif params_left:
                 validate_structure(node[detail], params_left)
@@ -167,7 +167,7 @@ def load(
     r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object
 
     Args:
-        data_type (str)   : A string representing the type of the data required - qchem or qspin
+        data_type (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
         attributes (list) : An optional list to specify individual data element that are required
         folder_path (str) : Path to the root folder where download takes place.
             By default dataset folder will be created in the working directory
