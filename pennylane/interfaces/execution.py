@@ -449,8 +449,24 @@ def _execute_new(
                 tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
             )  # pragma: no cover
         elif mapped_interface == "jax":
-            _execute = _get_jax_execute_fn_new(interface, tapes)
-            res = _execute(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
+
+            if interface == "jax":
+                from .jax import get_jax_interface_name
+
+                interface = get_jax_interface_name(tapes)
+
+            if interface == "jax-jit":
+                from .jax_jit import execute_new as _execute
+
+                res = _execute(
+                    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+                )
+            else:
+                from .jax import execute_new as _execute
+
+                res = _execute(
+                    tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+                )
 
     except ImportError as e:
         raise qml.QuantumFunctionError(
@@ -731,15 +747,16 @@ def _get_jax_execute_fn_new(interface: str, tapes: Sequence[QuantumTape]):
     # The most general JAX interface was specified, automatically determine if
     # support for jitting is needed by swapping to "jax-jit" or "jax-python"
 
-    # TODO: Add Jit interface
-    # if interface == "jax":
-    #     from .jax import get_jax_interface_name
+    print("In the get JAX execute fn function")
+    if interface == "jax":
+        from .jax import get_jax_interface_name
 
-    #     interface = get_jax_interface_name(tapes)
+        interface = get_jax_interface_name(tapes)
 
-    # if interface == "jax-jit":
-    #    from .jax_jit import execute_new as _execute
-    # else:
-    from .jax import execute_new as _execute
+    if interface == "jax-jit":
+        print("getting jax jit")
+        from .jax_jit import execute_new as _execute
+    else:
+        from .jax import execute_new as _execute
 
     return _execute

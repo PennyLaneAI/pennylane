@@ -32,7 +32,7 @@ def _convert(jac, tangent):
         jac = tuple(jac_new)
     else:
         jac = math.convert_like(jac, tangent)
-        jac = math.cast(jac, tangent.dtype)
+        # jac = math.cast_like(jac, tangent)
     return jac
 
 
@@ -88,19 +88,21 @@ def compute_jvp_single(tangent, jac):
     if jac is None:
         return None
 
-    tangent = qml.math.stack(tangent)
-    jac = _convert(jac, tangent)
+    # tangent = qml.math.array(tangent)
+    # jac = _convert(jac, tangent)
 
     # Single measurement with a single param
     if not isinstance(jac, tuple):
-        tangent = math.reshape(tangent, (1,))
+        # tangent = math.reshape(tangent, (1,))
         # Single measurement with no dimension e.g. expval
         if jac.shape == ():
             jac = math.reshape(jac, (1,))
         # Single measurement with dimension e.g. probs
         else:
             jac = math.reshape(jac, (1, len(jac)))
-        res = math.tensordot(jac, tangent, [[0], [0]])
+        from jax import numpy as jnp
+
+        res = jnp.tensordot(jac, jnp.array(tangent), [[0], [0]])
     # Single measurement with multiple params
     else:
         jac = qml.math.stack(jac)
