@@ -129,7 +129,13 @@ class MeasurementProcess:
     # pylint: disable=too-many-arguments
 
     def __init__(
-        self, return_type, obs: Operator = None, wires=None, eigvals=None, id=None, log_base=None
+        self,
+        return_type: ObservableReturnTypes,
+        obs: Operator = None,
+        wires=None,
+        eigvals=None,
+        id=None,
+        log_base=None,
     ):
         self.return_type = return_type
         self.obs = obs
