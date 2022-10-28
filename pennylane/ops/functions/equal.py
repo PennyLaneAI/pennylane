@@ -93,6 +93,7 @@ def equal(
 
     return equal_operator(op1, op2, check_interface, check_trainability, rtol, atol)
 
+
 def equal_operator(op1, op2, check_interface, check_trainability, rtol, atol):
     """Determine whether two Operator objects are equal"""
     if op1.arithmetic_depth != op2.arithmetic_depth:
@@ -133,7 +134,14 @@ def equal_measurements(op1, op2):
     eigvals_match = op1.eigvals == op2.eigvals
     log_base_match = op1.log_base == op2.log_base
 
-    return return_types_match and observables_match and wires_match and eigvals_match and log_base_match
+    return (
+        return_types_match
+        and observables_match
+        and wires_match
+        and eigvals_match
+        and log_base_match
+    )
+
 
 def equal_shadow_measurements(op1, op2):
     """Determine whether two ShadowMeasurementProcess objects are equal"""
