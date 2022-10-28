@@ -293,6 +293,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
 * `qml.tape.QuantumTape.inv()` is now deprecated. Please use `qml.tape.QuantumTape.adjoint` instead.
+  [(#3237)](https://github.com/PennyLaneAI/pennylane/pull/3237)
 
 <h3>Documentation</h3>
 
