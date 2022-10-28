@@ -191,9 +191,13 @@ class DefaultQubit(QubitDevice):
     @property
     def stopping_condition(self):
         def accepts_obj(obj):
+            if obj.name == "QFT" and len(obj.wires) >= 6:
+                return False
+            if obj.name == "GroverOperator" and len(obj.wires) >= 13:
+                return False
             if getattr(obj, "has_matrix", False):
                 # pow operations dont work with backprop or adjoint without decomposition
-                # use class name string so we don't need to use isisntance check
+                # use class name string so we don't need to use isinstance check
                 return not (obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj))
             return obj.name in self.observables.union(self.operations)
 
