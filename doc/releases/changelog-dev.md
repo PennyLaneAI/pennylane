@@ -48,7 +48,75 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
   ```
 
+* The `QNode` class now accepts an ``auto`` interface, which automatically detects the interface
+  of the given input.
+  [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
+
+  We can therefore execute the same parametrized QNode with parameters from different interfaces,
+  and the class will automatically detect the interface:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev, interface="auto")
+  def circuit(weight):
+      qml.RX(weight[0], wires=0)
+      qml.RY(weight[1], wires=1)
+      return qml.expval(qml.PauliZ(0))
+
+  interface_tensors = [[0, 1], np.array([0, 1]), torch.Tensor([0, 1]), tf.Variable([0, 1], dtype=float), jnp.array([0, 1])]
+  for tensor in interface_tensors:
+      res = circuit(weight=tensor)
+      print(f"Result value: {res:.2f}; Result type: {type(res)}")
+  ```
+
+  ```pycon
+  Result value: 1.00; Result type: <class 'pennylane.numpy.tensor.tensor'>
+  Result value: 1.00; Result type: <class 'pennylane.numpy.tensor.tensor'>
+  Result value: 1.00; Result type: <class 'torch.Tensor'>
+  Result value: 1.00; Result type: <class 'tensorflow.python.framework.ops.EagerTensor'>
+  Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
+  ```
+
+* Added the `qml.map_wires` function, that changes the wires of the given operator, `QNode`, queue
+  or quantum function according to the given wire map.
+  [(#3145)](https://github.com/PennyLaneAI/pennylane/pull/3145)
+
+  Using `qml.map_wires` with an operator:
+
+  ```pycon
+  >>> op = qml.RX(0.54, wires=0) + qml.PauliX(1) + (qml.PauliZ(2) @ qml.RY(1.23, wires=3))
+  >>> op
+  (RX(0.54, wires=[0]) + PauliX(wires=[1])) + (PauliZ(wires=[2]) @ RY(1.23, wires=[3]))
+  >>> wire_map = {0: 10, 1: 11, 2: 12, 3: 13}
+  >>> qml.map_wires(op, wire_map)
+  (RX(0.54, wires=[10]) + PauliX(wires=[11])) + (PauliZ(wires=[12]) @ RY(1.23, wires=[13]))
+  ```
+
+  Using `qml.map_wires` with a `QNode`:
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=[10, 11, 12, 13])
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...     qml.RX(0.54, wires=0)
+  ...     qml.PauliX(1)
+  ...     qml.PauliZ(2)
+  ...     qml.RY(1.23, wires=3)
+  ...     return qml.probs(wires=0)
+  >>> mapped_circuit = qml.map_wires(circuit, wire_map)
+  >>> mapped_circuit()
+  tensor([0.92885434, 0.07114566], requires_grad=True)
+  >>> print(qml.draw(mapped_circuit)())
+  10: ──RX(0.54)─┤  Probs
+  11: ──X────────┤       
+  12: ──Z────────┤       
+  13: ──RY(1.23)─┤  
+  ```
+
 <h3>Improvements</h3>
+
+* The matrix passed to `qml.Hermitian` is validated when creating the observable if the input is not abstract.
+  [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
 
 * Added a new `pennylane.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now `QuantumTape` inherits from `QuantumScript` as well
   as `AnnotatedQueue`.
@@ -118,6 +186,12 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
+* Added `overlapping_ops` property to the `Composite` class to improve the
+  performance of the `eigvals`, `diagonalizing_gates` and `Prod.matrix` methods.
+  [(#3084)](https://github.com/PennyLaneAI/pennylane/pull/3084)
+
+<h3>Breaking changes</h3>
+
 * Added the `map_wires` method to the `Operator` class, which returns a copy of the operator with
   its wires changed according to the given wire map.
   [(#3143)](https://github.com/PennyLaneAI/pennylane/pull/3143)
@@ -138,7 +212,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
   [(#3163)](https://github.com/PennyLaneAI/pennylane/pull/3163)
 
-* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations. 
+* New `null.qubit` device. The `null.qubit`performs no operations or memory allocations.
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
 
 * `ControlledQubitUnitary` now has a `control_values` property.
@@ -206,6 +280,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Bug fixes</h3>
 
+* Users no longer see unintuitive errors when inputing sequences to `qml.Hermitian`.
+  [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
+
 * `ControlledQubitUnitary.pow` now copies over the `control_values`.
   [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
 
@@ -228,7 +305,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
   [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
 
-* Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian 
+* Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
 
