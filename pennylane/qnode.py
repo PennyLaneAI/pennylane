@@ -66,6 +66,9 @@ class QNode:
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
+            * ``"auto"``: The QNode automatically detects the interface from the input values of
+              the quantum function.
+
         diff_method (str or .gradient_transform): The method of differentiation to use in the created QNode.
             Can either be a :class:`~.gradient_transform`, which includes all quantum gradient
             transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
@@ -246,7 +249,7 @@ class QNode:
                 f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACES}."
             )
 
-        self._interface = value
+        self._interface = INTERFACE_MAP[value]
         self._update_gradient_fn()
 
     def _update_gradient_fn(self):
@@ -254,6 +257,8 @@ class QNode:
             self._interface = None
             self.gradient_fn = None
             self.gradient_kwargs = {}
+            return
+        if self.interface == "auto":
             return
 
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
@@ -588,6 +593,9 @@ class QNode:
 
     def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches
         override_shots = False
+        old_interface = self.interface
+        if old_interface == "auto":
+            self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
@@ -630,16 +638,20 @@ class QNode:
 
             res = res[0]
 
-            # Special case of single Measurement in a list
-            if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
-                return [res]
-
             # Autograd or tensorflow: they do not support tuple return with backpropagation
             backprop = False
             if not isinstance(
                 self._qfunc_output, qml.measurements.MeasurementProcess
             ) and self.interface in ("tf", "autograd"):
                 backprop = any(qml.math.in_backprop(x) for x in res)
+
+            if old_interface == "auto":
+                self.interface = "auto"
+
+            # Special case of single Measurement in a list
+            if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
+                return [res]
+
             if self.gradient_fn == "backprop" and backprop:
                 res = self.device._asarray(res)
 
@@ -672,6 +684,9 @@ class QNode:
             override_shots=override_shots,
             **self.execute_kwargs,
         )
+
+        if old_interface == "auto":
+            self.interface = "auto"
 
         if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
             # If a device batch transform was applied, we need to 'unpack'
