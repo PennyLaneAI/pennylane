@@ -38,8 +38,10 @@ from .set_shots import set_shots
 
 INTERFACE_MAP = {
     None: "Numpy",
+    "auto": "auto",
     "autograd": "autograd",
     "numpy": "autograd",
+    "scipy": "numpy",
     "jax": "jax",
     "jax-jit": "jax",
     "jax-python": "jax",
@@ -254,7 +256,7 @@ def _execute_new(
             for the gradient (if supported).
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
-            Available options include ``autograd``, ``torch``, ``tf``, and ``jax``.
+            Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
         mode (str): Whether the gradients should be computed on the forward
             pass (``forward``) or the backward pass (``backward``). Only applies
             if the device is queried for the gradient; gradient transform
@@ -340,6 +342,12 @@ def _execute_new(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+    if interface == "auto":
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = qml.math.get_interface(*params)
+
     gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
@@ -484,7 +492,7 @@ def execute(
             for the gradient (if supported).
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
-            Available options include ``autograd``, ``torch``, ``tf``, and ``jax``.
+            Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
         mode (str): Whether the gradients should be computed on the forward
             pass (``forward``) or the backward pass (``backward``). Only applies
             if the device is queried for the gradient; gradient transform
@@ -586,6 +594,12 @@ def execute(
             max_expansion=max_expansion,
             device_batch_transform=device_batch_transform,
         )
+
+    if interface == "auto":
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = qml.math.get_interface(*params)
 
     gradient_kwargs = gradient_kwargs or {}
 
