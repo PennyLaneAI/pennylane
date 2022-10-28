@@ -229,7 +229,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * New `null.qubit` device. The `null.qubit`performs no operations or memory allocations.
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
 
-* Favor decomposition and avoid matrix construction for large operations.
+* `default.qubit` favours decomposition and avoids matrix construction for `QFT` and `GroverOperator` at larger qubit numbers.
   [(#3193)](https://github.com/PennyLaneAI/pennylane/pull/3193)
 
 * `ControlledQubitUnitary` now has a `control_values` property.
