@@ -233,6 +233,9 @@ Users can specify the control wires as well as the values to control the operati
 * New `null.qubit` device. The `null.qubit`performs no operations or memory allocations.
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
 
+* `default.qubit` favours decomposition and avoids matrix construction for `QFT` and `GroverOperator` at larger qubit numbers.
+  [(#3193)](https://github.com/PennyLaneAI/pennylane/pull/3193)
+
 * `ControlledQubitUnitary` now has a `control_values` property.
   [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
 
@@ -240,7 +243,7 @@ Users can specify the control wires as well as the values to control the operati
   Stop using `op._wires = new_wires`, use `qml.map_wires(op, wire_map=dict(zip(op.wires, new_wires)))`
   instead.
   [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
-  
+
 <h3>Breaking changes</h3>
 
 * `QuantumTape._par_info` is now a list of dictionaries, instead of a dictionary whose keys are integers starting from zero.
@@ -296,6 +299,10 @@ Users can specify the control wires as well as the values to control the operati
 * `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
+* `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
+  instead. There is no longer a static method for this.
+  [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
+
 <h3>Documentation</h3>
 
 * The code block in the usage details of the UCCSD template is updated.
@@ -344,6 +351,7 @@ Juan Miguel Arrazola,
 Albert Mitjans Coma,
 Utkarsh Azad,
 Amintor Dusko,
+Lillian M. A. Frederiksen,
 Diego Guala,
 Soran Jahangiri,
 Christina Lee,
