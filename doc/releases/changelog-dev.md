@@ -48,6 +48,35 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
   ```
 
+* The `QNode` class now accepts an ``auto`` interface, which automatically detects the interface
+  of the given input.
+  [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
+
+  We can therefore execute the same parametrized QNode with parameters from different interfaces,
+  and the class will automatically detect the interface:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev, interface="auto")
+  def circuit(weight):
+      qml.RX(weight[0], wires=0)
+      qml.RY(weight[1], wires=1)
+      return qml.expval(qml.PauliZ(0))
+
+  interface_tensors = [[0, 1], np.array([0, 1]), torch.Tensor([0, 1]), tf.Variable([0, 1], dtype=float), jnp.array([0, 1])]
+  for tensor in interface_tensors:
+      res = circuit(weight=tensor)
+      print(f"Result value: {res:.2f}; Result type: {type(res)}")
+  ```
+
+  ```pycon
+  Result value: 1.00; Result type: <class 'pennylane.numpy.tensor.tensor'>
+  Result value: 1.00; Result type: <class 'pennylane.numpy.tensor.tensor'>
+  Result value: 1.00; Result type: <class 'torch.Tensor'>
+  Result value: 1.00; Result type: <class 'tensorflow.python.framework.ops.EagerTensor'>
+  Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
+  ```
+
 * Added the `qml.map_wires` function, that changes the wires of the given operator, `QNode`, queue
   or quantum function according to the given wire map.
   [(#3145)](https://github.com/PennyLaneAI/pennylane/pull/3145)
@@ -156,6 +185,12 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
+
+* Added `overlapping_ops` property to the `Composite` class to improve the
+  performance of the `eigvals`, `diagonalizing_gates` and `Prod.matrix` methods.
+  [(#3084)](https://github.com/PennyLaneAI/pennylane/pull/3084)
+
+<h3>Breaking changes</h3>
 
 * Added the `map_wires` method to the `Operator` class, which returns a copy of the operator with
   its wires changed according to the given wire map.
@@ -274,7 +309,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
   [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
 
-* Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian 
+* Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
 

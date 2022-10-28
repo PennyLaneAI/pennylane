@@ -43,6 +43,7 @@ ops_rep = (
 
 class ValidOp(CompositeOp):
     _op_symbol = "#"
+    _math_op = None
 
     @property
     def is_hermitian(self):
@@ -269,3 +270,40 @@ class TestProperties:
 
         op = ValidOp(qml.PauliX(0), ValidOp(qml.Identity(wires=0), qml.RX(1.9, wires=1)))
         assert op.arithmetic_depth == 2
+
+    def test_overlapping_ops_property(self):
+        """Test the overlapping_ops property."""
+        valid_op = ValidOp(
+            qml.op_sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
+            qml.op_sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
+            qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+            qml.PauliY(7),
+            qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
+        )
+        overlapping_ops = [
+            [
+                qml.op_sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
+                qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+                qml.PauliY(7),
+            ],
+            [
+                qml.op_sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
+                qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
+            ],
+        ]
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops):
+            for op1, op2 in zip(list_op1, list_op2):
+                assert op1.name == op2.name
+                assert op1.wires == op2.wires
+                assert op1.data == op2.data
+                assert op1.arithmetic_depth == op2.arithmetic_depth
+
+    def test_overlapping_ops_private_attribute(self):
+        """Test that the private `_overlapping_ops` attribute gets updated after a call to
+        the `overlapping_ops` property."""
+        op = ValidOp(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
+        overlapping_ops = op.overlapping_ops
+        assert op._overlapping_ops == overlapping_ops
