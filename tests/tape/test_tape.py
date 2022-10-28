@@ -772,7 +772,7 @@ class TestParameters:
 
         tape.set_parameters(new_params)
 
-        for pinfo, pval in zip(tape._par_info.values(), new_params):
+        for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert tape.get_parameters() == new_params
@@ -780,7 +780,7 @@ class TestParameters:
         new_params = [0.1, -0.2, 1, 5, 0]
         tape.data = new_params
 
-        for pinfo, pval in zip(tape._par_info.values(), new_params):
+        for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert tape.get_parameters() == new_params
@@ -794,7 +794,7 @@ class TestParameters:
         tape.set_parameters(new_params)
 
         count = 0
-        for idx, pinfo in tape._par_info.items():
+        for idx, pinfo in enumerate(tape._par_info):
             if idx in tape.trainable_params:
                 assert pinfo["op"].data[pinfo["p_idx"]] == new_params[count]
                 count += 1
@@ -835,7 +835,7 @@ class TestParameters:
         tape.trainable_params = [1, 3]
         tape.set_parameters(new_params, trainable_only=False)
 
-        for pinfo, pval in zip(tape._par_info.values(), new_params):
+        for pinfo, pval in zip(tape._par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert tape.get_parameters(trainable_only=False) == new_params
@@ -1662,6 +1662,15 @@ class TestStopRecording:
 
         assert len(temp_tape.operations) == 1
         assert temp_tape.operations[0] == op1
+
+    def test_stop_recording_within_tape_cleans_up(self):
+        """Test if some error is raised within a stop_recording context, the previously
+        active contexts are still returned to avoid popping from an empty deque"""
+
+        with pytest.raises(ValueError):
+            with qml.queuing.AnnotatedQueue() as q:
+                with qml.QueuingManager.stop_recording():
+                    raise ValueError
 
 
 def test_get_active_tape():
