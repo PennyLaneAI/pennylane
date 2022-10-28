@@ -18,6 +18,7 @@ excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 
 from copy import copy
 
+from collections.abc import Sequence
 import numpy as np
 from scipy.sparse import csr_matrix
 
@@ -49,7 +50,7 @@ class Hermitian(Observable):
     * Gradient recipe: None
 
     Args:
-        A (array): square hermitian matrix
+        A (array or Sequence): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
@@ -60,10 +61,42 @@ class Hermitian(Observable):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "F"
+
+    # Qubit case
+    _num_basis_states = 2
     _eigs = {}
 
     def __init__(self, A, wires, do_queue=True, id=None):
+        A = qml.math.asarray(A)
+        if not qml.math.is_abstract(A):
+            if isinstance(wires, Sequence) and not isinstance(wires, str):
+                if len(wires) == 0:
+                    raise ValueError(
+                        "Hermitian: wrong number of wires. At least one wire has to be given."
+                    )
+                expected_mx_shape = self._num_basis_states ** len(wires)
+            else:
+                # Assumably wires is an int; further validation checks are performed by calling super().__init__
+                expected_mx_shape = self._num_basis_states
+
+            Hermitian._validate_input(A, expected_mx_shape)
+
         super().__init__(A, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def _validate_input(A, expected_mx_shape=None):
+        """Validate the input matrix."""
+        if len(A.shape) != 2 or A.shape[0] != A.shape[1]:
+            raise ValueError("Observable must be a square matrix.")
+
+        if expected_mx_shape is not None and A.shape[0] != expected_mx_shape:
+            raise ValueError(
+                f"Expected input matrix to have shape {expected_mx_shape}x{expected_mx_shape}, but "
+                f"a matrix with shape {A.shape[0]}x{A.shape[0]} was passed."
+            )
+
+        if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
+            raise ValueError("Observable must be Hermitian.")
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
@@ -91,13 +124,7 @@ class Hermitian(Observable):
          [ 1.+2.j -1.+0.j]]
         """
         A = qml.math.asarray(A)
-
-        if A.shape[0] != A.shape[1]:
-            raise ValueError("Observable must be a square matrix.")
-
-        if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
-            raise ValueError("Observable must be Hermitian.")
-
+        Hermitian._validate_input(A)
         return A
 
     @property
