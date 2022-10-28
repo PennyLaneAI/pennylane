@@ -891,7 +891,7 @@ class Device(abc.ABC):
             ValueError: if `operation` is not a :class:`~.Operation` class or string
 
         Returns:
-            bool: ``True`` iff supplied operation is supported
+            bool: ``True`` if supplied operation is supported
         """
         if isinstance(operation, type) and issubclass(operation, Operation):
             return operation.__name__ in self.operations

@@ -69,6 +69,8 @@ class THermitian(Hermitian):
 
     """
 
+    # Qutrit case
+    _num_basis_states = 3
     _eigs = {}
 
     # This method is overridden to update the docstring.

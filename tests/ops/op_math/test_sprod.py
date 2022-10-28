@@ -708,7 +708,7 @@ class TestIntegration:
             qml.PauliX(wires=0)
             return qml.expval(SProd(scalar, qml.Hadamard(wires=0)))
 
-        scalar = qnp.array([1.23], requires_grad=True)
+        scalar = qnp.array(1.23, requires_grad=True)
         grad = qml.grad(circuit)(scalar)
 
         true_grad = -1 / qnp.sqrt(2)
