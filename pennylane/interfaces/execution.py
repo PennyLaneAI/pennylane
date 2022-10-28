@@ -42,7 +42,7 @@ INTERFACE_MAP = {
     "auto": "auto",
     "autograd": "autograd",
     "numpy": "autograd",
-    "scipy": "autograd",
+    "scipy": "Numpy",
     "jax": "jax",
     "jax-jit": "jax",
     "jax-python": "jax",
