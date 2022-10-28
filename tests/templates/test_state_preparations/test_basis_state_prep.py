@@ -76,6 +76,33 @@ class TestDecomposition:
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "basis_state,wires,target_state",
+        [
+            ([0, 1], [0, 1], [0, 1, 0]),
+            ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
+        ],
+    )
+    def test_state_preparation_jax_jit(
+        self, tol, qubit_device_3_wires, basis_state, wires, target_state
+    ):
+        """Tests that the template produces the correct expectation values."""
+        import jax
+
+        @qml.qnode(qubit_device_3_wires, interface="jax")
+        def circuit(state):
+            qml.BasisStatePreparation(state, wires)
+
+            # Pauli Z gates identify the basis state
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+
+        circuit = jax.jit(circuit)
+
+        # Convert from Pauli Z eigenvalues to basis state
+        output_state = [0 if x == 1.0 else 1 for x in circuit(basis_state)]
+
+        assert np.allclose(output_state, target_state, atol=tol, rtol=0)
+
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         basis_state = [0, 1, 0]

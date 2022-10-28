@@ -16,6 +16,7 @@ Contains the BasisStatePreparation template.
 """
 
 import pennylane as qml
+import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
 
 
@@ -52,6 +53,7 @@ class BasisStatePreparation(Operation):
     grad_method = None
 
     def __init__(self, basis_state, wires, do_queue=True, id=None):
+        basis_state = qml.math.stack(basis_state)
 
         # check if the `basis_state` param is batched
         batched = len(qml.math.shape(basis_state)) > 1
@@ -72,10 +74,13 @@ class BasisStatePreparation(Operation):
                     f"Basis states must be of length {len(wires)}; state {i} has length {n_bits}."
                 )
 
-            if not all(bit in [0, 1] for bit in state):
-                raise ValueError(
-                    f"Basis states must only consist of 0s and 1s; state {i} is {state}"
-                )
+            # don't perform the validation if the state is a JAX tracer or a TensorFlow
+            # non-eager tensor
+            if not qml.math.is_abstract(state):
+                if not all(bit in [0, 1] for bit in state):
+                    raise ValueError(
+                        f"Basis states must only consist of 0s and 1s; state {i} is {state}"
+                    )
 
         # TODO: basis_state should be a hyperparameter, not a trainable parameter.
         # However, this breaks a test that ensures compatibility with batch_transform.
@@ -103,8 +108,15 @@ class BasisStatePreparation(Operation):
         [PauliX(wires=['a']),
         PauliX(wires=['b'])]
         """
-        op_list = []
-        for wire, state in zip(wires, basis_state):
-            if state == 1:
-                op_list.append(qml.PauliX(wire))
+        # if the state is not a JAX tracer or TensorFlow non-eager tensor, compute
+        # the decomposition using PauliX gates on the '1' wires
+        if not qml.math.is_abstract(basis_state):
+            op_list = []
+            for wire, state in zip(wires, basis_state):
+                if state == 1:
+                    op_list.append(qml.PauliX(wire))
+            return op_list
+
+        # otherwise, use RX gates with 0 or pi angles
+        op_list = [qml.RX(state * np.pi, wire) for wire, state in zip(wires, basis_state)]
         return op_list
