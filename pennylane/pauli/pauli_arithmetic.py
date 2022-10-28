@@ -172,13 +172,7 @@ class PauliWord(dict):
         matrix_map = sparse_mat_map if format != "dense" else mat_map
         kron = sparse.kron if format != "dense" else math.kron
 
-        initial_wire = wire_order[0]
-        result_matrix = matrix_map[self[initial_wire]]
-
-        for wire in wire_order[1:]:
-            result_matrix = kron(result_matrix, matrix_map[self[wire]])
-
-        return result_matrix
+        return reduce(kron, (matrix_map[self[w]] for w in wire_order))
 
 
 class PauliSentence(dict):
