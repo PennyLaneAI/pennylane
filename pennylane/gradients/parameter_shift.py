@@ -1505,7 +1505,7 @@ def _param_shift_new(
                 supported_grads = fn(supported_res)
                 return _single_shot_batch_grad(unsupported_grads, supported_grads)
 
-            num_shot_vec_components = len(shots) if shot_vector else None
+            num_shot_vec_components = len(shots)
 
             supported_grads = fn(supported_res)
             unsupported_grads = fallback_proc_fn(unsupported_res)
