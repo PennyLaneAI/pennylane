@@ -1179,27 +1179,29 @@ class TestExpand:
             tape.expand(expand_measurements=True)
 
     @pytest.mark.parametrize("ret", [expval, var, probs])
-    def test_expand_tape_multiple_wires_non_commuting_no_obs_sampling(self, ret):
+    @pytest.mark.parametrize("wires", [None, 0, [0]])
+    def test_expand_tape_multiple_wires_non_commuting_no_obs_sampling(self, ret, wires):
         """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
         observables (also involving computational basis sampling) are on the same wire"""
         with QuantumTape() as tape:
             qml.RX(0.3, wires=0)
             qml.RY(0.4, wires=1)
             ret(op=qml.PauliX(0))
-            qml.sample()
+            qml.sample(wires=wires)
 
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
             tape.expand(expand_measurements=True)
 
     @pytest.mark.parametrize("ret", [expval, var, probs])
-    def test_expand_tape_multiple_wires_non_commuting_no_obs_counting(self, ret):
+    @pytest.mark.parametrize("wires", [None, 0, [0]])
+    def test_expand_tape_multiple_wires_non_commuting_no_obs_counting(self, ret, wires):
         """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
         observables (also involving computational basis sampling) are on the same wire"""
         with QuantumTape() as tape:
             qml.RX(0.3, wires=0)
             qml.RY(0.4, wires=1)
             ret(op=qml.PauliX(0))
-            qml.counts()
+            qml.counts(wires=wires)
 
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
             tape.expand(expand_measurements=True)

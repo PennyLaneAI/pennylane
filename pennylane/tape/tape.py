@@ -68,34 +68,39 @@ def _err_msg_for_some_meas_not_qwc(measurements):
 def _validate_computational_basis_sampling(measurements):
     """Auxiliary function for validating computational basis state sampling with other measurements considering the
     qubit-wise commutativity relation."""
-    ordinary_obs = []
-    comp_basis_obs = []
+    non_comp_basis_sampling_obs = []
+    comp_basis_sampling_obs = []
     for o in measurements:
         if o.samples_computational_basis:
-            comp_basis_obs.append(o)
+            comp_basis_sampling_obs.append(o)
         else:
-            ordinary_obs.append(o)
+            non_comp_basis_sampling_obs.append(o)
 
-    if ordinary_obs:
-        for cb_obs in comp_basis_obs:
-            wires = (
-                cb_obs.wires
-                if cb_obs.wires != qml.wires.Wires([])
-                else qml.wires.Wires.all_wires([m.wires for m in measurements])
+    if non_comp_basis_sampling_obs:
+        all_wires = []
+        empty_wires = qml.wires.Wires([])
+        for idx, cb_obs in enumerate(comp_basis_sampling_obs):
+            if cb_obs.wires == empty_wires:
+                all_wires = qml.wires.Wires.all_wires([m.wires for m in measurements])
+                break
+
+            all_wires.append(cb_obs.wires)
+            if idx == len(comp_basis_sampling_obs) - 1:
+                all_wires = qml.wires.Wires.all_wires(all_wires)
+
+        with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
+            pauliz_for_cb_obs = (
+                qml.PauliZ(all_wires)
+                if len(all_wires) == 1
+                else qml.operation.Tensor(*[qml.PauliZ(w) for w in all_wires])
             )
-            with QueuingManager.stop_recording():  # stop recording operations - the constructed operator is just aux
-                pauliz_for_cb_obs = (
-                    qml.PauliZ(wires)
-                    if len(wires) == 1
-                    else qml.operation.Tensor(*[qml.PauliZ(w) for w in wires])
-                )
 
-            for obs in ordinary_obs:
-                # Cover e.g., qml.probs(wires=wires) case by checking obs attr
-                if obs.obs is not None and not qml.grouping.utils.are_pauli_words_qwc(
-                    [obs.obs, pauliz_for_cb_obs]
-                ):
-                    raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
+        for obs in non_comp_basis_sampling_obs:
+            # Cover e.g., qml.probs(wires=wires) case by checking obs attr
+            if obs.obs is not None and not qml.grouping.utils.are_pauli_words_qwc(
+                [obs.obs, pauliz_for_cb_obs]
+            ):
+                raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
 
 
 # TODO: move this function to its own file and rename
