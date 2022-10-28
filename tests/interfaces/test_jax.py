@@ -28,11 +28,11 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute, InterfaceUnsupportedError
+from pennylane.interfaces import InterfaceUnsupportedError, execute
 from pennylane.interfaces.jax_jit import _execute_with_fwd
 
 
-@pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
+@pytest.mark.parametrize("interface", ["jax-jit", "jax-python", "auto"])
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""
 
@@ -197,7 +197,7 @@ class TestJaxExecuteUnitTests:
             )
 
 
-@pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
+@pytest.mark.parametrize("interface", ["jax-jit", "jax-python", "auto"])
 class TestCaching:
     """Test for caching behaviour"""
 
@@ -378,7 +378,7 @@ execute_kwargs = [
 
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
-@pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
+@pytest.mark.parametrize("interface", ["jax-jit", "jax-python", "auto"])
 class TestJaxExecuteIntegration:
     """Test the jax interface execute function
     integrates well for both forward and backward execution"""
