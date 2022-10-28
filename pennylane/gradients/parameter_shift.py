@@ -1466,7 +1466,13 @@ def _param_shift_new(
 
     if unsupported_params:
 
-        def _single_grad(unsupported_grads, supported_grads):
+        def _single_shot_batch_grad(unsupported_grads, supported_grads):
+            """Auxiliary function for post-processing one batch of supported and unsupported gradients corresponding to
+            finite shot execution.
+
+            If the device used a shot vector, gradients corresponding to a single component of the shot vector should be
+            passed to this aux function.
+            """
             multi_measure = len(tape.measurements) > 1
             if not multi_measure:
                 res = []
@@ -1497,7 +1503,7 @@ def _param_shift_new(
             if not shot_vector:
                 unsupported_grads = fallback_proc_fn(unsupported_grads)
                 supported_grads = fn(supported_grads)
-                return _single_grad(unsupported_grads, supported_grads)
+                return _single_shot_batch_grad(unsupported_grads, supported_grads)
 
             num_shot_vec_components = len(shots) if shot_vector else None
 
@@ -1508,7 +1514,7 @@ def _param_shift_new(
             for idx in range(num_shot_vec_components):
                 u_grads = unsupported_grads[idx]
                 sup = supported_grads[idx]
-                final_grad.append(_single_grad(u_grads, sup))
+                final_grad.append(_single_shot_batch_grad(u_grads, sup))
             return tuple(final_grad)
 
         return gradient_tapes, processing_fn
