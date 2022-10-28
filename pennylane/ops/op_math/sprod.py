@@ -110,8 +110,8 @@ class SProd(SymbolicOp):
     _name = "SProd"
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
-        self._check_scalar_is_valid(scalar=scalar)
         self.scalar = scalar
+        self._check_scalar_is_valid()
         super().__init__(base=base, do_queue=do_queue, id=id)
 
     def __repr__(self):
@@ -265,7 +265,7 @@ class SProd(SymbolicOp):
             return SProd(scalar=self.scalar, base=new_base).simplify()
         return SProd(scalar=self.scalar, base=new_base)
 
-    def _check_scalar_is_valid(self, scalar: Union[int, float, complex]):
+    def _check_scalar_is_valid(self):
         """Check that the given scalar is valid.
 
         Args:
@@ -274,13 +274,13 @@ class SProd(SymbolicOp):
         Raises:
             ValueError: if the scalar is not valid
         """
-        backend = autoray.infer_backend(scalar)
+        backend = autoray.infer_backend(self.scalar)
         # TODO: Remove shape check when supporting batching
         if not (
-            (backend == "builtins" and isinstance(scalar, numbers.Number))
-            or (backend in SUPPORTED_INTERFACES and qml.math.shape(scalar) == ())
+            (backend == "builtins" and isinstance(self.scalar, numbers.Number))
+            or (backend in SUPPORTED_INTERFACES and qml.math.shape(self.scalar) == ())
         ):
             raise ValueError(
                 f"Cannot compute the scalar product of a scalar value with backend `{backend}` and "
-                f"type `{type(scalar)}`"
+                f"type `{type(self.scalar)}`"
             )
