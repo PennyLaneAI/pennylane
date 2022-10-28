@@ -19,7 +19,6 @@ executed by a device.
 
 import contextlib
 import copy
-import functools
 from typing import List, Union
 from collections import Counter, defaultdict
 
@@ -308,7 +307,6 @@ class QuantumScript:
         return self._measurements
 
     @property
-    @functools.lru_cache()
     def samples_computational_basis(self):
         """Determines if any of the measurements do sampling/counting in the computational basis."""
         return any(o.samples_computational_basis for o in self.measurements)

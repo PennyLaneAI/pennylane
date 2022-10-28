@@ -163,12 +163,12 @@ class TestUpdate:
         assert qs.all_sampled is False
         assert qs.samples_computational_basis is False
 
-    def test_samples_computational_basis_caching_correctly(self):
-        """Test that the samples_computational_basis property's caching works as expected."""
+    def test_samples_computational_basis_correctly(self):
+        """Test that the samples_computational_basis property works as expected even if the script is updated."""
         qs = QuantumScript(measurements=[qml.sample()])
         assert qs.samples_computational_basis is True
 
-        qs.measurements = [qml.expval(qml.PauliZ(0))]
+        qs._measurements = [qml.expval(qml.PauliZ(0))]
         assert qs.samples_computational_basis is False
 
     def test_update_par_info_update_trainable_params(self):
