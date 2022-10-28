@@ -224,7 +224,6 @@ class DefaultQubitJax(DefaultQubit):
                     for _key, prob in zip(keys, state_probability)
                 ]
             )
-        print(key, number_of_states, (shots,), state_probability)
         return jax.random.choice(key, number_of_states, shape=(shots,), p=state_probability)
 
     @staticmethod
