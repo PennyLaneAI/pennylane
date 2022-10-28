@@ -80,7 +80,7 @@ from pennylane import qchem
     ],
 )
 def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int_ref):
-    r"""Test that generate_electron_integrals returns the correct values."""
+    r"""Test that dipole_integrals returns the correct result."""
     mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
     constants, integrals = qchem.dipole_integrals(mol, core=core, active=active)(*args)
@@ -192,7 +192,7 @@ def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int
     ],
 )
 def test_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
-    r"""Test that generate_electron_integrals returns the correct values."""
+    r"""Test that fermionic_dipole returns the correct result."""
     mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
     f = qchem.fermionic_dipole(mol, core=core, active=active)(*args)[0]
@@ -227,7 +227,7 @@ def test_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
     ],
 )
 def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
-    r"""Test that generate_electron_integrals returns the correct values."""
+    r"""Test that dipole_moment returns the correct result."""
     mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
     d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
@@ -237,6 +237,34 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     assert qml.Hamiltonian(np.ones(len(d.coeffs)), d.ops).compare(
         qml.Hamiltonian(np.ones(len(d_ref.coeffs)), d_ref.ops)
     )
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge", "core", "active"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+            0,
+            None,
+            None,
+        ),
+    ],
+)
+def test_dipole_moment_631g_basis(symbols, geometry, core, charge, active):
+    r"""Test that dipole moment is constructed properly with basis sets having different numbers of
+    primitive Gaussian functions."""
+    alpha = [
+        np.array([18.73113696, 2.82539437, 0.64012169], requires_grad=True),
+        np.array([0.16127776], requires_grad=True),
+        np.array([18.73113696, 2.82539437, 0.64012169], requires_grad=True),
+        np.array([0.16127776], requires_grad=True),
+    ]
+    mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha, basis_name="6-31g")
+    args = [alpha]
+    d = qchem.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
+
+    assert isinstance(d, qml.Hamiltonian)
 
 
 @pytest.mark.parametrize(
@@ -254,9 +282,9 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
         ),
     ],
 )
-def test_expvalD(symbols, geometry, core, charge, active, d_ref):
+def test_expvalD(symbols, geometry, charge, core, active, d_ref):
     r"""Test that expval(D) is correct."""
-    mol = qchem.Molecule(symbols, geometry)
+    mol = qchem.Molecule(symbols, geometry, charge=charge)
     args = []
     dev = qml.device("default.qubit", wires=6)
 
