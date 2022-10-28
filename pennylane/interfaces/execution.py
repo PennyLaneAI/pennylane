@@ -32,7 +32,6 @@ from typing import Callable, Sequence
 from cachetools import LRUCache
 
 import pennylane as qml
-from pennylane import Device
 from pennylane.tape import QuantumTape
 
 from .set_shots import set_shots
@@ -230,7 +229,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
 def _execute_new(
     tapes: Sequence[QuantumTape],
-    device: Device,
+    device,
     gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
@@ -471,7 +470,7 @@ def _execute_new(
 
 def execute(
     tapes: Sequence[QuantumTape],
-    device: Device,
+    device,
     gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
