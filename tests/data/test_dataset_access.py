@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane.data.data_manager import _generate_folders as original_generate_folders
 
 _folder_map = {
-    "qchem": {"H2": {"6-31G": ["0.46", "1.16"]}},
+    "qchem": {"H2": {"6-31G": ["0.46", "1.16", "1.0"]}},
     "qspin": {"Heisenberg": {"closed": {"chain": ["1x4"]}}},
 }
 _data_struct = {
@@ -131,7 +131,7 @@ class TestValidateParams:
             ),
             (
                 {"molname": ["H2"], "basis": ["6-31G"], "bondlength": ["foo"]},
-                r"bondlength value of 'foo' is not available. Available values are \['0.46', '1.16'\]",
+                r"bondlength value of 'foo' is not available. Available values are \['0.46', '1.16', '1.0'\]",
             ),
             (
                 {"molname": ["H2"], "basis": ["6-31G", "foo"], "bondlength": ["0.46"]},
@@ -170,11 +170,73 @@ class TestValidateParams:
             )
 
     @pytest.mark.parametrize(
+        ("data_name", "description", "error_message"),
+        [
+            (
+                "qchem",
+                {"molname": [15], "basis": ["6-31G"], "bondlength": ["0.46"]},
+                "Invalid type 'int' for parameter 'molname'",
+            ),
+            (
+                "qchem",
+                {"molname": ["H2"], "basis": ["6-31G"], "bondlength": [1 + 2j]},
+                "Invalid type 'complex' for parameter 'bondlength'",
+            ),
+            (
+                "qspin",
+                {
+                    "sysname": ["Heisenberg"],
+                    "periodicity": ["closed"],
+                    "lattice": ["chain"],
+                    "layout": [1],
+                },
+                "Invalid type 'int' for parameter 'layout'",
+            ),
+        ],
+    )
+    def test_parameters_with_bad_type_fail(self, data_name, description, error_message):
+        """Test that _validate_params fails if a parameter fails a custom type-check."""
+        with pytest.raises(TypeError, match=error_message):
+            qml.data.data_manager._validate_params(data_name, description, ["full"])
+
+    def test_layout_misses_for_strange_values(self):
+        """Test that _format_detail joins any iterable for layout, but _validate_params fails"""
+        with pytest.raises(
+            ValueError,
+            match=r"layout value of 'fooxbarxbaz' is not available. Available values are \['1x4'\]",
+        ):
+            qml.data.data_manager._validate_params(
+                "qspin",
+                {
+                    "sysname": ["Heisenberg"],
+                    "periodicity": ["closed"],
+                    "lattice": ["chain"],
+                    "layout": [["foo", "bar", "baz"]],
+                },
+                ["full"],
+            )
+
+    @pytest.mark.parametrize(
         ("data_name", "description", "attributes"),
         [
             (
                 "qchem",
                 {"molname": ["H2"], "basis": ["6-31G"], "bondlength": ["0.46"]},
+                ["full"],
+            ),
+            (
+                "qchem",
+                {"molname": ["full"], "basis": ["6-31G"], "bondlength": [0.460]},
+                ["full"],
+            ),
+            (
+                "qchem",
+                {"molname": ["full"], "basis": ["6-31G"], "bondlength": [1]},
+                ["full"],
+            ),
+            (
+                "qchem",
+                {"molname": ["full"], "basis": ["6-31G"], "bondlength": [1.0]},
                 ["full"],
             ),
             (
@@ -191,6 +253,26 @@ class TestValidateParams:
                     "layout": ["1x4"],
                 },
                 ["full", "ground_states"],
+            ),
+            (
+                "qspin",
+                {
+                    "sysname": ["Heisenberg"],
+                    "periodicity": ["closed"],
+                    "lattice": ["chain"],
+                    "layout": [(1, 4)],
+                },
+                ["full"],
+            ),
+            (
+                "qspin",
+                {
+                    "sysname": ["Heisenberg"],
+                    "periodicity": ["closed"],
+                    "lattice": ["chain"],
+                    "layout": [[1, 4]],
+                },
+                ["full"],
             ),
             (
                 "qspin",
@@ -311,7 +393,7 @@ class TestLoadHelpers:
             loaded_data.read(filename)
             assert loaded_data.molecule == "new_data"
 
-        def test_s3_download_thread_failure(self, wait_mock, submit_mock, tmp_path):
+        def test_s3_download_thread_failure(self, wait_mock, _submit_mock, tmp_path):
             """Test that _s3_download raises errors from download failures."""
             wait_mock.return_value = MagicMock(
                 done=[MagicMock(exception=MagicMock(return_value=ValueError("network error")))]
@@ -370,7 +452,7 @@ class TestLoad:
             qml.data.load("qchem", molname="H2", basis="bar", bondlength="baz")
         with pytest.raises(
             ValueError,
-            match=r"bondlength value of 'baz' is not available. Available values are \['0.46', '1.16'\]",
+            match=r"bondlength value of 'baz' is not available. Available values are \['0.46', '1.16', '1.0'\]",
         ):
             qml.data.load("qchem", molname="H2", basis="6-31G", bondlength="baz")
 
@@ -403,9 +485,10 @@ class TestLoad:
         datasets = qml.data.load(
             "qchem", molname="H2", basis="6-31G", bondlength="full", folder_path=str(tmp_path)
         )
-        assert len(datasets) == 2
+        assert len(datasets) == 3
         assert sorted([d.molecule for d in datasets]) == [
             "H2_6-31G_0.46_full",
+            "H2_6-31G_1.0_full",
             "H2_6-31G_1.16_full",
         ]
 
@@ -438,21 +521,22 @@ class TestLoad:
             attributes=["full", "molecule"],
             folder_path=dest,
         )
-        assert len(datasets) == 2
+        assert len(datasets) == 3
         assert generate_mock.call_count == 3
         arglist = generate_mock.call_args_list
         assert arglist[0][0] == (  # [first call][args]
-            {"H2": {"6-31G": ["0.46", "1.16"]}},
+            {"H2": {"6-31G": ["0.46", "1.16", "1.0"]}},
             [["H2"], ["6-31G"], ["full"]],  # 0.46 was removed from the last list!
         )
 
         # these test that _generate_folders carried on as expected
-        assert arglist[1][0] == ({"6-31G": ["0.46", "1.16"]}, [["6-31G"], ["full"]])
-        assert arglist[2][0] == (["0.46", "1.16"], [["full"]])
+        assert arglist[1][0] == ({"6-31G": ["0.46", "1.16", "1.0"]}, [["6-31G"], ["full"]])
+        assert arglist[2][0] == (["0.46", "1.16", "1.0"], [["full"]])
 
         # assert that the "molecule" attribute was dropped
         assert sorted(glob(os.path.join(dest, "**/*.dat"), recursive=True)) == [
             os.path.join(dest, "datasets/qchem/H2/6-31G/0.46/H2_6-31G_0.46_full.dat"),
+            os.path.join(dest, "datasets/qchem/H2/6-31G/1.0/H2_6-31G_1.0_full.dat"),
             os.path.join(dest, "datasets/qchem/H2/6-31G/1.16/H2_6-31G_1.16_full.dat"),
         ]
 

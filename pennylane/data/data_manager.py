@@ -15,6 +15,7 @@
 Contains the Dataset utility functions.
 """
 # pylint:disable=too-many-arguments,global-statement
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
 import os
 
@@ -27,6 +28,19 @@ DATA_STRUCT_URL = os.path.join(S3_URL, "data_struct.json")
 
 _foldermap = {}
 _data_struct = {}
+
+
+def _format_detail(param, detail):
+    if isinstance(detail, str):
+        return detail
+    if param == "layout" and isinstance(detail, Iterable):
+        return "x".join(map(str, detail))
+    if param == "bondlength":
+        if isinstance(detail, float):
+            return str(detail)
+        if isinstance(detail, int):
+            return f"{detail:.1f}"
+    raise TypeError(f"Invalid type '{type(detail).__name__}' for parameter '{param}'")
 
 
 def _validate_params(data_name, description, attributes):
@@ -57,8 +71,8 @@ def _validate_params(data_name, description, attributes):
         """Recursively validates that all values in `description` exist in the dataset."""
         param = params_left[0]
         params_left = params_left[1:]
-        details = description[param]
-        for detail in details:
+        for detail in description[param]:
+            detail = _format_detail(param, detail)
             if detail == "full":
                 if not params_left:
                     return
