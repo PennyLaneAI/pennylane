@@ -74,6 +74,7 @@ Users can specify the control wires as well as the values to control the operati
   ```pycon
   >>> circuit()
   [-0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
+  ```
 
 * The `QNode` class now accepts an ``auto`` interface, which automatically detects the interface
   of the given input.
