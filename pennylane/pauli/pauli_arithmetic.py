@@ -87,7 +87,7 @@ class PauliWord(dict):
         then no operator acts on it, so return the Identity."""
         return I
 
-    def __init__(self, mapping={}):  # pylint:disable=dangerous-default-value
+    def __init__(self, mapping):
         """Strip identities from PauliWord on init!"""
         mapping = {wire: op for wire, op in mapping.items() if op != I}
         super().__init__(mapping)
@@ -129,7 +129,7 @@ class PauliWord(dict):
         for wire, term in iterator.items():
             if wire in result:
                 factor, new_op = (
-                    mul_map[result[wire]][term] if not swapped else mul_map[term][result[wire]]
+                    mul_map[term][result[wire]] if swapped else mul_map[result[wire]][term]
                 )
                 if new_op == I:
                     del result[wire]
@@ -144,7 +144,7 @@ class PauliWord(dict):
     @property
     def wires(self):
         """Track wires in a PauliWord."""
-        return set(k for k in self.keys())
+        return set(self)
 
     def to_mat(self, wire_order, format="dense"):
         """Given a Pauli word, get the matrix representation.
