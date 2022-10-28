@@ -148,6 +148,36 @@ class TestSimpleObservables:
 class TestHermitian:
     """Test the Hermitian observable"""
 
+    def test_hermitian_creation_exceptions(self):
+        """Tests that the hermitian matrix method raises the proper errors."""
+        H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+
+        # test non-square matrix
+        with pytest.raises(ValueError, match="must be a square matrix"):
+            qml.Hermitian(H[1:], wires=0)
+
+        H1 = np.array([[1]]) / np.sqrt(2)
+
+        # test matrix with incorrect dimensions
+        with pytest.raises(ValueError, match="Expected input matrix to have shape"):
+            qml.Hermitian(H1, wires=[0])
+
+        # test non-Hermitian matrix
+        H2 = H.copy()
+        H2[0, 1] = 2
+        with pytest.raises(ValueError, match="must be Hermitian"):
+            qml.Hermitian(H2, wires=0)
+
+    def test_ragged_input_raises(self):
+        """Tests that an error is raised if the input to Hermitian is ragged."""
+        H = [[1, 0], [0, 1, 2]]
+
+        with pytest.warns(
+            np.VisibleDeprecationWarning, match="Creating an ndarray from ragged nested sequences"
+        ):
+            with pytest.raises(ValueError, match="must be a square matrix"):
+                qml.Hermitian(H, wires=0)
+
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_eigegendecomposition_single_wire(self, observable, eigvals, eigvecs, tol):
         """Tests that the eigendecomposition property of the Hermitian class returns the correct results
@@ -361,7 +391,7 @@ class TestHermitian:
 
     def test_hermitian_empty_wire_list_error(self):
         """Tests that the hermitian operator raises an error when instantiated with wires=[]."""
-        herm_mat = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        herm_mat = np.array([]).reshape((0, 0))
 
         with pytest.raises(ValueError, match="wrong number of wires"):
             qml.Hermitian(herm_mat, wires=[])
