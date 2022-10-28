@@ -273,7 +273,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
-* `qml.Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
+* `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
   instead. There is no longer a static method for this.
   [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
 
