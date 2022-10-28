@@ -16,7 +16,8 @@ This module contains the qml.equal function.
 """
 # pylint: disable=too-many-arguments,too-many-return-statements
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import Operator, Operation, Observable
+from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 def equal(
@@ -72,27 +73,48 @@ def equal(
         >>> qml.equal(op3, op4, check_trainability=False)
         True
     """
-    if [op1.name, op1.arithmetic_depth, op1.wires] != [op2.name, op2.arithmetic_depth, op2.wires]:
-        return False
-    if op1.arithmetic_depth > 0:
-        raise NotImplementedError(
-            "Comparison of operators with an arithmetic depth larger than 0 is not yet implemented."
-        )
-    if not all(
-        qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
-    ):
-        return False
-    if op1.hyperparameters != op2.hyperparameters:
-        return False
+    if isinstance(op1, Operation) and isinstance(op2, Operation):
+        if [op1.name, op1.arithmetic_depth, op1.wires] != [
+            op2.name,
+            op2.arithmetic_depth,
+            op2.wires,
+        ]:
+            return False
+        if op1.arithmetic_depth > 0:
+            raise NotImplementedError(
+                "Comparison of operators with an arithmetic depth larger than 0 is not yet implemented."
+            )
+        if not all(
+            qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
+        ):
+            return False
+        if op1.hyperparameters != op2.hyperparameters:
+            return False
 
-    if check_trainability:
-        for params_1, params_2 in zip(op1.data, op2.data):
-            if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
-                return False
+        if check_trainability:
+            for params_1, params_2 in zip(op1.data, op2.data):
+                if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
+                    return False
 
-    if check_interface:
-        for params_1, params_2 in zip(op1.data, op2.data):
-            if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
-                return False
+        if check_interface:
+            for params_1, params_2 in zip(op1.data, op2.data):
+                if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
+                    return False
 
-    return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
+        return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
+
+    if isinstance(op1, Observable) and isinstance(op2, Observable):
+        return _obs_comparison_data(op1) == _obs_comparison_data(op2)
+
+    raise NotImplementedError(
+        "Comparison is only implemented between two Operations, or two Observables."
+    )
+
+
+def _obs_comparison_data(obs):
+    if isinstance(obs, Hamiltonian):
+        obs.simplify()
+        obs = obs._obs_data()  # pylint: disable=protected-access
+    else:
+        obs = {(1, frozenset(obs._obs_data()))}  # pylint: disable=protected-access
+    return obs
