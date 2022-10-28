@@ -324,7 +324,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
 
-* Deprecate `remap_tape_wires`. Use `qml.map_wires` instead.
+* Deprecate `qml.transforms.qcut.remap_tape_wires`. Use `qml.map_wires` instead.
   [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
 
 <h3>Contributors</h3>
