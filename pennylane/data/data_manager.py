@@ -208,15 +208,20 @@ def load(
     _s3_download(data_name, all_folders, attributes, directory_path, force, num_threads)
 
     data_files = []
+    docstring = f"{data['docstr']}\n\nArgs:\n"
+    for arg, argtype, argdoc in zip(
+        data["attributes"], data["attribute_types"], data["docstrings"]
+    ):
+        if arg == "full":
+            continue
+        docstring += f"\t{arg} ({argtype}): {argdoc}\n"
+    docstring += f"\nReturns:\n\tDataset({data_name})"
+
     for folder in all_folders:
         real_folder = os.path.join(directory_path, data_name, folder)
-        obj = Dataset(data_name, real_folder, folder.replace("/", "_"), standard=True)
-        doc_attrs = obj.list_attributes()
-        doc_vals = [type(getattr(obj, attr)) for attr in doc_attrs]
-        args_idx = [data["attributes"].index(x) for x in doc_attrs]
-        argsdocs = [data["docstrings"][x] for x in args_idx]
-        obj.setdocstr(data["docstr"], doc_attrs, doc_vals, argsdocs)
-        data_files.append(obj)
+        data_files.append(
+            Dataset(data_name, real_folder, folder.replace("/", "_"), docstring, standard=True)
+        )
 
     return data_files
 

@@ -41,6 +41,7 @@ _data_struct = {
             "Contains all the attributes related to the quantum chemistry datatset",
         ],
         "attributes": ["molecule", "hamiltonian", "sparse_hamiltonian", "hf_state", "full"],
+        "attribute_types": ["Molecule", "dict", "csr_matrix", "tensor", "dict"],
     },
     "qspin": {
         "docstr": "Quantum many-body spin system dataset.",
@@ -52,6 +53,7 @@ _data_struct = {
             "Contains all the attributes related to the quantum spin datatset",
         ],
         "attributes": ["parameters", "hamiltonians", "ground_states", "full"],
+        "attribute_types": ["ndarray", "list", "ndarray", "dict"],
     },
 }
 
@@ -311,10 +313,13 @@ class TestLoadHelpers:
 
         def test_s3_download_thread_failure(self, wait_mock, submit_mock, tmp_path):
             """Test that _s3_download raises errors from download failures."""
-            wait_mock.return_value = MagicMock(done=[MagicMock(exception=MagicMock(return_value=ValueError("network error")))])
+            wait_mock.return_value = MagicMock(
+                done=[MagicMock(exception=MagicMock(return_value=ValueError("network error")))]
+            )
             with pytest.raises(ValueError, match="network error"):
-                qml.data.data_manager._s3_download("qchem", ["H2/6-31G/0.50"], ["molecule"], str(tmp_path), False, 50)
-
+                qml.data.data_manager._s3_download(
+                    "qchem", ["H2/6-31G/0.50"], ["molecule"], str(tmp_path), False, 50
+                )
 
     @patch("requests.get")
     def test_fetch_and_save(self, get_and_write_mock, tmp_path):
@@ -384,7 +389,7 @@ class TestLoad:
         data = datasets[0]
 
         assert data._is_standard
-        assert data.attrs == {"molecule": "H2_6-31G_0.46_molecule"}
+        assert data.attrs == {"molecule": None}
         assert data.molecule == "H2_6-31G_0.46_molecule"
         assert data._dtype == "qchem"
         assert data._folder == os.path.join(dest, "datasets/qchem/H2/6-31G/0.46")
@@ -462,11 +467,15 @@ class TestLoad:
             attributes=["molecule"],
             folder_path=dest,
         )[0]
+        print(data.__doc__.split("\n"))
         assert data.__doc__.split("\n") == [
             "Quantum chemistry dataset.",
             "",
             "Args:",
-            "\tmolecule (<class 'str'>): Molecule object describing the chemical system",
+            "\tmolecule (Molecule): Molecule object describing the chemical system",
+            "\thamiltonian (dict): Hamiltonian of the system using Jordan-Wigner mapping",
+            "\tsparse_hamiltonian (csr_matrix): Sparse Hamiltonian of the system",
+            "\thf_state (tensor): Hartree-Fock state for the system",
             "",
             "Returns:",
             "\tDataset(qchem)",

@@ -83,15 +83,15 @@ class Dataset(ABC):
         + (1) [Z1]
     """
 
-    _standard_argnames = ["data_name", "data_folder", "attr_prefix"]
+    _standard_argnames = ["data_name", "data_folder", "attr_prefix", "docstring"]
 
-    def __std_init__(self, data_name, folder, attr_prefix):
+    def __std_init__(self, data_name, folder, attr_prefix, docstring):
         """Constructor for standardized datasets."""
         self._dtype = data_name
         self._folder = folder.rstrip("/")
         self._prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
         self._prefix_len = len(attr_prefix) + 1
-        self.__doc__ = ""
+        self.__doc__ = docstring
 
         self._fullfile = self._prefix.format("full")
         if not os.path.exists(self._fullfile):
@@ -236,13 +236,3 @@ class Dataset(ABC):
                 return value
             # TODO: download the file here?
             raise
-
-    def setdocstr(self, docstr, args=None, argtypes=None, argsdocs=None):
-        """Build the docstring for the Dataset class"""
-        docstring = f"{docstr}\n\n"
-        if args and argsdocs and argtypes:
-            docstring += "Args:\n"
-            for arg, argdoc, argtype in zip(args, argsdocs, argtypes):
-                docstring += f"\t{arg} ({argtype}): {argdoc}\n"
-            docstring += f"\nReturns:\n\tDataset({self._dtype})"
-        self.__doc__ = docstring  # pylint:disable=attribute-defined-outside-init
