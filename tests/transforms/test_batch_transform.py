@@ -112,6 +112,10 @@ class TestBatchTransform:
         tapes, fn = my_transform(tape)
         assert fn(5) == 5
 
+        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+        tapes, fn = my_transform(qs)
+        assert fn(5) == 5
+
     def test_not_differentiable(self):
         """Test that a non-differentiable transform cannot be differentiated"""
 
