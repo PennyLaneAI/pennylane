@@ -178,7 +178,7 @@ class ControlledQutritUnitary(QutritUnitary):
     :math:`\vert 0\rangle` or :math:`\vert 1\rangle` state, or a mix of the three.
 
     The state on which to control can be changed by passing a string of trits to
-    `control_values`. For example, if we want to apply a single-qutrit unitary to
+    ``control_values``. For example, if we want to apply a single-qutrit unitary to
     wire ``3`` conditioned on three wires where the first is in state ``0``, the
     second is in state ``1``, and the third in state ``2``, we can write:
 
