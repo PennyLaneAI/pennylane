@@ -156,11 +156,19 @@ class TestUpdate:
         assert qs.samples_computational_basis is True
 
     def test_update_circuit_info_no_sampling(self):
-        """Test that all_sampled and is_sampled properties are set to False if no sampling
+        """Test that all_sampled, is_sampled and samples_computational_basis properties are set to False if no sampling
         measurement process exists."""
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
         assert qs.is_sampled is False
         assert qs.all_sampled is False
+        assert qs.samples_computational_basis is False
+
+    def test_samples_computational_basis_caching_correctly(self):
+        """Test that the samples_computational_basis property's caching works as expected."""
+        qs = QuantumScript(measurements=[qml.sample()])
+        assert qs.samples_computational_basis is True
+
+        qs.measurements = [qml.expval(qml.PauliZ(0))]
         assert qs.samples_computational_basis is False
 
     def test_update_par_info_update_trainable_params(self):
