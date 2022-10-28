@@ -124,6 +124,10 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   should continue to rely on `QNode`s.
   [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
 
+* `qml.simplify`, `op_tranform`'s like `qml.matrix`, `batch_transform`, `hamiltonian_expand` and `split_non_commuting` now work with
+  `QuantumScript` as well as `QuantumTape`.
+  [(#3209)](https://github.com/PennyLaneAI/pennylane/pull/3209)
+
 * The UCCSD and kUpCCGSD template are modified to remove a redundant flipping of the initial state.
   [(#3148)](https://github.com/PennyLaneAI/pennylane/pull/3148)
 
