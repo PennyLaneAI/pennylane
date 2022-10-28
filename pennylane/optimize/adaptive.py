@@ -44,10 +44,10 @@ class AdaptiveOptimizer:
     Quantum circuits can be built by adding gates
     `adaptively <https://www.nature.com/articles/s41467-019-10988-2>`_. The adaptive optimizer
     implements an algorithm that grows and optimizes an input quantum circuit by selecting and
-    adding gates from a user-defined collection of operators. The algorithm starts with adding all
+    adding gates from a user-defined collection of operators. The algorithm starts by adding all
     the gates to the circuit and computing the circuit gradients with respect to the gate
     parameters. The algorithm then retains the gate which has the largest gradient and optimizes its
-    parameter. The processes of growing the circuit is repeated until the computed gradients
+    parameter. The process of growing the circuit is repeated until the computed gradients
     converge to zero within a given threshold. The optimizer returns the fully trained and
     adaptively-built circuit. The adaptive optimizer can be used to implement
     algorithms such as `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_.
@@ -78,7 +78,9 @@ class AdaptiveOptimizer:
 
     >>> n_electrons = 2
     >>> singles, doubles = qml.qchem.excitations(n_electrons, qubits)
-    >>> operator_pool = doubles + singles
+    >>> singles_excitations = [qml.SingleExcitation(0.0, x) for x in singles]
+    >>> doubles_excitations = [qml.DoubleExcitation(0.0, x) for x in doubles]
+    >>> operator_pool = doubles_excitations + singles_excitations
 
     An initial circuit preparing the Hartree-Fock state and returning the expectation value of the
     Hamiltonian is defined:
@@ -93,9 +95,6 @@ class AdaptiveOptimizer:
     The optimizer is instantiated and the circuit is created and optimized adaptively:
 
     >>> opt = AdaptiveOptimizer()
-    >>> singles_excitations = [qml.SingleExcitation(0.0, x) for x in singles]
-    >>> doubles_excitations = [qml.DoubleExcitation(0.0, x) for x in doubles]
-    >>> operator_pool = doubles_excitations + singles_excitations
     >>> for i in range(len(operator_pool)):
     ...     circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
     ...     print('Energy:', energy)
