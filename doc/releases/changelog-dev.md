@@ -182,6 +182,11 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 * `ControlledQubitUnitary` now has a `control_values` property.
   [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
+
+* Remove `_wires` properties and setters from the `ControlledClass` and the `SymbolicClass`.
+  Stop using `op._wires = new_wires`, use `qml.map_wires(op, wire_map=dict(zip(op.wires, new_wires)))`
+  instead.
+  [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
   
 <h3>Breaking changes</h3>
 
@@ -270,9 +275,12 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
   [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
 
-* Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian 
+* Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
+
+* Deprecate `remap_tape_wires`. Use `qml.map_wires` instead.
+  [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
 
 <h3>Contributors</h3>
 
