@@ -52,7 +52,6 @@ Users can specify the control wires as well as the values to control the operati
 
   ```
 
-<<<<<<< HEAD
 * The `IntegerComparator` arithmetic operation is now available.
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
@@ -75,7 +74,7 @@ Users can specify the control wires as well as the values to control the operati
   ```pycon
   >>> circuit()
   [-0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
-=======
+
 * The `QNode` class now accepts an ``auto`` interface, which automatically detects the interface
   of the given input.
   [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
@@ -139,7 +138,6 @@ Users can specify the control wires as well as the values to control the operati
   11: ──X────────┤       
   12: ──Z────────┤       
   13: ──RY(1.23)─┤  
->>>>>>> master
   ```
 
 <h3>Improvements</h3>
