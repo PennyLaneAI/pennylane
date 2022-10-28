@@ -186,6 +186,12 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Improve `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
+* Added `overlapping_ops` property to the `Composite` class to improve the
+  performance of the `eigvals`, `diagonalizing_gates` and `Prod.matrix` methods.
+  [(#3084)](https://github.com/PennyLaneAI/pennylane/pull/3084)
+
+<h3>Breaking changes</h3>
+
 * Added the `map_wires` method to the `Operator` class, which returns a copy of the operator with
   its wires changed according to the given wire map.
   [(#3143)](https://github.com/PennyLaneAI/pennylane/pull/3143)
