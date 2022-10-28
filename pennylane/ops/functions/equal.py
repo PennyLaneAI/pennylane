@@ -55,6 +55,8 @@ def equal(
     >>> True
     >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)) )
     >>> False
+    >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]) )
+    >>> True
 
     .. details::
         :title: Usage Details
@@ -85,10 +87,14 @@ def equal(
 
     if op1.__class__ is MeasurementProcess:
         return equal_measurements(op1, op2)
-    
+
     if op1.__class__ is ShadowMeasurementProcess:
         return equal_shadow_measurements(op1, op2)
 
+    return equal_operator(op1, op2, check_interface, check_trainability, rtol, atol)
+
+def equal_operator(op1, op2, check_interface, check_trainability, rtol, atol):
+    """Determine whether two Operator objects are equal"""
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
 
@@ -124,7 +130,7 @@ def equal_measurements(op1, op2):
     return_types_match = op1.return_type == op2.return_type
     observables_match = op1.obs == op2.obs
     wires_match = op1.wires == op2.wires
-    eigvals_match = op1.eigvals == op2.eigvals #TODO add test case for eigvals and logbase
+    eigvals_match = op1.eigvals == op2.eigvals
     log_base_match = op1.log_base == op2.log_base
 
     return return_types_match and observables_match and wires_match and eigvals_match and log_base_match
