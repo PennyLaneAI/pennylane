@@ -685,6 +685,22 @@ class MeasurementProcess:
 
         return MeasurementProcess(return_type=self.return_type, obs=self.obs.simplify())
 
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current measurement process with its wires changed according to
+        the given wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .MeasurementProcess: new measurement process
+        """
+        new_measurement = copy.copy(self)
+        new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        if self.obs is not None:
+            new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
+        return new_measurement
+
 
 class ShadowMeasurementProcess(MeasurementProcess):
     """Represents a classical shadow measurement process occurring at the end of a
