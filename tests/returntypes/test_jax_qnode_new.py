@@ -2209,11 +2209,14 @@ class TestReturn:
         assert hess[1].shape == (4, 2, 2)
 
 
-shots = [(1000), (1, 20, 100)]
+shots = [100, (1, 20, 100)]
+# TODO: Add the following shot vector
 # (1, (5, 4), 100)
 
+
+# TODO: Add finite diff
+# ["default.qubit", "finite-diff", {"h": 10e-2}],
 qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", {"h": 10e-2}],
     ["default.qubit", "parameter-shift", {}],
 ]
 
@@ -2242,7 +2245,15 @@ class TestReturn:
 
         jac = jax.jacobian(circuit)(a)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, jax.numpy.ndarray)
+            assert jac.shape == ()
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, jax.numpy.ndarray)
+                assert j.shape == ()
 
     def test_jac_single_measurement_multiple_param(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2266,7 +2277,19 @@ class TestReturn:
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(a, b)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, tuple)
+            assert len(jac) == 2
+            assert jac[0].shape == ()
+            assert jac[1].shape == ()
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, tuple)
+                assert len(j) == 2
+                assert j[0].shape == ()
+                assert j[1].shape == ()
 
     def test_jacobian_single_measurement_multiple_param_array(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2289,7 +2312,15 @@ class TestReturn:
 
         jac = jax.jacobian(circuit)(a)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, jax.numpy.ndarray)
+            assert jac.shape == (2,)
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, jax.numpy.ndarray)
+                assert j.shape == (2,)
 
     def test_jacobian_single_measurement_param_probs(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2313,7 +2344,15 @@ class TestReturn:
 
         jac = jax.jacobian(circuit)(a)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, jax.numpy.ndarray)
+            assert jac.shape == (4,)
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, jax.numpy.ndarray)
+                assert j.shape == (4,)
 
     def test_jacobian_single_measurement_probs_multiple_param(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2338,7 +2377,25 @@ class TestReturn:
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(a, b)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, tuple)
+
+            assert isinstance(jac[0], jax.numpy.ndarray)
+            assert jac[0].shape == (4,)
+
+            assert isinstance(jac[1], jax.numpy.ndarray)
+            assert jac[1].shape == (4,)
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, tuple)
+
+                assert isinstance(j[0], jax.numpy.ndarray)
+                assert j[0].shape == (4,)
+
+                assert isinstance(j[1], jax.numpy.ndarray)
+                assert j[1].shape == (4,)
 
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2361,7 +2418,15 @@ class TestReturn:
         a = jax.numpy.array([0.1, 0.2])
         jac = jax.jacobian(circuit)(a)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, jax.numpy.ndarray)
+            assert jac.shape == (4, 2)
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, jax.numpy.ndarray)
+                assert j.shape == (4, 2)
 
     def test_jacobian_expval_expval_multiple_params(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2386,7 +2451,41 @@ class TestReturn:
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, tuple)
+
+            assert isinstance(jac[0], tuple)
+            assert len(jac[0]) == 2
+            assert isinstance(jac[0][0], jax.numpy.ndarray)
+            assert jac[0][0].shape == ()
+            assert isinstance(jac[0][1], jax.numpy.ndarray)
+            assert jac[0][1].shape == ()
+
+            assert isinstance(jac[1], tuple)
+            assert len(jac[1]) == 2
+            assert isinstance(jac[1][0], jax.numpy.ndarray)
+            assert jac[1][0].shape == ()
+            assert isinstance(jac[1][1], jax.numpy.ndarray)
+            assert jac[1][1].shape == ()
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, tuple)
+
+                assert isinstance(j[0], tuple)
+                assert len(j[0]) == 2
+                assert isinstance(j[0][0], jax.numpy.ndarray)
+                assert j[0][0].shape == ()
+                assert isinstance(j[0][1], jax.numpy.ndarray)
+                assert j[0][1].shape == ()
+
+                assert isinstance(j[1], tuple)
+                assert len(j[1]) == 2
+                assert isinstance(j[1][0], jax.numpy.ndarray)
+                assert j[1][0].shape == ()
+                assert isinstance(j[1][1], jax.numpy.ndarray)
+                assert j[1][1].shape == ()
 
     def test_jacobian_expval_expval_multiple_params_array(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2409,7 +2508,27 @@ class TestReturn:
 
         jac = jax.jacobian(circuit)(a)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, tuple)
+            assert len(jac) == 2  # measurements
+
+            assert isinstance(jac[0], jax.numpy.ndarray)
+            assert jac[0].shape == (2,)
+
+            assert isinstance(jac[1], jax.numpy.ndarray)
+            assert jac[1].shape == (2,)
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, tuple)
+                assert len(j) == 2  # measurements
+
+                assert isinstance(j[0], jax.numpy.ndarray)
+                assert j[0].shape == (2,)
+
+                assert isinstance(j[1], jax.numpy.ndarray)
+                assert j[1].shape == (2,)
 
     def test_jacobian_var_var_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
@@ -2432,7 +2551,43 @@ class TestReturn:
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, tuple)
+            assert len(jac) == 2
+
+            assert isinstance(jac[0], tuple)
+            assert len(jac[0]) == 2
+            assert isinstance(jac[0][0], jax.numpy.ndarray)
+            assert jac[0][0].shape == ()
+            assert isinstance(jac[0][1], jax.numpy.ndarray)
+            assert jac[0][1].shape == ()
+
+            assert isinstance(jac[1], tuple)
+            assert len(jac[1]) == 2
+            assert isinstance(jac[1][0], jax.numpy.ndarray)
+            assert jac[1][0].shape == ()
+            assert isinstance(jac[1][1], jax.numpy.ndarray)
+            assert jac[1][1].shape == ()
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, tuple)
+                assert len(j) == 2
+
+                assert isinstance(j[0], tuple)
+                assert len(j[0]) == 2
+                assert isinstance(j[0][0], jax.numpy.ndarray)
+                assert j[0][0].shape == ()
+                assert isinstance(j[0][1], jax.numpy.ndarray)
+                assert j[0][1].shape == ()
+
+                assert isinstance(j[1], tuple)
+                assert len(j[1]) == 2
+                assert isinstance(j[1][0], jax.numpy.ndarray)
+                assert j[1][0].shape == ()
+                assert isinstance(j[1][1], jax.numpy.ndarray)
+                assert j[1][1].shape == ()
 
     def test_jacobian_var_var_multiple_params_array(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2455,7 +2610,27 @@ class TestReturn:
 
         jac = jax.jacobian(circuit)(a)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, tuple)
+            assert len(jac) == 2  # measurements
+
+            assert isinstance(jac[0], jax.numpy.ndarray)
+            assert jac[0].shape == (2,)
+
+            assert isinstance(jac[1], jax.numpy.ndarray)
+            assert jac[1].shape == (2,)
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, tuple)
+                assert len(j) == 2  # measurements
+
+                assert isinstance(j[0], jax.numpy.ndarray)
+                assert j[0].shape == (2,)
+
+                assert isinstance(j[1], jax.numpy.ndarray)
+                assert j[1].shape == (2,)
 
     def test_jacobian_multiple_measurement_single_param(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2478,7 +2653,27 @@ class TestReturn:
 
         jac = jax.jacobian(circuit)(a)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, tuple)
+            assert len(jac) == 2
+
+            assert isinstance(jac[0], jax.numpy.ndarray)
+            assert jac[0].shape == ()
+
+            assert isinstance(jac[1], jax.numpy.ndarray)
+            assert jac[1].shape == (4,)
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(jac, tuple)
+                assert len(j) == 2
+
+                assert isinstance(j[0], jax.numpy.ndarray)
+                assert j[0].shape == ()
+
+                assert isinstance(j[1], jax.numpy.ndarray)
+                assert j[1].shape == (4,)
 
     def test_jacobian_multiple_measurement_multiple_param(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2502,7 +2697,43 @@ class TestReturn:
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(a, b)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, tuple)
+            assert len(jac) == 2
+
+            assert isinstance(jac[0], tuple)
+            assert len(jac[0]) == 2
+            assert isinstance(jac[0][0], jax.numpy.ndarray)
+            assert jac[0][0].shape == ()
+            assert isinstance(jac[0][1], jax.numpy.ndarray)
+            assert jac[0][1].shape == ()
+
+            assert isinstance(jac[1], tuple)
+            assert len(jac[1]) == 2
+            assert isinstance(jac[1][0], jax.numpy.ndarray)
+            assert jac[1][0].shape == (4,)
+            assert isinstance(jac[1][1], jax.numpy.ndarray)
+            assert jac[1][1].shape == (4,)
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, tuple)
+                assert len(j) == 2
+
+                assert isinstance(j[0], tuple)
+                assert len(j[0]) == 2
+                assert isinstance(j[0][0], jax.numpy.ndarray)
+                assert j[0][0].shape == ()
+                assert isinstance(j[0][1], jax.numpy.ndarray)
+                assert j[0][1].shape == ()
+
+                assert isinstance(j[1], tuple)
+                assert len(j[1]) == 2
+                assert isinstance(j[1][0], jax.numpy.ndarray)
+                assert j[1][0].shape == (4,)
+                assert isinstance(j[1][1], jax.numpy.ndarray)
+                assert j[1][1].shape == (4,)
 
     def test_jacobian_multiple_measurement_multiple_param_array(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2525,7 +2756,27 @@ class TestReturn:
 
         jac = jax.jacobian(circuit)(a)
 
-        print(jac)
+        if isinstance(shots, int):
+            assert isinstance(jac, tuple)
+            assert len(jac) == 2  # measurements
+
+            assert isinstance(jac[0], jax.numpy.ndarray)
+            assert jac[0].shape == (2,)
+
+            assert isinstance(jac[1], jax.numpy.ndarray)
+            assert jac[1].shape == (4, 2)
+        else:
+            assert isinstance(jac, tuple)
+            assert len(jac) == len(shots)
+            for j in jac:
+                assert isinstance(j, tuple)
+                assert len(j) == 2  # measurements
+
+                assert isinstance(j[0], jax.numpy.ndarray)
+                assert j[0].shape == (2,)
+
+                assert isinstance(j[1], jax.numpy.ndarray)
+                assert j[1].shape == (4, 2)
 
     def test_hessian_expval_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
@@ -2535,9 +2786,6 @@ class TestReturn:
         config.update("jax_enable_x64", True)
 
         dev = qml.device(dev_name, wires=2, shots=shots)
-
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because second order diff.")
 
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
@@ -2551,7 +2799,39 @@ class TestReturn:
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        print(hess)
+        if isinstance(shots, int):
+            assert isinstance(hess, tuple)
+            assert len(hess) == 2
+
+            assert isinstance(hess[0], tuple)
+            assert len(hess[0]) == 2
+            assert isinstance(hess[0][0], jax.numpy.ndarray)
+            assert hess[0][0].shape == ()
+            assert hess[0][1].shape == ()
+
+            assert isinstance(hess[1], tuple)
+            assert len(hess[1]) == 2
+            assert isinstance(hess[1][0], jax.numpy.ndarray)
+            assert hess[1][0].shape == ()
+            assert hess[1][1].shape == ()
+        else:
+            assert isinstance(hess, tuple)
+            assert len(hess) == len(shots)
+            for h in hess:
+                assert isinstance(hess, tuple)
+                assert len(h) == 2
+
+                assert isinstance(h[0], tuple)
+                assert len(h[0]) == 2
+                assert isinstance(h[0][0], jax.numpy.ndarray)
+                assert h[0][0].shape == ()
+                assert h[0][1].shape == ()
+
+                assert isinstance(h[1], tuple)
+                assert len(h[1]) == 2
+                assert isinstance(h[1][0], jax.numpy.ndarray)
+                assert h[1][0].shape == ()
+                assert h[1][1].shape == ()
 
     def test_hessian_expval_multiple_param_array(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2575,7 +2855,15 @@ class TestReturn:
 
         hess = jax.hessian(circuit)(params)
 
-        print(hess)
+        if isinstance(shots, int):
+            assert isinstance(hess, jax.numpy.ndarray)
+            assert hess.shape == (2, 2)
+        else:
+            assert isinstance(hess, tuple)
+            assert len(hess) == len(shots)
+            for h in hess:
+                assert isinstance(h, jax.numpy.ndarray)
+                assert h.shape == (2, 2)
 
     def test_hessian_var_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
@@ -2598,7 +2886,39 @@ class TestReturn:
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        print(hess)
+        if isinstance(shots, int):
+            assert isinstance(hess, tuple)
+            assert len(hess) == 2
+
+            assert isinstance(hess[0], tuple)
+            assert len(hess[0]) == 2
+            assert isinstance(hess[0][0], jax.numpy.ndarray)
+            assert hess[0][0].shape == ()
+            assert hess[0][1].shape == ()
+
+            assert isinstance(hess[1], tuple)
+            assert len(hess[1]) == 2
+            assert isinstance(hess[1][0], jax.numpy.ndarray)
+            assert hess[1][0].shape == ()
+            assert hess[1][1].shape == ()
+        else:
+            assert isinstance(hess, tuple)
+            assert len(hess) == len(shots)
+            for h in hess:
+                assert isinstance(h, tuple)
+                assert len(h) == 2
+
+                assert isinstance(h[0], tuple)
+                assert len(h[0]) == 2
+                assert isinstance(h[0][0], jax.numpy.ndarray)
+                assert h[0][0].shape == ()
+                assert h[0][1].shape == ()
+
+                assert isinstance(h[1], tuple)
+                assert len(h[1]) == 2
+                assert isinstance(h[1][0], jax.numpy.ndarray)
+                assert h[1][0].shape == ()
+                assert h[1][1].shape == ()
 
     def test_hessian_var_multiple_param_array(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of single measurement with a multiple params array return a single array."""
@@ -2620,7 +2940,15 @@ class TestReturn:
 
         hess = jax.hessian(circuit)(params)
 
-        print(hess)
+        if isinstance(shots, int):
+            assert isinstance(hess, jax.numpy.ndarray)
+            assert hess.shape == (2, 2)
+        else:
+            assert isinstance(hess, tuple)
+            assert len(hess) == len(shots)
+            for h in hess:
+                assert isinstance(h, jax.numpy.ndarray)
+                assert h.shape == (2, 2)
 
     def test_hessian_probs_expval_multiple_params(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2645,7 +2973,75 @@ class TestReturn:
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        print(hess)
+        if isinstance(shots, int):
+            assert isinstance(hess, tuple)
+            assert len(hess) == 2
+
+            assert isinstance(hess[0], tuple)
+            assert len(hess[0]) == 2
+            assert isinstance(hess[0][0], tuple)
+            assert len(hess[0][0]) == 2
+            assert isinstance(hess[0][0][0], jax.numpy.ndarray)
+            assert hess[0][0][0].shape == ()
+            assert isinstance(hess[0][0][1], jax.numpy.ndarray)
+            assert hess[0][0][1].shape == ()
+            assert isinstance(hess[0][1], tuple)
+            assert len(hess[0][1]) == 2
+            assert isinstance(hess[0][1][0], jax.numpy.ndarray)
+            assert hess[0][1][0].shape == ()
+            assert isinstance(hess[0][1][1], jax.numpy.ndarray)
+            assert hess[0][1][1].shape == ()
+
+            assert isinstance(hess[1], tuple)
+            assert len(hess[1]) == 2
+            assert isinstance(hess[1][0], tuple)
+            assert len(hess[1][0]) == 2
+            assert isinstance(hess[1][0][0], jax.numpy.ndarray)
+            assert hess[1][0][0].shape == (4,)
+            assert isinstance(hess[1][0][1], jax.numpy.ndarray)
+            assert hess[1][0][1].shape == (4,)
+            assert isinstance(hess[1][1], tuple)
+            assert len(hess[1][1]) == 2
+            assert isinstance(hess[1][1][0], jax.numpy.ndarray)
+            assert hess[1][1][0].shape == (4,)
+            assert isinstance(hess[1][1][1], jax.numpy.ndarray)
+            assert hess[1][1][1].shape == (4,)
+        else:
+            assert isinstance(hess, tuple)
+            assert len(hess) == len(shots)
+            for h in hess:
+                assert isinstance(h, tuple)
+                assert len(h) == 2
+
+                assert isinstance(h[0], tuple)
+                assert len(h[0]) == 2
+                assert isinstance(h[0][0], tuple)
+                assert len(h[0][0]) == 2
+                assert isinstance(h[0][0][0], jax.numpy.ndarray)
+                assert h[0][0][0].shape == ()
+                assert isinstance(h[0][0][1], jax.numpy.ndarray)
+                assert h[0][0][1].shape == ()
+                assert isinstance(h[0][1], tuple)
+                assert len(h[0][1]) == 2
+                assert isinstance(h[0][1][0], jax.numpy.ndarray)
+                assert h[0][1][0].shape == ()
+                assert isinstance(h[0][1][1], jax.numpy.ndarray)
+                assert h[0][1][1].shape == ()
+
+                assert isinstance(h[1], tuple)
+                assert len(h[1]) == 2
+                assert isinstance(h[1][0], tuple)
+                assert len(h[1][0]) == 2
+                assert isinstance(h[1][0][0], jax.numpy.ndarray)
+                assert h[1][0][0].shape == (4,)
+                assert isinstance(h[1][0][1], jax.numpy.ndarray)
+                assert h[1][0][1].shape == (4,)
+                assert isinstance(h[1][1], tuple)
+                assert len(h[1][1]) == 2
+                assert isinstance(h[1][1][0], jax.numpy.ndarray)
+                assert h[1][1][0].shape == (4,)
+                assert isinstance(h[1][1][1], jax.numpy.ndarray)
+                assert h[1][1][1].shape == (4,)
 
     def test_hessian_expval_probs_multiple_param_array(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2659,11 +3055,11 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device(dev_name, wires=2, shots=shots)
 
         params = jax.numpy.array([0.1, 0.2])
 
-        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2, **gradient_kwargs)
         def circuit(x):
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
@@ -2672,7 +3068,27 @@ class TestReturn:
 
         hess = jax.hessian(circuit)(params)
 
-        print(hess)
+        if isinstance(shots, int):
+            assert isinstance(hess, tuple)
+            assert len(hess) == 2
+
+            assert isinstance(hess[0], jax.numpy.ndarray)
+            assert hess[0].shape == (2, 2)
+
+            assert isinstance(hess[1], jax.numpy.ndarray)
+            assert hess[1].shape == (4, 2, 2)
+        else:
+            assert isinstance(hess, tuple)
+            assert len(hess) == len(shots)
+            for h in hess:
+                assert isinstance(h, tuple)
+                assert len(h) == 2
+
+                assert isinstance(h[0], jax.numpy.ndarray)
+                assert h[0].shape == (2, 2)
+
+                assert isinstance(h[1], jax.numpy.ndarray)
+                assert h[1].shape == (4, 2, 2)
 
     def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
@@ -2695,7 +3111,75 @@ class TestReturn:
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        print(hess)
+        if isinstance(shots, int):
+            assert isinstance(hess, tuple)
+            assert len(hess) == 2
+
+            assert isinstance(hess[0], tuple)
+            assert len(hess[0]) == 2
+            assert isinstance(hess[0][0], tuple)
+            assert len(hess[0][0]) == 2
+            assert isinstance(hess[0][0][0], jax.numpy.ndarray)
+            assert hess[0][0][0].shape == ()
+            assert isinstance(hess[0][0][1], jax.numpy.ndarray)
+            assert hess[0][0][1].shape == ()
+            assert isinstance(hess[0][1], tuple)
+            assert len(hess[0][1]) == 2
+            assert isinstance(hess[0][1][0], jax.numpy.ndarray)
+            assert hess[0][1][0].shape == ()
+            assert isinstance(hess[0][1][1], jax.numpy.ndarray)
+            assert hess[0][1][1].shape == ()
+
+            assert isinstance(hess[1], tuple)
+            assert len(hess[1]) == 2
+            assert isinstance(hess[1][0], tuple)
+            assert len(hess[1][0]) == 2
+            assert isinstance(hess[1][0][0], jax.numpy.ndarray)
+            assert hess[1][0][0].shape == (4,)
+            assert isinstance(hess[1][0][1], jax.numpy.ndarray)
+            assert hess[1][0][1].shape == (4,)
+            assert isinstance(hess[1][1], tuple)
+            assert len(hess[1][1]) == 2
+            assert isinstance(hess[1][1][0], jax.numpy.ndarray)
+            assert hess[1][1][0].shape == (4,)
+            assert isinstance(hess[1][1][1], jax.numpy.ndarray)
+            assert hess[1][1][1].shape == (4,)
+        else:
+            assert isinstance(hess, tuple)
+            assert len(hess) == len(shots)
+            for h in hess:
+                assert isinstance(h, tuple)
+                assert len(h) == 2
+
+                assert isinstance(h[0], tuple)
+                assert len(h[0]) == 2
+                assert isinstance(h[0][0], tuple)
+                assert len(h[0][0]) == 2
+                assert isinstance(h[0][0][0], jax.numpy.ndarray)
+                assert h[0][0][0].shape == ()
+                assert isinstance(h[0][0][1], jax.numpy.ndarray)
+                assert h[0][0][1].shape == ()
+                assert isinstance(h[0][1], tuple)
+                assert len(h[0][1]) == 2
+                assert isinstance(h[0][1][0], jax.numpy.ndarray)
+                assert h[0][1][0].shape == ()
+                assert isinstance(h[0][1][1], jax.numpy.ndarray)
+                assert h[0][1][1].shape == ()
+
+                assert isinstance(h[1], tuple)
+                assert len(h[1]) == 2
+                assert isinstance(h[1][0], tuple)
+                assert len(h[1][0]) == 2
+                assert isinstance(h[1][0][0], jax.numpy.ndarray)
+                assert h[1][0][0].shape == (4,)
+                assert isinstance(h[1][0][1], jax.numpy.ndarray)
+                assert h[1][0][1].shape == (4,)
+                assert isinstance(h[1][1], tuple)
+                assert len(h[1][1]) == 2
+                assert isinstance(h[1][1][0], jax.numpy.ndarray)
+                assert h[1][1][0].shape == (4,)
+                assert isinstance(h[1][1][1], jax.numpy.ndarray)
+                assert h[1][1][1].shape == (4,)
 
     def test_hessian_var_probs_multiple_param_array(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -2719,7 +3203,27 @@ class TestReturn:
 
         hess = jax.hessian(circuit)(params)
 
-        print(hess)
+        if isinstance(shots, int):
+            assert isinstance(hess, tuple)
+            assert len(hess) == 2
+
+            assert isinstance(hess[0], jax.numpy.ndarray)
+            assert hess[0].shape == (2, 2)
+
+            assert isinstance(hess[1], jax.numpy.ndarray)
+            assert hess[1].shape == (4, 2, 2)
+        else:
+            assert isinstance(hess, tuple)
+            assert len(hess) == len(shots)
+            for h in hess:
+                assert isinstance(h, tuple)
+                assert len(h) == 2
+
+                assert isinstance(h[0], jax.numpy.ndarray)
+                assert h[0].shape == (2, 2)
+
+                assert isinstance(h[1], jax.numpy.ndarray)
+                assert h[1].shape == (4, 2, 2)
 
 
 finite_diff_shot_vec_tol = 0.3

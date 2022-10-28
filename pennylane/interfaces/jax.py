@@ -407,9 +407,6 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
-    if device.shot_vector:
-        gradient_kwargs["shots"] = device.shot_vector
-
     if gradient_fn is None:
         # PennyLane forward execution
         return _execute_fwd_new(
@@ -529,6 +526,7 @@ def _execute_bwd_new(
                         new_tapes,
                         tangents[0],
                         gradient_fn,
+                        device.shot_vector,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
@@ -539,6 +537,7 @@ def _execute_bwd_new(
                     new_tapes,
                     tangents[0],
                     gradient_fn,
+                    device.shot_vector,
                     reduction="append",
                     gradient_kwargs=gradient_kwargs,
                 )

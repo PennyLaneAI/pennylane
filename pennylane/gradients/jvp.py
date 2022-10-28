@@ -154,7 +154,7 @@ def compute_jvp_multi(tangent, jac):
     return tuple(res)
 
 
-def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
+def jvp(tape, tangent, gradient_fn, shots, gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the Jacobian vector products of a tape.
 
@@ -219,12 +219,11 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
     except (AttributeError, TypeError):
         pass
 
-    gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
+    gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
 
     def processing_fn(results):
         # postprocess results to compute the Jacobian
         jac = fn(results)
-        shots = gradient_kwargs.get("shots")
         shot_vector = isinstance(shots, Sequence)
 
         # Jacobian without shot vectors
@@ -248,13 +247,13 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
     return gradient_tapes, processing_fn
 
 
-def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=None):
+def batch_jvp(tapes, tangents, gradient_fn, shots, reduction="append", gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the Jacobian vector products of a batch of tapes.
 
     Args:
         tapes (Sequence[.QuantumTape]): sequence of quantum tapes to differentiate
-        tangentss (Sequence[tensor_like]): Sequence of gradient-output vectors ``dy``. Must be the
+        tangents (Sequence[tensor_like]): Sequence of gradient-output vectors ``dy``. Must be the
             same length as ``tapes``. Each ``dy`` tensor should have shape
             matching the output shape of the corresponding tape.
         gradient_fn (callable): the gradient transform to use to differentiate
@@ -274,6 +273,7 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
 
     # TODO: add examples
     """
+    # pylint: disable=too-many-arguments
     gradient_kwargs = gradient_kwargs or {}
     reshape_info = []
     gradient_tapes = []
@@ -281,7 +281,7 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
 
     # Loop through the tapes and dys vector
     for tape, tangent in zip(tapes, tangents):
-        g_tapes, fn = jvp(tape, tangent, gradient_fn, gradient_kwargs)
+        g_tapes, fn = jvp(tape, tangent, gradient_fn, shots, gradient_kwargs)
 
         reshape_info.append(len(g_tapes))
         processing_fns.append(fn)
