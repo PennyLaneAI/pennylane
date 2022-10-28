@@ -1514,7 +1514,7 @@ class TestParameterShiftRule:
                 assert param_res.shape == ()
 
             assert shot_vec_result[0] == pytest.approx(expected[0], abs=finite_diff_tol)
-            assert shot_vec_result[1] == pytest.approx(expected[1], abs=0.5)
+            assert shot_vec_result[1] == pytest.approx(expected[1], abs=herm_shot_vec_tol)
 
     @flaky(max_runs=8)
     def test_involutory_and_noninvolutory_variance_multi_param(self, tol):

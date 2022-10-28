@@ -308,7 +308,7 @@ def _finite_diff_new(
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
 
-    def _single_shot_batch_result(tape, results, shapes, c0, f0, coeffs):
+    def _single_shot_batch_result(results):
         """Auxiliary function for post-processing one batch of results corresponding to finite shots or a single
         component of a shot vector"""
 
@@ -405,13 +405,13 @@ def _finite_diff_new(
         shot_vector = isinstance(shots, Sequence)
 
         if not shot_vector:
-            grads_tuple = _single_shot_batch_result(tape, results, shapes, c0, f0, coeffs)
+            grads_tuple = _single_shot_batch_result(results)
         else:
             grads_tuple = []
             shot_vec_len = len(shots)
             for idx in range(shot_vec_len):
                 res = [param_res[idx] for param_res in results]
-                g_tuple = _single_shot_batch_result(tape, res, shapes, c0, f0, coeffs)
+                g_tuple = _single_shot_batch_result(res)
                 grads_tuple.append(g_tuple)
             grads_tuple = tuple(grads_tuple)
 

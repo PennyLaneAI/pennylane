@@ -886,7 +886,7 @@ class TestFiniteDiffGradients:
                 approx_order=approx_order,
                 strategy=strategy,
                 h=10e-2,
-                # shots=many_shots_shot_vector,
+                shots=many_shots_shot_vector,
             )
             jac = np.array(fn(dev.batch_execute(tapes)))
             return jac
