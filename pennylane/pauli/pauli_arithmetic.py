@@ -13,6 +13,7 @@
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
 from copy import copy
+from functools import reduce
 
 import numpy as np
 from scipy import sparse
