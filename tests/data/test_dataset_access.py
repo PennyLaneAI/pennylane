@@ -403,8 +403,20 @@ class TestLoadHelpers:
                     "qchem", ["H2/6-31G/0.50"], ["molecule"], str(tmp_path), False, 50
                 )
 
+    @pytest.mark.parametrize(
+        ("filename", "called_with"),
+        [
+            ("my/file/in/s3.dat", os.path.join(qml.data.data_manager.S3_URL, "my/file/in/s3.dat")),
+            (
+                "qchem/H3+/STO-3G/1.0/H3+_STO-3G_1.0_full.dat",
+                os.path.join(
+                    qml.data.data_manager.S3_URL, "qchem/H3%2B/STO-3G/1.0/H3%2B_STO-3G_1.0_full.dat"
+                ),
+            ),
+        ],
+    )
     @patch("requests.get")
-    def test_fetch_and_save(self, get_and_write_mock, tmp_path):
+    def test_fetch_and_save(self, get_and_write_mock, tmp_path, filename, called_with):
         """Test the _fetch_and_save helper function."""
         get_return = MagicMock()
         get_return.raise_for_status.return_value = None
@@ -412,17 +424,13 @@ class TestLoadHelpers:
         get_and_write_mock.return_value = get_return
 
         dest = str(tmp_path / "datasets")
-        filename = "my/file/in/s3.dat"
         destfile = os.path.join(dest, filename)
-
         os.makedirs(os.path.dirname(destfile))
+
         qml.data.data_manager._fetch_and_save(filename, dest)
-        assert get_and_write_mock.called_once_with(
-            os.path.join(qml.data.data_manager.S3_URL, filename), timeout=5.0
-        )
+        get_and_write_mock.assert_called_once_with(called_with, timeout=5.0)
         with open(destfile, "rb") as f:
-            content = f.read()
-        assert content == b"foobar"
+            assert f.read() == b"foobar"
 
 
 @patch.object(requests, "get", get_mock)

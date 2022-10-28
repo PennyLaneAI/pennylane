@@ -18,6 +18,7 @@ Contains the Dataset utility functions.
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
 import os
+from urllib.parse import quote
 
 import requests
 from pennylane.data.dataset import Dataset
@@ -110,7 +111,7 @@ def _refresh_data_struct():
 
 def _fetch_and_save(filename, dest_folder):
     """Download a single file from S3 and save it locally."""
-    response = requests.get(os.path.join(S3_URL, filename), timeout=5.0)
+    response = requests.get(os.path.join(S3_URL, quote(filename)), timeout=5.0)
     response.raise_for_status()
     with open(os.path.join(dest_folder, filename), "wb") as f:
         f.write(response.content)
