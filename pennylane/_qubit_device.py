@@ -1040,29 +1040,7 @@ class QubitDevice(Device):
 
         return state
 
-    def generate_samples(self):
-        r"""Returns the computational basis samples generated for all wires.
-
-        Note that PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
-        :math:`q_0` is the most significant bit.
-
-        .. warning::
-
-            This method should be overwritten on devices that
-            generate their own computational basis samples, with the resulting
-            computational basis samples stored as ``self._samples``.
-
-        Returns:
-             array[complex]: array of samples in the shape ``(dev.shots, dev.num_wires)``
-        """
-        number_of_states = 2**self.num_wires
-
-        rotated_prob = self.analytic_probability()
-
-        samples = self.sample_basis_states(number_of_states, rotated_prob)
-        return self.states_to_binary(samples, self.num_wires)
-
-    def sample_basis_states(self, number_of_states, state_probability):
+    def sample_basis_states(self, number_of_states, state_probability, **kwargs):
         """Sample from the computational basis states based on the state
         probability.
 
@@ -1750,9 +1728,11 @@ class QubitDevice(Device):
             samples = sub_samples[..., np.array(device_wires)]  # Add np.array here for Jax support.
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
-            indices = np.array(indices)  # Add np.array here for Jax support.
+            #indices = np.array(indices)  # Add np.array here for Jax support.
             try:
-                samples = observable.eigvals()[indices]
+                from jax import numpy as jnp
+                print(observable.eigvals(), jnp.array(indices))
+                samples = jnp.array(observable.eigvals())[jnp.array(indices)]
             except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise qml.operation.EigvalsUndefinedError(

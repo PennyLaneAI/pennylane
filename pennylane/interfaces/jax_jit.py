@@ -143,15 +143,19 @@ def _execute(
 
     @jax.custom_vjp
     def wrapped_exec(params):
+        prng_key = device._prng_key
         def wrapper(p):
             """Compute the forward pass."""
+            p, prng_key = p
             new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
-            with qml.tape.Unwrap(*new_tapes):
-                res, _ = execute_fn(new_tapes, **gradient_kwargs)
+            #with qml.tape.Unwrap(*new_tapes):
+            #    print(gradient_kwargs, execute_fn)
+            res, _ = execute_fn(new_tapes, **gradient_kwargs)
             return res
 
-        shape_dtype_structs = _extract_shape_dtype_structs(tapes, device)
-        res = host_callback.call(wrapper, params, result_shape=shape_dtype_structs)
+        # shape_dtype_structs = _extract_shape_dtype_structs(tapes, device)
+        # res = host_callback.call(wrapper, [params, prng_key], result_shape=shape_dtype_structs)
+        res = wrapper([params, prng_key])
         return res
 
     def wrapped_exec_fwd(params):

@@ -183,7 +183,7 @@ class DefaultQubitJax(DefaultQubit):
         new_array = new_array.at[indices].set(array)
         return new_array
 
-    def sample_basis_states(self, number_of_states, state_probability):
+    def sample_basis_states(self, number_of_states, state_probability, prng_key=None):
         """Sample from the computational basis states based on the state
         probability.
 
@@ -204,11 +204,14 @@ class DefaultQubitJax(DefaultQubit):
 
         shots = self.shots
 
-        if self._prng_key is None:
+        if prng_key is not None:
+            print('here, prng_key fed in: ', prng_key)
+            key = prng_key
+        elif self._prng_key is not None:
+            key = self._prng_key
+        else:
             # Assuming op-by-op, so we'll just make one.
             key = jax.random.PRNGKey(np.random.randint(0, 2**31))
-        else:
-            key = self._prng_key
         if jnp.ndim(state_probability) == 2:
             # Produce separate keys for each of the probabilities along the broadcasted axis
             keys = []
@@ -221,6 +224,7 @@ class DefaultQubitJax(DefaultQubit):
                     for _key, prob in zip(keys, state_probability)
                 ]
             )
+        print(key, number_of_states, (shots,), state_probability)
         return jax.random.choice(key, number_of_states, shape=(shots,), p=state_probability)
 
     @staticmethod
@@ -297,3 +301,152 @@ class DefaultQubitJax(DefaultQubit):
                     prob = prob.at[i, state, b].set(count / bin_size)
         # resize prob which discards the 'filled values'
         return prob[:, :-1]
+
+    def execute(self, circuit, **kwargs):
+        """Execute a queue of quantum operations on the device and then
+        measure the given observables.
+
+        For plugin developers: instead of overwriting this, consider
+        implementing a suitable subset of
+
+        * :meth:`apply`
+
+        * :meth:`~.generate_samples`
+
+        * :meth:`~.probability`
+
+        Additional keyword arguments may be passed to the this method
+        that can be utilised by :meth:`apply`. An example would be passing
+        the ``QNode`` hash that can be used later for parametric compilation.
+
+        Args:
+            circuit (~.tapes.QuantumTape): circuit to execute on the device
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            array[float]: measured value(s)
+        """
+        if qml.active_return():
+            return self._execute_new(circuit, **kwargs)
+
+        self.check_validity(circuit.operations, circuit.observables)
+
+        # apply all circuit operations
+        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+
+        # generate computational basis samples
+        if self.shots is not None or circuit.is_sampled:
+            prng_key = kwargs.get("prng_key", None)
+            self._samples = self.generate_samples(prng_key)
+
+        ret_types = [m.return_type for m in circuit.measurements]
+        counts_exist = any(
+            ret in (qml.measurements.Counts, qml.measurements.AllCounts) for ret in ret_types
+        )
+
+        # compute the required statistics
+        if not self.analytic and self._shot_vector is not None:
+            results = self._collect_shotvector_results(circuit, counts_exist)
+        else:
+            results = self.statistics(circuit.observables, circuit=circuit)
+
+        if not circuit.is_sampled:
+
+            if len(circuit.measurements) == 1:
+                if ret_types[0] is qml.measurements.State:
+                    # State: assumed to only be allowed if it's the only measurement
+                    results = self._asarray(results, dtype=self.C_DTYPE)
+                else:
+                    # Measurements with expval, var or probs
+                    try:
+                        # Feature for returning custom objects: if the type cannot be cast to float then we can still allow it as an output
+                        results = self._asarray(results, dtype=self.R_DTYPE)
+                    except TypeError:
+                        pass
+
+            elif all(
+                ret in (qml.measurements.Expectation, qml.measurements.Variance)
+                for ret in ret_types
+            ):
+                # Measurements with expval or var
+                results = self._asarray(results, dtype=self.R_DTYPE)
+            elif not counts_exist:
+                # all the other cases except any counts
+                results = self._asarray(results)
+
+        elif circuit.all_sampled and not self._has_partitioned_shots() and not counts_exist:
+            results = self._asarray(results)
+        else:
+            results = tuple(
+                qml.math.squeeze(self._asarray(r)) if not isinstance(r, dict) else r
+                for r in results
+            )
+
+        # increment counter for number of executions of qubit device
+        self._num_executions += 1
+
+        if self.tracker.active:
+            self.tracker.update(executions=1, shots=self._shots)
+            self.tracker.record()
+
+        return results
+
+    def generate_samples(self, prng_key=None):
+        r"""Returns the computational basis samples generated for all wires.
+
+        Note that PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
+        :math:`q_0` is the most significant bit.
+
+        .. warning::
+
+            This method should be overwritten on devices that
+            generate their own computational basis samples, with the resulting
+            computational basis samples stored as ``self._samples``.
+
+        Returns:
+             array[complex]: array of samples in the shape ``(dev.shots, dev.num_wires)``
+        """
+        number_of_states = 2**self.num_wires
+
+        rotated_prob = self.analytic_probability()
+
+        samples = self.sample_basis_states(number_of_states, rotated_prob, prng_key)
+        return self.states_to_binary(samples, self.num_wires)
+
+    def batch_execute(self, circuits, **kwargs):
+        """Execute a batch of quantum circuits on the device.
+
+        The circuits are represented by tapes, and they are executed one-by-one using the
+        device's ``execute`` method. The results are collected in a list.
+
+        For plugin developers: This function should be overwritten if the device can efficiently run multiple
+        circuits on a backend, for example using parallel and/or asynchronous executions.
+
+        Args:
+            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+
+        Returns:
+            list[array[float]]: list of measured value(s)
+        """
+        # TODO: This method and the tests can be globally implemented by Device
+        # once it has the same signature in the execute() method
+        if qml.active_return():
+            return self._batch_execute_new(circuits=circuits)
+
+        results = []
+        for circuit in circuits:
+            # we need to reset the device here, else it will
+            # not start the next computation in the zero state
+            self.reset()
+
+            # TODO: Insert control on value here
+            res = self.execute(circuit, **kwargs)
+            results.append(res)
+
+        if self.tracker.active:
+            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.record()
+
+        return results

@@ -85,7 +85,7 @@ def _adjoint_jacobian_expansion(
     return tapes
 
 
-def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
+def cache_execute(fn: Callable, cache, pass_kwargs=True, return_tuple=True, expand_fn=None):
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
 
@@ -131,6 +131,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
     @wraps(fn)
     def wrapper(tapes: Sequence[QuantumTape], **kwargs):
+        print(kwargs, pass_kwargs)
 
         if not pass_kwargs:
             kwargs = {}
@@ -696,6 +697,7 @@ def execute(
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
 
+    print("gradient_kwargs: ", gradient_kwargs)
     res = _execute(
         tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
     )
