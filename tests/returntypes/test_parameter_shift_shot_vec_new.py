@@ -27,6 +27,7 @@ from pennylane.operation import Observable, AnyWires
 shot_vec_tol = 10e-3
 herm_shot_vec_tol = 0.5
 finite_diff_tol = 0.1
+h_val = 0.1
 
 default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([1000000] * 3)
@@ -649,7 +650,7 @@ class TestParameterShiftRule:
 
         assert spy.call_args[1]["shifts"] == (shift,)
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         numeric_val = fn(dev.batch_execute(tapes))
         for a_val, n_val in zip(autograd_val, numeric_val):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
@@ -707,7 +708,7 @@ class TestParameterShiftRule:
             assert np.allclose(a_val, m_val, atol=shot_vec_tol, rtol=0)
             assert spy.call_args[1]["shifts"] == (shift,)
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         numeric_val = fn(dev.batch_execute(tapes))
         for a_val, n_val in zip(autograd_val, numeric_val):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
@@ -736,7 +737,7 @@ class TestParameterShiftRule:
         assert len(grad) == len(many_shots_shot_vector)
         assert np.allclose(grad, expected, atol=shot_vec_tol, rtol=0)
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         numeric_val = fn(dev.batch_execute(tapes))
         for a_val, n_val in zip(grad, numeric_val):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
@@ -780,7 +781,7 @@ class TestParameterShiftRule:
             for idx, g in enumerate(shot_vec_res):
                 assert np.allclose(g, expected[idx], atol=shot_vec_tol, rtol=0)
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         numeric_val = fn(dev.batch_execute(tapes))
         for a_val, n_val in zip(grad, numeric_val):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
@@ -805,7 +806,7 @@ class TestParameterShiftRule:
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
 
         grad_F1 = grad_fn(
-            tape, dev, fn=qml.gradients.finite_diff, approx_order=1, h=10e-2, shots=shot_vec
+            tape, dev, fn=qml.gradients.finite_diff, approx_order=1, h=h_val, shots=shot_vec
         )
         grad_F2 = grad_fn(
             tape,
@@ -813,7 +814,7 @@ class TestParameterShiftRule:
             fn=qml.gradients.finite_diff,
             approx_order=2,
             strategy="center",
-            h=10e-2,
+            h=h_val,
             shots=shot_vec,
         )
         grad_A = grad_fn(tape, dev, shots=shot_vec)
@@ -844,7 +845,7 @@ class TestParameterShiftRule:
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
 
         grad_F1 = grad_fn(
-            tape, dev, fn=qml.gradients.finite_diff, approx_order=1, h=10e-2, shots=shot_vec
+            tape, dev, fn=qml.gradients.finite_diff, approx_order=1, h=h_val, shots=shot_vec
         )
         grad_F2 = grad_fn(
             tape,
@@ -852,7 +853,7 @@ class TestParameterShiftRule:
             fn=qml.gradients.finite_diff,
             approx_order=2,
             strategy="center",
-            h=10e-2,
+            h=h_val,
             shots=shot_vec,
         )
         grad_A = grad_fn(tape, dev, shots=shot_vec)
@@ -885,7 +886,7 @@ class TestParameterShiftRule:
                 qml.var(qml.PauliX(1))
                 qml.expval(qml.PauliZ(2))
 
-            finite_diff = partial(qml.gradients.finite_diff, h=10e-2)
+            finite_diff = partial(qml.gradients.finite_diff, h=h_val)
             tapes, fn = param_shift(tape, fallback_fn=finite_diff, shots=fallback_shot_vec)
             assert len(tapes) == 5
 
@@ -942,7 +943,7 @@ class TestParameterShiftRule:
                 RX(params[1], wires=[0])
                 qml.expval(qml.PauliZ(0))
 
-            finite_diff = partial(qml.gradients.finite_diff, h=10e-2)
+            finite_diff = partial(qml.gradients.finite_diff, h=h_val)
             tapes, fn = param_shift(tape, fallback_fn=finite_diff, shots=shot_vec)
             assert len(tapes) == 4
 
@@ -992,7 +993,7 @@ class TestParameterShiftRule:
                 qml.expval(qml.PauliZ(0))
                 qml.probs(wires=[0, 1])
 
-            finite_diff = partial(qml.gradients.finite_diff, h=10e-2)
+            finite_diff = partial(qml.gradients.finite_diff, h=h_val)
             tapes, fn = param_shift(tape, fallback_fn=finite_diff, shots=fallback_shot_vec)
             assert len(tapes) == 4
 
@@ -1085,7 +1086,7 @@ class TestParameterShiftRule:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        finite_diff = partial(qml.gradients.finite_diff, h=10e-2)
+        finite_diff = partial(qml.gradients.finite_diff, h=h_val)
         tapes, fn = param_shift(tape, fallback_fn=finite_diff, shots=fallback_shot_vec)
         assert len(tapes) == 1 + 2
 
@@ -1315,7 +1316,7 @@ class TestParameterShiftRule:
 
         assert len(tapes) == 1 + 2 * 1
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         all_gradF = fn(dev.batch_execute(tapes))
         assert len(tapes) == 2
 
@@ -1361,7 +1362,7 @@ class TestParameterShiftRule:
 
             assert len(tapes) == 1 + 2 * 2
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         all_res = fn(dev.batch_execute(tapes))
         for gradF in all_res:
 
@@ -1399,7 +1400,7 @@ class TestParameterShiftRule:
         gradA = fn(dev.batch_execute(tapes))
         assert len(tapes) == 1 + 4 * 1
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         all_gradF = fn(dev.batch_execute(tapes))
         assert len(tapes) == 2
 
@@ -1455,7 +1456,7 @@ class TestParameterShiftRule:
             assert gradA[0] == pytest.approx(expected, abs=herm_shot_vec_tol)
             assert gradA[1] == pytest.approx(expected, abs=herm_shot_vec_tol)
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         all_gradF = fn(dev.batch_execute(tapes))
         assert len(all_gradF) == len(many_shots_shot_vector)
         assert isinstance(all_gradF, tuple)
@@ -1493,7 +1494,7 @@ class TestParameterShiftRule:
         gradA = fn(dev.batch_execute(tapes))
         assert len(tapes) == 1 + 4
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         gradF = fn(dev.batch_execute(tapes))
         assert len(tapes) == 1 + 1
 
@@ -1557,7 +1558,7 @@ class TestParameterShiftRule:
 
         assert len(tapes) == 1 + 2 * 4
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         gradF = fn(dev.batch_execute(tapes))
         assert len(tapes) == 1 + 2
 
@@ -1800,7 +1801,7 @@ class TestParameterShiftRule:
                 assert a_comp.shape == ()
                 assert np.allclose(a_comp, e_comp, atol=shot_vec_tol, rtol=0)
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         all_gradF = fn(dev.batch_execute(tapes))
         assert isinstance(all_gradF, tuple)
 
@@ -1866,7 +1867,7 @@ class TestParameterShiftRule:
                     assert a_comp.shape == ()
                     assert np.allclose(a_comp, e_comp, atol=shot_vec_tol, rtol=0)
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         all_gradF = fn(dev.batch_execute(tapes))
         for gradF in all_res:
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)
@@ -1910,7 +1911,7 @@ class TestParameterShiftRule:
         for gradA in all_res:
             assert np.allclose(gradA, expected, atol=shot_vec_tol, rtol=0)
 
-        tapes, fn = qml.gradients.finite_diff(tape, h=10e-2, shots=shot_vec)
+        tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         all_gradF = fn(dev.batch_execute(tapes))
         for gradF in all_gradF:
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)

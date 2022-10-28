@@ -29,6 +29,7 @@ from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
 
+h_val = 0.1
 finite_diff_shot_vec_tol = 0.3
 
 default_shot_vector = (1000, 2000, 3000)
@@ -59,7 +60,7 @@ class TestFiniteDiff:
         # setting trainable parameters avoids this
         tape.trainable_params = {1, 2}
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-        tapes, fn = finite_diff(tape, h=10e-2, shots=default_shot_vector)
+        tapes, fn = finite_diff(tape, h=h_val, shots=default_shot_vector)
 
         all_res = fn(dev.batch_execute(tapes))
 
@@ -86,7 +87,7 @@ class TestFiniteDiff:
             qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-        tapes, fn = finite_diff(tape, h=10e-2, shots=default_shot_vector)
+        tapes, fn = finite_diff(tape, h=h_val, shots=default_shot_vector)
         all_res = fn(dev.batch_execute(tapes))
 
         assert isinstance(all_res, tuple)
@@ -119,7 +120,7 @@ class TestFiniteDiff:
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = qml.gradients.finite_diff(
-                tape, h=10e-2, shots=default_shot_vector
+                tape, h=h_val, shots=default_shot_vector
             )
         res = post_processing(qml.execute(g_tapes, dev, None))
 
@@ -142,7 +143,7 @@ class TestFiniteDiff:
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = qml.gradients.finite_diff(
-                tape, h=10e-2, shots=default_shot_vector
+                tape, h=h_val, shots=default_shot_vector
             )
         res = post_processing(qml.execute(g_tapes, dev, None))
 
@@ -163,7 +164,7 @@ class TestFiniteDiff:
 
         weights = [0.1, 0.2]
         with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit, h=10e-2, shots=default_shot_vector)(weights)
+            res = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(weights)
 
         assert res == ()
 
@@ -181,7 +182,7 @@ class TestFiniteDiff:
 
         weights = [0.1, 0.2]
         with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit, h=10e-2, shots=default_shot_vector)(weights)
+            res = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(weights)
 
         assert res == ()
 
@@ -199,7 +200,7 @@ class TestFiniteDiff:
 
         weights = [0.1, 0.2]
         with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit, h=10e-2, shots=default_shot_vector)(weights)
+            res = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(weights)
 
         assert res == ()
 
@@ -217,7 +218,7 @@ class TestFiniteDiff:
 
         weights = [0.1, 0.2]
         with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
-            res = qml.gradients.finite_diff(circuit, h=10e-2, shots=default_shot_vector)(weights)
+            res = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(weights)
 
         assert res == ()
 
@@ -233,7 +234,7 @@ class TestFiniteDiff:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        result = qml.gradients.finite_diff(circuit, h=10e-2, shots=default_shot_vector)(params)
+        result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
 
         assert isinstance(result, tuple)
 
@@ -251,7 +252,7 @@ class TestFiniteDiff:
         assert result[2].shape == (4,)
         assert np.allclose(result[2], 0)
 
-        tapes, _ = qml.gradients.finite_diff(circuit.tape, h=10e-2, shots=default_shot_vector)
+        tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
         assert tapes == []
 
     def test_all_zero_diff_methods_multiple_returns(self):
@@ -267,7 +268,7 @@ class TestFiniteDiff:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        result = qml.gradients.finite_diff(circuit, h=10e-2, shots=default_shot_vector)(params)
+        result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
 
         assert isinstance(result, tuple)
 
@@ -303,7 +304,7 @@ class TestFiniteDiff:
         assert result[1][2].shape == (4,)
         assert np.allclose(result[1][2], 0)
 
-        tapes, _ = qml.gradients.finite_diff(circuit.tape, h=10e-2, shots=default_shot_vector)
+        tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
         assert tapes == []
 
     def test_y0(self, mocker):
@@ -317,7 +318,7 @@ class TestFiniteDiff:
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        tapes, fn = finite_diff(tape, approx_order=1, h=10e-2, shots=default_shot_vector)
+        tapes, fn = finite_diff(tape, approx_order=1, h=h_val, shots=default_shot_vector)
 
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
@@ -332,7 +333,7 @@ class TestFiniteDiff:
             qml.expval(qml.PauliZ(0))
 
         f0 = dev.execute(tape)
-        tapes, fn = finite_diff(tape, approx_order=1, f0=f0, h=10e-2, shots=default_shot_vector)
+        tapes, fn = finite_diff(tape, approx_order=1, f0=f0, h=h_val, shots=default_shot_vector)
 
         assert len(tapes) == tape.num_params
 
@@ -351,13 +352,13 @@ class TestFiniteDiff:
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
-        tapes, fn = finite_diff(tape1, approx_order=1, h=10e-2, shots=many_shots_shot_vector)
+        tapes, fn = finite_diff(tape1, approx_order=1, h=h_val, shots=many_shots_shot_vector)
         j1 = fn(dev.batch_execute(tapes))
 
         # We should only be executing the device to differentiate 1 parameter (2 executions)
         assert dev.num_executions == 2
 
-        tapes, fn = finite_diff(tape2, approx_order=1, h=10e-2, shots=default_shot_vector)
+        tapes, fn = finite_diff(tape2, approx_order=1, h=h_val, shots=default_shot_vector)
         j2 = fn(dev.batch_execute(tapes))
 
         exp = -np.sin(1)
@@ -403,7 +404,7 @@ class TestFiniteDiff:
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [
-            qml.math.shape(qml.gradients.finite_diff(c, h=10e-2, shots=default_shot_vector)(x))
+            qml.math.shape(qml.gradients.finite_diff(c, h=h_val, shots=default_shot_vector)(x))
             for c in circuits
         ]
 
@@ -545,7 +546,7 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=10e-2,
+            h=h_val,
             shots=default_shot_vector,
         )
         all_res = fn(dev.batch_execute(tapes))
@@ -587,7 +588,7 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=10e-2,
+            h=h_val,
             shots=many_shots_shot_vector,
         )
         all_res = fn(dev.batch_execute(tapes))
@@ -633,7 +634,7 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=10e-2,
+            h=h_val,
             shots=many_shots_shot_vector,
         )
         all_res = fn(dev.batch_execute(tapes))
@@ -683,7 +684,7 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=10e-2,
+            h=h_val,
             shots=many_shots_shot_vector,
         )
         res = fn(dev.batch_execute(tapes))
@@ -721,7 +722,7 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=10e-2,
+            h=h_val,
             shots=many_shots_shot_vector,
         )
         all_res = fn(dev.batch_execute(tapes))
@@ -765,7 +766,7 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=10e-2,
+            h=h_val,
             shots=many_shots_shot_vector,
         )
         all_res = fn(dev.batch_execute(tapes))
@@ -811,7 +812,7 @@ class TestFiniteDiffIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            h=10e-2,
+            h=h_val,
             shots=many_shots_shot_vector,
         )
         all_res = fn(dev.batch_execute(tapes))
@@ -885,7 +886,7 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=10e-2,
+                h=h_val,
                 shots=many_shots_shot_vector,
             )
             jac = np.array(fn(dev.batch_execute(tapes)))
@@ -928,7 +929,7 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=10e-2,
+                h=h_val,
                 shots=many_shots_shot_vector,
             )
             jac = fn(dev.batch_execute(tapes))
@@ -967,7 +968,7 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=10e-2,
+                h=h_val,
                 shots=many_shots_shot_vector,
             )
             jac_0, jac_1 = fn(dev.batch_execute(tapes))
@@ -1008,7 +1009,7 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=10e-2,
+                h=h_val,
                 shots=many_shots_shot_vector,
             )
 
@@ -1043,7 +1044,7 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=10e-2,
+                h=h_val,
                 shots=many_shots_shot_vector,
             )
             jac = fn(dev.batch_execute(tapes))
@@ -1093,7 +1094,7 @@ class TestFiniteDiffGradients:
                 n=1,
                 approx_order=approx_order,
                 strategy=strategy,
-                h=10e-2,
+                h=h_val,
                 shots=many_shots_shot_vector,
             )
             jac = fn(dev.batch_execute(tapes))
