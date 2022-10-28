@@ -15,6 +15,7 @@
 """
 import autoray
 import numpy as onp
+import scipy as s
 import pytest
 from autoray import numpy as anp
 from pennylane import numpy as np
@@ -155,3 +156,15 @@ def test_unwrap():
     assert fn.get_interface(out[3][1]) == "numpy"
 
     assert out[4] == 0.5
+
+
+def test_kron():
+    """Test that a deprecation warning is raised when arrays
+    are dispatched to scipy.kron."""
+    m1 = s.array([[0, 1], [1, 0]])
+    m2 = s.array([[1, 0], [0, 1]])
+    expected_result = onp.kron(m1, m2)
+
+    assert expected_result == fn.kron(m1, m2)
+    with pytest.warns(DeprecationWarning):
+        _ = fn.kron(m1, m2, like="not_scipy")
