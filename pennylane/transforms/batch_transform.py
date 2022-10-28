@@ -365,7 +365,7 @@ class batch_transform:
                 if isinstance(qnode, qml.Device):
                     return self._device_wrapper(*targs, **tkwargs)(qnode)
 
-                if isinstance(qnode, qml.tape.QuantumTape):
+                if isinstance(qnode, qml.tape.QuantumScript):
                     return self._tape_wrapper(*targs, **tkwargs)(qnode)
 
                 _wrapper = self.qnode_wrapper(qnode, targs, tkwargs)
