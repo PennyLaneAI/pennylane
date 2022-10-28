@@ -90,6 +90,17 @@ class TestPauliWord:
         """Test that the wires are tracked correctly."""
         assert pw.wires == wires
 
+    tup_pw_str = (
+        (pw1, "[X(1)] @ [Y(2)]"),
+        (pw2, "[X(a)] @ [X(b)] @ [Z(c)]"),
+        (pw3, "[Z(0)] @ [Z(b)] @ [Z(c)]"),
+        (pw4, "[()]"),
+    )
+
+    @pytest.mark.parametrize("pw, str_rep", tup_pw_str)
+    def test_str(self, pw, str_rep):
+        assert str(pw) == str_rep
+
     tup_pws_mult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
         (pw1, pw3, PauliWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}), 1.0),
@@ -157,18 +168,18 @@ class TestPauliSentence:
     tup_ps_str = (
         (
             ps1,
-            "= (1.23) * [X(1)] @ [Y(2)]\n"
+            "(1.23) * [X(1)] @ [Y(2)]\n"
             "+ (4j) * [X(a)] @ [X(b)] @ [Z(c)]\n"
-            "+ (-0.5) * [Z(0)] @ [Z(b)] @ [Z(c)]\n",
+            "+ (-0.5) * [Z(0)] @ [Z(b)] @ [Z(c)]",
         ),
         (
             ps2,
-            "= (-1.23) * [X(1)] @ [Y(2)]\n"
+            "(-1.23) * [X(1)] @ [Y(2)]\n"
             "+ ((-0-4j)) * [X(a)] @ [X(b)] @ [Z(c)]\n"
-            "+ (0.5) * [Z(0)] @ [Z(b)] @ [Z(c)]\n",
+            "+ (0.5) * [Z(0)] @ [Z(b)] @ [Z(c)]",
         ),
-        (ps3, "= (-0.5) * [Z(0)] @ [Z(b)] @ [Z(c)]\n" "+ (1) * [()]\n"),
-        (ps4, "= (1) * [()]\n"),
+        (ps3, "(-0.5) * [Z(0)] @ [Z(b)] @ [Z(c)]\n" "+ (1) * [()]"),
+        (ps4, "(1) * [()]"),
     )
 
     @pytest.mark.parametrize("ps, str_rep", tup_ps_str)

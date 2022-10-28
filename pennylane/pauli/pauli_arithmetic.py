@@ -141,6 +141,12 @@ class PauliWord(dict):
 
         return PauliWord(result), coeff
 
+    def __str__(self):
+        """String representation of a PauliWord."""
+        if len(self) == 0:
+            return "[()]"
+        return " @ ".join(f"[{op}({w})]" for w, op in self.items())
+
     @property
     def wires(self):
         """Track wires in a PauliWord."""
@@ -214,26 +220,7 @@ class PauliSentence(dict):
 
     def __str__(self):
         """String representation of the PauliSentence."""
-        rep_str = ""
-        for index_i, (pw, coeff) in enumerate(self.items()):
-            if index_i == 0:
-                rep_str += "= "
-            else:
-                rep_str += "+ "
-            rep_str += f"({coeff}) * "
-
-            if len(pw) == 0:
-                rep_str += "[()]\n"
-                continue
-
-            for index_j, (w, op) in enumerate(pw.items()):
-                if index_j == 0:
-                    rep_str += f"[{op}({w})]"
-                else:
-                    rep_str += f" @ [{op}({w})]"
-            rep_str += "\n"
-
-        return rep_str
+        return "\n+ ".join(f"({coeff}) * {str(pw)}" for pw, coeff in self.items())
 
     @property
     def wires(self):
