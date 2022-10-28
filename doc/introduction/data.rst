@@ -3,17 +3,18 @@
 
 .. _intro_ref_data:
 
-Data Module
-============
+Quantum Datasets
+================
 
-The data module provides functionality to access, store and manipulate the quantum datasets within the PennyLane framework.
+PennyLane provides the :mod:`~.data` subpackage to download, create, store and manipulate quantum datasets within the PennyLane framework.
 
 Loading Datasets in PennyLane
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------
 
-We can download data of the desired type with the :func: `~pennylande.data.load` function. If the data that has already been downloaded,
-it will be loaded from the disk instead. We must include all of the necessary attributes for the desired data.
-For 'qchem' this includes the molname, basis and bondlength, and for 'qspin' this includes sys_name, periodic, lattice and layout. 
+We can access data of a desired type with the :func:`~pennylande.data.load` function. This downloads the desired
+dataset or loads it from local storage if previously downloaded. Some examples of data categories available for download include 'qchem',
+quantum chemistry-related datasets, and 'qspin', spin-system-related datasets. To specify the desired data, we use several arguments.
+For 'qchem' this includes the molname, basis, and bondlength, and for 'qspin' this includes sys_name, periodic, lattice, and layout. 
 Ideally, the :func:`~pennylande.data.load` returns a list with the desired data which can then be used within
 the usual PennyLane workflow.
 
@@ -24,8 +25,8 @@ the usual PennyLane workflow.
     [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
 
 
-Using Dataset in PennyLane
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Using Datasets in PennyLane
+---------------------------
 
 Once loaded, one can access the attributes in the dataset.
 
@@ -36,7 +37,8 @@ Once loaded, one can access the attributes in the dataset.
     >>> H2_dataset[0].hf_state
     [1 1 0 0 0 0 0 0]
 
-Since the loaded data items are compatible with PennyLane whenever possible, so we can use them directly in PennyLane worflow as follows:
+The loaded data items are compatible with PennyLane whenever possible. We can therefore
+use them directly in PennyLane workflow as follows:
 
 .. code-block:: python
 
@@ -48,13 +50,13 @@ Since the loaded data items are compatible with PennyLane whenever possible, so 
     2.173913043478261
 
 Dataset Structure
-~~~~~~~~~~~~~~~~~~~
+-----------------
 
-PennyLane's quantum dataset module currently contains two subcategories: `qchem` and `qspin`.
+Two example subcategories in PennyLane's quantum dataset subpackage are `qchem` and `qspin`.
 These subcategories offer data relating to molecules and spin systems, respectively. Users can call the 
 :func:`~.pennylane.data.list_datasets` function to get a snapshot of the currently available data.
 This function returns a nested dictionary as we show below. Note that this example limits the results
-of the function calls for clarity. Additionally, as more data becomes available, the results of these
+of the function calls for clarity and that as more data becomes available, the results of these
 function calls will change.
 
 .. code-block:: python
@@ -70,9 +72,10 @@ function calls will change.
     ['0.46', '1.16', '1.22', ...]
 
 Filtering Datasets
-~~~~~~~~~~~~~~~~~~~
+------------------
 
-In the case that we only wish to download or load portions of a large dataset, we can specify the desired attributes. For example, we can download only the molecule and hamiltonian of a dataset as follows:
+In the case that we only wish to download or load portions of a large dataset, we can specify the desired attributes.
+For example, we can download only the molecule and hamiltonian of a dataset as follows:
 
 .. code-block:: python
 
@@ -82,16 +85,21 @@ In the case that we only wish to download or load portions of a large dataset, w
 
 :html:`<div class="summary-table">`
 
+Quantum Datasets Functions and Classes
+--------------------------------------
+
+Classes
+^^^^^^^
+
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.data.Dataset
+    ~pennylane.data.Dataset    
 
 :html:`</div>`
 
-
-Utility Functions
-^^^^^^^^^^^^^^^^^^
+Functions
+^^^^^^^^^
 
 :html:`<div class="summary-table">`
 

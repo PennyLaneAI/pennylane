@@ -1,9 +1,6 @@
 qml.data
 =========
 
-Overview
---------
-
 .. currentmodule:: pennylane.data
 
 .. automodapi:: pennylane.data
