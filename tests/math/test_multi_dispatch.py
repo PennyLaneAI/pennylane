@@ -167,4 +167,4 @@ def test_kron():
 
     assert np.allclose(expected_result, fn.kron(m1, m2))
     with pytest.warns(DeprecationWarning):
-        _ = fn.kron(m1, m2, like="not_scipy")
+        _ = fn.kron(m1, m2)
