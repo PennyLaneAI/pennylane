@@ -115,6 +115,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Improvements</h3>
 
+* The matrix passed to `qml.Hermitian` is validated when creating the observable if the input is not abstract.
+  [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
+
 * Added a new `pennylane.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now `QuantumTape` inherits from `QuantumScript` as well
   as `AnnotatedQueue`.
   This is a developer-facing change, and users should not manipulate `QuantumScript` directly.  Instead, they
@@ -270,6 +273,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
 <h3>Bug fixes</h3>
+
+* Users no longer see unintuitive errors when inputing sequences to `qml.Hermitian`.
+  [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
 
 * `ControlledQubitUnitary.pow` now copies over the `control_values`.
   [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
