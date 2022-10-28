@@ -76,6 +76,7 @@ class TestDecomposition:
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "basis_state,wires,target_state",
         [
