@@ -1161,21 +1161,23 @@ class Operator(abc.ABC):
 
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, numbers.Number):
-            if other == 0:
-                return self
-            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         if isinstance(other, Operator):
             return qml.op_sum(self, other)
-        raise ValueError(f"Cannot add Operator and {type(other)}")
+        if other == 0:
+            return self
+        try:
+            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
+        except ValueError as e:
+            raise ValueError(f"Cannot add Operator and {type(other)}") from e
 
     __radd__ = __add__
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
-        if isinstance(other, numbers.Number):
+        try:
             return qml.s_prod(scalar=other, operator=self)
-        raise ValueError(f"Cannot multiply Operator and {type(other)}.")
+        except ValueError as e:
+            raise ValueError(f"Cannot multiply Operator and {type(other)}.") from e
 
     __rmul__ = __mul__
 
