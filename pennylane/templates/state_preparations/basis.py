@@ -118,5 +118,11 @@ class BasisStatePreparation(Operation):
             return op_list
 
         # otherwise, use RX gates with 0 or pi angles
-        op_list = [qml.RX(state * np.pi, wire) for wire, state in zip(wires, basis_state)]
+        op_list = [
+            qml.PhaseShift(state * np.pi / 2, wire) for wire, state in zip(wires, basis_state)
+        ]
+        op_list += [qml.RX(state * np.pi, wire) for wire, state in zip(wires, basis_state)]
+        op_list += [
+            qml.PhaseShift(state * np.pi / 2, wire) for wire, state in zip(wires, basis_state)
+        ]
         return op_list
