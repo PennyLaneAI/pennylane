@@ -958,6 +958,14 @@ class TestHamiltonian:
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
 
+    def test_hermitian_tensor_prod(self):
+        """Test that the tensor product of a Hamiltonian with Hermitian observable works."""
+        tensor = qml.PauliX(0) @ qml.PauliX(1)
+        herm = qml.Hermitian([[1, 0], [0, 1]], wires=4)
+
+        ham = qml.Hamiltonian([1.0, 1.0], [tensor, qml.PauliX(2)]) @ qml.Hamiltonian([1.0], [herm])
+        assert isinstance(ham, qml.Hamiltonian)
+
 
 class TestHamiltonianCoefficients:
     """Test the creation of a Hamiltonian"""
