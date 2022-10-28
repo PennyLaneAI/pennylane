@@ -72,7 +72,7 @@ def equal(
         >>> qml.equal(op3, op4, check_trainability=False)
         True
     """
-    if op1.__class__ is not op2.__class__ or op1.arithmetic_depth != op2.arithmetic_depth:
+    if [op1.name, op1.arithmetic_depth, op1.wires] != [op2.name, op2.arithmetic_depth, op2.wires]:
         return False
     if op1.arithmetic_depth > 0:
         raise NotImplementedError(
@@ -82,11 +82,8 @@ def equal(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):
         return False
-    if op1.wires != op2.wires:
+    if op1.hyperparameters != op2.hyperparameters:
         return False
-    for kwarg in op1.hyperparameters:
-        if op1.hyperparameters[kwarg] != op2.hyperparameters[kwarg]:
-            return False
 
     if check_trainability:
         for params_1, params_2 in zip(op1.data, op2.data):
