@@ -22,7 +22,7 @@ import networkx as nx
 from networkx.drawing.nx_pydot import to_pydot
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 
@@ -101,7 +101,7 @@ def commutation_dag(circuit):
             circuit.construct(args, kwargs)
             tape = circuit.qtape
 
-        elif isinstance(circuit, qml.tape.QuantumTape):
+        elif isinstance(circuit, QuantumScript):
             # user passed a tape
             tape = circuit
 
@@ -212,7 +212,7 @@ class CommutationDAG:
 
     """
 
-    def __init__(self, tape: QuantumTape):
+    def __init__(self, tape: QuantumScript):
 
         self.num_wires = len(tape.wires)
         self.node_id = -1
@@ -227,10 +227,7 @@ class CommutationDAG:
 
         self._add_successors()
 
-        for obs in tape.observables:
-            obs = qml.map_wires(obs, wire_map=wires_map)
-
-        self.observables = tape.observables if tape.observables is not None else []
+        self.observables = [qml.map_wires(obs, wire_map=wires_map) for obs in tape.observables]
 
     def _add_node(self, node):
         self.node_id += 1

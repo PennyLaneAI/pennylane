@@ -227,7 +227,7 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
                         for elem in pred:
                             node = circuit_dag.get_node(elem)
                             inst = copy.deepcopy(node.op)
-                            qml.map_wires(inst, wire_map=inverse_wires_map, queue=True)
+                            qml.apply(inst)
                             already_sub.append(elem)
 
                         already_sub = already_sub + circuit_sub
@@ -244,16 +244,15 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
                             inst = copy.deepcopy(node.op)
 
                             inst = qml.map_wires(inst, wire_map=dict(zip(inst.wires, wires)))
-                            inst = qml.map_wires(inst, wire_map=inverse_wires_map)
-                            adjoint(inst, lazy=False)
+                            adjoint(qml.apply, lazy=False)(inst)
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:
                         node = circuit_dag.get_node(node_id)
                         inst = copy.deepcopy(node.op)
-                        qml.map_wires(inst, wire_map=inverse_wires_map, queue=True)
+                        qml.apply(inst)
 
-                tape = tape_inside
+                tape = qml.map_wires(input=tape_inside, wire_map=inverse_wires_map)
 
     for op in tape.operations:
         qml.apply(op)
