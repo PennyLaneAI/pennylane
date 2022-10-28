@@ -1,6 +1,6 @@
 from ..device_interface import *
-from .python_device_driver import *
-
+from .python_simulator import *
+from .preprocessor import simple_preprocessor
 
 class TestDevicePythonSim(AbstractDevice):
     "Device containing a Python simulator favouring composition-like interface"
@@ -14,3 +14,6 @@ class TestDevicePythonSim(AbstractDevice):
 
     def capabilities(self) -> DeviceConfig:
         return self.dev_config
+
+    def preprocess(self, qscript : Union[QuantumScript, List[QuantumScript]]):
+        return simple_preprocessor(qscript)
