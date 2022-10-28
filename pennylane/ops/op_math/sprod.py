@@ -15,9 +15,13 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
+import numbers
 from typing import Union
 
+import autoray
+
 import pennylane as qml
+from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
@@ -106,6 +110,7 @@ class SProd(SymbolicOp):
     _name = "SProd"
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
+        self._check_scalar_is_valid(scalar=scalar)
         self.scalar = scalar
         super().__init__(base=base, do_queue=do_queue, id=id)
 
@@ -259,3 +264,23 @@ class SProd(SymbolicOp):
         if isinstance(new_base, SProd):
             return SProd(scalar=self.scalar, base=new_base).simplify()
         return SProd(scalar=self.scalar, base=new_base)
+
+    def _check_scalar_is_valid(self, scalar: Union[int, float, complex]):
+        """Check that the given scalar is valid.
+
+        Args:
+            scalar (Union[int, float, complex]): scalar value to check
+
+        Raises:
+            ValueError: if the scalar is not valid
+        """
+        backend = autoray.infer_backend(scalar)
+        # TODO: Remove shape check when supporting batching
+        if not (
+            (backend == "builtins" and isinstance(scalar, numbers.Number))
+            or (backend in SUPPORTED_INTERFACES and qml.math.shape(scalar) == ())
+        ):
+            raise ValueError(
+                f"Cannot compute the scalar product of a scalar value with backend `{backend}` and "
+                f"type `{type(scalar)}`"
+            )

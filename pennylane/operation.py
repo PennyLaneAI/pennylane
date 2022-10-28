@@ -102,13 +102,11 @@ import warnings
 from enum import IntEnum
 from typing import List
 
-import autoray
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
-from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -1157,27 +1155,23 @@ class Operator(abc.ABC):
 
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
-        backend = autoray.infer_backend(other)
         if isinstance(other, Operator):
             return qml.op_sum(self, other)
-        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
-            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
-        ):
-            if other == 0:
-                return self
+        if other == 0:
+            return self
+        try:
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
-        raise ValueError(f"Cannot add Operator and {type(other)}")
+        except ValueError as e:
+            raise ValueError(f"Cannot add Operator and {type(other)}") from e
 
     __radd__ = __add__
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
-        backend = autoray.infer_backend(other)
-        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
-            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
-        ):
+        try:
             return qml.s_prod(scalar=other, operator=self)
-        raise ValueError(f"Cannot multiply Operator and {type(other)}.")
+        except ValueError as e:
+            raise ValueError(f"Cannot multiply Operator and {type(other)}.") from e
 
     __rmul__ = __mul__
 
