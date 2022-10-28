@@ -1496,19 +1496,19 @@ def _param_shift_new(
         # the quantum results separately, once for the fallback
         # function and once for the parameter-shift rule, and recombine.
         def processing_fn(results):
-            unsupported_grads = results[:fallback_len]
-            supported_grads = results[fallback_len:]
+            unsupported_res = results[:fallback_len]
+            supported_res = results[fallback_len:]
 
             shot_vector = isinstance(shots, Sequence)
             if not shot_vector:
-                unsupported_grads = fallback_proc_fn(unsupported_grads)
-                supported_grads = fn(supported_grads)
+                unsupported_grads = fallback_proc_fn(unsupported_res)
+                supported_grads = fn(supported_res)
                 return _single_shot_batch_grad(unsupported_grads, supported_grads)
 
             num_shot_vec_components = len(shots) if shot_vector else None
 
-            supported_grads = fn(supported_grads)
-            unsupported_grads = fallback_proc_fn(unsupported_grads)
+            supported_grads = fn(supported_res)
+            unsupported_grads = fallback_proc_fn(unsupported_res)
 
             final_grad = []
             for idx in range(num_shot_vec_components):
