@@ -229,6 +229,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * New `null.qubit` device. The `null.qubit`performs no operations or memory allocations.
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
 
+* `default.qubit` favours decomposition and avoids matrix construction for `QFT` and `GroverOperator` at larger qubit numbers.
+  [(#3193)](https://github.com/PennyLaneAI/pennylane/pull/3193)
+
 * `ControlledQubitUnitary` now has a `control_values` property.
   [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
 
@@ -236,7 +239,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   Stop using `op._wires = new_wires`, use `qml.map_wires(op, wire_map=dict(zip(op.wires, new_wires)))`
   instead.
   [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
-  
+
 <h3>Breaking changes</h3>
 
 * `QuantumTape._par_info` is now a list of dictionaries, instead of a dictionary whose keys are integers starting from zero.
