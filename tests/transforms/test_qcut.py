@@ -3785,6 +3785,17 @@ class TestRemapTapeWires:
 
         compare_tapes(expected_tape, new_tape)
 
+    def test_deprecation_warning(self):
+        """Test that a deprecation warning is raised when calling `remap_tape_wires`."""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.5, wires=2)
+            qml.RY(0.6, wires=3)
+            qml.CNOT(wires=[2, 3])
+            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
+
+        with pytest.warns(UserWarning, match="The method remap_tape_wires is deprecated."):
+            qcut.remap_tape_wires(tape, [0, 1])
+
 
 class TestCutCircuitTransformValidation:
     """Tests of validation checks in the cut_circuit function"""
