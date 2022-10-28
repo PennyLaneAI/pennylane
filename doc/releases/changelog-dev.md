@@ -124,6 +124,10 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   should continue to rely on `QNode`s.
   [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
 
+* `qml.simplify`, `op_tranform`'s like `qml.matrix`, `batch_transform`, `hamiltonian_expand` and `split_non_commuting` now work with
+  `QuantumScript` as well as `QuantumTape`.
+  [(#3209)](https://github.com/PennyLaneAI/pennylane/pull/3209)
+
 * The UCCSD and kUpCCGSD template are modified to remove a redundant flipping of the initial state.
   [(#3148)](https://github.com/PennyLaneAI/pennylane/pull/3148)
 
@@ -227,6 +231,11 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 * `ControlledQubitUnitary` now has a `control_values` property.
   [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
+
+* Remove `_wires` properties and setters from the `ControlledClass` and the `SymbolicClass`.
+  Stop using `op._wires = new_wires`, use `qml.map_wires(op, wire_map=dict(zip(op.wires, new_wires)))`
+  instead.
+  [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
   
 <h3>Breaking changes</h3>
 
@@ -318,6 +327,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
+
+* Deprecate `qml.transforms.qcut.remap_tape_wires`. Use `qml.map_wires` instead.
+  [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
 
 <h3>Contributors</h3>
 
