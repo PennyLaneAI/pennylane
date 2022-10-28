@@ -229,6 +229,8 @@ class Dataset(ABC):
             if os.path.exists(filepath):
                 value = self._read_file(filepath)
                 if filepath == self._fullfile:
+                    if name not in value:
+                        raise
                     value = value[name]
                 setattr(self, name, value)
                 return value

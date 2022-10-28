@@ -36,7 +36,6 @@ def test_write_dataset(tmp_path):
     """Test that datasets are saved correctly."""
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
     d = tmp_path / "sub"
-    d.mkdir()
     p = d / "test_dataset"
     test_dataset.write(p)
 
@@ -45,7 +44,6 @@ def test_read_dataset(tmp_path):
     """Test that datasets are loaded correctly."""
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
     d = tmp_path / "sub"
-    d.mkdir()
     p = d / "test_dataset"
     test_dataset.write(p)
 
@@ -55,6 +53,12 @@ def test_read_dataset(tmp_path):
     assert test_dataset.kw1 == 1
     assert test_dataset.kw2 == "2"
     assert test_dataset.kw3 == [3]
+
+
+def test_list_attributes():
+    """Test the list_attributes method."""
+    test_dataset = qml.data.Dataset(kw1=1)
+    assert test_dataset.list_attributes() == ["kw1"]
 
 
 def test_copy_non_standard():
@@ -129,7 +133,7 @@ def test_getattribute_dunder_full(tmp_path):
     # this getattribute will read from the above created file
     dataset = qml.data.Dataset("qchem", str(folder), "myset", standard=True)
     assert dataset.hf_state == 2
-    with pytest.raises(KeyError):
+    with pytest.raises(AttributeError):
         _ = dataset.molecule
 
 

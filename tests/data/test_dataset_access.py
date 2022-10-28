@@ -77,6 +77,11 @@ def submit_download_mock(_self, _fetch_and_save, filename, dest_folder):
     qml.data.Dataset._write_file(content, os.path.join(dest_folder, filename))
 
 
+def wait_mock_fixture(_futures, return_when=None):
+    """Patch to avoid raising exceptions after collecting threads."""
+    return MagicMock(done=[])
+
+
 @patch.object(qml.data.data_manager, "_foldermap", _folder_map)
 @patch.object(qml.data.data_manager, "_data_struct", _data_struct)
 @patch.object(requests, "get", get_mock)
@@ -231,7 +236,7 @@ class TestLoadHelpers:
         assert sorted(qml.data.data_manager._generate_folders(node, folders)) == output
 
     @patch("concurrent.futures.ThreadPoolExecutor.submit", return_value=True)
-    @patch("pennylane.data.data_manager.wait")
+    @patch("pennylane.data.data_manager.wait", return_value=MagicMock(done=[]))
     class TestS3Download:
         """Test the _s3_download utility function with various inputs."""
 
@@ -256,7 +261,7 @@ class TestLoadHelpers:
             assert wait_mock.called_once_with([True, True])
 
         def test_s3_download_force_false(self, _wait_mock, submit_mock, tmp_path):
-            """Test the _s3_download with force=False"""
+            """Test _s3_download with force=False"""
             dest = str(tmp_path)
             data = qml.data.Dataset(molecule="already_exists")
             filename = os.path.join(dest, "qchem/H2/6-31G/0.50/H2_6-31G_0.50_molecule.dat")
@@ -280,7 +285,7 @@ class TestLoadHelpers:
             assert loaded_data.molecule == "already_exists"
 
         def test_s3_download_force_true(self, _wait_mock, submit_mock, tmp_path):
-            """Test the _s3_download with force=True"""
+            """Test _s3_download with force=True"""
 
             def submit_side_effect(_fetch, filename, dest_folder):
                 dataset = qml.data.Dataset(molecule="new_data")
@@ -303,6 +308,13 @@ class TestLoadHelpers:
             loaded_data = qml.data.Dataset()
             loaded_data.read(filename)
             assert loaded_data.molecule == "new_data"
+
+        def test_s3_download_thread_failure(self, wait_mock, submit_mock, tmp_path):
+            """Test that _s3_download raises errors from download failures."""
+            wait_mock.return_value = MagicMock(done=[MagicMock(exception=MagicMock(return_value=ValueError("network error")))])
+            with pytest.raises(ValueError, match="network error"):
+                qml.data.data_manager._s3_download("qchem", ["H2/6-31G/0.50"], ["molecule"], str(tmp_path), False, 50)
+
 
     @patch("requests.get")
     def test_fetch_and_save(self, get_and_write_mock, tmp_path):
@@ -328,7 +340,7 @@ class TestLoadHelpers:
 
 @patch.object(requests, "get", get_mock)
 @patch.object(ThreadPoolExecutor, "submit", submit_download_mock)
-@patch.object(qml.data.data_manager, "wait", MagicMock)
+@patch.object(qml.data.data_manager, "wait", wait_mock_fixture)
 class TestLoad:
     """Test the load() method."""
 

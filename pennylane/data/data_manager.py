@@ -15,7 +15,7 @@
 Contains the Dataset utility functions.
 """
 # pylint:disable=too-many-arguments,global-statement
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
 import os
 
 import requests
@@ -135,7 +135,10 @@ def _s3_download(data_name, folders, attributes, dest_folder, force, num_threads
 
     with ThreadPoolExecutor(num_threads) as pool:
         futures = [pool.submit(_fetch_and_save, f, dest_folder) for f in files]
-        wait(futures)
+        results = wait(futures, return_when=FIRST_EXCEPTION)
+        for result in results.done:
+            if result.exception():
+                raise result.exception()
 
 
 def _generate_folders(node, folders):
