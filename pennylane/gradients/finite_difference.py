@@ -410,7 +410,7 @@ def _finite_diff_new(
             grads_tuple = []
             shot_vec_len = len(shots)
             for idx in range(shot_vec_len):
-                res = [param_res[idx] for param_res in results]
+                res = [tape_res[idx] for tape_res in results]
                 g_tuple = _single_shot_batch_result(res)
                 grads_tuple.append(g_tuple)
             grads_tuple = tuple(grads_tuple)
