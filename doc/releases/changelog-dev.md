@@ -58,6 +58,30 @@ Users can specify the control wires as well as the values to control the operati
   module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
   [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
 
+* The `IntegerComparator` arithmetic operation is now available.
+[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
+
+  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive
+  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. 
+  Alternatively, the flipping condition can be :math:`n < L`. This is accessed via the `geq` keyword
+  argument.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisState(np.array([0, 1]), wires=range(2))
+      qml.broadcast(qml.Hadamard, wires=range(2), pattern='single')
+      qml.IntegerComparator(2, geq=False, wires=[0, 1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  [-0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
+  ```
+
 * The `QNode` class now accepts an ``auto`` interface, which automatically detects the interface
   of the given input.
   [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
@@ -124,6 +148,9 @@ Users can specify the control wires as well as the values to control the operati
   ```
 
 <h3>Improvements</h3>
+
+* Printing `MultiControlledX` now shows the `control_values`.
+[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
 * The matrix passed to `qml.Hermitian` is validated when creating the observable if the input is not abstract.
   [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
@@ -356,6 +383,7 @@ Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Albert Mitjans Coma,
 Utkarsh Azad,
+Isaac De Vlugt,
 Amintor Dusko,
 Lillian M. A. Frederiksen,
 Diego Guala,
