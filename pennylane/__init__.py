@@ -344,9 +344,10 @@ def __getattr__(name):
     """Re-route calls of qml.grouping as it will be deprecated."""
     if name == "grouping":
         warn(
-            f"The qml.grouping module is deprecated, please use qml.pauli instead.",
+            "The qml.grouping module is deprecated, please use qml.pauli instead.",
             DeprecationWarning,
         )
-        import pennylane.grouping as grouping
+        from pennylane import grouping  # pylint:disable=import-outside-toplevel
 
         return grouping
+    raise AttributeError(f"Module {__name__} has no attribute {name}")
