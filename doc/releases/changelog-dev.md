@@ -3,6 +3,43 @@
 # Release 0.27.0-dev (development release)
 
 <h3>New features since last release</h3>
+* A set of functions that forms a basis for the realization of Shor’s algorithm was developed as quantum operations. 
+  The most interesting addition is the order-finding procedure from the quantum part of Shor’s algorithm that can be 
+  implemented efficiently using quantum primitives, in contrast to exponential complexity of classical solutions. 
+  Underpinning quantum operations can be used as quantum arithmetic gates. 
+  Several classical functions for decompositions were added. The full list of quantum operations added is the following:
+  * `SUM` Performs 3-qubit addition modulo 2 operation and puts the result in the third qubit
+  *	`CARRY` Performs calculation of the highest order bit in the sum of three bits
+  *	`CARRY_inv` Reversed (conjugate-transposed) CARRY gate
+  *	`ADDER` Performs addition of two integer numbers encoded in input-qubits with respective binary representations
+  *	`ADDER_inv` Reversed (conjugate-transposed) ADDER gate
+  *	`ADDER_MOD` Performs addition modulo N of two integer numbers a, b < N encoded in input-qubits
+       with respective binary representations
+  *	`ADDER_MOD_inv` Reversed (conjugate-transposed) ADDER_MOD gate
+  *	`Ctrl_MULT_MOD` If a control-qubit is |1⟩, the gate performs multiplication of the integer number z encoded
+       in the input register by integer number m modulo N; if the control-qubit is |0⟩, 
+       then the initial number z is put into the output register
+  *	`Ctrl_MULT_MOD_inv` Reversed (conjugate-transposed) Ctrl_MULT_MOD gate
+  *	`Ctrl_SWAP` Performs SWAP of two target-qubits conditional on the state of a control-qubit
+  *	`MODULAR_EXPONENTIATION` Performs O(n<sup>3</sup>) modular exponentiation, in particular, 
+       for encoded into the input register integer number x, the gate performs calculation of y<sup>x</sup>
+       modulo N and puts the result into the output register
+  *	`CR_k` Performs 2-qubit controlled phase shift gate which is used in the QFT (Quantum Fourier Transform) gate
+  *	`CR_k_inv` Reversed (conjugate-transposed) CR_k gate
+  *	`QFT` Performs Quantum Fourier Transform
+  *	`QFT_inv` Performs reversed (conjugate-transposed) Quantum Fourier Transform
+  *	`Order_Finding` Performs quantum order-finding algorithm
+  
+* The full list of classical operations added is the following:
+  *	`gcd` Performs Euclid’s algorithm for finding greater common divider (GCD) of integers a and b
+  *	`diophantine_equation` Solves Diophantine equation, i.e. given a, b, the function returns x, y
+       such that ax + by = GCD(a, b)
+  *	`modular_multiplicative_inverse` Finds modular multiplicative inverse of 
+       an integer a modulo N using the function diophantine equation
+  
+Conjugate-transposed versions of quantum operations were realized as separate gates due to issues with the depreciated 
+op.inv() method. These versions can be replaced with combinations of initial versions of gates and relevant inversion
+methods upon developer’s request.
 
 * The `qml.qchem.basis_rotation` function is added to the `qchem` module. This function returns
   grouped coefficients, grouped observables and basis rotation transformation matrices needed to
