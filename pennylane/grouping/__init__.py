@@ -15,19 +15,6 @@ r"""
 This subpackage defines functions and classes for Pauli-word partitioning
 functionality used in measurement optimization.
 """
-
-r"""
-This subpackage defines functions and classes for Pauli-word partitioning
-functionality used in measurement optimization.
-"""
-# import warnings
-#
-# warnings.warn(
-#     f"\nThe grouping module is deprecated!"
-#     f"\nPlease use the pauli module:"
-#     f"\npennylane.pauli or pennylane.pauli.grouping", DeprecationWarning
-# )
-
 from . import graph_colouring
 from .group_observables import group_observables, PauliGroupingStrategy
 from .optimize_measurements import optimize_measurements
@@ -51,4 +38,3 @@ from .utils import (
     qwc_complement_adj_matrix,
 )
 from .pauli import pauli_group, pauli_mult, pauli_mult_with_phase, partition_pauli_group
-

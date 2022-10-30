@@ -15,6 +15,7 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+from warnings import warn
 from importlib import reload
 import types
 import pkg_resources
@@ -103,7 +104,6 @@ from pennylane.shadows import ClassicalShadow
 
 # collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
-import pennylane.grouping
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
@@ -338,3 +338,15 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
+
+
+def __getattr__(name):
+    """Re-route calls of qml.grouping as it will be deprecated."""
+    if name == "grouping":
+        warn(
+            f"The qml.grouping module is deprecated, please use qml.pauli instead.",
+            DeprecationWarning,
+        )
+        import pennylane.grouping as grouping
+
+        return grouping
