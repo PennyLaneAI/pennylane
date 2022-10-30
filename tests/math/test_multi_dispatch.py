@@ -165,6 +165,6 @@ def test_kron():
     m2 = s.array([[1, 0], [0, 1]])
     expected_result = onp.kron(m1, m2)
 
-    assert np.allclose(expected_result, fn.kron(m1, m2))
+    assert np.allclose(expected_result, fn.kron(m1, m2, like="scipy"))
     with pytest.warns(DeprecationWarning):
         _ = s.kron(m1, m2)
