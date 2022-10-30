@@ -159,7 +159,7 @@ def test_unwrap():
 
 
 def test_kron():
-    """Test that a deprecation warning is raised when arrays
+    """Test that a deprecation warning is avoided when arrays
     are dispatched to scipy.kron."""
     m1 = s.array([[0, 1], [1, 0]])
     m2 = s.array([[1, 0], [0, 1]])
@@ -167,4 +167,4 @@ def test_kron():
 
     assert np.allclose(expected_result, fn.kron(m1, m2))
     with pytest.warns(DeprecationWarning):
-        _ = fn.kron(m1, m2)
+        _ = s.kron(m1, m2)
