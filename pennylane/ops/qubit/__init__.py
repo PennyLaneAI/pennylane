@@ -86,6 +86,7 @@ ops = {
     "QubitUnitary",
     "ControlledQubitUnitary",
     "MultiControlledX",
+    "IntegerComparator",
     "DiagonalQubitUnitary",
     "SingleExcitation",
     "SingleExcitationPlus",
