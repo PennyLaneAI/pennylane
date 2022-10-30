@@ -39,7 +39,7 @@
   
 Conjugate-transposed versions of quantum operations were realized as separate gates due to issues with the depreciated 
 op.inv() method. These versions can be replaced with combinations of initial versions of gates and relevant inversion
-methods upon developer’s request.
+methods upon developer’s request.([#3241](https://github.com/PennyLaneAI/pennylane/pull/3241#issue-1429035293))
 
 * The `qml.qchem.basis_rotation` function is added to the `qchem` module. This function returns
   grouped coefficients, grouped observables and basis rotation transformation matrices needed to
