@@ -31,17 +31,35 @@ _foldermap = {}
 _data_struct = {}
 
 
-def _format_detail(param, detail):
-    if isinstance(detail, str):
-        return detail
-    if param == "layout" and isinstance(detail, Iterable):
-        return "x".join(map(str, detail))
-    if param == "bondlength":
-        if isinstance(detail, float):
-            return str(detail)
-        if isinstance(detail, int):
-            return f"{detail:.1f}"
-    raise TypeError(f"Invalid type '{type(detail).__name__}' for parameter '{param}'")
+# pylint:disable=too-many-branches
+def _format_details(param, details):
+    if not isinstance(details, list):
+        details = [details]
+    if param == "layout":
+        # if a user inputs layout=[1,2], they wanted "1x2"
+        # note that the above conversion to a list of details wouldn't work as expected here
+        if all(isinstance(dim, int) for dim in details):
+            return ["x".join(map(str, details))]
+        # will turn [(1,2), [3,4], "5x6"] into ["1x2", "3x4", "5x6"]
+        for i, detail in enumerate(details):
+            if isinstance(detail, Iterable) and all(isinstance(dim, int) for dim in detail):
+                details[i] = "x".join(map(str, detail))
+            elif not isinstance(detail, str):
+                raise TypeError(
+                    f"Invalid layout value of '{detail}'. Must be a string or a tuple of ints."
+                )
+    elif param == "bondlength":
+        for i, detail in enumerate(details):
+            if isinstance(detail, float):
+                details[i] = str(detail)
+            elif isinstance(detail, int):
+                details[i] = f"{detail:.1f}"
+            elif not isinstance(detail, str):
+                raise TypeError(f"Invalid bondlength '{detail}'. Must be a string, int or float.")
+    for detail in details:
+        if not isinstance(detail, str):
+            raise TypeError(f"Invalid type '{type(detail).__name__}' for parameter '{param}'")
+    return details
 
 
 def _validate_params(data_name, description, attributes):
@@ -73,7 +91,6 @@ def _validate_params(data_name, description, attributes):
         param = params_left[0]
         params_left = params_left[1:]
         for detail in description[param]:
-            detail = _format_detail(param, detail)
             if detail == "full":
                 if not params_left:
                     return
@@ -207,7 +224,7 @@ def load(
     if not attributes:
         attributes = ["full"]
 
-    description = {key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()}
+    description = {param: _format_details(param, details) for param, details in params.items()}
     _validate_params(data_name, description, attributes)
     if len(attributes) > 1 and "full" in attributes:
         attributes = ["full"]

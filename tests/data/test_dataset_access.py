@@ -170,58 +170,52 @@ class TestValidateParams:
             )
 
     @pytest.mark.parametrize(
-        ("data_name", "description", "error_message"),
+        ("description", "error_message"),
         [
             (
-                "qchem",
                 {"molname": [15], "basis": ["6-31G"], "bondlength": ["0.46"]},
                 "Invalid type 'int' for parameter 'molname'",
             ),
             (
-                "qchem",
-                {"molname": ["H2"], "basis": ["6-31G"], "bondlength": [1 + 2j]},
-                "Invalid type 'complex' for parameter 'bondlength'",
+                {"molname": ["H2"], "basis": ["6-31G"], "bondlength": [1.1, 1 + 2j]},
+                r"Invalid bondlength '\(1\+2j\)'. Must be a string, int or float",
             ),
             (
-                "qspin",
-                {
-                    "sysname": ["Heisenberg"],
-                    "periodicity": ["closed"],
-                    "lattice": ["chain"],
-                    "layout": [1],
-                },
-                "Invalid type 'int' for parameter 'layout'",
+                {"layout": [1, [1, 4]]},
+                "Invalid layout value of '1'. Must be a string or a tuple of ints.",
             ),
         ],
     )
-    def test_parameters_with_bad_type_fail(self, data_name, description, error_message):
-        """Test that _validate_params fails if a parameter fails a custom type-check."""
+    def test_parameters_with_bad_type_fail(self, description, error_message):
+        """Test that _format_details fails if a parameter fails a custom type-check."""
         with pytest.raises(TypeError, match=error_message):
-            qml.data.data_manager._validate_params(data_name, description, ["full"])
+            _ = {
+                param: qml.data.data_manager._format_details(param, details)
+                for param, details in description.items()
+            }
 
-    def test_layout_misses_for_strange_values(self):
-        """Test that _format_detail joins any iterable for layout, but _validate_params fails"""
-        with pytest.raises(
-            ValueError,
-            match=r"layout value of 'fooxbarxbaz' is not available. Available values are \['1x4'\]",
-        ):
-            qml.data.data_manager._validate_params(
-                "qspin",
-                {
-                    "sysname": ["Heisenberg"],
-                    "periodicity": ["closed"],
-                    "lattice": ["chain"],
-                    "layout": [["foo", "bar", "baz"]],
-                },
-                ["full"],
-            )
+    @pytest.mark.parametrize(
+        ("param", "details", "expected"),
+        [
+            ("layout", [1], ["1"]),
+            ("layout", ["foo", "bar", "baz"], ["foo", "bar", "baz"]),
+            ("layout", [1, 4], ["1x4"]),
+            ("layout", [[1, 4]], ["1x4"]),
+            ("bondlength", [1, 1.100], ["1.0", "1.1"]),
+            ("random", "foo", ["foo"]),
+            ("random", ["foo", "bar"], ["foo", "bar"]),
+        ],
+    )
+    def test_format_details_success(self, param, details, expected):
+        """Test that _format_detail behaves as expected."""
+        assert qml.data.data_manager._format_details(param, details) == expected
 
     @pytest.mark.parametrize(
         ("data_name", "description", "attributes"),
         [
             (
                 "qchem",
-                {"molname": ["H2"], "basis": ["6-31G"], "bondlength": ["0.46"]},
+                {"molname": "H2", "basis": "6-31G", "bondlength": "0.46"},
                 ["full"],
             ),
             (
@@ -277,6 +271,16 @@ class TestValidateParams:
             (
                 "qspin",
                 {
+                    "sysname": "Heisenberg",
+                    "periodicity": "closed",
+                    "lattice": "chain",
+                    "layout": [1, 4],
+                },
+                ["full"],
+            ),
+            (
+                "qspin",
+                {
                     "sysname": ["full"],
                     "periodicity": ["closed"],
                     "lattice": ["full"],
@@ -288,6 +292,10 @@ class TestValidateParams:
     )
     def test_validate_params_successes(self, data_name, description, attributes):
         """Test that the _validate_params method passes with valid parameters."""
+        description = {
+            param: qml.data.data_manager._format_details(param, details)
+            for param, details in description.items()
+        }
         qml.data.data_manager._validate_params(data_name, description, attributes)
 
 
