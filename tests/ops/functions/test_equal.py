@@ -114,23 +114,51 @@ PARAMETRIZED_MEASUREMENTS = [
     qml.sample(),
     qml.counts(qml.PauliZ(0)),
     qml.counts(wires=[0, 1]),
+    qml.counts(wires=[1, 0]),
     qml.counts(),
     qml.density_matrix(wires=0),
+    qml.density_matrix(wires=1),
     qml.var(qml.PauliY(1)),
+    qml.var(qml.PauliY(0)),
     qml.expval(qml.PauliX(0)),
+    qml.expval(qml.PauliX(1)),
     qml.probs(wires=1),
+    qml.probs(wires=0),
     qml.probs(qml.PauliZ(0)),
+    qml.probs(qml.PauliZ(1)),
     qml.state(),
     qml.vn_entropy(wires=0),
+    qml.vn_entropy(wires=0, log_base=np.e),
     qml.mutual_info(wires0=[0], wires1=[1]),
+    qml.mutual_info(wires0=[1], wires1=[0]),
+    qml.mutual_info(wires0=[1], wires1=[0], log_base=2),
     qml.classical_shadow(wires=[0, 1]),
+    qml.classical_shadow(wires=[1, 0]),
+    qml.classical_shadow(wires=[0, 1], seed_recipes=False),
     qml.shadow_expval(
         H=qml.Hamiltonian(
             [1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
         ),
         k=2,
     ),
+    qml.shadow_expval(
+        H=qml.Hamiltonian(
+            [1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+        )
+    ),
+    qml.shadow_expval(
+        H=qml.Hamiltonian(
+            [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        )
+    ),
+    qml.shadow_expval(
+        H=qml.Hamiltonian(
+            [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        ),
+        seed_recipes=False,
+    ),
     MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, -1]),
+    MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, 2]),
 ]
 PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
     itertools.combinations(

@@ -129,9 +129,13 @@ def equal_operator(op1, op2, check_interface, check_trainability, rtol, atol):
 def equal_measurements(op1, op2):
     """Determine whether two MeasurementProcess objects are equal"""
     return_types_match = op1.return_type == op2.return_type
-    observables_match = op1.obs == op2.obs
+    if op1.obs is not None and op2.obs is not None:
+        observables_match = equal(op1.obs, op2.obs)
+    # check obs equality when either one is None (False) or both are None (True)
+    else:
+        observables_match = op1.obs == op2.obs
     wires_match = op1.wires == op2.wires
-    eigvals_match = op1.eigvals == op2.eigvals
+    eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
     log_base_match = op1.log_base == op2.log_base
 
     return (
@@ -149,5 +153,6 @@ def equal_shadow_measurements(op1, op2):
     wires_match = op1.wires == op2.wires
     H_match = op1.H == op2.H
     k_match = op1.k == op2.k
+    seed_class_match = op1.seed.__class__ == op2.seed.__class__  # seed can be None or a random int
 
-    return return_types_match and wires_match and H_match and k_match
+    return return_types_match and wires_match and H_match and k_match and seed_class_match
