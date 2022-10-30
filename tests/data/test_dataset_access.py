@@ -33,27 +33,12 @@ _data_struct = {
     "qchem": {
         "docstr": "Quantum chemistry dataset.",
         "params": ["molname", "basis", "bondlength"],
-        "docstrings": [
-            "Molecule object describing the chemical system",
-            "Hamiltonian of the system using Jordan-Wigner mapping",
-            "Sparse Hamiltonian of the system",
-            "Hartree-Fock state for the system",
-            "Contains all the attributes related to the quantum chemistry datatset",
-        ],
         "attributes": ["molecule", "hamiltonian", "sparse_hamiltonian", "hf_state", "full"],
-        "attribute_types": ["Molecule", "dict", "csr_matrix", "tensor", "dict"],
     },
     "qspin": {
         "docstr": "Quantum many-body spin system dataset.",
         "params": ["sysname", "periodicity", "lattice", "layout"],
-        "docstrings": [
-            "Parameters describing the spin system",
-            "Hamiltonians for the spin systems with different parameter values",
-            "Ground states for the spin systems with different parameter values",
-            "Contains all the attributes related to the quantum spin datatset",
-        ],
         "attributes": ["parameters", "hamiltonians", "ground_states", "full"],
-        "attribute_types": ["ndarray", "list", "ndarray", "dict"],
     },
 }
 
@@ -556,7 +541,7 @@ class TestLoad:
             os.path.join(dest, "datasets/qchem/H2/6-31G/1.16/H2_6-31G_1.16_full.dat"),
         ]
 
-    def test_docstr_generated_correctly(self, tmp_path):
+    def test_docstr_is_added_to_loaded_dataset(self, tmp_path):
         """Test that a docstring describing all attributes on a Dataset is set."""
         dest = str(tmp_path)
         data = qml.data.load(
@@ -567,19 +552,7 @@ class TestLoad:
             attributes=["molecule"],
             folder_path=dest,
         )[0]
-        print(data.__doc__.split("\n"))
-        assert data.__doc__.split("\n") == [
-            "Quantum chemistry dataset.",
-            "",
-            "Args:",
-            "\tmolecule (Molecule): Molecule object describing the chemical system",
-            "\thamiltonian (dict): Hamiltonian of the system using Jordan-Wigner mapping",
-            "\tsparse_hamiltonian (csr_matrix): Sparse Hamiltonian of the system",
-            "\thf_state (tensor): Hartree-Fock state for the system",
-            "",
-            "Returns:",
-            "\tDataset(qchem)",
-        ]
+        assert data.__doc__ == "Quantum chemistry dataset."
 
 
 @patch.object(requests, "get", get_mock)

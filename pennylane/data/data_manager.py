@@ -25,7 +25,7 @@ from pennylane.data.dataset import Dataset
 
 S3_URL = "https://xanadu-quantum-datasets-test.s3.amazonaws.com"
 FOLDERMAP_URL = os.path.join(S3_URL, "foldermap.json")
-DATA_STRUCT_URL = os.path.join(S3_URL, "data_struct.json")
+DATA_STRUCT_URL = os.path.join(S3_URL, "data_struct_new.json")
 
 _foldermap = {}
 _data_struct = {}
@@ -240,15 +240,7 @@ def load(
     _s3_download(data_name, all_folders, attributes, directory_path, force, num_threads)
 
     data_files = []
-    docstring = f"{data['docstr']}\n\nArgs:\n"
-    for arg, argtype, argdoc in zip(
-        data["attributes"], data["attribute_types"], data["docstrings"]
-    ):
-        if arg == "full":
-            continue
-        docstring += f"\t{arg} ({argtype}): {argdoc}\n"
-    docstring += f"\nReturns:\n\tDataset({data_name})"
-
+    docstring = data["docstr"]
     for folder in all_folders:
         real_folder = os.path.join(directory_path, data_name, folder)
         data_files.append(
