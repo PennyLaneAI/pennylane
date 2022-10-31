@@ -54,8 +54,7 @@ use them directly in PennyLane workflow as follows:
 Dataset Structure
 -----------------
 
-Two example subcategories in PennyLane's quantum dataset subpackage are `qchem` and `qspin`.
-These subcategories offer data relating to molecules and spin systems, respectively. Users can call the 
+You can call the 
 :func:`~.pennylane.data.list_datasets` function to get a snapshot of the currently available data.
 This function returns a nested dictionary as we show below. Note that this example limits the results
 of the function calls for clarity and that as more data becomes available, the results of these
