@@ -30,7 +30,7 @@ the usual PennyLane workflow.
 Using Datasets in PennyLane
 ---------------------------
 
-Once loaded, one can access the attributes in the dataset.
+Once loaded, one can access properties of the datasets (referred to as _attributes_):
 
 .. code-block:: python
 
