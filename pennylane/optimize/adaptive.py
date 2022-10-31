@@ -163,8 +163,7 @@ class AdaptiveOptimizer:
             params_zero (bool): flag to initiate circuit parameters at zero
 
         Returns:
-            tuple[.QNode, float, float]: the optimized circuit, the objective function output prior
-            to the step, and the largest gradient
+            .QNode: the optimized circuit
         """
         return self.step_and_cost(circuit, operator_pool, params_zero=params_zero)[0]
 
