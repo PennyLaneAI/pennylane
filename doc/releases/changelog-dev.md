@@ -335,6 +335,9 @@ Users can specify the control wires as well as the values to control the operati
 * The code block in the usage details of the UCCSD template is updated.
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
+* The example of the `FlipSign` template is updated.
+  [(#3219)](https://github.com/PennyLaneAI/pennylane/pull/3219)
+
 <h3>Bug fixes</h3>
 
 * Users no longer see unintuitive errors when inputing sequences to `qml.Hermitian`.
