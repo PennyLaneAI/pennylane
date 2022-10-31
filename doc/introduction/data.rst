@@ -105,6 +105,36 @@ For example, we can download only the molecule and Hamiltonian of a dataset as f
 
 :html:`<div class="summary-table">`
 
+Creating Custom Datasets
+------------------------
+
+The functionality in :mod:`~.data` also includes creating and reading custom-made datasets.
+To create a dataset, we can do the following:
+
+.. code-block:: python
+
+    >>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], observables=[qml.PauliZ(wires=0),qml.PauliX(wires=1)])
+    >>> example_energies, _ = np.linalg.eigh(qml.matrix(example_hamiltonian))
+    >>> example_dataset = qml.data.Dataset(dataset_name = 'An example dataset',hamiltonian=example_hamiltonian,energies=example_energies)
+    >>> example_dataset.dataset_name
+    'An example dataset'
+    >>> example_dataset.hamiltonian
+      (0.5) [X1]
+    + (1) [Z0]
+    >>> example_dataset.energies
+    array([-1.5, -0.5,  0.5,  1.5])
+
+We can then write this :class:`~.data.Dataset` to storage and read it as follows:
+
+.. code-block:: python
+    
+    >>> example_dataset.write('./path/to/dataset.dat')
+    >>> read_dataset = qml.data.Dataset()
+    >>> read_dataset.read('./path/to/dataset.dat')
+    >>> read_dataset.dataset_name
+    'An example dataset'
+    
+
 Quantum Datasets Functions and Classes
 --------------------------------------
 
