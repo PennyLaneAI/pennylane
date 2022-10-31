@@ -17,6 +17,7 @@ from copy import copy
 
 from scipy import sparse
 from pennylane import numpy as np
+from pennylane.wires import Wires
 from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
 
 
@@ -57,13 +58,13 @@ class TestPauliWord:
     def test_set_items(self):
         """Test that setting items raises an error"""
         pw = PauliWord({0: I, 1: X, 2: Y})
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(TypeError, match="PauliWord object does not support assignment"):
             pw[3] = Z  # trying to add to a pw after instantiation is prohibited
 
     def test_update_items(self):
         """Test that updating items raises an error"""
         pw = PauliWord({0: I, 1: X, 2: Y})
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(TypeError, match="PauliWord object does not support assignment"):
             pw.update({3: Z})  # trying to add to a pw after instantiation is prohibited
 
     def test_hash(self):
@@ -92,15 +93,16 @@ class TestPauliWord:
         assert pw.wires == wires
 
     tup_pw_str = (
-        (pw1, "[X(1)] @ [Y(2)]"),
-        (pw2, "[X(a)] @ [X(b)] @ [Z(c)]"),
-        (pw3, "[Z(0)] @ [Z(b)] @ [Z(c)]"),
-        (pw4, "[()]"),
+        (pw1, "X(1) @ Y(2)"),
+        (pw2, "X(a) @ X(b) @ Z(c)"),
+        (pw3, "Z(0) @ Z(b) @ Z(c)"),
+        (pw4, "()"),
     )
 
     @pytest.mark.parametrize("pw, str_rep", tup_pw_str)
     def test_str(self, pw, str_rep):
         assert str(pw) == str_rep
+        assert repr(pw) == str_rep
 
     tup_pws_mult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
@@ -128,7 +130,10 @@ class TestPauliWord:
         """Test that an appropriate error is raised when an empty
         PauliWord is cast to matrix."""
         with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
-            pw4.to_mat(wire_order=[])
+            pw4.to_mat(wire_order=None)
+
+        with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
+            pw4.to_mat(wire_order=Wires([]))
 
     @pytest.mark.parametrize("pw, wire_order, true_matrix", tup_pws_mat_wire)
     def test_to_mat(self, pw, wire_order, true_matrix):
@@ -169,24 +174,21 @@ class TestPauliSentence:
     tup_ps_str = (
         (
             ps1,
-            "(1.23) * [X(1)] @ [Y(2)]\n"
-            "+ (4j) * [X(a)] @ [X(b)] @ [Z(c)]\n"
-            "+ (-0.5) * [Z(0)] @ [Z(b)] @ [Z(c)]",
+            "1.23 * X(1) @ Y(2)\n" "+ 4j * X(a) @ X(b) @ Z(c)\n" "+ -0.5 * Z(0) @ Z(b) @ Z(c)",
         ),
         (
             ps2,
-            "(-1.23) * [X(1)] @ [Y(2)]\n"
-            "+ ((-0-4j)) * [X(a)] @ [X(b)] @ [Z(c)]\n"
-            "+ (0.5) * [Z(0)] @ [Z(b)] @ [Z(c)]",
+            "-1.23 * X(1) @ Y(2)\n" "+ (-0-4j) * X(a) @ X(b) @ Z(c)\n" "+ 0.5 * Z(0) @ Z(b) @ Z(c)",
         ),
-        (ps3, "(-0.5) * [Z(0)] @ [Z(b)] @ [Z(c)]\n" "+ (1) * [()]"),
-        (ps4, "(1) * [()]"),
+        (ps3, "-0.5 * Z(0) @ Z(b) @ Z(c)\n" "+ 1 * ()"),
+        (ps4, "1 * ()"),
     )
 
     @pytest.mark.parametrize("ps, str_rep", tup_ps_str)
     def test_str(self, ps, str_rep):
         """Test the string representation of the PauliSentence."""
         assert str(ps) == str_rep
+        assert repr(ps) == str_rep
 
     tup_ps_wires = (
         (ps1, {0, 1, 2, "a", "b", "c"}),
@@ -273,7 +275,10 @@ class TestPauliSentence:
         """Test that an appropriate error is raised when an empty
         PauliSentence or PauliWord is cast to matrix."""
         with pytest.raises(ValueError, match=match):
-            ps.to_mat(wire_order=[])
+            ps.to_mat(wire_order=None)
+
+        with pytest.raises(ValueError, match=match):
+            ps.to_mat(wire_order=Wires([]))
 
     tup_ps_mat = (
         (

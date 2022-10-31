@@ -17,7 +17,7 @@ from functools import reduce
 
 import numpy as np
 from scipy import sparse
-from pennylane import math, wires
+from pennylane import math, wires, Identity
 
 I = "I"
 X = "X"
@@ -99,11 +99,11 @@ class PauliWord(dict):
 
     def __setitem__(self, key, item):
         """Restrict setting items after instantiation."""
-        raise NotImplementedError
+        raise TypeError("PauliWord object does not support assignment")
 
     def update(self, __m, **kwargs) -> None:
         """Restrict updating PW after instantiation."""
-        raise NotImplementedError
+        raise TypeError("PauliWord object does not support assignment")
 
     def __hash__(self):
         return hash(frozenset(self.items()))
@@ -119,19 +119,15 @@ class PauliWord(dict):
             result(PauliWord): The resulting operator of the multiplication
             coeff(complex): The complex phase factor
         """
-        c_self, c_other = (copy(self), copy(other))
-        result, iterator, swapped = (
-            (dict(c_self), c_other, False)
-            if len(self) > len(other)
-            else (dict(c_other), c_self, True)
+        base, iterator, swapped = (
+            (self, other, False) if len(self) > len(other) else (other, self, True)
         )
+        result = copy(dict(base))
         coeff = 1
 
         for wire, term in iterator.items():
-            if wire in result:
-                factor, new_op = (
-                    mul_map[term][result[wire]] if swapped else mul_map[result[wire]][term]
-                )
+            if wire in base:
+                factor, new_op = mul_map[term][base[wire]] if swapped else mul_map[base[wire]][term]
                 if new_op == I:
                     del result[wire]
                 else:
@@ -145,8 +141,12 @@ class PauliWord(dict):
     def __str__(self):
         """String representation of a PauliWord."""
         if len(self) == 0:
-            return "[()]"
-        return " @ ".join(f"[{op}({w})]" for w, op in self.items())
+            return "()"
+        return " @ ".join(f"{op}({w})" for w, op in self.items())
+
+    def __repr__(self):
+        """Terminal representation for PauliWord"""
+        return str(self)
 
     @property
     def wires(self):
@@ -168,7 +168,9 @@ class PauliWord(dict):
             ValueError: Can't get the matrix of an empty PauliWord.
         """
         if len(self) == 0:
-            raise ValueError("Can't get the matrix of an empty PauliWord.")
+            if wire_order is None or wire_order == wires.Wires([]):
+                raise ValueError("Can't get the matrix of an empty PauliWord.")
+            return Identity(wires=wire_order)  # return Identity if no factors in the PauliWord
 
         matrix_map = sparse_mat_map if format != "dense" else mat_map
         kron = sparse.kron if format != "dense" else math.kron
@@ -194,8 +196,9 @@ class PauliSentence(dict):
     def __add__(self, other):
         """Add two Pauli sentence together by iterating over the smaller
         one and adding its terms to the larger one."""
-        c_self, c_other = (copy(self), copy(other))
-        smaller_ps, larger_ps = (c_self, c_other) if len(self) < len(other) else (c_other, c_self)
+        smaller_ps, larger_ps = (
+            (self, copy(other)) if len(self) < len(other) else (other, copy(self))
+        )
         for key in smaller_ps:
             larger_ps[key] += smaller_ps[key]
 
@@ -215,7 +218,11 @@ class PauliSentence(dict):
 
     def __str__(self):
         """String representation of the PauliSentence."""
-        return "\n+ ".join(f"({coeff}) * {str(pw)}" for pw, coeff in self.items())
+        return "\n+ ".join(f"{coeff} * {str(pw)}" for pw, coeff in self.items())
+
+    def __repr__(self):
+        """Terminal representation for PauliSentence"""
+        return str(self)
 
     @property
     def wires(self):
@@ -237,7 +244,9 @@ class PauliSentence(dict):
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
         if len(self) == 0:
-            raise ValueError("Can't get the matrix of an empty PauliSentence.")
+            if wire_order is None or wire_order == wires.Wires([]):
+                raise ValueError("Can't get the matrix of an empty PauliSentence.")
+            return Identity(wires=wire_order)  # return Identity if no terms in the PauliSentence
 
         mats_and_wires_gen = (
             (
