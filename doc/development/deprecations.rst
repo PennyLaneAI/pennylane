@@ -29,6 +29,21 @@ use ``qml.adjoint`` or ``qml.pow`` instead.
   >>> qml.PauliX(0) ** -1
   PauliX(wires=[0])**-1
 
+* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
+  
+  - Deprecated in v0.24
+  - Will be removed in v0.28
+
+  Instead, it is recommended to simply
+  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
+
+  .. code-block:: python
+
+    @qml.qnode(dev)
+    def ansatz(params):
+        some_qfunc(params)
+        return qml.expval(Hamiltonian)
+
 * ``QueuingContext`` is renamed ``QueuingManager``. 
 
   - Still accessible via ``QueuingContext`` in v0.27
@@ -48,21 +63,6 @@ use ``qml.adjoint`` or ``qml.pow`` instead.
 
   - Still accessible in v0.27
   - Removed in v0.28
-
-* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
-  
-  - Deprecated in v0.24
-  - Will be removed in v0.28
-
-  Instead, it is recommended to simply
-  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
-
-  .. code-block:: python
-
-    @qml.qnode(dev)
-    def ansatz(params):
-        some_qfunc(params)
-        return qml.expval(Hamiltonian)
 
 
 Completed deprecation cycles
