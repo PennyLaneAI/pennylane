@@ -27,16 +27,19 @@ def __getattr__(name):
         raise AttributeError(f"Module {__name__} has no attribute {name}") from e
 
 
-from . import graph_colouring
-from .group_observables import group_observables, PauliGroupingStrategy
-from .optimize_measurements import optimize_measurements
-from .transformations import (
+from . import graph_colouring  # pylint:disable=wrong-import-position
+from .group_observables import (  # pylint:disable=wrong-import-position
+    group_observables,
+    PauliGroupingStrategy,
+)
+from .optimize_measurements import optimize_measurements  # pylint:disable=wrong-import-position
+from .transformations import (  # pylint:disable=wrong-import-position
     qwc_rotation,
     diagonalize_pauli_word,
     diagonalize_qwc_pauli_words,
     diagonalize_qwc_groupings,
 )
-from .utils import (
+from .utils import (  # pylint:disable=wrong-import-position
     is_pauli_word,
     are_identical_pauli_words,
     pauli_to_binary,
@@ -49,4 +52,9 @@ from .utils import (
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
-from .pauli import pauli_group, pauli_mult, pauli_mult_with_phase, partition_pauli_group
+from .pauli import (  # pylint:disable=wrong-import-position
+    pauli_group,
+    pauli_mult,
+    pauli_mult_with_phase,
+    partition_pauli_group,
+)

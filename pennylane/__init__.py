@@ -15,7 +15,6 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
-from warnings import warn
 from importlib import reload
 import types
 import pkg_resources
