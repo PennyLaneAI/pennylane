@@ -70,7 +70,6 @@ class TestComputeJVP:
         jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
 
         jvp = qml.gradients.compute_jvp_multi(tangent, jac)
-        print(jvp)
         assert isinstance(jvp, tuple)
         assert len(jvp) == 2
 
@@ -81,7 +80,7 @@ class TestComputeJVP:
         assert np.allclose(jvp[1], [0.4, 1.0])
 
     def test_compute_multiple_measurement_multi_dim_multiple_params(self):
-        """Test that the correct VJP is returned"""
+        """Test that the correct JVP is returned"""
         tangent = np.array([1.0, 2.0])
 
         jac = tuple(
@@ -172,7 +171,7 @@ class TestComputeJVP:
 
 
 class TestJVP:
-    """Tests for the vjp function"""
+    """Tests for the jvp function"""
 
     def test_no_trainable_parameters(self):
         """A tape with no trainable parameters will simply return None"""
@@ -542,7 +541,7 @@ class TestJVPGradients:
 
 
 class TestBatchJVP:
-    """Tests for the batch VJP function"""
+    """Tests for the batch JVP function"""
 
     def test_one_tape_no_trainable_parameters(self):
         """A tape with no trainable parameters will simply return None"""
@@ -569,7 +568,7 @@ class TestBatchJVP:
         assert len(v_tapes) == 4
 
         # Even though there are 3 parameters, only two contribute
-        # to the VJP, so only 2*2=4 quantum evals
+        # to the JVP, so only 2*2=4 quantum evals
         res = fn(dev.batch_execute(v_tapes))
 
         assert res[0] is None
@@ -596,7 +595,7 @@ class TestBatchJVP:
         tapes = [tape1, tape2]
         tangents = [np.array([1.0, 0.0]), np.array([1.0, 0.0])]
 
-        v_tapes, fn = qml.gradients.batch_vjp(tapes, tangents, param_shift)
+        v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
 
         assert v_tapes == []
         assert fn([]) == [None, None]
@@ -626,7 +625,7 @@ class TestBatchJVP:
         res = fn(dev.batch_execute(v_tapes))
 
         # Even though there are 3 parameters, only two contribute
-        # to the VJP, so only 2*2=4 quantum evals
+        # to the JVP, so only 2*2=4 quantum evals
         assert len(v_tapes) == 4
         assert np.allclose(res[0], 0)
 
@@ -654,7 +653,7 @@ class TestBatchJVP:
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift, reduction="append")
         res = fn(dev.batch_execute(v_tapes))
 
-        # Returned VJPs will be appended to a list, one vjp per tape
+        # Returned JVPs will be appended to a list, one JVP per tape
         assert len(res) == 2
         assert all(isinstance(r, np.ndarray) for r in res)
         assert res[0].shape == ()
@@ -684,7 +683,7 @@ class TestBatchJVP:
 
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift, reduction="extend")
         res = fn(dev.batch_execute(v_tapes))
-        # Returned VJPs will be extended into a list. Each element of the returned
+        # Returned JVPs will be extended into a list. Each element of the returned
         # list will correspond to a single input parameter of the combined
         # tapes.
         assert len(res) == 3
@@ -712,8 +711,8 @@ class TestBatchJVP:
         tangents = [np.array([1.0]), np.array([1.0, 1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(
-            tapes, tangents, param_shift, reduction=lambda vjps, x: vjps.append(x)
+            tapes, tangents, param_shift, reduction=lambda jvps, x: jvps.append(x)
         )
         res = fn(dev.batch_execute(v_tapes))
-        # Returned VJPs will be appended to a list, one vjp per tape
+        # Returned JVPs will be appended to a list, one JVP per tape
         assert len(res) == 2

@@ -27,12 +27,12 @@ def _convert(jac, tangent):
         jac_new = []
         for j in jac:
             j_ = math.convert_like(j, tangent)
-            j_ = math.cast(j_, tangent.dtype)
+            j_ = math.cast_like(j_, tangent)
             jac_new.append(j_)
         jac = tuple(jac_new)
     else:
         jac = math.convert_like(jac, tangent)
-        jac = math.cast(jac, tangent.dtype)
+        jac = math.cast_like(jac, tangent)
     return jac
 
 
@@ -87,37 +87,37 @@ def compute_jvp_single(tangent, jac):
     tangent = qml.math.stack(tangent)
     jac = _convert(jac, tangent)
 
-    # Single measurement with a single param
+    # Single param
     if not isinstance(jac, tuple):
         tangent = math.reshape(tangent, (1,))
-        # Single measurement with no dimension e.g. expval
+        # No dimension e.g. expval
         if jac.shape == ():
             jac = math.reshape(jac, (1,))
-        # Single measurement with dimension e.g. probs
+        # With dimension e.g. probs
         else:
             jac = math.reshape(jac, (1, len(jac)))
         res = math.tensordot(jac, tangent, [[0], [0]])
-    # Single measurement with multiple params
+    # Multiple params
     else:
         jac = qml.math.stack(jac)
-        # Single measurement with no dimension e.g. expval
+        # No dimension e.g. expval
         if jac[0].shape == ():
             res = qml.math.tensordot(jac, tangent, 1)
-        # Single measurement with dimension e.g. probs
+        # With dimension e.g. probs
         else:
             res = qml.math.tensordot(jac, tangent, [[0], [0]])
     return res
 
 
 def compute_jvp_multi(tangent, jac):
-    """Convenience function to compute the Jacobian vector product for a given
-    vector of gradient outputs and a Jacobian for a multiple measurements tape.
+    """Convenience function to compute the Jacobian-vector product for a given
+    vector of gradient outputs and a Jacobian for a tape with multiple measurements.
 
     Args:
         tangent (tensor_like, list): tangent vector
         jac (tensor_like, tuple): Jacobian matrix
     Returns:
-        tensor_like: the Jacobian vector product
+        tensor_like: the Jacobian-vector product
 
     **Examples**
 
@@ -140,12 +140,8 @@ def compute_jvp_multi(tangent, jac):
     """
     if jac is None:
         return None
-    res = []
-
-    for j in jac:
-        res.append(compute_jvp_single(tangent, j))
-
-    return tuple(res)
+    res = tuple(compute_jvp_single(tangent, j) for j in jac)
+    return res
 
 
 def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
@@ -192,13 +188,13 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
                 else:
                     res = []
                     for m in tape.measurements:
-                        # TODO: Update shape for CV variables
+                        # TODO: Update shape for CV variables and for qutrit simulations
                         if m.return_type is qml.measurements.Probability:
                             dim = 2 ** len(m.wires)
                         else:
                             dim = ()
                         sub_res = math.convert_like(np.zeros(dim), tangent)
-                        sub_res = math.cast(sub_res, tangent.dtype)
+                        sub_res = math.cast_like(sub_res, tangent)
                         res.append(sub_res)
                     res = tuple(res)
 
