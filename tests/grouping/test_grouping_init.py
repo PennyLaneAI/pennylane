@@ -21,4 +21,6 @@ import pennylane as qml
 def test_deprecation_warning():
     """Test that a deprecation warning is raised."""
     with pytest.warns(DeprecationWarning, match="The qml.grouping module is deprecated,"):
-        _ = qml.grouping.is_pauli_word(qml.PauliX(0))
+        import pennylane.grouping as grouping
+
+        _ = grouping.is_pauli_word(qml.PauliX(0))

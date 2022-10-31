@@ -15,6 +15,18 @@ r"""
 This subpackage defines functions and classes for Pauli-word partitioning
 functionality used in measurement optimization.
 """
+from warnings import warn
+
+
+def __getattr__(name):
+    """Raise deprecation warning!"""
+    warn("The qml.grouping module is deprecated, please use qml.pauli instead.", DeprecationWarning)
+    try:
+        globals()[name]
+    except KeyError as e:
+        raise AttributeError(f"Module {__name__} has no attribute {name}") from e
+
+
 from . import graph_colouring
 from .group_observables import group_observables, PauliGroupingStrategy
 from .optimize_measurements import optimize_measurements

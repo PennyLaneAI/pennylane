@@ -338,16 +338,3 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
-
-
-def __getattr__(name):
-    """Re-route calls of qml.grouping as it will be deprecated."""
-    if name == "grouping":
-        warn(
-            "The qml.grouping module is deprecated, please use qml.pauli instead.",
-            DeprecationWarning,
-        )
-        from pennylane import grouping  # pylint:disable=import-outside-toplevel
-
-        return grouping
-    raise AttributeError(f"Module {__name__} has no attribute {name}")
