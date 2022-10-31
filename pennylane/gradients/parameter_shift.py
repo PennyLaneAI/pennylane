@@ -18,6 +18,7 @@ of a qubit-based quantum tape.
 # pylint: disable=protected-access,too-many-arguments,too-many-statements
 import warnings
 from collections.abc import Sequence
+from functools import partial
 
 import numpy as np
 
@@ -187,10 +188,8 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
 
     num_measurements = len(tape.measurements)
     if num_measurements == 1:
-
         if not shot_vector:
             return _single_meas_grad(res, coeffs, unshifted_coeff, r0)
-
         num_shot_components = len(shots)
         g = []
 
@@ -1438,6 +1437,9 @@ def _param_shift_new(
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
     if unsupported_params:
+        # If shots were provided, assume that the fallback function also takes that arg
+
+        fallback_fn = fallback_fn if shots is None else partial(fallback_fn, shots=shots)
         if not argnum:
             return fallback_fn(tape)
 
@@ -1463,13 +1465,14 @@ def _param_shift_new(
     gradient_tapes.extend(g_tapes)
 
     if unsupported_params:
-        # If there are unsupported parameters, we must process
-        # the quantum results separately, once for the fallback
-        # function and once for the parameter-shift rule, and recombine.
-        def processing_fn(results):
-            unsupported_grads = fallback_proc_fn(results[:fallback_len])
-            supported_grads = fn(results[fallback_len:])
 
+        def _single_shot_batch_grad(unsupported_grads, supported_grads):
+            """Auxiliary function for post-processing one batch of supported and unsupported gradients corresponding to
+            finite shot execution.
+
+            If the device used a shot vector, gradients corresponding to a single component of the shot vector should be
+            passed to this aux function.
+            """
             multi_measure = len(tape.measurements) > 1
             if not multi_measure:
                 res = []
@@ -1488,6 +1491,31 @@ def _param_shift_new(
                 meas_grad = tuple(meas_grad)
                 combined_grad.append(meas_grad)
             return tuple(combined_grad)
+
+        # If there are unsupported parameters, we must process
+        # the quantum results separately, once for the fallback
+        # function and once for the parameter-shift rule, and recombine.
+        def processing_fn(results):
+            unsupported_res = results[:fallback_len]
+            supported_res = results[fallback_len:]
+
+            shot_vector = isinstance(shots, Sequence)
+            if not shot_vector:
+                unsupported_grads = fallback_proc_fn(unsupported_res)
+                supported_grads = fn(supported_res)
+                return _single_shot_batch_grad(unsupported_grads, supported_grads)
+
+            num_shot_vec_components = len(shots)
+
+            supported_grads = fn(supported_res)
+            unsupported_grads = fallback_proc_fn(unsupported_res)
+
+            final_grad = []
+            for idx in range(num_shot_vec_components):
+                u_grads = unsupported_grads[idx]
+                sup = supported_grads[idx]
+                final_grad.append(_single_shot_batch_grad(u_grads, sup))
+            return tuple(final_grad)
 
         return gradient_tapes, processing_fn
 

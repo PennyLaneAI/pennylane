@@ -215,6 +215,7 @@ def _finite_diff_new(
     strategy="forward",
     f0=None,
     validate_params=True,
+    shots=None,
 ):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
     parameters with respect to its inputs. This function is adapted to the new return system.
@@ -242,6 +243,10 @@ def _finite_diff_new(
             the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
+            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
+            to the transform about the device shots and helps in determining if a shot sequence was used to define the
+            device shots for the new return types output system.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
@@ -303,7 +308,10 @@ def _finite_diff_new(
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
 
-    def processing_fn(results):
+    def _single_shot_batch_result(results):
+        """Auxiliary function for post-processing one batch of results corresponding to finite shots or a single
+        component of a shot vector"""
+
         grads = []
         start = 1 if c0 is not None and f0 is None else 0
         r0 = f0 or results[0]
@@ -391,6 +399,21 @@ def _finite_diff_new(
             grads_tuple = tuple(elem[0] for elem in grads_reorder)
         else:
             grads_tuple = tuple(tuple(elem) for elem in grads_reorder)
+        return grads_tuple
+
+    def processing_fn(results):
+        shot_vector = isinstance(shots, Sequence)
+
+        if not shot_vector:
+            grads_tuple = _single_shot_batch_result(results)
+        else:
+            grads_tuple = []
+            shot_vec_len = len(shots)
+            for idx in range(shot_vec_len):
+                res = [tape_res[idx] for tape_res in results]
+                g_tuple = _single_shot_batch_result(res)
+                grads_tuple.append(g_tuple)
+            grads_tuple = tuple(grads_tuple)
 
         return grads_tuple
 
@@ -407,6 +430,7 @@ def finite_diff(
     strategy="forward",
     f0=None,
     validate_params=True,
+    shots=None,
 ):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
     parameters with respect to its inputs.
@@ -434,6 +458,10 @@ def finite_diff(
             the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
+            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
+            to the transform about the device shots and helps in determining if a shot sequence was used to define the
+            device shots for the new return types output system.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
@@ -518,6 +546,7 @@ def finite_diff(
             strategy=strategy,
             f0=f0,
             validate_params=validate_params,
+            shots=shots,
         )
 
     if argnum is None and not tape.trainable_params:
