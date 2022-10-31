@@ -99,7 +99,7 @@ def _validate_params(data_name, description, attributes):
                     validate_structure(child, params_left)
             elif detail not in node:
                 # TODO: shorten this limit without permanently changing it
-                # sys.tracebacklimit = 0  # the recursive stack is disorienting
+                # sys.tracebacklimit = 0 # the recursive stack is disorienting
                 raise ValueError(
                     f"{param} value of '{detail}' is not available. Available values are {list(node)}"
                 )
