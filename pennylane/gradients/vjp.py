@@ -15,9 +15,178 @@
 This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
+# pylint: disable=no-member, too-many-branches
 import numpy as np
+import autograd
 
-from pennylane import math
+import pennylane as qml
+
+
+def _convert(jac, dy_row):
+    """Utility to convert and cast the jacobian as dy_row."""
+    if isinstance(jac, tuple):
+        jac_new = []
+        for j in jac:
+            j_ = qml.math.convert_like(j, dy_row)
+            j_ = qml.math.cast_like(j_, dy_row)
+            jac_new.append(j_)
+        jac = tuple(jac_new)
+    else:
+        jac = qml.math.convert_like(jac, dy_row)
+        jac = qml.math.cast_like(jac, dy_row)
+    return jac
+
+
+def compute_vjp_single_new(dy, jac):
+    """Convenience function to compute the vector-Jacobian product for a given
+    vector of gradient outputs and a Jacobian for a single measurement tape.
+
+    Args:
+        dy (tensor_like): vector of gradient outputs
+        jac (tensor_like, tuple): Jacobian matrix
+
+    Returns:
+        tensor_like: the vector-Jacobian product
+
+    **Examples**
+
+    1. For a single parameter and a single measurement without shape (e.g. expval, var):
+
+    .. code-block:: pycon
+
+        >>> jac = np.array(0.1)
+        >>> dy = np.array(2)
+        >>> compute_vjp_single_new(dy, jac)
+        np.array([0.2])
+
+    2. For a single parameter and a single measurment with shape (e.g. probs):
+
+    .. code-block:: pycon
+
+        >>> jac = np.array([0.1, 0.2])
+        >>> dy = np.array([1.0, 1.0])
+        >>> compute_vjp_single_new(dy, jac)
+        np.array([0.3])
+
+
+    3. For multiple parameters (in this case 2 parameters) and a single measurement without shape (e.g. expval, var):
+
+    .. code-block:: pycon
+
+        >>> jac = tuple([np.array(0.1), np.array(0.2)])
+        >>> dy = np.array(2)
+        >>> compute_vjp_single_new(dy, jac)
+        np.array([0.2, 0.4])
+
+    4. For multiple parameters (in this case 2 parameters) and a single measurement with shape (e.g. probs):
+
+    .. code-block:: pycon
+
+        >>> jac = tuple([np.array([0.1, 0.2]), np.array([0.3, 0.4])])
+        >>> dy = np.array([1.0, 2.0])
+        >>> compute_vjp_single_new(dy, jac)
+        np.array([0.5, 1.1])
+
+    """
+    if jac is None:
+        return None
+
+    dy_row = qml.math.reshape(dy, [-1])
+
+    if not isinstance(dy_row, np.ndarray):
+        jac = _convert(jac, dy_row)
+
+    try:
+        if qml.math.allclose(dy, 0):
+            # If the dy vector is zero, then the
+            # corresponding element of the VJP will be zero.
+            num_params = len(jac) if isinstance(jac, tuple) else 1
+
+            res = qml.math.convert_like(np.zeros(num_params), dy)
+            return qml.math.cast_like(res, dy)
+    except (AttributeError, TypeError):
+        pass
+
+    # Single measurement with a single param
+    if not isinstance(jac, (tuple, autograd.builtins.SequenceBox)):
+        # No trainable parameters
+        if jac.shape == (0,):
+            res = qml.math.zeros((1, 0))
+            return res
+        # Single measurement with no dimension e.g. expval or with dimension e.g. probs
+        if dy.shape == ():
+            jac = qml.math.squeeze(jac)
+        jac = qml.math.reshape(jac, (-1, 1))
+        res = qml.math.tensordot(jac, dy_row, [[0], [0]])
+    # Single measurement with multiple params
+    else:
+        # No trainable parameters (adjoint)
+        if len(jac) == 0:
+            res = qml.math.zeros((1, 0))
+            return res
+        # Single measurement with no dimension e.g. expval
+        if dy.shape == ():
+            jac = qml.math.reshape(qml.math.stack(jac), (1, len(jac)))
+            res = qml.math.tensordot(jac, dy_row, [[0], [0]])
+
+        # Single measurement with dimension e.g. probs
+        else:
+            jac = qml.math.stack(jac)
+            res = qml.math.tensordot(jac, dy_row, [[1], [0]])
+    return res
+
+
+def compute_vjp_multi_new(dy, jac):
+    """Convenience function to compute the vector-Jacobian product for a given
+    vector of gradient outputs and a Jacobian for a tape with multiple measurements.
+
+    Args:
+        dy (tensor_like): vector of gradient outputs
+        jac (tensor_like, tuple): Jacobian matrix
+
+    Returns:
+        tensor_like: the vector-Jacobian product
+
+    **Examples**
+
+    1. For a single parameter and multiple measurement (one without shape and one with shape, e.g. expval and probs):
+
+    .. code-block:: pycon
+
+        >>> jac = tuple([np.array(0.1), np.array([0.3, 0.4])])
+        >>> dy = tuple([np.array(1.0), np.array([1.0, 2.0])])
+        >>> compute_vjp_multi_new(dy, jac)
+        np.array([1.2])
+
+    2. For multiple parameters (in this case 2 parameters) and multiple measurement (one without shape and one with
+    shape, e.g. expval and probs):
+
+    .. code-block:: pycon
+
+        >>> jac = tuple([tuple([np.array(0.1), np.array(0.2)]), tuple([np.array([0.3, 0.4]), np.array([0.5, 0.6])])])
+        >>> dy = tuple([np.array(1.0), np.array([1.0, 2.0])])
+        >>> compute_vjp_multi_new(dy, jac)
+        np.array([1.2, 1.9])
+
+    """
+    if jac is None:
+        return None
+    # Single parameter
+    if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
+        res = []
+        for d, j_ in zip(dy, jac):
+            res.append(compute_vjp_single_new(d, j_))
+        res = qml.math.stack([qml.math.sum(res)])
+    # Multiple parameters
+    else:
+        res = []
+        for d, j_ in zip(dy, jac):
+            sub_res = []
+            for j in j_:
+                sub_res.append(qml.math.squeeze(compute_vjp_single_new(d, j)))
+            res.append(sub_res)
+        res = qml.math.stack([qml.math.sum(x) for x in zip(*res)])
+    return res
 
 
 def compute_vjp(dy, jac, num=None):
@@ -39,28 +208,27 @@ def compute_vjp(dy, jac, num=None):
     if jac is None:
         return None
 
-    dy_row = math.reshape(dy, [-1])
+    dy_row = qml.math.reshape(dy, [-1])
 
     if num is None:
-        num = math.shape(dy_row)[0]
+        num = qml.math.shape(dy_row)[0]
 
     if not isinstance(dy_row, np.ndarray):
-        jac = math.convert_like(jac, dy_row)
-        jac = math.cast(jac, dy_row.dtype)
+        jac = qml.math.convert_like(jac, dy_row)
+        jac = qml.math.cast_like(jac, dy_row)
 
-    jac = math.reshape(jac, [num, -1])
+    jac = qml.math.reshape(jac, [num, -1])
 
     try:
-        if math.allclose(dy, 0):
+        if qml.math.allclose(dy, 0):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero.
             num_params = jac.shape[1]
-            res = math.convert_like(np.zeros([num_params]), dy)
-            return math.cast(res, dy.dtype)
+            res = qml.math.convert_like(np.zeros([num_params]), dy)
+            return qml.math.cast_like(res, dy)
     except (AttributeError, TypeError):
         pass
-
-    return math.tensordot(jac, dy_row, [[0], [0]])
+    return qml.math.tensordot(jac, dy_row, [[0], [0]])
 
 
 def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
@@ -166,14 +334,19 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
         return [], lambda _, num=None: None
 
     try:
-        if math.allclose(dy, 0):
+        if qml.math.allclose(dy, 0):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero,
             # and we can avoid a quantum computation.
 
             def func(_, num=None):  # pylint: disable=unused-argument
-                res = math.convert_like(np.zeros([num_params]), dy)
-                return math.cast(res, dy.dtype)
+                res = qml.math.convert_like(np.zeros([num_params]), dy)
+                if qml.active_return():
+                    multi = len(tape.measurements) > 1
+                    if multi:
+                        multi_dy = dy[0]
+                        return qml.math.cast_like(res, multi_dy)
+                return qml.math.cast_like(res, dy)
 
             return [], func
     except (AttributeError, TypeError):
@@ -184,6 +357,11 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     def processing_fn(results, num=None):
         # postprocess results to compute the Jacobian
         jac = fn(results)
+        if qml.active_return():
+            multi = len(tape.measurements) > 1
+            if multi:
+                return compute_vjp_multi_new(dy, jac)
+            return compute_vjp_single_new(dy, jac)
         return compute_vjp(dy, jac, num=num)
 
     return gradient_tapes, processing_fn
@@ -311,7 +489,6 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
     # Loop through the tapes and dys vector
     for tape, dy in zip(tapes, dys):
         g_tapes, fn = vjp(tape, dy, gradient_fn, gradient_kwargs)
-
         reshape_info.append(len(g_tapes))
         processing_fns.append(fn)
         gradient_tapes.extend(g_tapes)
@@ -328,10 +505,8 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
             res_len = reshape_info[t_idx]
             res_t = results[start : start + res_len]
             start += res_len
-
             # postprocess results to compute the VJP
             vjp_ = processing_fns[t_idx](res_t, num=nums[t_idx])
-
             if vjp_ is None:
                 if reduction == "append":
                     vjps.append(None)

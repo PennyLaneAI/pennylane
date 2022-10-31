@@ -15,15 +15,14 @@
 This module provides the PennyLane :class:`~.tensor` class.
 """
 import numpy as onp
-
 from autograd import numpy as _np
-from autograd.extend import primitive, defvjp
-
-from autograd.tracer import Box
-from autograd.numpy.numpy_boxes import ArrayBox
-from autograd.numpy.numpy_vspaces import ComplexArrayVSpace, ArrayVSpace
 from autograd.core import VSpace
+from autograd.extend import defvjp, primitive
+from autograd.numpy.numpy_boxes import ArrayBox
+from autograd.numpy.numpy_vspaces import ArrayVSpace, ComplexArrayVSpace
+from autograd.tracer import Box
 
+from pennylane.operation import Operator
 
 __doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
 
@@ -153,6 +152,9 @@ class tensor(_np.ndarray):
         # call the ndarray.__array_ufunc__ method to compute the result
         # of the vectorized ufunc
         res = super().__array_ufunc__(ufunc, method, *args, **kwargs)
+
+        if isinstance(res, Operator):
+            return res
 
         if ufunc.nout == 1:
             res = (res,)
