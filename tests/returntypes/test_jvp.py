@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the gradients.vjp module."""
+"""Tests for the gradients.jvp module."""
 from functools import partial
 
 import pytest
@@ -70,7 +70,7 @@ class TestComputeJVP:
         jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
 
         jvp = qml.gradients.compute_jvp_multi(tangent, jac)
-        print(jvp)
+
         assert isinstance(jvp, tuple)
         assert len(jvp) == 2
 
@@ -81,7 +81,7 @@ class TestComputeJVP:
         assert np.allclose(jvp[1], [0.4, 1.0])
 
     def test_compute_multiple_measurement_multi_dim_multiple_params(self):
-        """Test that the correct VJP is returned"""
+        """Test that the correct JVP is returned"""
         tangent = np.array([1.0, 2.0])
 
         jac = tuple(
@@ -134,7 +134,8 @@ class TestComputeJVP:
         jac = tuple([np.array(0.1), np.array(0.2)])
 
         jvp = qml.gradients.compute_jvp_single(tangent, jac)
-        assert np.all(jvp == np.zeros([1]))
+
+        assert np.all(jvp == np.zeros([2]))
 
     def test_zero_dy_multi(self):
         """A zero tangent vector will return a zero matrix"""
@@ -170,9 +171,45 @@ class TestComputeJVP:
         jac = tuple([jax.numpy.array(1, dtype=dtype2), jax.numpy.array([1, 1], dtype=dtype2)])
         assert qml.gradients.compute_jvp_multi(tangent, jac)[0].dtype == dtype
 
+    def test_no_trainable_params_adjoint_single(self):
+        """An empty jacobian return empty array."""
+        tangent = np.array([1.0, 2.0])
+        jac = tuple()
+
+        jvp = qml.gradients.compute_jvp_single(tangent, jac)
+        assert np.allclose(jvp, qml.math.zeros(0))
+
+    def test_no_trainable_params_adjoint_multi_measurement(self):
+        """An empty jacobian return an empty tuple."""
+        tangent = np.array([1.0, 2.0])
+        jac = tuple()
+
+        jvp = qml.gradients.compute_jvp_multi(tangent, jac)
+        assert isinstance(jvp, tuple)
+        assert len(jvp) == 0
+
+    def test_no_trainable_params_gradient_transform_single(self):
+        """An empty jacobian return empty array."""
+        tangent = np.array([1.0, 2.0])
+        jac = qml.math.zeros(0)
+
+        jvp = qml.gradients.compute_jvp_single(tangent, jac)
+        assert np.allclose(jvp, qml.math.zeros(0))
+
+    def test_no_trainable_params_gradient_transform_multi_measurement(self):
+        """An empty jacobian return an empty tuple."""
+        tangent = np.array([1.0, 2.0])
+        jac = tuple([qml.math.zeros(0), qml.math.zeros(0)])
+
+        jvp = qml.gradients.compute_jvp_multi(tangent, jac)
+        assert isinstance(jvp, tuple)
+        assert len(jvp) == 2
+        for j in jvp:
+            assert np.allclose(j, qml.math.zeros(0))
+
 
 class TestJVP:
-    """Tests for the vjp function"""
+    """Tests for the jvp function"""
 
     def test_no_trainable_parameters(self):
         """A tape with no trainable parameters will simply return None"""
@@ -186,7 +223,7 @@ class TestJVP:
         tangent = np.array([1.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
-        assert not tapes
+        assert tapes == []
         assert fn(tapes) is None
 
     def test_zero_tangent_single_measurement_single_param(self):
@@ -201,7 +238,7 @@ class TestJVP:
         tangent = np.array([0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
-        assert not tapes
+        assert tapes == []
         assert np.all(fn(tapes) == np.zeros([1]))
 
     def test_zero_tangent_single_measurement_multiple_param(self):
@@ -217,9 +254,24 @@ class TestJVP:
         tangent = np.array([0.0, 0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
-        assert not tapes
-        assert isinstance(fn(tapes), tuple)
+        assert tapes == []
         assert np.all(fn(tapes) == np.zeros([1]))
+
+    def test_zero_tangent_single_measurement_probs_multiple_param(self):
+        """A zero tangent vector will return no tapes and a zero matrix"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.RX(0.6, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        tape.trainable_params = {0, 1}
+        tangent = np.array([0.0, 0.0])
+        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+
+        assert tapes == []
+        assert np.all(fn(tapes) == np.zeros([4]))
 
     def test_zero_tangent_multiple_measurement_single_param(self):
         """A zero tangent vector will return no tapes and a zero matrix"""
@@ -235,7 +287,7 @@ class TestJVP:
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         res = fn(tapes)
 
-        assert not tapes
+        assert tapes == []
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -261,7 +313,7 @@ class TestJVP:
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         res = fn(tapes)
 
-        assert not tapes
+        assert tapes == []
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -323,6 +375,33 @@ class TestJVP:
         expected = np.array([-np.sin(x), 2 * np.cos(y)])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_multiple_measurement_single_param(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with expval and probs as measurements."""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=0)
+
+        tape.trainable_params = {0}
+        tangent = np.array([1.0])
+
+        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+        assert len(tapes) == 2
+
+        res = fn(dev.batch_execute(tapes))
+        assert isinstance(res, tuple)
+
+        expected_0 = -np.sin(x)
+        assert np.allclose(res[0], expected_0, atol=tol, rtol=0)
+
+        expected_1 = [-np.sin(x) / 2, np.sin(x) / 2]
+        assert np.allclose(res[1], expected_1, atol=tol, rtol=0)
+
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
@@ -367,7 +446,7 @@ class TestJVP:
 
     @pytest.mark.parametrize("dtype", [np.float32, np.float64])
     def test_dtype_matches_tangent(self, dtype):
-        """Tests that the vjp function matches the dtype of tangent when tangent is
+        """Tests that the jvp function matches the dtype of tangent when tangent is
         zero-like."""
         x = np.array([0.1], dtype=np.float64)
 
@@ -412,7 +491,8 @@ class TestJVPGradients:
             jvp = fn(dev.batch_execute(tapes))
             return jvp
 
-        tangent = np.array([1.0, 0.0], requires_grad=False)
+        tangent = np.array([1.0, 0.3], requires_grad=False)
+
         res = cost_fn(params, tangent)
         assert np.allclose(res, expected(params), atol=tol, rtol=0)
 
@@ -477,45 +557,9 @@ class TestJVPGradients:
         res = t.jacobian(jvp, params)
         assert np.allclose(res, qml.jacobian(expected)(params_np), atol=tol, rtol=0)
 
-    # TODO: to be added when lighting and TF compatible with return types
-    # @pytest.mark.tf
-    # def test_tf_custom_loss(self):
-    #     """Tests that the gradient pipeline using the TensorFlow interface with
-    #     a custom TF loss and lightning.qubit with a custom dtype does not raise
-    #     any errors."""
-    #     import tensorflow as tf
-
-    #     nwires = 5
-    #     dev = qml.device("lightning.qubit", wires=nwires)
-    #     dev.C_DTYPE = vanilla_numpy.complex64
-    #     dev.R_DTYPE = vanilla_numpy.float32
-
-    #     @qml.qnode(dev, interface="tf", diff_method="adjoint")
-    #     def circuit(weights, features):
-    #         for i in range(nwires):
-    #            qml.RX(features[i], wires=i)
-    #             qml.RX(weights[i], wires=i)
-    #         return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
-
-    #     vanilla_numpy.random.seed(42)
-
-    #     ndata = 100
-    #     data = [vanilla_numpy.random.randn(nwires).astype("float32") for _ in range(ndata)]
-    #     label = [vanilla_numpy.random.choice([1, 0]).astype("int") for _ in range(ndata)]
-
-    #     loss = tf.losses.SparseCategoricalCrossentropy()
-
-    #     params = tf.Variable(vanilla_numpy.random.randn(nwires).astype("float32"), trainable=True)
-    #     with tf.GradientTape() as tape:
-    #         probs = [circuit(params, d) for d in data]
-    #         loss_value = loss(label, probs)
-
-    #    grads = tape.gradient(loss_value, [params])
-    #    assert len(grads) == 1
-
     @pytest.mark.jax
     def test_jax(self, tol):
-        """Tests that the output of the VJP transform
+        """Tests that the output of the JVP transform
         can be differentiated using JAX."""
         import jax
         from jax import numpy as jnp
@@ -542,7 +586,7 @@ class TestJVPGradients:
 
 
 class TestBatchJVP:
-    """Tests for the batch VJP function"""
+    """Tests for the batch JVP function"""
 
     def test_one_tape_no_trainable_parameters(self):
         """A tape with no trainable parameters will simply return None"""
@@ -569,7 +613,7 @@ class TestBatchJVP:
         assert len(v_tapes) == 4
 
         # Even though there are 3 parameters, only two contribute
-        # to the VJP, so only 2*2=4 quantum evals
+        # to the JVP, so only 2*2=4 quantum evals
         res = fn(dev.batch_execute(v_tapes))
 
         assert res[0] is None
@@ -596,7 +640,7 @@ class TestBatchJVP:
         tapes = [tape1, tape2]
         tangents = [np.array([1.0, 0.0]), np.array([1.0, 0.0])]
 
-        v_tapes, fn = qml.gradients.batch_vjp(tapes, tangents, param_shift)
+        v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
 
         assert v_tapes == []
         assert fn([]) == [None, None]
@@ -626,7 +670,8 @@ class TestBatchJVP:
         res = fn(dev.batch_execute(v_tapes))
 
         # Even though there are 3 parameters, only two contribute
-        # to the VJP, so only 2*2=4 quantum evals
+        # to the JVP, so only 2*2=4 quantum evals
+
         assert len(v_tapes) == 4
         assert np.allclose(res[0], 0)
 
@@ -654,13 +699,39 @@ class TestBatchJVP:
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift, reduction="append")
         res = fn(dev.batch_execute(v_tapes))
 
-        # Returned VJPs will be appended to a list, one vjp per tape
+        # Returned JVPs will be appended to a list, one JVP per tape
+
         assert len(res) == 2
         assert all(isinstance(r, np.ndarray) for r in res)
         assert res[0].shape == ()
         assert res[1].shape == ()
 
     def test_reduction_extend(self):
+        """Test the 'extend' reduction strategy"""
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(0.4, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=0)
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.RX(0.4, wires=0)
+            qml.RX(0.6, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=1)
+
+        tape1.trainable_params = {0}
+        tape2.trainable_params = {1}
+
+        tapes = [tape1, tape2]
+        tangents = [np.array([1.0]), np.array([1.0])]
+
+        v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift, reduction="extend")
+        res = fn(dev.batch_execute(v_tapes))
+        assert len(res) == 4
+
+    def test_reduction_extend_special(self):
         """Test the 'extend' reduction strategy"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -682,11 +753,16 @@ class TestBatchJVP:
         tapes = [tape1, tape2]
         tangents = [np.array([1.0]), np.array([1.0, 1.0])]
 
-        v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift, reduction="extend")
+        v_tapes, fn = qml.gradients.batch_jvp(
+            tapes,
+            tangents,
+            param_shift,
+            reduction=lambda jvps, x: jvps.extend(qml.math.reshape(x, (1,)))
+            if not isinstance(x, tuple) and x.shape == ()
+            else jvps.extend(x),
+        )
         res = fn(dev.batch_execute(v_tapes))
-        # Returned VJPs will be extended into a list. Each element of the returned
-        # list will correspond to a single input parameter of the combined
-        # tapes.
+
         assert len(res) == 3
 
     def test_reduction_callable(self):
@@ -712,8 +788,8 @@ class TestBatchJVP:
         tangents = [np.array([1.0]), np.array([1.0, 1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(
-            tapes, tangents, param_shift, reduction=lambda vjps, x: vjps.append(x)
+            tapes, tangents, param_shift, reduction=lambda jvps, x: jvps.append(x)
         )
         res = fn(dev.batch_execute(v_tapes))
-        # Returned VJPs will be appended to a list, one vjp per tape
+        # Returned JVPs will be appended to a list, one JVP per tape
         assert len(res) == 2

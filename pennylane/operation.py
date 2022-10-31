@@ -581,38 +581,18 @@ class Operator(abc.ABC):
                 return qml.math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
-    @staticmethod
-    def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument
-        r"""Representation of the operator as a linear combination of other operators (static method).
-
-        .. math:: O = \sum_i c_i O_i
-
-        .. seealso:: :meth:`~.Operator.terms`
-
-        Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the
-                ``hyperparameters`` attribute
-
-        Returns:
-            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients and list of operations
-        """
-        raise TermsUndefinedError
-
-    def terms(self):
+    def terms(self):  # pylint: disable=no-self-use
         r"""Representation of the operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
 
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_terms`
-
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
-        return self.compute_terms(*self.parameters, **self.hyperparameters)
+        raise TermsUndefinedError
 
     @property
     @abc.abstractmethod
@@ -1155,21 +1135,23 @@ class Operator(abc.ABC):
 
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, numbers.Number):
-            if other == 0:
-                return self
-            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         if isinstance(other, Operator):
             return qml.op_sum(self, other)
-        raise ValueError(f"Cannot add Operator and {type(other)}")
+        if other == 0:
+            return self
+        try:
+            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
+        except ValueError as e:
+            raise ValueError(f"Cannot add Operator and {type(other)}") from e
 
     __radd__ = __add__
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
-        if isinstance(other, numbers.Number):
+        try:
             return qml.s_prod(scalar=other, operator=self)
-        raise ValueError(f"Cannot multiply Operator and {type(other)}.")
+        except ValueError as e:
+            raise ValueError(f"Cannot multiply Operator and {type(other)}.") from e
 
     __rmul__ = __mul__
 
