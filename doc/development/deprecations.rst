@@ -52,18 +52,22 @@ use ``qml.adjoint`` or ``qml.pow`` instead.
 * ``QueuingManager.safe_update_info`` and ``AnnotateQueue.safe_update_info`` are removed.
 
   - Still accessible in v0.27
-  - Removed in v0.28
+  -  Will be removed in v0.28
 
 * ``qml.tape.stop_recording`` and ``QuantumTape.stop_recording`` are moved to ``qml.QueuingManager.stop_recording``
 
   - Still accessible in v0.27
-  - Removed in v0.28
+  -  Will be removed in v0.28
 
 * ``qml.tape.get_active_tape`` is deprecated. Please use ``qml.QueuingManager.active_context()`` instead.
 
   - Still accessible in v0.27
-  - Removed in v0.28
+  -  Will be removed in v0.28
 
+* ``qml.transforms.qcut.remap_tape_wires`` is deprecated. Please use ``qml.map_wires`` instead.
+
+  - Still accessible in v0.27
+  - Will be removed in v0.28
 
 Completed deprecation cycles
 ----------------------------
@@ -79,5 +83,3 @@ Completed deprecation cycles
 
   - Deprecated in v0.24
   - Removed in v0.27
-
-
