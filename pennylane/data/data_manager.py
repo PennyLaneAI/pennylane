@@ -394,7 +394,7 @@ def load_interactive():
 
     approve = input("Would you like to continue? (Default is yes) [Y/n]: ")
     if approve not in ["Y", "", "y"]:
-        print("not downloading.")
+        print("Aborting and not downloading!")
         return None
     return load(
         data_name, attributes=attributes, folder_path=dest_folder, force=force, **description
