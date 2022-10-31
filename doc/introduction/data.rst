@@ -99,7 +99,7 @@ For example, we can download only the molecule and Hamiltonian of a dataset as f
 
 .. code-block:: python
 
-    >>> H2_hamiltonian = qml.data.load(data_type='qchem',molname='H2', basis='6-31G', bondlength='0.46', attributes=['molecule','hamiltonian'])
+    >>> H2_hamiltonian = qml.data.load(data_type="qchem", molname="H2", basis="6-31G", bondlength="0.46", attributes=["molecule", "hamiltonian"])
     >>> H2_hamiltonian
     <Hamiltonian: terms=185, wires=[0, 1, 2, 3, 4, 5, 6, 7]>
 
