@@ -14,7 +14,6 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
-from copy import copy
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -23,7 +22,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import QuantumFunctionError, math
+from pennylane import DeviceError, QuantumFunctionError, math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
 from pennylane.ops.op_math import Sum, op_sum
 from pennylane.wires import Wires
@@ -821,7 +820,7 @@ class TestIntegration:
         assert qnp.allclose(grad, true_grad)
 
     def test_non_hermitian_op_in_measurement_process(self):
-        """Test that non-hermitian ops in a measurement process will raise a warning."""
+        """Test that non-hermitian ops in a measurement process will raise an error."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
         sum_op = Sum(qml.RX(1.23, wires=0), qml.Identity(wires=1))
@@ -831,7 +830,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(sum_op)
 
-        with pytest.warns(UserWarning, match="Sum might not be hermitian."):
+        with pytest.raises(DeviceError, match="Observable RX not supported"):
             my_circ()
 
 

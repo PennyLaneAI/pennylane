@@ -719,7 +719,9 @@ class Device(abc.ABC):
         )
 
         hamiltonian_in_obs = any(isinstance(obs, Hamiltonian) for obs in circuit.observables)
-        sum_in_obs = any(isinstance(obs, Sum) for obs in circuit.observables)
+        expval_sum_in_obs = any(
+            isinstance(m.obs, Sum) and m.return_type is Expectation for m in circuit.measurements
+        )
 
         return_types = [m.return_type for m in circuit.observables]
 
@@ -739,7 +741,7 @@ class Device(abc.ABC):
                 raise ValueError(
                     "Can only return the expectation of a single Hamiltonian observable"
                 ) from e
-        elif sum_in_obs and not is_shadow:
+        elif expval_sum_in_obs and not is_shadow:
             try:
                 circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
 
