@@ -608,8 +608,6 @@ class TestLoadInteractive:
 
     def test_load_interactive_without_confirm(self, mock_input, mock_load, _mock_sleep):
         """Test that load_interactive returns None if the user doesn't confirm."""
-        qml.data.data_manager._foldermap = {}  # wipe this and _data_struct to make codecov happy
-        qml.data.data_manager._data_struct = {}
         mock_input.side_effect = ["1", "1", "2", "", "", "n"]
         assert qml.data.load_interactive() is None
         mock_load.assert_not_called()
@@ -634,21 +632,29 @@ class TestLoadInteractive:
 
 
 @patch.object(requests, "get", get_mock)
-def test_list_datasets(tmp_path):
-    """Test that list_datasets returns either the S3 foldermap, or the local tree."""
-    qml.data.data_manager._foldermap = {}
-    assert qml.data.list_datasets() == _folder_map
+class TestMiscHelpers:
+    """Test miscellaneous helper functions in data_manager."""
 
-    first = qml.data.Dataset(foo="this")
-    second = qml.data.Dataset(bar="that")
+    def test_list_datasets(self, tmp_path):
+        """Test that list_datasets returns either the S3 foldermap, or the local tree."""
+        assert qml.data.list_datasets() == _folder_map
 
-    d = tmp_path / "datasets"
-    d1 = d / "qspin" / "data_1" / "foo_size"
-    d2 = d / "qspin" / "data_2" / "bar_size"
+        first = qml.data.Dataset(foo="this")
+        second = qml.data.Dataset(bar="that")
 
-    first.write(str(d1 / "first.dat"))
-    second.write(str(d2 / "second.dat"))
+        d = tmp_path / "datasets"
+        d1 = d / "qspin" / "data_1" / "foo_size"
+        d2 = d / "qspin" / "data_2" / "bar_size"
 
-    assert qml.data.list_datasets(str(d)) == {
-        "qspin": {"data_1": ["foo_size"], "data_2": ["bar_size"]}
-    }
+        first.write(str(d1 / "first.dat"))
+        second.write(str(d2 / "second.dat"))
+
+        assert qml.data.list_datasets(str(d)) == {
+            "qspin": {"data_1": ["foo_size"], "data_2": ["bar_size"]}
+        }
+
+    def test_list_attributes(self):
+        """Test list_attributes"""
+        assert qml.data.list_attributes("qchem") == _data_struct["qchem"]["attributes"]
+        with pytest.raises(ValueError, match="Currently the hosted datasets are of types"):
+            qml.data.list_attributes("invalid_data_name")

@@ -34,6 +34,8 @@ _data_struct = {}
 
 # pylint:disable=too-many-branches
 def _format_details(param, details):
+    """Ensures each user-inputted parameter is a properly typed list.
+    Also provides custom support for certain parameters."""
     if not isinstance(details, list):
         details = [details]
     if param == "layout":
@@ -111,19 +113,21 @@ def _validate_params(data_name, description, attributes):
 
 def _refresh_foldermap():
     """Refresh the foldermap from S3."""
+    global _foldermap
+    if _foldermap:
+        return
     response = requests.get(FOLDERMAP_URL, timeout=5.0)
     response.raise_for_status()
-
-    global _foldermap
     _foldermap = response.json()
 
 
 def _refresh_data_struct():
     """Refresh the data struct from S3."""
+    global _data_struct
+    if _data_struct:
+        return
     response = requests.get(DATA_STRUCT_URL, timeout=5.0)
     response.raise_for_status()
-
-    global _data_struct
     _data_struct = response.json()
 
 
@@ -218,10 +222,8 @@ def load(
 
     _ = lazy
 
-    if data_name not in _foldermap:
-        _refresh_foldermap()
-    if not _data_struct:
-        _refresh_data_struct()
+    _refresh_foldermap()
+    _refresh_data_struct()
     if not attributes:
         attributes = ["full"]
 
@@ -291,9 +293,22 @@ def list_datasets(path=None):
 
     if path:
         return _direc_to_dict(path)
-    if not _foldermap:
-        _refresh_foldermap()
+    _refresh_foldermap()
     return _foldermap.copy()
+
+
+def list_attributes(data_name):
+    """List the attributes that exist for a specific data_name.
+
+    Returns:
+        list(str): A list of accepted attributes for a given data name.
+    """
+    _refresh_data_struct()
+    if data_name not in _data_struct:
+        raise ValueError(
+            f"Currently the hosted datasets are of types: {list(_data_struct)}, but got {data_name}."
+        )
+    return _data_struct[data_name]["attributes"]
 
 
 def _interactive_request_attributes(options):
@@ -366,10 +381,8 @@ def load_interactive():
         <pennylane.data.dataset.Dataset object at 0x10157ab50>
     """
 
-    if not _foldermap:
-        _refresh_foldermap()
-    if not _data_struct:
-        _refresh_data_struct()
+    _refresh_foldermap()
+    _refresh_data_struct()
 
     node = _foldermap
     data_name = _interactive_request_single(node, "data name")
