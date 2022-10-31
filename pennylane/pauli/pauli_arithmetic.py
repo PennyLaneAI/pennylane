@@ -255,7 +255,7 @@ class PauliSentence(dict):
 
     def simplify(self, tol=1e-8):
         """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""
-        terms = list(self.keys())
-        for pw in terms:
-            if abs(self[pw]) <= tol:
+        items = list(self.items())
+        for pw, coeff in items:
+            if abs(coeff) <= tol:
                 del self[pw]
