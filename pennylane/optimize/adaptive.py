@@ -47,7 +47,7 @@ class AdaptiveOptimizer:
     adding gates from a user-defined collection of operators. The algorithm starts by adding all
     the gates to the circuit and computing the circuit gradients with respect to the gate
     parameters. The algorithm then retains the gate which has the largest gradient and optimizes its
-    parameter. The process of growing the circuit is repeated until the computed gradients
+    parameter. The process of growing the circuit can be repeated until the computed gradients
     converge to zero within a given threshold. The optimizer returns the fully trained and
     adaptively-built circuit. The adaptive optimizer can be used to implement
     algorithms such as `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_.
@@ -92,7 +92,7 @@ class AdaptiveOptimizer:
     ...     qml.BasisState(hf_state, wires=range(qubits))
     ...     return qml.expval(H)
 
-    The optimizer is instantiated and the circuit is created and optimized adaptively:
+    The optimizer is instantiated and then the circuit is created and optimized adaptively:
 
     >>> opt = AdaptiveOptimizer()
     >>> for i in range(len(operator_pool)):
@@ -168,8 +168,8 @@ class AdaptiveOptimizer:
         return self.step_and_cost(circuit, operator_pool, params_zero=params_zero)[0]
 
     def step_and_cost(self, circuit, operator_pool, drain_pool=False, params_zero=True):
-        r"""Update the circuit with one step of the optimizer and return the corresponding
-        objective function value prior to the step.
+        r"""Update the circuit with one step of the optimizer, return the corresponding
+        objective function value prior to the step, and return the maximum gradient
 
         Args:
             circuit (.QNode): user-defined circuit returning an expectation value

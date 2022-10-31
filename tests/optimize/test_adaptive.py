@@ -103,7 +103,7 @@ pool = [
     ],
 )
 def test_step_and_cost_drain(circuit, energy_ref, pool):
-    """Test that step_and_cost function returns the correct results."""
+    """Test that step_and_cost function returns the correct results when drain_pool is True."""
     opt = qml.AdaptiveOptimizer()
     for i in range(4):
         circuit, energy, gradient = opt.step_and_cost(circuit, pool, drain_pool=True)
@@ -123,7 +123,7 @@ def test_step_and_cost_drain(circuit, energy_ref, pool):
     ],
 )
 def test_step_and_cost_nodrain(circuit, energy_ref, pool):
-    """Test that step_and_cost function returns the correct results."""
+    """Test that step_and_cost function returns the correct results when drain_pool is False."""
     opt = qml.AdaptiveOptimizer()
     for i in range(4):
         pool = [
@@ -142,6 +142,7 @@ def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     selected_excitations = [op.wires for op in circuit.tape.operations[1:]]
 
     assert np.allclose(energy, energy_ref, rtol=1e-4)
+    # assert that the operator pool is not drained, there are repeated gates in the circuit
     assert len(set(selected_excitations)) < len(selected_excitations)
 
 
@@ -177,9 +178,7 @@ def test_largest_gradient(circuit):
 
 @pytest.mark.parametrize(
     "circuit",
-    [
-        (initial_circuit),
-    ],
+    [initial_circuit],
 )
 def test_append_gate(circuit):
     """Test that append_gate properly adds a gate to a circuit."""
@@ -201,9 +200,7 @@ def qubit_rotation_circuit():
 
 @pytest.mark.parametrize(
     "circuit",
-    [
-        (qubit_rotation_circuit),
-    ],
+    [qubit_rotation_circuit],
 )
 def test_qubit_rotation(circuit):
     """Test that step function returns correct results for a qubit rotation circuit."""
