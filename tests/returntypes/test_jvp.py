@@ -253,7 +253,6 @@ class TestJVP:
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
 
         assert tapes == []
-        assert isinstance(fn(tapes), tuple)
         assert np.all(fn(tapes) == np.zeros([1]))
 
     def test_zero_tangent_multiple_measurement_single_param(self):

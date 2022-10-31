@@ -189,7 +189,6 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
         return [], lambda _, num=None: None
 
     multi_m = num_measurements > 1
-    multi_p = num_params > 1
 
     try:
         if qml.math.allclose(qml.math.stack(tangent), 0):
@@ -206,8 +205,6 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
                         dim = ()
                     res = qml.math.convert_like(np.zeros(dim), tangent)
                     res = qml.math.cast_like(res, tangent)
-                    if multi_p:
-                        res = tuple(res)
                 else:
                     res = []
                     for m in tape.measurements:
