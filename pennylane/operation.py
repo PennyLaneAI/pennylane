@@ -1083,28 +1083,24 @@ class Operator(abc.ABC):
         raise AdjointUndefinedError
 
     def expand(self):
-        """Returns a tape that has recorded the decomposition of the operator.
+        """Returns a quantum script that has contains the decomposition of the operator.
 
         Returns:
-            .QuantumTape: quantum tape
+            .QuantumScript: quantum script
         """
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        tape = qml.tape.QuantumTape(do_queue=False)
-
-        with tape:
-            self.decomposition()
+        with QueuingManager.stop_recording():
+            qscript = qml.tape.QuantumScript(self.decomposition())
+            if getattr(self, "inverse", False):
+                qscript = qscript.adjoint()
 
         if not self.data:
             # original operation has no trainable parameters
-            tape.trainable_params = {}
+            qscript.trainable_params = {}
 
-        # the inverse attribute can be defined by subclasses
-        if getattr(self, "inverse", False):
-            tape.inv()
-
-        return tape
+        return qscript
 
     @property
     def arithmetic_depth(self) -> int:

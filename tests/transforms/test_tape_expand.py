@@ -362,7 +362,7 @@ def custom_rot(phi, theta, omega, wires):
 def custom_basic_entangler_layers(weights, wires, **kwargs):
     return [
         qml.AngleEmbedding(weights[0], wires=wires),
-        qml.broadcast(qml.CNOT, pattern="ring", wires=wires),
+        *qml.broadcast(qml.CNOT, pattern="ring", wires=wires),
     ]
 
 

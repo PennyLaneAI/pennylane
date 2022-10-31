@@ -560,9 +560,11 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     wire_sequence, parameters = _preprocess(parameters, pattern, wires)
 
-    if parameters is None:
-        for i in range(len(wire_sequence)):
-            unitary(wires=wire_sequence[i], **kwargs)
-    else:
-        for i in range(len(wire_sequence)):
-            unitary(*parameters[i], wires=wire_sequence[i], **kwargs)
+    with qml.tape.QuantumTape() as tape:
+        if parameters is None:
+            for i in range(len(wire_sequence)):
+                unitary(wires=wire_sequence[i], **kwargs)
+        else:
+            for i in range(len(wire_sequence)):
+                unitary(*parameters[i], wires=wire_sequence[i], **kwargs)
+    return list(tape)

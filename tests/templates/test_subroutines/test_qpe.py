@@ -35,16 +35,16 @@ class TestDecomposition:
             qml.ControlledQubitUnitary(m, control_wires=[2], wires=[0]),
             qml.adjoint(qml.QFT(wires=[1, 2]))
 
-        assert len(tape2.queue) == len(tape.queue)
+        assert len(tape2) == len(tape)
         # qml.equal doesn't work for Adjoint op yet, so we stop before we get to it.
-        for op1, op2 in zip(tape.queue[:-1], tape2.queue[:-1]):
+        for op1, op2 in zip(tape[:-1], tape2[:-1]):
             assert qml.equal(op1, op2)
 
         assert isinstance(tape[-1], qml.ops.op_math.Adjoint)
         assert qml.equal(tape[-1].base, qml.QFT(wires=(1, 2)))
 
-        assert np.allclose(tape.queue[1].matrix(), tape2.queue[1].matrix())
-        assert np.allclose(tape.queue[3].matrix(), tape2.queue[3].matrix())
+        assert np.allclose(tape[1].matrix(), tape2[1].matrix())
+        assert np.allclose(tape[3].matrix(), tape2[3].matrix())
 
     @pytest.mark.parametrize("phase", [2, 3, 6, np.pi])
     def test_phase_estimated(self, phase):

@@ -158,7 +158,7 @@ class CommutingEvolution(Operation):
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
         hamiltonian = qml.Hamiltonian(coeffs, hamiltonian.ops)
-        return qml.ApproxTimeEvolution(hamiltonian, time, 1)
+        return [qml.ApproxTimeEvolution(hamiltonian, time, 1)]
 
     def adjoint(self):
 

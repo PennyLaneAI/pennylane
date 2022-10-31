@@ -214,13 +214,22 @@ class TTN(Operation):
         op_list = []
         if block.__code__.co_argcount > 2:
             for idx, w in enumerate(ind_gates):
-                op_list.append(block(*weights[idx], wires=w))
+
+                with qml.tape.QuantumTape() as tape:
+                    block(*weights[idx], wires=w)
+                op_list += list(tape)
+
         elif block.__code__.co_argcount == 2:
             for idx, w in enumerate(ind_gates):
-                op_list.append(block(weights[idx], wires=w))
+                with qml.tape.QuantumTape() as tape:
+                    block(weights[idx], wires=w)
+                op_list += list(tape)
+
         else:
             for idx, w in enumerate(ind_gates):
-                op_list.append(block(wires=w))
+                with qml.tape.QuantumTape() as tape:
+                    block(wires=w)
+                op_list += list(tape)
 
         return op_list
 

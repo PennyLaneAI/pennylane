@@ -61,7 +61,7 @@ def test_decomposition_expand():
 
     op = qml.CommutingEvolution(hamiltonian, time)
 
-    decomp = op.decomposition()
+    decomp = op.decomposition()[0]
 
     assert isinstance(decomp, qml.ApproxTimeEvolution)
     assert all(decomp.hyperparameters["hamiltonian"].coeffs == hamiltonian.coeffs)

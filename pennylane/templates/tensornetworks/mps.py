@@ -176,7 +176,13 @@ class MPS(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        return [block(weights=weights[idx][:], wires=w.tolist()) for idx, w in enumerate(ind_gates)]
+        decomp = []
+        for idx, w in enumerate(ind_gates):
+            with qml.tape.QuantumTape() as tape:
+                block(weights=weights[idx][:], wires=w.tolist())
+
+            decomp += list(tape)
+        return decomp
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires):

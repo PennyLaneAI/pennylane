@@ -227,13 +227,25 @@ class MERA(Operation):
         op_list = []
         if block.__code__.co_argcount > 2:
             for idx, w in enumerate(ind_gates):
-                op_list.append(block(*weights[idx], wires=w))
+
+                with qml.tape.QuantumTape() as tape1:
+                    block(*weights[idx], wires=w)
+
+                op_list += list(tape1)
         elif block.__code__.co_argcount == 2:
             for idx, w in enumerate(ind_gates):
-                op_list.append(block(weights[idx], wires=w))
+
+                with qml.tape.QuantumTape() as tape2:
+                    block(weights[idx], wires=w)
+
+                op_list += list(tape2)
         else:
             for idx, w in enumerate(ind_gates):
-                op_list.append(block(wires=w))
+
+                with qml.tape.QuantumTape() as tape3:
+                    block(wires=w)
+
+                op_list += list(tape3)
 
         return op_list
 
