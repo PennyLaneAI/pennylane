@@ -18,6 +18,7 @@ Contains the Dataset utility functions.
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
 import os
+from time import sleep
 from urllib.parse import quote
 
 import requests
@@ -293,3 +294,108 @@ def list_datasets(path=None):
     if not _foldermap:
         _refresh_foldermap()
     return _foldermap.copy()
+
+
+def _interactive_request_attributes(options):
+    """Prompt the user to select a list of attributes."""
+    prompt = "Please select attributes:"
+    for i, option in enumerate(options):
+        if option == "full":
+            option = "full (all attributes)"
+        prompt += f"\n\t{i+1}) {option}"
+    print(prompt)
+    choices = input(f"Choice (comma-separated list of options) [1-{len(options)}]: ").split(",")
+    try:
+        choices = list(map(int, choices))
+    except ValueError as e:
+        raise ValueError(f"Must enter a list of integers between 1 and {len(options)}") from e
+    if any(choice < 1 or choice > len(options) for choice in choices):
+        raise ValueError(f"Must enter a list of integers between 1 and {len(options)}")
+    return [options[choice - 1] for choice in choices]
+
+
+def _interactive_request_single(node, param):
+    """Prompt the user to select a single option from a list."""
+    options = list(node)
+    if len(options) == 1:
+        print(f"Using {options[0]} as it is the only {param} available.")
+        sleep(1)
+        return options[0]
+    print(f"Please select a {param}:")
+    print("\n".join(f"\t{i+1}) {option}" for i, option in enumerate(options)))
+    try:
+        choice = int(input(f"Choice [1-{len(options)}]: "))
+    except ValueError as e:
+        raise ValueError(f"Must enter an integer between 1 and {len(options)}") from e
+    if choice < 1 or choice > len(options):
+        raise ValueError(f"Must enter an integer between 1 and {len(options)}")
+    return options[choice - 1]
+
+
+def load_interactive():
+    """Download a dataset using an interactive load prompt.
+
+    **Example**
+
+    qml.data.load_interactive()
+    Please select a data name:
+            1) qspin
+            2) qchem
+    Choice [1-2]: 1
+    Please select a sysname:
+        ...
+    Please select a periodicity:
+        ...
+    Please select a lattice:
+        ...
+    Please select a layout:
+        ...
+    Please select attributes:
+        ...
+    Force download files? (Default is no) [y/N]: N
+    Folder to download to? (Default is pwd, will download to /datasets subdirectory): /Users/jovyan/Downloads
+
+    Please confirm your choices:
+    dataset: qspin/Ising/open/rectangular/4x4
+    attributes: ['parameters', 'ground_states']
+    force: False
+    dest folder: /Users/jovyan/Downloads/datasets
+    Would you like to continue? (Default is yes) [Y/n]:
+    <pennylane.data.dataset.Dataset object at 0x10157ab50>
+    """
+    if not _foldermap:
+        _refresh_foldermap()
+    if not _data_struct:
+        _refresh_data_struct()
+
+    node = _foldermap
+    data_name = _interactive_request_single(node, "data name")
+
+    description = {}
+    value = data_name
+
+    params = _data_struct[data_name]["params"]
+    for param in params:
+        node = node[value]
+        value = _interactive_request_single(node, param)
+        description[param] = value
+
+    attributes = _interactive_request_attributes(_data_struct[data_name]["attributes"])
+    force = input("Force download files? (Default is no) [y/N]: ") in ["y", "Y"]
+    dest_folder = input(
+        "Folder to download to? (Default is pwd, will download to /datasets subdirectory): "
+    )
+
+    print("\nPlease confirm your choices:")
+    print("dataset:", os.path.join(data_name, *[description[param] for param in params]))
+    print("attributes:", attributes)
+    print("force:", force)
+    print("dest folder:", os.path.join(dest_folder, "datasets"))
+
+    approve = input("Would you like to continue? (Default is yes) [Y/n]: ")
+    if approve not in ["Y", "", "y"]:
+        print("not downloading.")
+        return None
+    return load(
+        data_name, attributes=attributes, folder_path=dest_folder, force=force, **description
+    )[0]

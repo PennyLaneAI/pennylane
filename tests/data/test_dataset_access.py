@@ -556,6 +556,84 @@ class TestLoad:
 
 
 @patch.object(requests, "get", get_mock)
+@patch("pennylane.data.data_manager.sleep")
+@patch("pennylane.data.data_manager.load", return_value=[qml.data.Dataset()])
+@patch("builtins.input")
+class TestLoadInteractive:
+    """
+    Test the load_interactive function for various inputs. Side-effect args are ordered as:
+    [data name, *params, attributes, Force, Folder, continue]
+    """
+
+    @pytest.mark.parametrize(
+        ("side_effect", "data_name", "kwargs", "sleep_call_count"),
+        [
+            (
+                ["1", "1", "2", "", "", ""],
+                "qchem",
+                {
+                    "attributes": ["hamiltonian"],
+                    "folder_path": "",
+                    "force": False,
+                    "molname": "H2",
+                    "basis": "6-31G",
+                    "bondlength": "0.46",
+                },
+                2,
+            ),
+            (
+                ["2", "1, 4", "Y", "/my/path", "y"],
+                "qspin",
+                {
+                    "attributes": ["parameters", "full"],
+                    "folder_path": "/my/path",
+                    "force": True,
+                    "sysname": "Heisenberg",
+                    "periodicity": "closed",
+                    "lattice": "chain",
+                    "layout": "1x4",
+                },
+                4,
+            ),
+        ],
+    )
+    def test_load_interactive_success(
+        self, mock_input, mock_load, mock_sleep, side_effect, data_name, kwargs, sleep_call_count
+    ):
+        """Test that load_interactive succeeds."""
+        mock_input.side_effect = side_effect
+        assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
+        mock_load.assert_called_once_with(data_name, **kwargs)
+        assert mock_sleep.call_count == sleep_call_count
+
+    def test_load_interactive_without_confirm(self, mock_input, mock_load, _mock_sleep):
+        """Test that load_interactive returns None if the user doesn't confirm."""
+        qml.data.data_manager._foldermap = {}  # wipe this and _data_struct to make codecov happy
+        qml.data.data_manager._data_struct = {}
+        mock_input.side_effect = ["1", "1", "2", "", "", "n"]
+        assert qml.data.load_interactive() is None
+        mock_load.assert_not_called()
+
+    @pytest.mark.parametrize(
+        ("side_effect", "error_message"),
+        [
+            (["foo"], "Must enter an integer between 1 and 2"),
+            (["0"], "Must enter an integer between 1 and 2"),
+            (["3"], "Must enter an integer between 1 and 2"),
+            (["1", "1", "0"], "Must enter a list of integers between 1 and 5"),
+            (["1", "1", "1 2"], "Must enter a list of integers between 1 and 5"),
+        ],
+    )
+    def test_load_interactive_invalid_inputs(
+        self, mock_input, _mock_load, _mock_sleep, side_effect, error_message
+    ):
+        """Test that load_interactive raises errors as expected."""
+        mock_input.side_effect = side_effect
+        with pytest.raises(ValueError, match=error_message):
+            qml.data.load_interactive()
+
+
+@patch.object(requests, "get", get_mock)
 def test_list_datasets(tmp_path):
     """Test that list_datasets returns either the S3 foldermap, or the local tree."""
     qml.data.data_manager._foldermap = {}
