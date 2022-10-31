@@ -141,14 +141,15 @@ Users can specify the control wires as well as the values to control the operati
   13: ──RY(1.23)─┤  
   ```
 
-* An optimizer is added for building and optimizing quantum circuits adaptively. The new optimizer,
-  ``AdaptiveOptimizer``, takes an initial circuit and a collection of operators as input and adds a
-  selected gate to the circuits at each optimization step. The process of growing the circuit can be 
-  repeated until the circuit gradients converge to zero within a given threshold. The adaptive
-  optimizer can be used to implement algorithms such as
+* An optimizer is added for building and optimizing quantum circuits adaptively.
+  [(#3192)](https://github.com/PennyLaneAI/pennylane/pull/3192)
+
+  The new optimizer, ``AdaptiveOptimizer``, takes an initial circuit and a collection of operators
+  as input and adds a selected gate to the circuits at each optimization step. The process of
+  growing the circuit can be repeated until the circuit gradients converge to zero within a given
+  threshold. The adaptive optimizer can be used to implement algorithms such as
   `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_ as shown in the following
   example.
-  [(#3192)](https://github.com/PennyLaneAI/pennylane/pull/3192)
 
   First, the molecule is defined and the Hamiltonian is computed:
 
