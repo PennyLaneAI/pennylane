@@ -1471,7 +1471,6 @@ class TestTapeExpansion:
             ]
             assert np.allclose(grad2_w_c, expected)
 
-    @pytest.mark.xfail(reason="Update expand hamiltonian processing function.")
     @pytest.mark.slow
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_finite_shots(
