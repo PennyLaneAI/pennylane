@@ -22,7 +22,7 @@ the usual PennyLane workflow.
 
 .. code-block:: python
 
-    >>> H2_dataset=qml.data.load(data_type='qchem',molname='H2', basis='6-31G', bondlength='0.46')
+    >>> H2_dataset = qml.data.load(data_type="qchem", molname="H2", basis="6-31G", bondlength="0.46")
     >>> print(H2_dataset)
     [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
 
