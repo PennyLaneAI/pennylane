@@ -39,7 +39,7 @@ Once loaded, one can access the attributes in the dataset.
     >>> H2_dataset[0].hf_state
     [1 1 0 0 0 0 0 0]
 
-The loaded data items are compatible with PennyLane whenever possible. We can therefore
+The loaded data items are fully compatible with PennyLane. We can therefore
 use them directly in PennyLane workflow as follows:
 
 .. code-block:: python
