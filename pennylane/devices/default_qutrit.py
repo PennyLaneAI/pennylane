@@ -55,6 +55,7 @@ class DefaultQutrit(QutritDevice):
     operations = {
         "Identity",
         "QutritUnitary",
+        "ControlledQutritUnitary",
         "TShift",
         "TClock",
         "TAdd",

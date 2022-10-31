@@ -967,7 +967,7 @@ class TestParameterShiftRule:
     def test_fallback(self, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
         spy = mocker.spy(qml.gradients, "finite_diff")
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = qml.device("default.qubit", wires=3)
         x = 0.543
         y = -0.654
 
@@ -983,6 +983,7 @@ class TestParameterShiftRule:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.var(qml.PauliX(1))
+                qml.expval(qml.PauliZ(2))
 
             tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
             assert len(tapes) == 5
@@ -997,19 +998,18 @@ class TestParameterShiftRule:
 
         assert isinstance(res, tuple)
 
-        assert len(res) == 2
+        assert len(res) == 3
 
-        assert isinstance(res[0], tuple)
-        assert len(res[0]) == 2
-        assert isinstance(res[0][0], np.ndarray)
-        assert res[0][0].shape == ()
-        assert isinstance(res[0][1], np.ndarray)
-        assert res[0][1].shape == ()
+        for r in res:
+            assert isinstance(r, tuple)
+            assert len(r) == 2
 
-        assert isinstance(res[1], tuple)
-        assert len(res[1]) == 2
+            assert isinstance(r[0], np.ndarray)
+            assert r[0].shape == ()
+            assert isinstance(r[1], np.ndarray)
+            assert r[1].shape == ()
 
-        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
+        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)], [0, 0]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # TODO: support Hessian with the new return types
