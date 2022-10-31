@@ -76,8 +76,12 @@ class BasisEmbedding(Operation):
         if isinstance(features, list):
             features = qml.math.stack(features)
 
+        # True if the features is a JAX tracer or a TensorFlow non-eager tensor
+        tracing = qml.math.is_abstract(features)
+
         if qml.math.shape(features) == ():
-            if not qml.math.is_abstract(features) and features >= 2 ** len(wires):
+            # don't perform validation during tracing since the values are unknown
+            if not tracing and features >= 2 ** len(wires):
                 raise ValueError(
                     f"Features must be of length {len(wires)}, got features={features} which is >= {2 ** len(wires)}"
                 )
@@ -96,9 +100,8 @@ class BasisEmbedding(Operation):
                 f"Features must be of length {len(wires)}; got length {n_features} (features={features})."
             )
 
-        # don't perform the validation if the features is a JAX tracer or a TensorFlow
-        # non-eager tensor
-        if not qml.math.is_abstract(features):
+        # don't perform the validation during tracing since the values are unknown
+        if not tracing:
             features = list(qml.math.toarray(features))
             if not set(features).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
