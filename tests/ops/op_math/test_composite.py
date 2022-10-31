@@ -15,13 +15,14 @@
 Unit tests for the composite operator class of qubit operations
 """
 from copy import copy
+
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as qnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp
+from pennylane.wires import Wires
 
 ops = (
     (qml.PauliX(wires=0), qml.PauliZ(wires=0), qml.Hadamard(wires=0)),
@@ -42,6 +43,7 @@ ops_rep = (
 
 class ValidOp(CompositeOp):
     _op_symbol = "#"
+    _math_op = None
 
     @property
     def is_hermitian(self):
@@ -161,6 +163,16 @@ class TestConstruction:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
+    def test_map_wires(self):
+        """Test the map_wires method."""
+        diag_op = ValidOp(*self.simple_operands)
+        wire_map = {0: 5, 1: 7, 2: 9, 3: 11}
+        mapped_op = diag_op.map_wires(wire_map=wire_map)
+
+        assert mapped_op.wires == Wires([5, 7])
+        assert mapped_op[0].wires == Wires(5)
+        assert mapped_op[1].wires == Wires(7)
+
 
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
@@ -258,3 +270,40 @@ class TestProperties:
 
         op = ValidOp(qml.PauliX(0), ValidOp(qml.Identity(wires=0), qml.RX(1.9, wires=1)))
         assert op.arithmetic_depth == 2
+
+    def test_overlapping_ops_property(self):
+        """Test the overlapping_ops property."""
+        valid_op = ValidOp(
+            qml.op_sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
+            qml.op_sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
+            qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+            qml.PauliY(7),
+            qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
+        )
+        overlapping_ops = [
+            [
+                qml.op_sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
+                qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+                qml.PauliY(7),
+            ],
+            [
+                qml.op_sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
+                qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
+            ],
+        ]
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops):
+            for op1, op2 in zip(list_op1, list_op2):
+                assert op1.name == op2.name
+                assert op1.wires == op2.wires
+                assert op1.data == op2.data
+                assert op1.arithmetic_depth == op2.arithmetic_depth
+
+    def test_overlapping_ops_private_attribute(self):
+        """Test that the private `_overlapping_ops` attribute gets updated after a call to
+        the `overlapping_ops` property."""
+        op = ValidOp(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
+        overlapping_ops = op.overlapping_ops
+        assert op._overlapping_ops == overlapping_ops

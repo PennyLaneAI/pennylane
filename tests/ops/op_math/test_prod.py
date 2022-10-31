@@ -696,7 +696,7 @@ class TestProperties:
         eig_vals = eig_decomp["eigval"]
 
         true_eigvecs = qnp.tensor(
-            [  # the eigvecs ordered according to eigvals ordered smallest --> largest
+            [
                 [0.0, 0.0, 1.0, 0.0],
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],

@@ -14,11 +14,10 @@
 """
 Unit tests for the new return types with QNode.
 """
+import numpy as np
 import pytest
 
-import numpy as np
 import pennylane as qml
-
 
 wires = [2, 3, 4]
 devices = ["default.qubit", "lightning.qubit", "default.mixed"]
@@ -124,6 +123,22 @@ class TestIntegrationSingleReturn:
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
 
+    @pytest.mark.xfail(reason="qml.execute shot vec support required with new return types")
+    def test_vn_entropy_shot_vec_error(self):
+        """Test an error is raised when using shot vectors with vn_entropy."""
+        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        with pytest.raises(
+            NotImplementedError, match="mutual information is not supported with shot vectors"
+        ):
+            circuit(0.5)
+
     @pytest.mark.parametrize("device", devices)
     def test_mutual_info(self, device):
         """Return a single mutual information."""
@@ -139,6 +154,22 @@ class TestIntegrationSingleReturn:
 
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
+
+    @pytest.mark.xfail(reason="qml.execute shot vec support required with new return types")
+    def test_mutual_info_shot_vec_error(self):
+        """Test an error is raised when using shot vectors with mutual_info."""
+        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        with pytest.raises(
+            NotImplementedError, match="mutual information is not supported with shot vectors"
+        ):
+            circuit(0.5)
 
     herm = np.diag([1, 2, 3, 4])
     probs_data = [
@@ -385,7 +416,7 @@ class TestIntegrationSingleReturnTensorFlow:
         """Test the sample measurement."""
         import tensorflow as tf
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for Tf.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -599,7 +630,7 @@ class TestIntegrationSingleReturnTorch:
         """Test the sample measurement."""
         import torch
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for Torch.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -1258,7 +1289,7 @@ class TestIntegrationMultipleReturnsTensorflow:
         """Test the expval and sample measurements together."""
         import tensorflow as tf
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample must be reworked with interfaces.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -1521,7 +1552,7 @@ class TestIntegrationMultipleReturnsTorch:
         """Test the expval and sample measurements together."""
         import torch
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for interfaces.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -2586,11 +2617,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
     """Test the new return types for the Jacobian of multiple measurements, with backprop."""
 
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_expval_autograd(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "autograd"])
+    def test_multiple_expval_autograd(self, interface, device):
         """Return Jacobian of multiple expvals."""
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2606,13 +2638,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_expval_torch(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    def test_multiple_expval_torch(self, interface, device):
         """Return Jacobian of multiple expvals."""
         import torch
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2632,13 +2665,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_expval_tf(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    def test_multiple_expval_tf(self, interface, device):
         """Return Jacobian of multiple expvals."""
         import tensorflow as tf
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2657,14 +2691,15 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert res.shape == (2, 3)
 
     @pytest.mark.tf
-    def test_multiple_meas_tf_autograph(self):
+    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    def test_multiple_meas_tf_autograph(self, interface):
         """Return Jacobian of multiple measurements with Tf Autograph."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
         @tf.function
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2686,13 +2721,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_expval_jax(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_multiple_expval_jax(self, interface, device):
         """Return Jacobian of multiple expvals."""
         import jax
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2711,13 +2747,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_expval_jax_jit(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_multiple_expval_jax_jit(self, interface, device):
         """Return Jacobian of multiple expvals with Jitting."""
         import jax
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2735,11 +2772,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert elem.shape == (3,)
 
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_probs_autograd(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "autograd"])
+    def test_multiple_probs_autograd(self, interface, device):
         """Return Jacobian of multiple probs."""
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2755,13 +2793,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_probs_torch(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    def test_multiple_probs_torch(self, interface, device):
         """Return Jacobian of multiple probs."""
         import torch
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2781,13 +2820,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_probs_tf(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    def test_multiple_probs_tf(self, interface, device):
         """Return Jacobian of multiple probs."""
         import tensorflow as tf
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2807,13 +2847,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_probs_jax(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_multiple_probs_jax(self, interface, device):
         """Return Jacobian of multiple probs."""
         import jax
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2833,13 +2874,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_probs_jax_jit(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_multiple_probs_jax_jit(self, interface, device):
         """Return Jacobian of multiple probs with Jax jit."""
         import jax
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2858,11 +2900,12 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert elem.shape == (2, 3)
 
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_meas_autograd(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "autograd"])
+    def test_multiple_meas_autograd(self, interface, device):
         """Return Jacobian of multiple measurements."""
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2878,13 +2921,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_meas_torch(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    def test_multiple_meas_torch(self, interface, device):
         """Return Jacobian of multiple measurements."""
         import torch
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2909,13 +2953,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_meas_tf(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    def test_multiple_meas_tf(self, interface, device):
         """Return Jacobian of multiple measurements."""
         import tensorflow as tf
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2939,13 +2984,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_meas_jax(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_multiple_meas_jax(self, interface, device):
         """Return Jacobian of multiple measurements."""
         import jax
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -2970,13 +3016,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
-    def test_multiple_meas_jax_jit(self, device):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_multiple_meas_jax_jit(self, interface, device):
         """Return Jacobian of multiple measurements with Jax jit."""
         import jax
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit(a):
             qml.RX(a[0], wires=0)
             qml.CNOT(wires=(0, 1))

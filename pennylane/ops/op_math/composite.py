@@ -14,17 +14,21 @@
 """
 This submodule defines a base class for composite operations.
 """
+# pylint: disable=too-many-instance-attributes
 import abc
-from typing import List
+from typing import Callable, List, Tuple
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.wires import Wires
+
+# pylint: disable=too-many-instance-attributes
 
 
-class CompositeOp(Operator, abc.ABC):
+class CompositeOp(Operator):
     """A base class for operators that are composed of other operators.
 
     Args:
@@ -55,6 +59,7 @@ class CompositeOp(Operator, abc.ABC):
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = None
+        self._overlapping_ops = None
 
         if do_queue:
             self.queue()
@@ -131,13 +136,62 @@ class CompositeOp(Operator, abc.ABC):
     def has_matrix(self):
         return all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in self)
 
-    @abc.abstractmethod
     def eigvals(self):
-        """Return the eigenvalues of the specified operator."""
+        """Return the eigenvalues of the specified operator.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the operator
+        """
+        eigvals = []
+        for ops in self.overlapping_ops:
+            if len(ops) == 1:
+                eigvals.append(
+                    qml.utils.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                )
+            else:
+                tmp_composite = self.__class__(*ops)
+                eigvals.append(
+                    qml.utils.expand_vector(
+                        tmp_composite.eigendecomposition["eigval"],
+                        list(tmp_composite.wires),
+                        list(self.wires),
+                    )
+                )
+
+        return self._math_op(eigvals, axis=0)
 
     @abc.abstractmethod
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
+
+    @property
+    def overlapping_ops(self) -> List[Tuple[Wires, List[Operator]]]:
+        """Groups all operands of the composite operator that act on overlapping wires.
+
+        Returns:
+            List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
+            inner lists commute with each other.
+        """
+        if self._overlapping_ops is None:
+            overlapping_ops = []  # [(wires, [ops])]
+            for op in self:
+                ops = [op]
+                wires = op.wires
+                op_added = False
+                for idx, (old_wires, old_ops) in enumerate(overlapping_ops):
+                    if any(wire in old_wires for wire in wires):
+                        overlapping_ops[idx] = (old_wires + wires, old_ops + ops)
+                        op_added = True
+                        break
+                if not op_added:
+                    overlapping_ops.append((op.wires, [op]))
+
+            self._overlapping_ops = [overlapping_op[1] for overlapping_op in overlapping_ops]
+
+        return self._overlapping_ops
 
     @property
     def eigendecomposition(self):
@@ -152,10 +206,12 @@ class CompositeOp(Operator, abc.ABC):
             dict[str, array]: dictionary containing the eigenvalues and the
                 eigenvectors of the operator.
         """
+        eigen_func = np.linalg.eigh if self.is_hermitian else np.linalg.eig
+
         if self.hash not in self._eigs:
-            Hmat = self.matrix()
-            Hmat = math.to_numpy(Hmat)
-            w, U = np.linalg.eigh(Hmat)
+            mat = self.matrix()
+            mat = math.to_numpy(mat)
+            w, U = eigen_func(mat)
             self._eigs[self.hash] = {"eigvec": U, "eigval": w}
 
         return self._eigs[self.hash]
@@ -184,12 +240,14 @@ class CompositeOp(Operator, abc.ABC):
         Returns:
             list[.Operator] or None: a list of operators
         """
-        if self.has_overlapping_wires:
-            eigen_vectors = self.eigendecomposition["eigvec"]
-            return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires, unitary_check=False)]
         diag_gates = []
-        for op in self:
-            diag_gates.extend(op.diagonalizing_gates())
+        for ops in self.overlapping_ops:
+            if len(ops) == 1:
+                diag_gates.extend(ops[0].diagonalizing_gates())
+            else:
+                tmp_sum = self.__class__(*ops)
+                eigvecs = tmp_sum.eigendecomposition["eigvec"]
+                diag_gates.append(qml.QubitUnitary(eigvecs.conj().T, wires=tmp_sum.wires))
         return diag_gates
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -255,3 +313,22 @@ class CompositeOp(Operator, abc.ABC):
     @property
     def arithmetic_depth(self) -> int:
         return 1 + max(op.arithmetic_depth for op in self)
+
+    @property
+    @abc.abstractmethod
+    def _math_op(self) -> Callable:
+        """The function used when combining the operands of the composite operator"""
+
+    def map_wires(self, wire_map: dict):
+        cls = self.__class__
+        new_op = cls.__new__(cls)
+        new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)
+        new_op._wires = Wires(  # pylint: disable=protected-access
+            [wire_map.get(wire, wire) for wire in self.wires]
+        )
+        new_op.data = self.data.copy()
+        for attr, value in vars(self).items():
+            if attr not in {"data", "operands", "_wires"}:
+                setattr(new_op, attr, value)
+
+        return new_op

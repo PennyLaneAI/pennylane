@@ -20,6 +20,7 @@ import itertools
 import numbers
 from collections.abc import Iterable
 from copy import copy
+from typing import List
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -164,7 +165,7 @@ class Hamiltonian(Observable):
     def __init__(
         self,
         coeffs,
-        observables,
+        observables: List[Observable],
         simplify=False,
         grouping_type=None,
         method="rlf",
@@ -236,34 +237,33 @@ class Hamiltonian(Observable):
         """
         return self._ops
 
-    @staticmethod
-    def compute_terms(*coeffs, ops):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a linear combination of other operators (static method).
+    def terms(self):
+        r"""Representation of the operator as a linear combination of other operators.
 
          .. math:: O = \sum_i c_i O_i
 
          .. seealso:: :meth:`~.Hamiltonian.terms`
 
-        Args:
-            coeffs (Iterable[tensor_like or float]): coefficients
-            ops (list[.Operator]): operators
-
         Returns:
             tuple[Iterable[tensor_like or float], list[.Operator]]: coefficients and operations
 
         **Example**
+        >>> coeffs = [1., 2.]
+        >>> ops = [qml.PauliX(0), qml.PauliZ(0)]
+        >>> H = qml.Hamiltonian(coeffs, ops)
 
-        >>> qml.Hamiltonian.compute_terms([1., 2.], ops=[qml.PauliX(0), qml.PauliZ(0)])
+        >>> H.terms()
         [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
 
         The coefficients are differentiable and can be stored as tensors:
-
         >>> import tensorflow as tf
-        >>> t = qml.Hamiltonian.compute_terms([tf.Variable(1.), tf.Variable(2.)], ops=[qml.PauliX(0), qml.PauliZ(0)])
+        >>> H = qml.Hamiltonian([tf.Variable(1.), tf.Variable(2.)], [qml.PauliX(0), qml.PauliZ(0)])
+        >>> t = H.terms()
+
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return coeffs, ops
+        return self.coeffs, self.ops
 
     @property
     def wires(self):
@@ -539,7 +539,6 @@ class Hamiltonian(Observable):
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
-
             return qml.Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
@@ -649,3 +648,28 @@ class Hamiltonian(Observable):
             context.update_info(o, owner=self)
         context.append(self, owns=tuple(self.ops))
         return self
+
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current hamiltonian with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Hamiltonian: new hamiltonian
+        """
+        cls = self.__class__
+        new_op = cls.__new__(cls)
+        new_op.data = self.data.copy()
+        new_op._wires = Wires(  # pylint: disable=protected-access
+            [wire_map.get(wire, wire) for wire in self.wires]
+        )
+        new_op._ops = [  # pylint: disable=protected-access
+            op.map_wires(wire_map) for op in self.ops
+        ]
+        for attr, value in vars(self).items():
+            if attr not in {"data", "_wires", "_ops"}:
+                setattr(new_op, attr, value)
+        new_op.hyperparameters["ops"] = new_op._ops  # pylint: disable=protected-access
+        return new_op
