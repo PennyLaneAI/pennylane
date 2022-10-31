@@ -143,6 +143,10 @@ Users can specify the control wires as well as the values to control the operati
 
 <h3>Improvements</h3>
 
+* The parameters of a basis set containing different number of Gaussian functions are easier to 
+  differentiate.
+  [(#3213)](https://github.com/PennyLaneAI/pennylane/pull/3213)
+
 * Printing `MultiControlledX` now shows the `control_values`.
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
