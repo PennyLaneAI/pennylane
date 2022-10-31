@@ -255,6 +255,22 @@ class TestJVP:
         assert tapes == []
         assert np.all(fn(tapes) == np.zeros([1]))
 
+    def test_zero_tangent_single_measurement_probs_multiple_param(self):
+        """A zero tangent vector will return no tapes and a zero matrix"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.RX(0.6, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        tape.trainable_params = {0, 1}
+        tangent = np.array([0.0, 0.0])
+        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+
+        assert tapes == []
+        assert np.all(fn(tapes) == np.zeros([4]))
+
     def test_zero_tangent_multiple_measurement_single_param(self):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
