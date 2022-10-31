@@ -11,7 +11,7 @@ PennyLane provides the :mod:`~.data` subpackage to download, create, store and m
 Loading Datasets in PennyLane
 -----------------------------
 
-We can access data of a desired type with the :func:`~pennylande.data.load` function. This downloads the desired
+We can access data of a desired type with the :func:`~pennylane.data.load` function. This downloads the desired
 dataset or loads it from local storage if previously downloaded. Some examples of data categories available for download include 'qchem',
 quantum chemistry-related datasets, and 'qspin', spin-system-related datasets. To specify the desired data, we use several arguments.
 For 'qchem' this includes the molname, basis, and bondlength, and for 'qspin' this includes sys_name, periodic, lattice, and layout. 
