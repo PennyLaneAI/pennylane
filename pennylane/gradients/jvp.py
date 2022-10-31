@@ -97,10 +97,13 @@ def compute_jvp_single(tangent, jac):
         if jac.shape == (0,):
             res = qml.math.zeros((1, 0))
             return res
+
         tangent = qml.math.reshape(tangent, (1,))
+
         # No dimension e.g. expval
         if jac.shape == ():
             jac = qml.math.reshape(jac, (1,))
+
         # With dimension e.g. probs
         else:
             jac = qml.math.reshape(jac, (1, -1))
@@ -111,10 +114,13 @@ def compute_jvp_single(tangent, jac):
         if len(jac) == 0:
             res = qml.math.zeros((1, 0))
             return res
+
         jac = qml.math.stack(jac)
+
         # No dimension e.g. expval
         if jac[0].shape == ():
             res = qml.math.tensordot(jac, tangent, 1)
+
         # With dimension e.g. probs
         else:
             res = qml.math.tensordot(jac, tangent, [[0], [0]])
@@ -134,7 +140,7 @@ def compute_jvp_multi(tangent, jac):
 
     **Examples**
 
-    1. For a single parameter and multiple measurement (one without shape and one with shape, e.g. expval and probs):
+    1. For a single parameter and multiple measurements (one without shape and one with shape, e.g. expval and probs):
 
     .. code-block:: pycon
 
@@ -143,7 +149,7 @@ def compute_jvp_multi(tangent, jac):
         >>> qml.gradients.compute_jvp_multi(tangent, jac)
         (np.array([0.6]), np.array([0.4, 1. ]))
 
-    2. For multiple parameters (in this case 2 parameters) and multiple measurement (one without shape and one with
+    2. For multiple parameters (in this case 2 parameters) and multiple measurements (one without shape and one with
     shape, e.g. expval and probs):
 
     .. code-block:: pycon
@@ -199,26 +205,11 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
             def func(_):  # pylint: disable=unused-argument
                 if not multi_m:
                     # TODO: Update shape for CV variables and for qutrit simulations
-                    if tape.measurements[0].return_type is qml.measurements.Probability:
-                        dim = 2 ** len(tape.measurements[0].wires)
-                    else:
-                        dim = ()
-                    res = qml.math.convert_like(np.zeros(dim), tangent)
-                    res = qml.math.cast_like(res, tangent)
+                    res = _single_measurement_zero(tape.measurements[0], tangent)
                 else:
-                    res = []
-                    for m in tape.measurements:
-                        # TODO: Update shape for CV variables and for qutrit simulations
-                        if m.return_type is qml.measurements.Probability:
-                            dim = 2 ** len(m.wires)
-                        else:
-                            dim = ()
-
-                        sub_res = qml.math.convert_like(np.zeros(dim), tangent)
-                        sub_res = qml.math.cast_like(sub_res, tangent)
-                        res.append(sub_res)
+                    # TODO: Update shape for CV variables and for qutrit simulations
+                    res = [_single_measurement_zero(m, tangent) for m in tape.measurements]
                     res = tuple(res)
-
                 return res
 
             return [], func
@@ -302,3 +293,14 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
         return jvps
 
     return gradient_tapes, processing_fn
+
+
+def _single_measurement_zero(m, tangent):
+    """Aux function to create a zero tensor from a measurement."""
+    if m.return_type is qml.measurements.Probability:
+        dim = 2 ** len(m.wires)
+    else:
+        dim = ()
+    res = qml.math.convert_like(np.zeros(dim), tangent)
+    res = qml.math.cast_like(res, tangent)
+    return res

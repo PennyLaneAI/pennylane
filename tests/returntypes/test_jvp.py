@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the gradients.vjp module."""
+"""Tests for the gradients.jvp module."""
 from functools import partial
 
 import pytest
@@ -446,7 +446,7 @@ class TestJVP:
 
     @pytest.mark.parametrize("dtype", [np.float32, np.float64])
     def test_dtype_matches_tangent(self, dtype):
-        """Tests that the vjp function matches the dtype of tangent when tangent is
+        """Tests that the jvp function matches the dtype of tangent when tangent is
         zero-like."""
         x = np.array([0.1], dtype=np.float64)
 
@@ -559,7 +559,7 @@ class TestJVPGradients:
 
     @pytest.mark.jax
     def test_jax(self, tol):
-        """Tests that the output of the VJP transform
+        """Tests that the output of the JVP transform
         can be differentiated using JAX."""
         import jax
         from jax import numpy as jnp
