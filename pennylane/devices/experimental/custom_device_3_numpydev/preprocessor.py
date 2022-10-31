@@ -12,7 +12,9 @@ def stopping_condition(obj):
     return getattr(obj, "has_matrix", False)
 
 
-def simple_preprocessor(qscript: Union[QuantumScript, List[QuantumScript]]) -> Union[QuantumScript, List[QuantumScript]]:
+def simple_preprocessor(
+    qscript: Union[QuantumScript, List[QuantumScript]]
+) -> Union[QuantumScript, List[QuantumScript]]:
 
     if not isinstance(qscript, QuantumScript):
         return [simple_preprocessor(qs) for qs in qscript]
@@ -24,6 +26,8 @@ def simple_preprocessor(qscript: Union[QuantumScript, List[QuantumScript]]) -> U
         if not stopping_condition(op):
             raise NotImplementedError(f"{op} not supported on device")
     if new_qscript.num_wires > 30:
-        raise NotImplementedError(f"Requested execution with {new_qscript.num_wires} qubits. We support at most 30.")
+        raise NotImplementedError(
+            f"Requested execution with {new_qscript.num_wires} qubits. We support at most 30."
+        )
 
     return simplify(new_qscript)
