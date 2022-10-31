@@ -280,7 +280,7 @@ def list_datasets(path=None):
                     '6-31G': ['0.46', '1.16', '0.58'],
                     'STO-3G': ['0.46', '1.05']
                 },
-                'HeH': {'STO-3G': ['0.9', '0.74', '0.6', '0.8']}
+                'HeH+': {'STO-3G': ['0.9', '0.74', '0.6', '0.8']}
             },
             'qspin': {
                 'Heisenberg': {'closed': {'chain': ['1x4']}},
@@ -337,32 +337,35 @@ def load_interactive():
 
     **Example**
 
-    qml.data.load_interactive()
-    Please select a data name:
+    .. code-block :: pycon
+
+        >>> qml.data.load_interactive()
+        Please select a data name:
             1) qspin
             2) qchem
-    Choice [1-2]: 1
-    Please select a sysname:
-        ...
-    Please select a periodicity:
-        ...
-    Please select a lattice:
-        ...
-    Please select a layout:
-        ...
-    Please select attributes:
-        ...
-    Force download files? (Default is no) [y/N]: N
-    Folder to download to? (Default is pwd, will download to /datasets subdirectory): /Users/jovyan/Downloads
+        Choice [1-2]: 1
+        Please select a sysname:
+            ...
+        Please select a periodicity:
+            ...
+        Please select a lattice:
+            ...
+        Please select a layout:
+            ...
+        Please select attributes:
+            ...
+        Force download files? (Default is no) [y/N]: N
+        Folder to download to? (Default is pwd, will download to /datasets subdirectory): /Users/jovyan/Downloads
 
-    Please confirm your choices:
-    dataset: qspin/Ising/open/rectangular/4x4
-    attributes: ['parameters', 'ground_states']
-    force: False
-    dest folder: /Users/jovyan/Downloads/datasets
-    Would you like to continue? (Default is yes) [Y/n]:
-    <pennylane.data.dataset.Dataset object at 0x10157ab50>
+        Please confirm your choices:
+        dataset: qspin/Ising/open/rectangular/4x4
+        attributes: ['parameters', 'ground_states']
+        force: False
+        dest folder: /Users/jovyan/Downloads/datasets
+        Would you like to continue? (Default is yes) [Y/n]:
+        <pennylane.data.dataset.Dataset object at 0x10157ab50>
     """
+
     if not _foldermap:
         _refresh_foldermap()
     if not _data_struct:

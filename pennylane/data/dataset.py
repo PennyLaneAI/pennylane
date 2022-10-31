@@ -163,6 +163,7 @@ class Dataset(ABC):
 
     @staticmethod
     def _write_file(data, filepath, protocol=4):
+        """General method to write data to a file."""
         pickled_data = dill.dumps(data, protocol=protocol)
         compressed_pickle = zstd.compress(pickled_data)
         with open(filepath, "wb") as f:
