@@ -12,9 +12,11 @@ Loading Datasets in PennyLane
 -----------------------------
 
 We can access data of a desired type with the :func:`~pennylane.data.load` function. This downloads the desired
-dataset or loads it from local storage if previously downloaded. Some examples of data categories available for download include 'qchem',
-quantum chemistry-related datasets, and 'qspin', spin-system-related datasets. To specify the desired data, we use several arguments.
-For 'qchem' this includes the molname, basis, and bondlength, and for 'qspin' this includes sys_name, periodic, lattice, and layout. 
+dataset or loads it from local storage if previously downloaded.
+
+To specify the dataset to be loaded, the data category (``data_type``) must be
+specified, alongside category-specific keyword arguments. For the full list
+of available datasets, please see the dataset library documentation.
 The :func:`~pennylane.data.load` returns a list with the desired data which can then be used within
 the usual PennyLane workflow.
 
