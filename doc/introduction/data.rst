@@ -77,7 +77,7 @@ Filtering Datasets
 ------------------
 
 In the case that we only wish to download or load portions of a large dataset, we can specify the desired attributes.
-For example, we can download only the molecule and hamiltonian of a dataset as follows:
+For example, we can download only the molecule and Hamiltonian of a dataset as follows:
 
 .. code-block:: python
 
