@@ -437,7 +437,7 @@ def _execute_fwd_new(
 ):
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
-    provided. This function is does not allow multiple derivatives."""
+    provided. This function does not allow multiple derivatives."""
 
     # pylint: disable=unused-variable
     @jax.custom_jvp
@@ -476,10 +476,8 @@ def _compute_jvps(jacs, tangents, multi_measurements):
     """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
     jvps = []
     for i, multi in enumerate(multi_measurements):
-        if multi:
-            jvps.append(qml.gradients.compute_jvp_multi(tangents[i], jacs[i]))
-        else:
-            jvps.append(qml.gradients.compute_jvp_single(tangents[i], jacs[i]))
+        compute_func = qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
+        jvps.append(compute_func(tangents[i], jacs[i]))
     return jvps
 
 
@@ -490,7 +488,7 @@ def _execute_bwd_new(
     gradient_fn,
     gradient_kwargs,
     _n=1,
-    max_diff=1,
+    max_diff=2,
 ):
     """The main interface execution function where jacobians of the execute
     function are computed by the registered backward function."""

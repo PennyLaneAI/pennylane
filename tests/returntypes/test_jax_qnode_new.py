@@ -484,7 +484,6 @@ class TestVectorValuedQNode:
                 ],
             ]
         )
-        print(jac)
         assert isinstance(jac, tuple)
         assert isinstance(jac[0], tuple)
 
@@ -803,7 +802,7 @@ class TestQubitIntegration:
         assert len(res) == 2
 
     def test_second_derivative(self, dev_name, diff_method, mode, interface, tol):
-        """Test second derivative calculation of a scalar valued QNode"""
+        """Test second derivative calculation of a scalar-valued QNode"""
 
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not second derivative.")
@@ -839,7 +838,7 @@ class TestQubitIntegration:
             assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
 
     def test_hessian(self, dev_name, diff_method, mode, interface, tol):
-        """Test hessian calculation of a scalar valued QNode"""
+        """Test hessian calculation of a scalar-valued QNode"""
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
 
@@ -877,7 +876,7 @@ class TestQubitIntegration:
             assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued(self, dev_name, diff_method, mode, interface, tol):
-        """Test hessian calculation of a vector valued QNode"""
+        """Test hessian calculation of a vector-valued QNode"""
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
 
@@ -1262,7 +1261,7 @@ class TestTapeExpansion:
         assert np.allclose(grad[0], expected_w)
         assert np.allclose(grad[1], expected_c)
 
-        # TODO: Add parameter shift when the bug with trainablle params and hamiltonian_grad is solved.
+        # TODO: Add parameter shift when the bug with trainable params and hamiltonian_grad is solved.
         # test second-order derivatives
         if diff_method in "backprop" and max_diff == 2:
             grad2_c = jax.jacobian(jax.grad(circuit, argnums=[2]), argnums=[2])(d, w, c)
@@ -1276,7 +1275,7 @@ class TestTapeExpansion:
             ]
             assert np.allclose(grad2_w_c, expected)
 
-    # TODO: Rework hamiltonian expand the for the new return type system.
+    # TODO: Rework hamiltonian expand for the new return type system.
     @pytest.mark.xfail(reason="Rework hamiltonian expand the for the new return type system.")
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_finite_shots(
@@ -1345,7 +1344,7 @@ jit_qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "backward"],
 ]
 
-# TODO: Addd interface for Jax-jit and create a new test file.
+# TODO: Add interface for Jax-jit and create a new test file.
 @pytest.mark.xfail(reason="Add interface for Jax-jit")
 @pytest.mark.parametrize("dev_name,diff_method,mode", jit_qubit_device_and_diff_method)
 class TestJIT:
