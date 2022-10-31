@@ -26,12 +26,12 @@ def _convert(jac, tangent):
         jac_new = []
         for j in jac:
             j_ = qml.math.convert_like(j, tangent)
-            j_ = qml.math.cast_like(j_, tangent)
+            j_ = qml.math.cast(j_, tangent.dtype)
             jac_new.append(j_)
         jac = tuple(jac_new)
     else:
         jac = qml.math.convert_like(jac, tangent)
-        jac = qml.math.cast_like(jac, tangent)
+        jac = qml.math.cast(jac, tangent.dtype)
     return jac
 
 
