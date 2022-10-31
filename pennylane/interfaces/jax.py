@@ -476,7 +476,9 @@ def _compute_jvps(jacs, tangents, multi_measurements):
     """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
     jvps = []
     for i, multi in enumerate(multi_measurements):
-        compute_func = qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
+        compute_func = (
+            qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
+        )
         jvps.append(compute_func(tangents[i], jacs[i]))
     return jvps
 

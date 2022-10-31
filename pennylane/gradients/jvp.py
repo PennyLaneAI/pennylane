@@ -18,7 +18,6 @@ of tapes.
 import numpy as np
 
 import pennylane as qml
-from pennylane import math
 
 
 def _convert(jac, tangent):
@@ -26,13 +25,13 @@ def _convert(jac, tangent):
     if isinstance(jac, tuple):
         jac_new = []
         for j in jac:
-            j_ = math.convert_like(j, tangent)
-            j_ = math.cast(j_, tangent.dtype)
+            j_ = qml.math.convert_like(j, tangent)
+            j_ = qml.math.cast_like(j_, tangent)
             jac_new.append(j_)
         jac = tuple(jac_new)
     else:
-        jac = math.convert_like(jac, tangent)
-        jac = math.cast(jac, tangent.dtype)
+        jac = qml.math.convert_like(jac, tangent)
+        jac = qml.math.cast_like(jac, tangent)
     return jac
 
 
@@ -43,6 +42,7 @@ def compute_jvp_single(tangent, jac):
     Args:
         tangent (list, tensor_like): tangent vector
         jac (tensor_like, tuple): Jacobian matrix
+
     Returns:
         tensor_like: the Jacobian vector product
 
@@ -62,9 +62,9 @@ def compute_jvp_single(tangent, jac):
     .. code-block:: pycon
 
         >>> tangent = np.array([2.0])
-        >>> jac = np.array([0.3, 0.3])
+        >>> jac = np.array([0.3, 0.4])
         >>> qml.gradients.compute_jvp_single(tangent, jac)
-        np.array([0.6, 0.6])
+        np.array([0.6, 0.8])
 
     3. For multiple parameters (in this case 2 parameters) and a single measurement without shape (e.g. expval, var):
 
@@ -91,43 +91,53 @@ def compute_jvp_single(tangent, jac):
     tangent = qml.math.stack(tangent)
     jac = _convert(jac, tangent)
 
-    # Single measurement with a single param
+    # Single param
     if not isinstance(jac, tuple):
-        tangent = math.reshape(tangent, (1,))
-        # Single measurement with no dimension e.g. expval
+        # No trainable parameters
+        if jac.shape == (0,):
+            res = qml.math.zeros((1, 0))
+            return res
+        tangent = qml.math.reshape(tangent, (1,))
+        # No dimension e.g. expval
         if jac.shape == ():
-            jac = math.reshape(jac, (1,))
-        # Single measurement with dimension e.g. probs
+            jac = qml.math.reshape(jac, (1,))
+        # With dimension e.g. probs
         else:
-            jac = math.reshape(jac, (1, len(jac)))
-        res = math.tensordot(jac, tangent, [[0], [0]])
-    # Single measurement with multiple params
+            jac = qml.math.reshape(jac, (1, -1))
+        res = qml.math.tensordot(jac, tangent, [[0], [0]])
+    # Multiple params
     else:
+        # No trainable parameters (adjoint)
+        if len(jac) == 0:
+            res = qml.math.zeros((1, 0))
+            return res
         jac = qml.math.stack(jac)
-        # Single measurement with no dimension e.g. expval
+        # No dimension e.g. expval
         if jac[0].shape == ():
             res = qml.math.tensordot(jac, tangent, 1)
-        # Single measurement with dimension e.g. probs
+        # With dimension e.g. probs
         else:
             res = qml.math.tensordot(jac, tangent, [[0], [0]])
     return res
 
 
 def compute_jvp_multi(tangent, jac):
-    """Convenience function to compute the Jacobian vector product for a given
-    vector of gradient outputs and a Jacobian for a multiple measurements tape.
+    """Convenience function to compute the Jacobian-vector product for a given
+    vector of gradient outputs and a Jacobian for a tape with multiple measurements.
 
     Args:
         tangent (tensor_like, list): tangent vector
         jac (tensor_like, tuple): Jacobian matrix
+
     Returns:
-        tensor_like: the Jacobian vector product
+        tensor_like: the Jacobian-vector product
 
     **Examples**
 
     1. For a single parameter and multiple measurement (one without shape and one with shape, e.g. expval and probs):
 
     .. code-block:: pycon
+
         >>> tangent = np.array([2.0])
         >>> jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
         >>> qml.gradients.compute_jvp_multi(tangent, jac)
@@ -137,20 +147,16 @@ def compute_jvp_multi(tangent, jac):
     shape, e.g. expval and probs):
 
     .. code-block:: pycon
+
         >>> tangent = np.array([1.0, 2.0])
         >>> jac = tuple([tuple([np.array([0.3]), np.array([0.4])]), tuple([np.array([0.2, 0.5]), np.array([0.3, 0.8])]),])
         >>> qml.gradients.compute_jvp_multi(tangent, jac)
         (np.array([1.1]), np.array([0.8, 2.1]))
-
     """
     if jac is None:
         return None
-    res = []
-
-    for j in jac:
-        res.append(compute_jvp_single(tangent, j))
-
-    return tuple(res)
+    res = tuple(compute_jvp_single(tangent, j) for j in jac)
+    return res
 
 
 def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
@@ -171,9 +177,7 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
         has no trainable parameters.
 
     **Example**
-
     #TODO: add examples
-
     """
     gradient_kwargs = gradient_kwargs or {}
     num_params = len(tape.trainable_params)
@@ -185,37 +189,41 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
         return [], lambda _, num=None: None
 
     multi_m = num_measurements > 1
-    multi_p = num_params > 1
 
     try:
-        if math.allclose(qml.math.stack(tangent), 0):
+        if qml.math.allclose(qml.math.stack(tangent), 0):
             # If the tangent vector is zero, then the
             # corresponding element of the JVP will be zero,
             # and we can avoid a quantum computation.
 
             def func(_):  # pylint: disable=unused-argument
                 if not multi_m:
-                    res = math.convert_like(np.zeros([num_params]), tangent)
-                    res = math.cast(res, tangent.dtype)
-                    if multi_p:
-                        res = tuple(res)
+                    # TODO: Update shape for CV variables and for qutrit simulations
+                    if tape.measurements[0].return_type is qml.measurements.Probability:
+                        dim = 2 ** len(tape.measurements[0].wires)
+                    else:
+                        dim = ()
+                    res = qml.math.convert_like(np.zeros(dim), tangent)
+                    res = qml.math.cast_like(res, tangent)
                 else:
                     res = []
                     for m in tape.measurements:
-                        # TODO: Update shape for CV variables
+                        # TODO: Update shape for CV variables and for qutrit simulations
                         if m.return_type is qml.measurements.Probability:
                             dim = 2 ** len(m.wires)
                         else:
                             dim = ()
-                        sub_res = math.convert_like(np.zeros(dim), tangent)
-                        sub_res = math.cast(sub_res, tangent.dtype)
+
+                        sub_res = qml.math.convert_like(np.zeros(dim), tangent)
+                        sub_res = qml.math.cast_like(sub_res, tangent)
                         res.append(sub_res)
                     res = tuple(res)
 
                 return res
 
             return [], func
-    except (AttributeError, TypeError):
+        # TODO remove the pragma in PR #3170
+    except (AttributeError, TypeError):  # pragma: no cover
         pass
 
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
@@ -243,8 +251,8 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
             the tapes
         reduction (str): Determines how the Jacobian-vector products are returned.
             If ``append``, then the output of the function will be of the form
-            ``List[tensor_like]``, with each element corresponding to the VJP of each
-            input tape. If ``extend``, then the output VJPs will be concatenated.
+            ``List[tensor_like]``, with each element corresponding to the JVP of each
+            input tape. If ``extend``, then the output JVPs will be concatenated.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
 
@@ -253,7 +261,6 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
         to tapes with no trainable parameters.
 
     **Example**
-
     # TODO: add examples
     """
     gradient_kwargs = gradient_kwargs or {}
@@ -279,7 +286,7 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
             res_t = results[start : start + res_len]
             start += res_len
 
-            # postprocess results to compute the VJP
+            # postprocess results to compute the JVP
             jvp_ = processing_fns[t_idx](res_t)
 
             if jvp_ is None:
@@ -288,9 +295,6 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
                 continue
 
             if isinstance(reduction, str):
-                if reduction == "extend":
-                    if not isinstance(jvp_, tuple) and jvp_.shape == ():
-                        jvp_ = math.reshape(jvp_, (1,))
                 getattr(jvps, reduction)(jvp_)
             elif callable(reduction):
                 reduction(jvps, jvp_)
