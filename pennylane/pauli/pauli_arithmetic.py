@@ -17,7 +17,7 @@ from functools import reduce
 
 import numpy as np
 from scipy import sparse
-from pennylane import math, wires, Identity
+from pennylane import math, wires
 
 I = "I"
 X = "X"
@@ -172,7 +172,11 @@ class PauliWord(dict):
         if len(self) == 0:
             if wire_order is None or wire_order == wires.Wires([]):
                 raise ValueError("Can't get the matrix of an empty PauliWord.")
-            return Identity(wires=wire_order)  # return Identity if no factors in the PauliWord
+            return (
+                np.eye(2 ** len(wire_order))
+                if format == "dense"
+                else sparse.eye(2 ** len(wire_order), format=format)
+            )
 
         matrix_map = sparse_mat_map if format != "dense" else mat_map
         kron = sparse.kron if format != "dense" else math.kron
@@ -248,7 +252,11 @@ class PauliSentence(dict):
         if len(self) == 0:
             if wire_order is None or wire_order == wires.Wires([]):
                 raise ValueError("Can't get the matrix of an empty PauliSentence.")
-            return Identity(wires=wire_order)  # return Identity if no terms in the PauliSentence
+            return (
+                np.eye(2 ** len(wire_order))
+                if format == "dense"
+                else sparse.eye(2 ** len(wire_order), format=format)
+            )
 
         mats_and_wires_gen = (
             (

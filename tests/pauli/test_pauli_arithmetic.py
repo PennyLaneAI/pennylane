@@ -135,6 +135,11 @@ class TestPauliWord:
         with pytest.raises(ValueError, match="Can't get the matrix of an empty PauliWord."):
             pw4.to_mat(wire_order=Wires([]))
 
+    def test_to_mat_identity(self):
+        """Test that an identity matrix is return if wire_order is provided."""
+        assert np.allclose(pw4.to_mat(wire_order=[0, 1]), np.eye(4))
+        assert sparse.issparse(pw4.to_mat(wire_order=[0, 1], format="csr"))
+
     @pytest.mark.parametrize("pw, wire_order, true_matrix", tup_pws_mat_wire)
     def test_to_mat(self, pw, wire_order, true_matrix):
         """Test that the wire_order is correctly incorporated in computing the
@@ -279,6 +284,11 @@ class TestPauliSentence:
 
         with pytest.raises(ValueError, match=match):
             ps.to_mat(wire_order=Wires([]))
+
+    def test_to_mat_identity(self):
+        """Test that an identity matrix is return if wire_order is provided."""
+        assert np.allclose(ps5.to_mat(wire_order=[0, 1]), np.eye(4))
+        assert sparse.issparse(ps5.to_mat(wire_order=[0, 1], format="csr"))
 
     tup_ps_mat = (
         (
