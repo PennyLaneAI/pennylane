@@ -14,7 +14,7 @@ Loading Datasets in PennyLane
 We can access data of a desired type with the :func:`~pennylane.data.load` function. This downloads the desired
 dataset or loads it from local storage if previously downloaded.
 
-To specify the dataset to be loaded, the data category (``data_type``) must be
+To specify the dataset to be loaded, the data category (``data_name``) must be
 specified, alongside category-specific keyword arguments. For the full list
 of available datasets, please see the dataset library documentation.
 The :func:`~pennylane.data.load` returns a list with the desired data which can then be used within
@@ -22,10 +22,29 @@ the usual PennyLane workflow.
 
 .. code-block:: python
 
-    >>> H2_dataset = qml.data.load(data_type="qchem", molname="H2", basis="6-31G", bondlength="0.46")
+    >>> H2_dataset = qml.data.load(data_name="qchem", molname="H2", basis="6-31G", bondlength="0.46")
     >>> print(H2_dataset)
     [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
 
+When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as _attributes_).
+For example, we can download only the molecule and hamiltonian of a dataset as follows:
+
+.. code-block:: python
+
+    >>> H2_hamiltonian = qml.data.load(data_name='qchem',molname='H2', basis='6-31G', bondlength='0.46', attributes=['molecule','hamiltonian'])
+    >>> H2_hamiltonian
+    <Hamiltonian: terms=185, wires=[0, 1, 2, 3, 4, 5, 6, 7]>
+
+To determine what attributes are available for a type of dataset, we can use the function :func:`~pennylane.data.list_attributes`:
+
+.. code-block:: python
+    >>> qml.data.list_attributes(data_name='qchem')
+    ['molecule',
+    'hamiltonian',
+    'wire_map',
+    ...
+    'vqe_params',
+    'vqe_circuit']
 
 Using Datasets in PennyLane
 ---------------------------
