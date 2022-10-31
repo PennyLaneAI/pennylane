@@ -134,7 +134,7 @@ def compute_jvp_multi(tangent, jac):
 
     **Examples**
 
-    1. For a single parameter and multiple measurement (one without shape and one with shape, e.g. expval and probs):
+    1. For a single parameter and multiple measurements (one without shape and one with shape, e.g. expval and probs):
 
     .. code-block:: pycon
 
@@ -143,7 +143,7 @@ def compute_jvp_multi(tangent, jac):
         >>> qml.gradients.compute_jvp_multi(tangent, jac)
         (np.array([0.6]), np.array([0.4, 1. ]))
 
-    2. For multiple parameters (in this case 2 parameters) and multiple measurement (one without shape and one with
+    2. For multiple parameters (in this case 2 parameters) and multiple measurements (one without shape and one with
     shape, e.g. expval and probs):
 
     .. code-block:: pycon
