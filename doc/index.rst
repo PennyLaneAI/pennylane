@@ -173,24 +173,30 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/qml
-   code/qml_interfaces
-   code/qml_operation
-   code/qml_devices
+   code/qml_drawer
    code/qml_fourier
    code/qml_gradients
    code/qml_grouping
    code/qml_kernels
    code/qml_math
+   code/qml_numpy
    code/qml_ops_op_math
    code/qml_qinfo
-   code/qml_numpy
+   code/qml_resource
+   code/qml_shadows
+   code/qml_transforms
    code/qml_qaoa
    code/qml_qchem
    code/qml_qnn
-   code/qml_resource
-   code/qml_shadows
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Internals
+   :hidden:
+
+   code/qml_devices
+   code/qml_interfaces
+   code/qml_operation
    code/qml_tape
-   code/qml_transforms
-   code/qml_drawer
    code/qml_utils
    code/qml_wires
