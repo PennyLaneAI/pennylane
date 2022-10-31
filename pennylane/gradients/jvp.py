@@ -95,7 +95,7 @@ def compute_jvp_single(tangent, jac):
             jac = math.reshape(jac, (1,))
         # With dimension e.g. probs
         else:
-            jac = math.reshape(jac, (1, len(jac)))
+            jac = math.reshape(jac, (1, -1))
         res = math.tensordot(jac, tangent, [[0], [0]])
     # Multiple params
     else:
