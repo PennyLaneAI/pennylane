@@ -343,7 +343,7 @@ Users can specify the control wires as well as the values to control the operati
 * The code block in the usage details of the UCCSD template is updated.
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
-* Adds a "Deprecations" page to the developer documentation.
+* Added a "Deprecations" page to the developer documentation.
   [(#3093)](https://github.com/PennyLaneAI/pennylane/pull/3093)
 
 * The example of the `FlipSign` template is updated.
