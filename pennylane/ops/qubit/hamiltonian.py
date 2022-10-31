@@ -237,34 +237,33 @@ class Hamiltonian(Observable):
         """
         return self._ops
 
-    @staticmethod
-    def compute_terms(*coeffs, ops):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a linear combination of other operators (static method).
+    def terms(self):
+        r"""Representation of the operator as a linear combination of other operators.
 
          .. math:: O = \sum_i c_i O_i
 
          .. seealso:: :meth:`~.Hamiltonian.terms`
 
-        Args:
-            coeffs (Iterable[tensor_like or float]): coefficients
-            ops (list[.Operator]): operators
-
         Returns:
             tuple[Iterable[tensor_like or float], list[.Operator]]: coefficients and operations
 
         **Example**
+        >>> coeffs = [1., 2.]
+        >>> ops = [qml.PauliX(0), qml.PauliZ(0)]
+        >>> H = qml.Hamiltonian(coeffs, ops)
 
-        >>> qml.Hamiltonian.compute_terms([1., 2.], ops=[qml.PauliX(0), qml.PauliZ(0)])
+        >>> H.terms()
         [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
 
         The coefficients are differentiable and can be stored as tensors:
-
         >>> import tensorflow as tf
-        >>> t = qml.Hamiltonian.compute_terms([tf.Variable(1.), tf.Variable(2.)], ops=[qml.PauliX(0), qml.PauliZ(0)])
+        >>> H = qml.Hamiltonian([tf.Variable(1.), tf.Variable(2.)], [qml.PauliX(0), qml.PauliZ(0)])
+        >>> t = H.terms()
+
         >>> t[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return coeffs, ops
+        return self.coeffs, self.ops
 
     @property
     def wires(self):
