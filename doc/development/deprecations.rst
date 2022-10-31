@@ -3,14 +3,14 @@
 Deprecations
 ============
 
-Pending Deprecations
+Pending deprecations
 --------------------
 
-* In-place inversion is now deprecated. This includes ``op.inv()`` and ``op.inverse=value``. Please
-  use ``qml.adjoint`` or ``qml.pow`` instead. 
+* In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
+use ``qml.adjoint`` or ``qml.pow`` instead. 
 
   - Still accessible in v0.27 and v0.28
-  - Removed in v0.29
+  - Will be removed in v0.29
 
   Don't use:
 
@@ -18,7 +18,7 @@ Pending Deprecations
   >>> v2 = qml.PauliX(0)
   >>> v2.inverse = True
 
-  Instead use:
+  Instead, use:
 
   >>> qml.adjoint(qml.PauliX(0))
   Adjoint(PauliX(wires=[0]))
@@ -32,7 +32,7 @@ Pending Deprecations
 * ``QueuingContext`` is renamed ``QueuingManager``. 
 
   - Still accessible via ``QueuingContext`` in v0.27
-  - Only accessible via ``QueuingManager`` in v0.28
+  - Will only be accessible via ``QueuingManager`` in v0.28
 
 * ``QueuingManager.safe_update_info`` and ``AnnotateQueue.safe_update_info`` are removed.
 
@@ -65,16 +65,16 @@ Pending Deprecations
         return qml.expval(Hamiltonian)
 
 
-Completed Deprecation Cycles
+Completed deprecation cycles
 ----------------------------
 
-* The ``ObservableReturnTypes`` ``Sample``, ``Variance``, ``Expectation``, ``Probability``, ``State``, and ``MidMeasure``
-  have been moved to ``measurements`` from ``operation``.
+* ``ObservableReturnTypes`` ``Sample``, ``Variance``, ``Expectation``, ``Probability``, ``State``, and ``MidMeasure``
+  are moved to ``measurements`` from ``operation``.
 
   - Deprecated in v0.23
   - Removed in v0.27
 
-* The ``qml.utils.expand`` function is now removed; ``qml.math.expand_matrix`` should be used
+* The ``qml.utils.expand`` function is deprecated. ``qml.math.expand_matrix`` should be used
   instead.
 
   - Deprecated in v0.24
