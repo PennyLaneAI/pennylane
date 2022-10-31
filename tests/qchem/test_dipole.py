@@ -252,8 +252,8 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     ],
 )
 def test_dipole_moment_631g_basis(symbols, geometry, core, charge, active):
-    r"""Test that dipole moment is constructed properly with basis sets having different numbers of
-    primitive Gaussian functions."""
+    r"""Test that the dipole moment is constructed properly with basis sets having different numbers
+    of primitive Gaussian functions."""
     alpha = [
         np.array([18.73113696, 2.82539437, 0.64012169], requires_grad=True),
         np.array([0.16127776], requires_grad=True),
