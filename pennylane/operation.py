@@ -1115,7 +1115,7 @@ class Operator(abc.ABC):
 
         with tape:
             if getattr(self, "inverse", False):
-                qml.adjoint(self.decomposition)()
+                qml.adjoint(self.decomposition, lazy=False)()
             else:
                 self.decomposition()
 
