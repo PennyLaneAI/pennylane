@@ -14,6 +14,10 @@
 * Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
 keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
   ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
+  
+* Added the `qml.ControlledQutritUnitary` qutrit operation for applying a controlled arbitrary unitary matrix to the specified set of wires.
+Users can specify the control wires as well as the values to control the operation on.
+  ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
 
 * `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
   symmetries of the Hamiltonian.
@@ -46,6 +50,30 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
         0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
         1: ───────────────────────┤ ╰<Z@Z>
 
+  ```
+
+* The `IntegerComparator` arithmetic operation is now available.
+[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
+
+  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive
+  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. 
+  Alternatively, the flipping condition can be :math:`n < L`. This is accessed via the `geq` keyword
+  argument.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisState(np.array([0, 1]), wires=range(2))
+      qml.broadcast(qml.Hadamard, wires=range(2), pattern='single')
+      qml.IntegerComparator(2, geq=False, wires=[0, 1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  [-0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
   ```
 
 * The `QNode` class now accepts an ``auto`` interface, which automatically detects the interface
@@ -115,6 +143,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 
 <h3>Improvements</h3>
 
+* Printing `MultiControlledX` now shows the `control_values`.
+[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
+
 * The matrix passed to `qml.Hermitian` is validated when creating the observable if the input is not abstract.
   [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
 
@@ -123,6 +154,10 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   This is a developer-facing change, and users should not manipulate `QuantumScript` directly.  Instead, they
   should continue to rely on `QNode`s.
   [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
+
+* `qml.simplify`, `op_tranform`'s like `qml.matrix`, `batch_transform`, `hamiltonian_expand` and `split_non_commuting` now work with
+  `QuantumScript` as well as `QuantumTape`.
+  [(#3209)](https://github.com/PennyLaneAI/pennylane/pull/3209)
 
 * The UCCSD and kUpCCGSD template are modified to remove a redundant flipping of the initial state.
   [(#3148)](https://github.com/PennyLaneAI/pennylane/pull/3148)
@@ -225,6 +260,9 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * New `null.qubit` device. The `null.qubit`performs no operations or memory allocations.
   [(#2589)](https://github.com/PennyLaneAI/pennylane/pull/2589)
 
+* `default.qubit` favours decomposition and avoids matrix construction for `QFT` and `GroverOperator` at larger qubit numbers.
+  [(#3193)](https://github.com/PennyLaneAI/pennylane/pull/3193)
+
 * `ControlledQubitUnitary` now has a `control_values` property.
   [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
 
@@ -232,7 +270,7 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   Stop using `op._wires = new_wires`, use `qml.map_wires(op, wire_map=dict(zip(op.wires, new_wires)))`
   instead.
   [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
-  
+
 <h3>Breaking changes</h3>
 
 * `QuantumTape._par_info` is now a list of dictionaries, instead of a dictionary whose keys are integers starting from zero.
@@ -288,6 +326,10 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
+* `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
+  instead. There is no longer a static method for this.
+  [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
+
 <h3>Documentation</h3>
 
 * The code block in the usage details of the UCCSD template is updated.
@@ -335,7 +377,9 @@ Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Albert Mitjans Coma,
 Utkarsh Azad,
+Isaac De Vlugt,
 Amintor Dusko,
+Lillian M. A. Frederiksen,
 Diego Guala,
 Soran Jahangiri,
 Christina Lee,
