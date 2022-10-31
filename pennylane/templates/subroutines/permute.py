@@ -161,7 +161,8 @@ class Permute(Operation):
             # Make sure everything in the permutation has an associated label in wires
         for label in permutation:
             if label not in wires:
-                raise ValueError(f"Cannot permute wire {label} not present in wire set.")
+                raise ValueError(
+                    f"Cannot permute wire {label} not present in wire set.")
 
         self._hyperparameters = {"permutation": permutation, 'wires': wires}
         super().__init__(wires=wires, do_queue=do_queue, id=id)
@@ -171,36 +172,39 @@ class Permute(Operation):
         return 0
 
     def matrix(self):  # pylint: disable=arguments-differ
-        
+
         wires = self._hyperparameters['wires']
         permutation = self._hyperparameters['permutation']
         n_wires = len(wires)
 
-        # Iterate over the permutation and swap the element with
+        wires_indices = list(range(n_wires))
+        perm_indices = [wires.index(label) for label in permutation]
+
+        # Iterate over the perm_indices and swap the element with
         # the location where the actual index occurs
         swap_order = []
-        for idx, value in enumerate(permutation):
-            if wires[idx] != value:
+        for idx, value in enumerate(perm_indices):
+            if wires_indices[idx] != value:
                 # Where do we need to send the qubit at this location?
-                j = permutation.index(wires[idx])
+                j = perm_indices.index(wires_indices[idx])
 
-                # SWAP based on the labels of the wires
-                swap_order.append((wires[idx], wires[j]))
+                # SWAP based on the labels of the wires_indices
+                swap_order.append((wires_indices[idx], wires_indices[j]))
 
-                # Update the permutations to account for the SWAP
-                permutation[idx], permutation[j] = (
-                    permutation[j],
-                    permutation[idx],
+                # Update the perm_indicess to account for the SWAP
+                perm_indices[idx], perm_indices[j] = (
+                    perm_indices[j],
+                    perm_indices[idx],
                 )
         swap_order.reverse()
-        
+
         # Update swap_order to support indexing from left to right
         for index, value in enumerate(swap_order):
             swap_order[index] = (n_wires - value[0] - 1, n_wires - value[1] - 1)
 
         # # Create the matrix representation of the permutation
         dimension = 2**n_wires
-        mat = np.zeros((dimension, dimension), dtype=np.complex128)
+        mat = np.zeros((dimension, dimension), dtype=np.int8)
 
         # Iterate over the rows of the matrix
         for i in range(dimension):
