@@ -147,6 +147,10 @@ Users can specify the control wires as well as the values to control the operati
   if computational basis samples are being generated.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 
+* The parameters of a basis set containing different number of Gaussian functions are easier to 
+  differentiate.
+  [(#3213)](https://github.com/PennyLaneAI/pennylane/pull/3213)
+
 * Printing `MultiControlledX` now shows the `control_values`.
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
@@ -338,6 +342,9 @@ Users can specify the control wires as well as the values to control the operati
 
 * The code block in the usage details of the UCCSD template is updated.
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
+
+* The example of the `FlipSign` template is updated.
+  [(#3219)](https://github.com/PennyLaneAI/pennylane/pull/3219)
 
 <h3>Bug fixes</h3>
 
