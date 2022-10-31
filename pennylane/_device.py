@@ -747,7 +747,7 @@ class Device(abc.ABC):
 
             except ValueError as e:
                 raise ValueError(
-                    "Can only return the expectation of a single Hamiltonian observable"
+                    "Can only return the expectation of a single Sum observable"
                 ) from e
         elif (
             len(circuit._obs_sharing_wires) > 0
