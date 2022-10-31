@@ -14,24 +14,24 @@
 """Transform finding all maximal matches of a pattern in a quantum circuit and optimizing the circuit by
 substitution."""
 
-import itertools
 import copy
+import itertools
 from collections import OrderedDict
 
 import numpy as np
 
 import pennylane as qml
-from pennylane import apply, adjoint
+from pennylane import adjoint
+from pennylane.ops.qubit.attributes import symmetric_over_all_wires
+from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.wires import Wires
-from pennylane.ops.qubit.attributes import (
-    symmetric_over_all_wires,
-)
+
 
 # pylint: disable=too-many-statements
 @qfunc_transform
-def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None):
+def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quantum_cost=None):
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:
@@ -172,14 +172,13 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
     # pylint: disable=protected-access, too-many-branches
 
     measurements = tape.measurements
-    observables = tape.observables
 
     consecutive_wires = Wires(range(len(tape.wires)))
     inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
 
     for pattern in pattern_tapes:
         # Check the validity of the pattern
-        if not isinstance(pattern, qml.tape.QuantumTape):
+        if not isinstance(pattern, QuantumTape):
             raise qml.QuantumFunctionError("The pattern is not a valid quantum tape.")
 
         # Check that it does not contain a measurement.
@@ -212,7 +211,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
             # If some substitutions are possible, we create an optimized circuit.
             if substitution.substitution_list:
                 # Create a tape that does not affect the outside context.
-                with qml.tape.QuantumTape(do_queue=False) as tape_inside:
+                with QuantumTape(do_queue=False) as tape_inside:
                     # Loop over all possible substitutions
                     for group in substitution.substitution_list:
 
@@ -228,7 +227,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
                         for elem in pred:
                             node = circuit_dag.get_node(elem)
                             inst = copy.deepcopy(node.op)
-                            apply(inst)
+                            qml.apply(inst)
                             already_sub.append(elem)
 
                         already_sub = already_sub + circuit_sub
@@ -244,28 +243,23 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
                             node = group.template_dag.get_node(index)
                             inst = copy.deepcopy(node.op)
 
-                            inst._wires = Wires(wires)
-
-                            adjoint(apply, lazy=False)(inst)
+                            inst = qml.map_wires(inst, wire_map=dict(zip(inst.wires, wires)))
+                            adjoint(qml.apply, lazy=False)(inst)
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:
                         node = circuit_dag.get_node(node_id)
                         inst = copy.deepcopy(node.op)
-                        apply(inst)
+                        qml.apply(inst)
 
-                tape = tape_inside
+                tape = qml.map_wires(input=tape_inside, wire_map=inverse_wires_map)
 
     for op in tape.operations:
-        op._wires = Wires([inverse_wires_map[wire] for wire in op.wires.tolist()])
-        apply(op)
+        qml.apply(op)
 
     # After optimization, simply apply the measurements
-    for obs in observables:
-        obs._wires = Wires([inverse_wires_map[wire] for wire in obs.wires.tolist()])
-
     for m in measurements:
-        apply(m)
+        qml.apply(m)
 
 
 def pattern_matching(circuit_dag, pattern_dag):
