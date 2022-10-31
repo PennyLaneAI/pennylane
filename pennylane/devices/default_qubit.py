@@ -95,6 +95,7 @@ class DefaultQubit(QubitDevice):
         "QubitUnitary",
         "ControlledQubitUnitary",
         "MultiControlledX",
+        "IntegerComparator",
         "DiagonalQubitUnitary",
         "PauliX",
         "PauliY",

@@ -243,6 +243,8 @@ Gates performing arithmetics
 
     ~pennylane.QubitCarry
     ~pennylane.QubitSum
+    ~pennylane.IntegerComparator
+
 
 :html:`</div>`
 
