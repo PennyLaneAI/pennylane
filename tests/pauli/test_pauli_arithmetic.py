@@ -82,6 +82,7 @@ class TestPauliWord:
         """Test that the copy is identical to the original."""
         copy_pw = copy(pw)
         assert copy_pw == pw
+        assert copy_pw is not pw
 
     tup_pws_wires = ((pw1, {1, 2}), (pw2, {"a", "b", "c"}), (pw3, {0, "b", "c"}), (pw4, set()))
 
