@@ -26,7 +26,7 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import Operation, Operator, Tensor, operation_derivative
-from pennylane.ops import cv
+from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
@@ -906,7 +906,7 @@ class TestOperatorIntegration:
         sum_op = qml.PauliX(0) + qml.RX(1, 0)
         final_op = qml.op_sum(qml.PauliX(0), qml.RX(1, 0))
         #  TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, qml.ops.Sum)
+        assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
@@ -918,12 +918,48 @@ class TestOperatorIntegration:
         sum_op = 5 + qml.PauliX(0) + 0
         final_op = qml.op_sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
         # TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, qml.ops.Sum)
+        assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
         assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+
+    def test_sum_scalar_tensor(self):
+        """Test the __sum__ dunder method with a scalar tensor."""
+        scalar = pnp.array(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert sum_op[1].scalar is scalar
+
+    @pytest.mark.torch
+    def test_sum_scalar_torch_tensor(self):
+        """Test the __sum__ dunder method with a scalar torch tensor."""
+        import torch
+
+        scalar = torch.tensor(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert isinstance(sum_op, Sum)
+        assert sum_op[1].scalar is scalar
+
+    @pytest.mark.tf
+    def test_sum_scalar_tf_tensor(self):
+        """Test the __sum__ dunder method with a scalar tf tensor."""
+        import tensorflow as tf
+
+        scalar = tf.constant(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert isinstance(sum_op, Sum)
+        assert sum_op[1].scalar is scalar
+
+    @pytest.mark.jax
+    def test_sum_scalar_jax_tensor(self):
+        """Test the __sum__ dunder method with a scalar jax tensor."""
+        from jax import numpy as jnp
+
+        scalar = jnp.array(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert isinstance(sum_op, Sum)
+        assert sum_op[1].scalar is scalar
 
     def test_sum_multi_wire_operator_with_scalar(self):
         """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
@@ -933,7 +969,7 @@ class TestOperatorIntegration:
             qml.s_prod(5, qml.Identity([0, 1])),
         )
         # TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, qml.ops.Sum)
+        assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
@@ -964,11 +1000,48 @@ class TestOperatorIntegration:
         assert np.allclose(sprod_op.matrix(), sprod_op2.matrix(), rtol=0)
         assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
 
+    def test_mul_scalar_tensor(self):
+        """Test the __mul__ dunder method with a scalar tensor."""
+        scalar = pnp.array(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+    @pytest.mark.torch
+    def test_mul_scalar_torch_tensor(self):
+        """Test the __mul__ dunder method with a scalar torch tensor."""
+        import torch
+
+        scalar = torch.tensor(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+    @pytest.mark.tf
+    def test_mul_scalar_tf_tensor(self):
+        """Test the __mul__ dunder method with a scalar tf tensor."""
+        import tensorflow as tf
+
+        scalar = tf.constant(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+    @pytest.mark.jax
+    def test_mul_scalar_jax_tensor(self):
+        """Test the __mul__ dunder method with a scalar jax tensor."""
+        from jax import numpy as jnp
+
+        scalar = jnp.array(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
     def test_mul_with_operator(self):
         """Test the __matmul__ dunder method with an operator."""
         prod_op = qml.RX(1, 0) @ qml.PauliX(0)
         final_op = qml.prod(qml.RX(1, 0), qml.PauliX(0))
-        assert isinstance(prod_op, qml.ops.Prod)
+        assert isinstance(prod_op, Prod)
         assert prod_op.name == final_op.name
         assert prod_op.wires == final_op.wires
         assert prod_op.data == final_op.data
@@ -1204,7 +1277,7 @@ class TestTensor:
 
     def test_num_wires(self):
         """Test that the correct number of wires is returned"""
-        p = np.array([0.5])
+        p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
@@ -1212,7 +1285,7 @@ class TestTensor:
 
     def test_wires(self):
         """Test that the correct nested list of wires is returned"""
-        p = np.array([0.5])
+        p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
@@ -1220,7 +1293,7 @@ class TestTensor:
 
     def test_params(self):
         """Test that the correct flattened list of parameters is returned"""
-        p = np.array([0.5])
+        p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
@@ -1228,7 +1301,7 @@ class TestTensor:
 
     def test_num_params(self):
         """Test that the correct number of parameters is returned"""
-        p = np.array([0.5])
+        p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         Z = qml.Hermitian(p, wires=[1, 2])
@@ -1237,7 +1310,7 @@ class TestTensor:
 
     def test_parameters(self):
         """Test that the correct nested list of parameters is returned"""
-        p = np.array([0.5])
+        p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
@@ -1917,8 +1990,6 @@ class TestDefaultRepresentations:
 
     def test_terms_undefined(self):
         """Tests that custom error is raised in the default terms representation."""
-        with pytest.raises(qml.operation.TermsUndefinedError):
-            MyOp.compute_terms(wires=[1])
         with pytest.raises(qml.operation.TermsUndefinedError):
             op.terms()
 
