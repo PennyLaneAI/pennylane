@@ -1446,7 +1446,7 @@ class TestAutograph:
 
     @pytest.mark.parametrize("mode", ["forward", "backward"])
     def test_autograph_adjoint_multi_params(self, mode, decorator, interface, tol):
-        """Test that a parameter-shift vQNode can be compiled
+        """Test that a parameter-shift QNode can be compiled
         using @tf.function, and differentiated to second order"""
         dev = qml.device("default.qubit", wires=1)
 
@@ -1472,7 +1472,7 @@ class TestAutograph:
 
     @pytest.mark.parametrize("mode", ["forward", "backward"])
     def test_autograph_adjoint_single_param(self, mode, decorator, interface, tol):
-        """Test that a parameter-shift vQNode can be compiled
+        """Test that a parameter-shift QNode can be compiled
         using @tf.function, and differentiated to second order"""
         dev = qml.device("default.qubit", wires=1)
 
@@ -1495,7 +1495,7 @@ class TestAutograph:
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
     def test_autograph_hessian(self, decorator, interface, tol):
-        """Test that a parameter-shift vQNode can be compiled
+        """Test that a parameter-shift QNode can be compiled
         using @tf.function, and differentiated to second order"""
         dev = qml.device("default.qubit", wires=1)
         a = tf.Variable(0.543, dtype=tf.float64)

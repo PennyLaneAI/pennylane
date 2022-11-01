@@ -27,7 +27,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 
 
 class TestTensorFlowExecuteUnitTests:
-    """Unit tests for autograd execution"""
+    """Unit tests for TensorFlow execution"""
 
     def test_jacobian_options(self, mocker, tol):
         """Test setting jacobian options"""
@@ -933,9 +933,9 @@ class TestHamiltonianWorkflows:
         )
 
     def test_multiple_hamiltonians_not_trainable(self, cost_fn, execute_kwargs, tol):
+        weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
         coeffs1 = tf.constant([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.constant([0.7], dtype=tf.float64)
-        weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape() as tape:
@@ -951,9 +951,9 @@ class TestHamiltonianWorkflows:
         assert res[2] is None
 
     def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, tol):
+        weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
         coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.Variable([0.7], dtype=tf.float64)
-        weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape() as tape:

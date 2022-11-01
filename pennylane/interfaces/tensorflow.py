@@ -279,10 +279,8 @@ def _execute_new(
         # convert output to TensorFlow tensors
 
         # skip in the case of counts
-        if isinstance(r, dict):
-            continue
-
-        res[i] = _to_tensors(r)
+        if not isinstance(r, dict):
+            res[i] = _to_tensors(r)
 
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
@@ -299,10 +297,7 @@ def _execute_new(
             for tape in tapes:
                 num_meas = len(tape.measurements)
                 tape_dy = dy[start : start + num_meas]
-                if num_meas == 1:
-                    dy_nested.append(tape_dy[0])
-                else:
-                    dy_nested.append(tape_dy)
+                dy_nested.append(tape_dy[0] if num_meas == 1 else tape_dy)
                 start += num_meas
 
             dy = dy_nested
