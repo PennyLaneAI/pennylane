@@ -193,7 +193,7 @@ def test_excitations_to_wires_exceptions(singles, doubles, wires, message_match)
             np.array([3.90575761, -1.89772083, -1.36689032]),
             [[0, 2], [1, 3]],
             [[0, 1, 2, 3]],
-            [-0.14619406, -0.06502792, 0.14619406, 0.06502792],
+            [0.14619406, 0.06502792, -0.14619406, -0.06502792],
         )
     ],
 )
@@ -201,14 +201,14 @@ def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
     """Test integration with the UCCSD template"""
 
     s_wires, d_wires = qchem.excitations_to_wires(singles, doubles)
-    N = 4
-    wires = range(N)
-    dev = qml.device("default.qubit", wires=N)
+    n = 4
+    wires = range(n)
+    dev = qml.device("default.qubit", wires=n)
 
     @qml.qnode(dev)
     def circuit(weights):
         UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=np.array([1, 1, 0, 0]))
-        return [qml.expval(qml.PauliZ(w)) for w in range(N)]
+        return [qml.expval(qml.PauliZ(w)) for w in range(n)]
 
     res = circuit(weights)
     assert np.allclose(res, np.array(expected))

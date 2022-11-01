@@ -165,6 +165,11 @@ class TestMultipleOperations:
         expected_matrix = I_CNOT @ X_S_H
         assert np.allclose(matrix, expected_matrix)
 
+        qs = qml.tape.QuantumScript(tape.operations)
+        qs_matrix = qml.matrix(tape, wire_order)
+
+        assert np.allclose(qs_matrix, expected_matrix)
+
     def test_multiple_operations_qfunc(self):
         """Check the total matrix for a qfunc containing multiple gates"""
         wire_order = ["a", "b", "c"]
@@ -212,6 +217,10 @@ class TestWithParameterBroadcasting:
         matrix = qml.matrix(tape, wire_order)
         expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ np.kron(RX(0.7), S_H)]
         assert np.allclose(matrix, expected_matrix)
+
+        qs = qml.tape.QuantumScript(tape.operations)
+        qs_matrix = qml.matrix(qs, wire_order)
+        assert np.allclose(qs_matrix, expected_matrix)
 
     def test_multiple_operations_tape_leading_broadcasted_op(self):
         """Check the total matrix for a tape containing multiple gates
