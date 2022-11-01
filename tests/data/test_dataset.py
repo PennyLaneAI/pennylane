@@ -171,3 +171,18 @@ def test_lazy_load_until_access_full(tmp_path):
     assert dataset.attrs == {"molecule": 1, "hf_state": None}
     assert dataset.hf_state == 2
     assert dataset.attrs == {"molecule": 1, "hf_state": 2}
+
+
+def test_hamiltonian_is_loaded_properly(tmp_path):
+    """Test that __getattribute__ correctly loads hamiltonians from dicts."""
+    filename = str(tmp_path / "myset_hamiltonian.dat")
+    qml.data.Dataset._write_file(
+        {"terms": {"IIII": 0.1, "ZIII": 0.2}, "wire_map": {0: 0, 1: 1, 2: 2, 3: 3}}, filename
+    )
+    dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
+    ham = dataset.hamiltonian
+    assert isinstance(ham, qml.Hamiltonian)
+    coeffs, ops = ham.terms()
+    assert coeffs == (0.1, 0.2)
+    assert qml.equal(qml.Identity(0), ops[0])
+    assert qml.equal(qml.PauliZ(0), ops[1])
