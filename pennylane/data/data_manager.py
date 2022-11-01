@@ -111,7 +111,7 @@ def _validate_params(data_name, description, attributes):
         return None
 
     exc = validate_structure(_foldermap[data_name], params_needed)
-    if exc is not None:
+    if isinstance(exc, Exception):
         raise exc
 
 
