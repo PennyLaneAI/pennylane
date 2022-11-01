@@ -306,7 +306,7 @@ def list_datasets(path=None):
 
 def list_attributes(data_name):
     r"""List the attributes that exist for a specific data_name.
-    
+
     Args:
         data_name (str): The type of the desired data
 
