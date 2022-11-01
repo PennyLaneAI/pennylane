@@ -16,13 +16,21 @@ This module contains functions for adding the TensorFlow Autograph interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments,too-many-branches,too-many-statements
+from functools import reduce
+
 import numpy as np
 import tensorflow as tf
 
 import pennylane as qml
 
 
-from .tensorflow import _compute_vjp, _compute_vjp_new
+from .tensorflow import (
+    _compute_vjp,
+    _compute_vjp_new,
+    _to_tensors,
+    _reconstruct_res_structure,
+    _reconstruct_jac_structure,
+)
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
@@ -297,17 +305,20 @@ def _execute_new(
 
         lens.append(len(params))
 
-        if tape.all_sampled:
-            output_types.append(tf.int64)
-        elif tape.measurements[0].return_type is qml.measurements.State:
-            output_types.append(tf.complex128)
-        else:
-            output_types.append(tf.float64)
+        for m in tape.measurements:
+            if m.return_type is qml.measurements.Sample:
+                output_types.append(tf.int64)
+            elif m.return_type is qml.measurements.State:
+                output_types.append(tf.complex128)
+            else:
+                output_types.append(tf.float64)
+
+    total_measurements = sum(len(tape.measurements) for tape in tapes)
 
     if mode == "forward":
-        output_types += [tf.float64] * len(tapes)
+        output_types += [tf.float64] * len(trainable)
 
-    output_types += [tf.int32] * len(tapes)
+    output_types += [tf.int32] * total_measurements
 
     def _nest_params(all_params):
         count = 0
@@ -327,16 +338,17 @@ def _execute_new(
             # Forward pass: execute the tapes
             res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-        for i, tape in enumerate(tapes):
+        # flatten the results
+        res = reduce(lambda x, y: x + list(y) if isinstance(y, tuple) else x + [y], res, [])
+
+        for i, r in enumerate(res):
             # convert output to TensorFlow tensors
-            res[i] = tf.convert_to_tensor(res[i])
-
-            if tape.all_sampled:
-                res[i] = tf.cast(res[i], tf.int64)
-
+            res[i] = _to_tensors(r)
             output_sizes.append(tf.size(res[i]))
 
+        # flatten the jacobians
         if jacs:
+            jacs = reduce(lambda x, y: x + list(y) if isinstance(y, tuple) else x + [y], jacs, [])
             for i, jac in enumerate(jacs):
                 jacs[i] = tf.convert_to_tensor(jac)
 
@@ -346,12 +358,15 @@ def _execute_new(
     def _execute(*all_params):  # pylint:disable=unused-argument
 
         res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
-        output_sizes = res[-len(tapes) :]
+        output_sizes = res[-total_measurements:]
 
         if mode == "forward":
-            jacs = res[len(tapes) : 2 * len(tapes)]
+            jacs = res[total_measurements:-total_measurements]
 
-        res = res[: len(tapes)]
+        res = res[:total_measurements]
+
+        # reconstruct the nested structure of res
+        res = _reconstruct_res_structure(res, tapes)
 
         def grad_fn(*dy, **tfkwargs):
             """Returns the vector-Jacobian product with given
@@ -359,26 +374,21 @@ def _execute_new(
 
             # whether the tapes contain multiple measurements
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-            dy = dy[: len(tapes)]
+            dy = dy[:total_measurements]
 
             if mode == "forward":
                 # Jacobians were computed on the forward pass (mode="forward")
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
-                len_dy = len(dy)
 
                 def _backward(*args):
-                    dy = args[:len_dy]
-                    jacs = args[len_dy:-len_dy]
-                    multi_measurements = args[-len_dy:]
+                    dy = args[:total_measurements]
+                    jacs = args[total_measurements : -len(tapes)]
+                    multi_measurements = args[-len(tapes) :]
 
-                    new_jacs = []
-                    for jac in jacs:
-                        if tf.rank(jac) > 0:
-                            new_jacs.append(tuple(tf.unstack(jac)))
-                        else:
-                            new_jacs.append(jac)
+                    dy = _reconstruct_res_structure(dy, tapes)
+                    jacs = _reconstruct_jac_structure(jacs, tapes)
 
-                    return _compute_vjp_new(dy, tuple(new_jacs), multi_measurements)
+                    return _compute_vjp_new(dy, jacs, multi_measurements)
 
                 vjps = tf.numpy_function(
                     func=_backward,
@@ -401,6 +411,8 @@ def _execute_new(
                             all_params = all_params[:len_all_params]
                             params_unwrapped = _nest_params(all_params)
 
+                            dy = _reconstruct_res_structure(dy, tapes)
+
                             with qml.tape.Unwrap(*tapes, params=params_unwrapped):
                                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                                     tapes,
@@ -420,6 +432,8 @@ def _execute_new(
                         )
 
                     else:
+                        dy = _reconstruct_res_structure(dy, tapes)
+
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             tapes,
                             dy,

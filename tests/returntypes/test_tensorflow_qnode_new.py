@@ -1429,6 +1429,7 @@ class TestAutograph:
 
         with tf.GradientTape() as tape:
             res = circuit(x, y)
+            res = tf.stack(res)
 
         expected = np.array(
             [
@@ -1502,6 +1503,44 @@ class TestAutograph:
 
         expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+    def test_autograph_ragged_differentiation(self, decorator, interface, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+        dev = qml.device("default.qubit", wires=2)
+
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", max_diff=1, interface=interface)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
+
+        with tf.GradientTape() as tape:
+            res = circuit(x, y)
+            res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+
+        expected = np.array(
+            [
+                tf.cos(x),
+                (1 + tf.cos(x) * tf.cos(y)) / 2,
+                (1 - tf.cos(x) * tf.cos(y)) / 2,
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = tape.jacobian(res, [x, y])
+        expected = np.array(
+            [
+                [-tf.sin(x), -tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
+                [0, -tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_autograph_hessian(self, decorator, interface, tol):
         """Test that a parameter-shift QNode can be compiled

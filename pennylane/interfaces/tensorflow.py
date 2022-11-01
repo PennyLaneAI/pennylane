@@ -69,6 +69,44 @@ def _to_tensors(x):
     return tuple(tf.convert_to_tensor(x_) for x_ in x)
 
 
+def _reconstruct_res_structure(res, tapes):
+    """
+    Reconstruct the nested tuple structure of the output of a list of tapes
+    """
+    start = 0
+    res_nested = []
+    for i, tape in enumerate(tapes):
+        num_meas = len(tape.measurements)
+        tape_res = tuple(res[start : start + num_meas])
+        res_nested.append(tape_res[0] if num_meas == 1 else tape_res)
+        start += num_meas
+
+    return tuple(res_nested)
+
+
+def _reconstruct_jac_structure(jacs, tapes):
+    """
+    Reconstruct the nested tuple structure of the jacobian of a list of tapes
+    """
+    start = 0
+    jacs_nested = []
+    for i, tape in enumerate(tapes):
+        num_meas = len(tape.measurements)
+        num_params = len(tape.trainable_params)
+
+        tape_jacs = tuple(jacs[start : start + num_meas * num_params])
+        tape_jacs = tuple(
+            tuple(tape_jacs[i * num_params : (i + 1) * num_params]) for i in range(num_meas)
+        )
+
+        while isinstance(tape_jacs, tuple) and len(tape_jacs) == 1:
+            tape_jacs = tape_jacs[0]
+
+        jacs_nested.append(tape_jacs)
+
+    return tuple(jacs_nested)
+
+
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
@@ -295,15 +333,7 @@ def _execute_new(
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
             # reconstruct the nested structure of dy
-            start = 0
-            dy_nested = []
-            for tape in tapes:
-                num_meas = len(tape.measurements)
-                tape_dy = dy[start : start + num_meas]
-                dy_nested.append(tape_dy[0] if num_meas == 1 else tape_dy)
-                start += num_meas
-
-            dy = dy_nested
+            dy = _reconstruct_res_structure(dy, tapes)
 
             if jacs:
                 # Jacobians were computed on the forward pass (mode="forward")
