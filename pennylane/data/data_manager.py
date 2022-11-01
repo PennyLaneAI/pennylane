@@ -275,7 +275,7 @@ def list_datasets(path=None):
 
     .. code-block :: pycon
 
-        >>> qml.qdata.list_datasets()
+        >>> qml.data.list_datasets()
         {
             'qchem': {
                 'H2': {
