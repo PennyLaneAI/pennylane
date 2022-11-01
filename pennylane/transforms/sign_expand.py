@@ -211,8 +211,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     Implementation of ideas from arXiv:2207.09479
 
-    For the calculation of variances, one assumes an even distribution of shots among the groups
-    as an adaptive shot allocation onto tapes is not implemented in Pennylane yet.
+    For the calculation of variances, one assumes an even distribution of shots among the groups.
 
     Args:
         tape (.QuantumTape): the tape used when calculating the expectation value of the Hamiltonian
