@@ -90,8 +90,8 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     for obs in observables:
         for o in obs:
             # create a list of tapes for the plus and minus shifted circuits
-            tapes_plus = [qml.tape.QuantumTape(p + "_p") for p in lie_algebra_basis_names]
-            tapes_min = [qml.tape.QuantumTape(p + "_m") for p in lie_algebra_basis_names]
+            tapes_plus = [qml.tape.QuantumTape(name=f"{p}_p") for p in lie_algebra_basis_names]
+            tapes_min = [qml.tape.QuantumTape(name=f"{p}_m") for p in lie_algebra_basis_names]
 
             # loop through all operations on the input tape
             for op in tape.operations:

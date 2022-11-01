@@ -652,7 +652,11 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
-        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0
+
+        comp_basis_sampled_multi_measure = (
+            len(circuit.measurements) > 1 and circuit.samples_computational_basis
+        )
+        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
         obs_on_same_wire &= not any(
             isinstance(o, qml.Hamiltonian) for o in circuit._obs_sharing_wires
         )
@@ -887,7 +891,7 @@ class Device(abc.ABC):
             ValueError: if `operation` is not a :class:`~.Operation` class or string
 
         Returns:
-            bool: ``True`` iff supplied operation is supported
+            bool: ``True`` if supplied operation is supported
         """
         if isinstance(operation, type) and issubclass(operation, Operation):
             return operation.__name__ in self.operations

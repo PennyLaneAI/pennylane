@@ -361,12 +361,19 @@ class ControlledQubitUnitary(QubitUnitary):
     def control_wires(self):
         return self.hyperparameters["control_wires"]
 
+    @property
+    def control_values(self):
+        """str.  Specifies whether or not to control on zero "0" or one "1" for each
+        control wire."""
+        return self.hyperparameters["control_values"]
+
     def pow(self, z):
         if isinstance(z, int):
             return [
                 ControlledQubitUnitary(
                     qml.math.linalg.matrix_power(self.data[0], z),
                     control_wires=self.control_wires,
+                    control_values=self.control_values,
                     wires=self.hyperparameters["u_wires"],
                 )
             ]
@@ -374,8 +381,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
     def _controlled(self, wire):
         ctrl_wires = self.control_wires + wire
-        old_control_values = self.hyperparameters["control_values"]
-        values = None if old_control_values is None else f"{old_control_values}1"
+        values = None if self.control_values is None else f"{self.control_values}1"
         new_op = ControlledQubitUnitary(
             *self.parameters,
             control_wires=ctrl_wires,

@@ -14,8 +14,8 @@
 """
 This module contains the functions needed for two-electron tensor factorization.
 """
-from pennylane import numpy as np
 import pennylane as qml
+from pennylane import numpy as np
 
 
 def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
@@ -306,9 +306,9 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
                         + qml.grouping.pauli_mult_with_phase(qml.PauliZ(i), qml.PauliZ(j))[0]
                     )
                 )
-        ops_l.append(ops_l_.tolist())
+        ops_l.append(ops_l_)
 
-    ops = [ops_t.tolist()] + ops_l
+    ops = [ops_t] + ops_l
 
     c_group = [op.coeffs * 2 for op in ops]  # coeffs are multiplied by 2 to account for spin
     o_group = [op.ops for op in ops]

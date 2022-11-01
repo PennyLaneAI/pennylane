@@ -154,32 +154,50 @@ def finite_diff_coeffs(n, approx_order, strategy):
     return coeffs_and_shifts
 
 
-def _no_trainable_grad_new(tape):
+def _no_trainable_grad_new(tape, shots=None):
     warnings.warn(
         "Attempted to compute the gradient of a tape with no trainable parameters. "
         "If this is unintended, please mark trainable parameters in accordance with the "
         "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
     )
+    if isinstance(shots, Sequence):
+        len_shot_vec = len(shots)
+        if len(tape.measurements) == 1:
+            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len_shot_vec))
+        return [], lambda _: tuple(
+            tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
+            for _ in range(len_shot_vec)
+        )
+
     if len(tape.measurements) == 1:
         return [], lambda _: qml.math.zeros([0])
     return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
 
 
-def _all_zero_grad_new(tape):
+def _all_zero_grad_new(tape, shots=None):
     """Auxiliary function to return zeros for the all-zero gradient case."""
     list_zeros = []
 
     for m in tape.measurements:
         # TODO: Update shape for CV variables
         if m.return_type is qml.measurements.Probability:
-            dim = 2 ** len(m.wires)
+            shape = 2 ** len(m.wires)
         else:
-            dim = 1
+            shape = ()
 
-        sub_list_zeros = [qml.math.zeros(dim) for _ in range(len(tape.trainable_params))]
-        sub_list_zeros = tuple(sub_list_zeros)
+        if len(tape.trainable_params) == 1:
+            sub_list_zeros = qml.math.zeros(shape)
+        else:
+            sub_list_zeros = [qml.math.zeros(shape) for _ in range(len(tape.trainable_params))]
+            sub_list_zeros = tuple(sub_list_zeros)
 
         list_zeros.append(sub_list_zeros)
+
+    if isinstance(shots, Sequence):
+        len_shot_vec = len(shots)
+        if len(tape.measurements) == 1:
+            return [], lambda _: tuple(list_zeros[0] for _ in range(len_shot_vec))
+        return [], lambda _: tuple(tuple(list_zeros) for _ in range(len_shot_vec))
 
     if len(tape.measurements) == 1:
         return [], lambda _: list_zeros[0]
@@ -197,6 +215,7 @@ def _finite_diff_new(
     strategy="forward",
     f0=None,
     validate_params=True,
+    shots=None,
 ):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
     parameters with respect to its inputs. This function is adapted to the new return system.
@@ -224,6 +243,10 @@ def _finite_diff_new(
             the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
+            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
+            to the transform about the device shots and helps in determining if a shot sequence was used to define the
+            device shots for the new return types output system.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
@@ -285,7 +308,10 @@ def _finite_diff_new(
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
 
-    def processing_fn(results):
+    def _single_shot_batch_result(results):
+        """Auxiliary function for post-processing one batch of results corresponding to finite shots or a single
+        component of a shot vector"""
+
         grads = []
         start = 1 if c0 is not None and f0 is None else 0
         r0 = f0 or results[0]
@@ -337,7 +363,7 @@ def _finite_diff_new(
             if c0 is not None:
                 if len(tape.measurements) == 1:
                     c = qml.math.convert_like(c0, r0)
-                    pre_grads = pre_grads + c * r0
+                    pre_grads = [pre_grads[0] + c * r0]
                 else:
                     for i in range(len(tape.measurements)):
                         r_i = r0[i]
@@ -356,7 +382,6 @@ def _finite_diff_new(
                 pre_grads = qml.math.convert_like(pre_grads[0] * coeff_div, coeff_div)
 
             grads.append(pre_grads)
-
         # Single measurement
         if len(tape.measurements) == 1:
             if len(tape.trainable_params) == 1:
@@ -374,6 +399,21 @@ def _finite_diff_new(
             grads_tuple = tuple(elem[0] for elem in grads_reorder)
         else:
             grads_tuple = tuple(tuple(elem) for elem in grads_reorder)
+        return grads_tuple
+
+    def processing_fn(results):
+        shot_vector = isinstance(shots, Sequence)
+
+        if not shot_vector:
+            grads_tuple = _single_shot_batch_result(results)
+        else:
+            grads_tuple = []
+            shot_vec_len = len(shots)
+            for idx in range(shot_vec_len):
+                res = [tape_res[idx] for tape_res in results]
+                g_tuple = _single_shot_batch_result(res)
+                grads_tuple.append(g_tuple)
+            grads_tuple = tuple(grads_tuple)
 
         return grads_tuple
 
@@ -390,6 +430,7 @@ def finite_diff(
     strategy="forward",
     f0=None,
     validate_params=True,
+    shots=None,
 ):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
     parameters with respect to its inputs.
@@ -417,6 +458,10 @@ def finite_diff(
             the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
+            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
+            to the transform about the device shots and helps in determining if a shot sequence was used to define the
+            device shots for the new return types output system.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
@@ -501,6 +546,7 @@ def finite_diff(
             strategy=strategy,
             f0=f0,
             validate_params=validate_params,
+            shots=shots,
         )
 
     if argnum is None and not tape.trainable_params:
