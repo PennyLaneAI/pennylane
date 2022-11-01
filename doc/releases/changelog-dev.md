@@ -147,9 +147,8 @@ Users can specify the control wires as well as the values to control the operati
   The new optimizer, ``AdaptiveOptimizer``, takes an initial circuit and a collection of operators
   as input and adds a selected gate to the circuits at each optimization step. The process of
   growing the circuit can be repeated until the circuit gradients converge to zero within a given
-  threshold. The adaptive optimizer can be used to implement algorithms such as
-  `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_ as shown in the following
-  example.
+  threshold. The adaptive optimizer can be used to implement algorithms such as ``ADAPT-VQE`` as
+  shown in the following example.
 
   First, the molecule is defined and the Hamiltonian is computed:
 
@@ -161,7 +160,7 @@ Users can specify the control wires as well as the values to control the operati
   H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge = 1)
   ```
 
-  The collection of gates to grow the circuit contains all single and double excitations:
+  The collection of gates to grow the circuit is built to contain all single and double excitations:
 
   ```python
   n_electrons = 2
@@ -186,9 +185,15 @@ Users can specify the control wires as well as the values to control the operati
   Finally, the optimizer is instantiated and then the circuit is created and optimized adaptively:
 
   ```python
-  opt = AdaptiveOptimizer()
+  opt = qml.optimize.AdaptiveOptimizer()
   for i in range(len(operator_pool)):
       circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
+      print('Energy:', energy)
+      print(qml.draw(circuit)())
+      print('Largest Gradient:', gradient)
+      print()
+      if gradient < 1e-3:
+          break
   ```
   
    ```pycon
