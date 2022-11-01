@@ -75,7 +75,7 @@ def _reconstruct_res_structure(res, tapes):
     """
     start = 0
     res_nested = []
-    for i, tape in enumerate(tapes):
+    for tape in tapes:
         num_meas = len(tape.measurements)
         tape_res = tuple(res[start : start + num_meas])
         res_nested.append(tape_res[0] if num_meas == 1 else tape_res)
