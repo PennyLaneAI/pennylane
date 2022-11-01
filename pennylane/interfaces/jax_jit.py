@@ -159,6 +159,17 @@ def _execute(
     def wrapped_exec_bwd(params, g):
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
+            for t in tapes:
+                multi_probs = (
+                    any(o.return_type is qml.measurements.Probability for o in t.observables)
+                    and len(t.observables) > 1
+                )
+
+            if multi_probs:
+                raise InterfaceUnsupportedError(
+                    "The JAX-Jit interface doesn't support differentiating QNodes that "
+                    "return multiple probabilities."
+                )
 
             def non_diff_wrapper(args):
                 """Compute the VJP in a non-differentiable manner."""
