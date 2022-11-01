@@ -1276,7 +1276,7 @@ class PauliRot(Operation):
     def generator(self):
         pauli_word = self.hyperparameters["pauli_word"]
         wire_map = {w: i for i, w in enumerate(self.wires)}
-        return -0.5 * qml.grouping.string_to_pauli_word(pauli_word, wire_map=wire_map)
+        return -0.5 * qml.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map)
 
     @staticmethod
     def compute_eigvals(theta, pauli_word):  # pylint: disable=arguments-differ
