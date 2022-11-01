@@ -204,7 +204,7 @@ def _generate_folders(node, folders):
 def load(
     data_name, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
 ):
-    r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object
+    r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object.
 
     Args:
         data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
@@ -266,12 +266,14 @@ def _direc_to_dict(path):
 
 
 def list_datasets(path=None):
-    r"""Returns a list of datasets and their sizes
+    r"""Returns a list of datasets.
 
     Return:
-        dict: Nested dictionary representing the directory structure of the hosted databases.
+        dict: Nested dictionary representing the directory structure of the hosted datasets.
 
     **Example:**
+
+    Note that the available data will differ from this example as we add more datasets.
 
     .. code-block :: pycon
 

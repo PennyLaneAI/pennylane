@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The data subpackage provides functionality to access, store and manipulate quantum datasets within the PennyLane framework.
+The data subpackage provides functionality to access, store and manipulate quantum datasets.
 
 Datasets are generally stored and accessed using the :class:`~pennylane.data.Dataset` class.
-Pre-computed datasets are available for download and can be accessed using the :func:`~pennylane.data.load` function.
-Alternatively, users can easily create, write to disk, and read custom datasets using functions within the
+Pre-computed datasets are available for download and can be accessed using the :func:`~pennylane.data.load` or
+:func:`~pennylane.data.load_interactive` functions.
+Additionally, users can easily create, write to disk, and read custom datasets using functions within the
 :class:`~pennylane.data.Dataset` class.
 
 .. currentmodule:: pennylane.data

@@ -6,38 +6,42 @@
 Quantum Datasets
 ================
 
-PennyLane provides the :mod:`~.data` subpackage to download, create, store and manipulate quantum datasets within the PennyLane framework.
+PennyLane provides the :mod:`~.data` subpackage to download, create, store and manipulate quantum datasets.
 
 Loading Datasets in PennyLane
 -----------------------------
 
-We can access data of a desired type with the :func:`~pennylane.data.load` function. This downloads the desired
-dataset or loads it from local storage if previously downloaded.
+We can access data of a desired type with the :func:`~pennylane.data.load` or :func:`~.data.load_interactive` functions.
+These download the desired datasets or load them from local storage if previously downloaded. 
+Here we use the :func:`~pennylane.data.load` function, for the
+:func:`~.data.load_interactive` function, please see the relevant documentation.
 
 To specify the dataset to be loaded, the data category (``data_name``) must be
 specified, alongside category-specific keyword arguments. For the full list
 of available datasets, please see the dataset library documentation.
-The :func:`~pennylane.data.load` returns a list with the desired data which can then be used within
-the usual PennyLane workflow.
+The :func:`~pennylane.data.load` function returns a list with the desired data.
 
 .. code-block:: python
 
-    >>> H2_dataset = qml.data.load(data_name="qchem", molname="H2", basis="6-31G", bondlength="0.46")
+    >>> H2_dataset = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0")
     >>> print(H2_dataset)
     [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
 
-When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as _attributes_).
-For example, we can download only the molecule and hamiltonian of a dataset as follows:
+When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as `attributes`).
+For example, we can download or load only the molecule and hamiltonian of a dataset as follows:
 
 .. code-block:: python
 
-    >>> H2_hamiltonian = qml.data.load(data_name='qchem',molname='H2', basis='6-31G', bondlength='0.46', attributes=['molecule','hamiltonian'])
-    >>> H2_hamiltonian
-    <Hamiltonian: terms=185, wires=[0, 1, 2, 3, 4, 5, 6, 7]>
+    >>> H2_partial = qml.data.load(data_name='qchem',molname='H2', basis='STO-3G', bondlength=1.0, attributes=['molecule','fci_energy'])[0]
+    >>> H2_partial.molecule
+    <pennylane.qchem.molecule.Molecule at 0x7f56c9d78e50>
+    >>> H2_partial.fci_energy
+    -1.1011498981604342
 
 To determine what attributes are available for a type of dataset, we can use the function :func:`~pennylane.data.list_attributes`:
 
 .. code-block:: python
+
     >>> qml.data.list_attributes(data_name='qchem')
     ['molecule',
     'hamiltonian',
@@ -55,11 +59,11 @@ Once loaded, one can access properties of the datasets (referred to as _attribut
 
     >>> H2_dataset[0].molecule
     <pennylane.qchem.molecule.Molecule object at 0x7f890b409280>
-    >>> H2_dataset[0].hf_state
-    [1 1 0 0 0 0 0 0]
+    >>> print(H2_dataset[0].hf_state)
+    [1 1 0 0]
 
 The loaded data items are fully compatible with PennyLane. We can therefore
-use them directly in PennyLane workflow as follows:
+use them directly in a PennyLane circuits as follows:
 
 .. code-block:: python
 
@@ -84,12 +88,12 @@ function calls will change.
     >>> available_data = qml.data.list_datasets()
     >>> available_data.keys()
     dict_keys(['qspin', 'qchem'])
-    >>> available_data['qchem']
-    dict_keys(['H2', 'HeH'])
-    >>> available_data['qchem']['H2']
-    dict_keys(['6-31G'])
-    >>> print(available_data['qchem']['H2']['6-31G'])
-    ['0.46', '1.16', '1.22', ...]
+    >>> available_data['qchem'].keys()
+    dict_keys(['HF', 'LiH', ...])
+    >>> available_data['qchem']['H2'].keys()
+    dict_keys(['STO-3G'])
+    >>> print(available_data['qchem']['H2']['STO-3G'])
+    ['2.35', '1.75', '0.6', '1.85', ...]
 
 Filtering Datasets
 ------------------
@@ -99,11 +103,9 @@ For example, we can download only the molecule and Hamiltonian of a dataset as f
 
 .. code-block:: python
 
-    >>> H2_hamiltonian = qml.data.load(data_type="qchem", molname="H2", basis="6-31G", bondlength="0.46", attributes=["molecule", "hamiltonian"])
-    >>> H2_hamiltonian
-    <Hamiltonian: terms=185, wires=[0, 1, 2, 3, 4, 5, 6, 7]>
-
-:html:`<div class="summary-table">`
+    >>> H2_hamiltonian = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0", attributes=["molecule", "hamiltonian"])[0]
+    >>> H2_hamiltonian.hamiltonian
+    <Hamiltonian: terms=15, wires=[0, 1, 2, 3]>
 
 Creating Custom Datasets
 ------------------------
@@ -114,10 +116,10 @@ To create a dataset, we can do the following:
 .. code-block:: python
 
     >>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], observables=[qml.PauliZ(wires=0),qml.PauliX(wires=1)])
-    >>> example_energies, _ = np.linalg.eigh(qml.matrix(example_hamiltonian))
-    >>> example_dataset = qml.data.Dataset(dataset_name = 'An example dataset',hamiltonian=example_hamiltonian,energies=example_energies)
-    >>> example_dataset.dataset_name
-    'An example dataset'
+    >>> example_energies, _ = np.linalg.eigh(qml.matrix(example_hamiltonian)) #Calculate the energies
+    >>> example_dataset = qml.data.Dataset(data_name = 'Example',hamiltonian=example_hamiltonian,energies=example_energies)
+    >>> example_dataset.data_name
+    'Example'
     >>> example_dataset.hamiltonian
       (0.5) [X1]
     + (1) [Z0]
@@ -131,9 +133,15 @@ We can then write this :class:`~.data.Dataset` to storage and read it as follows
     >>> example_dataset.write('./path/to/dataset.dat')
     >>> read_dataset = qml.data.Dataset()
     >>> read_dataset.read('./path/to/dataset.dat')
-    >>> read_dataset.dataset_name
-    'An example dataset'
-    
+    >>> read_dataset.data_name
+    'Example'
+    >>> read_dataset.hamiltonian
+      (0.5) [X1]
+    + (1) [Z0]
+    >>> read_dataset.energies
+    array([-1.5, -0.5,  0.5,  1.5])
+
+:html:`<div class="summary-table">`
 
 Quantum Datasets Functions and Classes
 --------------------------------------
@@ -158,5 +166,7 @@ Functions
 
     ~pennylane.data.list_datasets
     ~pennylane.data.load
+    ~pennylane.load_interactive
+    ~pennylane.list_attributes
 
 :html:`</div>`
