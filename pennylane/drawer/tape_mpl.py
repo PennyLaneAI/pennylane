@@ -92,7 +92,9 @@ special_cases = {
 """Dictionary mapping special case classes to functions for drawing them."""
 
 # pylint: disable=too-many-branches
-def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=None, **kwargs):
+def tape_mpl(
+    tape, wire_order=None, show_all_wires=False, decimals=None, style="black_white", **kwargs
+):
     """Produces a matplotlib graphic from a tape.
 
     Args:
@@ -103,6 +105,10 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
+        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
+            'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
+            'black_white' style will be used. Setting style does not modify matplotlib global plotting settings.
+            If None, the current matplotlib settings will be used.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -208,14 +214,14 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=N
 
     PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
     All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
-    Any available string can then be passed to ``qml.drawer.use_style``.
+    Any available string can then be passed via the kwarg ``style`` to change the settings for
+    that plot. This will not affect style settings for subsequent matplotlib plots.
 
     .. code-block:: python
 
-        qml.drawer.use_style('black_white')
-        fig, ax = tape_mpl(tape)
+        fig, ax = tape_mpl(tape, style='sketch')
 
-    .. figure:: ../../_static/tape_mpl/black_white_style.png
+    .. figure:: ../../_static/tape_mpl/sketch_style.png
             :align: center
             :width: 60%
             :target: javascript:void(0);

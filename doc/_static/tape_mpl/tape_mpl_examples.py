@@ -85,11 +85,9 @@ def rcparams(tape):
 
 def use_style(tape):
 
-    qml.drawer.use_style("black_white")
+    fig, ax = tape_mpl(tape, style='sketch')
 
-    fig, ax = tape_mpl(tape)
-
-    plt.savefig(folder / "black_white_style.png")
+    plt.savefig(folder / "sketch_style.png")
     plt.close()
     plt.style.use("default")
 

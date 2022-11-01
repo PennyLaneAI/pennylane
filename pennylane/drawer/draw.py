@@ -245,6 +245,10 @@ def draw_mpl(
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
+        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
+            'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
+            'black_white' style will be used. Setting style does not modify matplotlib global plotting settings.
+            If None, the current matplotlib settings will be used.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -371,16 +375,16 @@ def draw_mpl(
 
         PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
         All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
-        Any available string can then be passed to ``qml.drawer.use_style``.
+        Any available string can then be passed via the kwarg ``style`` to change the settings for
+        that plot. This will not affect style settings for subsequent matplotlib plots.
 
         .. code-block:: python
 
-            qml.drawer.use_style('black_white')
-            fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+            fig, ax = qml.draw_mpl(circuit, style='sketch')(1.2345,1.2345)
             fig.show()
 
 
-        .. figure:: ../../_static/draw_mpl/black_white_style.png
+        .. figure:: ../../_static/draw_mpl/sketch_style.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);

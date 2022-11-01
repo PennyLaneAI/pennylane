@@ -102,11 +102,9 @@ def rcparams(circuit):
 
 def use_style(circuit):
 
-    qml.drawer.use_style("black_white")
+    fig, ax = qml.draw_mpl(circuit, style='sketch')(1.2345, 1.2345)
 
-    fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
-
-    plt.savefig(folder / "black_white_style.png")
+    plt.savefig(folder / "sketch_style.png")
     plt.close()
     plt.style.use("default")
 
