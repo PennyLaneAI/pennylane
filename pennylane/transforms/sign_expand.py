@@ -84,7 +84,7 @@ def evolve_under(ops, coeffs, time, controls):
     Evolves under the given Hamiltonian deconstructed into its Pauli words
 
     Args:
-        ops (List[Observables]): List of Pauliwords that comprise the Hamiltonian
+        ops (List[Observables]): List of Pauli words that comprise the Hamiltonian
         coeffs (List[int]): List of the respective coefficients of the Pauliwords of the Hamiltonian
         time (float): At what time to evaluate these Pauliwords
     """
