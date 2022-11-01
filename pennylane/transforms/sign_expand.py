@@ -23,7 +23,7 @@ from .batch_transform import batch_transform
 
 
 def ControlledPauliEvolution(theta, wires, pauli_word, controls):
-    r"""Controlled Evolution under generic pauli words, adapted from the decomposition of
+    r"""Controlled Evolution under generic Pauli words, adapted from the decomposition of
     qml.PauliRot to suit our needs
 
 
