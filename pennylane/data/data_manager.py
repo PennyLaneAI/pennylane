@@ -112,7 +112,7 @@ def _validate_params(data_name, description, attributes):
 
     exc = validate_structure(_foldermap[data_name], params_needed)
     if isinstance(exc, Exception):
-        raise exc
+        raise exc  # pylint:disable=raising-bad-type
 
 
 def _refresh_foldermap():
