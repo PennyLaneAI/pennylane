@@ -22,7 +22,7 @@ import dill
 import zstd
 
 from pennylane import Hamiltonian
-from pennylane.grouping import string_to_pauli_word
+from pennylane.pauli import string_to_pauli_word
 
 
 class Dataset(ABC):
@@ -247,15 +247,14 @@ class Dataset(ABC):
             if not self._is_standard:
                 raise
             filepath = self.__get_filename_for_attribute(name)
-            if os.path.exists(filepath):
-                value = self._read_file(filepath)
-                if filepath == self._fullfile:
-                    if name not in value:
-                        raise
-                    value = value[name]
-                if name == "hamiltonian":
-                    value = self.__dict_to_hamiltonian(value["terms"], value["wire_map"])
-                setattr(self, name, value)
-                return value
-            # TODO: download the file here?
-            raise
+            if not os.path.exists(filepath):  # TODO: download the file here?
+                raise
+            value = self._read_file(filepath)
+            if filepath == self._fullfile:
+                if name not in value:
+                    raise
+                value = value[name]
+            if name == "hamiltonian":
+                value = self.__dict_to_hamiltonian(value["terms"], value["wire_map"])
+            setattr(self, name, value)
+            return value

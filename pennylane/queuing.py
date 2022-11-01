@@ -145,7 +145,11 @@ class QueuingManager:
         """
         previously_active_contexts = cls._active_contexts
         cls._active_contexts = []
-        yield
+        try:
+            yield
+        except Exception as e:
+            cls._active_contexts = previously_active_contexts
+            raise e
         cls._active_contexts = previously_active_contexts
 
     @classmethod

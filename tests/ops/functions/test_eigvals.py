@@ -287,6 +287,44 @@ class TestMultipleOperations:
         assert np.allclose(res, expected)
 
 
+class TestCompositeOperations:
+    """Composite Operations use math.linalg.eig instead of math.linalg.eigh since the operators
+    may not be hermitian."""
+
+    def test_sum_eigvals(self):
+        """Test that a sum op returns the correct eigvals."""
+        sum_op = qml.op_sum(qml.s_prod(1j, qml.PauliZ(wires=0)), qml.Identity(wires=0))
+        sum_eigvals = qml.eigvals(sum_op)
+
+        mat_rep = np.array([[1 + 1j, 0], [0, 1 - 1j]])
+        mat_eigvals = np.linalg.eig(mat_rep)[0]
+
+        assert np.allclose(mat_eigvals, sum_eigvals)
+
+    def test_prod_eigvals(self):
+        """Test that a prod op returns the correct eigvals."""
+
+        prod_op = qml.prod(qml.s_prod(1j, qml.PauliZ(wires=0)), qml.Identity(wires=1))
+        prod_eigvals = qml.eigvals(prod_op)
+
+        mat_rep = np.array([[1j, 0, 0, 0], [0, 1j, 0, 0], [0, 0, -1j, 0], [0, 0, 0, -1j]])
+        mat_eigvals = np.linalg.eig(mat_rep)[0]
+
+        assert np.allclose(mat_eigvals, prod_eigvals)
+
+    def test_composite_eigvals(self):
+        """Test that an arithmetic op with non-hermitian base ops produces the correct eigen-values."""
+        op = qml.prod(qml.PauliX(0), qml.adjoint(qml.PauliY(0)))
+        op_adj = qml.adjoint(op)
+        imag_op = -0.5j * (op - op_adj)
+        op_eigvals = qml.eigvals(imag_op)
+
+        mat_rep = np.array([[1.0, 0.0], [0.0, -1.0]])
+        mat_eigvals = np.linalg.eig(mat_rep)[0]
+
+        assert np.allclose(mat_eigvals, op_eigvals)
+
+
 class TestTemplates:
     """These tests are useful as they test operators that might not have
     matrix forms defined, requiring decomposition."""
