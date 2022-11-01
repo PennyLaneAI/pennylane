@@ -52,6 +52,12 @@ Users can specify the control wires as well as the values to control the operati
 
   ```
 
+<h4>Pauli Module</h4>
+
+* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
+  module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
+  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
+
 * The `IntegerComparator` arithmetic operation is now available.
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 

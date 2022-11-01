@@ -97,7 +97,7 @@ def _validate_computational_basis_sampling(measurements):
 
         for obs in non_comp_basis_sampling_obs:
             # Cover e.g., qml.probs(wires=wires) case by checking obs attr
-            if obs.obs is not None and not qml.grouping.utils.are_pauli_words_qwc(
+            if obs.obs is not None and not qml.pauli.utils.are_pauli_words_qwc(
                 [obs.obs, pauliz_for_cb_obs]
             ):
                 raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
@@ -175,7 +175,7 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     if qscript._obs_sharing_wires:
         with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
-                rotations, diag_obs = qml.grouping.diagonalize_qwc_pauli_words(
+                rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(
                     qscript._obs_sharing_wires
                 )
             except (TypeError, ValueError) as e:
