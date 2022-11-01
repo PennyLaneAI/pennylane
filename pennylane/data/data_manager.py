@@ -15,8 +15,11 @@
 Contains the Dataset utility functions.
 """
 # pylint:disable=too-many-arguments,global-statement
-from concurrent.futures import ThreadPoolExecutor, wait
+from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
 import os
+from time import sleep
+from urllib.parse import quote
 
 import requests
 from pennylane.data.dataset import Dataset
@@ -29,13 +32,46 @@ _foldermap = {}
 _data_struct = {}
 
 
-def _validate_params(data_type, description, attributes):
+# pylint:disable=too-many-branches
+def _format_details(param, details):
+    """Ensures each user-inputted parameter is a properly typed list.
+    Also provides custom support for certain parameters."""
+    if not isinstance(details, list):
+        details = [details]
+    if param == "layout":
+        # if a user inputs layout=[1,2], they wanted "1x2"
+        # note that the above conversion to a list of details wouldn't work as expected here
+        if all(isinstance(dim, int) for dim in details):
+            return ["x".join(map(str, details))]
+        # will turn [(1,2), [3,4], "5x6"] into ["1x2", "3x4", "5x6"]
+        for i, detail in enumerate(details):
+            if isinstance(detail, Iterable) and all(isinstance(dim, int) for dim in detail):
+                details[i] = "x".join(map(str, detail))
+            elif not isinstance(detail, str):
+                raise TypeError(
+                    f"Invalid layout value of '{detail}'. Must be a string or a tuple of ints."
+                )
+    elif param == "bondlength":
+        for i, detail in enumerate(details):
+            if isinstance(detail, float):
+                details[i] = str(detail)
+            elif isinstance(detail, int):
+                details[i] = f"{detail:.1f}"
+            elif not isinstance(detail, str):
+                raise TypeError(f"Invalid bondlength '{detail}'. Must be a string, int or float.")
+    for detail in details:
+        if not isinstance(detail, str):
+            raise TypeError(f"Invalid type '{type(detail).__name__}' for parameter '{param}'")
+    return details
+
+
+def _validate_params(data_name, description, attributes):
     """Validate parameters for loading the data."""
 
-    data = _data_struct.get(data_type)
+    data = _data_struct.get(data_name)
     if not data:
         raise ValueError(
-            f"Currently the hosted datasets are of types: {list(_data_struct)}, but got {data_type}."
+            f"Currently the hosted datasets are of types: {list(_data_struct)}, but got {data_name}."
         )
 
     if not isinstance(attributes, list):
@@ -44,21 +80,20 @@ def _validate_params(data_type, description, attributes):
     all_attributes = data["attributes"]
     if not set(attributes).issubset(set(all_attributes)):
         raise ValueError(
-            f"Supported key values for {data_type} are {all_attributes}, but got {attributes}."
+            f"Supported key values for {data_name} are {all_attributes}, but got {attributes}."
         )
 
     params_needed = data["params"]
     if set(description) != set(params_needed):
         raise ValueError(
-            f"Supported parameter values for {data_type} are {params_needed}, but got {list(description)}."
+            f"Supported parameter values for {data_name} are {params_needed}, but got {list(description)}."
         )
 
     def validate_structure(node, params_left):
         """Recursively validates that all values in `description` exist in the dataset."""
         param = params_left[0]
         params_left = params_left[1:]
-        details = description[param]
-        for detail in details:
+        for detail in description[param]:
             if detail == "full":
                 if not params_left:
                     return
@@ -66,47 +101,49 @@ def _validate_params(data_type, description, attributes):
                     validate_structure(child, params_left)
             elif detail not in node:
                 # TODO: shorten this limit without permanently changing it
-                # sys.tracebacklimit = 0  # the recursive stack is disorienting
+                # sys.tracebacklimit = 0 # the recursive stack is disorienting
                 raise ValueError(
                     f"{param} value of '{detail}' is not available. Available values are {list(node)}"
                 )
             elif params_left:
                 validate_structure(node[detail], params_left)
 
-    validate_structure(_foldermap[data_type], params_needed)
+    validate_structure(_foldermap[data_name], params_needed)
 
 
 def _refresh_foldermap():
     """Refresh the foldermap from S3."""
+    global _foldermap
+    if _foldermap:
+        return
     response = requests.get(FOLDERMAP_URL, timeout=5.0)
     response.raise_for_status()
-
-    global _foldermap
     _foldermap = response.json()
 
 
 def _refresh_data_struct():
     """Refresh the data struct from S3."""
+    global _data_struct
+    if _data_struct:
+        return
     response = requests.get(DATA_STRUCT_URL, timeout=5.0)
     response.raise_for_status()
-
-    global _data_struct
     _data_struct = response.json()
 
 
 def _fetch_and_save(filename, dest_folder):
     """Download a single file from S3 and save it locally."""
-    response = requests.get(os.path.join(S3_URL, filename), timeout=5.0)
+    response = requests.get(os.path.join(S3_URL, quote(filename)), timeout=5.0)
     response.raise_for_status()
     with open(os.path.join(dest_folder, filename), "wb") as f:
         f.write(response.content)
 
 
-def _s3_download(data_type, folders, attributes, dest_folder, force, num_threads):
+def _s3_download(data_name, folders, attributes, dest_folder, force, num_threads):
     """Download a file for each attribute from each folder to the specified destination.
 
     Args:
-        data_type   (str)  : The type of the data required
+        data_name   (str)  : The type of the data required
         folders     (list) : A list of folders corresponding to S3 object prefixes
         attributes  (list) : A list to specify individual data elements that are required
         dest_folder (str)  : Path to the root folder where files should be saved
@@ -116,11 +153,11 @@ def _s3_download(data_type, folders, attributes, dest_folder, force, num_threads
     """
     files = []
     for folder in folders:
-        local_folder = os.path.join(dest_folder, data_type, folder)
+        local_folder = os.path.join(dest_folder, data_name, folder)
         if not os.path.exists(local_folder):
             os.makedirs(local_folder)
 
-        prefix = os.path.join(data_type, folder, f"{folder.replace('/', '_')}_")
+        prefix = os.path.join(data_name, folder, f"{folder.replace('/', '_')}_")
         # TODO: consider combining files within a folder (switch to append)
         files.extend([f"{prefix}{attr}.dat" for attr in attributes])
 
@@ -135,7 +172,10 @@ def _s3_download(data_type, folders, attributes, dest_folder, force, num_threads
 
     with ThreadPoolExecutor(num_threads) as pool:
         futures = [pool.submit(_fetch_and_save, f, dest_folder) for f in files]
-        wait(futures)
+        results = wait(futures, return_when=FIRST_EXCEPTION)
+        for result in results.done:
+            if result.exception():
+                raise result.exception()
 
 
 def _generate_folders(node, folders):
@@ -162,12 +202,12 @@ def _generate_folders(node, folders):
 
 
 def load(
-    data_type, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
+    data_name, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
 ):
     r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object
 
     Args:
-        data_type (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
+        data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
         attributes (list) : An optional list to specify individual data element that are required
         folder_path (str) : Path to the root folder where download takes place.
             By default dataset folder will be created in the working directory
@@ -182,38 +222,33 @@ def load(
 
     _ = lazy
 
-    if data_type not in _foldermap:
-        _refresh_foldermap()
-    if not _data_struct:
-        _refresh_data_struct()
+    _refresh_foldermap()
+    _refresh_data_struct()
     if not attributes:
         attributes = ["full"]
 
-    description = {key: (val if isinstance(val, list) else [val]) for (key, val) in params.items()}
-    _validate_params(data_type, description, attributes)
+    description = {param: _format_details(param, details) for param, details in params.items()}
+    _validate_params(data_name, description, attributes)
     if len(attributes) > 1 and "full" in attributes:
         attributes = ["full"]
     for key, val in description.items():
         if len(val) > 1 and "full" in val:
             description[key] = ["full"]
 
-    data = _data_struct[data_type]
+    data = _data_struct[data_name]
     directory_path = os.path.join(folder_path, "datasets")
 
     folders = [description[param] for param in data["params"]]
-    all_folders = _generate_folders(_foldermap[data_type], folders)
-    _s3_download(data_type, all_folders, attributes, directory_path, force, num_threads)
+    all_folders = _generate_folders(_foldermap[data_name], folders)
+    _s3_download(data_name, all_folders, attributes, directory_path, force, num_threads)
 
     data_files = []
+    docstring = data["docstr"]
     for folder in all_folders:
-        real_folder = os.path.join(directory_path, data_type, folder)
-        obj = Dataset(data_type, real_folder, folder.replace("/", "_"), standard=True)
-        doc_attrs = obj.list_attributes()
-        doc_vals = [type(getattr(obj, attr)) for attr in doc_attrs]
-        args_idx = [data["attributes"].index(x) for x in doc_attrs]
-        argsdocs = [data["docstrings"][x] for x in args_idx]
-        obj.setdocstr(data["docstr"], doc_attrs, doc_vals, argsdocs)
-        data_files.append(obj)
+        real_folder = os.path.join(directory_path, data_name, folder)
+        data_files.append(
+            Dataset(data_name, real_folder, folder.replace("/", "_"), docstring, standard=True)
+        )
 
     return data_files
 
@@ -240,18 +275,143 @@ def list_datasets(path=None):
 
     .. code-block :: pycon
 
-        >>> qml.qdata.list_datasets()
+        >>> qml.data.list_datasets()
         {
             'qchem': {
-                'H2': {'STO3G': ['0.8']},
-                'LiH': {'STO3G': ['1.1']},
-                'NH3': {'STO3G': ['1.8']}
+                'H2': {
+                    '6-31G': ['0.46', '1.16', '0.58'],
+                    'STO-3G': ['0.46', '1.05']
+                },
+                'HeH+': {'STO-3G': ['0.9', '0.74', '0.6', '0.8']}
+            },
+            'qspin': {
+                'Heisenberg': {'closed': {'chain': ['1x4']}},
+                'Ising': {'open': {'chain': ['1x8']}}
             }
         }
     """
 
     if path:
         return _direc_to_dict(path)
-    if not _foldermap:
-        _refresh_foldermap()
+    _refresh_foldermap()
     return _foldermap.copy()
+
+
+def list_attributes(data_name):
+    """List the attributes that exist for a specific data_name.
+
+    Returns:
+        list(str): A list of accepted attributes for a given data name.
+    """
+    _refresh_data_struct()
+    if data_name not in _data_struct:
+        raise ValueError(
+            f"Currently the hosted datasets are of types: {list(_data_struct)}, but got {data_name}."
+        )
+    return _data_struct[data_name]["attributes"]
+
+
+def _interactive_request_attributes(options):
+    """Prompt the user to select a list of attributes."""
+    prompt = "Please select attributes:"
+    for i, option in enumerate(options):
+        if option == "full":
+            option = "full (all attributes)"
+        prompt += f"\n\t{i+1}) {option}"
+    print(prompt)
+    choices = input(f"Choice (comma-separated list of options) [1-{len(options)}]: ").split(",")
+    try:
+        choices = list(map(int, choices))
+    except ValueError as e:
+        raise ValueError(f"Must enter a list of integers between 1 and {len(options)}") from e
+    if any(choice < 1 or choice > len(options) for choice in choices):
+        raise ValueError(f"Must enter a list of integers between 1 and {len(options)}")
+    return [options[choice - 1] for choice in choices]
+
+
+def _interactive_request_single(node, param):
+    """Prompt the user to select a single option from a list."""
+    options = list(node)
+    if len(options) == 1:
+        print(f"Using {options[0]} as it is the only {param} available.")
+        sleep(1)
+        return options[0]
+    print(f"Please select a {param}:")
+    print("\n".join(f"\t{i+1}) {option}" for i, option in enumerate(options)))
+    try:
+        choice = int(input(f"Choice [1-{len(options)}]: "))
+    except ValueError as e:
+        raise ValueError(f"Must enter an integer between 1 and {len(options)}") from e
+    if choice < 1 or choice > len(options):
+        raise ValueError(f"Must enter an integer between 1 and {len(options)}")
+    return options[choice - 1]
+
+
+def load_interactive():
+    """Download a dataset using an interactive load prompt.
+
+    **Example**
+
+    .. code-block :: pycon
+
+        >>> qml.data.load_interactive()
+        Please select a data name:
+            1) qspin
+            2) qchem
+        Choice [1-2]: 1
+        Please select a sysname:
+            ...
+        Please select a periodicity:
+            ...
+        Please select a lattice:
+            ...
+        Please select a layout:
+            ...
+        Please select attributes:
+            ...
+        Force download files? (Default is no) [y/N]: N
+        Folder to download to? (Default is pwd, will download to /datasets subdirectory): /Users/jovyan/Downloads
+
+        Please confirm your choices:
+        dataset: qspin/Ising/open/rectangular/4x4
+        attributes: ['parameters', 'ground_states']
+        force: False
+        dest folder: /Users/jovyan/Downloads/datasets
+        Would you like to continue? (Default is yes) [Y/n]:
+        <pennylane.data.dataset.Dataset object at 0x10157ab50>
+    """
+
+    _refresh_foldermap()
+    _refresh_data_struct()
+
+    node = _foldermap
+    data_name = _interactive_request_single(node, "data name")
+
+    description = {}
+    value = data_name
+
+    params = _data_struct[data_name]["params"]
+    for param in params:
+        node = node[value]
+        value = _interactive_request_single(node, param)
+        description[param] = value
+
+    attributes = _interactive_request_attributes(_data_struct[data_name]["attributes"])
+    force = input("Force download files? (Default is no) [y/N]: ") in ["y", "Y"]
+    dest_folder = input(
+        "Folder to download to? (Default is pwd, will download to /datasets subdirectory): "
+    )
+
+    print("\nPlease confirm your choices:")
+    print("dataset:", os.path.join(data_name, *[description[param] for param in params]))
+    print("attributes:", attributes)
+    print("force:", force)
+    print("dest folder:", os.path.join(dest_folder, "datasets"))
+
+    approve = input("Would you like to continue? (Default is yes) [Y/n]: ")
+    if approve not in ["Y", "", "y"]:
+        print("Aborting and not downloading!")
+        return None
+    return load(
+        data_name, attributes=attributes, folder_path=dest_folder, force=force, **description
+    )[0]

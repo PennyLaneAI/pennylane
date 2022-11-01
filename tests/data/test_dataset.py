@@ -15,6 +15,8 @@
 Unit tests for the :class:`pennylane.data.Dataset` class and its functions.
 """
 # pylint:disable=protected-access
+from copy import copy
+import os
 import pytest
 import pennylane as qml
 
@@ -34,7 +36,6 @@ def test_write_dataset(tmp_path):
     """Test that datasets are saved correctly."""
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
     d = tmp_path / "sub"
-    d.mkdir()
     p = d / "test_dataset"
     test_dataset.write(p)
 
@@ -43,7 +44,6 @@ def test_read_dataset(tmp_path):
     """Test that datasets are loaded correctly."""
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
     d = tmp_path / "sub"
-    d.mkdir()
     p = d / "test_dataset"
     test_dataset.write(p)
 
@@ -55,24 +55,51 @@ def test_read_dataset(tmp_path):
     assert test_dataset.kw3 == [3]
 
 
-def test_from_dataset():
+def test_list_attributes():
+    """Test the list_attributes method."""
+    test_dataset = qml.data.Dataset(kw1=1)
+    assert test_dataset.list_attributes() == ["kw1"]
+
+
+def test_copy_non_standard():
     """Test that datasets can be built from other datasets."""
     test_dataset = qml.data.Dataset(dtype="test_data", kw1=1, kw2="2", kw3=[3])
-    new_dataset = qml.data.Dataset.from_dataset(test_dataset)
-
+    new_dataset = copy(test_dataset)
     assert new_dataset.attrs == test_dataset.attrs
+    assert new_dataset._is_standard is False
+
+
+def test_copy_standard(tmp_path):
+    """Test that standard datasets can be built from other standard datasets."""
+    filepath = tmp_path / "myset_full.dat"
+    qml.data.Dataset._write_file({"molecule": 1, "hf_state": 2}, str(filepath))
+    test_dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
+    new_dataset = copy(test_dataset)
+
+    assert new_dataset._is_standard == test_dataset._is_standard
+    assert new_dataset._dtype == test_dataset._dtype
+    assert new_dataset._folder == test_dataset._folder
+    assert new_dataset._prefix == test_dataset._prefix
+    assert new_dataset._prefix_len == test_dataset._prefix_len
+    assert new_dataset._fullfile == test_dataset._fullfile
+    assert new_dataset.__doc__ == test_dataset.__doc__
+    assert new_dataset.attrs == test_dataset.attrs
+    assert new_dataset.attrs == {"molecule": None, "hf_state": None}
+    assert new_dataset.molecule == 1
+    assert new_dataset.hf_state == 2
+    assert new_dataset.attrs == {"molecule": 1, "hf_state": 2}
 
 
 def test_invalid_init():
     """Test that __init__ fails with invalid arguments."""
     with pytest.raises(
         TypeError,
-        match=r"Standard datasets expect 3 arguments: \['data_type', 'data_folder', 'attr_prefix'\]",
+        match=r"Standard datasets expect 4 arguments: \['data_name', 'data_folder', 'attr_prefix', 'docstring'\]",
     ):
         qml.data.Dataset("first", "second", standard=True)
 
-    with pytest.raises(ValueError, match="Expected data_type to be a str, got int"):
-        qml.data.Dataset(1, "some_folder", "some_prefix", standard=True)
+    with pytest.raises(ValueError, match="Expected data_name to be a str, got int"):
+        qml.data.Dataset(1, "some_folder", "some_prefix", "some_docstr", standard=True)
 
 
 def test_getattribute_dunder_non_full(tmp_path):
@@ -84,14 +111,14 @@ def test_getattribute_dunder_non_full(tmp_path):
     folder = tmp_path / "datasets" / "myset"
 
     # would not usually be done by users, bypassing qml.data.load
-    standard_dataset = qml.data.Dataset("qchem", str(folder), "myset", standard=True)
+    standard_dataset = qml.data.Dataset("qchem", str(folder), "myset", "", standard=True)
 
     # no hf_state file exists (yet!)
     with pytest.raises(AttributeError):
         _ = standard_dataset.hf_state
     # create an hf_state file
-    writer_dataset = qml.data.Dataset(hf_state=2)
-    writer_dataset.write(str(folder / "myset_hf_state.dat"))
+    os.makedirs(folder)
+    qml.data.Dataset._write_file(2, str(folder / "myset_hf_state.dat"))
     # this getattribute will read from the above created file
     assert standard_dataset.hf_state == 2
     assert standard_dataset._fullfile is None
@@ -100,12 +127,47 @@ def test_getattribute_dunder_non_full(tmp_path):
 def test_getattribute_dunder_full(tmp_path):
     """Test the getattribute behaviour when a fullfile is set."""
     folder = tmp_path / "datasets" / "myset"
-
-    writer_dataset = qml.data.Dataset(hf_state=2)
-    writer_dataset.write(str(folder / "myset_full.dat"))
+    os.makedirs(folder)
+    qml.data.Dataset._write_file({"hf_state": 2}, str(folder / "myset_full.dat"))
 
     # this getattribute will read from the above created file
-    dataset = qml.data.Dataset("qchem", str(folder), "myset", standard=True)
+    dataset = qml.data.Dataset("qchem", str(folder), "myset", "", standard=True)
     assert dataset.hf_state == 2
-    with pytest.raises(KeyError):
+    with pytest.raises(AttributeError):
         _ = dataset.molecule
+
+
+def test_none_attribute_value(tmp_path):
+    """Test that non-standard datasets return None while standard datasets raise an error."""
+    non_standard_dataset = qml.data.Dataset(molecule=None)
+    assert non_standard_dataset.molecule is None
+
+    standard_dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
+    standard_dataset.molecule = None  # wouldn't usually happen
+    with pytest.raises(
+        AttributeError,
+        match="Dataset has a 'molecule' attribute, but it is None and no data file was found",
+    ):
+        _ = standard_dataset.molecule
+
+
+def test_lazy_load_until_access_non_full(tmp_path):
+    """Test that Datasets do not load values until accessed with non-full files."""
+    filename = str(tmp_path / "myset_hf_state.dat")
+    qml.data.Dataset._write_file(2, filename)
+    dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
+    assert dataset.attrs == {"hf_state": None}
+    assert dataset.hf_state == 2
+    assert dataset.attrs == {"hf_state": 2}
+
+
+def test_lazy_load_until_access_full(tmp_path):
+    """Test that Datasets do not load values until accessed with full files."""
+    filename = str(tmp_path / "myset_full.dat")
+    qml.data.Dataset._write_file({"molecule": 1, "hf_state": 2}, filename)
+    dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
+    assert dataset.attrs == {"molecule": None, "hf_state": None}
+    assert dataset.molecule == 1
+    assert dataset.attrs == {"molecule": 1, "hf_state": None}
+    assert dataset.hf_state == 2
+    assert dataset.attrs == {"molecule": 1, "hf_state": 2}
