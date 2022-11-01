@@ -305,7 +305,7 @@ def list_datasets(path=None):
 
 
 def list_attributes(data_name):
-    """List the attributes that exist for a specific data_name.
+    r"""List the attributes that exist for a specific data_name.
 
     Returns:
         list(str): A list of accepted attributes for a given data name.
@@ -355,7 +355,7 @@ def _interactive_request_single(node, param):
 
 
 def load_interactive():
-    """Download a dataset using an interactive load prompt.
+    r"""Download a dataset using an interactive load prompt.
 
     **Example**
 
