@@ -221,7 +221,7 @@ def load(
             Note that these are not optional
 
     Returns:
-        list[DatasetFile]
+        list[Dataset]
     """
 
     _ = lazy
@@ -306,9 +306,12 @@ def list_datasets(path=None):
 
 def list_attributes(data_name):
     r"""List the attributes that exist for a specific data_name.
+    
+    Args:
+        data_name (str): The type of the desired data
 
     Returns:
-        list(str): A list of accepted attributes for a given data name.
+        list (str): A list of accepted attributes for a given data name
     """
     _refresh_data_struct()
     if data_name not in _data_struct:
@@ -356,6 +359,9 @@ def _interactive_request_single(node, param):
 
 def load_interactive():
     r"""Download a dataset using an interactive load prompt.
+
+    Returns:
+        Dataset
 
     **Example**
 
