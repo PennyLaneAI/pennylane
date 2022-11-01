@@ -349,7 +349,7 @@ def _execute_new(
         output_sizes = res[-len(tapes) :]
 
         if mode == "forward":
-            jacs = res[len(tapes) : -len(tapes)]
+            jacs = res[len(tapes) : 2 * len(tapes)]
 
         res = res[: len(tapes)]
 

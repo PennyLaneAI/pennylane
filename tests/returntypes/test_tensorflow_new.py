@@ -318,6 +318,8 @@ class TestTensorFlowExecuteIntegration:
         assert len(res) == 2
         assert res[0].shape == ()
         assert res[1].shape == ()
+        assert isinstance(res[0], tf.Tensor)
+        assert isinstance(res[1], tf.Tensor)
 
     def test_scalar_jacobian(self, execute_kwargs, tol):
         """Test scalar jacobian calculation"""
@@ -769,12 +771,12 @@ class TestHigherOrderDerivatives:
                     qml.RX(params[1], wires=0)
                     qml.probs(wires=0)
 
-                res = execute([tape], dev, gradient_fn=param_shift, interface="tf", max_diff=2)
+                res = execute([tape], dev, gradient_fn=param_shift, interface="tf", max_diff=2)[0]
                 res = tf.stack(res)
 
             g = t1.jacobian(res, params, experimental_use_pfor=False)
 
-        hess = tf.squeeze(t2.jacobian(g, params))
+        hess = t2.jacobian(g, params)
 
         a, b = params * 1.0
 
@@ -827,6 +829,8 @@ class TestHigherOrderDerivatives:
 
             grad = t1.gradient(res, params)
             assert grad is not None
+            assert grad.dtype == tf.float64
+            assert grad.shape == params.shape
 
         hess = t2.jacobian(grad, params)
         assert hess is None
@@ -913,7 +917,7 @@ class TestHamiltonianWorkflows:
         return [-c * np.sin(x) * np.sin(y) + np.cos(x) * (a + b * np.sin(y)), d * np.cos(x)]
 
     @staticmethod
-    def cost_fn_jacobian(weights, coeffs1, coeffs2):
+    def cost_fn_jacobian_expected(weights, coeffs1, coeffs2):
         """Analytic jacobian of cost_fn above"""
         a, b, c = coeffs1.numpy()
         d = coeffs2.numpy()[0]
@@ -945,7 +949,7 @@ class TestHamiltonianWorkflows:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = tape.jacobian(res, [weights, coeffs1, coeffs2])
-        expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
+        expected = self.cost_fn_jacobian_expected(weights, coeffs1, coeffs2)
         assert np.allclose(res[0], expected[:, :2], atol=tol, rtol=0)
         assert res[1] is None
         assert res[2] is None
@@ -963,7 +967,7 @@ class TestHamiltonianWorkflows:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = tape.jacobian(res, [weights, coeffs1, coeffs2])
-        expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
+        expected = self.cost_fn_jacobian_expected(weights, coeffs1, coeffs2)
         assert np.allclose(res[0], expected[:, :2], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[:, 2:5], atol=tol, rtol=0)
         assert np.allclose(res[2], expected[:, 5:], atol=tol, rtol=0)

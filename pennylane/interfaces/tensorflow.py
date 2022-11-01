@@ -58,6 +58,17 @@ def _compute_vjp_new(dy, jacs, multi_measurements):
     return vjps
 
 
+def _to_tensors(x):
+    """
+    Convert a nested tuple structure of arrays into a nested tuple
+    structure of TF tensors
+    """
+    if not isinstance(x, tuple):
+        return tf.convert_to_tensor(x)
+
+    return tuple(tf.convert_to_tensor(x_) for x_ in x)
+
+
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
@@ -268,18 +279,10 @@ def _execute_new(
         # Forward pass: execute the tapes
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-    # convert all arrays to tensors
-    def _to_tensors(x):
-        if not isinstance(x, tuple):
-            return tf.convert_to_tensor(x)
-
-        return tuple(tf.convert_to_tensor(x_) for x_ in x)
-
     for i, r in enumerate(res):
-        # convert output to TensorFlow tensors
-
         # skip in the case of counts
         if not isinstance(r, dict):
+            # convert output to TensorFlow tensors
             res[i] = _to_tensors(r)
 
     @tf.custom_gradient

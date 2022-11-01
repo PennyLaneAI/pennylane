@@ -1186,7 +1186,6 @@ class TestTapeExpansion:
             ]
             assert np.allclose(grad2_w_c, expected)
 
-    @pytest.mark.xfail(reason="TODO: Update expand hamiltonian")
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_finite_shots(
         self, dev_name, diff_method, mode, max_diff, mocker
@@ -1259,13 +1258,17 @@ class TestSample:
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))]
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         res = circuit()
-        res = tf.stack(res)
 
-        assert res.shape == (2, 10)
-        assert isinstance(res, tf.Tensor)
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert res[0].shape == (10,)
+        assert res[1].shape == (10,)
+        assert isinstance(res[0], tf.Tensor)
+        assert isinstance(res[1], tf.Tensor)
 
     def test_sampling_expval(self):
         """Test sampling works as expected if combined with expectation values"""
@@ -1282,6 +1285,7 @@ class TestSample:
         assert len(res) == 2
         assert isinstance(res, tuple)
         assert res[0].shape == (10,)
+        assert res[1].shape == ()
         assert isinstance(res[0], tf.Tensor)
         assert isinstance(res[1], tf.Tensor)
 
@@ -1300,10 +1304,15 @@ class TestSample:
         result = circuit()
 
         assert len(result) == 3
-        assert np.array_equal(result[0].shape, (n_sample,))
+        assert result[0].shape == (n_sample,)
+        assert result[1].shape == ()
+        assert result[2].shape == ()
+        assert isinstance(result[0], tf.Tensor)
         assert isinstance(result[1], tf.Tensor)
         assert isinstance(result[2], tf.Tensor)
         assert result[0].dtype is tf.int64
+        assert result[1].dtype is tf.float64
+        assert result[2].dtype is tf.float64
 
     def test_single_wire_sample(self, tol):
         """Test the return type and shape of sampling a single wire"""
@@ -1445,6 +1454,30 @@ class TestAutograph:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("mode", ["forward", "backward"])
+    def test_autograph_adjoint_single_param(self, mode, decorator, interface, tol):
+        """Test that a parameter-shift QNode can be compiled
+        using @tf.function, and differentiated to second order"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @decorator
+        @qnode(dev, diff_method="adjoint", interface=interface, mode=mode)
+        def circuit(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = tf.Variable(1.0, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            res = circuit(x)
+        g = tape.gradient(res, x)
+
+        expected_res = tf.cos(x)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = -tf.sin(x)
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("mode", ["forward", "backward"])
     def test_autograph_adjoint_multi_params(self, mode, decorator, interface, tol):
         """Test that a parameter-shift QNode can be compiled
         using @tf.function, and differentiated to second order"""
@@ -1468,30 +1501,6 @@ class TestAutograph:
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("mode", ["forward", "backward"])
-    def test_autograph_adjoint_single_param(self, mode, decorator, interface, tol):
-        """Test that a parameter-shift QNode can be compiled
-        using @tf.function, and differentiated to second order"""
-        dev = qml.device("default.qubit", wires=1)
-
-        @decorator
-        @qnode(dev, diff_method="adjoint", interface=interface, mode=mode)
-        def circuit(x):
-            qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        x = tf.Variable(1.0, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            res = circuit(x)
-        g = tape.gradient(res, x)
-
-        expected_res = tf.cos(x)
-        assert np.allclose(res, expected_res, atol=tol, rtol=0)
-
-        expected_g = -tf.sin(x)
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
     def test_autograph_hessian(self, decorator, interface, tol):
@@ -1535,6 +1544,7 @@ class TestAutograph:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
+        # TODO: fix this for diff_method=None
         @decorator
         @qnode(dev, diff_method="parameter-shift", interface=interface)
         def circuit(x, y):
@@ -1567,3 +1577,488 @@ class TestAutograph:
 
         assert res.shape == (2, 10)
         assert isinstance(res, tf.Tensor)
+
+
+@pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
+class TestReturn:
+    """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
+
+    def test_grad_single_measurement_param(self, dev_name, diff_method, mode):
+        """For one measurement and one param, the gradient is a float."""
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = tf.Variable(0.1)
+
+        with tf.GradientTape() as tape:
+            res = circuit(a)
+
+        grad = tape.gradient(res, a)
+
+        assert isinstance(grad, tf.Tensor)
+        assert grad.shape == ()
+
+    def test_grad_single_measurement_multiple_param(self, dev_name, diff_method, mode):
+        """For one measurement and multiple param, the gradient is a tuple of arrays."""
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = tf.Variable(0.1)
+        b = tf.Variable(0.2)
+
+        with tf.GradientTape() as tape:
+            res = circuit(a, b)
+
+        grad = tape.gradient(res, (a, b))
+
+        assert isinstance(grad, tuple)
+        assert len(grad) == 2
+        assert grad[0].shape == ()
+        assert grad[1].shape == ()
+
+    def test_grad_single_measurement_multiple_param_array(self, dev_name, diff_method, mode):
+        """For one measurement and multiple param as a single array params, the gradient is an array."""
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = tf.Variable([0.1, 0.2])
+
+        with tf.GradientTape() as tape:
+            res = circuit(a)
+
+        grad = tape.gradient(res, a)
+
+        assert isinstance(grad, tf.Tensor)
+        assert len(grad) == 2
+        assert grad.shape == (2,)
+
+    def test_jacobian_single_measurement_param_probs(self, dev_name, diff_method, mode):
+        """For a multi dimensional measurement (probs), check that a single array is returned with the correct
+        dimension"""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.probs(wires=[0, 1])
+
+        a = tf.Variable(0.1)
+
+        with tf.GradientTape() as tape:
+            res = circuit(a)
+
+        jac = tape.jacobian(res, a)
+
+        assert isinstance(jac, tf.Tensor)
+        assert jac.shape == (4,)
+
+    def test_jacobian_single_measurement_probs_multiple_param(self, dev_name, diff_method, mode):
+        """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
+        the correct dimension"""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.probs(wires=[0, 1])
+
+        a = tf.Variable(0.1)
+        b = tf.Variable(0.2)
+
+        with tf.GradientTape() as tape:
+            res = circuit(a, b)
+
+        jac = tape.jacobian(res, (a, b))
+
+        assert isinstance(jac, tuple)
+
+        assert isinstance(jac[0], tf.Tensor)
+        assert jac[0].shape == (4,)
+
+        assert isinstance(jac[1], tf.Tensor)
+        assert jac[1].shape == (4,)
+
+    def test_jacobian_single_measurement_probs_multiple_param_single_array(
+        self, dev_name, diff_method, mode
+    ):
+        """For a multi dimensional measurement (probs), check that a single array is returned."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.probs(wires=[0, 1])
+
+        a = tf.Variable([0.1, 0.2])
+
+        with tf.GradientTape() as tape:
+            res = circuit(a)
+
+        jac = tape.jacobian(res, a)
+
+        assert isinstance(jac, tf.Tensor)
+        assert jac.shape == (4, 2)
+
+    def test_jacobian_multiple_measurement_single_param(self, dev_name, diff_method, mode):
+        """The jacobian of multiple measurements with a single params return an array."""
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+
+        @qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        a = tf.Variable(0.1)
+
+        with tf.GradientTape() as tape:
+            res = circuit(a)
+            res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+
+        jac = tape.jacobian(res, a)
+
+        assert isinstance(jac, tf.Tensor)
+        assert jac.shape == (5,)
+
+    def test_jacobian_multiple_measurement_multiple_param(self, dev_name, diff_method, mode):
+        """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        a = tf.Variable(0.1)
+        b = tf.Variable(0.2)
+
+        with tf.GradientTape() as tape:
+            res = circuit(a, b)
+            res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+
+        jac = tape.jacobian(res, (a, b))
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2
+
+        assert isinstance(jac[0], tf.Tensor)
+        assert jac[0].shape == (5,)
+
+        assert isinstance(jac[1], tf.Tensor)
+        assert jac[1].shape == (5,)
+
+    def test_jacobian_multiple_measurement_multiple_param_array(self, dev_name, diff_method, mode):
+        """The jacobian of multiple measurements with a multiple params array return a single array."""
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        a = tf.Variable([0.1, 0.2])
+
+        with tf.GradientTape() as tape:
+            res = circuit(a)
+            res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+
+        jac = tape.jacobian(res, a)
+
+        assert isinstance(jac, tf.Tensor)
+        assert jac.shape == (5, 2)
+
+    def test_hessian_expval_multiple_params(self, dev_name, diff_method, mode):
+        """The hessian of single a measurement with multiple params return a tuple of arrays."""
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        par_0 = tf.Variable(0.1, dtype=tf.float64)
+        par_1 = tf.Variable(0.2, dtype=tf.float64)
+
+        @qnode(dev, interface="tf", diff_method=diff_method, max_diff=2)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape() as tape2:
+                res = circuit(par_0, par_1)
+
+            grad = tape2.gradient(res, (par_0, par_1))
+            grad = tf.stack(grad)
+
+        hess = tape1.jacobian(grad, (par_0, par_1))
+
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+
+        assert isinstance(hess[0], tf.Tensor)
+        assert hess[0].shape == (2,)
+
+        assert isinstance(hess[1], tf.Tensor)
+        assert hess[1].shape == (2,)
+
+    def test_hessian_expval_multiple_param_array(self, dev_name, diff_method, mode):
+        """The hessian of single measurement with a multiple params array return a single array."""
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        params = tf.Variable([0.1, 0.2], dtype=tf.float64)
+
+        @qnode(dev, interface="tf", diff_method=diff_method, max_diff=2)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape() as tape2:
+                res = circuit(params)
+
+            grad = tape2.gradient(res, params)
+
+        hess = tape1.jacobian(grad, params)
+
+        assert isinstance(hess, tf.Tensor)
+        assert hess.shape == (2, 2)
+
+    def test_hessian_var_multiple_params(self, dev_name, diff_method, mode):
+        """The hessian of single a measurement with multiple params return a tuple of arrays."""
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        par_0 = tf.Variable(0.1, dtype=tf.float64)
+        par_1 = tf.Variable(0.2, dtype=tf.float64)
+
+        @qnode(dev, interface="tf", diff_method=diff_method, max_diff=2)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape() as tape2:
+                res = circuit(par_0, par_1)
+
+            grad = tape2.gradient(res, (par_0, par_1))
+            grad = tf.stack(grad)
+
+        hess = tape1.jacobian(grad, (par_0, par_1))
+
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+
+        assert isinstance(hess[0], tf.Tensor)
+        assert hess[0].shape == (2,)
+
+        assert isinstance(hess[1], tf.Tensor)
+        assert hess[1].shape == (2,)
+
+    def test_hessian_var_multiple_param_array(self, dev_name, diff_method, mode):
+        """The hessian of single measurement with a multiple params array return a single array."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        params = tf.Variable([0.1, 0.2], dtype=tf.float64)
+
+        @qnode(dev, interface="tf", diff_method=diff_method, max_diff=2)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape() as tape2:
+                res = circuit(params)
+
+            grad = tape2.gradient(res, params)
+
+        hess = tape1.jacobian(grad, params)
+
+        assert isinstance(hess, tf.Tensor)
+        assert hess.shape == (2, 2)
+
+    def test_hessian_probs_expval_multiple_params(self, dev_name, diff_method, mode):
+        """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        par_0 = tf.Variable(0.1, dtype=tf.float64)
+        par_1 = tf.Variable(0.2, dtype=tf.float64)
+
+        @qnode(dev, interface="tf", diff_method=diff_method, max_diff=2)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape(persistent=True) as tape2:
+                res = circuit(par_0, par_1)
+                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+
+            grad = tape2.jacobian(res, (par_0, par_1), experimental_use_pfor=False)
+            grad = tf.concat(grad, 0)
+
+        hess = tape1.jacobian(grad, (par_0, par_1))
+
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+
+        assert isinstance(hess[0], tf.Tensor)
+        assert hess[0].shape == (10,)
+
+        assert isinstance(hess[1], tf.Tensor)
+        assert hess[1].shape == (10,)
+
+    def test_hessian_expval_probs_multiple_param_array(self, dev_name, diff_method, mode):
+        """The hessian of multiple measurements with a multiple param array return a single array."""
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        params = tf.Variable([0.1, 0.2], dtype=tf.float64)
+
+        @qnode(dev, interface="tf", diff_method=diff_method, max_diff=2)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape(persistent=True) as tape2:
+                res = circuit(params)
+                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+
+            grad = tape2.jacobian(res, params, experimental_use_pfor=False)
+
+        hess = tape1.jacobian(grad, params)
+
+        assert isinstance(hess, tf.Tensor)
+        assert hess.shape == (5, 2, 2)
+
+    def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, mode):
+        """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        par_0 = tf.Variable(0.1, dtype=tf.float64)
+        par_1 = tf.Variable(0.2, dtype=tf.float64)
+
+        @qnode(dev, interface="tf", diff_method=diff_method, max_diff=2)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape(persistent=True) as tape2:
+                res = circuit(par_0, par_1)
+                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+
+            grad = tape2.jacobian(res, (par_0, par_1), experimental_use_pfor=False)
+            grad = tf.concat(grad, 0)
+
+        hess = tape1.jacobian(grad, (par_0, par_1))
+
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+
+        assert isinstance(hess[0], tf.Tensor)
+        assert hess[0].shape == (10,)
+
+        assert isinstance(hess[1], tf.Tensor)
+        assert hess[1].shape == (10,)
+
+    def test_hessian_probs_var_multiple_param_array(self, dev_name, diff_method, mode):
+        """The hessian of multiple measurements with a multiple param array return a single array."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        params = tf.Variable([0.1, 0.2], dtype=tf.float64)
+
+        @qnode(dev, interface="tf", diff_method=diff_method, max_diff=2)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape(persistent=True) as tape2:
+                res = circuit(params)
+                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+
+            grad = tape2.jacobian(res, params, experimental_use_pfor=False)
+
+        hess = tape1.jacobian(grad, params)
+
+        assert isinstance(hess, tf.Tensor)
+        assert hess.shape == (5, 2, 2)
