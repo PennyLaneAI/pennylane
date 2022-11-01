@@ -236,6 +236,10 @@ class Pow(SymbolicOp):
     def ndim_params(self):
         return self.base.ndim_params
 
+    def _check_batching(self, params):
+        # pylint: disable=protected-access
+        return self.base._check_batching(params)
+
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
         base_label = self.base.label(decimals, base_label, cache=cache)
@@ -252,7 +256,15 @@ class Pow(SymbolicOp):
         if isinstance(self.z, int):
             mat = qmlmath.linalg.matrix_power(base_matrix, self.z)
         else:
-            mat = fractional_matrix_power(base_matrix, self.z)
+            if self.batch_size is None:
+                mat = fractional_matrix_power(base_matrix, self.z)
+            else:
+
+                def partial(mat):
+                    return fractional_matrix_power(mat, self.z)
+
+                fmp = qml.numpy.vectorize(partial, signature="(n,n)->(n,n)")
+                mat = fmp(base_matrix)
 
         if wire_order is None or self.wires == Wires(wire_order):
             return mat

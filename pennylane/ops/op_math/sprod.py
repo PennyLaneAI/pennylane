@@ -22,9 +22,10 @@ import autoray
 
 import pennylane as qml
 from pennylane.interfaces import SUPPORTED_INTERFACES
-from pennylane.operation import Operator
+from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
+from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 from .symbolicop import SymbolicOp
 
@@ -111,8 +112,9 @@ class SProd(SymbolicOp):
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
         self.scalar = scalar
-        self._check_scalar_is_valid()
+        # self._check_scalar_is_valid()
         super().__init__(base=base, do_queue=do_queue, id=id)
+        self._check_batching([[scalar], base.data])
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -138,6 +140,47 @@ class SProd(SymbolicOp):
         self.scalar = new_data[0][0]
         if len(new_data) > 1:
             self.base.data = new_data[1]
+
+    _coeff_batch_size = None
+
+    def _check_batching(self, params):
+        self._batch_size = self.base.batch_size
+
+        self.base._check_batching(params[1])  # pylint: disable=protected-access
+        coeff = params[0][0]
+        try:
+            dim = qml.math.ndim(coeff)
+        except ValueError as e:
+            # TODO:[dwierichs] When using tf.function with an input_signature that contains
+            # an unknown-shaped input, ndim() will not be able to determine the number of
+            # dimensions because they are not specified yet. Failing example: Let `fun` be
+            # a single-parameter QNode.
+            # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
+            # There might be a way to support batching nonetheless, which remains to be
+            # investigated. For now, the batch_size is left to be `None` when instantiating
+            # an operation with abstract parameters that make `qml.math.ndim` fail.
+            if qml.math.is_abstract(coeff):
+                return
+            raise e
+
+        if dim > 1:
+            raise ValueError(
+                f"SProd: wrong number(s) of dimensions in parameters. "
+                f"Parameters with ndims {dim} passed, 0 or 1 expected."
+            )
+        if dim == 0:
+            return
+
+        coeff_size = qml.math.shape(coeff)[0]
+        self._coeff_batch_size = coeff_size
+        base_size = self.base.batch_size or 0
+        if base_size in (0, coeff_size):
+            self._batch_size = coeff_size
+        else:
+            raise ValueError(
+                "Broadcasting was attempted but the broadcasted dimensions "
+                f"do not match: {coeff_size} and {base_size}."
+            )
 
     @property
     def num_params(self):
@@ -225,9 +268,16 @@ class SProd(SymbolicOp):
         Returns:
             tensor_like: matrix representation
         """
-        if isinstance(self.base, qml.Hamiltonian):
+        if isinstance(self.base, Hamiltonian):
             return self.scalar * qml.matrix(self.base, wire_order=wire_order)
-        return self.scalar * self.base.matrix(wire_order=wire_order)
+
+        if self._coeff_batch_size is None:
+            return self.scalar * self.base.matrix(wire_order=wire_order)
+        if self.base.batch_size is None:
+            return qml.math.einsum("i,jk->ijk", self.scalar, self.base.matrix())
+        # both base and coefficient batched
+        # still working on a solution here
+        raise MatrixUndefinedError
 
     @property
     def _queue_category(self):  # don't queue scalar prods as they might not be Unitary!
