@@ -21,6 +21,9 @@ import os
 import dill
 import zstd
 
+from pennylane import Hamiltonian
+from pennylane.grouping import string_to_pauli_word
+
 
 class Dataset(ABC):
     """Create a dataset object to store a collection of information describing
@@ -215,6 +218,23 @@ class Dataset(ABC):
     def __get_attribute_from_filename(self, filename):
         return os.path.basename(filename)[self._prefix_len : -4]
 
+    @staticmethod
+    def __dict_to_hamiltonian(hamil_dict, wire_map):
+        coeffs, ops = [], []
+        for key, val in hamil_dict.items():
+            coeffs.append(val)
+            ops.append(string_to_pauli_word(key, wire_map))
+        return Hamiltonian(coeffs, ops)
+
+    # TODO: validate this and add to _write_file (if 'hamiltonian' in data))
+    # @staticmethod
+    # def __hamiltonian_to_dict(hamiltonian, wire_map):
+    #     hamil_dict = {}
+    #     coeffs, ops = hamiltonian.terms()
+    #     for coeff, op in zip(coeffs, ops):
+    #         hamil_dict.update({pauli_word_to_string(op, wire_map): coeff})
+    #     return hamil_dict
+
     def __getattribute__(self, name):
         try:
             val = super().__getattribute__(name)
@@ -227,13 +247,14 @@ class Dataset(ABC):
             if not self._is_standard:
                 raise
             filepath = self.__get_filename_for_attribute(name)
-            if os.path.exists(filepath):
-                value = self._read_file(filepath)
-                if filepath == self._fullfile:
-                    if name not in value:
-                        raise
-                    value = value[name]
-                setattr(self, name, value)
-                return value
-            # TODO: download the file here?
-            raise
+            if not os.path.exists(filepath):  # TODO: download the file here?
+                raise
+            value = self._read_file(filepath)
+            if filepath == self._fullfile:
+                if name not in value:
+                    raise
+                value = value[name]
+            if name == "hamiltonian":
+                value = self.__dict_to_hamiltonian(value["terms"], value["wire_map"])
+            setattr(self, name, value)
+            return value
