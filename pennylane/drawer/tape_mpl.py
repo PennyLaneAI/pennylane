@@ -18,6 +18,7 @@ Developer note: when making changes to this file, you can run
 `pennylane/doc/_static/tape_mpl/tape_mpl_examples.py` to generate docstring
 images.  If you change the docstring examples, please update this file.
 """
+import matplotlib as mpl
 
 # cant `import pennylane as qml` because of circular imports with circuit graph
 from pennylane import ops
@@ -25,6 +26,8 @@ from pennylane.wires import Wires
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
+from .style import use_style
+
 
 ############################ Special Gate Methods #########################
 # If an operation is drawn differently than the standard box/ ctrl+box style
@@ -84,10 +87,12 @@ special_cases = {
     ops.Barrier: _add_barrier,
     ops.WireCut: _add_wirecut,
 }
+
+
 """Dictionary mapping special case classes to functions for drawing them."""
 
 # pylint: disable=too-many-branches
-def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
+def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, style=None, **kwargs):
     """Produces a matplotlib graphic from a tape.
 
     Args:
@@ -265,6 +270,11 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     n_layers = len(layers)
     n_wires = len(wire_map)
 
+    restore_params = {}
+    if style:
+        restore_params = mpl.rcParams.copy()
+        use_style(style)
+
     drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
 
     if fontsize is not None:
@@ -324,5 +334,11 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
             if wire not in measured_wires:
                 drawer.measure(n_layers, wire_map[wire])
                 measured_wires += wire
+
+    if style:
+        # we don't want to mess with how it modifies whether the interface is interactive
+        # but we want to restore everything else
+        restore_params["interactive"] = mpl.rcParams["interactive"]
+        mpl.rcParams.update(restore_params)
 
     return drawer.fig, drawer.ax

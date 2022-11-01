@@ -227,7 +227,13 @@ def draw(
 
 
 def draw_mpl(
-    qnode, wire_order=None, show_all_wires=False, decimals=None, expansion_strategy=None, **kwargs
+    qnode,
+    wire_order=None,
+    show_all_wires=False,
+    decimals=None,
+    expansion_strategy=None,
+    style="black_white",
+    **kwargs,
 ):
     """Draw a qnode with matplotlib
 
@@ -437,6 +443,7 @@ def draw_mpl(
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
+            style=style,
             **kwargs,
         )
 
