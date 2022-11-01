@@ -160,7 +160,7 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
     approximating/estimating the individual terms of your decomposition
 
     Args:
-      hamiltonian (qml.Hamiltonian): The pennylane hamiltonian to be decomposed
+      hamiltonian (qml.Hamiltonian): The pennylane Hamiltonian to be decomposed
       tape (qml.QuantumTape: Tape containing the circuit to be expanded into the new circuits
       mus (List[float]): The average between the two eigenvalues (E_1+E-2)/2
       times (List[float]): The time for this term group to be evaluated/evolved at
