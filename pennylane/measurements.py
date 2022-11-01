@@ -591,6 +591,17 @@ class MeasurementProcess:
         # `MeasurementProcess` within `expand` should never fail with the given parameters.
         return self.obs.has_diagonalizing_gates
 
+    @property
+    def samples_computational_basis(self):
+        r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
+        computational basis states.
+        """
+        return (
+            self.return_type
+            in (qml.measurements.AllCounts, qml.measurements.Counts, qml.measurements.Sample)
+            and self.obs is None
+        )
+
     def expand(self):
         """Expand the measurement of an observable to a unitary
         rotation and a measurement in the computational basis.

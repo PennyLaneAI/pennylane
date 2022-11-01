@@ -243,6 +243,8 @@ Gates performing arithmetics
 
     ~pennylane.QubitCarry
     ~pennylane.QubitSum
+    ~pennylane.IntegerComparator
+
 
 :html:`</div>`
 
@@ -424,6 +426,7 @@ Qutrit gates constructed from a matrix
     :nosignatures:
 
     ~pennylane.QutritUnitary
+    ~pennylane.ControlledQutritUnitary
 
 :html:`</div>`
 
