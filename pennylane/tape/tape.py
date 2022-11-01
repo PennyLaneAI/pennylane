@@ -97,7 +97,7 @@ def _validate_computational_basis_sampling(measurements):
 
         for obs in non_comp_basis_sampling_obs:
             # Cover e.g., qml.probs(wires=wires) case by checking obs attr
-            if obs.obs is not None and not qml.grouping.utils.are_pauli_words_qwc(
+            if obs.obs is not None and not qml.pauli.utils.are_pauli_words_qwc(
                 [obs.obs, pauliz_for_cb_obs]
             ):
                 raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
