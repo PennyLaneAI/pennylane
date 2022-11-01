@@ -23,51 +23,10 @@ import scipy
 import numpy
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.qchem.observable_hf import simplify, jordan_wigner
+from pennylane.pauli import simplify
+from pennylane.pauli.utils import _binary_matrix
+from pennylane.qchem.observable_hf import jordan_wigner
 from pennylane.wires import Wires
-
-
-def _binary_matrix(terms, num_qubits, wire_map=None):
-    r"""Get a binary matrix representation of the Hamiltonian where each row corresponds to a
-    Pauli term, which is represented by a concatenation of Z and X vectors.
-
-    Args:
-        terms (Iterable[Observable]): operators defining the Hamiltonian
-        num_qubits (int): number of wires required to define the Hamiltonian
-        wire_map (dict): dictionary containing all wire labels used in the Pauli words as keys, and
-            unique integer labels as their values
-
-    Returns:
-        array[int]: binary matrix representation of the Hamiltonian of shape
-        :math:`len(terms) \times 2*num_qubits`
-
-    **Example**
-
-    >>> wire_map = {'a':0, 'b':1, 'c':2, 'd':3}
-    >>> terms = [qml.PauliZ(wires=['a']) @ qml.PauliX(wires=['b']),
-    ...          qml.PauliZ(wires=['a']) @ qml.PauliY(wires=['c']),
-    ...          qml.PauliX(wires=['a']) @ qml.PauliY(wires=['d'])]
-    >>> _binary_matrix(terms, 4, wire_map=wire_map)
-    array([[1, 0, 0, 0, 0, 1, 0, 0],
-           [1, 0, 1, 0, 0, 0, 1, 0],
-           [0, 0, 0, 1, 1, 0, 0, 1]])
-    """
-    if wire_map is None:
-        all_wires = qml.wires.Wires.all_wires([term.wires for term in terms], sort=True)
-        wire_map = {i: c for c, i in enumerate(all_wires)}
-
-    binary_matrix = np.zeros((len(terms), 2 * num_qubits), dtype=int)
-    for idx, term in enumerate(terms):
-        ops, wires = term.name, term.wires
-        if len(wires) == 1:
-            ops = [ops]
-        for op, wire in zip(ops, wires):
-            if op in ["PauliX", "PauliY"]:
-                binary_matrix[idx][wire_map[wire] + num_qubits] = 1
-            if op in ["PauliZ", "PauliY"]:
-                binary_matrix[idx][wire_map[wire]] = 1
-
-    return binary_matrix
 
 
 def _reduced_row_echelon(binary_matrix):
@@ -286,7 +245,7 @@ def _observable_mult(obs_a, obs_b):
     c = []
     for i in range(len(obs_a.terms()[0])):
         for j in range(len(obs_b.terms()[0])):
-            op, phase = qml.grouping.pauli_mult_with_phase(obs_a.terms()[1][i], obs_b.terms()[1][j])
+            op, phase = qml.pauli.pauli_mult_with_phase(obs_a.terms()[1][i], obs_b.terms()[1][j])
             o.append(op)
             c.append(phase * obs_a.terms()[0][i] * obs_b.terms()[0][j])
     return simplify(qml.Hamiltonian(qml.math.stack(c), o))
@@ -307,9 +266,9 @@ def clifford(generators, paulixops):
 
     **Example**
 
-    >>> t1 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZZII')])
-    >>> t2 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIZI')])
-    >>> t3 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIIZ')])
+    >>> t1 = qml.Hamiltonian([1.0], [qml.pauli.string_to_pauli_word('ZZII')])
+    >>> t2 = qml.Hamiltonian([1.0], [qml.pauli.string_to_pauli_word('ZIZI')])
+    >>> t3 = qml.Hamiltonian([1.0], [qml.pauli.string_to_pauli_word('ZIIZ')])
     >>> generators = [t1, t2, t3]
     >>> paulixops = [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)]
     >>> u = clifford(generators, paulixops)
@@ -374,7 +333,7 @@ def taper(h, generators, paulixops, paulix_sector):
 
     for idx, w in enumerate(paulix_wires):
         for i in range(len(h.terms()[0])):
-            s = qml.grouping.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
+            s = qml.pauli.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
             if s[w] == "X":
                 val[i] *= paulix_sector[idx]
 
@@ -383,11 +342,11 @@ def taper(h, generators, paulixops, paulix_sector):
     wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
 
     for i in range(len(h.terms()[0])):
-        s = qml.grouping.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
+        s = qml.pauli.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
 
         wires = [x for x in h.wires if x not in paulix_wires]
         o.append(
-            qml.grouping.string_to_pauli_word(
+            qml.pauli.string_to_pauli_word(
                 "".join([s[wiremap[i]] for i in wires]), wire_map=wiremap_tap
             )
         )
