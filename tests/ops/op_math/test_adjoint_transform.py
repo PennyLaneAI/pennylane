@@ -47,7 +47,7 @@ class TestPreconstructedOp:
         assert isinstance(out, Adjoint)
         assert out.base is base
         assert len(tape) == 1
-        assert len(tape._queue) == 2
+        assert len(tape.queue) == 2
         assert tape.get_info(base) == {"owner": out}
         assert tape.get_info(out) == {"owns": base}
 
@@ -176,8 +176,8 @@ class TestNonLazyExecution:
         assert len(tape) == 1
         assert out is tape[0]
         assert len(tape._queue) == 2
-        assert tape._queue[base] == {"owner": out}
-        assert tape._queue[out] == {"owns": base}
+        assert tape.get_info(base) == {"owner": out}
+        assert tape.get_info(out) == {"owns": base}
 
         assert isinstance(out, Adjoint)
         assert isinstance(out.base, qml.S)

@@ -1554,9 +1554,8 @@ class TestTapeCopying:
         assert copied_tape is not tape
 
         # the operations are not references; they are unique objects
-        assert copied_tape.operations != tape.operations
-        assert copied_tape.observables != tape.observables
-        assert copied_tape.measurements != tape.measurements
+        for obj1, obj2 in zip(copied_tape, tape):
+            assert obj1 is not obj2
         assert copied_tape.operations[0] is not tape.operations[0]
 
         # however, the underlying operation data *is still shared*
@@ -1595,9 +1594,8 @@ class TestTapeCopying:
         assert copied_tape is not tape
 
         # the operations are not references
-        assert copied_tape.operations != tape.operations
-        assert copied_tape.observables != tape.observables
-        assert copied_tape.measurements != tape.measurements
+        for obj1, obj2 in zip(copied_tape, tape):
+            assert obj1 is not obj2
         assert copied_tape.operations[0] is not tape.operations[0]
 
         # check that the output dim is identical

@@ -489,9 +489,8 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references; they are unique objects
-        assert copied_qs.operations != qs.operations
-        assert copied_qs.observables != qs.observables
-        assert copied_qs.measurements != qs.measurements
+        for obj1, obj2 in zip(copied_qs, qs):
+            assert obj1 is not obj2
         assert copied_qs.operations[0] is not qs.operations[0]
 
         # however, the underlying operation data *is still shared*
@@ -531,9 +530,9 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references
-        assert copied_qs.operations != qs.operations
-        assert copied_qs.observables != qs.observables
-        assert copied_qs.measurements != qs.measurements
+        # the operations are not references; they are unique objects
+        for obj1, obj2 in zip(copied_qs, qs):
+            assert obj1 is not obj2
         assert copied_qs.operations[0] is not qs.operations[0]
 
         # check that the output dim is identical
