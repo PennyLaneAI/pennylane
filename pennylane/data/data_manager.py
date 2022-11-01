@@ -94,21 +94,25 @@ def _validate_params(data_name, description, attributes):
         param = params_left[0]
         params_left = params_left[1:]
         for detail in description[param]:
+            exc = None
             if detail == "full":
                 if not params_left:
-                    return
+                    return None
                 for child in node.values():
-                    validate_structure(child, params_left)
-            elif detail not in node:
-                # TODO: shorten this limit without permanently changing it
-                # sys.tracebacklimit = 0 # the recursive stack is disorienting
-                raise ValueError(
+                    exc = validate_structure(child, params_left)
+            elif detail not in node:  # error: return the error message to be raised
+                return ValueError(
                     f"{param} value of '{detail}' is not available. Available values are {list(node)}"
                 )
             elif params_left:
-                validate_structure(node[detail], params_left)
+                exc = validate_structure(node[detail], params_left)
+            if exc is not None:
+                return exc
+        return None
 
-    validate_structure(_foldermap[data_name], params_needed)
+    exc = validate_structure(_foldermap[data_name], params_needed)
+    if exc is not None:
+        raise exc
 
 
 def _refresh_foldermap():

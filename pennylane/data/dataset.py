@@ -22,7 +22,7 @@ import dill
 import zstd
 
 from pennylane import Hamiltonian
-from pennylane.grouping import string_to_pauli_word
+from pennylane.pauli import string_to_pauli_word
 
 
 class Dataset(ABC):

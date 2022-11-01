@@ -183,6 +183,6 @@ def test_hamiltonian_is_loaded_properly(tmp_path):
     ham = dataset.hamiltonian
     assert isinstance(ham, qml.Hamiltonian)
     coeffs, ops = ham.terms()
-    assert coeffs == (0.1, 0.2)
+    assert coeffs == [0.1, 0.2]
     assert qml.equal(qml.Identity(0), ops[0])
     assert qml.equal(qml.PauliZ(0), ops[1])
