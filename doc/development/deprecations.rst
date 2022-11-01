@@ -7,7 +7,7 @@ Pending deprecations
 --------------------
 
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
-use ``qml.adjoint`` or ``qml.pow`` instead. 
+  use ``qml.adjoint`` or ``qml.pow`` instead. 
 
   - Still accessible in v0.27 and v0.28
   - Will be removed in v0.29
