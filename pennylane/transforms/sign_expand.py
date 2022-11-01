@@ -81,7 +81,7 @@ def MultiCRZ(theta, wires, control):
 
 def evolve_under(ops, coeffs, time, controls):
     """
-    Evolves under the given Hamiltonian deconstructed into its pauliwords
+    Evolves under the given Hamiltonian deconstructed into its Pauli words
 
     Args:
         ops (List[Observables]): List of Pauliwords that comprise the Hamiltonian
