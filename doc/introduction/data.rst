@@ -28,7 +28,7 @@ The :func:`~pennylane.data.load` function returns a list with the desired data.
     [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
 
 When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as `attributes`).
-For example, we can download or load only the molecule and hamiltonian of a dataset as follows:
+For example, we can download or load only the molecule and Hamiltonian of a dataset as follows:
 
 .. code-block:: python
 
@@ -53,7 +53,7 @@ To determine what attributes are available for a type of dataset, we can use the
 Using Datasets in PennyLane
 ---------------------------
 
-Once loaded, one can access properties of the datasets (referred to as _attributes_):
+Once loaded, one can access properties of the datasets:
 
 .. code-block:: python
 
