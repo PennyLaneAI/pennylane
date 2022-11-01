@@ -428,6 +428,84 @@ def execute_new(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=
     )
 
 
+def _execute_bwd_new(
+    params,
+    tapes,
+    execute_fn,
+    gradient_fn,
+    gradient_kwargs,
+    _n=1,
+    max_diff=2,
+):
+    """The main interface execution function where jacobians of the execute
+    function are computed by the registered backward function."""
+
+    # pylint: disable=unused-variable
+    # Copy a given tape with operations and set parameters
+
+    @jax.custom_jvp
+    def execute_wrapper(params):
+        new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
+
+        with qml.tape.Unwrap(*new_tapes):
+            res, _ = execute_fn(new_tapes, **gradient_kwargs)
+
+        res = _to_jax(res)
+
+        return res
+
+    @execute_wrapper.defjvp
+    def execute_wrapper_jvp(primals, tangents):
+        """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
+        new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, primals[0])]
+
+        if isinstance(gradient_fn, qml.gradients.gradient_transform):
+            if _n == max_diff:
+
+                with qml.tape.Unwrap(*new_tapes):
+                    jvp_tapes, processing_fn = qml.gradients.batch_jvp(
+                        new_tapes,
+                        tangents[0],
+                        gradient_fn,
+                        reduction="append",
+                        gradient_kwargs=gradient_kwargs,
+                    )
+                    jvps = processing_fn(execute_fn(jvp_tapes)[0])
+
+            else:
+                jvp_tapes, processing_fn = qml.gradients.batch_jvp(
+                    new_tapes,
+                    tangents[0],
+                    gradient_fn,
+                    reduction="append",
+                    gradient_kwargs=gradient_kwargs,
+                )
+
+                jvps = processing_fn(
+                    execute_new(
+                        jvp_tapes,
+                        execute_fn,
+                        gradient_fn,
+                        gradient_kwargs,
+                        _n=_n + 1,
+                        max_diff=max_diff,
+                    )
+                )
+            res = execute_wrapper(primals[0])
+        else:
+            # Execution: execute the function first
+            res = execute_wrapper(primals[0])
+            # Backward: Gradient function is a device method.
+            with qml.tape.Unwrap(*new_tapes):
+                jacs = gradient_fn(new_tapes, **gradient_kwargs)
+            multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
+            jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
+
+        return res, jvps
+
+    return execute_wrapper(params)
+
+
 def _execute_fwd_new(
     params,
     tapes,
@@ -447,12 +525,14 @@ def _execute_fwd_new(
         with qml.tape.Unwrap(*new_tapes):
             res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
+        print(res, jacs)
         res = _to_jax(res)
 
         return res, jacs
 
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primal, tangents):
+        """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         res, jacs = execute_wrapper(primal[0])
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
@@ -483,78 +563,6 @@ def _compute_jvps(jacs, tangents, multi_measurements):
     return jvps
 
 
-def _execute_bwd_new(
-    params,
-    tapes,
-    execute_fn,
-    gradient_fn,
-    gradient_kwargs,
-    _n=1,
-    max_diff=2,
-):
-    """The main interface execution function where jacobians of the execute
-    function are computed by the registered backward function."""
-
-    # pylint: disable=unused-variable
-    # Copy a given tape with operations and set parameters
-
-    @jax.custom_jvp
-    def execute_wrapper(params):
-        new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
-
-        with qml.tape.Unwrap(*new_tapes):
-            res, _ = execute_fn(new_tapes, **gradient_kwargs)
-        res = _to_jax(res)
-
-        return res
-
-    @execute_wrapper.defjvp
-    def execute_wrapper_jvp(primals, tangents):
-        new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, primals[0])]
-
-        if isinstance(gradient_fn, qml.gradients.gradient_transform):
-            if _n == max_diff:
-                with qml.tape.Unwrap(*new_tapes):
-                    jvp_tapes, processing_fn = qml.gradients.batch_jvp(
-                        new_tapes,
-                        tangents[0],
-                        gradient_fn,
-                        reduction="append",
-                        gradient_kwargs=gradient_kwargs,
-                    )
-                    jvps = processing_fn(execute_fn(jvp_tapes)[0])
-
-            else:
-                jvp_tapes, processing_fn = qml.gradients.batch_jvp(
-                    new_tapes,
-                    tangents[0],
-                    gradient_fn,
-                    reduction="append",
-                    gradient_kwargs=gradient_kwargs,
-                )
-
-                jvps = processing_fn(
-                    execute_new(
-                        jvp_tapes,
-                        execute_fn,
-                        gradient_fn,
-                        gradient_kwargs,
-                        _n=_n + 1,
-                        max_diff=max_diff,
-                    )
-                )
-        else:
-            # Backward: Gradient function is a device method.
-            with qml.tape.Unwrap(*new_tapes):
-                jacs = gradient_fn(new_tapes, **gradient_kwargs)
-            multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
-            jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
-
-        return execute_wrapper(primals[0]), jvps
-
-    return execute_wrapper(params)
-
-
 def _copy_tape(t, a):
     tc = t.copy(copy_operations=True)
     tc.set_parameters(a)
@@ -569,6 +577,9 @@ def _to_jax(res):
         else:
             sub_r = []
             for r_i in r:
-                sub_r.append(jnp.array(r_i))
+                if isinstance(r_i, dict):
+                    sub_r.append(r_i)
+                else:
+                    sub_r.append(jnp.array(r_i))
             res_.append(tuple(sub_r))
     return res_
