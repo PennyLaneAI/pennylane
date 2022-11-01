@@ -14,3 +14,33 @@
 """A module containing utility functions and reduced representation classes for working with Pauli operators. """
 
 from .pauli_arithmetic import PauliWord, PauliSentence
+
+from .utils import (
+    is_pauli_word,
+    are_identical_pauli_words,
+    pauli_to_binary,
+    binary_to_pauli,
+    pauli_word_to_string,
+    string_to_pauli_word,
+    pauli_word_to_matrix,
+    is_qwc,
+    are_pauli_words_qwc,
+    observables_to_binary_matrix,
+    qwc_complement_adj_matrix,
+    pauli_group,
+    pauli_mult,
+    pauli_mult_with_phase,
+    partition_pauli_group,
+    qwc_rotation,
+    diagonalize_pauli_word,
+    diagonalize_qwc_pauli_words,
+    diagonalize_qwc_groupings,
+    simplify,
+)
+
+from .grouping import (
+    group_observables,
+    PauliGroupingStrategy,
+    optimize_measurements,
+    graph_colouring,
+)
