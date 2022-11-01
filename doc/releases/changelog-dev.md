@@ -143,6 +143,10 @@ Users can specify the control wires as well as the values to control the operati
 
 <h3>Improvements</h3>
 
+* Added the `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track
+  if computational basis samples are being generated.
+  [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
+
 * The parameters of a basis set containing different number of Gaussian functions are easier to 
   differentiate.
   [(#3213)](https://github.com/PennyLaneAI/pennylane/pull/3213)
@@ -344,6 +348,10 @@ Users can specify the control wires as well as the values to control the operati
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug where `qml.sample()` and `qml.counts()` would output incorrect results when mixed with measurements whose
+  operators do not qubit-wise commute with computational basis projectors.
+  [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
+
 * Users no longer see unintuitive errors when inputing sequences to `qml.Hermitian`.
   [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
 
@@ -368,6 +376,11 @@ Users can specify the control wires as well as the values to control the operati
 
 * Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
   [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
+
+* Returning `qml.sample()` or `qml.counts()` with other measurements of non-commuting observables
+  now raises a QuantumFunctionError (e.g., `return qml.expval(PauliX(wires=0)), qml.sample()`
+  now raises an error).
+  [(#2924)](https://github.com/PennyLaneAI/pennylane/pull/2924)
 
 * Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian
   composite operator.
