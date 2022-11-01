@@ -18,7 +18,7 @@ Here we use the :func:`~pennylane.data.load` function, for the
 
 To specify the dataset to be loaded, the data category (``data_name``) must be
 specified, alongside category-specific keyword arguments. For the full list
-of available datasets, please see the dataset library documentation.
+of available datasets, please see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
 The :func:`~pennylane.data.load` function returns a list with the desired data.
 
 .. code-block:: python
