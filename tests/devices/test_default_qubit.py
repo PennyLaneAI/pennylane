@@ -1128,7 +1128,7 @@ class TestSample:
         s3 = dev.sample(qml.PauliX(0) @ qml.PauliZ(1))
         assert np.array_equal(s3.shape, (17,))
 
-    def test_sample_values(self, qubit_device_2_wires, tol):
+    def test_sample_values(self, tol):
         """Tests if the samples returned by sample have
         the correct values
         """
@@ -1164,7 +1164,6 @@ class TestDefaultQubitIntegration:
             "supports_tensor_observables": True,
             "returns_probs": True,
             "returns_state": True,
-            "supports_reversible_diff": True,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "supports_broadcasting": True,
@@ -2578,3 +2577,22 @@ class TestGetBatchSize:
         dev = qml.device("default.qubit", wires=1)
         with pytest.raises(ValueError, match="could not broadcast"):
             dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2), 8)
+
+
+class TestDenseMatrixDecompositionThreshold:
+    """Tests for QFT and Grover operators the automatic transition from dense matrix to decomposition
+    on calculations."""
+
+    input = [
+        (qml.QFT, 4, True),
+        (qml.QFT, 6, False),
+        (qml.GroverOperator, 4, True),
+        (qml.GroverOperator, 13, False),
+    ]
+
+    @pytest.mark.parametrize("op, n_wires, condition", input)
+    def test_threshold(self, op, n_wires, condition):
+
+        wires = np.linspace(0, n_wires - 1, n_wires, dtype=int)
+        op = op(wires=wires)
+        assert DefaultQubit.stopping_condition.__get__(op)(op) == condition

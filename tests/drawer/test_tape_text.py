@@ -78,6 +78,7 @@ class TestHelperFunctions:
             (qml.IsingXX(1.23, wires=(0, 2)), ["╭IsingXX", "│", "╰IsingXX", "─"]),
             (qml.Snapshot(), ["─|S|", "─|S|", "─|S|", "─|S|"]),
             (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
+            (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
         ],
     )
     def test_add_op(self, op, out):

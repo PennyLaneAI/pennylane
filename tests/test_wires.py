@@ -317,9 +317,7 @@ class TestWires:
 
         new_wires = Wires.all_wires([wires1, wires2, wires3], sort=True)
         assert new_wires.labels == (1, 2, 3, 4, 5, 6)
-
-        with pytest.raises(WireError, match="Expected a Wires object"):
-            Wires.all_wires([[3, 4], [8, 5]])
+        assert Wires.all_wires([[3, 4], [8, 5]]).labels == (3, 4, 8, 5)
 
     def test_shared_wires_method(self):
         """Tests the ``shared_wires()`` method."""

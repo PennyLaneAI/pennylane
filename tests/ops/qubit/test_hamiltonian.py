@@ -21,6 +21,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.wires import Wires
+from collections.abc import Iterable
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -78,6 +80,8 @@ valid_hamiltonians = [
     ([1.5, 2.0], [qml.PauliZ(0), qml.PauliY(2)]),
     (np.array([-0.1, 0.5]), [qml.Hermitian(H_TWO_QUBITS, [0, 1]), qml.PauliY(0)]),
     ((0.5, 1.2), (qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1))),
+    ((0.5 + 1.2j, 1.2 + 0.5j), (qml.PauliX(0), qml.PauliY(1))),
+    ((0.7 + 0j, 0 + 1.3j), (qml.PauliX(0), qml.PauliY(1))),
 ]
 
 valid_hamiltonians_str = [
@@ -92,6 +96,8 @@ valid_hamiltonians_str = [
     "  (1.5) [Z0]\n+ (2.0) [Y2]",
     "  (0.5) [Y0]\n+ (-0.1) [Hermitian0,1]",
     "  (0.5) [X0]\n+ (1.2) [X0 X1]",
+    "  ((0.5+1.2j)) [X0]\n+ ((1.2+0.5j)) [Y1]",
+    "  (1.3j) [Y1]\n+ ((0.7+0j)) [X0]",
 ]
 
 valid_hamiltonians_repr = [
@@ -104,6 +110,8 @@ valid_hamiltonians_repr = [
     "<Hamiltonian: terms=3, wires=[0, 2]>",
     "<Hamiltonian: terms=2, wires=[0, 1, 2]>",
     "<Hamiltonian: terms=2, wires=[0, 2]>",
+    "<Hamiltonian: terms=2, wires=[0, 1]>",
+    "<Hamiltonian: terms=2, wires=[0, 1]>",
     "<Hamiltonian: terms=2, wires=[0, 1]>",
     "<Hamiltonian: terms=2, wires=[0, 1]>",
 ]
@@ -923,7 +931,7 @@ class TestHamiltonian:
         ops = [qml.PauliX(0), qml.PauliZ(1)]
         h = qml.Hamiltonian(coeffs, ops)
         c, o = h.terms()
-        assert isinstance(c, tuple)
+        assert isinstance(c, Iterable)
         assert isinstance(o, list)
         assert all(isinstance(item, np.ndarray) for item in c)
         assert all(item.requires_grad for item in c)
@@ -933,6 +941,30 @@ class TestHamiltonian:
         """Test that empty Hamiltonian does not raise an empty wire error."""
         hamiltonian = qml.Hamiltonian([], [])
         assert isinstance(hamiltonian, qml.Hamiltonian)
+
+    def test_map_wires(self):
+        """Test the map_wires method."""
+        coeffs = pnp.array([1.0, 2.0, -3.0], requires_grad=True)
+        ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)]
+        h = qml.Hamiltonian(coeffs, ops)
+        wire_map = {0: 10, 1: 11, 2: 12}
+        mapped_h = h.map_wires(wire_map=wire_map)
+        final_obs = [qml.PauliX(10), qml.PauliZ(11), qml.PauliY(12)]
+        assert h is not mapped_h
+        assert h.wires == Wires([0, 1, 2])
+        assert mapped_h.wires == Wires([10, 11, 12])
+        for obs1, obs2 in zip(mapped_h.ops, final_obs):
+            assert qml.equal(obs1, obs2)
+        for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
+            assert coeff1 == coeff2
+
+    def test_hermitian_tensor_prod(self):
+        """Test that the tensor product of a Hamiltonian with Hermitian observable works."""
+        tensor = qml.PauliX(0) @ qml.PauliX(1)
+        herm = qml.Hermitian([[1, 0], [0, 1]], wires=4)
+
+        ham = qml.Hamiltonian([1.0, 1.0], [tensor, qml.PauliX(2)]) @ qml.Hamiltonian([1.0], [herm])
+        assert isinstance(ham, qml.Hamiltonian)
 
 
 class TestHamiltonianCoefficients:

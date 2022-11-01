@@ -95,6 +95,7 @@ class DefaultQubit(QubitDevice):
         "QubitUnitary",
         "ControlledQubitUnitary",
         "MultiControlledX",
+        "IntegerComparator",
         "DiagonalQubitUnitary",
         "PauliX",
         "PauliY",
@@ -160,6 +161,7 @@ class DefaultQubit(QubitDevice):
         "Sum",
         "SProd",
         "Prod",
+        "Exp",
     }
 
     def __init__(
@@ -190,9 +192,13 @@ class DefaultQubit(QubitDevice):
     @property
     def stopping_condition(self):
         def accepts_obj(obj):
+            if obj.name == "QFT" and len(obj.wires) >= 6:
+                return False
+            if obj.name == "GroverOperator" and len(obj.wires) >= 13:
+                return False
             if getattr(obj, "has_matrix", False):
                 # pow operations dont work with backprop or adjoint without decomposition
-                # use class name string so we don't need to use isisntance check
+                # use class name string so we don't need to use isinstance check
                 return not (obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj))
             return obj.name in self.observables.union(self.operations)
 
@@ -622,7 +628,6 @@ class DefaultQubit(QubitDevice):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
-            supports_reversible_diff=True,
             supports_inverse_operations=True,
             supports_analytic_computation=True,
             supports_broadcasting=True,
@@ -901,7 +906,7 @@ class DefaultQubit(QubitDevice):
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
 
-    def classical_shadow(self, wires, circuit, seed=None):
+    def classical_shadow(self, obs, circuit):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -932,16 +937,15 @@ class DefaultQubit(QubitDevice):
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            wires (Sequence[int]): The wires to perform Pauli measurements on
-            n_snapshots (int): The number of snapshots
+            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
-            seed (Union[int, None]): If provided, it is used to seed the random
-                number generation for generating the Pauli measurements.
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
+        wires = obs.wires
+        seed = obs.seed
 
         n_qubits = len(wires)
         n_snapshots = self.shots

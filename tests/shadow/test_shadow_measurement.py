@@ -129,12 +129,25 @@ class TestShadowMeasurement:
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
-        assert res.shape(device=dev) == (2, shots, wires)
+        assert res.shape(device=dev) == (1, 2, shots, wires)
 
         # test an error is raised when device is None
         msg = "The device argument is required to obtain the shape of a classical shadow measurement process"
         with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
             res.shape(device=None)
+
+    def test_shape_matches(self, wires):
+        """Test that the shape of the MeasurementProcess matches the shape
+        of the tape execution"""
+        shots = 100
+
+        circuit = get_circuit(wires, shots, True)
+        circuit.construct((), {})
+
+        res = qml.execute([circuit.tape], circuit.device, None)[0]
+        expected_shape = qml.classical_shadow(wires=range(wires)).shape(device=circuit.device)
+
+        assert res.shape == expected_shape
 
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_measurement_process_copy(self, wires, seed):

@@ -67,14 +67,25 @@ class TestUnittestSplitNonCommuting:
         spy = mocker.spy(qml.math, "concatenate")
 
         assert split == [tape]
-        assert all([isinstance(t, qml.tape.QuantumTape) for t in split])
+        assert all(isinstance(t, qml.tape.QuantumTape) for t in split)
         assert fn([0.5]) == 0.5
+
+        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+        split, fn = split_non_commuting(qs)
+        assert split == [qs]
+        assert all(isinstance(i_qs, qml.tape.QuantumScript) for i_qs in split)
+        assert fn([0.5]) == 0.5
+
         spy.assert_not_called()
 
     @pytest.mark.parametrize("tape,expected", [(non_commuting_tape2, 2), (non_commuting_tape3, 3)])
     def test_non_commuting_group_right_number(self, tape, expected):
         """Test that the output is of the correct size"""
         split, _ = split_non_commuting(tape)
+        assert len(split) == expected
+
+        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+        split, _ = split_non_commuting(qs)
         assert len(split) == expected
 
     @pytest.mark.parametrize(
@@ -84,6 +95,10 @@ class TestUnittestSplitNonCommuting:
     def test_non_commuting_group_right_reorder(self, tape, group_coeffs):
         """Test that the output is of the correct order"""
         split, fn = split_non_commuting(tape)
+        assert all(np.array(fn(group_coeffs)) == np.arange(len(split) * 2))
+
+        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+        split, fn = split_non_commuting(qs)
         assert all(np.array(fn(group_coeffs)) == np.arange(len(split) * 2))
 
     @pytest.mark.parametrize("meas_type", obs_fn)
@@ -99,6 +114,12 @@ class TestUnittestSplitNonCommuting:
             meas_type(qml.PauliX(0))
         the_return_type = tape.measurements[0].return_type
         split, _ = split_non_commuting(tape)
+        for new_tape in split:
+            for meas in new_tape.measurements:
+                assert meas.return_type == the_return_type
+
+        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+        split, _ = split_non_commuting(qs)
         for new_tape in split:
             for meas in new_tape.measurements:
                 assert meas.return_type == the_return_type

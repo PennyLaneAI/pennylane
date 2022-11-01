@@ -34,7 +34,6 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .multi_dispatch import (
-    _multi_dispatch,
     multi_dispatch,
     array,
     block_diag,
@@ -74,6 +73,8 @@ from .utils import (
 
 from .is_independent import is_independent
 
+from .matrix_manipulation import expand_matrix, reduce_matrices
+
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
@@ -88,7 +89,6 @@ def __getattr__(name):
 
 
 __all__ = [
-    "_multi_dispatch",
     "multi_dispatch",
     "allclose",
     "allequal",
@@ -125,4 +125,5 @@ __all__ = [
     "where",
     "add",
     "iscomplex",
+    "expand_matrix",
 ]

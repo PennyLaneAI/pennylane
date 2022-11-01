@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Classical Shadows base class with processing functions"""
+# pylint: disable = too-many-arguments
 import warnings
 from collections.abc import Iterable
 from string import ascii_letters as ABC
@@ -21,7 +22,7 @@ import pennylane as qml
 
 
 class ClassicalShadow:
-    r"""Class for classical shadow post-processing
+    r"""Class for classical shadow post-processing expectation values, approximate states, and entropies.
 
     A ``ClassicalShadow`` is a classical description of a quantum state that is capable of reproducing expectation values of local Pauli observables, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
 
@@ -42,9 +43,15 @@ class ClassicalShadow:
 
     One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/T`, though it is not advisable nor practical for larger systems due to its exponential scaling.
 
+    .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, when computing multiple expectation values it is advisable to directly estimate the desired observables by simultaneously measuring
+        qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``.
+
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
         recipes (tensor): recorded measurement bases.
+        wire_map (list[int]): list of the measured wires in the order that
+            they appear in the columns of ``bits`` and ``recipes``. If None, defaults
+            to ``range(n)``, where ``n`` is the number of measured wires.
 
     .. seealso:: `PennyLane demo on Classical Shadows <https://pennylane.ai/qml/demos/tutorial_classical_shadows.html>`_, :func:`~.pennylane.classical_shadow`
 
@@ -60,34 +67,46 @@ class ClassicalShadow:
             qml.Hadamard(0)
             qml.CNOT((0,1))
             qml.RX(x, wires=0)
-            return classical_shadow(wires=range(2))
+            return qml.classical_shadow(wires=range(2))
 
         bits, recipes = qnode(0)
-        shadow = ClassicalShadow(bits, recipes)
+        shadow = qml.ClassicalShadow(bits, recipes)
 
     After recording these ``T=1000`` quantum measurements, we can post-process the results to arbitrary local expectation values of Pauli strings.
     For example, we can compute the expectation value of a Pauli string
 
     >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
-    (1.0079999999999998+0j)
+    array(0.972)
 
     or of a Hamiltonian:
 
-    >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+    >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
     >>> shadow.expval(H, k=1)
-    (2.2319999999999998+0j)
+    array(1.917)
 
     The parameter ``k`` is used to estimate the expectation values via the `median of means` algorithm (see `2002.08953 <https://arxiv.org/abs/2002.08953>`_). The case ``k=1`` corresponds to simply taking the mean
-    value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means.
+    value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means. For the case of measuring only in the Pauli basis,
+    there is no advantage expected from setting ``k>1``.
     """
 
-    def __init__(self, bits, recipes):
+    def __init__(self, bits, recipes, wire_map=None):
         self.bits = bits
         self.recipes = recipes
+
+        # the wires corresponding to the columns of bitstrings
+        if wire_map is None:
+            self.wire_map = list(range(bits.shape[1]))
+        else:
+            self.wire_map = wire_map
 
         if bits.shape != recipes.shape:
             raise ValueError(
                 f"Bits and recipes but have the same shape, got {bits.shape} and {recipes.shape}."
+            )
+
+        if bits.shape[1] != len(self.wire_map):
+            raise ValueError(
+                f"The 1st axis of bits must have the same size as wire_map, got {bits.shape[1]} and {len(self.wire_map)}."
             )
 
         self.observables = [
@@ -134,16 +153,15 @@ class ClassicalShadow:
             recipes = self.recipes
 
         if isinstance(wires, Iterable):
-            bits = bits[:, wires]
-            recipes = recipes[:, wires]
+            wires = qml.math.convert_like(wires, bits)
+            bits = qml.math.T(qml.math.gather(qml.math.T(bits), wires))
+            recipes = qml.math.T(qml.math.gather(qml.math.T(recipes), wires))
 
         T, n = bits.shape
 
         U = np.empty((T, n, 2, 2), dtype="complex")
         for i, u in enumerate(self.observables):
             U[np.where(recipes == i)] = u
-
-        # U = np.array([[self.observables[idx] for idx in recipe] for recipe in recipes], dtype="complex")
 
         state = (qml.math.cast((1 - 2 * bits[:, :, None, None]), np.complex64) * U + np.eye(2)) / 2
 
@@ -222,7 +240,7 @@ class ClassicalShadow:
                 if ob.name not in obs_to_recipe_map:
                     raise ValueError("Observable must be a linear combination of Pauli observables")
 
-                word[ob.wires[0]] = obs_to_recipe_map[ob.name]
+                word[self.wire_map.index(ob.wires[0])] = obs_to_recipe_map[ob.name]
 
             return word
 
@@ -244,18 +262,19 @@ class ClassicalShadow:
                 )
             return coeffs_and_words
 
-    def expval(self, H, k):
+    def expval(self, H, k=1):
         r"""Compute expectation value of an observable :math:`H`.
 
         The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
-        This corresponds to the case ``k=1``. However, it is often desirable for better accuracy to split the ``T`` measurements into ``k`` equal parts to compute the median of means, see `2002.08953 <https://arxiv.org/abs/2002.08953>`_.
+        This corresponds to the case ``k=1``. In the original work, `2002.08953 <https://arxiv.org/abs/2002.08953>`_, it has been proposed to split the ``T`` measurements into ``k`` equal
+        parts to compute the median of means. For the case of Pauli measurements and Pauli observables, there is no advantage expected from setting ``k>1``.
 
         One of the main perks of classical shadows is being able to compute many different expectation values by classically post-processing the same measurements. This is helpful in general as it may help
         save quantum circuit executions.
 
         Args:
             H (qml.Observable): Observable to compute the expectation value
-            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` corresponds to simply taking the mean over all measurements.
+            k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
 
         Returns:
             float: expectation value estimate.
@@ -270,21 +289,21 @@ class ClassicalShadow:
                 qml.Hadamard(0)
                 qml.CNOT((0,1))
                 qml.RX(x, wires=0)
-                return classical_shadow(wires=range(2))
+                return qml.classical_shadow(wires=range(2))
 
             bits, recipes = qnode(0)
-            shadow = ClassicalShadow(bits, recipes)
+            shadow = qml.ClassicalShadow(bits, recipes)
 
         Compute Pauli string observables
 
         >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
-        (1.0079999999999998+0j)
+        array(1.116)
 
         or of a Hamiltonian using `the same` measurement results
 
-        >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+        >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
         >>> shadow.expval(H, k=1)
-        (2.2319999999999998+0j)
+        array(1.9980000000000002)
         """
         if not isinstance(H, Iterable):
             H = [H]
@@ -304,6 +323,121 @@ class ClassicalShadow:
 
         return qml.math.squeeze(results)
 
+    def entropy(self, wires, snapshots=None, alpha=2, k=1, base=None, atol=1e-5):
+        r"""Compute entropies from classical shadow measurements.
+
+        Compute general Renyi entropies of order :math:`\alpha` for a reduced density matrix :math:`\rho` in terms of
+
+        .. math:: S_\alpha(\rho) = \frac{1}{1-\alpha} \log\left(\text{tr}\left[\rho^\alpha \right] \right).
+
+        There are two interesting special cases: In the limit :math:`\alpha \rightarrow 1`, we find the von Neumann entropy
+
+        .. math:: S_{\alpha=1}(\rho) = -\text{tr}(\rho \log(\rho)).
+
+        In the case of :math:`\alpha = 2`, the Renyi entropy becomes the logarithm of the purity of the reduced state
+
+        .. math:: S_{\alpha=2}(\rho) = - \log\left(\text{tr}(\rho^2) \right)
+
+        .. warning::
+
+            Entropies are non-linear functions of the quantum state. Accuracy bounds on entropies with classical shadows are not known exactly,
+            but scale exponentially in the subsystem size. It is advisable to only compute entropies for small subsystems of a few qubits.
+            Further, entropies as post-processed by this class method are currently not automatically differentiable.
+
+        Args:
+            wires (Iterable[int]): The wires over which to compute the entropy of their reduced state. Note that the computation scales exponentially in the
+                number of wires for the reduced state.
+            snapshots (Iterable[int] or int): Only compute a subset of local snapshots. For ``snapshots=None`` (default), all local snapshots are taken.
+                In case of an integer, a random subset of that size is taken. The subset can also be explicitly fixed by passing an Iterable with the corresponding indices.
+            alpha (float): order of the Renyi-entropy. Defaults to ``alpha=2``, which corresponds to the purity of the reduced state. This case is straight forward to compute.
+                All other cases ``alpha!=2`` necessitate computing the eigenvalues of the reduced state and thus may lead to longer computations times.
+                Another special case is ``alpha=1``, which corresponds to the von Neumann entropy.
+            k (int): Allow to split the snapshots into ``k`` equal parts and estimate the snapshots in a median of means fashion. There is no known advantage to do this for entropies.
+                Thus, ``k=1`` is default and advised.
+            base (float): Base to the logarithm used for the entropies.
+            atol (float): Absolute tolerance for eigenvalues close to 0 that are taken into account.
+
+        Returns:
+            float: Entropy of the chosen subsystem.
+
+        **Example**
+
+        For the maximally entangled state of ``n`` qubits, the reduced state has two constant eigenvalues :math:`\frac{1}{2}`. For constant distributions, all Renyi entropies are
+        equivalent:
+
+        .. code-block:: python3
+
+            wires = 4
+            dev = qml.device("default.qubit", wires=range(wires), shots=1000)
+
+            @qml.qnode(dev)
+            def max_entangled_circuit():
+                qml.Hadamard(wires=0)
+                for i in range(1, wires):
+                    qml.CNOT(wires=[0, i])
+                return qml.classical_shadow(wires=range(wires))
+
+            bits, recipes = max_entangled_circuit()
+            shadow = qml.ClassicalShadow(bits, recipes)
+
+            entropies = [shadow.entropy(wires=[0], alpha=alpha, atol=1e-2) for alpha in [1., 2., 3.]]
+
+        >>> np.isclose(entropies, entropies[0], atol=1e-2)
+        [ True,  True,  True]
+
+        For non-uniform reduced states that is not the case anymore and the entropy differs for each order ``alpha``:
+
+        .. code-block:: python3
+
+            @qml.qnode(dev)
+            def qnode(x):
+                for i in range(wires):
+                    qml.RY(x[i], wires=i)
+
+                for i in range(wires - 1):
+                    qml.CNOT((i, i + 1))
+
+                return qml.classical_shadow(wires=range(wires))
+
+            x = np.linspace(0.5, 1.5, num=wires)
+            bitstrings, recipes = qnode(x)
+            shadow = qml.ClassicalShadow(bitstrings, recipes)
+
+        >>> [shadow.entropy(wires=wires, alpha=alpha, atol=1e-10) for alpha in [1., 2., 3.]]
+        [1.5419292874423107, 1.1537924276625828, 0.9593638767763727]
+
+        """
+
+        global_snapshots = self.global_snapshots(wires=wires, snapshots=snapshots)
+        rdm = median_of_means(global_snapshots, k, axis=0)
+
+        # Allow for different log base
+        div = np.log(base) if base else 1
+
+        # This was returning negative values in most cases, so commenting it out
+        # until we figure out the issue.
+        # if alpha == 2:
+        #     # special case of purity
+        #     res = -qml.math.log(qml.math.trace(rdm @ rdm))
+        #     return res / div
+
+        # Else
+        # Compute Eigenvalues and choose only those >>0
+        evs = qml.math.eigvalsh(rdm)
+        mask0 = qml.math.logical_not(qml.math.isclose(evs, 0, atol=atol))
+        mask1 = qml.math.where(evs > 0, True, False)
+        mask = qml.math.logical_and(mask0, mask1)
+        # Renormalize because of cropped evs
+        evs_nonzero = qml.math.gather(evs, mask)
+        evs_nonzero = evs_nonzero / qml.math.sum(evs_nonzero)
+
+        if alpha == 1:
+            # Special case of von Neumann entropy
+            return -qml.math.sum(evs_nonzero * qml.math.log(evs_nonzero)) / div
+
+        # General Renyi-alpha entropy
+        return qml.math.log(qml.math.sum(evs_nonzero**alpha)) / (1.0 - alpha) / div
+
 
 # Util functions
 def median_of_means(arr, num_batches, axis=0):
@@ -321,9 +455,7 @@ def median_of_means(arr, num_batches, axis=0):
     Returns:
         float: The median of means
     """
-    means = []
     batch_size = int(np.ceil(arr.shape[0] / num_batches))
-
     means = [
         qml.math.mean(arr[i * batch_size : (i + 1) * batch_size], 0) for i in range(num_batches)
     ]
@@ -377,7 +509,6 @@ def pauli_expval(bits, recipes, word):
     id_mask = word == -1
 
     # determine snapshots and qubits that match the word
-
     indices = qml.math.equal(
         qml.math.reshape(recipes, (T, 1, n)), qml.math.reshape(word, (1, b, n))
     )

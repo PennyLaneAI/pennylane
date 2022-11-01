@@ -175,7 +175,10 @@ def _execute(
         dictionaries. JAX NumPy arrays don't support dictionaries."""
         return (
             jnp.array(r)
-            if not any(m.return_type is qml.measurements.Counts for m in tape.measurements)
+            if not any(
+                m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+                for m in tape.measurements
+            )
             else r
         )
 

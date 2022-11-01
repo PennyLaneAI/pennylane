@@ -19,6 +19,7 @@ not depend on any parameters.
 import cmath
 import warnings
 from copy import copy
+from functools import lru_cache
 
 import numpy as np
 
@@ -59,6 +60,7 @@ class Hadamard(Observable, Operation):
         return base_label or "H"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -79,8 +81,8 @@ class Hadamard(Observable, Operation):
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
-        """Compute the sparse matrix representation"""
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
@@ -201,6 +203,7 @@ class PauliX(Observable, Operation):
         return base_label or "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -222,7 +225,8 @@ class PauliX(Observable, Operation):
         return np.array([[0, 1], [1, 0]])
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, 1], [1, 0]])
 
     @staticmethod
@@ -315,7 +319,7 @@ class PauliX(Observable, Operation):
         return super().pow(z_mod2)
 
     def _controlled(self, wire):
-        CNOT(wires=Wires(wire) + self.wires)
+        return CNOT(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
@@ -350,6 +354,7 @@ class PauliY(Observable, Operation):
         return base_label or "Y"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -370,7 +375,8 @@ class PauliY(Observable, Operation):
         return np.array([[0, -1j], [1j, 0]])
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, -1j], [1j, 0]])
 
     @staticmethod
@@ -463,7 +469,7 @@ class PauliY(Observable, Operation):
         return super().pow(z % 2)
 
     def _controlled(self, wire):
-        CY(wires=Wires(wire) + self.wires)
+        return CY(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # Y = RZ(0) RY(\pi) RZ(0)
@@ -496,6 +502,7 @@ class PauliZ(Observable, Operation):
         return base_label or "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -516,7 +523,8 @@ class PauliZ(Observable, Operation):
         return np.array([[1, 0], [0, -1]])
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[1, 0], [0, -1]])
 
     @staticmethod
@@ -610,7 +618,7 @@ class PauliZ(Observable, Operation):
         return [qml.PhaseShift(np.pi * z_mod2, wires=self.wires)]
 
     def _controlled(self, wire):
-        CZ(wires=Wires(wire) + self.wires)
+        return CZ(wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         # Z = RZ(\pi) RY(0) RZ(0)
@@ -641,6 +649,7 @@ class S(Operation):
     basis = "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -749,6 +758,7 @@ class T(Operation):
     basis = "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -857,6 +867,7 @@ class SX(Operation):
     basis = "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -976,6 +987,7 @@ class CNOT(Operation):
         return base_label or "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1005,7 +1017,7 @@ class CNOT(Operation):
         return super().pow(z % 2)
 
     def _controlled(self, wire):
-        Toffoli(wires=Wires(wire) + self.wires)
+        return Toffoli(wires=wire + self.wires)
 
     @property
     def control_wires(self):
@@ -1047,6 +1059,7 @@ class CZ(Operation):
         return base_label or "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1140,6 +1153,7 @@ class CY(Operation):
         return base_label or "Y"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1232,6 +1246,7 @@ class SWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1288,7 +1303,7 @@ class SWAP(Operation):
         return SWAP(wires=self.wires)
 
     def _controlled(self, wire):
-        CSWAP(wires=wire + self.wires)
+        return CSWAP(wires=wire + self.wires)
 
     @property
     def is_hermitian(self):
@@ -1448,6 +1463,7 @@ class ISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1562,6 +1578,7 @@ class SISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1707,6 +1724,7 @@ class CSWAP(Operation):
         return base_label or "SWAP"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1822,6 +1840,7 @@ class Toffoli(Operation):
         return base_label or "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2025,8 +2044,12 @@ class MultiControlledX(Operation):
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["control_values"] = control_values
+        self.total_wires = total_wires
 
-        super().__init__(wires=total_wires, do_queue=do_queue)
+        super().__init__(wires=self.total_wires, do_queue=do_queue)
+
+    def __repr__(self):
+        return f'MultiControlledX(wires={list(self.total_wires._labels)}, control_values="{self.hyperparameters["control_values"]}")'
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
@@ -2144,7 +2167,6 @@ class MultiControlledX(Operation):
         if len(control_wires) == 1:
             decomp = [qml.CNOT(wires=[control_wires[0], target_wire])]
         elif len(control_wires) == 2:
-
             decomp = [qml.Toffoli(wires=[*control_wires, target_wire])]
         else:
             num_work_wires_needed = len(control_wires) - 2
@@ -2298,13 +2320,20 @@ class Barrier(Operation):
         return "||"
 
     def _controlled(self, _):
-        return Barrier(wires=self.wires)
+        return copy(self).queue()
 
     def adjoint(self):
-        return Barrier(wires=self.wires)
+        return copy(self)
 
     def pow(self, z):
         return [copy(self)]
+
+    def simplify(self):
+        if self.only_visual:
+            if len(self.wires) == 1:
+                return qml.Identity(self.wires[0])
+            return qml.prod(*(qml.Identity(w) for w in self.wires))
+        return self
 
 
 class WireCut(Operation):

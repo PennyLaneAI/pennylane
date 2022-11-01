@@ -61,6 +61,17 @@ class TestUnitTestClassicalShadows:
         with pytest.raises(ValueError, match=msg):
             ClassicalShadow(bits, recipes)
 
+    def test_wire_mismatch_error(self):
+        """Test that an error is raised when a ClassicalShadow object
+        is created using a wire map with the incorrect size"""
+        bits = np.random.randint(0, 1, size=(3, 4))
+        recipes = np.random.randint(0, 2, size=(3, 4))
+        wire_map = [0, 1, 2]
+
+        msg = "The 1st axis of bits must have the same size as wire_map"
+        with pytest.raises(ValueError, match=msg):
+            ClassicalShadow(bits, recipes, wire_map=wire_map)
+
 
 class TestIntegrationShadows:
     """Integration tests for classical shadows class"""

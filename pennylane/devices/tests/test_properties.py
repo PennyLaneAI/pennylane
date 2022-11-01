@@ -198,23 +198,6 @@ class TestCapabilities:
             with pytest.raises(qml.QuantumFunctionError):
                 circuit()
 
-    @pytest.mark.xfail
-    def test_reversible_diff(self, device_kwargs):
-        """Tests that the device reports correctly whether it supports reversible differentiation."""
-        device_kwargs["wires"] = 1
-        dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
-
-        if "supports_reversible_diff" not in cap:
-            pytest.skip("No supports_reversible_diff capability specified by device.")
-
-        if cap["supports_reversible_diff"]:
-            qfunc = qfunc_with_scalar_input(model=cap["model"])
-            qnode = qml.QNode(qfunc, dev, diff_method="reversible")
-            g = qml.grad(qnode)
-            g(0.1)
-        # no need to check else statement, since the reversible qnode creation fails in that case by default
-
     def test_returns_state(self, device_kwargs):
         """Tests that the device reports correctly whether it supports returning the state."""
         device_kwargs["wires"] = 1

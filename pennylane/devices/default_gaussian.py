@@ -703,7 +703,6 @@ class DefaultGaussian(Device):
             supports_finite_shots=True,
             returns_probs=False,
             returns_state=False,
-            supports_reversible_diff=False,
         )
         return capabilities
 

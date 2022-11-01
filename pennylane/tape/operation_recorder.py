@@ -14,7 +14,8 @@
 """
 This module contains the :class:`OperationRecorder`.
 """
-from pennylane.queuing import QueuingContext
+# pylint: disable=too-many-arguments
+from pennylane.queuing import QueuingManager
 
 from .tape import QuantumTape
 
@@ -42,8 +43,12 @@ class OperationRecorder(QuantumTape):
     objects.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(
+        self, ops=None, measurements=None, prep=None, name=None, do_queue=False, _update=True
+    ):
+        super().__init__(
+            ops, measurements, prep=prep, name=name, do_queue=do_queue, _update=_update
+        )
         self.ops = None
         self.obs = None
 
@@ -51,11 +56,7 @@ class OperationRecorder(QuantumTape):
         super()._process_queue()
 
         for obj, info in self._queue.items():
-            QueuingContext.append(obj, **info)
-
-        # remove the operation recorder from the queuing
-        # context
-        QueuingContext.remove(self)
+            QueuingManager.append(obj, **info)
 
         new_tape = self.expand(depth=5, stop_at=lambda obj: not isinstance(obj, QuantumTape))
         self.ops = new_tape.operations

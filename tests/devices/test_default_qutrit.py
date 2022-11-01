@@ -22,7 +22,7 @@ from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qutrit import DefaultQutrit
 from pennylane.wires import Wires, WireError
 
-from gate_data import OMEGA, TSHIFT, TCLOCK, TSWAP, TADD
+from gate_data import OMEGA, TSHIFT, TCLOCK, TSWAP, TADD, GELL_MANN
 
 
 U_thadamard_01 = np.multiply(
@@ -59,11 +59,9 @@ def test_dtype_errors():
         qml.device("default.qutrit", wires=1, c_dtype=np.float64)
 
 
-# TODO: Add tests for expval, var, sample and tensor observables after addition of observables
 # TODO: Add tests to check for dtype preservation after more ops and observables have been added
 # TODO: Add tests for operations that will have custom internal implementations for default.qutrit once added
 # TODO: Add tests for inverse decomposition once decomposible operations are added
-# TODO: Add tests for verifying correct behaviour of different observables on default qutrit device.
 
 
 class TestApply:
@@ -72,6 +70,170 @@ class TestApply:
     """
 
     # TODO: Add tests for non-parametric ops after they're implemented
+    test_data_no_parameters = [
+        (qml.TShift, [1, 0, 0], np.array([0, 1, 0]), None),
+        (
+            qml.TShift,
+            [1 / math.sqrt(2), 1 / math.sqrt(2), 0],
+            np.array([0, 1 / math.sqrt(2), 1 / math.sqrt(2)]),
+            None,
+        ),
+        (qml.TClock, [1, 0, 0], np.array([1, 0, 0]), None),
+        (qml.TClock, [0, 1, 0], np.array([0, OMEGA, 0]), None),
+    ]
+
+    test_data_no_parameters_inverses = [
+        (qml.TShift, [0, 1, 0], np.array([1, 0, 0]), None),
+        (
+            qml.TShift,
+            [0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
+            np.array([1 / math.sqrt(2), 1 / math.sqrt(2), 0]),
+            None,
+        ),
+        (qml.TClock, [1, 0, 0], np.array([1, 0, 0]), None),
+        (qml.TClock, [0, OMEGA, 0], np.array([0, 1, 0]), None),
+    ]
+
+    @pytest.mark.parametrize("operation, input, expected_output, subspace", test_data_no_parameters)
+    def test_apply_operation_single_wire_no_parameters(
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an operation yields the expected output state for single wire
+        operations that have no parameters."""
+
+        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+        qutrit_device_1_wire.apply(
+            [operation(wires=[0]) if subspace is None else operation(wires=[0], subspace=subspace)]
+        )
+
+        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+
+    @pytest.mark.parametrize(
+        "operation,input,expected_output, subspace", test_data_no_parameters_inverses
+    )
+    def test_apply_operation_single_wire_no_parameters_inverse(
+        self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an inverse operation yields the expected output state for single wire
+        operations that have no parameters."""
+
+        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+        qutrit_device_1_wire.apply(
+            [
+                operation(wires=[0]).inv()
+                if subspace is None
+                else operation(wires=[0], subspace=subspace).inv()
+            ]
+        )
+
+        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+
+    test_data_two_wires_no_parameters = [
+        (qml.TSWAP, [0, 1, 0, 0, 0, 0, 0, 0, 0], np.array([0, 0, 0, 1, 0, 0, 0, 0, 0]), None),
+        (
+            qml.TSWAP,
+            [0, 0, 0, 1 / math.sqrt(2), 0, 0, 0, 0, 1 / math.sqrt(2)],
+            np.array([0, 1 / math.sqrt(2), 0, 0, 0, 0, 0, 0, 1 / math.sqrt(2)]),
+            None,
+        ),
+        (
+            qml.TSWAP,
+            [0, 0, 0, -1j / math.sqrt(3), 0, 0, 0, -1 / math.sqrt(3), 1j / math.sqrt(3)],
+            np.array([0, -1j / math.sqrt(3), 0, 0, 0, -1 / math.sqrt(3), 0, 0, 1j / math.sqrt(3)]),
+            None,
+        ),
+    ]
+
+    test_data_tadd = [
+        (qml.TAdd, [0, 0, 0, 0, 1, 0, 0, 0, 0], np.array([0, 0, 0, 0, 0, 1, 0, 0, 0]), None),
+        (
+            qml.TAdd,
+            [0, 0, 0, 1 / math.sqrt(2), 0, 0, 0, 1 / math.sqrt(2), 0],
+            np.array([0, 0, 0, 0, 1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0, 0]),
+            None,
+        ),
+        (
+            qml.TAdd,
+            [0, 0.5, -0.5, 0, -0.5 * 1j, 0, 0, 0, 0.5 * 1j],
+            np.array([0, 0.5, -0.5, 0, 0, -0.5 * 1j, 0, 0.5 * 1j, 0]),
+            None,
+        ),
+    ]
+
+    test_data_tadd_inv = [
+        (qml.TAdd, [0, 0, 0, 0, 0, 1, 0, 0, 0], np.array([0, 0, 0, 0, 1, 0, 0, 0, 0]), None),
+        (
+            qml.TAdd,
+            [0, 0, 0, 0, 1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0, 0],
+            np.array([0, 0, 0, 1 / math.sqrt(2), 0, 0, 0, 1 / math.sqrt(2), 0]),
+            None,
+        ),
+        (
+            qml.TAdd,
+            [0, 0.5, -0.5, 0, 0, -0.5 * 1j, 0, 0.5 * 1j, 0],
+            np.array([0, 0.5, -0.5, 0, -0.5 * 1j, 0, 0, 0, 0.5 * 1j]),
+            None,
+        ),
+    ]
+
+    all_two_wires_no_parameters = test_data_two_wires_no_parameters + test_data_tadd
+
+    @pytest.mark.parametrize(
+        "operation,input,expected_output, subspace", all_two_wires_no_parameters
+    )
+    def test_apply_operation_two_wires_no_parameters(
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an operation yields the expected output state for two wire
+        operations that have no parameters."""
+
+        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
+            (3, 3)
+        )
+        qutrit_device_2_wires.apply(
+            [
+                operation(wires=[0, 1])
+                if subspace is None
+                else operation(wires=[0, 1], subspace=subspace)
+            ]
+        )
+
+        assert np.allclose(
+            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+        )
+        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
+
+    all_two_wires_no_parameters_inv = test_data_two_wires_no_parameters + test_data_tadd_inv
+
+    @pytest.mark.parametrize(
+        "operation,input,expected_output, subspace", all_two_wires_no_parameters_inv
+    )
+    def test_apply_operation_two_wires_no_parameters_inverse(
+        self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
+    ):
+        """Tests that applying an inverse operation yields the expected output state for two wire
+        operations that have no parameters."""
+
+        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
+            (3, 3)
+        )
+        qutrit_device_2_wires.apply(
+            [
+                operation(wires=[0, 1]).inv()
+                if subspace is None
+                else operation(wires=[0, 1], subspace=subspace).inv()
+            ]
+        )
+
+        assert np.allclose(
+            qutrit_device_2_wires._state.flatten(),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
+        )
+        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
 
     # TODO: Add more data as parametric ops get added
     test_data_single_wire_with_parameters = [
@@ -228,10 +390,8 @@ class TestApply:
 class TestExpval:
     """Tests that expectation values are properly calculated or that the proper errors are raised."""
 
-    # TODO: Add test for expval of non-parametrized observables
-
     @pytest.mark.parametrize(
-        "observable,state,expected_output,mat",
+        "observable,state,expected_output,par",
         [
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
             (qml.THermitian, [0, 1, 0], -1, [[1, 0, 0], [0, -1, 0], [0, 0, 0]]),
@@ -241,14 +401,34 @@ class TestExpval:
                 0,
                 [[0, -1j, 0], [1j, 0, 0], [0, 0, 0]],
             ),
+            (qml.GellMann, [1, 0, 0], 0, 1),
+            (qml.GellMann, [0, 0, 1], 0, 1),
+            (qml.GellMann, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], -1, 2),
+            (qml.GellMann, [1, 0, 0], 0, 2),
+            (qml.GellMann, [1, 0, 0], 1, 3),
+            (qml.GellMann, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], -0.5, 3),
+            (qml.GellMann, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], -1, 4),
+            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 4),
+            (qml.GellMann, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 1, 5),
+            (qml.GellMann, [0, 1, 0], 0, 5),
+            (qml.GellMann, [0, 0, 1], 0, 6),
+            (qml.GellMann, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0, 6),
+            (qml.GellMann, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 1, 7),
+            (qml.GellMann, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], -1, 7),
+            (qml.GellMann, [0, 0, 1], -2 / math.sqrt(3), 8),
+            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 0, 8),
         ],
     )
     def test_expval_single_wire_with_parameters(
-        self, qutrit_device_1_wire, tol, observable, state, expected_output, mat
+        self, qutrit_device_1_wire, tol, observable, state, expected_output, par
     ):
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
 
-        obs = observable(np.array(mat), wires=[0])
+        obs = (
+            observable(wires=[0], index=par)
+            if isinstance(par, int)
+            else observable(np.array(par), wires=[0])
+        )
 
         qutrit_device_1_wire.reset()
         qutrit_device_1_wire._state = np.array(state).reshape([3])
@@ -348,10 +528,8 @@ class TestExpval:
 class TestVar:
     """Tests that variances are properly calculated."""
 
-    # TODO: Add test for var of non-parametrized observables
-
     @pytest.mark.parametrize(
-        "observable,state,expected_output,mat",
+        "observable,state,expected_output,par",
         [
             (qml.THermitian, [1, 0, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
             (qml.THermitian, [0, 1, 0], 1, [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]]),
@@ -361,14 +539,34 @@ class TestVar:
                 2 / 3,
                 [[1, 1j, 0], [-1j, 1, 0], [0, 0, 1]],
             ),
+            (qml.GellMann, [1, 0, 0], 1, 1),
+            (qml.GellMann, [0, 0, 1], 0, 1),
+            (qml.GellMann, [1 / math.sqrt(2), -1j / math.sqrt(2), 0], 0, 2),
+            (qml.GellMann, [1, 0, 0], 1, 2),
+            (qml.GellMann, [1, 0, 0], 0, 3),
+            (qml.GellMann, [0, 1 / math.sqrt(2), 1 / math.sqrt(2)], 0.25, 3),
+            (qml.GellMann, [1 / math.sqrt(2), 0, -1 / math.sqrt(2)], 0, 4),
+            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 9, 4),
+            (qml.GellMann, [1 / math.sqrt(2), 0, 1j / math.sqrt(2)], 0, 5),
+            (qml.GellMann, [0, 1, 0], 0, 5),
+            (qml.GellMann, [0, 0, 1], 1, 6),
+            (qml.GellMann, [1 / math.sqrt(2), 1 / math.sqrt(2), 0], 0.5, 6),
+            (qml.GellMann, [0, 1 / math.sqrt(2), 1j / math.sqrt(2)], 0, 7),
+            (qml.GellMann, [0, 1 / math.sqrt(2), -1j / math.sqrt(2)], 0, 7),
+            (qml.GellMann, [0, 0, 1], 0, 8),
+            (qml.GellMann, [1 / math.sqrt(3), 1 / math.sqrt(3), 1 / math.sqrt(3)], 2 / 3, 8),
         ],
     )
     def test_var_single_wire_with_parameters(
-        self, qutrit_device_1_wire, tol, observable, state, expected_output, mat
+        self, qutrit_device_1_wire, tol, observable, state, expected_output, par
     ):
         """Tests that variances are properly calculated for single-wire observables with parameters."""
 
-        obs = observable(np.array(mat), wires=[0])
+        obs = (
+            observable(wires=[0], index=par)
+            if isinstance(par, int)
+            else observable(np.array(par), wires=[0])
+        )
 
         qutrit_device_1_wire.reset()
         qutrit_device_1_wire._state = np.array(state).reshape([3])
@@ -437,6 +635,7 @@ class TestVar:
         qutrit_device_2_wires._state = np.array(state).reshape([3] * 2)
         qutrit_device_2_wires.apply([], obs.diagonalizing_gates())
         res = qutrit_device_2_wires.var(obs)
+
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
 
     def test_var_estimate(self):
@@ -582,7 +781,30 @@ class TestDefaultQutritIntegration:
 class TestTensorExpval:
     """Test tensor expectation values"""
 
-    # TODO: Add tests for non-parametric observables and identity
+    @pytest.mark.parametrize("index", list(range(1, 9)))
+    def test_gell_mann_hermitian(self, index, tol):
+        """Test that the variance of the tensor product of a Gell-Mann observable and a Hermitian
+        matrix behaves correctly."""
+        dev = qml.device("default.qutrit", wires=2)
+        A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
+        obs = qml.GellMann(wires=0, index=index) @ qml.THermitian(A, wires=1)
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+            ],
+            obs.diagonalizing_gates(),
+        )
+        res = dev.expval(obs)
+
+        state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / math.sqrt(2)
+        obs_mat = np.kron(GELL_MANN[index - 1], A)
+
+        expected = state.conj() @ obs_mat @ state.T
+        assert np.isclose(res, expected[0], atol=tol, rtol=0)
 
     def test_hermitian_hermitian(self, tol):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
@@ -633,15 +855,206 @@ class TestTensorExpval:
         expected = 3.5 * 1 * 1
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("index_1", list(range(1, 9)))
+    @pytest.mark.parametrize("index_2", list(range(1, 9)))
+    def test_gell_mann_tensor(self, index_1, index_2, tol):
+        """Test that the expectation value of the tensor product of two Gell-Mann observables is
+        correct"""
+        dev = qml.device("default.qutrit", wires=2)
+        obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
 
-# TODO: Add tests for tensor non-parametrized observables
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(TADD, wires=[0, 1]),
+            ],
+            obs.diagonalizing_gates(),
+        )
+        res = dev.expval(obs)
+
+        obs_mat = np.kron(
+            qml.GellMann.compute_matrix(index_1), qml.GellMann.compute_matrix(index_2)
+        )
+        state = np.array([[1, 0, 0, 0, 1, 0, 0, 0, 0]]) / np.sqrt(2)
+        expected = state.conj() @ obs_mat @ state.T
+        assert np.isclose(res, expected[0], atol=tol, rtol=0)
+
+
 class TestTensorVar:
-    pass
+    """Tests for variance of tensor observables"""
+
+    @pytest.mark.parametrize("index_1", list(range(1, 9)))
+    @pytest.mark.parametrize("index_2", list(range(1, 9)))
+    def test_gell_mann_tensor(self, index_1, index_2, tol):
+        """Test that the variance of tensor products of Gell-Mann observables is correct"""
+        dev = qml.device("default.qutrit", wires=2)
+        obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+            ],
+            obs.diagonalizing_gates(),
+        )
+        res = dev.var(obs)
+
+        state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / math.sqrt(2)
+        obs_mat = np.kron(GELL_MANN[index_1 - 1], GELL_MANN[index_2 - 1])
+
+        expected = (
+            state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
+        )
+        assert np.isclose(res, expected[0], atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("index", list(range(1, 9)))
+    def test_gell_mann_hermitian(self, index, tol):
+        """Test that the variance of the tensor product of a Gell-Mann observable and a Hermitian
+        matrix behaves correctly."""
+        dev = qml.device("default.qutrit", wires=2)
+        A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
+        obs = qml.GellMann(wires=0, index=index) @ qml.THermitian(A, wires=1)
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+            ],
+            obs.diagonalizing_gates(),
+        )
+        res = dev.var(obs)
+
+        state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / math.sqrt(2)
+        obs_mat = np.kron(GELL_MANN[index - 1], A)
+
+        expected = (
+            state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
+        )
+        assert np.isclose(res, expected[0], atol=tol, rtol=0)
+
+    def test_hermitian(self, tol):
+        """Test that the variance of a tensor product of two Hermitian matrices behaves correctly"""
+        dev = qml.device("default.qutrit", wires=3)
+
+        A1 = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
+
+        A = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 2]])
+        B = np.array([[4, 0, 0], [0, -2, 0], [0, 0, 1]])
+        A2 = np.kron(A, B)
+
+        obs = qml.THermitian(A1, wires=[0]) @ qml.THermitian(A2, wires=[1, 2])
+
+        dev.apply(
+            [
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TADD, wires=[0, 1]),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(U_thadamard_01, wires=2),
+            ],
+            obs.diagonalizing_gates(),
+        )
+
+        res = dev.var(obs)
+
+        state = np.zeros((1, 27))
+        state[0, 21] = 1 / np.sqrt(2)
+        state[0, 22] = 1 / np.sqrt(2)
+        obs_mat = np.kron(A1, A2)
+
+        expected = (
+            state.conj() @ obs_mat @ obs_mat @ state.T - (state.conj() @ obs_mat @ state.T) ** 2
+        )
+        assert np.isclose(res, expected, atol=tol, rtol=0)
 
 
 # TODO: Add tests for tensor non-parametrized observables
 class TestTensorSample:
-    pass
+    """Test tensor samples"""
+
+    @pytest.mark.parametrize("index_1", list(range(1, 9)))
+    @pytest.mark.parametrize("index_2", list(range(1, 9)))
+    def test_gell_mann_obs(self, index_1, index_2, tol_stochastic):
+        """Test that sampling tensor products involving Gell-Mann observables works correctly"""
+        dev = qml.device("default.qutrit", wires=2, shots=int(1e6))
+
+        obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+            ],
+            obs.diagonalizing_gates(),
+        )
+
+        dev._wires_measured = {0, 1}
+        dev._samples = dev.generate_samples()
+        dev.sample(obs)
+
+        state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / np.sqrt(2)
+        state = state.T
+        obs_mat = np.kron(GELL_MANN[index_1 - 1], GELL_MANN[index_2 - 1])
+
+        s1 = obs.eigvals()
+        p = dev.probability(wires=dev.map_wires(obs.wires))
+
+        mean = s1 @ p
+        expected = state.conj().T @ obs_mat @ state
+        assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
+
+        var = (s1**2) @ p - (s1 @ p) ** 2
+        expected = (
+            state.conj().T @ obs_mat @ obs_mat @ state - (state.conj().T @ obs_mat @ state) ** 2
+        )
+        assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
+
+    @pytest.mark.parametrize("index", list(range(1, 9)))
+    def test_hermitian(self, index, tol_stochastic):
+        """Tests that sampling on a tensor product of Hermitian observables with another observable works
+        correctly"""
+
+        dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
+
+        A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
+
+        obs = qml.GellMann(wires=0, index=index) @ qml.THermitian(A, wires=1)
+
+        dev.apply(
+            [
+                qml.QutritUnitary(U_thadamard_01, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=0),
+                qml.QutritUnitary(TSHIFT, wires=1),
+                qml.QutritUnitary(TADD, wires=[0, 1]),  # (|12> + |20>) / sqrt(2)
+            ],
+            obs.diagonalizing_gates(),
+        )
+
+        dev._wires_measured = {0, 1}
+        dev._samples = dev.generate_samples()
+        dev.sample(obs)
+
+        s1 = obs.eigvals()
+        p = dev.marginal_prob(dev.probability(), wires=obs.wires)
+
+        obs_mat = np.kron(GELL_MANN[index - 1], A)
+        state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / np.sqrt(2)
+        state = state.T
+
+        mean = s1 @ p
+        expected = state.conj().T @ obs_mat @ state
+        assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
+
+        var = (s1**2) @ p - (s1 @ p) ** 2
+        expected = (
+            state.conj().T @ obs_mat @ obs_mat @ state - (state.conj().T @ obs_mat @ state) ** 2
+        )
+        assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
 
 class TestProbabilityIntegration:
@@ -780,8 +1193,10 @@ class TestApplyOps:
         (qml.TClock, dev._apply_tclock),
     ]
 
-    # TODO: Add tests for two-qutrit ops once they are added
-    two_qutrit_ops = []
+    two_qutrit_ops = [
+        (qml.TAdd, dev._apply_tadd),
+        (qml.TSWAP, dev._apply_tswap),
+    ]
 
     @pytest.mark.parametrize("op, method", single_qutrit_ops)
     def test_apply_single_qutrit_op(self, op, method, inverse):
@@ -792,7 +1207,26 @@ class TestApplyOps:
         state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
-    # TODO: Add tests for two-qutrit operations
+    @pytest.mark.parametrize("op, method", two_qutrit_ops)
+    def test_apply_two_qutrit_op(self, op, method, inverse):
+        """Test if the application of two qutrit operations is correct."""
+        state_out = method(self.state, axes=[0, 1], inverse=inverse)
+        op1 = op(wires=[0, 1])
+        matrix = op1.inv().matrix() if inverse else op1.matrix()
+        matrix = matrix.reshape((3, 3, 3, 3))
+        state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", two_qutrit_ops)
+    def test_apply_two_qutrit_op_reverse(self, op, method, inverse):
+        """Test if the application of two qutrit operations is correct when the
+        applied wires are reversed."""
+        state_out = method(self.state, axes=[1, 0], inverse=inverse)
+        op2 = op(wires=[1, 0])
+        matrix = op2.inv().matrix() if inverse else op2.matrix()
+        matrix = matrix.reshape((3, 3, 3, 3))
+        state_out_einsum = np.einsum("badc,cdjk->abjk", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
 
 
 class TestApplyOperationUnit:

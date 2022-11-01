@@ -7,8 +7,8 @@ on:
 
 
 env:
-  TF_VERSION: 2.6.0
-  TORCH_VERSION: 1.10.0+cpu
+  TF_VERSION: 2.10.0
+  TORCH_VERSION: 1.11.0+cpu
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
 
 
@@ -22,8 +22,11 @@ jobs:
           - {python-version: 3.7, suite: 'torch'}
           - {python-version: 3.7, suite: 'tf'}
           - {python-version: 3.8, suite: 'tf'}
+          - {python-version: '3.10', suite: 'tf'}
           - {python-version: 3.8, suite: 'torch'}
+          - {python-version: '3.10', suite: 'torch'}
           - {python-version: 3.8, suite: 'jax'}
+          - {python-version: '3.10', suite: 'jax'}
           - {python-version: 3.7, suite: 'autograd'}
           - {python-version: 3.8, suite: 'autograd'}
           - {python-version: 3.9, suite: 'autograd'}
@@ -365,3 +368,5 @@ jobs:
           uses: actions/download-artifact@v2
         - name: Upload to Codecov
           uses: codecov/codecov-action@v3
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}

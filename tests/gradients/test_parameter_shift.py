@@ -1479,12 +1479,13 @@ class TestParameterShiftRuleBroadcast:
         grad_F2 = grad_fn(
             tape, dev, fn=qml.gradients.finite_diff, approx_order=2, strategy="center"
         )
-        grad_A = grad_fn(tape, dev)
+        grad_A = grad_fn(tape, dev, broadcast=True)
 
         # gradients computed with different methods must agree
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
+    @pytest.mark.xfail(reason="Broadcasting with multiple measurements is not supported yet")
     def test_variance_gradients_agree_finite_differences(self, tol):
         """Tests that the variance parameter-shift rule agrees with the first and second
         order finite differences"""
@@ -1507,7 +1508,7 @@ class TestParameterShiftRuleBroadcast:
         grad_F2 = grad_fn(
             tape, dev, fn=qml.gradients.finite_diff, approx_order=2, strategy="center"
         )
-        grad_A = grad_fn(tape, dev)
+        grad_A = grad_fn(tape, dev, broadcast=True)
 
         # gradients computed with different methods must agree
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)

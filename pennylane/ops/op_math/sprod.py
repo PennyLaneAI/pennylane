@@ -15,8 +15,15 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
+import numbers
+from typing import Union
+
+import autoray
+
 import pennylane as qml
+from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.operation import Operator
+from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 
 from .symbolicop import SymbolicOp
@@ -102,8 +109,9 @@ class SProd(SymbolicOp):
     """
     _name = "SProd"
 
-    def __init__(self, scalar, base, do_queue=True, id=None):
+    def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
         self.scalar = scalar
+        self._check_scalar_is_valid()
         super().__init__(base=base, do_queue=do_queue, id=id)
 
     def __repr__(self):
@@ -142,8 +150,6 @@ class SProd(SymbolicOp):
 
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_terms`
-
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
@@ -155,6 +161,11 @@ class SProd(SymbolicOp):
         """If the base operator is hermitian and the scalar is real,
         then the scalar product operator is hermitian."""
         return self.base.is_hermitian and not qml.math.iscomplex(self.scalar)
+
+    # pylint: disable=arguments-renamed,invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
@@ -188,6 +199,10 @@ class SProd(SymbolicOp):
 
     def sparse_matrix(self, wire_order=None):
         return self.scalar * self.base.sparse_matrix(wire_order=wire_order)
+
+    @property
+    def has_matrix(self):
+        return isinstance(self.base, qml.Hamiltonian) or self.base.has_matrix
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -224,6 +239,12 @@ class SProd(SymbolicOp):
         """
         return None
 
+    def pow(self, z):
+        return [SProd(scalar=self.scalar**z, base=Pow(base=self.base, z=z))]
+
+    def adjoint(self):
+        return SProd(scalar=qml.math.conjugate(self.scalar), base=qml.adjoint(self.base))
+
     def simplify(self) -> Operator:
         if self.scalar == 1:
             return self.base.simplify()
@@ -232,12 +253,32 @@ class SProd(SymbolicOp):
             if scalar == 1:
                 return self.base.base.simplify()
             return SProd(scalar=scalar, base=self.base.base.simplify())
-        if isinstance(self.base, Sum):
-            simplified_sum = self.base.simplify()
+
+        new_base = self.base.simplify()
+        if isinstance(new_base, Sum):
             return Sum(
-                *(
-                    SProd(scalar=self.scalar, base=summand).simplify()
-                    for summand in simplified_sum.summands
-                )
+                *(SProd(scalar=self.scalar, base=summand).simplify() for summand in new_base)
             )
-        return SProd(scalar=self.scalar, base=self.base.simplify())
+        if isinstance(new_base, SProd):
+            return SProd(scalar=self.scalar, base=new_base).simplify()
+        return SProd(scalar=self.scalar, base=new_base)
+
+    def _check_scalar_is_valid(self):
+        """Check that the given scalar is valid.
+
+        Args:
+            scalar (Union[int, float, complex]): scalar value to check
+
+        Raises:
+            ValueError: if the scalar is not valid
+        """
+        backend = autoray.infer_backend(self.scalar)
+        # TODO: Remove shape check when supporting batching
+        if not (
+            (backend == "builtins" and isinstance(self.scalar, numbers.Number))
+            or (backend in SUPPORTED_INTERFACES and qml.math.shape(self.scalar) == ())
+        ):
+            raise ValueError(
+                f"Cannot compute the scalar product of a scalar value with backend `{backend}` and "
+                f"type `{type(self.scalar)}`"
+            )
