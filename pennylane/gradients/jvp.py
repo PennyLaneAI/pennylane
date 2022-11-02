@@ -246,7 +246,7 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
     return gradient_tapes, processing_fn
 
 
-def batch_jvp(tapes, tangents, gradient_fn, shots, reduction="append", gradient_kwargs=None):
+def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the Jacobian vector products of a batch of tapes.
 
