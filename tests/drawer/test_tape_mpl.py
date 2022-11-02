@@ -301,9 +301,9 @@ class TestSpecialGates:
         _, ax = tape_mpl(tape)
 
         assert ax.patches[0].get_facecolor() == (1.0, 1.0, 1.0, 1.0)  # white
-        assert ax.patches[1].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
+        assert ax.patches[1].get_facecolor() == (0.0, 0.0, 0.0, 1.0)  # black
         assert ax.patches[2].get_facecolor() == (1.0, 1.0, 1.0, 1.0)
-        assert ax.patches[3].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
+        assert ax.patches[3].get_facecolor() == (0.0, 0.0, 0.0, 1.0)
 
         plt.close()
 

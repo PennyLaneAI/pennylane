@@ -288,14 +288,19 @@ class TestMPLIntegration:
 
         # confirm settings were updated for the draw_mpl plot
         _, ax = qml.draw_mpl(circuit1, style="sketch")(1.234, 1.234)
-        assert ax.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
-        assert ax.patches[3].get_facecolor() == (
-            0.12156862745098039,
-            0.4666666666666667,
-            0.7058823529411765,
+        assert ax.get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
             1.0,
         )
-        assert ax.patches[3].get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert ax.patches[3].get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
+        assert ax.patches[3].get_edgecolor() == (0.0, 0.0, 0.0, 1.0)
 
         # confirm general matplotlib settings were reset after plotting
         assert mpl.rcParams["axes.facecolor"] == initial_facecolor
