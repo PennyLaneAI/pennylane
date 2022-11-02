@@ -216,15 +216,13 @@ def sum_expand(tape: QuantumScript, group=True):
     for idx, m in enumerate(tape.measurements):
         if isinstance(m.obs, Sum) and m.return_type is Expectation:
             sum_op = m.obs
-
             if group:
                 # make one tape per group of qwc observables
                 obs_groupings = _group_summands(sum_op)
-                tapes = []
-                for obs in obs_groupings:
-                    new_tape = QuantumScript(tape._ops, (qml.expval(o) for o in obs), tape._prep)
-                    tapes.append(new_tape)
-
+                tapes = [
+                    QuantumScript(tape._ops, [qml.expval(o) for o in obs], tape._prep)
+                    for obs in obs_groupings
+                ]
             else:
                 # make one tape per summand
                 tapes = [
