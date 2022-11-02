@@ -154,9 +154,7 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
         # observables in that grouping
         tapes = []
         for obs in obs_groupings:
-            new_tape = tape.__class__(tape._ops, (qml.expval(o) for o in obs), tape._prep)
-
-            new_tape = new_tape.expand(stop_at=lambda obj: True)
+            new_tape = QuantumScript(tape._ops, (qml.expval(o) for o in obs), tape._prep)
             tapes.append(new_tape)
 
         def processing_fn(res_groupings):
@@ -185,7 +183,7 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     tapes = []
     for o in hamiltonian.ops:
         # pylint: disable=protected-access
-        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep)
+        new_tape = QuantumScript(tape._ops, [qml.expval(o)], tape._prep)
         tapes.append(new_tape)
 
     # pylint: disable=function-redefined
@@ -196,13 +194,15 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     return tapes, processing_fn
 
 
-def sum_expand(tape: QuantumScript):
+def sum_expand(tape: QuantumScript, group=True):
     """Splits a tape measuring a Sum expectation into mutliple tapes of summand expectations,
     and provides a function to recombine the results.
 
     Args:
         tape (.QuantumTape): the tape used when calculating the expectation value
             of the Hamiltonian
+        group (bool): Whether to compute disjoint groups of commuting Pauli observables, leading to fewer tapes.
+            If grouping information can be found in the Hamiltonian, it will be used even if group=False.
 
     Returns:
         tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
@@ -216,6 +216,22 @@ def sum_expand(tape: QuantumScript):
         or tape.measurements[0].return_type != Expectation
     ):
         raise ValueError("Passed tape must end in `qml.expval(S)`, where S is of type `Sum`")
+
+    if group:
+        obs_groupings = _group_summands(sum_op)
+        # make one tape per grouping, measuring the
+        # observables in that grouping
+        tapes = []
+        for obs in obs_groupings:
+            new_tape = QuantumScript(tape._ops, (qml.expval(o) for o in obs), tape._prep)
+            tapes.append(new_tape)
+
+        def processing_fn(res_groupings):
+            summed_groups = [qml.math.sum(c_group) for c_group in res_groupings]
+            return qml.math.sum(qml.math.stack(summed_groups), axis=0)
+
+        return tapes, processing_fn
+
     # make one tape per summand
     tapes = []
     coeffs = []
@@ -233,3 +249,27 @@ def sum_expand(tape: QuantumScript):
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
     return tapes, processing_fn
+
+
+def _group_summands(sum: Sum):
+    """Group summands of Sum operator into qubit-wise commuting groups.
+
+    Args:
+        sum (Sum): sum operator
+
+    Returns:
+        list[list[Operator]]: list of lists of qubit-wise commuting operators
+    """
+    qwc_groups = []
+    for summand in sum.operands:
+        op_added = False
+        for idx, (wires, group) in enumerate(qwc_groups):
+            if all(wire not in summand.wires for wire in wires):
+                qwc_groups[idx] = (wires + summand.wires, group + [summand])
+                op_added = True
+                break
+
+        if not op_added:
+            qwc_groups.append((summand.wires, [summand]))
+
+    return [group[1] for group in qwc_groups]
