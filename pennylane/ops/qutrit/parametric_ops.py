@@ -126,7 +126,7 @@ class TRX(Operation):
 
         Args:
             theta (tensor_like or float): rotation angle
-            subspace (Sequence[int]): the 2D subspace on which to apply operation
+            subspace (Sequence[int]): the 2D subspace on which to apply the operation
 
         Returns:
             tensor_like: canonical matrix
