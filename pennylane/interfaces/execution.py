@@ -471,7 +471,7 @@ def _execute_new(
             f"{mapped_interface} not found. Please install the latest "
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
-    print(res)
+
     return batch_fn(res)
 
 

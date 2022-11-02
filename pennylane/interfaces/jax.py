@@ -541,7 +541,14 @@ def _execute_fwd_new(
 
     res = execute_wrapper(params)
 
-    tracing = any(isinstance(r, jax.interpreters.ad.JVPTracer) for r in res)
+    tracing = []
+    for i, tape in enumerate(tapes):
+        if len(tape.measurements) == 1:
+            tracing.append(isinstance(res[i], jax.interpreters.ad.JVPTracer))
+        else:
+            tracing.extend([isinstance(r, jax.interpreters.ad.JVPTracer) for r in res[i]])
+    print(tracing)
+    tracing = any(tracing)
 
     # When there are no tracers (not differentiating), we have the result of
     # the forward pass and the jacobian, but only need the result of the
