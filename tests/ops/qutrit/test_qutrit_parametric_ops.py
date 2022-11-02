@@ -243,7 +243,7 @@ class TestLabel:
 
     @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data_broadcasted)
     def test_label_method_broadcasted(self, op, label1, label2, label3, label4):
-        """Test label method with plain scalers."""
+        """Test broadcasted label method with plain scalars."""
 
         assert op.label() == label1
         assert op.label(decimals=2) == label2
