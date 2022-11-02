@@ -20,7 +20,6 @@ import itertools
 
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.ops.qutrit.observables import THermitian
 
 
 class TRX(Operation):
