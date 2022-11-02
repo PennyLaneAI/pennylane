@@ -174,6 +174,12 @@ class TestCaching:
         cache = spy.call_args[0][1]
         assert cache is custom_cache
 
+        with qml.tape.Unwrap(tape):
+            h = tape.hash
+
+        assert h in cache
+        assert np.allclose(cache[h], res)
+
     def test_caching_param_shift(self, tol):
         """Test that, when using parameter-shift transform,
         caching reduces the number of evaluations to their optimum."""
