@@ -464,6 +464,7 @@ def _execute_new(
             )
         elif mapped_interface == "jax":
             _execute = _get_jax_execute_fn(interface, tapes)
+
             res = _execute(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 
     except ImportError as e:
