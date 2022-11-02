@@ -341,22 +341,6 @@ class TestProperties:
         op: Pow = power_method(base=qml.PauliX(0) @ qml.PauliY(1), z=-1.1)
         assert op._queue_category is None
 
-    def test_batching_properties(self, power_method):
-        """Test that Pow batching behavior mirrors that of the base."""
-
-        class DummyOp(qml.operation.Operator):
-            ndim_params = (0, 2)
-            num_wires = 1
-
-        param1 = [0.3] * 3
-        param2 = [[[0.3, 1.2]]] * 3
-
-        base = DummyOp(param1, param2, wires=0)
-        op: Pow = power_method(base=base, z=3)
-
-        assert op.ndim_params == (0, 2)
-        assert op.batch_size == 3
-
 
 class TestSimplify:
     """Test Pow simplify method and depth property."""
@@ -494,6 +478,24 @@ class TestMiscMethods:
         assert qml.math.allclose(base_gen_coeff * z, op_gen_coeff)
         assert base_gen_op.__class__ is op_gen_op.__class__
 
+    def test_batching_properties_method(self):
+        """Test the batching"""
+
+        class DummyOp(qml.operation.Operator):
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        param1 = [0.3] * 3
+        param2 = [[[0.3, 1.2]]] * 3
+
+        base = DummyOp(param1, param2, wires=0)
+        op: Pow = Pow(base=base, z=0.5)
+
+        assert op.ndim_params == (0, 2)
+        assert op.batch_size == 3
+        op._check_batching([np.array([1.2, 2.3])])
+        assert op.batch_size == base.batch_size == 2
+
 
 class TestDiagonalizingGates:
     """Test Pow operators diagonalizing_gates method."""
@@ -585,6 +587,13 @@ class TestMatrix:
         param = qml.numpy.array(2.34)
         assert self.check_matrix(param, z)
 
+    @pytest.mark.autograd
+    def test_matrix_against_shortcut_autograd_broadcasted(self):
+        """Test the matrix using a pennylane numpy batched array/ autograd numpy."""
+        z = 0.4
+        param = qml.numpy.array([2.34, 3.45])
+        assert self.check_matrix(param, z)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
     def test_matrix_against_shortcut_jax(self, z):
@@ -592,6 +601,16 @@ class TestMatrix:
         from jax import numpy as jnp
 
         param = jnp.array(2.34)
+        assert self.check_matrix(param, z)
+
+    @pytest.mark.jax
+    def test_matrix_against_shortcut_jax_broadcasted(self):
+        """Test the matrix using a broadcasted jax parameter."""
+        from jax import numpy as jnp
+
+        z = 0.3
+
+        param = jnp.array([2.34, 3.45, 3.45])
         assert self.check_matrix(param, z)
 
     @pytest.mark.torch
@@ -603,13 +622,31 @@ class TestMatrix:
         param = torch.tensor(2.34)
         assert self.check_matrix(param, z)
 
+    @pytest.mark.torch
+    def test_matrix_against_shortcut_torch_broadcasted(self):
+        """Tests the matrix using a broadcasted torch tensor parameter."""
+        import torch
+
+        z = 0.3
+        param = torch.tensor([2.34, -2.1, 4.9])
+        assert self.check_matrix(param, z)
+
     @pytest.mark.tf
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
-    def test_matrix_against_shortcut_jax(self, z):
+    def test_matrix_against_shortcut_tf(self, z):
         """Test the matrix using a tf variable parameter."""
         import tensorflow as tf
 
         param = tf.Variable(2.34)
+        assert self.check_matrix(param, z)
+
+    @pytest.mark.tf
+    def test_matrix_against_shortcut_tf_broadcasted(self):
+        """Test the matrix using a broadcasted tf variable parameter."""
+        import tensorflow as tf
+
+        z = 0.3
+        param = tf.Variable([2.34, 3.45, 4.56])
         assert self.check_matrix(param, z)
 
     def test_matrix_wire_order(self):

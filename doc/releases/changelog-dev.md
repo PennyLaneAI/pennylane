@@ -260,8 +260,9 @@ Users can specify the control wires as well as the values to control the operati
 * The UCCSD and kUpCCGSD template are modified to remove a redundant flipping of the initial state.
   [(#3148)](https://github.com/PennyLaneAI/pennylane/pull/3148)
 
-* `Adjoint` now supports batching if the base operation supports batching.
+* `Adjoint` and `Pow` now support batching if the base operation supports batching.
   [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
+  [(#3250)](https://github.com/PennyLaneAI/pennylane/pull/3250)
 
 * `OrbitalRotation` is now decomposed into two `SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `SingleExcitation`.
   [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
