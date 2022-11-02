@@ -218,9 +218,8 @@ def sum_expand(tape: QuantumScript, group=True):
             sum_op = m.obs
 
             if group:
+                # make one tape per group of qwc observables
                 obs_groupings = _group_summands(sum_op)
-                # make one tape per grouping, measuring the
-                # observables in that grouping
                 tapes = []
                 for obs in obs_groupings:
                     new_tape = QuantumScript(tape._ops, (qml.expval(o) for o in obs), tape._prep)
@@ -269,11 +268,14 @@ def sum_expand(tape: QuantumScript, group=True):
     # pylint: disable=function-redefined
     def outer_processing_fn(res):
         processed_results = []
+        # process results of all tapes except the last one
         for idx, n_tapes in enumerate(num_tapes):
             processed_results += [inner_processing_fn(res[idx : idx + n_tapes])]
+        # add results of tape containing all the non-sum observables
         if non_expanded_tape:
             non_expanded_res = [res[-1]] if len(non_expanded_measurement_idxs) == 1 else res[-1]
             processed_results += non_expanded_res
+        # sort results
         sorted_results = sorted(zip(processed_results, measurement_idxs), key=lambda x: x[1])
         return tuple(res[0] for res in sorted_results)
 
