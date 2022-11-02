@@ -44,6 +44,9 @@ def compute_vjp_single_new(dy, jac, num=None):
     Args:
         dy (tensor_like): vector of gradient outputs
         jac (tensor_like, tuple): Jacobian matrix
+        num (int): The length of the flattened ``dy`` argument. This is an
+            optional argument, but can be useful to provide if ``dy`` potentially
+            has no shape (for example, due to tracing or just-in-time compilation).
 
     Returns:
         tensor_like: the vector-Jacobian product
@@ -146,6 +149,9 @@ def compute_vjp_multi_new(dy, jac, num=None):
     Args:
         dy (tensor_like): vector of gradient outputs
         jac (tensor_like, tuple): Jacobian matrix
+        num (int): The length of the flattened ``dy`` argument. This is an
+            optional argument, but can be useful to provide if ``dy`` potentially
+            has no shape (for example, due to tracing or just-in-time compilation).
 
     Returns:
         tensor_like: the vector-Jacobian product

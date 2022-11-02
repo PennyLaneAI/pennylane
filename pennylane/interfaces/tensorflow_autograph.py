@@ -374,7 +374,7 @@ def _execute_new(
 
             # whether the tapes contain multiple measurements
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-            dy = dy[:total_measurements]
+            dy = list(dy[:total_measurements])
 
             if mode == "forward":
                 # Jacobians were computed on the forward pass (mode="forward")
@@ -392,7 +392,7 @@ def _execute_new(
 
                 vjps = tf.numpy_function(
                     func=_backward,
-                    inp=list(dy) + list(jacs) + multi_measurements,
+                    inp=dy + list(jacs) + multi_measurements,
                     Tout=[tf.float64] * len(parameters),
                 )
 
@@ -427,7 +427,7 @@ def _execute_new(
 
                         vjps = tf.py_function(
                             func=_backward,
-                            inp=list(all_params) + list(dy),
+                            inp=list(all_params) + dy,
                             Tout=[tf.float64] * len(parameters),
                         )
 
@@ -486,7 +486,7 @@ def _execute_new(
 
                     vjps = tf.numpy_function(
                         func=_backward,
-                        inp=list(all_params) + list(dy) + multi_measurements,
+                        inp=list(all_params) + dy + multi_measurements,
                         Tout=[tf.float64] * len(parameters),
                     )
 
