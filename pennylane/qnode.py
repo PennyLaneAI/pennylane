@@ -644,7 +644,12 @@ class QNode:
             if not isinstance(
                 self._qfunc_output, qml.measurements.MeasurementProcess
             ) and self.interface in ("tf", "autograd"):
-                backprop = any(qml.math.in_backprop(x) for x in res)
+                if isinstance(res, Sequence):
+                    backprop = any(qml.math.in_backprop(x) for x in res)
+                else:
+                    # res might not be a sequence even if the qfunc output is a sequence
+                    # of length 1
+                    backprop = qml.math.in_backprop(res)
 
             if old_interface == "auto":
                 self.interface = "auto"

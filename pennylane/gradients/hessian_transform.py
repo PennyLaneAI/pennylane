@@ -14,6 +14,7 @@
 """This module contains utilities for defining custom Hessian transforms,
 including a decorator for specifying Hessian expansions."""
 import warnings
+from string import ascii_letters as ABC
 
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
@@ -127,6 +128,9 @@ class hessian_transform(qml.batch_transform):
             if not hybrid:
                 return qhess
 
+            if qml.active_return() and len(qnode.tape.measurements) == 1:
+                qhess = (qhess,)
+
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
 
@@ -144,16 +148,47 @@ class hessian_transform(qml.batch_transform):
             hessians = []
             for jac in cjac:
                 if jac is not None:
-                    # Check for a Jacobian equal to the identity matrix.
-                    shape = qml.math.shape(jac)
-                    is_square = len(shape) == 2 and shape[0] == shape[1]
-                    if is_square and qml.math.allclose(jac, qml.numpy.eye(shape[0])):
-                        hessians.append(qhess)
-                        continue
+                    if qml.active_return():
+                        # Check for a Jacobian equal to the identity matrix.
+                        shape = qml.math.shape(jac)
+                        is_square = len(shape) == 2 and shape[0] == shape[1]
+                        if is_square and qml.math.allclose(jac, qml.numpy.eye(shape[0])):
+                            hessians.append(qhess if len(qhess) > 1 else qhess[0])
 
-                    num_arg_dims = len(qml.math.shape(jac)) - 1  # number of axes in qnode_arg_shape
-                    hess = qml.math.tensordot(qhess, jac, [[-1], [0]])
-                    hess = qml.math.tensordot(hess, jac, [[-1 - num_arg_dims], [0]])
+                        hess = []
+                        for qh in qhess:
+                            if len(qml.math.shape(qh)) <= 1:
+                                # single argument case
+                                qh = qml.math.expand_dims(qh, [0, 1])
+                            else:
+                                qh = qml.math.stack([qml.math.stack(row) for row in qh])
+
+                            jac_ndim = len(qml.math.shape(jac))
+
+                            qh = qml.math.einsum(
+                                f"ab...,a{ABC[2:2 + jac_ndim - 1]},",
+                                f"b{ABC[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]}"
+                                f"->{ABC[2:2 + 2 * jac_ndim - 2]}...",
+                                qh,
+                                jac,
+                                jac,
+                            )
+                            hess.append(qh)
+
+                        hess = tuple(hess) if len(hess) > 1 else hess[0]
+                    else:
+                        # Check for a Jacobian equal to the identity matrix.
+                        shape = qml.math.shape(jac)
+                        is_square = len(shape) == 2 and shape[0] == shape[1]
+                        if is_square and qml.math.allclose(jac, qml.numpy.eye(shape[0])):
+                            hessians.append(qhess)
+                            continue
+
+                        num_arg_dims = (
+                            len(qml.math.shape(jac)) - 1
+                        )  # number of axes in qnode_arg_shape
+                        hess = qml.math.tensordot(qhess, jac, [[-1], [0]])
+                        hess = qml.math.tensordot(hess, jac, [[-1 - num_arg_dims], [0]])
 
                     hessians.append(hess)
 

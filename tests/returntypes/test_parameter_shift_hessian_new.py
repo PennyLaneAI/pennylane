@@ -734,7 +734,6 @@ class TestParameterShiftHessian:
             qml.gradients.param_shift_hessian(tape, argnum=argnum, off_diagonal_shifts=[])
 
 
-@pytest.mark.skip("Requires QNode integration for new return types")
 class TestParameterShiftHessianQNode:
     """Test the general functionality of the param_shift_hessian method
     with QNodes on the default interface (autograd)"""
@@ -926,7 +925,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(qml.math.transpose(expected, (2, 1, 0)), hessian)
 
     def test_quantum_hessian_shape_vector_input_vector_output(self):
         """Test that the purely "quantum" hessian has the correct shape (1d -> 1d)"""
@@ -943,7 +942,7 @@ class TestParameterShiftHessianQNode:
             return qml.probs(wires=[0, 1])
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        shape = (4, 6, 6)  # (num_output_vals, num_gate_args, num_gate_args)
+        shape = (6, 6, 4)  # (num_gate_args, num_gate_args, num_output_vals)
 
         hessian = qml.gradients.param_shift_hessian(circuit, hybrid=False)(x)
 
@@ -968,7 +967,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(qml.math.transpose(expected, (2, 1, 0)), hessian)
 
     def test_multiple_two_term_gates_classical_processing(self):
         """Test that the correct hessian is calculated when manipulating parameters (1d -> 1d)"""
@@ -988,7 +987,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(qml.math.transpose(expected, (2, 1, 0)), hessian)
 
     def test_multiple_two_term_gates_matrix_output(self):
         """Test that the correct hessian is calculated for higher dimensional QNode outputs
@@ -996,7 +995,7 @@ class TestParameterShiftHessianQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -1008,7 +1007,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(qml.math.transpose(expected, (0, 3, 2, 1)), hessian)
 
     def test_multiple_two_term_gates_matrix_input(self):
         """Test that the correct hessian is calculated for higher dimensional cl. jacobians
@@ -1016,7 +1015,7 @@ class TestParameterShiftHessianQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2)
         def circuit(x):
             qml.RX(x[0, 0], wires=0)
             qml.RY(x[0, 1], wires=0)
@@ -1028,15 +1027,17 @@ class TestParameterShiftHessianQNode:
         x = np.ones([1, 3], requires_grad=True)
 
         expected = qml.jacobian(qml.jacobian(circuit))(x)
+        print(qml.math.shape(expected))
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
+        print(qml.math.shape(hessian))
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(qml.math.transpose(expected, (0, 2, 3, 4, 5, 1)), hessian)
 
     def test_multiple_qnode_arguments_scalar(self):
         """Test that the correct Hessian is calculated with multiple QNode arguments (0D->1D)"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2)
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -1063,7 +1064,7 @@ class TestParameterShiftHessianQNode:
         """Test that the correct Hessian is calculated with multiple QNode arguments (1D->1D)"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2)
         def circuit(x, y, z):
             qml.RX(x[0], wires=1)
             qml.RY(y[0], wires=0)
@@ -1085,7 +1086,7 @@ class TestParameterShiftHessianQNode:
         circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(qml.math.transpose(expected, (0, 2, 3, 1)), hessian)
 
     def test_multiple_qnode_arguments_matrix(self):
         """Test that the correct Hessian is calculated with multiple QNode arguments (2D->1D)"""
@@ -1113,14 +1114,14 @@ class TestParameterShiftHessianQNode:
         circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(qml.math.transpose(expected, (0, 2, 3, 4, 5, 1)), hessian)
 
     def test_multiple_qnode_arguments_mixed(self):
         """Test that the correct Hessian is calculated with multiple mixed-shape QNode arguments"""
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
+        @qml.qnode(dev, max_diff=2)
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(z[0] + z[1], wires=0)
@@ -1138,7 +1139,9 @@ class TestParameterShiftHessianQNode:
         )
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
-        assert all(np.allclose(expected[i], hessian[i]) for i in range(3))
+        assert np.allclose(expected[0], hessian[0])
+        assert np.allclose(qml.math.transpose(expected[1], (0, 2, 3, 4, 5, 1)), hessian[1])
+        assert np.allclose(qml.math.transpose(expected[2], (0, 2, 3, 1)), hessian[2])
 
     def test_with_channel(self):
         """Test that the Hessian is correctly computed for circuits
@@ -1146,7 +1149,7 @@ class TestParameterShiftHessianQNode:
 
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
+        @qml.qnode(dev, max_diff=2)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1159,14 +1162,14 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(expected, hessian)
+        assert np.allclose(qml.math.transpose(expected, (2, 1, 0)), hessian)
 
     def test_hessian_transform_is_differentiable(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation (1d -> 1d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=3, diff_method="parameter-shift")
+        @qml.qnode(dev, max_diff=3)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1176,9 +1179,15 @@ class TestParameterShiftHessianQNode:
         x = np.array([0.1, 0.2], requires_grad=True)
 
         expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
-        derivative = qml.jacobian(qml.gradients.param_shift_hessian(circuit))(x)
 
-        assert np.allclose(expected, derivative)
+        def cost_fn(x):
+            hess = qml.gradients.param_shift_hessian(circuit)(x)
+            hess = qml.math.stack([qml.math.stack(row) for row in hess])
+            return hess
+
+        derivative = qml.jacobian(cost_fn)(x)
+
+        assert np.allclose(qml.math.transpose(expected, (1, 2, 0, 3)), derivative)
 
     # Some bounds on the efficiency (device executions) of the hessian for 2-term shift rules:
     # - < jacobian(jacobian())
@@ -1186,6 +1195,7 @@ class TestParameterShiftHessianQNode:
     # - <= 3^m                    see arXiv:2008.06517 p. 4
     # here d=2 is the derivative order, m is the number of variational parameters (w.r.t. gate args)
 
+    @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_fewer_device_invocations_scalar_input(self):
         """Test that the hessian invokes less hardware executions than double differentiation
         (0d -> 0d)"""
@@ -1211,6 +1221,7 @@ class TestParameterShiftHessianQNode:
         assert hessian_qruns <= 2**2 * 1  # 1 = (1+2-1)C(2)
         assert hessian_qruns <= 3**1
 
+    @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_fewer_device_invocations_vector_input(self):
         """Test that the hessian invokes less hardware executions than double differentiation
         (1d -> 0d)"""
@@ -1237,6 +1248,7 @@ class TestParameterShiftHessianQNode:
         assert hessian_qruns <= 2**2 * 3  # 3 = (2+2-1)C(2)
         assert hessian_qruns <= 3**2
 
+    @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_fewer_device_invocations_vector_output(self):
         """Test that the hessian invokes less hardware executions than double differentiation
         (1d -> 1d)"""
@@ -1440,16 +1452,17 @@ class TestParameterShiftHessianQNode:
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
         result = qml.gradients.param_shift_hessian(circuit)(params)
-        assert np.allclose(result, np.zeros((4, 3, 3)), atol=0, rtol=0)
+        assert np.allclose(result, np.zeros((3, 3, 4)), atol=0, rtol=0)
 
         tapes, _ = qml.gradients.param_shift_hessian(circuit.tape)
         assert tapes == []
 
+    @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_f0_argument(self):
         """Test that we can provide the results of a QNode to save on quantum invocations"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -1501,13 +1514,14 @@ class TestParameterShiftHessianQNode:
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(qml.gradients.param_shift_hessian(c)(x)) for c in circuits]
-        qnode = [qml.math.shape(c(x)) + (3, 3) for c in circuits]
-        expected = [(3, 3), (1, 3, 3), (2, 3, 3), (4, 3, 3), (1, 4, 3, 3), (2, 4, 3, 3)]
+        expected = [(3, 3), (3, 3), (2, 3, 3), (3, 3, 4), (3, 3, 4), (2, 3, 3, 4)]
 
-        assert all(t == q == e for t, q, e in zip(transform, qnode, expected))
+        print(transform)
+        print(expected)
+
+        assert all(t == e for t, e in zip(transform, expected))
 
 
-@pytest.mark.skip("Requires QNode integration for new return types")
 class TestParamShiftHessianWithKwargs:
     """Test the parameter-shift Hessian computation when manually
     providing parameter shifts or `argnum`."""
@@ -1523,7 +1537,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that diagonal shifts are used and yield the correct Hessian."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
+        @qml.qnode(dev, max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -1532,7 +1546,7 @@ class TestParamShiftHessianWithKwargs:
 
         x = np.array([0.6, -0.2], requires_grad=True)
 
-        expected = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.math.transpose(qml.jacobian(qml.jacobian(circuit))(x), (1, 2, 0))
         circuit(x)
         tapes, fn = qml.gradients.param_shift_hessian(
             circuit.qtape, diagonal_shifts=diagonal_shifts
@@ -1567,7 +1581,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that off-diagonal shifts are used and yield the correct Hessian."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
+        @qml.qnode(dev, max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.CRY(x[1], wires=[0, 1])
@@ -1576,7 +1590,7 @@ class TestParamShiftHessianWithKwargs:
 
         x = np.array([0.6, -0.2], requires_grad=True)
 
-        expected = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.math.transpose(qml.jacobian(qml.jacobian(circuit))(x), (1, 2, 0))
         circuit(x)
         tapes, fn = qml.gradients.param_shift_hessian(
             circuit.qtape, off_diagonal_shifts=off_diagonal_shifts
@@ -1646,7 +1660,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that providing an argnum to indicated differentiable parameters works."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
+        @qml.qnode(dev, max_diff=2)
         def circuit(par):
             qml.RX(par[0], wires=0)
             qml.CRY(par[1], wires=[0, 1])
@@ -1658,7 +1672,9 @@ class TestParamShiftHessianWithKwargs:
 
         expected = qml.jacobian(qml.jacobian(circuit))(par)
         # Set non-argnum argument entries to 0
-        expected = expected * qml.math.array(argnum, dtype=float)[None]
+        expected = qml.math.transpose(
+            expected * qml.math.array(argnum, dtype=float)[None], (1, 2, 0)
+        )
         hessian = qml.gradients.param_shift_hessian(circuit, argnum=argnum)(par)
         assert np.allclose(hessian, expected)
 
