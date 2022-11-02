@@ -167,7 +167,6 @@ class TestQNode:
         if diff_method in ("parameter-shift", "finite-diff"):
             spy.assert_called()
 
-    @pytest.mark.xfail
     def test_jacobian_dtype(self, dev_name, diff_method, mode, tol):
         """Test calculating the jacobian with a different datatype"""
         if diff_method == "backprop":
@@ -176,22 +175,19 @@ class TestQNode:
         a = tf.Variable(0.1, dtype=tf.float32)
         b = tf.Variable(0.2, dtype=tf.float32)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, r_dtype=np.float32)
 
-        @qnode(dev, diff_method=diff_method, mode=mode)
+        @qnode(dev, diff_method=diff_method, mode=mode, interface="tf")
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
 
-        circuit.to_tf(dtype=tf.float32)
-        assert circuit.dtype is tf.float32
-
         with tf.GradientTape() as tape:
             res = circuit(a, b)
+            res = tf.stack(res)
 
-        assert circuit.qtape.interface == "tf"
         assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tf.Tensor)
@@ -340,6 +336,10 @@ class TestQNode:
 
         assert res.shape == (2,)
         assert isinstance(res, tf.Tensor)
+
+        # can't take the gradient with respect to "a" since it's a Python scalar
+        grad = tape.jacobian(res, b)
+        assert grad is None
 
     @pytest.mark.parametrize("U", [tf.constant([[0, 1], [1, 0]]), np.array([[0, 1], [1, 0]])])
     def test_matrix_parameter(self, dev_name, diff_method, mode, U, tol):
