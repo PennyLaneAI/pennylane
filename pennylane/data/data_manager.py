@@ -208,7 +208,7 @@ def _generate_folders(node, folders):
 def load(
     data_name, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
 ):
-    r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object
+    r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object.
 
     Args:
         data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
@@ -221,7 +221,7 @@ def load(
             Note that these are not optional
 
     Returns:
-        list[DatasetFile]
+        list[Dataset]
     """
 
     _ = lazy
@@ -270,12 +270,15 @@ def _direc_to_dict(path):
 
 
 def list_datasets(path=None):
-    r"""Returns a list of datasets and their sizes
+    r"""Returns a list of datasets.
 
     Return:
-        dict: Nested dictionary representing the directory structure of the hosted databases.
+        dict: Nested dictionary representing the directory structure of the hosted datasets.
 
     **Example:**
+
+    Note that the available data will differ from this example as we add more datasets.
+    For updates on available data see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
 
     .. code-block :: pycon
 
@@ -302,10 +305,13 @@ def list_datasets(path=None):
 
 
 def list_attributes(data_name):
-    """List the attributes that exist for a specific data_name.
+    r"""List the attributes that exist for a specific data_name.
+
+    Args:
+        data_name (str): The type of the desired data
 
     Returns:
-        list(str): A list of accepted attributes for a given data name.
+        list (str): A list of accepted attributes for a given data name
     """
     _refresh_data_struct()
     if data_name not in _data_struct:
@@ -352,7 +358,10 @@ def _interactive_request_single(node, param):
 
 
 def load_interactive():
-    """Download a dataset using an interactive load prompt.
+    r"""Download a dataset using an interactive load prompt.
+
+    Returns:
+        Dataset
 
     **Example**
 
