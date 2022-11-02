@@ -11,10 +11,10 @@ PennyLane provides the :mod:`~.data` subpackage to download, create, store and m
 Loading Datasets in PennyLane
 -----------------------------
 
-We can access data of a desired type with the :func:`~pennylane.data.load` or :func:`~.data.load_interactive` functions.
+We can access data of a desired type with the :func:`~pennylane.data.load` or :func:`~pennylane.data.load_interactive` functions.
 These download the desired datasets or load them from local storage if previously downloaded. 
 Here we use the :func:`~pennylane.data.load` function, for the
-:func:`~.data.load_interactive` function, please see the relevant documentation.
+:func:`~pennylane.data.load_interactive` function, please see the relevant documentation.
 
 To specify the dataset to be loaded, the data category (``data_name``) must be
 specified, alongside category-specific keyword arguments. For the full list
@@ -96,7 +96,7 @@ For example, we can download only the molecule and Hamiltonian of a dataset as f
 Creating Custom Datasets
 ------------------------
 
-The functionality in :mod:`~.data` also includes creating and reading custom-made datasets.
+The functionality in :mod:`~pennylane.data` also includes creating and reading custom-made datasets.
 To create a dataset, we can do the following:
 
 >>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], observables=[qml.PauliZ(wires=0),qml.PauliX(wires=1)])
@@ -110,7 +110,7 @@ To create a dataset, we can do the following:
 >>> example_dataset.energies
 array([-1.5, -0.5,  0.5,  1.5])
 
-We can then write this :class:`~.data.Dataset` to storage and read it as follows:
+We can then write this :class:`~pennylane.data.Dataset` to storage and read it as follows:
 
 
 >>> example_dataset.write('./path/to/dataset.dat')
@@ -135,7 +135,7 @@ Classes
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.data.Dataset    
+    ~pennylane.data.Dataset
 
 :html:`</div>`
 
