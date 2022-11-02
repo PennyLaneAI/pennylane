@@ -231,14 +231,14 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
                 return compute_jvp_multi(tangent, jac)
             return compute_jvp_single(tangent, jac)
 
-        # The jacoobian is calculated for shot vectors
-        num_shot_components = len(shots)
+        # The jacobian is calculated for shot vectors
+        len_shot_vec = _shots_copies(shots)
         jvps = []
         if multi_m:
-            for i in range(num_shot_components):
+            for i in range(len_shot_vec):
                 jvps.append(compute_jvp_multi(tangent, jac[i]))
         else:
-            for i in range(num_shot_components):
+            for i in range(len_shot_vec):
                 jvps.append(compute_jvp_single(tangent, jac[i]))
 
         return tuple(jvps)
@@ -322,3 +322,12 @@ def _single_measurement_zero(m, tangent):
     res = qml.math.convert_like(np.zeros(dim), tangent)
     res = qml.math.cast_like(res, tangent)
     return res
+
+
+def _shots_copies(shot_vector):
+    """Helper function to determine the number of copies from a shot vector."""
+    if isinstance(shot_vector[0], tuple):
+        len_shot_vec = sum(shot_v.copies for shot_v in shot_vector)
+    else:
+        len_shot_vec = len(shot_vector)
+    return len_shot_vec

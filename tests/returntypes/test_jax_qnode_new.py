@@ -2192,9 +2192,7 @@ class TestReturn:
         assert hess[1].shape == (4, 2, 2)
 
 
-shots = [100, (1, 20, 100)]
-# TODO: Add the following shot vector
-# (1, (5, 4), 100)
+shots = [100, (1, 20, 100), (1, (20, 1), 100), (1, (5, 4), 100)]
 
 
 qubit_device_and_diff_method = [
@@ -2230,7 +2228,11 @@ class TestReturnWithShotVectors:
             assert jac.shape == ()
         else:
             assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, jax.numpy.ndarray)
                 assert j.shape == ()
@@ -2260,7 +2262,11 @@ class TestReturnWithShotVectors:
             assert jac[1].shape == ()
         else:
             assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, tuple)
                 assert len(j) == 2
@@ -2288,8 +2294,11 @@ class TestReturnWithShotVectors:
             assert isinstance(jac, jax.numpy.ndarray)
             assert jac.shape == (2,)
         else:
-            assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, jax.numpy.ndarray)
                 assert j.shape == (2,)
@@ -2316,8 +2325,11 @@ class TestReturnWithShotVectors:
             assert isinstance(jac, jax.numpy.ndarray)
             assert jac.shape == (4,)
         else:
-            assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, jax.numpy.ndarray)
                 assert j.shape == (4,)
@@ -2350,8 +2362,11 @@ class TestReturnWithShotVectors:
             assert isinstance(jac[1], jax.numpy.ndarray)
             assert jac[1].shape == (4,)
         else:
-            assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, tuple)
 
@@ -2383,8 +2398,11 @@ class TestReturnWithShotVectors:
             assert isinstance(jac, jax.numpy.ndarray)
             assert jac.shape == (4, 2)
         else:
-            assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, jax.numpy.ndarray)
                 assert j.shape == (4, 2)
@@ -2425,8 +2443,11 @@ class TestReturnWithShotVectors:
             assert isinstance(jac[1][1], jax.numpy.ndarray)
             assert jac[1][1].shape == ()
         else:
-            assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, tuple)
 
@@ -2471,8 +2492,11 @@ class TestReturnWithShotVectors:
             assert isinstance(jac[1], jax.numpy.ndarray)
             assert jac[1].shape == (2,)
         else:
-            assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, tuple)
                 assert len(j) == 2  # measurements
@@ -2520,8 +2544,11 @@ class TestReturnWithShotVectors:
             assert isinstance(jac[1][1], jax.numpy.ndarray)
             assert jac[1][1].shape == ()
         else:
-            assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, tuple)
                 assert len(j) == 2
@@ -2567,8 +2594,11 @@ class TestReturnWithShotVectors:
             assert isinstance(jac[1], jax.numpy.ndarray)
             assert jac[1].shape == (2,)
         else:
-            assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, tuple)
                 assert len(j) == 2  # measurements
@@ -2606,8 +2636,11 @@ class TestReturnWithShotVectors:
             assert isinstance(jac[1], jax.numpy.ndarray)
             assert jac[1].shape == (4,)
         else:
-            assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(jac, tuple)
                 assert len(j) == 2
@@ -2654,8 +2687,11 @@ class TestReturnWithShotVectors:
             assert isinstance(jac[1][1], jax.numpy.ndarray)
             assert jac[1][1].shape == (4,)
         else:
-            assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, tuple)
                 assert len(j) == 2
@@ -2701,8 +2737,11 @@ class TestReturnWithShotVectors:
             assert isinstance(jac[1], jax.numpy.ndarray)
             assert jac[1].shape == (4, 2)
         else:
-            assert isinstance(jac, tuple)
-            assert len(jac) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(jac) == num_copies
             for j in jac:
                 assert isinstance(j, tuple)
                 assert len(j) == 2  # measurements
@@ -2750,8 +2789,11 @@ class TestReturnWithShotVectors:
             assert hess[1][0].shape == ()
             assert hess[1][1].shape == ()
         else:
-            assert isinstance(hess, tuple)
-            assert len(hess) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(hess) == num_copies
             for h in hess:
                 assert isinstance(hess, tuple)
                 assert len(h) == 2
@@ -2794,8 +2836,11 @@ class TestReturnWithShotVectors:
             assert isinstance(hess, jax.numpy.ndarray)
             assert hess.shape == (2, 2)
         else:
-            assert isinstance(hess, tuple)
-            assert len(hess) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(hess) == num_copies
             for h in hess:
                 assert isinstance(h, jax.numpy.ndarray)
                 assert h.shape == (2, 2)
@@ -2837,8 +2882,11 @@ class TestReturnWithShotVectors:
             assert hess[1][0].shape == ()
             assert hess[1][1].shape == ()
         else:
-            assert isinstance(hess, tuple)
-            assert len(hess) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(hess) == num_copies
             for h in hess:
                 assert isinstance(h, tuple)
                 assert len(h) == 2
@@ -2879,8 +2927,11 @@ class TestReturnWithShotVectors:
             assert isinstance(hess, jax.numpy.ndarray)
             assert hess.shape == (2, 2)
         else:
-            assert isinstance(hess, tuple)
-            assert len(hess) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(hess) == num_copies
             for h in hess:
                 assert isinstance(h, jax.numpy.ndarray)
                 assert h.shape == (2, 2)
@@ -2942,8 +2993,11 @@ class TestReturnWithShotVectors:
             assert isinstance(hess[1][1][1], jax.numpy.ndarray)
             assert hess[1][1][1].shape == (4,)
         else:
-            assert isinstance(hess, tuple)
-            assert len(hess) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(hess) == num_copies
             for h in hess:
                 assert isinstance(h, tuple)
                 assert len(h) == 2
@@ -3013,8 +3067,11 @@ class TestReturnWithShotVectors:
             assert isinstance(hess[1], jax.numpy.ndarray)
             assert hess[1].shape == (4, 2, 2)
         else:
-            assert isinstance(hess, tuple)
-            assert len(hess) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(hess) == num_copies
             for h in hess:
                 assert isinstance(h, tuple)
                 assert len(h) == 2
@@ -3080,8 +3137,11 @@ class TestReturnWithShotVectors:
             assert isinstance(hess[1][1][1], jax.numpy.ndarray)
             assert hess[1][1][1].shape == (4,)
         else:
-            assert isinstance(hess, tuple)
-            assert len(hess) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(hess) == num_copies
             for h in hess:
                 assert isinstance(h, tuple)
                 assert len(h) == 2
@@ -3148,8 +3208,11 @@ class TestReturnWithShotVectors:
             assert isinstance(hess[1], jax.numpy.ndarray)
             assert hess[1].shape == (4, 2, 2)
         else:
-            assert isinstance(hess, tuple)
-            assert len(hess) == len(shots)
+            num_copies = sum(
+                [1 for x in shots if isinstance(x, int)]
+                + [x[1] for x in shots if isinstance(x, tuple)]
+            )
+            assert len(hess) == num_copies
             for h in hess:
                 assert isinstance(h, tuple)
                 assert len(h) == 2
@@ -3159,7 +3222,3 @@ class TestReturnWithShotVectors:
 
                 assert isinstance(h[1], jax.numpy.ndarray)
                 assert h[1].shape == (4, 2, 2)
-
-
-finite_diff_shot_vec_tol = 0.3
-param_shift_shot_vec_tol = 10e-7

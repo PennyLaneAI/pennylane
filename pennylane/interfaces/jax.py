@@ -534,7 +534,6 @@ def _execute_fwd_new(
         with qml.tape.Unwrap(*new_tapes):
             res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
-        print(res, jacs)
         res = _to_jax(res)
 
         return res, jacs
