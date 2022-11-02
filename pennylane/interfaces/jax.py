@@ -599,6 +599,7 @@ def _to_jax(res):
             res_.append(tuple(sub_r))
     return res_
 
+
 def _to_jax_shot_vector(res):
     res_ = [tuple(_to_jax([r_])[0] for r_ in r) for r in res]
     return res_
