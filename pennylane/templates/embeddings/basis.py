@@ -76,11 +76,9 @@ class BasisEmbedding(Operation):
         if isinstance(features, list):
             features = qml.math.stack(features)
 
-        # True if the features is a JAX tracer or a TensorFlow non-eager tensor
         tracing = qml.math.is_abstract(features)
 
         if qml.math.shape(features) == ():
-            # don't perform validation during tracing since the values are unknown
             if not tracing and features >= 2 ** len(wires):
                 raise ValueError(
                     f"Features must be of length {len(wires)}, got features={features} which is >= {2 ** len(wires)}"
@@ -100,7 +98,6 @@ class BasisEmbedding(Operation):
                 f"Features must be of length {len(wires)}; got length {n_features} (features={features})."
             )
 
-        # don't perform the validation during tracing since the values are unknown
         if not tracing:
             features = list(qml.math.toarray(features))
             if not set(features).issubset({0, 1}):
@@ -138,4 +135,17 @@ class BasisEmbedding(Operation):
         [PauliX(wires=['a']),
          PauliX(wires=['c'])]
         """
-        return qml.BasisStatePreparation.compute_decomposition(basis_state, wires)
+        if not qml.math.is_abstract(basis_state):
+            ops_list = []
+            for wire, bit in zip(wires, basis_state):
+                if bit == 1:
+                    ops_list.append(qml.PauliX(wire))
+            return ops_list
+
+        ops_list = []
+        for wire, state in zip(wires, basis_state):
+            ops_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+            ops_list.append(qml.RX(state * np.pi, wire))
+            ops_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+
+        return ops_list

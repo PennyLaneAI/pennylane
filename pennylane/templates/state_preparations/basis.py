@@ -74,10 +74,8 @@ class BasisStatePreparation(Operation):
                     f"Basis states must be of length {len(wires)}; state {i} has length {n_bits}."
                 )
 
-            # don't perform the validation if the state is a JAX tracer or a TensorFlow
-            # non-eager tensor
             if not qml.math.is_abstract(state):
-                if not all(bit in [0, 1] for bit in state):
+                if any(bit not in [0, 1] for bit in state):
                     raise ValueError(
                         f"Basis states must only consist of 0s and 1s; state {i} is {state}"
                     )
@@ -108,8 +106,6 @@ class BasisStatePreparation(Operation):
         [PauliX(wires=['a']),
         PauliX(wires=['b'])]
         """
-        # if the state is not a JAX tracer or TensorFlow non-eager tensor, compute
-        # the decomposition using PauliX gates on the '1' wires
         if not qml.math.is_abstract(basis_state):
             op_list = []
             for wire, state in zip(wires, basis_state):
@@ -117,12 +113,10 @@ class BasisStatePreparation(Operation):
                     op_list.append(qml.PauliX(wire))
             return op_list
 
-        # otherwise, use RX gates with 0 or pi angles
-        op_list = [
-            qml.PhaseShift(state * np.pi / 2, wire) for wire, state in zip(wires, basis_state)
-        ]
-        op_list += [qml.RX(state * np.pi, wire) for wire, state in zip(wires, basis_state)]
-        op_list += [
-            qml.PhaseShift(state * np.pi / 2, wire) for wire, state in zip(wires, basis_state)
-        ]
+        op_list = []
+        for wire, state in zip(wires, basis_state):
+            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+            op_list.append(qml.RX(state * np.pi, wire))
+            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+
         return op_list
