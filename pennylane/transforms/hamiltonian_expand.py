@@ -259,10 +259,7 @@ def sum_expand(tape: QuantumScript, group=True):
         if group:
             summed_groups = [qml.math.sum(c_group) for c_group in res]
             return qml.math.sum(qml.math.stack(summed_groups), axis=0)
-        dot_products = [
-            qml.math.dot(qml.math.squeeze(r), c)
-            for c, r in zip(coeffs, res)  # pylint: disable=cell-var-from-loop
-        ]
+        dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
     # pylint: disable=function-redefined
