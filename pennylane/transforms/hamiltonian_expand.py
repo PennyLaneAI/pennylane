@@ -208,44 +208,77 @@ def sum_expand(tape: QuantumScript, group=True):
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions to compute the expectation value.
     """
-    sum_op = tape.measurements[0].obs
-    if (
-        not isinstance(sum_op, Sum)
-        or len(tape.measurements) > 1
-        or tape.measurements[0].return_type != Expectation
-    ):
-        raise ValueError("Passed tape must end in `qml.expval(S)`, where S is of type `Sum`")
+    non_expanded_measurements = []
+    non_expanded_measurement_idx = []
+    expanded_tapes = []
+    processing_fns = []
+    measurement_idx = []
+    num_tapes = []
+    for idx, m in enumerate(tape.measurements):
+        if isinstance(m.obs, Sum) and m.return_type is Expectation:
+            sum_op = m.obs
 
-    if group:
-        obs_groupings = _group_summands(sum_op)
-        # make one tape per grouping, measuring the
-        # observables in that grouping
-        tapes = []
-        for obs in obs_groupings:
-            new_tape = QuantumScript(tape._ops, (qml.expval(o) for o in obs), tape._prep)
-            tapes.append(new_tape)
+            if group:
+                obs_groupings = _group_summands(sum_op)
+                # make one tape per grouping, measuring the
+                # observables in that grouping
+                tapes = []
+                for obs in obs_groupings:
+                    new_tape = QuantumScript(tape._ops, (qml.expval(o) for o in obs), tape._prep)
+                    tapes.append(new_tape)
 
-        def processing_fn(res_groupings):
-            summed_groups = [qml.math.sum(c_group) for c_group in res_groupings]
-            return qml.math.sum(qml.math.stack(summed_groups), axis=0)
+                def processing_fn(res_groupings):
+                    summed_groups = [qml.math.sum(c_group) for c_group in res_groupings]
+                    return qml.math.sum(qml.math.stack(summed_groups), axis=0)
 
-        return tapes, processing_fn
+            else:
+                # make one tape per summand
+                tapes = []
+                coeffs = []
+                for summand in sum_op.operands:
+                    if isinstance(summand, SProd):
+                        coeffs.append(summand.scalar)
+                        summand = summand.base
+                    else:
+                        coeffs.append(1.0)
+                    tapes.append(
+                        QuantumScript(ops=tape.operations, measurements=[qml.expval(summand)])
+                    )
 
-    # make one tape per summand
-    tapes = []
-    coeffs = []
-    for summand in sum_op.operands:
-        if isinstance(summand, SProd):
-            coeffs.append(summand.scalar)
-            summand = summand.base
+                # pylint: disable=function-redefined
+                def processing_fn(res):
+                    dot_products = [
+                        qml.math.dot(qml.math.squeeze(r), c)
+                        for c, r in zip(coeffs, res)  # pylint: disable=cell-var-from-loop
+                    ]
+                    return qml.math.sum(qml.math.stack(dot_products), axis=0)
+
+            expanded_tapes.extend(tapes)
+            processing_fns.append(processing_fn)
+            measurement_idx.append(idx)
+            num_tapes.append(len(tapes))
+
         else:
-            coeffs.append(1.0)
-        tapes.append(QuantumScript(ops=tape.operations, measurements=[qml.expval(summand)]))
+            non_expanded_measurements.append(m)
+            non_expanded_measurement_idx.append(idx)
+
+    non_expanded_tape = (
+        [QuantumScript(ops=tape._ops, measurements=non_expanded_measurements, prep=tape._prep)]
+        if non_expanded_measurements
+        else []
+    )
+    tapes = expanded_tapes + non_expanded_tape
+    measurement_idx += non_expanded_measurement_idx
 
     # pylint: disable=function-redefined
     def processing_fn(res):
-        dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
-        return qml.math.sum(qml.math.stack(dot_products), axis=0)
+        processed_results = []
+        for idx, (pr_fn, n_tapes) in enumerate(zip(processing_fns, num_tapes)):
+            processed_results += [pr_fn(res[idx : idx + n_tapes])]
+        if non_expanded_tape:
+            non_expanded_res = [res[-1]] if len(non_expanded_measurement_idx) == 1 else res[-1]
+            processed_results += non_expanded_res
+        return tuple(processed_results[i] for i in measurement_idx)
 
     return tapes, processing_fn
 
