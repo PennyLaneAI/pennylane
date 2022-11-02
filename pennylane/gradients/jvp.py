@@ -166,7 +166,7 @@ def compute_jvp_multi(tangent, jac):
     return res
 
 
-def jvp(tape, tangent, gradient_fn, shots, gradient_kwargs=None):
+def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the Jacobian vector products of a tape.
 

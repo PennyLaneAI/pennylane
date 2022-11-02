@@ -2197,25 +2197,22 @@ shots = [100, (1, 20, 100)]
 # (1, (5, 4), 100)
 
 
-# TODO: Add finite diff
-# ["default.qubit", "finite-diff", {"h": 10e-2}],
 qubit_device_and_diff_method = [
+    ["default.qubit", "finite-diff", {"h": 10e-2}],
     ["default.qubit", "parameter-shift", {}],
 ]
 
 
 @pytest.mark.parametrize("shots", shots)
 @pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
-class TestReturn:
-    """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
+class TestReturnWithShotVectors:
+    """Class to test the shape of the Grad/Jacobian/Hessian with different return types and shoot vectors."""
 
-    def test_jac_single_measurement_param(self, dev_name, diff_method, gradient_kwargs, shots):
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jac_single_measurement_param(
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
+    ):
         """For one measurement and one param, the gradient is a float."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=1, shots=shots)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
@@ -2226,7 +2223,7 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        jac = jax.jacobian(circuit)(a)
+        jac = jacobian(circuit)(a)
 
         if isinstance(shots, int):
             assert isinstance(jac, jax.numpy.ndarray)
@@ -2238,15 +2235,11 @@ class TestReturn:
                 assert isinstance(j, jax.numpy.ndarray)
                 assert j.shape == ()
 
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jac_single_measurement_multiple_param(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=1, shots=shots)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
@@ -2258,7 +2251,7 @@ class TestReturn:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        jac = jax.jacobian(circuit, argnums=[0, 1])(a, b)
+        jac = jacobian(circuit, argnums=[0, 1])(a, b)
 
         if isinstance(shots, int):
             assert isinstance(jac, tuple)
@@ -2274,15 +2267,11 @@ class TestReturn:
                 assert j[0].shape == ()
                 assert j[1].shape == ()
 
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_single_measurement_multiple_param_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=1, shots=shots)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
@@ -2293,7 +2282,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jacobian(circuit)(a)
+        jac = jacobian(circuit)(a)
 
         if isinstance(shots, int):
             assert isinstance(jac, jax.numpy.ndarray)
@@ -2305,16 +2294,12 @@ class TestReturn:
                 assert isinstance(j, jax.numpy.ndarray)
                 assert j.shape == (2,)
 
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_single_measurement_param_probs(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
@@ -2325,7 +2310,7 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        jac = jax.jacobian(circuit)(a)
+        jac = jacobian(circuit)(a)
 
         if isinstance(shots, int):
             assert isinstance(jac, jax.numpy.ndarray)
@@ -2337,16 +2322,12 @@ class TestReturn:
                 assert isinstance(j, jax.numpy.ndarray)
                 assert j.shape == (4,)
 
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_single_measurement_probs_multiple_param(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
@@ -2358,7 +2339,7 @@ class TestReturn:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        jac = jax.jacobian(circuit, argnums=[0, 1])(a, b)
+        jac = jacobian(circuit, argnums=[0, 1])(a, b)
 
         if isinstance(shots, int):
             assert isinstance(jac, tuple)
@@ -2380,16 +2361,12 @@ class TestReturn:
                 assert isinstance(j[1], jax.numpy.ndarray)
                 assert j[1].shape == (4,)
 
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
@@ -2399,7 +2376,8 @@ class TestReturn:
             return qml.probs(wires=[0, 1])
 
         a = jax.numpy.array([0.1, 0.2])
-        jac = jax.jacobian(circuit)(a)
+
+        jac = jacobian(circuit)(a)
 
         if isinstance(shots, int):
             assert isinstance(jac, jax.numpy.ndarray)
@@ -2411,15 +2389,11 @@ class TestReturn:
                 assert isinstance(j, jax.numpy.ndarray)
                 assert j.shape == (4, 2)
 
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_expval_expval_multiple_params(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = jax.numpy.array(0.1)
@@ -2432,7 +2406,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        jac = jax.jacobian(circuit, argnums=[0, 1])(par_0, par_1)
+        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
 
         if isinstance(shots, int):
             assert isinstance(jac, tuple)
@@ -2470,15 +2444,11 @@ class TestReturn:
                 assert isinstance(j[1][1], jax.numpy.ndarray)
                 assert j[1][1].shape == ()
 
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_expval_expval_multiple_params_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
@@ -2489,7 +2459,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jacobian(circuit)(a)
+        jac = jacobian(circuit)(a)
 
         if isinstance(shots, int):
             assert isinstance(jac, tuple)
@@ -2513,13 +2483,11 @@ class TestReturn:
                 assert isinstance(j[1], jax.numpy.ndarray)
                 assert j[1].shape == (2,)
 
-    def test_jacobian_var_var_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jacobian_var_var_multiple_params(
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
+    ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = jax.numpy.array(0.1)
@@ -2532,7 +2500,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
 
-        jac = jax.jacobian(circuit, argnums=[0, 1])(par_0, par_1)
+        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
 
         if isinstance(shots, int):
             assert isinstance(jac, tuple)
@@ -2572,15 +2540,11 @@ class TestReturn:
                 assert isinstance(j[1][1], jax.numpy.ndarray)
                 assert j[1][1].shape == ()
 
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_var_var_multiple_params_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
@@ -2591,7 +2555,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jacobian(circuit)(a)
+        jac = jacobian(circuit)(a)
 
         if isinstance(shots, int):
             assert isinstance(jac, tuple)
@@ -2615,15 +2579,11 @@ class TestReturn:
                 assert isinstance(j[1], jax.numpy.ndarray)
                 assert j[1].shape == (2,)
 
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_single_param(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
     ):
         """The jacobian of multiple measurements with a single params return an array."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
@@ -2634,7 +2594,7 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        jac = jax.jacobian(circuit)(a)
+        jac = jacobian(circuit)(a)
 
         if isinstance(shots, int):
             assert isinstance(jac, tuple)
@@ -2658,15 +2618,11 @@ class TestReturn:
                 assert isinstance(j[1], jax.numpy.ndarray)
                 assert j[1].shape == (4,)
 
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_multiple_param(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
@@ -2678,7 +2634,7 @@ class TestReturn:
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        jac = jax.jacobian(circuit, argnums=[0, 1])(a, b)
+        jac = jacobian(circuit, argnums=[0, 1])(a, b)
 
         if isinstance(shots, int):
             assert isinstance(jac, tuple)
@@ -2718,15 +2674,11 @@ class TestReturn:
                 assert isinstance(j[1][1], jax.numpy.ndarray)
                 assert j[1][1].shape == (4,)
 
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_multiple_param_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
@@ -2737,7 +2689,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jacobian(circuit)(a)
+        jac = jacobian(circuit)(a)
 
         if isinstance(shots, int):
             assert isinstance(jac, tuple)
