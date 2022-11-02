@@ -52,6 +52,12 @@ Users can specify the control wires as well as the values to control the operati
 
   ```
 
+<h4>Pauli Module</h4>
+
+* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
+  module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
+  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
+
 * The `IntegerComparator` arithmetic operation is now available.
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
@@ -409,6 +415,10 @@ Users can specify the control wires as well as the values to control the operati
   'torch'
   ```
 
+* `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
+  instead. There is no longer a static method for this.
+  [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
+
 <h3>Deprecations</h3>
 
 * `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
@@ -418,14 +428,16 @@ Users can specify the control wires as well as the values to control the operati
 * `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
-* `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
-  instead. There is no longer a static method for this.
-  [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
+* Deprecate `qml.transforms.qcut.remap_tape_wires`. Use `qml.map_wires` instead.
+  [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
 
 <h3>Documentation</h3>
 
 * The code block in the usage details of the UCCSD template is updated.
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
+
+* Added a "Deprecations" page to the developer documentation.
+  [(#3093)](https://github.com/PennyLaneAI/pennylane/pull/3093)
 
 * The example of the `FlipSign` template is updated.
   [(#3219)](https://github.com/PennyLaneAI/pennylane/pull/3219)
@@ -469,9 +481,6 @@ Users can specify the control wires as well as the values to control the operati
 * Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
-
-* Deprecate `qml.transforms.qcut.remap_tape_wires`. Use `qml.map_wires` instead.
-  [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
 
 <h3>Contributors</h3>
 
