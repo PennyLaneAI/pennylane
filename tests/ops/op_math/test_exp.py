@@ -307,9 +307,7 @@ class TestDecomposition:
 
         assert op.has_decomposition
         pr = op.decomposition()[0]
-        assert pr.data[0] == 3.21
-        assert pr.hyperparameters["pauli_word"] == base_string
-        assert pr.wires == base.wires
+        assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
 
 class TestMiscMethods:

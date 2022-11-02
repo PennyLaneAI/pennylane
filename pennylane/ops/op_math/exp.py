@@ -173,6 +173,17 @@ class Exp(SymbolicOp):
         return math.real(self.coeff) == 0 and is_pauli_word(self.base)
 
     def decomposition(self):
+        r"""Representation of the operator as a product of other operators. Decomposes into
+        :class:`~.PauliRot` if the coefficient is imaginary and the base is a Pauli Word.
+
+        .. math:: O = O_1 O_2 \dots O_n
+
+        A ``DecompositionUndefinedError`` is raised if the coefficient is not imaginary or the base
+        is not a Pauli Word.
+
+        Returns:
+            list[PauliRot]: decomposition of the operator
+        """
         if math.real(self.coeff) != 0 or not is_pauli_word(self.base):
             raise DecompositionUndefinedError
         new_coeff = math.real(2j * self.coeff)
