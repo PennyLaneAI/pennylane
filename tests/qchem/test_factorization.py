@@ -222,9 +222,9 @@ def test_basis_rotation_output(
         assert np.allclose(np.sort(coeff), np.sort(coeffs_ref[i]))
 
     for j, op in enumerate(ops):
-        ops_ref_str = [qml.grouping.pauli_word_to_string(t) for t in ops_ref[i]]
+        ops_ref_str = [qml.pauli.pauli_word_to_string(t) for t in ops_ref[i]]
         for o in op:
-            assert qml.grouping.pauli_word_to_string(o) in ops_ref_str
+            assert qml.pauli.pauli_word_to_string(o) in ops_ref_str
 
     for i, vec in enumerate(eigvecs):
         assert np.allclose(vec, eigvecs_ref[i])

@@ -23,8 +23,8 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.pauli.utils import _binary_matrix
 from pennylane.qchem.tapering import (
-    _binary_matrix,
     _kernel,
     _observable_mult,
     _reduced_row_echelon,
@@ -33,79 +33,6 @@ from pennylane.qchem.tapering import (
     taper_hf,
     taper_operation,
 )
-
-
-@pytest.mark.parametrize(
-    ("terms", "num_qubits", "result"),
-    [
-        (
-            [
-                qml.Identity(wires=[0]),
-                qml.PauliZ(wires=[0]),
-                qml.PauliZ(wires=[1]),
-                qml.PauliZ(wires=[2]),
-                qml.PauliZ(wires=[3]),
-                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                qml.PauliY(wires=[0])
-                @ qml.PauliX(wires=[1])
-                @ qml.PauliX(wires=[2])
-                @ qml.PauliY(wires=[3]),
-                qml.PauliY(wires=[0])
-                @ qml.PauliY(wires=[1])
-                @ qml.PauliX(wires=[2])
-                @ qml.PauliX(wires=[3]),
-                qml.PauliX(wires=[0])
-                @ qml.PauliX(wires=[1])
-                @ qml.PauliY(wires=[2])
-                @ qml.PauliY(wires=[3]),
-                qml.PauliX(wires=[0])
-                @ qml.PauliY(wires=[1])
-                @ qml.PauliY(wires=[2])
-                @ qml.PauliX(wires=[3]),
-                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-            ],
-            4,
-            np.array(
-                [
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 1, 0, 0, 0, 0],
-                    [1, 1, 0, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 1, 1, 1, 1, 1],
-                    [1, 1, 0, 0, 1, 1, 1, 1],
-                    [0, 0, 1, 1, 1, 1, 1, 1],
-                    [0, 1, 1, 0, 1, 1, 1, 1],
-                    [1, 0, 1, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 1, 0, 0, 0, 0],
-                    [0, 1, 1, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 1, 0, 0, 0, 0],
-                    [0, 0, 1, 1, 0, 0, 0, 0],
-                ]
-            ),
-        ),
-        (
-            [
-                qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
-                qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
-                qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
-            ],
-            4,
-            np.array(
-                [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
-            ),
-        ),
-    ],
-)
-def test_binary_matrix(terms, num_qubits, result):
-    r"""Test that _binary_matrix returns the correct result."""
-    binary_matrix = _binary_matrix(terms, num_qubits)
-    assert (binary_matrix == result).all()
 
 
 @pytest.mark.parametrize(

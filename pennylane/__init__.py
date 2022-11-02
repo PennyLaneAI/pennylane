@@ -31,8 +31,9 @@ import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
-import pennylane.resource
 import pennylane.templates
+from pennylane import pauli
+import pennylane.resource
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
 from pennylane._device import Device, DeviceError
@@ -102,7 +103,6 @@ from pennylane.shadows import ClassicalShadow
 
 # collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
-import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order

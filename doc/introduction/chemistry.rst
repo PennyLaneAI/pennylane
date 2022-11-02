@@ -201,7 +201,6 @@ Differentiable observables
     ~pennylane.qchem.jordan_wigner
     ~pennylane.qchem.molecular_hamiltonian
     ~pennylane.qchem.qubit_observable
-    ~pennylane.qchem.simplify
 
 :html:`</div>`
 

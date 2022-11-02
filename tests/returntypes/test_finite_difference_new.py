@@ -17,16 +17,11 @@ Tests for the gradients.finite_difference module.
 import numpy
 import pytest
 
-from pennylane import numpy as np
-
 import pennylane as qml
-from pennylane.gradients import (
-    finite_diff,
-    finite_diff_coeffs,
-    generate_shifted_tapes,
-)
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
-from pennylane.operation import Observable, AnyWires
+from pennylane.gradients import finite_diff, finite_diff_coeffs, generate_shifted_tapes
+from pennylane.operation import AnyWires, Observable
 
 
 class TestCoeffs:
@@ -322,15 +317,15 @@ class TestFiniteDiff:
         assert len(result[0]) == 3
 
         assert isinstance(result[0][0], numpy.ndarray)
-        assert result[0][0].shape == (1,)
+        assert result[0][0].shape == ()
         assert np.allclose(result[0][0], 0)
 
         assert isinstance(result[0][1], numpy.ndarray)
-        assert result[0][1].shape == (1,)
+        assert result[0][1].shape == ()
         assert np.allclose(result[0][1], 0)
 
         assert isinstance(result[0][2], numpy.ndarray)
-        assert result[0][2].shape == (1,)
+        assert result[0][2].shape == ()
         assert np.allclose(result[0][2], 0)
 
         # Second elem

@@ -151,22 +151,27 @@ def hamiltonian_expand(tape, group=True):
         # observables in that grouping
         tapes = []
         for obs in obs_groupings:
-
-            with tape.__class__() as new_tape:
-                for op in tape.operations:
-                    op.queue()
-
-                for o in obs:
-                    qml.expval(o)
+            new_tape = tape.__class__(tape._ops, (qml.expval(o) for o in obs), tape._prep)
 
             new_tape = new_tape.expand(stop_at=lambda obj: True)
             tapes.append(new_tape)
 
         def processing_fn(res_groupings):
-            dot_products = [
-                qml.math.dot(r_group, c_group)
-                for c_group, r_group in zip(coeff_groupings, res_groupings)
-            ]
+            if qml.active_return():
+                dot_products = [
+                    qml.math.dot(
+                        qml.math.reshape(
+                            qml.math.convert_like(r_group, c_group), qml.math.shape(c_group)
+                        ),
+                        c_group,
+                    )
+                    for c_group, r_group in zip(coeff_groupings, res_groupings)
+                ]
+            else:
+                dot_products = [
+                    qml.math.dot(r_group, c_group)
+                    for c_group, r_group in zip(coeff_groupings, res_groupings)
+                ]
             return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
         return tapes, processing_fn
@@ -176,11 +181,8 @@ def hamiltonian_expand(tape, group=True):
     # make one tape per observable
     tapes = []
     for o in hamiltonian.ops:
-        with tape.__class__() as new_tape:
-            for op in tape.operations:
-                op.queue()
-            qml.expval(o)
-
+        # pylint: disable=protected-access
+        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep)
         tapes.append(new_tape)
 
     # pylint: disable=function-redefined

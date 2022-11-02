@@ -53,7 +53,7 @@ class TestQFT:
 
         assert np.allclose(reconstructed_unitary, expected_unitary)
 
-    @pytest.mark.parametrize("n_qubits", range(2, 6))
+    @pytest.mark.parametrize("n_qubits", range(2, 10))
     def test_QFT_adjoint_identity(self, n_qubits, tol):
         """Test if using the qml.adjoint transform the resulting operation is
         the inverse of QFT."""

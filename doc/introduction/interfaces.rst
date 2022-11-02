@@ -139,6 +139,7 @@ Some of these are specific to quantum optimization, such as the :class:`~.QNGOpt
 
     ~pennylane.AdagradOptimizer
     ~pennylane.AdamOptimizer
+    ~pennylane.AdaptiveOptimizer
     ~pennylane.GradientDescentOptimizer
     ~pennylane.LieAlgebraOptimizer
     ~pennylane.MomentumOptimizer

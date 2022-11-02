@@ -147,9 +147,9 @@ class ControlledQutritUnitary(QutritUnitary):
     available for ``ControlledQutritUnitary``:
 
     * ``control_wires``: wires that act as control for the operation
-    * ``U``: unitary applied to the target wires
+    * ``U``: unitary applied to the target wires. Accessible via ``op.parameters[0]``
     * ``control_values``: a string of trits representing the state of the control
-                qutrits to control on (default is the all 2s state)
+      qutrits to control on (default is the all 2s state)
 
     **Details:**
 
@@ -178,7 +178,7 @@ class ControlledQutritUnitary(QutritUnitary):
     :math:`\vert 0\rangle` or :math:`\vert 1\rangle` state, or a mix of the three.
 
     The state on which to control can be changed by passing a string of trits to
-    `control_values`. For example, if we want to apply a single-qutrit unitary to
+    ``control_values``. For example, if we want to apply a single-qutrit unitary to
     wire ``3`` conditioned on three wires where the first is in state ``0``, the
     second is in state ``1``, and the third in state ``2``, we can write:
 
@@ -223,10 +223,6 @@ class ControlledQutritUnitary(QutritUnitary):
 
         total_wires = control_wires + wires
         super().__init__(*params, wires=total_wires, do_queue=do_queue)
-
-    @staticmethod
-    def compute_decomposition(*params, wires=None, **hyperparameters):
-        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_matrix(
@@ -306,6 +302,12 @@ class ControlledQutritUnitary(QutritUnitary):
     @property
     def control_wires(self):
         return self.hyperparameters["control_wires"]
+
+    @property
+    def control_values(self):
+        """str. Specifies whether or not to control on zero "0", one "1", or two "2" for each
+        control wire."""
+        return self.hyperparameters["control_values"]
 
     def pow(self, z):
         if isinstance(z, int):
