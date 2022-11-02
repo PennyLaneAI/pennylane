@@ -538,7 +538,7 @@ class TestQubitIntegration:
 
             with pytest.raises(
                 InterfaceUnsupportedError,
-                match="The JAX-Jit interface doesn't support differentiating QNodes",
+                match="The JAX-JIT interface doesn't support differentiating QNodes",
             ):
                 jax.jacobian(circuit)(x, y)
 

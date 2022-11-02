@@ -165,11 +165,11 @@ def _execute(
                     and len(t.observables) > 1
                 )
 
-            if multi_probs:
-                raise InterfaceUnsupportedError(
-                    "The JAX-Jit interface doesn't support differentiating QNodes that "
-                    "return multiple probabilities."
-                )
+                if multi_probs:
+                    raise InterfaceUnsupportedError(
+                        "The JAX-JIT interface doesn't support differentiating QNodes that "
+                        "return multiple probabilities."
+                    )
 
             def non_diff_wrapper(args):
                 """Compute the VJP in a non-differentiable manner."""
