@@ -109,7 +109,7 @@ class TRX(Operation):
         basis state is not affected by the operator.
 
         Returns:
-            tuple[int]: subspace on which operator acts
+            tuple[int]: subspace on which the operator acts
         """
         return tuple(sorted(self._subspace))
 
