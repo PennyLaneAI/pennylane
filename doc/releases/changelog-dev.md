@@ -4,8 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* Added support to the JAX JIT for computing the gradient of QNodes returning a single vector of probabilities or
-  multiple expectation values.
+* Added support to the JAX JIT interface for computing the gradient of QNodes returning a single vector of probabilities
+  or multiple expectation values.
   [(#3244)](https://github.com/PennyLaneAI/pennylane/pull/3244)
 
   ```python
