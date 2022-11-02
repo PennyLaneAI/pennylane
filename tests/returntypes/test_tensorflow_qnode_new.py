@@ -666,7 +666,8 @@ class TestQubitIntegration:
 
         with tf.GradientTape() as tape:
             res = circuit(x, y)
-            res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+            if diff_method != "backprop":
+                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
 
         expected = np.array(
             [
@@ -871,7 +872,8 @@ class TestQubitIntegration:
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(x)
-                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+                if diff_method != "backprop":
+                    res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
             g = tape2.jacobian(res, x, experimental_use_pfor=False)
 
         hess = tape1.jacobian(g, x)
@@ -1784,7 +1786,8 @@ class TestReturn:
 
         with tf.GradientTape() as tape:
             res = circuit(a)
-            res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+            if diff_method != "backprop":
+                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
 
         jac = tape.jacobian(res, a)
 
@@ -1810,7 +1813,8 @@ class TestReturn:
 
         with tf.GradientTape() as tape:
             res = circuit(a, b)
-            res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+            if diff_method != "backprop":
+                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
 
         jac = tape.jacobian(res, (a, b))
 
@@ -1841,7 +1845,8 @@ class TestReturn:
 
         with tf.GradientTape() as tape:
             res = circuit(a)
-            res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+            if diff_method != "backprop":
+                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
 
         jac = tape.jacobian(res, a)
 
@@ -1993,7 +1998,8 @@ class TestReturn:
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(par_0, par_1)
-                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+                if diff_method != "backprop":
+                    res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
 
             grad = tape2.jacobian(res, (par_0, par_1), experimental_use_pfor=False)
             grad = tf.concat(grad, 0)
@@ -2009,7 +2015,7 @@ class TestReturn:
         assert isinstance(hess[1], tf.Tensor)
         assert hess[1].shape == (10,)
 
-    def test_hessian_expval_probs_multiple_param_array(self, dev_name, diff_method, mode):
+    def test_hessian_probs_expval_multiple_param_array(self, dev_name, diff_method, mode):
         """The hessian of multiple measurements with a multiple param array return a single array."""
 
         if diff_method == "adjoint":
@@ -2029,7 +2035,8 @@ class TestReturn:
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(params)
-                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+                if diff_method != "backprop":
+                    res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
 
             grad = tape2.jacobian(res, params, experimental_use_pfor=False)
 
@@ -2058,7 +2065,8 @@ class TestReturn:
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(par_0, par_1)
-                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+                if diff_method != "backprop":
+                    res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
 
             grad = tape2.jacobian(res, (par_0, par_1), experimental_use_pfor=False)
             grad = tf.concat(grad, 0)
@@ -2093,7 +2101,8 @@ class TestReturn:
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(params)
-                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+                if diff_method != "backprop":
+                    res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
 
             grad = tape2.jacobian(res, params, experimental_use_pfor=False)
 
