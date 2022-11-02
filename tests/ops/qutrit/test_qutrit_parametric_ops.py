@@ -315,6 +315,7 @@ class TestParametricPow:
         matrix raised to the power.  This test only can work for integer powers."""
         op_mat = qml.matrix(op)
         # Can't use qml.matrix(op.pow)(n) because qml.matrix is hardcoded to work with qubits
+        # TODO: update this test once qml.matrix is updated
         pow_mat = op.pow(n)[0].matrix()
 
         assert qml.math.allclose(qml.math.linalg.matrix_power(op_mat, n), pow_mat)
