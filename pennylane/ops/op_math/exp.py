@@ -20,9 +20,11 @@ from scipy.sparse.linalg import expm as sparse_expm
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import (
+    DecompositionUndefinedError,
     expand_matrix,
     OperatorPropertyUndefined,
 )
+from pennylane.pauli import is_pauli_word, pauli_word_to_string
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
@@ -164,6 +166,18 @@ class Exp(SymbolicOp):
         if self.base.is_hermitian and math.real(self.coeff) == 0:
             return "_ops"
         return None
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        return math.real(self.coeff) == 0 and is_pauli_word(self.base)
+
+    def decomposition(self):
+        if math.real(self.coeff) != 0 or not is_pauli_word(self.base):
+            raise DecompositionUndefinedError
+        new_coeff = math.real(2j * self.coeff)
+        string_base = pauli_word_to_string(self.base)
+        return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
 
     def matrix(self, wire_order=None):
 
