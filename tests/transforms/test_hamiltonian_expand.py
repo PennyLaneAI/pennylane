@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 import pennylane.tape
 from pennylane import numpy as pnp
@@ -161,13 +162,15 @@ class TestHamiltonianExpand:
         tapes, fn = qml.transforms.hamiltonian_expand(qs, group=True)
         assert len(tapes) == 2
 
-    def test_hamiltonian_error(self):
+    def test_non_hamiltonian_tape(self):
 
         with pennylane.tape.QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match=r"Passed tape must end in"):
-            tapes, fn = qml.transforms.hamiltonian_expand(tape)
+        tapes, fn = qml.transforms.hamiltonian_expand(tape)
+
+        assert tapes[0] is tape
+        assert fn([1]) == 1
 
     @pytest.mark.autograd
     def test_hamiltonian_dif_autograd(self, tol):
