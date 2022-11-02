@@ -16,6 +16,7 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
+
 import jax
 import jax.numpy as jnp
 
@@ -103,7 +104,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
     if gradient_fn is None:
-        return _execute_with_fwd(
+        return _execute_fwd(
             parameters,
             tapes=tapes,
             device=device,
@@ -303,7 +304,7 @@ def _raise_vector_valued_fwd(tapes):
         )
 
 
-def _execute_with_fwd(
+def _execute_fwd(
     params,
     tapes=None,
     device=None,
@@ -373,3 +374,225 @@ def _execute_with_fwd(
         res = res[0]
 
     return res
+
+
+def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+    """Execute a batch of tapes with JAX parameters on a device.
+
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
+        execute_fn (callable): The execution function used to execute the tapes
+            during the forward pass. This function must return a tuple ``(results, jacobians)``.
+            If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
+            compute the gradients during the backwards pass.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
+        gradient_fn (callable): the gradient function to use to compute quantum gradients
+        _n (int): a positive integer used to track nesting of derivatives, for example
+            if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum order of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
+
+    Returns:
+        list[list[float]]: A nested list of tape results. Each element in
+        the returned list corresponds in order to the provided tapes.
+    """
+    # Set the trainable parameters
+    for tape in tapes:
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+
+    parameters = tuple(list(t.get_parameters()) for t in tapes)
+
+    if gradient_fn is None:
+        # PennyLane forward execution
+        return _execute_fwd_new(
+            parameters,
+            tapes,
+            execute_fn,
+            gradient_kwargs,
+            _n=_n,
+        )
+
+    # PennyLane backward execution
+    return _execute_bwd_new(
+        parameters,
+        tapes,
+        device,
+        execute_fn,
+        gradient_fn,
+        gradient_kwargs,
+        _n=_n,
+        max_diff=max_diff,
+    )
+
+
+def _execute_bwd_new(
+    params,
+    tapes,
+    device,
+    execute_fn,
+    gradient_fn,
+    gradient_kwargs,
+    _n=1,
+    max_diff=2,
+):
+    """The main interface execution function where jacobians of the execute
+    function are computed by the registered backward function."""
+
+    # pylint: disable=unused-variable
+    # Copy a given tape with operations and set parameters
+
+    @jax.custom_jvp
+    def execute_wrapper(params):
+        new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
+
+        with qml.tape.Unwrap(*new_tapes):
+            res, _ = execute_fn(new_tapes, **gradient_kwargs)
+
+        res = _to_jax(res)
+
+        return res
+
+    @execute_wrapper.defjvp
+    def execute_wrapper_jvp(primals, tangents):
+        """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
+        new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, primals[0])]
+
+        if isinstance(gradient_fn, qml.gradients.gradient_transform):
+            if _n == max_diff:
+
+                with qml.tape.Unwrap(*new_tapes):
+                    jvp_tapes, processing_fn = qml.gradients.batch_jvp(
+                        new_tapes,
+                        tangents[0],
+                        gradient_fn,
+                        reduction="append",
+                        gradient_kwargs=gradient_kwargs,
+                    )
+                    jvps = processing_fn(execute_fn(jvp_tapes)[0])
+
+            else:
+                jvp_tapes, processing_fn = qml.gradients.batch_jvp(
+                    new_tapes,
+                    tangents[0],
+                    gradient_fn,
+                    reduction="append",
+                    gradient_kwargs=gradient_kwargs,
+                )
+
+                jvps = processing_fn(
+                    execute_new(
+                        jvp_tapes,
+                        device,
+                        execute_fn,
+                        gradient_fn,
+                        gradient_kwargs,
+                        _n=_n + 1,
+                        max_diff=max_diff,
+                    )
+                )
+            res = execute_wrapper(primals[0])
+        else:
+            # Execution: execute the function first
+            res = execute_wrapper(primals[0])
+            # Backward: Gradient function is a device method.
+            with qml.tape.Unwrap(*new_tapes):
+                jacs = gradient_fn(new_tapes, **gradient_kwargs)
+            multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
+            jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
+
+        return res, jvps
+
+    return execute_wrapper(params)
+
+
+def _execute_fwd_new(
+    params,
+    tapes,
+    execute_fn,
+    gradient_kwargs,
+    _n=1,
+):
+    """The auxiliary execute function for cases when the user requested
+    jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
+    provided. This function does not allow multiple derivatives."""
+
+    # pylint: disable=unused-variable
+    @jax.custom_jvp
+    def execute_wrapper(params):
+        new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
+
+        with qml.tape.Unwrap(*new_tapes):
+            res, jacs = execute_fn(new_tapes, **gradient_kwargs)
+
+        print(res, jacs)
+        res = _to_jax(res)
+
+        return res, jacs
+
+    @execute_wrapper.defjvp
+    def execute_wrapper_jvp(primal, tangents):
+        """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
+        res, jacs = execute_wrapper(primal[0])
+        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
+
+        jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
+        return res, jvps
+
+    res = execute_wrapper(params)
+
+    tracing = []
+    for i, tape in enumerate(tapes):
+        if len(tape.measurements) == 1:
+            tracing.append(isinstance(res[i], jax.interpreters.ad.JVPTracer))
+        else:
+            tracing.extend([isinstance(r, jax.interpreters.ad.JVPTracer) for r in res[i]])
+
+    tracing = any(tracing)
+
+    # When there are no tracers (not differentiating), we have the result of
+    # the forward pass and the jacobian, but only need the result of the
+    # forward pass
+    if len(res) == 2 and not tracing:
+        res = res[0]
+
+    return res
+
+
+def _compute_jvps(jacs, tangents, multi_measurements):
+    """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
+    jvps = []
+    for i, multi in enumerate(multi_measurements):
+        compute_func = (
+            qml.gradients.compute_jvp_multi if multi else qml.gradients.compute_jvp_single
+        )
+        jvps.append(compute_func(tangents[i], jacs[i]))
+    return jvps
+
+
+def _copy_tape(t, a):
+    tc = t.copy(copy_operations=True)
+    tc.set_parameters(a)
+    return tc
+
+
+def _to_jax(res):
+    res_ = []
+    for r in res:
+        if not isinstance(r, tuple):
+            res_.append(jnp.array(r))
+        else:
+            sub_r = []
+            for r_i in r:
+                if isinstance(r_i, dict):
+                    sub_r.append(r_i)
+                else:
+                    sub_r.append(jnp.array(r_i))
+            res_.append(tuple(sub_r))
+    return res_
