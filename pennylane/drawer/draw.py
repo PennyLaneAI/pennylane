@@ -391,7 +391,8 @@ def draw_mpl(
 
         You can also control the appearance with matplotlib's provided tools, see the
         `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-        For example, we can customize ``plt.rcParams``:
+        For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
+        ``plt.rcParams``, qml.draw_mpl must be run with style=None:
 
         .. code-block:: python
 
@@ -405,7 +406,7 @@ def draw_mpl(
             plt.rcParams['lines.linewidth'] = 5
             plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-            fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+            fig, ax = qml.draw_mpl(circuit, style=None)(1.2345,1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/rcparams.png

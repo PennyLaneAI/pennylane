@@ -228,7 +228,8 @@ def tape_mpl(
 
     You can also control the appearance with matplotlib's provided tools, see the
     `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-    For example, we can customize ``plt.rcParams``:
+    For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
+    ``plt.rcParams``, ``qml.draw_mpl`` must be run with style=None::
 
     .. code-block:: python
 
@@ -242,7 +243,7 @@ def tape_mpl(
         plt.rcParams['lines.linewidth'] = 5
         plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-        fig, ax = tape_mpl(tape)
+        fig, ax = tape_mpl(tape, style=None)
 
     .. figure:: ../../_static/tape_mpl/rcparams.png
             :align: center
