@@ -376,11 +376,14 @@ def _execute_fwd(
     return res
 
 
-def execute_new(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
             during the forward pass. This function must return a tuple ``(results, jacobians)``.
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
@@ -410,19 +413,20 @@ def execute_new(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=
         # PennyLane forward execution
         return _execute_fwd_new(
             parameters,
-            tapes=tapes,
-            execute_fn=execute_fn,
-            gradient_kwargs=gradient_kwargs,
+            tapes,
+            execute_fn,
+            gradient_kwargs,
             _n=_n,
         )
 
     # PennyLane backward execution
     return _execute_bwd_new(
         parameters,
-        tapes=tapes,
-        execute_fn=execute_fn,
-        gradient_fn=gradient_fn,
-        gradient_kwargs=gradient_kwargs,
+        tapes,
+        device,
+        execute_fn,
+        gradient_fn,
+        gradient_kwargs,
         _n=_n,
         max_diff=max_diff,
     )
@@ -431,6 +435,7 @@ def execute_new(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=
 def _execute_bwd_new(
     params,
     tapes,
+    device,
     execute_fn,
     gradient_fn,
     gradient_kwargs,
@@ -484,6 +489,7 @@ def _execute_bwd_new(
                 jvps = processing_fn(
                     execute_new(
                         jvp_tapes,
+                        device,
                         execute_fn,
                         gradient_fn,
                         gradient_kwargs,
@@ -547,7 +553,7 @@ def _execute_fwd_new(
             tracing.append(isinstance(res[i], jax.interpreters.ad.JVPTracer))
         else:
             tracing.extend([isinstance(r, jax.interpreters.ad.JVPTracer) for r in res[i]])
-    print(tracing)
+
     tracing = any(tracing)
 
     # When there are no tracers (not differentiating), we have the result of

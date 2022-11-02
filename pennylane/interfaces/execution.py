@@ -439,9 +439,6 @@ def _execute_new(
         if mapped_interface == "autograd":
             from .autograd import execute as _execute
 
-            res = _execute(
-                tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-            )
         elif mapped_interface == "tf":
             # TODO: remove pragmas when TF is supported
             import tensorflow as tf  # pragma: no cover
@@ -452,20 +449,16 @@ def _execute_new(
             else:
                 from .tensorflow import execute as _execute  # pragma: no cover
 
-            res = _execute(
-                tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-            )
         elif mapped_interface == "torch":
             # TODO: remove pragmas when Torch is supported
             from .torch import execute as _execute  # pragma: no cover
 
-            res = _execute(
-                tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-            )
         elif mapped_interface == "jax":
             _execute = _get_jax_execute_fn(interface, tapes)
 
-            res = _execute(tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
+        res = _execute(
+            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+        )
 
     except ImportError as e:
         raise qml.QuantumFunctionError(
