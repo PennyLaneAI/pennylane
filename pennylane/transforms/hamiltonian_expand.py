@@ -257,11 +257,11 @@ def sum_expand(tape: QuantumScript, group=True):
         processed_results = []
         # process results of all tapes except the last one
         for idx, n_tapes in enumerate(num_tapes):
-            processed_results += [inner_processing_fn(res[idx : idx + n_tapes])]
+            processed_results.extend([inner_processing_fn(res[idx : idx + n_tapes])])
         # add results of tape containing all the non-sum observables
         if non_expanded_tape:
             non_expanded_res = [res[-1]] if len(non_expanded_measurement_idxs) == 1 else res[-1]
-            processed_results += non_expanded_res
+            processed_results.extend(non_expanded_res)
         # sort results
         sorted_results = sorted(zip(processed_results, measurement_idxs), key=lambda x: x[1])
         if len(sorted_results) > 1:
