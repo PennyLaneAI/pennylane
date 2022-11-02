@@ -82,6 +82,7 @@ def _adjoint_jacobian_expansion(
     for i, tape in enumerate(tapes):
         if any(not stop_at(op) for op in tape.operations):
             tapes[i] = tape.expand(stop_at=stop_at, depth=max_expansion)
+
     return tapes
 
 
@@ -244,6 +245,7 @@ def _execute_new(
 ):
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
+
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
         device (.Device): Device to use to execute the batch of tapes.
@@ -281,26 +283,34 @@ def _execute_new(
             (within :meth:`Device.batch_transform`) to each tape to be executed. The default behaviour
             of the device batch transform is to expand out Hamiltonian measurements into
             constituent terms if not supported on the device.
+
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
+
     **Example**
+
     Consider the following cost function:
+
     .. code-block:: python
+
         dev = qml.device("lightning.qubit", wires=2)
+
         def cost_fn(params, x):
             with qml.tape.QuantumTape() as tape1:
                 qml.RX(params[0], wires=0)
                 qml.RY(params[1], wires=0)
                 qml.expval(qml.PauliZ(0))
+
             with qml.tape.QuantumTape() as tape2:
                 qml.RX(params[2], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=0)
-            tapes = [tape1, tape2]
-            # execute both tapes in a batch on the given device
 
+            tapes = [tape1, tape2]
+
+            # execute both tapes in a batch on the given device
             res = qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift, max_diff=2)
 
             return res[0] + res[1][0] - res[1][1]
@@ -309,7 +319,9 @@ def _execute_new(
     constructed; one returning an expectation value, the other probabilities.
     We then batch execute the two tapes, and reduce the results to obtain
     a scalar.
+
     Let's execute this cost function while tracking the gradient:
+
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> x = np.array([0.5], requires_grad=True)
     >>> cost_fn(params, x)
@@ -317,10 +329,13 @@ def _execute_new(
 
     Since the ``execute`` function is differentiable, we can
     also compute the gradient:
+
     >>> qml.grad(cost_fn)(params, x)
     (array([-0.0978434 , -0.19767681, -0.29552021]), array([5.37764278e-17]))
+
     Finally, we can also compute any nth-order derivative. Let's compute the Jacobian
     of the gradient (that is, the Hessian):
+
     >>> x.requires_grad = False
     >>> qml.jacobian(qml.grad(cost_fn))(params, x)
     array([[-0.97517033,  0.01983384,  0.        ],
@@ -400,10 +415,6 @@ def _execute_new(
             # disable caching on the forward pass
             execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
 
-            # For adjoint backward pass the state needs to be reset
-            if gradient_kwargs["method"] == "adjoint_jacobian":
-                gradient_kwargs["use_device_state"] = False
-
             # replace the backward gradient computation
             gradient_fn = qml.interfaces.cache_execute(
                 set_shots(device, override_shots)(device.gradients),
@@ -428,9 +439,6 @@ def _execute_new(
         if mapped_interface == "autograd":
             from .autograd import execute as _execute
 
-            res = _execute(
-                tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-            )
         elif mapped_interface == "tf":
             # TODO: remove pragmas when TF is supported
             import tensorflow as tf  # pragma: no cover
@@ -438,28 +446,19 @@ def _execute_new(
             if not tf.executing_eagerly() or "autograph" in interface:  # pragma: no cover
                 from .tensorflow_autograph import execute as _execute  # pragma: no cover
 
-                res = _execute(
-                    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-                )  # pragma: no cover
             else:
                 from .tensorflow import execute as _execute  # pragma: no cover
-
-                res = _execute(
-                    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-                )  # pragma: no cover
 
         elif mapped_interface == "torch":
             # TODO: remove pragmas when Torch is supported
             from .torch import execute as _execute  # pragma: no cover
 
-            res = _execute(
-                tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-            )  # pragma: no cover
         elif mapped_interface == "jax":
-            _execute = _get_jax_execute_fn_new(interface, tapes)
-            res = _execute(
-                tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-            )
+            _execute = _get_jax_execute_fn(interface, tapes)
+
+        res = _execute(
+            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+        )
 
     except ImportError as e:
         raise qml.QuantumFunctionError(
@@ -735,26 +734,8 @@ def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
     if interface == "jax-jit":
         from .jax_jit import execute as _execute
     else:
-        from .jax import execute as _execute
-    return _execute
-
-
-def _get_jax_execute_fn_new(interface: str, tapes: Sequence[QuantumTape]):
-    """Auxiliary function to determine the execute function to use with the JAX
-    interface."""
-
-    # The most general JAX interface was specified, automatically determine if
-    # support for jitting is needed by swapping to "jax-jit" or "jax-python"
-
-    # TODO: Add Jit interface
-    # if interface == "jax":
-    #     from .jax import get_jax_interface_name
-
-    #     interface = get_jax_interface_name(tapes)
-
-    # if interface == "jax-jit":
-    #    from .jax_jit import execute_new as _execute
-    # else:
-    from .jax import execute_new as _execute
-
+        if qml.active_return():
+            from .jax import execute_new as _execute
+        else:
+            from .jax import execute as _execute
     return _execute
