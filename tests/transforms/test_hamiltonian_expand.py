@@ -163,6 +163,8 @@ class TestHamiltonianExpand:
         assert len(tapes) == 2
 
     def test_non_hamiltonian_tape(self):
+        """Test that the ``hamiltonian_expand`` function returns the input tape if it does not
+        contain a single measurement with the expectation value of a Hamiltonian."""
 
         with pennylane.tape.QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
