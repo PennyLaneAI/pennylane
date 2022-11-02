@@ -235,6 +235,7 @@ Users can specify the control wires as well as the values to control the operati
 
 * The `Exp` class decomposes into a `PauliRot` class if the coefficient is imaginary and 
   the base operator is a Pauli Word.
+  [(#3249)](https://github.com/PennyLaneAI/pennylane/pull/3249)
 
 * Added the `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track
   if computational basis samples are being generated.
