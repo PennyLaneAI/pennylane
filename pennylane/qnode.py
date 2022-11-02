@@ -592,7 +592,7 @@ class QNode:
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
 
-    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches
+    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
         override_shots = False
         old_interface = self.interface
         if old_interface == "auto":

@@ -20,6 +20,39 @@ import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 
+def _process_jacs_new(jac, qhess):
+    """
+    Combine the classical and quantum jacobians
+    """
+    # Check for a Jacobian equal to the identity matrix.
+    shape = qml.math.shape(jac)
+    is_square = len(shape) == 2 and shape[0] == shape[1]
+    if is_square and qml.math.allclose(jac, qml.numpy.eye(shape[0])):
+        return qhess if len(qhess) > 1 else qhess[0]
+
+    hess = []
+    for qh in qhess:
+        if len(qml.math.shape(qh)) <= 1:
+            # single argument case
+            qh = qml.math.expand_dims(qh, [0, 1])
+        else:
+            qh = qml.math.stack([qml.math.stack(row) for row in qh])
+
+        jac_ndim = len(qml.math.shape(jac))
+
+        qh = qml.math.einsum(
+            f"ab...,a{ABC[2:2 + jac_ndim - 1]},"
+            f"b{ABC[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]}"
+            f"->{ABC[2:2 + 2 * jac_ndim - 2]}...",
+            qh,
+            jac,
+            jac,
+        )
+        hess.append(qh)
+
+    return tuple(hess) if len(hess) > 1 else hess[0]
+
+
 class hessian_transform(qml.batch_transform):
     """Decorator for defining quantum Hessian transforms.
 
@@ -149,33 +182,7 @@ class hessian_transform(qml.batch_transform):
             for jac in cjac:
                 if jac is not None:
                     if qml.active_return():
-                        # Check for a Jacobian equal to the identity matrix.
-                        shape = qml.math.shape(jac)
-                        is_square = len(shape) == 2 and shape[0] == shape[1]
-                        if is_square and qml.math.allclose(jac, qml.numpy.eye(shape[0])):
-                            hessians.append(qhess if len(qhess) > 1 else qhess[0])
-
-                        hess = []
-                        for qh in qhess:
-                            if len(qml.math.shape(qh)) <= 1:
-                                # single argument case
-                                qh = qml.math.expand_dims(qh, [0, 1])
-                            else:
-                                qh = qml.math.stack([qml.math.stack(row) for row in qh])
-
-                            jac_ndim = len(qml.math.shape(jac))
-
-                            qh = qml.math.einsum(
-                                f"ab...,a{ABC[2:2 + jac_ndim - 1]},",
-                                f"b{ABC[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]}"
-                                f"->{ABC[2:2 + 2 * jac_ndim - 2]}...",
-                                qh,
-                                jac,
-                                jac,
-                            )
-                            hess.append(qh)
-
-                        hess = tuple(hess) if len(hess) > 1 else hess[0]
+                        hess = _process_jacs_new(jac, qhess)
                     else:
                         # Check for a Jacobian equal to the identity matrix.
                         shape = qml.math.shape(jac)
