@@ -209,10 +209,9 @@ def sum_expand(tape: QuantumScript, group=True):
         tape executions to compute the expectation value.
     """
     non_expanded_measurements = []
-    non_expanded_measurement_idx = []
+    non_expanded_measurement_idxs = []
     expanded_tapes = []
-    processing_fns = []
-    measurement_idx = []
+    expanded_measurement_idxs = []
     num_tapes = []
     for idx, m in enumerate(tape.measurements):
         if isinstance(m.obs, Sum) and m.return_type is Expectation:
@@ -226,10 +225,6 @@ def sum_expand(tape: QuantumScript, group=True):
                 for obs in obs_groupings:
                     new_tape = QuantumScript(tape._ops, (qml.expval(o) for o in obs), tape._prep)
                     tapes.append(new_tape)
-
-                def processing_fn(res_groupings):
-                    summed_groups = [qml.math.sum(c_group) for c_group in res_groupings]
-                    return qml.math.sum(qml.math.stack(summed_groups), axis=0)
 
             else:
                 # make one tape per summand
@@ -245,22 +240,13 @@ def sum_expand(tape: QuantumScript, group=True):
                         QuantumScript(ops=tape.operations, measurements=[qml.expval(summand)])
                     )
 
-                # pylint: disable=function-redefined
-                def processing_fn(res):
-                    dot_products = [
-                        qml.math.dot(qml.math.squeeze(r), c)
-                        for c, r in zip(coeffs, res)  # pylint: disable=cell-var-from-loop
-                    ]
-                    return qml.math.sum(qml.math.stack(dot_products), axis=0)
-
             expanded_tapes.extend(tapes)
-            processing_fns.append(processing_fn)
-            measurement_idx.append(idx)
+            expanded_measurement_idxs.append(idx)
             num_tapes.append(len(tapes))
 
         else:
             non_expanded_measurements.append(m)
-            non_expanded_measurement_idx.append(idx)
+            non_expanded_measurement_idxs.append(idx)
 
     non_expanded_tape = (
         [QuantumScript(ops=tape._ops, measurements=non_expanded_measurements, prep=tape._prep)]
@@ -268,19 +254,30 @@ def sum_expand(tape: QuantumScript, group=True):
         else []
     )
     tapes = expanded_tapes + non_expanded_tape
-    measurement_idx += non_expanded_measurement_idx
+    measurement_idxs = expanded_measurement_idxs + non_expanded_measurement_idxs
+
+    def inner_processing_fn(res):
+        if group:
+            summed_groups = [qml.math.sum(c_group) for c_group in res]
+            return qml.math.sum(qml.math.stack(summed_groups), axis=0)
+        dot_products = [
+            qml.math.dot(qml.math.squeeze(r), c)
+            for c, r in zip(coeffs, res)  # pylint: disable=cell-var-from-loop
+        ]
+        return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
     # pylint: disable=function-redefined
-    def processing_fn(res):
+    def outer_processing_fn(res):
         processed_results = []
-        for idx, (pr_fn, n_tapes) in enumerate(zip(processing_fns, num_tapes)):
-            processed_results += [pr_fn(res[idx : idx + n_tapes])]
+        for idx, n_tapes in enumerate(num_tapes):
+            processed_results += [inner_processing_fn(res[idx : idx + n_tapes])]
         if non_expanded_tape:
-            non_expanded_res = [res[-1]] if len(non_expanded_measurement_idx) == 1 else res[-1]
+            non_expanded_res = [res[-1]] if len(non_expanded_measurement_idxs) == 1 else res[-1]
             processed_results += non_expanded_res
-        return tuple(processed_results[i] for i in measurement_idx)
+        sorted_results = sorted(zip(processed_results, measurement_idxs), key=lambda x: x[1])
+        return tuple(res[0] for res in sorted_results)
 
-    return tapes, processing_fn
+    return tapes, outer_processing_fn
 
 
 def _group_summands(sum: Sum):
