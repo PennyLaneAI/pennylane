@@ -26,7 +26,7 @@ The :func:`~pennylane.data.load` function returns a list with the desired data.
 [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
 
 When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as `attributes`).
-For example, we can download or load only the molecule and Hamiltonian of a dataset as follows:
+For example, we can download or load only the molecule and energy of a dataset as follows:
 
 >>> H2_partial = qml.data.load(data_name='qchem',molname='H2', basis='STO-3G', bondlength=1.0, attributes=['molecule','fci_energy'])[0]
 >>> H2_partial.molecule
@@ -82,16 +82,6 @@ dict_keys(['HF', 'LiH', ...])
 dict_keys(['STO-3G'])
 >>> print(available_data['qchem']['H2']['STO-3G'])
 ['2.35', '1.75', '0.6', '1.85', ...]
-
-Filtering Datasets
-------------------
-
-In the case that we only wish to download or load portions of a large dataset, we can specify the desired attributes.
-For example, we can download only the molecule and Hamiltonian of a dataset as follows:
-
->>> H2_hamiltonian = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0", attributes=["molecule", "hamiltonian"])[0]
->>> H2_hamiltonian.hamiltonian
-<Hamiltonian: terms=15, wires=[0, 1, 2, 3]>
 
 Creating Custom Datasets
 ------------------------
