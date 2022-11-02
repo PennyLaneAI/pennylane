@@ -24,8 +24,8 @@ Additionally, users can easily create, write to disk, and read custom datasets u
 .. autosummary::
    :toctree: api
 
-   qml.data.dataset
-   qml.data.data_manager
+   dataset
+   data_manager
 """
 
 from .dataset import Dataset
