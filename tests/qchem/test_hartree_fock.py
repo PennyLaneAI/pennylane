@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for for Hartree-Fock functions.
+Unit tests for Hartree-Fock functions.
 """
 import autograd
 import pytest
@@ -66,7 +66,7 @@ def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_t
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             0,
             "sto-3g",
-            # HF energy computed with pyscf using scf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
+            # HF energy computed with pyscf using scf.hf.SCF(mol_pyscf).kernel()
             np.array([-1.06599931664376]),
         ),
         (
@@ -74,7 +74,7 @@ def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_t
             np.array([[0.0, 1.0, 0.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], requires_grad=False),
             1,
             "sto-3g",
-            # HF energy computed with pyscf using scf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
+            # HF energy computed with pyscf using scf.hf.SCF(mol_pyscf).kernel()
             np.array([-0.948179228995941]),
         ),
         (
@@ -82,7 +82,7 @@ def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_t
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             0,
             "sto-3g",
-            # HF energy computed with pyscf using scf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
+            # HF energy computed with pyscf using scf.hf.SCF(mol_pyscf).kernel()
             np.array([-97.8884541671664]),
         ),
         (
@@ -90,7 +90,7 @@ def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_t
             np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=False),
             1,
             "6-31G",
-            # HF energy computed with pyscf using scf.hf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
+            # HF energy computed with pyscf using scf.hf.SCF(mol_pyscf).kernel()
             np.array([-2.83655236013837]),
         ),
     ],
@@ -99,6 +99,48 @@ def test_hf_energy(symbols, geometry, charge, basis_name, e_ref):
     r"""Test that hf_energy returns the correct energy."""
     mol = qchem.Molecule(symbols, geometry, charge=charge, basis_name=basis_name)
     e = qchem.hf_energy(mol)()
+
+    assert np.allclose(e, e_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "charge", "basis_name", "e_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+            [
+                np.array([3.42525091, 0.62391373, 0.1688554], requires_grad=True),
+                np.array([3.42525091, 0.62391373, 0.1688554], requires_grad=True),
+            ],
+            0,
+            "sto-3g",
+            # HF energy computed with pyscf using scf.hf.SCF(mol_pyscf).kernel()
+            np.array([-1.06599931664376]),
+        ),
+        (
+            ["H", "H", "H"],
+            np.array([[0.0, 1.0, 0.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], requires_grad=True),
+            [
+                np.array([18.73113696, 2.82539437, 0.64012169], requires_grad=True),
+                np.array([0.16127776], requires_grad=True),
+                np.array([18.73113696, 2.82539437, 0.64012169], requires_grad=True),
+                np.array([0.16127776], requires_grad=True),
+                np.array([18.73113696, 2.82539437, 0.64012169], requires_grad=True),
+                np.array([0.16127776], requires_grad=True),
+            ],
+            1,
+            "6-31g",
+            # HF energy computed with pyscf using scf.hf.SCF(mol_pyscf).kernel()
+            np.array([-1.11631458846075]),
+        ),
+    ],
+)
+def test_hf_energy_diff(symbols, geometry, alpha, charge, basis_name, e_ref):
+    r"""Test that hf_energy returns the correct energy with differentiable parameters."""
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha, charge=charge, basis_name=basis_name)
+    args = [geometry, alpha]
+    e = qchem.hf_energy(mol)(*args)
 
     assert np.allclose(e, e_ref)
 

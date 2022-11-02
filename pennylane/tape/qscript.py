@@ -19,8 +19,8 @@ executed by a device.
 
 import contextlib
 import copy
-from collections import Counter, defaultdict
 from typing import List, Union
+from collections import Counter, defaultdict
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -305,6 +305,11 @@ class QuantumScript:
         [expval(PauliZ(wires=[0]))]
         """
         return self._measurements
+
+    @property
+    def samples_computational_basis(self):
+        """Determines if any of the measurements do sampling/counting in the computational basis."""
+        return any(o.samples_computational_basis for o in self.measurements)
 
     @property
     def num_params(self):
