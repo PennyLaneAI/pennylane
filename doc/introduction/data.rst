@@ -165,8 +165,8 @@ Functions
     :nosignatures:
 
     ~pennylane.data.list_datasets
+    ~pennylane.data.list_attributes
     ~pennylane.data.load
-    ~pennylane.load_interactive
-    ~pennylane.list_attributes
+    ~pennylane.data.load_interactive
 
 :html:`</div>`
