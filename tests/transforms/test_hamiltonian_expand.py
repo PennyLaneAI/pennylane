@@ -16,21 +16,21 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.tape
 from pennylane import numpy as pnp
-
-"""Defines the device used for all tests"""
+from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.transforms import hamiltonian_expand, sum_expand
 
 dev = qml.device("default.qubit", wires=4)
+"""Defines the device used for all tests"""
+
 
 """Defines circuits to be used in queueing/output tests"""
-
-with pennylane.tape.QuantumTape() as tape1:
+with QuantumTape() as h_tape1:
     qml.PauliX(0)
     H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
     qml.expval(H1)
 
-with pennylane.tape.QuantumTape() as tape2:
+with QuantumTape() as h_tape2:
     qml.Hadamard(0)
     qml.Hadamard(1)
     qml.PauliZ(1)
@@ -49,7 +49,7 @@ with pennylane.tape.QuantumTape() as tape2:
 
 H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
 
-with qml.tape.QuantumTape() as tape3:
+with QuantumTape() as h_tape3:
     qml.PauliX(0)
     qml.expval(H3)
 
@@ -63,7 +63,7 @@ H4 = (
 )
 H4 += qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2)
 
-with qml.tape.QuantumTape() as tape4:
+with QuantumTape() as h_tape4:
     qml.Hadamard(0)
     qml.Hadamard(1)
     qml.PauliZ(1)
@@ -71,43 +71,43 @@ with qml.tape.QuantumTape() as tape4:
 
     qml.expval(H4)
 
-TAPES = [tape1, tape2, tape3, tape4]
-OUTPUTS = [-1.5, -6, -1.5, -8]
+HAM_TAPES = [h_tape1, h_tape2, h_tape3, h_tape4]
+HAM_OUTPUTS = [-1.5, -6, -1.5, -8]
 
 
 class TestHamiltonianExpand:
     """Tests for the hamiltonian_expand transform"""
 
-    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    @pytest.mark.parametrize(("tape", "output"), zip(HAM_TAPES, HAM_OUTPUTS))
     def test_hamiltonians(self, tape, output):
         """Tests that the hamiltonian_expand transform returns the correct value"""
 
-        tapes, fn = qml.transforms.hamiltonian_expand(tape)
+        tapes, fn = hamiltonian_expand(tape)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
 
-        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
-        tapes, fn = qml.transforms.hamiltonian_expand(qs)
+        qs = QuantumScript(tape.operations, tape.measurements)
+        tapes, fn = hamiltonian_expand(qs)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
 
-    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    @pytest.mark.parametrize(("tape", "output"), zip(HAM_TAPES, HAM_OUTPUTS))
     def test_hamiltonians_no_grouping(self, tape, output):
         """Tests that the hamiltonian_expand transform returns the correct value
         if we switch grouping off"""
 
-        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        tapes, fn = hamiltonian_expand(tape, group=False)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
         assert np.isclose(output, expval)
 
-        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
-        tapes, fn = qml.transforms.hamiltonian_expand(qs, group=False)
+        qs = QuantumScript(tape.operations, tape.measurements)
+        tapes, fn = hamiltonian_expand(qs, group=False)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
@@ -120,17 +120,17 @@ class TestHamiltonianExpand:
         )
         assert H.grouping_indices is not None
 
-        with qml.tape.QuantumTape() as tape:
+        with QuantumTape() as tape:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
             qml.expval(H)
 
-        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        tapes, fn = hamiltonian_expand(tape, group=False)
         assert len(tapes) == 2
 
-        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
-        tapes, fn = qml.transforms.hamiltonian_expand(qs, group=False)
+        qs = QuantumScript(tape.operations, tape.measurements)
+        tapes, fn = hamiltonian_expand(qs, group=False)
         assert len(tapes) == 2
 
     def test_number_of_tapes(self):
@@ -138,38 +138,38 @@ class TestHamiltonianExpand:
 
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
 
-        with qml.tape.QuantumTape() as tape:
+        with QuantumTape() as tape:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
             qml.expval(H)
 
-        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+        tapes, fn = hamiltonian_expand(tape, group=False)
         assert len(tapes) == 3
 
-        tapes, fn = qml.transforms.hamiltonian_expand(tape, group=True)
+        tapes, fn = hamiltonian_expand(tape, group=True)
         assert len(tapes) == 2
 
     def test_number_of_qscripts(self):
         """Tests the correct number of quantum scripts are produced."""
 
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
-        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        qs = QuantumScript(measurements=[qml.expval(H)])
 
-        tapes, fn = qml.transforms.hamiltonian_expand(qs, group=False)
+        tapes, fn = hamiltonian_expand(qs, group=False)
         assert len(tapes) == 3
 
-        tapes, fn = qml.transforms.hamiltonian_expand(qs, group=True)
+        tapes, fn = hamiltonian_expand(qs, group=True)
         assert len(tapes) == 2
 
     def test_non_hamiltonian_tape(self):
         """Test that the ``hamiltonian_expand`` function returns the input tape if it does not
         contain a single measurement with the expectation value of a Hamiltonian."""
 
-        with pennylane.tape.QuantumTape() as tape:
+        with QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
 
-        tapes, fn = qml.transforms.hamiltonian_expand(tape)
+        tapes, fn = hamiltonian_expand(tape)
 
         assert tapes[0] is tape
         assert fn([1]) == 1
@@ -196,7 +196,7 @@ class TestHamiltonianExpand:
             0.64123,
         ]
 
-        with qml.tape.QuantumTape() as tape:
+        with QuantumTape() as tape:
             for i in range(2):
                 qml.RX(np.array(0), wires=0)
                 qml.RX(np.array(0), wires=1)
@@ -209,7 +209,7 @@ class TestHamiltonianExpand:
 
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
-            tapes, fn = qml.transforms.hamiltonian_expand(tape)
+            tapes, fn = hamiltonian_expand(tape)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
@@ -241,7 +241,7 @@ class TestHamiltonianExpand:
         ]
 
         with tf.GradientTape() as gtape:
-            with qml.tape.QuantumTape() as tape:
+            with QuantumTape() as tape:
                 for i in range(2):
                     qml.RX(var[i, 0], wires=0)
                     qml.RX(var[i, 1], wires=1)
@@ -251,7 +251,243 @@ class TestHamiltonianExpand:
                     qml.CNOT(wires=[2, 0])
                 qml.expval(H)
 
-            tapes, fn = qml.transforms.hamiltonian_expand(tape)
+            tapes, fn = hamiltonian_expand(tape)
+            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
+
+            assert np.isclose(res, output)
+
+            g = gtape.gradient(res, var)
+            assert np.allclose(list(g[0]) + list(g[1]), output2)
+
+
+with QuantumTape() as s_tape1:
+    qml.PauliX(0)
+    S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1)))
+    qml.expval(S1)
+
+with QuantumTape() as s_tape2:
+    qml.Hadamard(0)
+    qml.Hadamard(1)
+    qml.PauliZ(1)
+    qml.PauliX(2)
+    S2 = qml.op_sum(
+        qml.prod(qml.PauliX(0), qml.PauliZ(2)),
+        qml.s_prod(3, qml.PauliZ(2)),
+        qml.s_prod(-2, qml.PauliX(0)),
+        qml.PauliX(2),
+        qml.prod(qml.PauliZ(0), qml.PauliX(1)),
+    )
+    qml.expval(S2)
+
+S3 = qml.op_sum(
+    qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1))), qml.s_prod(0.3, qml.PauliX(1))
+)
+
+with QuantumTape() as s_tape3:
+    qml.PauliX(0)
+    qml.expval(S3)
+
+
+S4 = (
+    qml.prod(qml.PauliX(0), qml.PauliZ(2))
+    + qml.s_prod(3, qml.PauliZ(2))
+    - qml.s_prod(2, qml.PauliX(0))
+    + qml.PauliZ(2)
+    + qml.PauliZ(2)
+    + qml.prod(qml.PauliZ(0), qml.PauliX(1), qml.PauliY(2))
+)
+
+with QuantumTape() as s_tape4:
+    qml.Hadamard(0)
+    qml.Hadamard(1)
+    qml.PauliZ(1)
+    qml.PauliX(2)
+
+    qml.expval(S4)
+
+SUM_TAPES = [s_tape1, s_tape2, s_tape3, s_tape4]
+SUM_OUTPUTS = [-1.5, -6, -1.5, -8]
+
+
+class TestSumExpand:
+    """Tests for the sum_expand transform"""
+
+    @pytest.mark.parametrize(("tape", "output"), zip(SUM_TAPES, SUM_OUTPUTS))
+    def test_sums(self, tape, output):
+        """Tests that the sum_expand transform returns the correct value"""
+
+        tapes, fn = sum_expand(tape)
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert np.isclose(output, expval)
+
+        qs = QuantumScript(tape.operations, tape.measurements)
+        tapes, fn = sum_expand(qs)
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert np.isclose(output, expval)
+
+    @pytest.mark.parametrize(("tape", "output"), zip(SUM_TAPES, SUM_OUTPUTS))
+    def test_sums_no_grouping(self, tape, output):
+        """Tests that the sum_expand transform returns the correct value
+        if we switch grouping off"""
+
+        tapes, fn = sum_expand(tape, group=False)
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert np.isclose(output, expval)
+
+        qs = QuantumScript(tape.operations, tape.measurements)
+        tapes, fn = sum_expand(qs, group=False)
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert np.isclose(output, expval)
+
+    def test_grouping(self):
+        """Test the grouping functionality"""
+        S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
+
+        with QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(S)
+
+        tapes, fn = sum_expand(tape, group=True)
+        assert len(tapes) == 2
+
+        qs = QuantumScript(tape.operations, tape.measurements)
+        tapes, fn = sum_expand(qs, group=True)
+        assert len(tapes) == 2
+
+    def test_number_of_tapes(self):
+        """Tests that the the correct number of tapes is produced"""
+
+        S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
+
+        with QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(S)
+
+        tapes, fn = sum_expand(tape, group=False)
+        assert len(tapes) == 3
+
+        tapes, fn = sum_expand(tape, group=True)
+        assert len(tapes) == 2
+
+    def test_number_of_qscripts(self):
+        """Tests the correct number of quantum scripts are produced."""
+
+        S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
+        qs = QuantumScript(measurements=[qml.expval(S)])
+
+        tapes, fn = sum_expand(qs, group=False)
+        assert len(tapes) == 3
+
+        tapes, fn = sum_expand(qs, group=True)
+        assert len(tapes) == 2
+
+    def test_non_sum_tape(self):
+        """Test that the ``sum_expand`` function returns the input tape if it does not
+        contain a single measurement with the expectation value of a Sum."""
+
+        with QuantumTape() as tape:
+            qml.expval(qml.PauliZ(0))
+
+        tapes, fn = sum_expand(tape)
+
+        assert len(tapes) == 1
+        assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
+        assert fn([1]) == 1
+
+    @pytest.mark.autograd
+    def test_sum_dif_autograd(self, tol):
+        """Tests that the sum_expand tape transform is differentiable with the Autograd interface"""
+
+        S = qml.op_sum(
+            qml.s_prod(-0.2, qml.PauliX(1)),
+            qml.s_prod(0.5, qml.prod(qml.PauliZ(1), qml.PauliY(2))),
+            qml.PauliZ(0),
+        )
+
+        var = pnp.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7, -0.2, 0.5, 1.0], requires_grad=True)
+        output = 0.42294409781940356
+        output2 = [
+            9.68883500e-02,
+            -2.90832724e-01,
+            -1.04448033e-01,
+            -1.94289029e-09,
+            3.50307411e-01,
+            -3.41123470e-01,
+            0.0,
+            -0.43657,
+            0.64123,
+        ]
+
+        with QuantumTape() as tape:
+            for _ in range(2):
+                qml.RX(np.array(0), wires=0)
+                qml.RX(np.array(0), wires=1)
+                qml.RX(np.array(0), wires=2)
+                qml.CNOT(wires=[0, 1])
+                qml.CNOT(wires=[1, 2])
+                qml.CNOT(wires=[2, 0])
+
+            qml.expval(S)
+
+        def cost(x):
+            tape.set_parameters(x, trainable_only=False)
+            tapes, fn = sum_expand(tape)
+            res = qml.execute(tapes, dev, qml.gradients.param_shift)
+            return fn(res)
+
+        assert np.isclose(cost(var), output)
+
+        grad = qml.grad(cost)(var)
+        assert len(grad) == len(output2)
+        for g, o in zip(grad, output2):
+            assert np.allclose(g, o, atol=tol)
+
+    @pytest.mark.tf
+    def test_sum_dif_tensorflow(self):
+        """Tests that the sum_expand tape transform is differentiable with the Tensorflow interface"""
+
+        import tensorflow as tf
+
+        S = qml.op_sum(
+            qml.s_prod(-0.2, qml.PauliX(1)),
+            qml.s_prod(0.5, qml.prod(qml.PauliZ(1), qml.PauliY(2))),
+            qml.PauliZ(0),
+        )
+        var = tf.Variable([[0.1, 0.67, 0.3], [0.4, -0.5, 0.7]], dtype=tf.float64)
+        output = 0.42294409781940356
+        output2 = [
+            9.68883500e-02,
+            -2.90832724e-01,
+            -1.04448033e-01,
+            -1.94289029e-09,
+            3.50307411e-01,
+            -3.41123470e-01,
+        ]
+
+        with tf.GradientTape() as gtape:
+            with QuantumTape() as tape:
+                for i in range(2):
+                    qml.RX(var[i, 0], wires=0)
+                    qml.RX(var[i, 1], wires=1)
+                    qml.RX(var[i, 2], wires=2)
+                    qml.CNOT(wires=[0, 1])
+                    qml.CNOT(wires=[1, 2])
+                    qml.CNOT(wires=[2, 0])
+                qml.expval(S)
+
+            tapes, fn = sum_expand(tape)
             res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
 
             assert np.isclose(res, output)

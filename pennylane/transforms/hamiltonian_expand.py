@@ -154,6 +154,7 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
         tapes = []
         for obs in obs_groupings:
             new_tape = QuantumScript(tape._ops, (qml.expval(o) for o in obs), tape._prep)
+            new_tape = new_tape.expand(stop_at=lambda obj: True)
             tapes.append(new_tape)
 
         def processing_fn(res_groupings):
@@ -263,7 +264,9 @@ def sum_expand(tape: QuantumScript, group=True):
             processed_results += non_expanded_res
         # sort results
         sorted_results = sorted(zip(processed_results, measurement_idxs), key=lambda x: x[1])
-        return tuple(res[0] for res in sorted_results)
+        if len(sorted_results) > 1:
+            return [res[0] for res in sorted_results]
+        return sorted_results[0][0]
 
     return tapes, outer_processing_fn
 
