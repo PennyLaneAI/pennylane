@@ -22,7 +22,7 @@ import autoray
 
 import pennylane as qml
 from pennylane.interfaces import SUPPORTED_INTERFACES
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
@@ -112,7 +112,7 @@ class SProd(SymbolicOp):
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
         self.scalar = scalar
-        # self._check_scalar_is_valid()
+        self._check_scalar_is_valid()
         super().__init__(base=base, do_queue=do_queue, id=id)
         self._check_batching([[scalar], base.data])
 
@@ -273,11 +273,8 @@ class SProd(SymbolicOp):
 
         if self._coeff_batch_size is None:
             return self.scalar * self.base.matrix(wire_order=wire_order)
-        if self.base.batch_size is None:
-            return qml.math.einsum("i,jk->ijk", self.scalar, self.base.matrix())
-        # both base and coefficient batched
-        # still working on a solution here
-        raise MatrixUndefinedError
+        formula = "i,jk->ijk" if self.base.batch_size is None else "i,ijk->ijk"
+        return qml.math.einsum(formula, self.scalar, self.base.matrix())
 
     @property
     def _queue_category(self):  # don't queue scalar prods as they might not be Unitary!
@@ -326,7 +323,7 @@ class SProd(SymbolicOp):
         # TODO: Remove shape check when supporting batching
         if not (
             (backend == "builtins" and isinstance(self.scalar, numbers.Number))
-            or (backend in SUPPORTED_INTERFACES and qml.math.shape(self.scalar) == ())
+            or (backend in SUPPORTED_INTERFACES)
         ):
             raise ValueError(
                 f"Cannot compute the scalar product of a scalar value with backend `{backend}` and "
