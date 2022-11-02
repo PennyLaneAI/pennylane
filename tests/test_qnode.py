@@ -1580,7 +1580,7 @@ class TestTapeExpansion:
         res = circuit(*params)
 
         tape = spy_expand.spy_return
-        rotations, observables = qml.grouping.diagonalize_qwc_pauli_words(obs)
+        rotations, observables = qml.pauli.diagonalize_qwc_pauli_words(obs)
 
         assert tape.observables[0].name == observables[0].name
         assert tape.observables[1].name == observables[1].name

@@ -1,16 +1,16 @@
-qml.grouping
+qml.pauli
 ============
 
 Overview
 --------
 
-This subpackage defines functions and classes for generating and manipulating
-elements of the Pauli group. It also contains Pauli-word partitioning
-functionality used in measurement optimization.
+This module defines functions and classes for generating and manipulating
+elements of the Pauli group. It also contains a subpackage :mod:`pauli/grouping`
+for Pauli-word partitioning functionality used in measurement optimization.
 
-.. currentmodule:: pennylane.grouping
+.. currentmodule:: pennylane.pauli
 
-.. automodapi:: pennylane.grouping
+.. automodapi:: pennylane.pauli
     :no-heading:
     :no-main-docstr:
     :no-inheritance-diagram:
@@ -19,7 +19,7 @@ functionality used in measurement optimization.
 Graph colouring
 ---------------
 
-.. automodapi:: pennylane.grouping.graph_colouring
+.. automodapi:: pennylane.pauli.grouping.graph_colouring
     :no-heading:
     :no-inheritance-diagram:
     :no-inherited-members:
@@ -46,14 +46,14 @@ function. To construct the group, it is recommended to provide a wire map in
 order to indicate the names and indices of the wires. (If none is provided, a
 default mapping of integers will be used.)
 
->>> from pennylane.grouping import pauli_group
+>>> from pennylane.pauli import pauli_group
 >>> pg_3 = list(pauli_group(3))
 
 Multiplication of Pauli group elements can be performed using
 :func:`~.pauli_mult` or
 :func:`~.pauli_mult_with_phase`:
 
->>> from pennylane.grouping import pauli_mult
+>>> from pennylane.pauli import pauli_mult
 >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
 >>> pg = list(pauli_group(3, wire_map=wire_map))
 >>> pg[3]
@@ -65,7 +65,7 @@ PauliY(wires=['a']) @ PauliX(wires=['b'])
 
 Pauli observables can be converted to strings (and vice versa):
 
->>> from pennylane.grouping import pauli_word_to_string, string_to_pauli_word
+>>> from pennylane.pauli import pauli_word_to_string, string_to_pauli_word
 >>> pauli_word_to_string(pg[55], wire_map=wire_map)
 'YYZ'
 >>> string_to_pauli_word('ZXY', wire_map=wire_map)
@@ -73,7 +73,7 @@ PauliZ(wires=['a']) @ PauliX(wires=['b']) @ PauliY(wires=['c'])
 
 The matrix representation for arbitrary Paulis and wire maps can also be performed.
 
->>> pennylane.grouping import pauli_word_to_matrix
+>>> pennylane.pauli import pauli_word_to_matrix
 >>> wire_map = {'a' : 0, 'b' : 1}
 >>> pauli_word = qml.PauliZ('b')  # corresponds to Pauli 'IZ'
 >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map)
