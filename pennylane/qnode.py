@@ -484,7 +484,6 @@ class QNode:
                 " Adjoint differentiation always calculated exactly.",
                 UserWarning,
             )
-
         return "device", {"use_device_state": True, "method": "adjoint_jacobian"}, device
 
     @staticmethod
