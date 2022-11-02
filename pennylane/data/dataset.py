@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the :class:`~pennylane.data.Dataset` class and its associated functions.
+Contains the :class:`~pennylane.data.dataset.Dataset` class and its associated functions.
 """
 
 from abc import ABC
