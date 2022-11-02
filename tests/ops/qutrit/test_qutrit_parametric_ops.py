@@ -115,7 +115,7 @@ class TestParameterFrequencies:
 
 class TestMatrix:
     def test_trx(self, tol):
-        """Test x rotation is correct"""
+        """Test that qutrit TRX rotation is correct"""
 
         # test identity for theta = 0
         expected = np.eye(3)
