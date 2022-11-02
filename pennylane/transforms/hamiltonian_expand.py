@@ -24,7 +24,8 @@ from pennylane.tape import QuantumScript
 def hamiltonian_expand(tape: QuantumScript, group=True):
     r"""
     Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
-    and provides a function to recombine the results.
+    and provides a function to recombine the results. The tape is returned unchanged if it doesn't
+    measure a single Hamiltonian expectation.
 
     Args:
         tape (.QuantumTape): the tape used when calculating the expectation value
@@ -128,9 +129,7 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
         or len(tape.measurements) > 1
         or tape.measurements[0].return_type != qml.measurements.Expectation
     ):
-        raise ValueError(
-            "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
-        )
+        return [tape], lambda res: res[0]
 
     # note: for backward passes of some frameworks
     # it is crucial to use the hamiltonian.data attribute,
