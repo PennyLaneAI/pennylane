@@ -25,22 +25,17 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
+    Expectation,
+    MidMeasure,
+    Probability,
     Sample,
+    ShadowExpval,
     State,
     Variance,
-    Expectation,
-    Probability,
-    MidMeasure,
-    ShadowExpval,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -731,20 +726,17 @@ class Device(abc.ABC):
 
         is_shadow = ShadowExpval in return_types
 
-        if hamiltonian_in_obs and (
-            (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known
+        if (
+            hamiltonian_in_obs
+            and (not supports_hamiltonian or (finite_shots and not is_shadow))
+            or grouping_known
         ):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
             # split tape into multiple tapes of diagonalizable known observables.
-            try:
-                circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
+            circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
 
-            except ValueError as e:
-                raise ValueError(
-                    "Can only return the expectation of a single Hamiltonian observable"
-                ) from e
         elif (
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs
