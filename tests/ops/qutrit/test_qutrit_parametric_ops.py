@@ -231,7 +231,7 @@ class TestLabel:
 
     @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data)
     def test_label_method(self, op, label1, label2, label3, label4):
-        """Test label method with plain scalers."""
+        """Test label method with plain scalars."""
 
         assert op.label() == label1
         assert op.label(decimals=2) == label2
