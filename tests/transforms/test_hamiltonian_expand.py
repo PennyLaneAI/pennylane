@@ -410,13 +410,7 @@ class TestSumExpand:
     def test_sum_dif_autograd(self, tol):
         """Tests that the sum_expand tape transform is differentiable with the Autograd interface"""
 
-        S = qml.op_sum(
-            qml.s_prod(-0.2, qml.PauliX(1)),
-            qml.s_prod(0.5, qml.prod(qml.PauliZ(1), qml.PauliY(2))),
-            qml.PauliZ(0),
-        )
-
-        var = pnp.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7, -0.2, 0.5, 1.0], requires_grad=True)
+        var = pnp.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7], requires_grad=True)
         output = 0.42294409781940356
         output2 = [
             9.68883500e-02,
@@ -425,31 +419,34 @@ class TestSumExpand:
             -1.94289029e-09,
             3.50307411e-01,
             -3.41123470e-01,
-            0.0,
-            -0.43657,
-            0.64123,
         ]
 
-        with QuantumTape() as tape:
-            for _ in range(2):
-                qml.RX(np.array(0), wires=0)
-                qml.RX(np.array(0), wires=1)
-                qml.RX(np.array(0), wires=2)
-                qml.CNOT(wires=[0, 1])
-                qml.CNOT(wires=[1, 2])
-                qml.CNOT(wires=[2, 0])
+        @qml.qnode(dev, diff_method=qml.gradients.param_shift)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RX(x[1], wires=1)
+            qml.RX(x[2], wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[2, 0])
+            qml.RX(x[3], wires=0)
+            qml.RX(x[4], wires=1)
+            qml.RX(x[5], wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[2, 0])
 
-            qml.expval(S)
+            return qml.expval(
+                qml.op_sum(
+                    qml.s_prod(-0.2, qml.PauliX(1)),
+                    qml.s_prod(0.5, qml.prod(qml.PauliZ(1), qml.PauliY(2))),
+                    qml.s_prod(1, qml.PauliZ(0)),
+                )
+            )
 
-        def cost(x):
-            tape.set_parameters(x, trainable_only=False)
-            tapes, fn = sum_expand(tape)
-            res = qml.execute(tapes, dev, qml.gradients.param_shift)
-            return fn(res)
+        assert np.isclose(circuit(var), output)
 
-        assert np.isclose(cost(var), output)
-
-        grad = qml.grad(cost)(var)
+        grad = qml.grad(circuit)(var)
         assert len(grad) == len(output2)
         for g, o in zip(grad, output2):
             assert np.allclose(g, o, atol=tol)
@@ -463,7 +460,7 @@ class TestSumExpand:
         S = qml.op_sum(
             qml.s_prod(-0.2, qml.PauliX(1)),
             qml.s_prod(0.5, qml.prod(qml.PauliZ(1), qml.PauliY(2))),
-            qml.PauliZ(0),
+            qml.s_prod(1, qml.PauliZ(0)),
         )
         var = tf.Variable([[0.1, 0.67, 0.3], [0.4, -0.5, 0.7]], dtype=tf.float64)
         output = 0.42294409781940356
