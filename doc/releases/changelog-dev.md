@@ -14,6 +14,10 @@
 * Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
 keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
   ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
+  
+* Added the `qml.ControlledQutritUnitary` qutrit operation for applying a controlled arbitrary unitary matrix to the specified set of wires.
+Users can specify the control wires as well as the values to control the operation on.
+  ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
 
 * `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
   symmetries of the Hamiltonian.
@@ -46,6 +50,36 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
         0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
         1: ───────────────────────┤ ╰<Z@Z>
 
+  ```
+
+<h4>Pauli Module</h4>
+
+* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
+  module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
+  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
+
+* The `IntegerComparator` arithmetic operation is now available.
+[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
+
+  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive
+  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. 
+  Alternatively, the flipping condition can be :math:`n < L`. This is accessed via the `geq` keyword
+  argument.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisState(np.array([0, 1]), wires=range(2))
+      qml.broadcast(qml.Hadamard, wires=range(2), pattern='single')
+      qml.IntegerComparator(2, geq=False, wires=[0, 1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  [-0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
   ```
 
 * The `QNode` class now accepts an ``auto`` interface, which automatically detects the interface
@@ -113,7 +147,102 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   13: ──RY(1.23)─┤  
   ```
 
+* An optimizer is added for building and optimizing quantum circuits adaptively.
+  [(#3192)](https://github.com/PennyLaneAI/pennylane/pull/3192)
+
+  The new optimizer, ``AdaptiveOptimizer``, takes an initial circuit and a collection of operators
+  as input and adds a selected gate to the circuits at each optimization step. The process of
+  growing the circuit can be repeated until the circuit gradients converge to zero within a given
+  threshold. The adaptive optimizer can be used to implement algorithms such as ``ADAPT-VQE`` as
+  shown in the following example.
+
+  First, the molecule is defined and the Hamiltonian is computed:
+
+  ```python
+  symbols = ["H", "H", "H"]
+  geometry = np.array([[0.01076341, 0.04449877, 0.0],
+                       [0.98729513, 1.63059094, 0.0],
+                       [1.87262415, -0.00815842, 0.0]], requires_grad=False)
+  H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge = 1)
+  ```
+
+  The collection of gates to grow the circuit is built to contain all single and double excitations:
+
+  ```python
+  n_electrons = 2
+  singles, doubles = qml.qchem.excitations(n_electrons, qubits)
+  singles_excitations = [qml.SingleExcitation(0.0, x) for x in singles]
+  doubles_excitations = [qml.DoubleExcitation(0.0, x) for x in doubles]
+  operator_pool = doubles_excitations + singles_excitations
+  ```
+
+  An initial circuit that prepares a Hartree-Fock state and returns the expectation value of the
+  Hamiltonian is defined:
+
+  ```python
+  hf_state = qml.qchem.hf_state(n_electrons, qubits)
+  dev = qml.device("default.qubit", wires=qubits)
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisState(hf_state, wires=range(qubits))
+      return qml.expval(H)
+  ```
+
+  Finally, the optimizer is instantiated and then the circuit is created and optimized adaptively:
+
+  ```python
+  opt = qml.optimize.AdaptiveOptimizer()
+  for i in range(len(operator_pool)):
+      circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
+      print('Energy:', energy)
+      print(qml.draw(circuit)())
+      print('Largest Gradient:', gradient)
+      print()
+      if gradient < 1e-3:
+          break
+  ```
+  
+   ```pycon
+  Energy: -1.246549938420637
+  0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
+  1: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
+  2: ─├BasisState(M0)─│─────────┤ ├<𝓗>
+  3: ─├BasisState(M0)─│─────────┤ ├<𝓗>
+  4: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
+  5: ─╰BasisState(M0)─╰G²(0.20)─┤ ╰<𝓗>
+  Largest Gradient: 0.14399872776755085
+
+  Energy: -1.2613740231529604
+  0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
+  1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
+  2: ─├BasisState(M0)─│─────────├G²(0.19)─┤ ├<𝓗>
+  3: ─├BasisState(M0)─│─────────╰G²(0.19)─┤ ├<𝓗>
+  4: ─├BasisState(M0)─├G²(0.20)───────────┤ ├<𝓗>
+  5: ─╰BasisState(M0)─╰G²(0.20)───────────┤ ╰<𝓗>
+  Largest Gradient: 0.1349349562423238
+
+  Energy: -1.2743971719780331
+  0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)──────────┤ ╭<𝓗>
+  1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(0.00)─┤ ├<𝓗>
+  2: ─├BasisState(M0)─│─────────├G²(0.19)─│────────┤ ├<𝓗>
+  3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(0.00)─┤ ├<𝓗>
+  4: ─├BasisState(M0)─├G²(0.20)────────────────────┤ ├<𝓗>
+  5: ─╰BasisState(M0)─╰G²(0.20)────────────────────┤ ╰<𝓗>
+  Largest Gradient: 0.00040841755397108586
+  ``` 
+
 <h3>Improvements</h3>
+
+* Added the `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track
+  if computational basis samples are being generated.
+  [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
+
+* The parameters of a basis set containing different number of Gaussian functions are easier to 
+  differentiate.
+  [(#3213)](https://github.com/PennyLaneAI/pennylane/pull/3213)
+
+* Printing `MultiControlledX` now shows the `control_values`.
+[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
 * The matrix passed to `qml.Hermitian` is validated when creating the observable if the input is not abstract.
   [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
@@ -286,6 +415,10 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
   'torch'
   ```
 
+* `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
+  instead. There is no longer a static method for this.
+  [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
+
 <h3>Deprecations</h3>
 
 * `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
@@ -295,16 +428,25 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
-* `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
-  instead. There is no longer a static method for this.
-  [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
+* Deprecate `qml.transforms.qcut.remap_tape_wires`. Use `qml.map_wires` instead.
+  [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
 
 <h3>Documentation</h3>
 
 * The code block in the usage details of the UCCSD template is updated.
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
+* Added a "Deprecations" page to the developer documentation.
+  [(#3093)](https://github.com/PennyLaneAI/pennylane/pull/3093)
+
+* The example of the `FlipSign` template is updated.
+  [(#3219)](https://github.com/PennyLaneAI/pennylane/pull/3219)
+
 <h3>Bug fixes</h3>
+
+* Fixed a bug where `qml.sample()` and `qml.counts()` would output incorrect results when mixed with measurements whose
+  operators do not qubit-wise commute with computational basis projectors.
+  [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 
 * Users no longer see unintuitive errors when inputing sequences to `qml.Hermitian`.
   [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
@@ -331,12 +473,14 @@ keyword argument when using `GellMann`, which determines which of the 8 Gell-Man
 * Fixed a bug where `qml.QueuingManager.stop_recording` did not clean up if yielded code raises an exception.
   [(#3182)](https://github.com/PennyLaneAI/pennylane/pull/3182)
 
+* Returning `qml.sample()` or `qml.counts()` with other measurements of non-commuting observables
+  now raises a QuantumFunctionError (e.g., `return qml.expval(PauliX(wires=0)), qml.sample()`
+  now raises an error).
+  [(#2924)](https://github.com/PennyLaneAI/pennylane/pull/2924)
+
 * Fixed a bug where `op.eigvals()` would return an incorrect result if the operator was a non-hermitian
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
-
-* Deprecate `qml.transforms.qcut.remap_tape_wires`. Use `qml.map_wires` instead.
-  [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
 
 <h3>Contributors</h3>
 
@@ -346,6 +490,7 @@ Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Albert Mitjans Coma,
 Utkarsh Azad,
+Isaac De Vlugt,
 Amintor Dusko,
 Lillian M. A. Frederiksen,
 Diego Guala,
