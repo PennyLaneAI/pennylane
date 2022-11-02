@@ -2194,7 +2194,6 @@ class TestReturn:
 
 shots = [100, (1, 20, 100), (1, (20, 1), 100), (1, (5, 4), 100)]
 
-
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 10e-2}],
     ["default.qubit", "parameter-shift", {}],
@@ -3222,3 +3221,163 @@ class TestReturnWithShotVectors:
 
                 assert isinstance(h[1], jax.numpy.ndarray)
                 assert h[1].shape == (4, 2, 2)
+
+
+shots = [(1, 20, 100), (1, (20, 1), 100), (1, (5, 4), 100)]
+
+
+@pytest.mark.parametrize("shots", shots)
+class TestReturnShotVectorsDevice:
+    def test_jac_adjoint_fwd_error(self, shots):
+        """Test that an error is raised for adjoint forward."""
+        dev = qml.device("default.qubit", wires=1, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method="adjoint", mode="forward")
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = jax.numpy.array(0.1)
+
+        if isinstance(shots, tuple):
+            with pytest.raises(
+                qml.QuantumFunctionError,
+                match="Adjoint does not support shot vectors.",
+            ):
+                jac = jax.jacobian(circuit)(a)
+
+    def test_jac_adjoint_bwd_error(self, shots):
+        """Test that an error is raised for adjoint backward."""
+        dev = qml.device("default.qubit", wires=1, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method="adjoint", mode="backward")
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = jax.numpy.array(0.1)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Adjoint does not support shot vectors.",
+        ):
+            jac = jax.jacobian(circuit)(a)
+
+
+qubit_device_and_diff_method = [
+    ["default.qubit", "finite-diff", {"h": 10e-2}],
+    ["default.qubit", "parameter-shift", {}],
+]
+
+finite_diff_shot_vec_tol = 0.3
+param_shift_shot_vec_tol = 10e-3
+
+shots = [(1000000, 900000, 800000), (1000000, (900000, 2))]
+
+
+@pytest.mark.parametrize("shots", shots)
+@pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
+class TestReturnShotVectorIntegration:
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_single_expectation_value(
+        self, dev_name, diff_method, gradient_kwargs, shots, jacobian
+    ):
+        """Tests correct output shape and evaluation for a tape
+        with a single expval output"""
+        dev = qml.device(dev_name, wires=2, shots=shots)
+        x = jnp.array(0.543)
+        y = jnp.array(-0.654)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        all_res = jacobian(circuit, argnums=[0, 1])(x, y)
+
+        assert isinstance(all_res, tuple)
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(all_res) == num_copies
+
+        for res in all_res:
+            assert isinstance(res[0], jax.numpy.ndarray)
+            assert res[0].shape == ()
+
+            assert isinstance(res[1], jax.numpy.ndarray)
+            assert res[1].shape == ()
+            tol = (
+                finite_diff_shot_vec_tol
+                if diff_method == "finite-diff"
+                else param_shift_shot_vec_tol
+            )
+            assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_prob_expectation_values(self, dev_name, diff_method, gradient_kwargs, shots, jacobian):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+        dev = qml.device(dev_name, wires=2, shots=shots)
+        x = jnp.array(0.543)
+        y = jnp.array(-0.654)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        all_res = jacobian(circuit, argnums=[0, 1])(x, y)
+
+        tol = finite_diff_shot_vec_tol if diff_method == "finite-diff" else param_shift_shot_vec_tol
+
+        assert isinstance(all_res, tuple)
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(all_res) == num_copies
+
+        for res in all_res:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
+
+            assert isinstance(res[0], tuple)
+            assert len(res[0]) == 2
+            assert np.allclose(res[0][0], -np.sin(x), atol=tol, rtol=0)
+            assert isinstance(res[0][0], jax.numpy.ndarray)
+            assert np.allclose(res[0][1], 0, atol=tol, rtol=0)
+            assert isinstance(res[0][1], jax.numpy.ndarray)
+
+            assert isinstance(res[1], tuple)
+            assert len(res[1]) == 2
+            assert np.allclose(
+                res[1][0],
+                [
+                    -(np.cos(y / 2) ** 2 * np.sin(x)) / 2,
+                    -(np.sin(x) * np.sin(y / 2) ** 2) / 2,
+                    (np.sin(x) * np.sin(y / 2) ** 2) / 2,
+                    (np.cos(y / 2) ** 2 * np.sin(x)) / 2,
+                ],
+                atol=tol,
+                rtol=0,
+            )
+            assert isinstance(res[1][0], jax.numpy.ndarray)
+            assert np.allclose(
+                res[1][1],
+                [
+                    -(np.cos(x / 2) ** 2 * np.sin(y)) / 2,
+                    (np.cos(x / 2) ** 2 * np.sin(y)) / 2,
+                    (np.sin(x / 2) ** 2 * np.sin(y)) / 2,
+                    -(np.sin(x / 2) ** 2 * np.sin(y)) / 2,
+                ],
+                atol=tol,
+                rtol=0,
+            )
+            assert isinstance(res[1][1], jax.numpy.ndarray)

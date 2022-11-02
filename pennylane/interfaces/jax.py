@@ -524,7 +524,7 @@ def _execute_fwd_new(
 ):
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
-    provided. This function does not allow multiple derivatives."""
+    provided. This function does not allow multiple derivatives. It does not support shot vectors."""
 
     # pylint: disable=unused-variable
     @jax.custom_jvp
@@ -601,10 +601,5 @@ def _to_jax(res):
 
 
 def _to_jax_shot_vector(res):
-    res_ = []
-    for r in res:
-        sub_res_ = []
-        for r_ in r:
-            sub_res_.append(_to_jax([r_])[0])
-        res_.append(tuple(sub_res_))
+    res_ = [tuple(_to_jax([r_])[0] for r_ in r) for r in res]
     return res_
