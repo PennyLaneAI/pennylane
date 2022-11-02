@@ -17,7 +17,7 @@ Contains the hamiltonian expand tape transform
 # pylint: disable=protected-access
 import pennylane as qml
 from pennylane.measurements import Expectation
-from pennylane.ops import SProd, Sum
+from pennylane.ops import Sum
 from pennylane.tape import QuantumScript
 
 
@@ -227,17 +227,10 @@ def sum_expand(tape: QuantumScript, group=True):
 
             else:
                 # make one tape per summand
-                tapes = []
-                coeffs = []
-                for summand in sum_op.operands:
-                    if isinstance(summand, SProd):
-                        coeffs.append(summand.scalar)
-                        summand = summand.base
-                    else:
-                        coeffs.append(1.0)
-                    tapes.append(
-                        QuantumScript(ops=tape.operations, measurements=[qml.expval(summand)])
-                    )
+                tapes = [
+                    QuantumScript(ops=tape.operations, measurements=[qml.expval(summand)])
+                    for summand in sum_op.operands
+                ]
 
             expanded_tapes.extend(tapes)
             expanded_measurement_idxs.append(idx)
@@ -257,10 +250,8 @@ def sum_expand(tape: QuantumScript, group=True):
 
     def inner_processing_fn(res):
         if group:
-            summed_groups = [qml.math.sum(c_group) for c_group in res]
-            return qml.math.sum(qml.math.stack(summed_groups), axis=0)
-        dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
-        return qml.math.sum(qml.math.stack(dot_products), axis=0)
+            res = [qml.math.sum(c_group) for c_group in res]
+        return qml.math.sum(qml.math.stack(res), axis=0)
 
     # pylint: disable=function-redefined
     def outer_processing_fn(res):
