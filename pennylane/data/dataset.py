@@ -183,8 +183,9 @@ class Dataset(ABC):
         >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
         >>> new_dataset.write('./path/to/file/file_name.dat')
         """
-        if not os.path.exists(os.path.dirname(filepath)):
-            os.makedirs(os.path.dirname(filepath))
+        dirname = os.path.dirname(filepath)
+        if dirname and not os.path.exists(dirname):
+            os.makedirs(dirname)
         self._write_file(self.attrs, filepath, protocol=protocol)
 
     def list_attributes(self):
