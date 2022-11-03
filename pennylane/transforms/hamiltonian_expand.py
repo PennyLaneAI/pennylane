@@ -357,6 +357,7 @@ def sum_expand(tape: QuantumScript, group=True):
         else []
     )
     tapes = expanded_tapes + non_expanded_tape
+    # indices used to reorder the obtained results
     measurement_idxs = expanded_measurement_idxs + non_expanded_measurement_idxs
 
     def outer_processing_fn(res):
