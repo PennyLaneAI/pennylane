@@ -87,11 +87,86 @@ special_cases = {
     ops.Barrier: _add_barrier,
     ops.WireCut: _add_wirecut,
 }
-
-
 """Dictionary mapping special case classes to functions for drawing them."""
 
 # pylint: disable=too-many-branches
+def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
+    """Private function wrapped with styling."""
+    wire_options = kwargs.get("wire_options", None)
+    label_options = kwargs.get("label_options", None)
+    active_wire_notches = kwargs.get("active_wire_notches", True)
+    fontsize = kwargs.get("fontsize", None)
+
+    wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+
+    layers = drawable_layers(tape.operations, wire_map=wire_map)
+
+    n_layers = len(layers)
+    n_wires = len(wire_map)
+
+    drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
+
+    if fontsize is not None:
+        drawer.fontsize = fontsize
+
+    drawer.label(list(wire_map), text_options=label_options)
+
+    for layer, layer_ops in enumerate(layers):
+        for op in layer_ops:
+            specialfunc = special_cases.get(op.__class__, None)
+            if specialfunc is not None:
+                mapped_wires = [wire_map[w] for w in op.wires]
+                specialfunc(drawer, layer, mapped_wires, op)
+
+            else:
+                op_control_wires = getattr(op, "control_wires", [])
+                control_wires = [wire_map[w] for w in op_control_wires]
+                target_wires = [wire_map[w] for w in op.wires if w not in op_control_wires]
+                control_values = op.hyperparameters.get("control_values", None)
+
+                if control_values is None:
+                    control_values = [True for _ in control_wires]
+                elif isinstance(control_values[0], str):
+                    control_values = [(i == "1") for i in control_values]
+
+                if len(control_wires) != 0:
+                    drawer.ctrl(
+                        layer,
+                        control_wires,
+                        wires_target=target_wires,
+                        control_values=control_values,
+                    )
+                drawer.box_gate(
+                    layer,
+                    target_wires,
+                    op.label(decimals=decimals),
+                    box_options={
+                        "zorder": 4
+                    },  # make sure box and text above control wires if controlled
+                    text_options={"zorder": 5},
+                    active_wire_notches=active_wire_notches,
+                )
+
+    # store wires we've already drawn on
+    # max one measurement symbol per wire
+    measured_wires = Wires([])
+
+    for m in tape.measurements:
+        # state and probs
+        if len(m.wires) == 0:
+            for wire in range(n_wires):
+                if wire not in measured_wires:
+                    drawer.measure(n_layers, wire)
+            break
+
+        for wire in m.wires:
+            if wire not in measured_wires:
+                drawer.measure(n_layers, wire_map[wire])
+                measured_wires += wire
+
+    return drawer.fig, drawer.ax
+
+
 def tape_mpl(
     tape, wire_order=None, show_all_wires=False, decimals=None, style="black_white", **kwargs
 ):
@@ -265,87 +340,18 @@ def tape_mpl(
             :target: javascript:void(0);
 
     """
-    wire_options = kwargs.get("wire_options", None)
-    label_options = kwargs.get("label_options", None)
-    active_wire_notches = kwargs.get("active_wire_notches", True)
-    fontsize = kwargs.get("fontsize", None)
-
-    wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
-
-    layers = drawable_layers(tape.operations, wire_map=wire_map)
-
-    n_layers = len(layers)
-    n_wires = len(wire_map)
 
     restore_params = {}
     if style:
         restore_params = mpl.rcParams.copy()
         use_style(style)
-
-    drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
-
-    if fontsize is not None:
-        drawer.fontsize = fontsize
-
-    drawer.label(list(wire_map), text_options=label_options)
-
-    for layer, layer_ops in enumerate(layers):
-        for op in layer_ops:
-            specialfunc = special_cases.get(op.__class__, None)
-            if specialfunc is not None:
-                mapped_wires = [wire_map[w] for w in op.wires]
-                specialfunc(drawer, layer, mapped_wires, op)
-
-            else:
-                op_control_wires = getattr(op, "control_wires", [])
-                control_wires = [wire_map[w] for w in op_control_wires]
-                target_wires = [wire_map[w] for w in op.wires if w not in op_control_wires]
-                control_values = op.hyperparameters.get("control_values", None)
-
-                if control_values is None:
-                    control_values = [True for _ in control_wires]
-                elif isinstance(control_values[0], str):
-                    control_values = [(i == "1") for i in control_values]
-
-                if len(control_wires) != 0:
-                    drawer.ctrl(
-                        layer,
-                        control_wires,
-                        wires_target=target_wires,
-                        control_values=control_values,
-                    )
-                drawer.box_gate(
-                    layer,
-                    target_wires,
-                    op.label(decimals=decimals),
-                    box_options={
-                        "zorder": 4
-                    },  # make sure box and text above control wires if controlled
-                    text_options={"zorder": 5},
-                    active_wire_notches=active_wire_notches,
-                )
-
-    # store wires we've already drawn on
-    # max one measurement symbol per wire
-    measured_wires = Wires([])
-
-    for m in tape.measurements:
-        # state and probs
-        if len(m.wires) == 0:
-            for wire in range(n_wires):
-                if wire not in measured_wires:
-                    drawer.measure(n_layers, wire)
-            break
-
-        for wire in m.wires:
-            if wire not in measured_wires:
-                drawer.measure(n_layers, wire_map[wire])
-                measured_wires += wire
-
-    if style:
-        # we don't want to mess with how it modifies whether the interface is interactive
-        # but we want to restore everything else
-        restore_params["interactive"] = mpl.rcParams["interactive"]
-        mpl.rcParams.update(restore_params)
-
-    return drawer.fig, drawer.ax
+    try:
+        return _tape_mpl(
+            tape, wire_order=wire_order, show_all_wires=show_all_wires, decimals=decimals, **kwargs
+        )
+    finally:
+        if style:
+            # we don't want to mess with how it modifies whether the interface is interactive
+            # but we want to restore everything else
+            restore_params["interactive"] = mpl.rcParams["interactive"]
+            mpl.rcParams.update(restore_params)
