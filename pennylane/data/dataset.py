@@ -19,6 +19,8 @@ from abc import ABC
 from glob import glob
 import os
 
+from pennylane import Hamiltonian
+from pennylane.pauli import string_to_pauli_word
 
 def _import_zstd_dill():
     """Import zstd and dill."""
@@ -32,11 +34,6 @@ def _import_zstd_dill():
         ) from Error
 
     return zstd, dill
-
-
-from pennylane import Hamiltonian
-from pennylane.pauli import string_to_pauli_word
-
 
 class Dataset(ABC):
     """Create a dataset object to store a collection of information describing
