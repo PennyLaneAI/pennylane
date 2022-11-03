@@ -18,6 +18,7 @@ Developer note: when making changes to this file, you can run
 `pennylane/doc/_static/tape_mpl/tape_mpl_examples.py` to generate docstring
 images.  If you change the docstring examples, please update this file.
 """
+import matplotlib as mpl
 
 # cant `import pennylane as qml` because of circular imports with circuit graph
 from pennylane import ops
@@ -25,6 +26,8 @@ from pennylane.wires import Wires
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
+from .style import use_style
+
 
 ############################ Special Gate Methods #########################
 # If an operation is drawn differently than the standard box/ ctrl+box style
@@ -87,7 +90,86 @@ special_cases = {
 """Dictionary mapping special case classes to functions for drawing them."""
 
 # pylint: disable=too-many-branches
-def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
+def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
+    """Private function wrapped with styling."""
+    wire_options = kwargs.get("wire_options", None)
+    label_options = kwargs.get("label_options", None)
+    active_wire_notches = kwargs.get("active_wire_notches", True)
+    fontsize = kwargs.get("fontsize", None)
+
+    wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+
+    layers = drawable_layers(tape.operations, wire_map=wire_map)
+
+    n_layers = len(layers)
+    n_wires = len(wire_map)
+
+    drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
+
+    if fontsize is not None:
+        drawer.fontsize = fontsize
+
+    drawer.label(list(wire_map), text_options=label_options)
+
+    for layer, layer_ops in enumerate(layers):
+        for op in layer_ops:
+            specialfunc = special_cases.get(op.__class__, None)
+            if specialfunc is not None:
+                mapped_wires = [wire_map[w] for w in op.wires]
+                specialfunc(drawer, layer, mapped_wires, op)
+
+            else:
+                op_control_wires = getattr(op, "control_wires", [])
+                control_wires = [wire_map[w] for w in op_control_wires]
+                target_wires = [wire_map[w] for w in op.wires if w not in op_control_wires]
+                control_values = op.hyperparameters.get("control_values", None)
+
+                if control_values is None:
+                    control_values = [True for _ in control_wires]
+                elif isinstance(control_values[0], str):
+                    control_values = [(i == "1") for i in control_values]
+
+                if len(control_wires) != 0:
+                    drawer.ctrl(
+                        layer,
+                        control_wires,
+                        wires_target=target_wires,
+                        control_values=control_values,
+                    )
+                drawer.box_gate(
+                    layer,
+                    target_wires,
+                    op.label(decimals=decimals),
+                    box_options={
+                        "zorder": 4
+                    },  # make sure box and text above control wires if controlled
+                    text_options={"zorder": 5},
+                    active_wire_notches=active_wire_notches,
+                )
+
+    # store wires we've already drawn on
+    # max one measurement symbol per wire
+    measured_wires = Wires([])
+
+    for m in tape.measurements:
+        # state and probs
+        if len(m.wires) == 0:
+            for wire in range(n_wires):
+                if wire not in measured_wires:
+                    drawer.measure(n_layers, wire)
+            break
+
+        for wire in m.wires:
+            if wire not in measured_wires:
+                drawer.measure(n_layers, wire_map[wire])
+                measured_wires += wire
+
+    return drawer.fig, drawer.ax
+
+
+def tape_mpl(
+    tape, wire_order=None, show_all_wires=False, decimals=None, style="black_white", **kwargs
+):
     """Produces a matplotlib graphic from a tape.
 
     Args:
@@ -98,6 +180,10 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
+        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
+            'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
+            'black_white' style will be used. Setting style does not modify matplotlib global plotting settings.
+            If None, the current matplotlib settings will be used.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -203,21 +289,22 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
 
     PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
     All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
-    Any available string can then be passed to ``qml.drawer.use_style``.
+    Any available string can then be passed via the kwarg ``style`` to change the settings for
+    that plot. This will not affect style settings for subsequent matplotlib plots.
 
     .. code-block:: python
 
-        qml.drawer.use_style('black_white')
-        fig, ax = tape_mpl(tape)
+        fig, ax = tape_mpl(tape, style='sketch')
 
-    .. figure:: ../../_static/tape_mpl/black_white_style.png
+    .. figure:: ../../_static/tape_mpl/sketch_style.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
 
     You can also control the appearance with matplotlib's provided tools, see the
     `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-    For example, we can customize ``plt.rcParams``:
+    For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
+    ``plt.rcParams``, ``qml.drawer.tape_mpl`` must be run with ``style=None``:
 
     .. code-block:: python
 
@@ -231,7 +318,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
         plt.rcParams['lines.linewidth'] = 5
         plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-        fig, ax = tape_mpl(tape)
+        fig, ax = tape_mpl(tape, style=None)
 
     .. figure:: ../../_static/tape_mpl/rcparams.png
             :align: center
@@ -244,7 +331,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
 
     .. code-block:: python
 
-        fig, ax = tape_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
+        fig, ax = tape_mpl(tape, wire_options={'color':'teal', 'linewidth': 5},
                     label_options={'size': 20})
 
     .. figure:: ../../_static/tape_mpl/wires_labels.png
@@ -253,76 +340,18 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
             :target: javascript:void(0);
 
     """
-    wire_options = kwargs.get("wire_options", None)
-    label_options = kwargs.get("label_options", None)
-    active_wire_notches = kwargs.get("active_wire_notches", True)
-    fontsize = kwargs.get("fontsize", None)
 
-    wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
-
-    layers = drawable_layers(tape.operations, wire_map=wire_map)
-
-    n_layers = len(layers)
-    n_wires = len(wire_map)
-
-    drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
-
-    if fontsize is not None:
-        drawer.fontsize = fontsize
-
-    drawer.label(list(wire_map), text_options=label_options)
-
-    for layer, layer_ops in enumerate(layers):
-        for op in layer_ops:
-            specialfunc = special_cases.get(op.__class__, None)
-            if specialfunc is not None:
-                mapped_wires = [wire_map[w] for w in op.wires]
-                specialfunc(drawer, layer, mapped_wires, op)
-
-            else:
-                op_control_wires = getattr(op, "control_wires", [])
-                control_wires = [wire_map[w] for w in op_control_wires]
-                target_wires = [wire_map[w] for w in op.wires if w not in op_control_wires]
-                control_values = op.hyperparameters.get("control_values", None)
-
-                if control_values is None:
-                    control_values = [True for _ in control_wires]
-                elif isinstance(control_values[0], str):
-                    control_values = [(i == "1") for i in control_values]
-
-                if len(control_wires) != 0:
-                    drawer.ctrl(
-                        layer,
-                        control_wires,
-                        wires_target=target_wires,
-                        control_values=control_values,
-                    )
-                drawer.box_gate(
-                    layer,
-                    target_wires,
-                    op.label(decimals=decimals),
-                    box_options={
-                        "zorder": 4
-                    },  # make sure box and text above control wires if controlled
-                    text_options={"zorder": 5},
-                    active_wire_notches=active_wire_notches,
-                )
-
-    # store wires we've already drawn on
-    # max one measurement symbol per wire
-    measured_wires = Wires([])
-
-    for m in tape.measurements:
-        # state and probs
-        if len(m.wires) == 0:
-            for wire in range(n_wires):
-                if wire not in measured_wires:
-                    drawer.measure(n_layers, wire)
-            break
-
-        for wire in m.wires:
-            if wire not in measured_wires:
-                drawer.measure(n_layers, wire_map[wire])
-                measured_wires += wire
-
-    return drawer.fig, drawer.ax
+    restore_params = {}
+    if style:
+        restore_params = mpl.rcParams.copy()
+        use_style(style)
+    try:
+        return _tape_mpl(
+            tape, wire_order=wire_order, show_all_wires=show_all_wires, decimals=decimals, **kwargs
+        )
+    finally:
+        if style:
+            # we don't want to mess with how it modifies whether the interface is interactive
+            # but we want to restore everything else
+            restore_params["interactive"] = mpl.rcParams["interactive"]
+            mpl.rcParams.update(restore_params)
