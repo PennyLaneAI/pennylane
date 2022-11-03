@@ -92,9 +92,8 @@ def is_pauli_word(observable):
     return False
 
 
-def are_identical_pauli_words(
-    pauli_1, pauli_2
-):  # pylint: disable=isinstance-second-argument-not-valid-type
+def are_identical_pauli_words(pauli_1, pauli_2):
+    # pylint: disable=isinstance-second-argument-not-valid-type
     """Performs a check if two Pauli words have the same ``wires`` and ``name`` attributes.
 
     This is a convenience function that checks if two given :class:`~.Tensor` instances specify the same

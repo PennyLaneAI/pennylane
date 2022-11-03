@@ -294,13 +294,6 @@ class PauliSentence(dict):
         Rasies:
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
-        if len(self) == 0:
-            if wire_order is None or wire_order == wires.Wires([]):
-                raise ValueError("Can't get the matrix of an empty PauliSentence.")
-            if format == "dense":
-                return np.eye(2 ** len(wire_order))
-            return sparse.eye(2 ** len(wire_order), format=format)
-
         def _pw_wires(w):
             """To account for empty pauli_words which represent identity operations."""
             if w:
@@ -311,6 +304,13 @@ class PauliSentence(dict):
                 return wires.Wires(
                     list(ps_wires)[0]
                 )  # return any wire from the Pauli sentence's wires
+
+        if len(self) == 0:
+            if wire_order is None or wire_order == wires.Wires([]):
+                raise ValueError("Can't get the matrix of an empty PauliSentence.")
+            if format == "dense":
+                return np.eye(2 ** len(wire_order))
+            return sparse.eye(2 ** len(wire_order), format=format)
 
         mats_and_wires_gen = (
             (

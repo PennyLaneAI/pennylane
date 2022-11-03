@@ -186,10 +186,7 @@ class Exp(SymbolicOp):
         Returns:
             list[PauliRot]: decomposition of the operator
         """
-        from pennylane.pauli.utils import (
-            is_pauli_word,
-            pauli_word_to_string,
-        )  # pylint:disable=import-outside-toplevel
+        from pennylane.pauli.utils import is_pauli_word, pauli_word_to_string  # pylint:disable=import-outside-toplevel
 
         if math.real(self.coeff) != 0 or not is_pauli_word(self.base):
             raise DecompositionUndefinedError
