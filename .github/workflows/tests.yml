@@ -332,6 +332,14 @@ jobs:
         run: |
           python -m pytest tests -m data -n auto
 
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: data-coverage
+          path: ./coverage.xml
+
   device-tests:
     runs-on: ubuntu-latest
 
