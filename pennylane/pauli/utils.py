@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Utility functions used in Pauli partitioning and measurement reduction schemes utilizing the
+Utility functions used in Pauli arithmetic, partitioning, and measurement reduction schemes utilizing the
 symplectic vector-space representation of Pauli words. For information on the symplectic binary
 representation of Pauli words and applications, see:
 
@@ -20,21 +20,49 @@ representation of Pauli words and applications, see:
 * `arXiv:1701.08213 <https://arxiv.org/abs/1701.08213>`_
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
-import itertools
+from operator import matmul
+from itertools import product
+from typing import Union, List
 from functools import reduce, lru_cache
-from typing import List
 
 import numpy as np
-
 import pennylane as qml
-from pennylane.tape import OperationRecorder
-from pennylane.ops import Identity
-from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
-from pennylane.operation import Observable, Tensor
+
+from .pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z, mat_map
+
 from pennylane.wires import Wires
+from pennylane.tape import OperationRecorder
+from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Sum, Prod, SProd
+from pennylane.operation import Operator, Observable, Tensor
 
 # To make this quicker later on
 ID_MAT = np.eye(2)
+
+
+def _is_pauli_linear_combination(op: Operator, level=0):
+    """Check if an arithmetic operator is formatted as a linear combination."""
+    pauli_ops = (Identity, PauliX, PauliY, PauliZ)
+
+    if isinstance(op, Sum) and level == 0:
+        return reduce(
+            lambda a, b: a and b,
+            (_is_pauli_linear_combination(summand, level=1) for summand in op.operands)
+        )
+
+    if isinstance(op, SProd) and level == 1:
+        return _is_pauli_linear_combination(op.base, level=2)
+
+    if isinstance(op, Prod) and level > 0:
+        return reduce(
+            lambda a, b: a and b,
+            (_is_pauli_linear_combination(factor, level=level+1) for factor in op.operands)
+        )
+
+    if isinstance(op, pauli_ops) and level > 0:
+        return True
+
+    return False
 
 
 def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
@@ -73,15 +101,23 @@ def is_pauli_word(observable):
     >>> is_pauli_word(qml.PauliZ(0) @ qml.Hadamard(1))
     False
     """
-
-    if not isinstance(observable, Observable):
-        return False
+    if isinstance(observable, (Identity, PauliX, PauliY, PauliZ)):
+        return True
 
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
         return set(observable.name).issubset(pauli_word_names)
 
-    return observable.name in pauli_word_names
+    if isinstance(observable, Hamiltonian):
+        terms_pauli_word = []
+        for _, ob in observable.terms():
+            if isinstance(ob, Tensor):
+                terms_pauli_word.append(set(ob.name).issubset(pauli_word_names))
+            else:
+                terms_pauli_word.append(ob.name in pauli_word_names)
+        return all(terms_pauli_word)
+
+    return _is_pauli_linear_combination(observable)
 
 
 def are_identical_pauli_words(pauli_1, pauli_2):
@@ -1036,12 +1072,12 @@ def partition_pauli_group(n_qubits: int) -> List[List[str]]:
     # ``['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ']``, which is our first group. The
     # next element of ``string`` will be ``('F', 'F', 'X')`` which we use to generate our second
     # group ``['IIX', 'IZX', 'ZIX', 'ZZX']``.
-    for string in itertools.product("FXYZ", repeat=n_qubits):
+    for string in product("FXYZ", repeat=n_qubits):
         if string not in strings:
             num_free_slots = string.count("F")
 
             group = []
-            commuting = itertools.product("IZ", repeat=num_free_slots)
+            commuting = product("IZ", repeat=num_free_slots)
 
             for commuting_string in commuting:
                 commuting_string = list(commuting_string)

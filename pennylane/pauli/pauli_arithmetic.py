@@ -18,11 +18,28 @@ from functools import reduce
 import numpy as np
 from scipy import sparse
 from pennylane import math, wires
+from pennylane.operation import Tensor
+from pennylane.ops import s_prod, op_sum, prod, Identity, PauliX, PauliY, PauliZ, Hamiltonian
+
 
 I = "I"
 X = "X"
 Y = "Y"
 Z = "Z"
+
+op_map = {
+    I: Identity,
+    X: PauliX,
+    Y: PauliY,
+    Z: PauliZ,
+}
+
+op_to_str_map = {
+    Identity: I,
+    PauliX: X,
+    PauliY: Y,
+    PauliZ: Z,
+}
 
 matI = np.eye(2)
 matX = np.array([[0, 1], [1, 0]])
@@ -143,7 +160,7 @@ class PauliWord(dict):
     def __str__(self):
         """String representation of a PauliWord."""
         if len(self) == 0:
-            return "()"
+            return "I"
         return " @ ".join(f"{op}({w})" for w, op in self.items())
 
     def __repr__(self):
@@ -182,6 +199,31 @@ class PauliWord(dict):
         kron = sparse.kron if format != "dense" else math.kron
 
         return reduce(kron, (matrix_map[self[w]] for w in wire_order))
+
+    def operation(self, wire_order=None):
+        """Returns a native PennyLane``~.Operator`` representing the PauliSentence."""
+        if len(self) == 0:
+            if wire_order is None or wire_order == wires.Wires([]):
+                raise ValueError("Can't get the operation for an empty PauliWord.")
+            return Identity(wires=wire_order)
+
+        if len(self) == 1:
+            wire, op = self.items()
+            return op_map[op](wire)
+
+        return prod(*(op_map[op](wire) for wire, op in self.items()))
+
+    def hamiltonian(self, wire_order=None):
+        if len(self) == 0:
+            if wire_order is None or wire_order == wires.Wires([]):
+                raise ValueError("Can't get the hamiltonian for an empty PauliWord.")
+            return Hamiltonian([1], [Identity(wires=wire_order)])
+
+        if len(self) == 1:
+            wire, op = self.items()
+            return Hamiltonian([1], [op_map[op](wire)])
+
+        return Hamiltonian([1], [Tensor(*(op_map[op](wire) for wire, op in self.items()))])
 
 
 class PauliSentence(dict):
@@ -258,9 +300,18 @@ class PauliSentence(dict):
                 else sparse.eye(2 ** len(wire_order), format=format)
             )
 
+        def _pw_wires(w):
+            """To account for empty pauli_words which represent identity operations."""
+            if w:
+                return wires.Wires(w)
+
+            ps_wires = self.wires
+            if len(ps_wires) > 0:
+                return wires.Wires(list(ps_wires)[0])  # return any wire from the Pauli sentence's wires
+
         mats_and_wires_gen = (
             (
-                coeff * pw.to_mat(wire_order=wires.Wires(list(pw.wires)), format=format),
+                coeff * pw.to_mat(wire_order=_pw_wires(list(pw.wires)), format=format),
                 wires.Wires(list(pw.wires)),
             )
             for pw, coeff in self.items()
@@ -271,6 +322,31 @@ class PauliSentence(dict):
         )
 
         return math.expand_matrix(reduced_mat, result_wire_order, wire_order=wire_order)
+
+    def operation(self, wire_order=None):
+        """Returns a native PennyLane``~.Operator`` representing the PauliSentence."""
+        if len(self) == 0:
+            if wire_order is None or wire_order == wires.Wires([]):
+                raise ValueError("Can't get the operation for an empty PauliSentence.")
+            return Identity(wires=wire_order)
+
+        if len(self) == 1:
+            pw, coeff = self.items()
+            return s_prod(coeff, pw.operation())
+
+        return op_sum(*(s_prod(coeff, pw.operation()) for pw, coeff in self.items()))
+
+    def hamiltonian(self, wire_order=None):
+        if len(self) == 0:
+            if wire_order is None or wire_order == wires.Wires([]):
+                raise ValueError("Can't get the hamiltonian for an empty PauliSentence.")
+            return Hamiltonian([1], [Identity(wires=wire_order)])
+
+        if len(self) == 1:
+            pw, coeff = self.items()
+            return coeff * pw.hamiltonian()
+
+        return sum(coeff * pw.hamiltonian() for pw, coeff in self.items())
 
     def simplify(self, tol=1e-8):
         """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""

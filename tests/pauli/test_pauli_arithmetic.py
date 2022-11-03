@@ -96,7 +96,7 @@ class TestPauliWord:
         (pw1, "X(1) @ Y(2)"),
         (pw2, "X(a) @ X(b) @ Z(c)"),
         (pw3, "Z(0) @ Z(b) @ Z(c)"),
-        (pw4, "()"),
+        (pw4, "I"),
     )
 
     @pytest.mark.parametrize("pw, str_rep", tup_pw_str)
@@ -185,8 +185,8 @@ class TestPauliSentence:
             ps2,
             "-1.23 * X(1) @ Y(2)\n" "+ (-0-4j) * X(a) @ X(b) @ Z(c)\n" "+ 0.5 * Z(0) @ Z(b) @ Z(c)",
         ),
-        (ps3, "-0.5 * Z(0) @ Z(b) @ Z(c)\n" "+ 1 * ()"),
-        (ps4, "1 * ()"),
+        (ps3, "-0.5 * Z(0) @ Z(b) @ Z(c)\n" "+ 1 * I"),
+        (ps4, "1 * I"),
     )
 
     @pytest.mark.parametrize("ps, str_rep", tup_ps_str)
@@ -270,7 +270,6 @@ class TestPauliSentence:
         assert ps2 == copy_ps2
 
     ps_match = (
-        (ps3, "Can't get the matrix of an empty PauliWord."),
         (ps4, "Can't get the matrix of an empty PauliWord."),
         (ps5, "Can't get the matrix of an empty PauliSentence."),
     )
@@ -305,6 +304,12 @@ class TestPauliSentence:
             - 4j * np.kron(np.kron(matX, np.kron(matX, matZ)), np.eye(8))
             + 0.5 * np.kron(np.kron(matI, np.kron(matZ, np.kron(matZ, matZ))), np.eye(4)),
         ),
+        # (
+        #     ps3,
+        #     [0, "b", "c"],
+        #     -0.5 * np.kron(matZ, np.kron(matZ, matZ))
+        #     + 1 * np.eye(8),
+        # ),  Uncomment after bug in expand_matrix is resolved
     )
 
     @pytest.mark.parametrize("ps, wire_order, true_matrix", tup_ps_mat)
