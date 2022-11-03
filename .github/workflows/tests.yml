@@ -309,7 +309,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
@@ -398,7 +398,7 @@ jobs:
           path: ./coverage.xml
 
   upload-to-codecov:
-      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, return-tests, qchem-tests, device-tests]
+      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, return-tests, qchem-tests, data-tests, device-tests]
       runs-on: ubuntu-latest
       steps:
         - name: Checkout
