@@ -591,7 +591,7 @@ class QNode:
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
 
-    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches
+    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
         override_shots = False
         old_interface = self.interface
         if old_interface == "auto":
@@ -643,7 +643,12 @@ class QNode:
             if not isinstance(
                 self._qfunc_output, qml.measurements.MeasurementProcess
             ) and self.interface in ("tf", "autograd"):
-                backprop = any(qml.math.in_backprop(x) for x in res)
+                if isinstance(res, Sequence):
+                    backprop = any(qml.math.in_backprop(x) for x in res)
+                else:
+                    # res might not be a sequence even if the qfunc output is a sequence
+                    # of length 1
+                    backprop = qml.math.in_backprop(res)
 
             if old_interface == "auto":
                 self.interface = "auto"
