@@ -28,8 +28,8 @@ from .tensorflow import (
     _compute_vjp,
     _compute_vjp_new,
     _to_tensors,
-    _reconstruct_res_structure,
-    _reconstruct_jac_structure,
+    _res_restructured,
+    _jac_restructured,
 )
 
 
@@ -366,7 +366,7 @@ def _execute_new(
         res = res[:total_measurements]
 
         # reconstruct the nested structure of res
-        res = _reconstruct_res_structure(res, tapes)
+        res = _res_restructured(res, tapes)
 
         def grad_fn(*dy, **tfkwargs):
             """Returns the vector-Jacobian product with given
@@ -385,8 +385,8 @@ def _execute_new(
                     jacs = args[total_measurements : -len(tapes)]
                     multi_measurements = args[-len(tapes) :]
 
-                    dy = _reconstruct_res_structure(dy, tapes)
-                    jacs = _reconstruct_jac_structure(jacs, tapes)
+                    dy = _res_restructured(dy, tapes)
+                    jacs = _jac_restructured(jacs, tapes)
 
                     return _compute_vjp_new(dy, jacs, multi_measurements)
 
@@ -411,7 +411,7 @@ def _execute_new(
                             all_params = all_params[:len_all_params]
                             params_unwrapped = _nest_params(all_params)
 
-                            dy = _reconstruct_res_structure(dy, tapes)
+                            dy = _res_restructured(dy, tapes)
 
                             with qml.tape.Unwrap(*tapes, params=params_unwrapped):
                                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
@@ -432,7 +432,7 @@ def _execute_new(
                         )
 
                     else:
-                        dy = _reconstruct_res_structure(dy, tapes)
+                        dy = _res_restructured(dy, tapes)
 
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             tapes,

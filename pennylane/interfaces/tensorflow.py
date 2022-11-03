@@ -69,7 +69,7 @@ def _to_tensors(x):
     return tuple(tf.convert_to_tensor(x_) for x_ in x)
 
 
-def _reconstruct_res_structure(res, tapes):
+def _res_restructured(res, tapes):
     """
     Reconstruct the nested tuple structure of the output of a list of tapes
     """
@@ -84,7 +84,7 @@ def _reconstruct_res_structure(res, tapes):
     return tuple(res_nested)
 
 
-def _reconstruct_jac_structure(jacs, tapes):
+def _jac_restructured(jacs, tapes):
     """
     Reconstruct the nested tuple structure of the jacobian of a list of tapes
     """
@@ -333,7 +333,7 @@ def _execute_new(
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
             # reconstruct the nested structure of dy
-            dy = _reconstruct_res_structure(dy, tapes)
+            dy = _res_restructured(dy, tapes)
 
             if jacs:
                 # Jacobians were computed on the forward pass (mode="forward")
