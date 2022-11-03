@@ -549,6 +549,12 @@ Users can specify the control wires as well as the values to control the operati
   >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
   'torch'
   ```
+  
+* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling 
+  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global 
+  configuration for matplotlib plotting. If no `style` is passed, the function defaults 
+  to plotting with the `black_white` style.
+  [(#3247)](https://github.com/PennyLaneAI/pennylane/pull/3247)
 
 * `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
   instead. There is no longer a static method for this.
