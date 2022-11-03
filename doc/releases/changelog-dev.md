@@ -404,13 +404,10 @@
 * `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
-<<<<<<< Updated upstream
-=======
 * `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
   instead. There is no longer a static method for this.
   [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
   
->>>>>>> Stashed changes
 * Deprecate `qml.transforms.qcut.remap_tape_wires`. Use `qml.map_wires` instead.
   [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
 
@@ -419,14 +416,10 @@
 * The code block in the usage details of the UCCSD template has been updated.
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
-<<<<<<< Updated upstream
 * Added a "Deprecations" page to the developer documentation.
   [(#3093)](https://github.com/PennyLaneAI/pennylane/pull/3093)
 
-* The example of the `FlipSign` template is updated.
-=======
 * The example of the `FlipSign` template has been updated.
->>>>>>> Stashed changes
   [(#3219)](https://github.com/PennyLaneAI/pennylane/pull/3219)
 
 <h3>Bug fixes</h3>
