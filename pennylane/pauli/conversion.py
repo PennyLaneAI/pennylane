@@ -21,12 +21,11 @@ from functools import reduce, singledispatch
 
 import numpy as np
 
+from pennylane.operation import Tensor
+from pennylane.ops import Hamiltonian, Identity,  PauliX, PauliY, PauliZ, Prod, SProd, Sum
+
 from .pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z, mat_map, op_map, op_to_str_map
 from .utils import is_pauli_word
-
-from pennylane.ops import Sum, Prod, SProd, PauliX, PauliY, PauliZ, Identity
-from pennylane.operation import Tensor
-from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 @singledispatch
