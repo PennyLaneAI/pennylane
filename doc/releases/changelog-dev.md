@@ -238,7 +238,7 @@ Users can specify the control wires as well as the values to control the operati
 * Datasets hosted on the cloud can be downloaded with the `qml.data.load` function as follows:
 
   ```pycon
-  >>> H2_dataset = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0")
+  >>> H2_dataset = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.1")
   >>> print(H2_dataset)
   [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
   ```
@@ -250,29 +250,19 @@ Users can specify the control wires as well as the values to control the operati
   >>> available_data.keys()
   dict_keys(['qspin', 'qchem'])
   >>> available_data['qchem'].keys()
-  dict_keys(['HF', 'LiH', ...])
+  dict_keys(['H2', 'LiH', ...])
   >>> available_data['qchem']['H2'].keys()
-  dict_keys(['STO-3G'])
+  dict_keys(['6-31G', 'STO-3G'])
   >>> print(available_data['qchem']['H2']['STO-3G'])
-  ['2.35', '1.75', '0.6', '1.85', ...]
+  ['0.5', '0.54', '0.62', '0.66', ...]
   ```
 
 * To download or load only specific properties of a dataset, we can specify the desired attributes in `qml.data.load`:
 
   ```pycon
-  >>> H2_hamiltonian = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0", attributes=["molecule", "hamiltonian"])[0]
-  >>> H2_hamiltonian.hamiltonian
-  <Hamiltonian: terms=15, wires=[0, 1, 2, 3]>
-  ```
-
-* Properties of datasets can be downloaded without downloading the full dataset by using the `attributes` argument:
-
-  ```pycon
-  >>> H2_partial = qml.data.load(data_name='qchem',molname='H2', basis='STO-3G', bondlength=1.0, attributes=['molecule','fci_energy'])[0]
-  >>> H2_partial.molecule
-  <pennylane.qchem.molecule.Molecule at 0x7f56c9d78e50>
+  >>> H2_partial = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.1", attributes=["molecule", "fci_energy"])[0]
   >>> H2_partial.fci_energy
-  -1.1011498981604342
+  -1.0791924385860894
   ```
 
 * The available `attributes` can be found using `qml.data.list_attributes`:
@@ -281,10 +271,10 @@ Users can specify the control wires as well as the values to control the operati
   >>> qml.data.list_attributes(data_name='qchem')
   ['molecule',
   'hamiltonian',
-  'wire_map',
+  'sparse_hamiltonian',
   ...
-  'vqe_params',
-  'vqe_circuit']
+  'tapered_wire_map',
+  'full']
   ```
 
 * To select data interactively by following a series of prompts, we can use `qml.data.load_interactive` as follows:
@@ -325,7 +315,7 @@ Users can specify the control wires as well as the values to control the operati
   ... def circuit():
   ...     return qml.expval(H2_dataset[0].hamiltonian)
   >>> print(circuit())
-  2.173913043478261
+  0.4810692051726486
   ```
 
 * It is also possible to create custom datasets with `qml.data.Dataset`
