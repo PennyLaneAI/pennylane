@@ -14,7 +14,6 @@
 """Unit tests for utility functions of Pauli arithmetic."""
 
 import pytest
-from copy import copy
 
 import numpy as np
 import pennylane as qml
@@ -216,7 +215,7 @@ class TestPauliSentence:
 
     error_ps = (
         qml.Hadamard(wires=0),
-        qml.Hamiltonian([1, 2], [qml.Projector(0, wires=0), qml.PauliZ(wires=1)]),
+        qml.Hamiltonian([1, 2], [qml.Projector([0], wires=0), qml.PauliZ(wires=1)]),
         qml.RX(1.23, wires="a") + qml.PauliZ(wires=0),
     )
 
