@@ -20,7 +20,14 @@ from collections import defaultdict
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import Expectation, MeasurementProcess
+from pennylane.measurements import (
+    AllCounts,
+    Counts,
+    Expectation,
+    MeasurementProcess,
+    Probability,
+    Sample,
+)
 from pennylane.ops import SProd, Sum
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -285,11 +292,15 @@ def sum_expand(tape: QuantumScript, group=True):
     [expval(PauliZ(wires=[0])), expval(2*(PauliX(wires=[1])))]
     [expval(3*(PauliX(wires=[0])))]
     """
+    # Populate these 2 dictionaries with the unique measurement objects, the index of the
+    # initial measurement on the tape and the coefficient
+    # NOTE: expval(Sum) is expanded into the expectation of each summand
+    # NOTE: expval(SProd) is transformed into expval(SProd.base) and the coeff is updated
     measurements_dict = {}  # {m_hash: measurement}
     idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
     for idx, m in enumerate(tape.measurements):
         obs = m.obs
-        coeff = None if obs is None else 1
+        coeff = None if m.return_type in {Probability, Counts, Sample, AllCounts} else 1
         if isinstance(obs, Sum) and m.return_type is Expectation:
             for summand in obs.operands:
                 if isinstance(summand, SProd):
@@ -313,11 +324,14 @@ def sum_expand(tape: QuantumScript, group=True):
         else:
             idxs_coeffs_dict[m.hash].append((idx, coeff))
 
+    # Cast the dictionaries into lists (we don't need the hashed anymore)
     measurements = list(measurements_dict.values())
     idxs_coeffs = list(idxs_coeffs_dict.values())
 
+    # Create the tapes, group observables if group==True
     if group:
         m_groups = _group_measurements(measurements)
+        # Update ``idxs_coeffs`` list such that it tracks the new ``m_groups`` list of lists
         tmp_idxs = []
         for m_group in m_groups:
             if len(m_group) == 1:
@@ -337,8 +351,7 @@ def sum_expand(tape: QuantumScript, group=True):
     def processing_fn(expanded_results):
         results = defaultdict(lambda: 0)  # {m_idx: result}
         for tape_res, tape_idxs in zip(expanded_results, idxs_coeffs):
-            # tape_res contains only one result
-            if isinstance(tape_idxs[0], tuple):
+            if isinstance(tape_idxs[0], tuple):  # tape_res contains only one result
                 for idx, coeff in tape_idxs:
                     if coeff is None:  # sample, counts or probs
                         results[idx] = tape_res[0]
