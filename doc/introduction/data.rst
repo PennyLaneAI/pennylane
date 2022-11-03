@@ -21,28 +21,28 @@ specified, alongside category-specific keyword arguments. For the full list
 of available datasets, please see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
 The :func:`~pennylane.data.load` function returns a list with the desired data.
 
->>> H2_dataset = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0")
+>>> H2_dataset = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.1")
 >>> print(H2_dataset)
 [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
 
 When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as `attributes`).
 For example, we can download or load only the molecule and energy of a dataset as follows:
 
->>> H2_partial = qml.data.load(data_name='qchem',molname='H2', basis='STO-3G', bondlength=1.0, attributes=['molecule','fci_energy'])[0]
+>>> H2_partial = qml.data.load(data_name='qchem',molname='H2', basis='STO-3G', bondlength=1.1, attributes=['molecule','fci_energy'])[0]
 >>> H2_partial.molecule
 <pennylane.qchem.molecule.Molecule at 0x7f56c9d78e50>
 >>> H2_partial.fci_energy
--1.1011498981604342
+-1.0791924385860894
 
 To determine what attributes are available for a type of dataset, we can use the function :func:`~pennylane.data.list_attributes`:
 
 >>> qml.data.list_attributes(data_name='qchem')
 ['molecule',
 'hamiltonian',
-'wire_map',
+'sparse_hamiltonian',
 ...
-'vqe_params',
-'vqe_circuit']
+'tapered_wire_map',
+'full']
 
 Using Datasets in PennyLane
 ---------------------------
@@ -62,7 +62,7 @@ use them directly in a PennyLane circuits as follows:
 ... def circuit():
 ...     return qml.expval(H2_dataset[0].hamiltonian)
 >>> print(circuit())
-2.173913043478261
+0.4810692051726486
 
 Dataset Structure
 -----------------
@@ -77,11 +77,11 @@ function calls will change.
 >>> available_data.keys()
 dict_keys(['qspin', 'qchem'])
 >>> available_data['qchem'].keys()
-dict_keys(['HF', 'LiH', ...])
+dict_keys(['H2', 'LiH', ...])
 >>> available_data['qchem']['H2'].keys()
-dict_keys(['STO-3G'])
+dict_keys(['6-31G', 'STO-3G'])
 >>> print(available_data['qchem']['H2']['STO-3G'])
-['2.35', '1.75', '0.6', '1.85', ...]
+['0.5', '0.54', '0.62', '0.66', ...]
 
 Creating Custom Datasets
 ------------------------
@@ -95,7 +95,7 @@ To create a dataset, we can do the following:
 >>> example_dataset.data_name
 'Example'
 >>> example_dataset.hamiltonian
-    (0.5) [X1]
+(0.5) [X1]
 + (1) [Z0]
 >>> example_dataset.energies
 array([-1.5, -0.5,  0.5,  1.5])
@@ -109,7 +109,7 @@ We can then write this :class:`~pennylane.data.Dataset` to storage and read it a
 >>> read_dataset.data_name
 'Example'
 >>> read_dataset.hamiltonian
-    (0.5) [X1]
+(0.5) [X1]
 + (1) [Z0]
 >>> read_dataset.energies
 array([-1.5, -0.5,  0.5,  1.5])
