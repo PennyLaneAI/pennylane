@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import (
+    AllCounts,
     Counts,
     Expectation,
     MeasurementProcess,
@@ -37,6 +38,10 @@ from pennylane.measurements import (
     sample,
     state,
     var,
+    VnEntropy,
+    MutualInfo,
+    Shadow,
+    ShadowExpval,
 )
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
@@ -1158,7 +1163,7 @@ class TestProperties:
     def test_wires_match_observable(self):
         """Test that the wires of the measurement process
         match an internal observable"""
-        obs = qml.Hermitian(np.diag([1, 2, 3]), wires=["a", "b", "c"])
+        obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=["a", "b"])
         m = MeasurementProcess(Expectation, obs=obs)
 
         assert np.all(m.wires == obs.wires)
@@ -1166,19 +1171,19 @@ class TestProperties:
     def test_eigvals_match_observable(self):
         """Test that the eigenvalues of the measurement process
         match an internal observable"""
-        obs = qml.Hermitian(np.diag([1, 2, 3]), wires=[0, 1, 2])
+        obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
         m = MeasurementProcess(Expectation, obs=obs)
 
-        assert np.all(m.eigvals() == np.array([1, 2, 3]))
+        assert np.all(m.eigvals() == np.array([1, 2, 3, 4]))
 
         # changing the observable data should be reflected
-        obs.data = [np.diag([5, 6, 7])]
-        assert np.all(m.eigvals() == np.array([5, 6, 7]))
+        obs.data = [np.diag([5, 6, 7, 8])]
+        assert np.all(m.eigvals() == np.array([5, 6, 7, 8]))
 
     def test_error_obs_and_eigvals(self):
         """Test that providing both eigenvalues and an observable
         results in an error"""
-        obs = qml.Hermitian(np.diag([1, 2, 3]), wires=[0, 1, 2])
+        obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
 
         with pytest.raises(ValueError, match="Cannot set the eigenvalues"):
             MeasurementProcess(Expectation, obs=obs, eigvals=[0, 1])
@@ -1186,7 +1191,7 @@ class TestProperties:
     def test_error_obs_and_wires(self):
         """Test that providing both wires and an observable
         results in an error"""
-        obs = qml.Hermitian(np.diag([1, 2, 3]), wires=[0, 1, 2])
+        obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
 
         with pytest.raises(ValueError, match="Cannot set the wires"):
             MeasurementProcess(Expectation, obs=obs, wires=qml.wires.Wires([0, 1]))
@@ -1308,6 +1313,43 @@ class TestExpansion:
 
         m = MeasurementProcess(Expectation, wires=qml.wires.Wires([0, 1]), eigvals=np.ones(4))
         assert m.has_decomposition is False
+
+    @pytest.mark.parametrize(
+        "return_type, kwargs",
+        [
+            (Sample, {}),
+            (Sample, {"wires": ["a", 1]}),
+            (AllCounts, {}),
+            (AllCounts, {"wires": ["a", 1]}),
+            (Counts, {}),
+            (Counts, {"wires": ["a", 1]}),
+        ],
+    )
+    def test_samples_computational_basis_true(self, return_type, kwargs):
+        """Test that measurements of Paulis report to have a decomposition."""
+        m = MeasurementProcess(return_type, **kwargs)
+        assert m.samples_computational_basis is True
+
+    @pytest.mark.parametrize(
+        "return_type, arg",
+        [
+            (Expectation, {"obs": qml.PauliX(2)}),
+            (Variance, {"obs": qml.PauliX("a")}),
+            (Probability, {"obs": qml.PauliX("b")}),
+            (Probability, {"wires": ["a", 1]}),
+            (Sample, {"obs": qml.PauliX("a")}),
+            (Counts, {"obs": qml.PauliX("a")}),
+            (State, {}),
+            (VnEntropy, {"wires": ["a", 1]}),
+            (MutualInfo, {"wires": [["a", 1], ["b", 2]]}),
+            (Shadow, {"wires": [["a", 1], ["b", 2]]}),
+            (ShadowExpval, {"obs": qml.PauliX("a")}),
+        ],
+    )
+    def test_samples_computational_basis_false(self, return_type, arg):
+        """Test that measurements of Paulis report to have a decomposition."""
+        m = MeasurementProcess(return_type, **arg)
+        assert m.samples_computational_basis is False
 
 
 class TestDiagonalizingGates:

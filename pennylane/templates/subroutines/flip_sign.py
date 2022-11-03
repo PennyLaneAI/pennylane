@@ -20,50 +20,49 @@ from pennylane.operation import Operation, AnyWires
 
 
 class FlipSign(Operation):
-    r"""FlipSign operator flips the sign for a given basic state.
+    r"""Flips the sign of a given basis state.
 
-    In a nutshell, this class perform the following operation:
+    This template performs the following operation:
 
     FlipSign(n) :math:`|m\rangle = -|m\rangle` if :math:`m = n`
 
     FlipSign(n) :math:`|m\rangle = |m\rangle` if :math:`m \not = n`,
 
-    where n is the basic state to flip and m is the input.
+    where n is the basis state to flip and m is the input.
 
     Args:
-        n (array[int] or int): binary array or integer value representing the state to flip the sign
-        wires (array[int]): number of wires that the operator acts on
+        n (array[int] or int): binary array or integer value representing the state on which to
+            flip the sign
+        wires (array[int]): wires that the template acts on
 
 
-    .. details::
-        :title: Usage Details
+    **Example**
 
-        The template is used inside a qnode.
-        The number of shots has to be explicitly set on the device when using sample-based measurements:
+    This template changes the sign of the basis state passed as an argument.
+    In this example, when passing the element ``[1, 0]``, we will change the sign of the state :math:`|10\rangle`.
+    We could alternatively pass the integer ``2`` and get the same result since its binary representation is ``[1, 0]``.
 
-        .. code-block:: python
+    .. code-block:: python
 
-            basis_state = [1, 0]
+        basis_state = [1, 0]
 
-            dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.qnode(dev)
+        def circuit():
+            for wire in list(range(2)):
+                qml.Hadamard(wires=wire)
+            qml.FlipSign(basis_state, wires=list(range(2)))
+            return qml.state()
 
-            @qml.qnode(dev)
-            def circuit():
-                for wire in list(range(2)):
-                    qml.Hadamard(wires=wire)
-                qml.FlipSign(basis_state, wires=list(range(2)))
-                return qml.state()
+        circuit()
 
+    The result for the above circuit is:
 
-            circuit()
+    .. code-block:: python
 
-        The result for the above circuit is:
-
-        .. code-block:: python
-
-            >>> print(circuit())
-            [ 0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
+        >>> print(circuit())
+        [ 0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
 
     """
 

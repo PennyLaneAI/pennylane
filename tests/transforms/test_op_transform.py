@@ -155,6 +155,10 @@ class TestUI:
         # check default wire order
         assert spy.spy_return[1].tolist() == [0, "a"]
 
+        qs = qml.tape.QuantumScript(tape.operations)
+        res_qs = my_transform(qs)
+        assert res_qs == ["RX", "RY"]
+
     def test_multiple_operator_qfunc(self, mocker):
         """Test that a transform can be applied to a quantum function
         with multiple operations as long as it is registered _how_
@@ -528,6 +532,10 @@ class TestWireOrder:
         expected = np.kron(np.eye(2), np.diag([1, -1]))
         assert np.allclose(res, expected)
         assert spy.spy_return[1].tolist() == ["a", 0]
+
+        qs = qml.tape.QuantumScript(tape.operations)
+        res_qs = matrix(qs, wire_order=["a", 0])
+        assert np.allclose(res_qs, expected)
 
     def test_inconsistent_wires_tape(self, mocker):
         """Test that an exception is raised if the wire order and tape wires are inconsistent"""
