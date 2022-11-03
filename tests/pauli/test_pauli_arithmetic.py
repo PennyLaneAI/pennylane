@@ -205,7 +205,7 @@ class TestPauliWord:
     def test_hamiltonian_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity Hamiltonian."""
         op = PauliWord({}).hamiltonian(wire_order=[0, 1])
-        id = 1*qml.Identity(wires=[0, 1])
+        id = 1 * qml.Identity(wires=[0, 1])
         assert op.compare(id)
 
     def test_hamiltonian_empty_error(self):
@@ -423,6 +423,7 @@ class TestPauliSentence:
     @pytest.mark.parametrize("ps, op", tup_ps_operation)
     def test_operation(self, ps, op):
         """Test that a PauliSentence can be cast to a PL operation."""
+
         def _compare_ops(op1, op2):
             assert op1.name == op2.name
             assert op1.wires == op2.wires
@@ -440,14 +441,17 @@ class TestPauliSentence:
 
     def test_operation_with_identity(self):
         """Test that a PauliSentence with an empty PauliWord can be cast to
-        operation correctly. """
+        operation correctly."""
         full_ps_op = ps3.operation()
         full_op = qml.op_sum(
             -0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
             qml.s_prod(1, qml.Identity(wires=[0, "b", "c"])),
         )
 
-        ps_op, op = (full_ps_op.operands[1], full_op.operands[1])  # testing that the identity term is constructed well
+        ps_op, op = (
+            full_ps_op.operands[1],
+            full_op.operands[1],
+        )  # testing that the identity term is constructed well
         assert ps_op.scalar == op.scalar
 
         ps_base, op_base = (ps_op.base, op.base)
@@ -474,19 +478,19 @@ class TestPauliSentence:
         (PauliSentence({PauliWord({0: X}): 1}), 1 * qml.PauliX(wires=0)),
         (
             ps1_hamiltonian,
-            + 1.23 * qml.PauliX(wires=1) @ qml.PauliY(wires=2)
+            +1.23 * qml.PauliX(wires=1) @ qml.PauliY(wires=2)
             + 4 * qml.PauliX(wires="a") @ qml.PauliX(wires="b") @ qml.PauliZ(wires="c")
             - 0.5 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c"),
         ),
         (
             ps2_hamiltonian,
-            - 1.23 * qml.PauliX(wires=1) @ qml.PauliY(wires=2)
+            -1.23 * qml.PauliX(wires=1) @ qml.PauliY(wires=2)
             - 4 * qml.PauliX(wires="a") @ qml.PauliX(wires="b") @ qml.PauliZ(wires="c")
             + 0.5 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c"),
         ),
         (
             ps3,
-            - 0.5 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c")
+            -0.5 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c")
             + 1 * qml.Identity(wires=[0, "b", "c"]),
         ),
     )
@@ -500,11 +504,13 @@ class TestPauliSentence:
     def test_hamiltonian_empty(self):
         """Test that an empty PauliSentence with wire_order returns Identity."""
         op = ps5.hamiltonian(wire_order=[0, 1])
-        id = 1*qml.Identity(wires=[0, 1])
+        id = 1 * qml.Identity(wires=[0, 1])
         assert op.compare(id)
 
     def test_hamiltonian_empty_error(self):
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a Hamiltonian."""
-        with pytest.raises(ValueError, match="Can't get the hamiltonian for an empty PauliSentence."):
+        with pytest.raises(
+            ValueError, match="Can't get the hamiltonian for an empty PauliSentence."
+        ):
             ps5.hamiltonian()

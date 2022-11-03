@@ -208,7 +208,7 @@ class PauliWord(dict):
             return Identity(wires=wire_order)
 
         if len(self) == 1:
-            wire, = self
+            (wire,) = self
             op = self[wire]
             return op_map[op](wire)
 
@@ -221,7 +221,7 @@ class PauliWord(dict):
             return Hamiltonian([1], [Identity(wires=wire_order)])
 
         if len(self) == 1:
-            wire, = self
+            (wire,) = self
             op = self[wire]
             return Hamiltonian([1], [op_map[op](wire)])
 
@@ -335,11 +335,22 @@ class PauliSentence(dict):
             return Identity(wires=wire_order)
 
         if len(self) == 1:
-            pw, = self
+            (pw,) = self
             coeff = self[pw]
-            return s_prod(coeff, pw.operation()) if len(pw) > 0 else s_prod(coeff, pw.operation(wire_order=list(self.wires)))
+            return (
+                s_prod(coeff, pw.operation())
+                if len(pw) > 0
+                else s_prod(coeff, pw.operation(wire_order=list(self.wires)))
+            )
 
-        return op_sum(*(s_prod(coeff, pw.operation()) if len(pw) > 0 else s_prod(coeff, pw.operation(wire_order=list(self.wires))) for pw, coeff in self.items()))
+        return op_sum(
+            *(
+                s_prod(coeff, pw.operation())
+                if len(pw) > 0
+                else s_prod(coeff, pw.operation(wire_order=list(self.wires)))
+                for pw, coeff in self.items()
+            )
+        )
 
     def hamiltonian(self, wire_order=None):
         if len(self) == 0:
@@ -348,11 +359,20 @@ class PauliSentence(dict):
             return Hamiltonian([1], [Identity(wires=wire_order)])
 
         if len(self) == 1:
-            pw, = self
+            (pw,) = self
             coeff = self[pw]
-            return coeff * pw.hamiltonian() if len(pw) > 0 else coeff * pw.hamiltonian(wire_order=list(self.wires))
+            return (
+                coeff * pw.hamiltonian()
+                if len(pw) > 0
+                else coeff * pw.hamiltonian(wire_order=list(self.wires))
+            )
 
-        return sum(coeff * pw.hamiltonian() if len(pw) > 0 else coeff * pw.hamiltonian(wire_order=list(self.wires)) for pw, coeff in self.items())
+        return sum(
+            coeff * pw.hamiltonian()
+            if len(pw) > 0
+            else coeff * pw.hamiltonian(wire_order=list(self.wires))
+            for pw, coeff in self.items()
+        )
 
     def simplify(self, tol=1e-8):
         """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""
