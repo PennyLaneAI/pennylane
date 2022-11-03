@@ -199,13 +199,13 @@ def test_import_zstd_dill(monkeypatch):
     """Test if an ImportError is raised by _import_zstd_dill function."""
 
     with monkeypatch.context() as m:
-        m.setitem(sys.modules, "dill", None)
+        m.setitem(sys.modules, "zstd", None)
 
-        with pytest.raises(ImportError, match="This feature requires zstd and dill."):
+        with pytest.raises(ImportError, match="This feature requires zstd and dill"):
             qml.data.dataset._import_zstd_dill()
 
     with monkeypatch.context() as m:
-        m.setitem(sys.modules, "zstd", None)
+        m.setitem(sys.modules, "dill", None)
 
-        with pytest.raises(ImportError, match="This feature requires zstd and dill."):
+        with pytest.raises(ImportError, match="This feature requires zstd and dill"):
             qml.data.dataset._import_zstd_dill()
