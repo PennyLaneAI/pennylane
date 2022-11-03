@@ -41,8 +41,7 @@ def pauli_sentence(op):
 
     Returns ~.PauliSentence
     """
-    err_msg = f"Op must be a linear combination of Pauli operators only, got: {op}"
-    raise ValueError(err_msg)
+    raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
 
 @pauli_sentence.register
@@ -67,6 +66,9 @@ def _(op: Identity):
 
 @pauli_sentence.register
 def _(op: Tensor):
+    if not is_pauli_word(op):
+        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
+
     pw = {}
     for factor in op.obs:
         wire, pauli = (factor.wires[0], op_to_str_map[factor.__class__])
@@ -77,6 +79,9 @@ def _(op: Tensor):
 
 @pauli_sentence.register
 def _(op: Prod):
+    if not is_pauli_word(op):
+        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
+
     pw = {}
     for factor in op.operands:
         wire, pauli = (factor.wires[0], op_to_str_map[factor.__class__])
@@ -87,6 +92,9 @@ def _(op: Prod):
 
 @pauli_sentence.register
 def _(op: SProd):
+    if not is_pauli_word(op):
+        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
+
     ps = pauli_sentence(op.base)
     for pw, coeff in ps.items():
         ps[pw] = coeff * op.scalar
@@ -95,6 +103,9 @@ def _(op: SProd):
 
 @pauli_sentence.register
 def _(op: Hamiltonian):
+    if not is_pauli_word(op):
+        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
+
     summands = []
     for coeff, op in zip(*op.terms()):
         ps = pauli_sentence(op)
@@ -107,77 +118,11 @@ def _(op: Hamiltonian):
 
 @pauli_sentence.register
 def _(op: Sum):
+    if not is_pauli_word(op):
+        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
+
     summands = [pauli_sentence(summand) for summand in op.operands]
     return reduce(lambda a, b: a + b, summands)
-
-
-# def pauli_sentence(op: Operator, simplify=False) -> PauliSentence:
-#     """Return the PauliSentence representation of an arithmetic operator or Hamiltonian.
-#
-#     Args:
-#         op (~.Operator): The operator or hamiltonian that needs to converted.
-#
-#     Raises:
-#         ValueError: Op must be a linear combination of Pauli operators
-#         ValueError: pauli_sentence only supports instances of ``~.Tensor``,
-#             ``~.Hamiltonian`` or ``~.Sum``
-#
-#     Returns ~.PauliSentence
-#     """
-#     err_msg = f"Op must be a linear combination of Pauli operators only, got: {op}"
-#     if not is_pauli_word(op):
-#         raise ValueError(err_msg)
-#
-#     def _tensor_product_to_ps(operator, c=1.0, is_prod=False):
-#         """~.Tensor or ~.Prod to ~.PauliSentence"""
-#         pw = {}
-#         factors = operator.operands if is_prod else operator.obs
-#         for factor in factors:
-#             wire, pauli = (factor.wires[0], op_to_str_map[factor.__class__])
-#             pw[wire] = pauli
-#
-#         return PauliSentence({PauliWord(pw): c})
-#
-#     if isinstance(op, Tensor):
-#         return _tensor_product_to_ps(op)
-#
-#     if isinstance(op, Hamiltonian):
-#         terms = []
-#         for coeff, ob in zip(*op.terms()):
-#             if isinstance(ob, Tensor):
-#                 terms.append(_tensor_product_to_ps(ob, c=coeff))
-#             else:
-#                 if not is_pauli_word(ob):
-#                     raise ValueError(err_msg)
-#                 pauli_rep, wire = (op_to_str_map[ob.__class__], ob.wires[0])
-#                 terms.append(PauliSentence({PauliWord({wire: pauli_rep}): coeff}))
-#         return sum(terms)
-#
-#     if isinstance(op, Sum) and is_pauli_word(op):
-#         terms = []
-#         for summand in op.operands:
-#             if isinstance(summand, Prod):
-#                 terms.append(_tensor_product_to_ps(summand, c=1.0, is_prod=True))
-#
-#             elif isinstance(summand, SProd):
-#                 coeff = summand.scalar
-#                 ob = summand.base
-#                 if isinstance(ob, Prod):
-#                     terms.append(_tensor_product_to_ps(ob, c=coeff, is_prod=True))
-#                 else:
-#                     pauli_rep, wire = (op_to_str_map[ob.__class__], ob.wires[0])
-#                     terms.append(PauliSentence({PauliWord({wire: pauli_rep}): coeff}))
-#
-#             else:
-#                 pauli_rep, wire = (op_to_str_map[summand.__class__], summand.wires[0])
-#                 terms.append(PauliSentence({PauliWord({wire: pauli_rep}): 1.0}))
-#
-#         return reduce(lambda a, b: a+b, terms)
-#
-#     if simplify:
-#         pauli_sentence(op.simplify(), simplify=False)
-#
-#     raise ValueError(f"pauli_sentence only supports instances of Tensor, Hamiltonian or Sum; got {op}")
 
 
 def decompose(H, hide_identity=False, wire_order=None, pauli=False) -> Union[Hamiltonian, PauliSentence]:
