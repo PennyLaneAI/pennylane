@@ -24,7 +24,7 @@ from pennylane.operation import (
     expand_matrix,
     OperatorPropertyUndefined,
 )
-from pennylane.pauli import is_pauli_word, pauli_word_to_string
+from pennylane.pauli.utils import is_pauli_word, pauli_word_to_string
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
