@@ -20,7 +20,6 @@ representation of Pauli words and applications, see:
 * `arXiv:1701.08213 <https://arxiv.org/abs/1701.08213>`_
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
-from operator import matmul
 from itertools import product
 from typing import Union, List
 from functools import reduce, lru_cache
@@ -28,13 +27,11 @@ from functools import reduce, lru_cache
 import numpy as np
 import pennylane as qml
 
-from .pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z, mat_map
-
 from pennylane.wires import Wires
 from pennylane.tape import OperationRecorder
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
-from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Sum, Prod, SProd
-from pennylane.operation import Operator, Observable, Tensor
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ
+from pennylane.operation import Observable, Tensor
 
 # To make this quicker later on
 ID_MAT = np.eye(2)
