@@ -304,7 +304,7 @@ def tape_mpl(
     You can also control the appearance with matplotlib's provided tools, see the
     `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
     For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
-    ``plt.rcParams``, ``qml.draw_mpl`` must be run with ``style=None``:
+    ``plt.rcParams``, ``qml.drawer.tape_mpl`` must be run with ``style=None``:
 
     .. code-block:: python
 
