@@ -195,7 +195,7 @@ def test_hamiltonian_is_loaded_properly(tmp_path):
     assert qml.equal(qml.PauliZ(0), ops[1])
 
 
-def _import_zstd_dill(monkeypatch):
+def test_import_zstd_dill(monkeypatch):
     """Test if an ImportError is raised by _import_zstd_dill function."""
 
     with monkeypatch.context() as m:
