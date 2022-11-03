@@ -357,10 +357,10 @@ def sum_expand(tape: QuantumScript, group=True):
         else []
     )
     tapes = expanded_tapes + non_expanded_tape
-    # indices used to reorder the obtained results
+    # Indices used for reordering the obtained results in the postprocessing function
     measurement_idxs = expanded_measurement_idxs + non_expanded_measurement_idxs
 
-    def outer_processing_fn(res):
+    def processing_fn(res):
         processed_results = []
         # process results of all tapes except the last one
         for idx, n_tapes in enumerate(num_tapes):
@@ -376,7 +376,7 @@ def sum_expand(tape: QuantumScript, group=True):
             return [res[0] for res in sorted_results]
         return sorted_results[0][0]
 
-    return tapes, outer_processing_fn
+    return tapes, processing_fn
 
 
 def _group_summands(sum: Sum):
