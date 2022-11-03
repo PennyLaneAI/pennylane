@@ -307,7 +307,9 @@ class PauliSentence(dict):
 
             ps_wires = self.wires
             if len(ps_wires) > 0:
-                return wires.Wires(list(ps_wires)[0])  # return any wire from the Pauli sentence's wires
+                return wires.Wires(
+                    list(ps_wires)[0]
+                )  # return any wire from the Pauli sentence's wires
 
         mats_and_wires_gen = (
             (

@@ -112,7 +112,9 @@ def _(op: Sum):
     return reduce(lambda a, b: a + b, summands)
 
 
-def decompose(H, hide_identity=False, wire_order=None, pauli=False) -> Union[Hamiltonian, PauliSentence]:
+def decompose(
+    H, hide_identity=False, wire_order=None, pauli=False
+) -> Union[Hamiltonian, PauliSentence]:
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
@@ -159,9 +161,7 @@ def decompose(H, hide_identity=False, wire_order=None, pauli=False) -> Union[Ham
         wire_order = range(n)
 
     if H.shape != (N, N):
-        raise ValueError(
-            "The matrix should have shape (2**n, 2**n), for any qubit number n>=1"
-        )
+        raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
 
     if not np.allclose(H, H.conj().T):
         raise ValueError("The matrix is not Hermitian")
@@ -176,7 +176,8 @@ def decompose(H, hide_identity=False, wire_order=None, pauli=False) -> Union[Ham
 
         if not np.allclose(coeff, 0):
             obs_term = (
-                [(o, w) for w, o in zip(wire_order, term) if o != I] if hide_identity
+                [(o, w) for w, o in zip(wire_order, term) if o != I]
+                if hide_identity
                 else [(o, w) for w, o in zip(wire_order, term)]
             )
 
@@ -185,7 +186,12 @@ def decompose(H, hide_identity=False, wire_order=None, pauli=False) -> Union[Ham
                 obs_lst.append(obs_term)
 
     if pauli:
-        return PauliSentence({PauliWord({w: o for o, w in obs_n_wires}): coeff for coeff, obs_n_wires in zip(coeffs, obs_lst)})
+        return PauliSentence(
+            {
+                PauliWord({w: o for o, w in obs_n_wires}): coeff
+                for coeff, obs_n_wires in zip(coeffs, obs_lst)
+            }
+        )
 
     obs = [reduce(matmul, [op_map[o](w) for o, w in obs_term]) for obs_term in obs_lst]
     return Hamiltonian(coeffs, obs)

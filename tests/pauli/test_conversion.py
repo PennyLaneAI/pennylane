@@ -98,6 +98,7 @@ class TestDecomposition:
         assert isinstance(ps, qml.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
 
+
 # class TestPauliSentence:
 #     """Test the pauli_sentence function."""
 #

@@ -307,8 +307,7 @@ class TestPauliSentence:
         (
             ps3,
             [0, "b", "c"],
-            -0.5 * np.kron(matZ, np.kron(matZ, matZ))
-            + 1 * np.eye(8),
+            -0.5 * np.kron(matZ, np.kron(matZ, matZ)) + 1 * np.eye(8),
         ),
     )
 
