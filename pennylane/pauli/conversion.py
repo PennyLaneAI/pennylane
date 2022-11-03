@@ -59,7 +59,7 @@ def _(op: PauliZ):
 
 
 @pauli_sentence.register
-def _(op: Identity):
+def _(op: Identity):  # pylint:disable=unused-argument
     return PauliSentence({PauliWord({}): 1.0})
 
 
@@ -78,7 +78,7 @@ def _(op: Tensor):
 
 @pauli_sentence.register
 def _(op: Prod):
-    factors = [pauli_sentence(factor) for factor in op.operands]
+    factors = (pauli_sentence(factor) for factor in op)
     return reduce(lambda a, b: a * b, factors)
 
 
@@ -96,8 +96,8 @@ def _(op: Hamiltonian):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
     summands = []
-    for coeff, op in zip(*op.terms()):
-        ps = pauli_sentence(op)
+    for coeff, term in zip(*op.terms()):
+        ps = pauli_sentence(term)
         for pw, sub_coeff in ps.items():
             ps[pw] = coeff * sub_coeff
         summands.append(ps)
@@ -107,7 +107,7 @@ def _(op: Hamiltonian):
 
 @pauli_sentence.register
 def _(op: Sum):
-    summands = [pauli_sentence(summand) for summand in op.operands]
+    summands = (pauli_sentence(summand) for summand in op)
     return reduce(lambda a, b: a + b, summands)
 
 
