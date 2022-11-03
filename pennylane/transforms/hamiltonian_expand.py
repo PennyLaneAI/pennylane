@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane.measurements import Expectation, MeasurementProcess
 from pennylane.ops import SProd, Sum
 from pennylane.tape import QuantumScript
+from pennylane.wires import Wires
 
 
 def hamiltonian_expand(tape: QuantumScript, group=True):
@@ -288,7 +289,7 @@ def sum_expand(tape: QuantumScript, group=True):
     idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
     for idx, m in enumerate(tape.measurements):
         obs = m.obs
-        coeff = 1
+        coeff = None if obs is None else 1
         if isinstance(obs, Sum) and m.return_type is Expectation:
             for summand in obs.operands:
                 if isinstance(summand, SProd):
@@ -339,7 +340,10 @@ def sum_expand(tape: QuantumScript, group=True):
             # tape_res contains only one result
             if isinstance(tape_idxs[0], tuple):
                 for idx, coeff in tape_idxs:
-                    results[idx] += coeff * tape_res[0]
+                    if coeff is None:  # sample, counts or probs
+                        results[idx] = tape_res[0]
+                    else:
+                        results[idx] += coeff * tape_res[0]
                 continue
             # tape_res contains multiple results
             for res, idxs in zip(tape_res, tape_idxs):
@@ -368,7 +372,7 @@ def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[Mea
     qwc_groups = []
     for m in measurements:
         if len(m.wires) == 0:  # measurement acts on all wires: e.g. qml.counts()
-            qwc_groups.append()
+            qwc_groups.append((Wires([]), [m]))
             continue
 
         op_added = False
