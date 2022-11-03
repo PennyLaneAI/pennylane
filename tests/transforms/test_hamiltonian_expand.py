@@ -448,7 +448,7 @@ class TestSumExpand:
 
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
-            tapes, fn = hamiltonian_expand(tape)
+            tapes, fn = sum_expand(tape)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
