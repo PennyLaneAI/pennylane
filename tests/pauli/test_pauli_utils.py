@@ -18,6 +18,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import (
+    Hamiltonian,
     Identity,
     PauliX,
     PauliY,
@@ -260,18 +261,19 @@ class TestGroupingUtils:
 
         assert pytest.raises(ValueError, is_qwc, pauli_vec_1, pauli_vec_2)
 
-    def test_is_pauli_word(self):
+    obs_pw_status = (
+        (PauliX(0), True),
+        (PauliZ(1) @ PauliX(2) @ PauliZ(4), True),
+        (PauliX(1) @ Hadamard(4), False),
+        (Hadamard(0), False),
+        (Hamiltonian([1.0, 0.5], [PauliX(0), PauliZ(1) @ PauliX(2)]), True),
+        (Hamiltonian([1.0, 0.5], [Hadamard(0), PauliZ(1) @ PauliX(2)]), False),
+    )
+
+    @pytest.mark.parametrize("ob, is_pw", obs_pw_status)
+    def test_is_pauli_word(self, ob, is_pw):
         """Test for determining whether input ``Observable`` instance is a Pauli word."""
-
-        observable_1 = PauliX(0)
-        observable_2 = PauliZ(1) @ PauliX(2) @ PauliZ(4)
-        observable_3 = PauliX(1) @ Hadamard(4)
-        observable_4 = Hadamard(0)
-
-        assert is_pauli_word(observable_1)
-        assert is_pauli_word(observable_2)
-        assert not is_pauli_word(observable_3)
-        assert not is_pauli_word(observable_4)
+        assert is_pauli_word(ob) == is_pw
 
     def test_is_pauli_word_non_observable(self):
         """Test that non-observables are not Pauli Words."""

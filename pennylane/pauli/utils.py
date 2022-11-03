@@ -61,7 +61,7 @@ def is_pauli_word(observable):
     Checks if an operator instance is a Pauli word.
 
     Args:
-        observable (Union[~.Operator, ~.Hamiltonian]): the operator to be
+        observable (Union[~.Observable]): the operator to be
             examined
 
     Returns:
@@ -85,7 +85,7 @@ def is_pauli_word(observable):
 
     if isinstance(observable, Hamiltonian):
         terms_pauli_word = []
-        for _, ob in observable.terms():
+        for _, ob in zip(*observable.terms()):
             if isinstance(ob, Tensor):
                 terms_pauli_word.append(set(ob.name).issubset(pauli_word_names))
             else:
