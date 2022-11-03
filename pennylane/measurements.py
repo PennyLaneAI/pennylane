@@ -123,6 +123,9 @@ class MeasurementProcess:
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+        log_base (float): Base for the logarithm.
     """
 
     # pylint: disable=too-few-public-methods
@@ -1273,7 +1276,7 @@ def vn_entropy(wires, log_base=None):
 
     Args:
         wires (Sequence[int] or int): The wires of the subsystem
-        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
+        log_base (float): Base for the logarithm.
 
     **Example:**
 
@@ -1325,7 +1328,7 @@ def mutual_info(wires0, wires1, log_base=None):
     Args:
         wires0 (Sequence[int] or int): the wires of the first subsystem
         wires1 (Sequence[int] or int): the wires of the second subsystem
-        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
+        log_base (float): Base for the logarithm.
 
     **Example:**
 
