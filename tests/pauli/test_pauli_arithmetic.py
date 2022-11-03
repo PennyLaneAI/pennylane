@@ -423,7 +423,6 @@ class TestPauliSentence:
     @pytest.mark.parametrize("ps, op", tup_ps_operation)
     def test_operation(self, ps, op):
         """Test that a PauliSentence can be cast to a PL operation."""
-
         def _compare_ops(op1, op2):
             assert op1.name == op2.name
             assert op1.wires == op2.wires
