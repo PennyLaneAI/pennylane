@@ -31,7 +31,7 @@ def _import_zstd_dill():
     except ImportError as Error:
         raise ImportError(
             "This feature requires zstd and dill."
-            "They can be installed with: pip install zstd dill."
+            "They can be installed with:\n\n pip install zstd dill."
         ) from Error
 
     return zstd, dill
