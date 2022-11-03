@@ -125,20 +125,22 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     expanded_tapes = []
     expanded_measurement_idxs = []
     expanded_coeffs = []
+    expanded_grouping = []
     for idx, m in enumerate(tape.measurements):
         if isinstance(m.obs, Hamiltonian) and m.return_type is Expectation:
             hamiltonian = m.obs
             # note: for backward passes of some frameworks
             # it is crucial to use the hamiltonian.data attribute,
             # and not hamiltonian.coeffs when recombining the results
-
+            inner_grouping = False
             if group or hamiltonian.grouping_indices is not None:
+                inner_grouping = True
 
                 if hamiltonian.grouping_indices is None:
                     # explicitly selected grouping, but indices not yet computed
                     hamiltonian.compute_grouping()
 
-                coeffs = [
+                inner_coeffs = [
                     qml.math.stack([hamiltonian.data[i] for i in indices])
                     for indices in hamiltonian.grouping_indices
                 ]
@@ -150,26 +152,27 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
 
                 # make one tape per grouping, measuring the
                 # observables in that grouping
-                tapes = []
+                inner_tapes = []
                 for obs in obs_groupings:
                     new_tape = tape.__class__(tape._ops, (qml.expval(o) for o in obs), tape._prep)
 
                     new_tape = new_tape.expand(stop_at=lambda obj: True)
-                    tapes.append(new_tape)
+                    inner_tapes.append(new_tape)
 
             else:
-                coeffs = hamiltonian.data
+                inner_coeffs = hamiltonian.data
 
                 # make one tape per observable
-                tapes = []
+                inner_tapes = []
                 for o in hamiltonian.ops:
                     # pylint: disable=protected-access
                     new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep)
-                    tapes.append(new_tape)
+                    inner_tapes.append(new_tape)
 
-            expanded_tapes.extend(tapes)
-            expanded_coeffs.append(coeffs)
+            expanded_tapes.extend(inner_tapes)
+            expanded_coeffs.append(inner_coeffs)
             expanded_measurement_idxs.append(idx)
+            expanded_grouping.append(inner_grouping)
 
         else:
             non_expanded_measurements.append(m)
@@ -183,8 +186,8 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     tapes = expanded_tapes + non_expanded_tape
     measurement_idxs = expanded_measurement_idxs + non_expanded_measurement_idxs
 
-    def inner_processing_fn(res, coeff):
-        if group:
+    def inner_processing_fn(res, coeff, grouping: bool):
+        if grouping:
             if qml.active_return():
                 dot_products = [
                     qml.math.dot(
@@ -200,14 +203,16 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
                     qml.math.dot(r_group, c_group) for c_group, r_group in zip(coeff, res)
                 ]
         else:
-            dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
+            dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeff, res)]
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
     def outer_processing_fn(res):
         processed_results = []
         # process results of all tapes except the last one
-        for idx, coeffs in enumerate(expanded_coeffs):
-            processed_results.extend([inner_processing_fn(res[idx : idx + len(coeffs)], coeffs)])
+        for idx, (coeff, grouping) in enumerate(zip(expanded_coeffs, expanded_grouping)):
+            processed_results.extend(
+                [inner_processing_fn(res[idx : idx + len(coeff)], coeff, grouping)]
+            )
         # add results of tape containing all the non-sum observables
         if non_expanded_tape:
             non_expanded_res = [res[-1]] if len(non_expanded_measurement_idxs) == 1 else res[-1]

@@ -47,21 +47,10 @@ with QuantumTape() as h_tape2:
     )
     qml.expval(H2)
 
-H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
-
 with QuantumTape() as h_tape3:
     qml.PauliX(0)
-    qml.expval(H3)
+    qml.expval(1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1))
 
-
-H4 = (
-    qml.PauliX(0) @ qml.PauliZ(2)
-    + 3 * qml.PauliZ(2)
-    - 2 * qml.PauliX(0)
-    + qml.PauliZ(2)
-    + qml.PauliZ(2)
-)
-H4 += qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2)
 
 with QuantumTape() as h_tape4:
     qml.Hadamard(0)
@@ -69,7 +58,16 @@ with QuantumTape() as h_tape4:
     qml.PauliZ(1)
     qml.PauliX(2)
 
-    qml.expval(H4)
+    qml.expval(
+        (
+            qml.PauliX(0) @ qml.PauliZ(2)
+            + 3 * qml.PauliZ(2)
+            - 2 * qml.PauliX(0)
+            + qml.PauliZ(2)
+            + qml.PauliZ(2)
+            + qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2)
+        )
+    )
 
 HAM_TAPES = [h_tape1, h_tape2, h_tape3, h_tape4]
 HAM_OUTPUTS = [-1.5, -6, -1.5, -8]
@@ -162,13 +160,17 @@ class TestHamiltonianExpand:
         tapes, fn = hamiltonian_expand(qs, group=True)
         assert len(tapes) == 2
 
-    def test_hamiltonian_error(self):
+    def test_no_hamiltonian(self):
+        """Test that ``hamiltonian_expand`` returns the input tape when the tape does not contain
+        a measurement with the expectation value of a Hamiltonian."""
 
         with QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match=r"Passed tape must end in"):
-            tapes, fn = qml.transforms.hamiltonian_expand(tape)
+        tapes, fn = qml.transforms.hamiltonian_expand(tape)
+
+        assert len(tapes) == 1
+        assert isinstance(tapes[0].measurements[0].obs, qml.PauliZ)
 
     @pytest.mark.autograd
     def test_hamiltonian_dif_autograd(self, tol):
