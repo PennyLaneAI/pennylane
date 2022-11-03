@@ -19,6 +19,7 @@ page in the developement guide.
 """
 
 import pytest
+import matplotlib as mpl
 
 import pennylane as qml
 
@@ -139,6 +140,37 @@ class TestKwargs:
         assert len(ax.patches) == n_patches
         plt.close()
 
+    def test_black_white_is_default_style(self):
+        """Test that if no style is specified, the black_white style is the default for mpl_draw,
+        rather than general matplotlib settings."""
+
+        _, ax = qml.draw_mpl(circuit1)(1.234, 1.234)
+
+        assert ax.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert ax.patches[4].get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert ax.patches[4].get_edgecolor() == (0.0, 0.0, 0.0, 1.0)
+
+    def test_style(self):
+        """Test style is set by keyword argument."""
+
+        _, ax = qml.draw_mpl(circuit1, style="sketch")(1.234, 1.234)
+
+        assert ax.get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
+        assert ax.patches[0].get_edgecolor() == (0.0, 0.0, 0.0, 1.0)
+        assert ax.patches[0].get_facecolor() == (1.0, 0.9333333333333333, 0.8313725490196079, 1.0)
+        assert ax.patches[2].get_facecolor() == (0.0, 0.0, 0.0, 1.0)
+        assert ax.patches[3].get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
+
 
 class TestWireBehaviour:
     """Tests that involve how wires are displayed"""
@@ -210,14 +242,14 @@ class TestMPLIntegration:
     """Test using matplotlib styling to modify look of graphic."""
 
     def test_rcparams(self):
-        """Test setting rcParams modifies style."""
+        """Test setting rcParams modifies style for draw_mpl(circuit, style=None)."""
 
         rgba_red = (1, 0, 0, 1)
         rgba_green = (0, 1, 0, 1)
         plt.rcParams["patch.facecolor"] = rgba_red
         plt.rcParams["lines.color"] = rgba_green
 
-        _, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, style=None)(1.23, 2.34)
 
         assert ax.patches[0].get_facecolor() == rgba_red
         assert ax.patches[1].get_facecolor() == rgba_red
@@ -228,12 +260,12 @@ class TestMPLIntegration:
         plt.style.use("default")
         plt.close()
 
-    def test_style(self):
-        """Test matplotlib styles impact figure styling."""
+    def test_style_with_matplotlib(self):
+        """Test matplotlib styles impact figure styling for draw_mpl(circuit, style=None)."""
 
         plt.style.use("fivethirtyeight")
 
-        _, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, style=None)(1.23, 2.34)
 
         expected_facecolor = mpl.colors.to_rgba(plt.rcParams["patch.facecolor"])
         assert ax.patches[0].get_facecolor() == expected_facecolor
@@ -245,3 +277,32 @@ class TestMPLIntegration:
 
         plt.style.use("default")
         plt.close()
+
+    def test_style_restores_settings(self):
+        """Test that selecting style as draw_mpl(circuit, style=None) does not modify the users
+        general matplotlib plotting settings"""
+
+        initial_facecolor = mpl.rcParams["axes.facecolor"]
+        initial_patch_facecolor = mpl.rcParams["patch.facecolor"]
+        initial_patch_edgecolor = mpl.rcParams["patch.edgecolor"]
+
+        # confirm settings were updated for the draw_mpl plot
+        _, ax = qml.draw_mpl(circuit1, style="sketch")(1.234, 1.234)
+        assert ax.get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
+        assert ax.patches[3].get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
+        assert ax.patches[3].get_edgecolor() == (0.0, 0.0, 0.0, 1.0)
+
+        # confirm general matplotlib settings were reset after plotting
+        assert mpl.rcParams["axes.facecolor"] == initial_facecolor
+        assert mpl.rcParams["patch.facecolor"] == initial_patch_facecolor
+        assert mpl.rcParams["patch.edgecolor"] == initial_patch_edgecolor
