@@ -2588,7 +2588,7 @@ class ADDER(Operation):
         wires_b = wires[n : 2 * n + 1]
         wires_c = wires[2 * n + 1 :]
 
-        decomp_ops = list()
+        decomp_ops = []
 
         # block of CARRY gates
         for i in range(len(wires_a) - 1):
@@ -2674,7 +2674,7 @@ class ADDER_inv(Operation):
         wires_b = wires[n : 2 * n + 1]
         wires_c = wires[2 * n + 1 :]
 
-        decomp_ops = list()
+        decomp_ops = []
 
         # block of inverse-SUM and CARRY gates
         for i in range(len(wires_a) - 1):
@@ -2812,13 +2812,13 @@ class QFT_(Operation):
         # local import to avoid Circular Import
         from .parametric_ops import CR_k
 
-        decomp_ops = list()
+        decomp_ops = []
 
         # block of Hadamard and CR_k gates
-        for i in range(len(wires)):
-            decomp_ops += [qml.Hadamard(wires=wires[i])]
+        for i, elem in enumerate(wires):
+            decomp_ops += [qml.Hadamard(wires=elem)]
             for k in range(2, (len(wires) - i) + 1):
-                decomp_ops += [CR_k(k, wires=[wires[i + (k - 1)], wires[i]])]
+                decomp_ops += [CR_k(k, wires=[wires[i + (k - 1)], elem])]
 
         # block of SWAP gates
         # works both if len(wires)%2 == 0 or len(wires)%2 == 1
@@ -2879,13 +2879,13 @@ class QFT_inv(Operation):
         # local import to avoid Circular Import
         from .parametric_ops import CR_k_inv
 
-        decomp_ops = list()
+        decomp_ops = []
 
         # block of Hadamard and CR_k gates
-        for i in range(len(wires)):
-            decomp_ops += [qml.Hadamard(wires=wires[i])]
+        for i, elem in enumerate(wires):
+            decomp_ops += [qml.Hadamard(wires=elem)]
             for k in range(2, (len(wires) - i) + 1):
-                decomp_ops += [CR_k_inv(k, wires=[wires[i + (k - 1)], wires[i]])]
+                decomp_ops += [CR_k_inv(k, wires=[wires[i + (k - 1)], elem])]
 
         # block of SWAP gates
         # works both if len(wires)%2 == 0 or len(wires)%2 == 1

@@ -3,7 +3,7 @@
 
 def states_vector(wires):
     """prints out list of states in a computational basis"""
-    state_vector = list()
+    state_vector = []
     for i in range(2 ** len(wires)):
         state_vector.append("|" + "0" * (len(wires) - len(bin(i)[2:])) + bin(i)[2:] + ">")
     return state_vector
@@ -66,7 +66,7 @@ def diophantine_equation(a, b):
 
     # initialize r and lists of r and k from the equation a = kb + r
     r_list = list([a])
-    k_list = list()
+    k_list = []
 
     # forward part of the algorithm (Nielsen Chuang p.628)
     while b != 0:

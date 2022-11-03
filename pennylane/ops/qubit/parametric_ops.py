@@ -3393,12 +3393,12 @@ class Controlled_reset_zero_register_to_N(Operation):
         # add zeros to match the register's size
         N = N + "0" * (len(wires_zero_register) - len(N))
 
-        decomp_ops = list()
+        decomp_ops = []
 
         # CNOTs with control=control_wire and taget - wire in wires_zero_register, for which N == '1'
-        for i in range(len(wires_zero_register)):
+        for i, elem in enumerate(wires_zero_register):
             if N[i] == "1":
-                decomp_ops += [qml.CNOT(wires=[control_wire, wires_zero_register[i]])]
+                decomp_ops += [qml.CNOT(wires=[control_wire, elem])]
 
         return decomp_ops
 
@@ -3664,12 +3664,12 @@ class Ctrl_MULT_MOD(Operation):
         if N > 2 ** (len(wires_N)) - 1:
             raise Exception("N is too big for the register wires_N")
 
-        decomp_ops = list()
+        decomp_ops = []
 
         ### block with ADDER_MODs
         # cycle to iteratively add ADDER_MODs each surrounded by Toffoli gates with control1=control_wire,
         # control2=wires_z[i] and target - wire in wires_a, for which m*2^i == '1'
-        for i in range(len(wires_z)):
+        for i, elem_wires_z in enumerate(wires_z):
             # binary representation of m*2^i mod N
             m_2_to_power_i_mod_N = bin((m * (2**i)) % N)[2:][::-1]
             m_2_to_power_i_mod_N = m_2_to_power_i_mod_N + "0" * (
@@ -3677,23 +3677,23 @@ class Ctrl_MULT_MOD(Operation):
             )
 
             # cycle for Toffoli gates before ADDER_MOD to put m*2^i to wires_a if control_wire == 1
-            for j in range(len(wires_a)):
+            for j, elem_wires_a in enumerate(wires_a):
                 if m_2_to_power_i_mod_N[j] == "1":
-                    decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[j]])]
+                    decomp_ops += [qml.Toffoli(wires=[control_wire, elem_wires_z, elem_wires_a])]
 
             # ADDER_MOD[i]
             decomp_ops += [ADDER_MOD(N, wires=wires_a + wires_b + wires_c + wires_N + [wires_t])]
 
             # cycle for Toffoli gates after ADDER_MOD to make wires_a |0..0> if control_wire == 1
-            for j in range(len(wires_a)):
+            for j, elem_wires_a in enumerate(wires_a):
                 if m_2_to_power_i_mod_N[j] == "1":
-                    decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[j]])]
+                    decomp_ops += [qml.Toffoli(wires=[control_wire, elem_wires_z, elem_wires_a])]
 
         ### block for copying z into wires_a conditional on control_wire == |0>.
         # That is, we want |0,z,0> -> |0,z,z>
         decomp_ops += [qml.PauliX(wires=control_wire)]
-        for i in range(len(wires_z)):
-            decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[i]])]
+        for i, elem_wires_z in enumerate(wires_z):
+            decomp_ops += [qml.Toffoli(wires=[control_wire, elem_wires_z, wires_a[i]])]
         decomp_ops += [qml.PauliX(wires=control_wire)]
 
         return decomp_ops
@@ -3778,12 +3778,12 @@ class Ctrl_MULT_MOD_inv(Operation):
         if N > 2 ** (len(wires_N)) - 1:
             raise Exception("N is too big for the register wires_N")
 
-        decomp_ops = list()
+        decomp_ops = []
 
         ### block for copying z into wires_a conditional on control_wire == |0>
         decomp_ops += [qml.PauliX(wires=control_wire)]
-        for i in range(len(wires_z)):
-            decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[i]])]
+        for i, elem_wires_z in enumerate(wires_z):
+            decomp_ops += [qml.Toffoli(wires=[control_wire, elem_wires_z, wires_a[i]])]
         decomp_ops += [qml.PauliX(wires=control_wire)]
 
         for i in range(len(wires_z) - 1, -1, -1):
@@ -3794,9 +3794,9 @@ class Ctrl_MULT_MOD_inv(Operation):
             )
 
             # cycle for Toffoli gates after ADDER_MOD to make wires_a |0..0> if control_wire == 1
-            for j in range(len(wires_a)):
+            for j, elem_wires_a in enumerate(wires_a):
                 if m_2_to_power_i_mod_N[j] == "1":
-                    decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[j]])]
+                    decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], elem_wires_a])]
 
             # ADDER_MOD[i]
             decomp_ops += [
@@ -3804,9 +3804,9 @@ class Ctrl_MULT_MOD_inv(Operation):
             ]
 
             # cycle for Toffoli gates before ADDER_MOD to put m*2^i to wires_a if control_wire == 1
-            for j in range(len(wires_a)):
+            for j, elem_wires_a in enumerate(wires_a):
                 if m_2_to_power_i_mod_N[j] == "1":
-                    decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], wires_a[j]])]
+                    decomp_ops += [qml.Toffoli(wires=[control_wire, wires_z[i], elem_wires_a])]
 
         return decomp_ops
 
@@ -3909,14 +3909,14 @@ class MODULAR_EXPONENTIATION(Operation):
         if N > 2 ** (len(wires_N)) - 1:
             raise Exception("N is too big for the register wires_N")
 
-        decomp_ops = list()
+        decomp_ops = []
 
-        for i in range(len(wires_x)):
+        for i, elem_wires_x in enumerate(wires_x):
             decomp_ops += [
                 Ctrl_MULT_MOD(
                     N,
                     y ** (2**i),
-                    wires=[wires_x[i]]
+                    wires=[elem_wires_x]
                     + wires_z
                     + wires_a
                     + wires_b
@@ -3926,15 +3926,15 @@ class MODULAR_EXPONENTIATION(Operation):
                 )
             ]
             # SWAP register wires_z with wires_b[:-1]
-            for j in range(len(wires_z)):
-                decomp_ops += [Ctrl_SWAP(wires=[wires_x[i], wires_z[j], wires_b[j]])]
+            for j, elem_wires_z in enumerate(wires_z):
+                decomp_ops += [Ctrl_SWAP(wires=[elem_wires_x, elem_wires_z, wires_b[j]])]
             # find modular multiplicative inverse of y**(2**i)
             inverse_y_2_i = modular_multiplicative_inverse(a=y ** (2**i), N=N)
             decomp_ops += [
                 Ctrl_MULT_MOD_inv(
                     N,
                     inverse_y_2_i,
-                    wires=[wires_x[i]]
+                    wires=[elem_wires_x]
                     + wires_z
                     + wires_a
                     + wires_b
@@ -4143,11 +4143,11 @@ class Order_Finding(Operation):
         if N > 2 ** (len(wires_N)) - 1:
             raise Exception("N is too big for the register wires_N")
 
-        decomp_ops = list()
+        decomp_ops = []
 
         # Create superposition with Hadamard gates
-        for i in range(len(wires_x)):
-            decomp_ops += [qml.Hadamard(wires=wires_x[i])]
+        for _, elem_wires_x in enumerate(wires_x):
+            decomp_ops += [qml.Hadamard(wires=elem_wires_x)]
 
         # Apply modular exponentiation
         decomp_ops += [
