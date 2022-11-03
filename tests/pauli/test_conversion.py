@@ -223,5 +223,7 @@ class TestPauliSentence:
     def test_error_not_linear_comb_pauli_words(self, op):
         """Test that a ValueError is raised when trying to cast operators to a PauliSentence
         which are not linear combinations of Pauli words."""
-        with pytest.raises(ValueError, match="Op must be a linear combination of Pauli operators only, got:"):
+        with pytest.raises(
+            ValueError, match="Op must be a linear combination of Pauli operators only, got:"
+        ):
             pauli_sentence(op)
