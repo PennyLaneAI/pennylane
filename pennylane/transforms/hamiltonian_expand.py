@@ -15,7 +15,6 @@
 Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
-from collections import defaultdict
 from typing import List
 
 import pennylane as qml
@@ -200,7 +199,7 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     return tapes, processing_fn
 
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, too-many-statements
 def sum_expand(tape: QuantumScript, group=True):
     """Splits a tape measuring a Sum expectation into mutliple tapes of summand expectations,
     and provides a function to recombine the results.
@@ -341,25 +340,32 @@ def sum_expand(tape: QuantumScript, group=True):
         ]
 
     def processing_fn(expanded_results):
-        results = defaultdict(lambda: 0)  # {m_idx: result}
+        results = []  # [(m_idx, result)]
         for tape_res, tape_idxs in zip(expanded_results, idxs_coeffs):
             if isinstance(tape_idxs[0], tuple):  # tape_res contains only one result
                 for idx, coeff in tape_idxs:
-                    if coeff is None:  # sample, counts or probs
-                        results[idx] = tape_res[0]
-                    else:
-                        results[idx] += coeff * tape_res[0]
+                    results.append((idx, tape_res[0] if coeff is None else coeff * tape_res[0]))
                 continue
             # tape_res contains multiple results
             for res, idxs in zip(tape_res, tape_idxs):
                 if isinstance(idxs, list):  # result is shared among measurements
                     for idx, coeff in idxs:
-                        results[idx] += coeff * res
+                        results.append((idx, res if coeff is None else coeff * res))
                 else:
                     idx, coeff = idxs
-                    results[idx] += coeff * res
+                    results.append((idx, res if coeff is None else coeff * res))
+
+        # sum results by idx
+        res_dict = {}
+        for idx, res in results:
+            if idx in res_dict:
+                res_dict[idx] += res
+            else:
+                res_dict[idx] = res
+
         # sort results by idx
-        results = [results[key] for key in sorted(results)]
+        results = [res_dict[key] for key in sorted(res_dict)]
+
         return results[0] if len(results) == 1 else results
 
     return tapes, processing_fn
