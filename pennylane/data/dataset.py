@@ -22,6 +22,7 @@ import os
 from pennylane import Hamiltonian
 from pennylane.pauli import string_to_pauli_word
 
+
 def _import_zstd_dill():
     """Import zstd and dill."""
     try:
@@ -34,6 +35,7 @@ def _import_zstd_dill():
         ) from Error
 
     return zstd, dill
+
 
 class Dataset(ABC):
     """Create a dataset object to store a collection of information describing
