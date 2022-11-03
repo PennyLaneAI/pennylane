@@ -4,23 +4,77 @@
 
 <h3>New features since last release</h3>
 
-* The `qml.qchem.basis_rotation` function is added to the `qchem` module. This function returns
-  grouped coefficients, grouped observables and basis rotation transformation matrices needed to
-  construct a qubit Hamiltonian in the rotated basis of molecular orbitals. In this basis, the
-  one-electron integral matrix and the symmetric matrices obtained from factorizing the two-electron
-  integrals tensor are diagonal.
-  ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
+<h4>(TODO: title) Qutrits</h4>
 
-* Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
-keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
+* The `qml.GellMann` qutrit observable, the ternary generalization of the Pauli observables, is now available.
   ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
-  
-* Added the `qml.ControlledQutritUnitary` qutrit operation for applying a controlled arbitrary unitary matrix to the specified set of wires.
-Users can specify the control wires as well as the values to control the operation on.
+
+  When using `qml.GellMann`, the `index` keyword argument determines which of the 8 Gell-Mann matrices is used.
+
+  ```python
+  dev = qml.device("default.qutrit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.TClock(wires=0)
+      qml.TShift(wires=1)
+      qml.TAdd(wires=[0, 1])
+      return qml.expval(qml.GellMann(wires=0, index=8) + qml.GellMann(wires=1, index=3))
+  ```
+
+  ```pycon
+  >>> circuit()
+  -0.42264973081037416
+  ```
+
+* Controlled qutrit operations can now be performed with `qml.ControlledQutritUnitary`.
   ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
 
-* `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
-  symmetries of the Hamiltonian.
+  The control wires and values that define the operation are defined analogously to the qubit operation.
+
+  ```python
+  dev = qml.device("default.qutrit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(U):
+      qml.TShift(wires=0)
+      qml.TAdd(wires=[0, 1])
+      qml.ControlledQutritUnitary(U, control_wires=[0, 1], control_values='12', wires=2)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
+  >>> circuit(U)
+  tensor([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+        0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+        0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+        0.+0.j, 0.+0.j, 0.+0.j], requires_grad=True)
+  ```
+
+<h4>(TODO: title) QChem</h4>
+
+* Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`. 
+  ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
+
+  ```pycon
+  >>> symbols  = ['H', 'H']
+  >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad = False)
+  >>> mol = qml.qchem.Molecule(symbols, geometry)
+  >>> core, one, two = qml.qchem.electron_integrals(mol)()
+  >>> coeffs, ops, unitaries = qml.qchem.basis_rotation(one, two, tol_factor=1.0e-5)
+  >>> unitaries
+  [tensor([[-1.00000000e+00, -5.46483514e-13],
+         [ 5.46483514e-13, -1.00000000e+00]], requires_grad=True),
+  tensor([[-1.00000000e+00,  3.17585063e-14],
+          [-3.17585063e-14, -1.00000000e+00]], requires_grad=True),
+  tensor([[-0.70710678, -0.70710678],
+          [-0.70710678,  0.70710678]], requires_grad=True),
+  tensor([[ 2.58789009e-11,  1.00000000e+00],
+          [-1.00000000e+00,  2.58789009e-11]], requires_grad=True)]
+  ```
+
+* Any gate operation can be tapered according to :math:`\mathbb{Z}_2` symmetries of the Hamiltonian via `qml.qchem.taper_operation`.
   [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
 
   ```pycon
@@ -37,34 +91,42 @@ Users can specify the control wires as well as the values to control the operati
     [Exp(1.570795j, 'PauliY', wires=[0])]
   ```
 
-  Moreover, the obtained tapered operation can be directly used within a QNode:
+  Moreover, the obtained tapered operation can be used directly within a QNode.
 
   ```pycon
     >>> dev = qml.device('default.qubit', wires=[0, 1])
     >>> @qml.qnode(dev)
     ... def circuit(params):
     ...     tap_op(params[0])
-    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
         0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
         1: ───────────────────────┤ ╰<Z@Z>
-
   ```
 
-<h4>Pauli Module</h4>
+<h4>(TODO: title) Pauli Module</h4>
 
-* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
+* Reorganized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
   module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
   [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
+
+<h4>(TODO: title) New operators and optimizers</h4>
+
+* Optimizing quantum circuits can now be done *adaptively* with `qml.AdaptiveOptimizer`.
+  [(#3192)](https://github.com/PennyLaneAI/pennylane/pull/3192)
+
+  The `AdaptiveOptimizer` optimizer takes an initial circuit and a collection of operators
+  as input and adds a selected gate to the circuits at each optimization step. The process of
+  growing the circuit can be repeated until the circuit gradients converge to zero within a given
+  threshold. The adaptive optimizer can be used to implement algorithms such as `ADAPT-VQE`.
+
+  For a detailed breakdown of its implementation, check out [our demo](https://pennylane.ai/qml/demos/tutorial_adaptive_circuits.html)!
 
 * The `IntegerComparator` arithmetic operation is now available.
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
-  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive
-  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. 
-  Alternatively, the flipping condition can be :math:`n < L`. This is accessed via the `geq` keyword
-  argument.
+  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n < L`. This is accessed via the `geq` keyword argument.
 
   ```python
   dev = qml.device("default.qubit", wires=2)
@@ -82,12 +144,10 @@ Users can specify the control wires as well as the values to control the operati
   [-0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
   ```
 
-* The `QNode` class now accepts an ``auto`` interface, which automatically detects the interface
-  of the given input.
-  [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
+<h4>(TODO: title) QNode QoL boosts</h4>
 
-  We can therefore execute the same parametrized QNode with parameters from different interfaces,
-  and the class will automatically detect the interface:
+* The `QNode` class now accepts an `auto` interface, which automatically detects the interface of the given input.
+  [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
 
   ```python
   dev = qml.device("default.qubit", wires=2)
@@ -111,153 +171,67 @@ Users can specify the control wires as well as the values to control the operati
   Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
   ```
 
-* Added the `qml.map_wires` function, that changes the wires of the given operator, `QNode`, queue
-  or quantum function according to the given wire map.
+* Wires of operators or entire QNodes can now be mapped to other wires via `qml.map_wires()`. 
   [(#3145)](https://github.com/PennyLaneAI/pennylane/pull/3145)
 
-  Using `qml.map_wires` with an operator:
+  The `qml.map_wires()` function requires a dictionary representing a wire map. Use it with
 
-  ```pycon
-  >>> op = qml.RX(0.54, wires=0) + qml.PauliX(1) + (qml.PauliZ(2) @ qml.RY(1.23, wires=3))
-  >>> op
-  (RX(0.54, wires=[0]) + PauliX(wires=[1])) + (PauliZ(wires=[2]) @ RY(1.23, wires=[3]))
-  >>> wire_map = {0: 10, 1: 11, 2: 12, 3: 13}
-  >>> qml.map_wires(op, wire_map)
-  (RX(0.54, wires=[10]) + PauliX(wires=[11])) + (PauliZ(wires=[12]) @ RY(1.23, wires=[13]))
-  ```
+  - arbitrary operators:
 
-  Using `qml.map_wires` with a `QNode`:
+    ```pycon
+    >>> op = qml.RX(0.54, wires=0) + qml.PauliX(1) + (qml.PauliZ(2) @ qml.RY(1.23, wires=3))
+    >>> op
+    (RX(0.54, wires=[0]) + PauliX(wires=[1])) + (PauliZ(wires=[2]) @ RY(1.23, wires=[3]))
+    >>> wire_map = {0: 10, 1: 11, 2: 12, 3: 13}
+    >>> qml.map_wires(op, wire_map)
+    (RX(0.54, wires=[10]) + PauliX(wires=[11])) + (PauliZ(wires=[12]) @ RY(1.23, wires=[13]))
+    ```
 
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=[10, 11, 12, 13])
-  >>> @qml.qnode(dev)
-  ... def circuit():
-  ...     qml.RX(0.54, wires=0)
-  ...     qml.PauliX(1)
-  ...     qml.PauliZ(2)
-  ...     qml.RY(1.23, wires=3)
-  ...     return qml.probs(wires=0)
-  >>> mapped_circuit = qml.map_wires(circuit, wire_map)
-  >>> mapped_circuit()
-  tensor([0.92885434, 0.07114566], requires_grad=True)
-  >>> print(qml.draw(mapped_circuit)())
-  10: ──RX(0.54)─┤  Probs
-  11: ──X────────┤       
-  12: ──Z────────┤       
-  13: ──RY(1.23)─┤  
-  ```
+  - entire QNodes:
 
-* An optimizer is added for building and optimizing quantum circuits adaptively.
-  [(#3192)](https://github.com/PennyLaneAI/pennylane/pull/3192)
+    ```python
+    dev = qml.device("default.qubit", wires=["A", "B", "C", "D"])
+    wire_map = {0: "A", 1: "B", 2: "C", 3: "D"}
 
-  The new optimizer, ``AdaptiveOptimizer``, takes an initial circuit and a collection of operators
-  as input and adds a selected gate to the circuits at each optimization step. The process of
-  growing the circuit can be repeated until the circuit gradients converge to zero within a given
-  threshold. The adaptive optimizer can be used to implement algorithms such as ``ADAPT-VQE`` as
-  shown in the following example.
+    @qml.qnode(dev) 
+    def circuit():
+        qml.RX(0.54, wires=0)
+        qml.PauliX(1)
+        qml.PauliZ(2)
+        qml.RY(1.23, wires=3)
+        return qml.probs(wires=0)
+    ```
 
-  First, the molecule is defined and the Hamiltonian is computed:
-
-  ```python
-  symbols = ["H", "H", "H"]
-  geometry = np.array([[0.01076341, 0.04449877, 0.0],
-                       [0.98729513, 1.63059094, 0.0],
-                       [1.87262415, -0.00815842, 0.0]], requires_grad=False)
-  H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge = 1)
-  ```
-
-  The collection of gates to grow the circuit is built to contain all single and double excitations:
-
-  ```python
-  n_electrons = 2
-  singles, doubles = qml.qchem.excitations(n_electrons, qubits)
-  singles_excitations = [qml.SingleExcitation(0.0, x) for x in singles]
-  doubles_excitations = [qml.DoubleExcitation(0.0, x) for x in doubles]
-  operator_pool = doubles_excitations + singles_excitations
-  ```
-
-  An initial circuit that prepares a Hartree-Fock state and returns the expectation value of the
-  Hamiltonian is defined:
-
-  ```python
-  hf_state = qml.qchem.hf_state(n_electrons, qubits)
-  dev = qml.device("default.qubit", wires=qubits)
-  @qml.qnode(dev)
-  def circuit():
-      qml.BasisState(hf_state, wires=range(qubits))
-      return qml.expval(H)
-  ```
-
-  Finally, the optimizer is instantiated and then the circuit is created and optimized adaptively:
-
-  ```python
-  opt = qml.optimize.AdaptiveOptimizer()
-  for i in range(len(operator_pool)):
-      circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
-      print('Energy:', energy)
-      print(qml.draw(circuit)())
-      print('Largest Gradient:', gradient)
-      print()
-      if gradient < 1e-3:
-          break
-  ```
-  
-   ```pycon
-  Energy: -1.246549938420637
-  0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
-  1: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
-  2: ─├BasisState(M0)─│─────────┤ ├<𝓗>
-  3: ─├BasisState(M0)─│─────────┤ ├<𝓗>
-  4: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
-  5: ─╰BasisState(M0)─╰G²(0.20)─┤ ╰<𝓗>
-  Largest Gradient: 0.14399872776755085
-
-  Energy: -1.2613740231529604
-  0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
-  1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
-  2: ─├BasisState(M0)─│─────────├G²(0.19)─┤ ├<𝓗>
-  3: ─├BasisState(M0)─│─────────╰G²(0.19)─┤ ├<𝓗>
-  4: ─├BasisState(M0)─├G²(0.20)───────────┤ ├<𝓗>
-  5: ─╰BasisState(M0)─╰G²(0.20)───────────┤ ╰<𝓗>
-  Largest Gradient: 0.1349349562423238
-
-  Energy: -1.2743971719780331
-  0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)──────────┤ ╭<𝓗>
-  1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(0.00)─┤ ├<𝓗>
-  2: ─├BasisState(M0)─│─────────├G²(0.19)─│────────┤ ├<𝓗>
-  3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(0.00)─┤ ├<𝓗>
-  4: ─├BasisState(M0)─├G²(0.20)────────────────────┤ ├<𝓗>
-  5: ─╰BasisState(M0)─╰G²(0.20)────────────────────┤ ╰<𝓗>
-  Largest Gradient: 0.00040841755397108586
-  ``` 
+    ```pycon
+    >>> mapped_circuit = qml.map_wires(circuit, wire_map)
+    >>> mapped_circuit()
+    tensor([0.92885434, 0.07114566], requires_grad=True)
+    >>> print(qml.draw(mapped_circuit)())
+    A: ──RX(0.54)─┤  Probs
+    B: ──X────────┤       
+    C: ──Z────────┤       
+    D: ──RY(1.23)─┤   
+    ```
 
 <h3>Improvements</h3>
 
-* Added the `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track
-  if computational basis samples are being generated.
+* Added a `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track if computational basis samples are being generated.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 
-* The parameters of a basis set containing different number of Gaussian functions are easier to 
-  differentiate.
+* The parameters of a basis set containing a different number of Gaussian functions are now easier to differentiate.
   [(#3213)](https://github.com/PennyLaneAI/pennylane/pull/3213)
 
-* Printing `MultiControlledX` now shows the `control_values`.
-[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
+* Printing a `MultiControlledX` operator now shows the `control_values` keyword argument.
+  [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
-* The matrix passed to `qml.Hermitian` is validated when creating the observable if the input is not abstract.
+* The matrix passed to `qml.Hermitian` is now validated when creating the observable if the input is not abstract.
   [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
 
-* Added a new `pennylane.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now `QuantumTape` inherits from `QuantumScript` as well
-  as `AnnotatedQueue`.
-  This is a developer-facing change, and users should not manipulate `QuantumScript` directly.  Instead, they
-  should continue to rely on `QNode`s.
-  [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
-
-* `qml.simplify`, `op_tranform`'s like `qml.matrix`, `batch_transform`, `hamiltonian_expand` and `split_non_commuting` now work with
+* `qml.simplify` and transforms like `qml.matrix`, `batch_transform`, `hamiltonian_expand`, and `split_non_commuting` now work with
   `QuantumScript` as well as `QuantumTape`.
   [(#3209)](https://github.com/PennyLaneAI/pennylane/pull/3209)
 
-* The UCCSD and kUpCCGSD template are modified to remove a redundant flipping of the initial state.
+* A redundant flipping of the initial state in the UCCSD and kUpCCGSD templates has been removed.
   [(#3148)](https://github.com/PennyLaneAI/pennylane/pull/3148)
 
 * `Adjoint` now supports batching if the base operation supports batching.
@@ -316,7 +290,7 @@ Users can specify the control wires as well as the values to control the operati
 * Improved the performance of the `qml.math.expand_matrix` function for dense matrices.
   [(#3064)](https://github.com/PennyLaneAI/pennylane/pull/3064)
 
-* Improve `qml.math.expand_matrix` method for sparse matrices.
+* Improved `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
 * Support sums and products of `Operator` classes with scalar tensors of any interface
@@ -346,10 +320,10 @@ Users can specify the control wires as well as the values to control the operati
   Toffoli(wires=[2, 1, 0])
   ```
 
-* Adds caching to the `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations.
+* Added caching to the `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations.
   [(#3134)](https://github.com/PennyLaneAI/pennylane/pull/3134)
 
-* Add details to the output of `Exp.label()`.
+* Added details to the output of `Exp.label()`.
   [(#3126)](https://github.com/PennyLaneAI/pennylane/pull/3126)
 
 * `qml.math.unwrap` no longer creates ragged arrays. Lists remain lists.
@@ -368,6 +342,8 @@ Users can specify the control wires as well as the values to control the operati
   Stop using `op._wires = new_wires`, use `qml.map_wires(op, wire_map=dict(zip(op.wires, new_wires)))`
   instead.
   [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
+* Added a new `pennylane.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now `QuantumTape` inherits from `QuantumScript` as well as `AnnotatedQueue`.
+  [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
 
 <h3>Breaking changes</h3>
 
@@ -428,18 +404,29 @@ Users can specify the control wires as well as the values to control the operati
 * `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
+<<<<<<< Updated upstream
+=======
+* `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
+  instead. There is no longer a static method for this.
+  [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
+  
+>>>>>>> Stashed changes
 * Deprecate `qml.transforms.qcut.remap_tape_wires`. Use `qml.map_wires` instead.
   [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
 
 <h3>Documentation</h3>
 
-* The code block in the usage details of the UCCSD template is updated.
+* The code block in the usage details of the UCCSD template has been updated.
   [(#3140)](https://github.com/PennyLaneAI/pennylane/pull/3140)
 
+<<<<<<< Updated upstream
 * Added a "Deprecations" page to the developer documentation.
   [(#3093)](https://github.com/PennyLaneAI/pennylane/pull/3093)
 
 * The example of the `FlipSign` template is updated.
+=======
+* The example of the `FlipSign` template has been updated.
+>>>>>>> Stashed changes
   [(#3219)](https://github.com/PennyLaneAI/pennylane/pull/3219)
 
 <h3>Bug fixes</h3>
