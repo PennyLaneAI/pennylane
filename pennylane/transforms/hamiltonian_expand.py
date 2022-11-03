@@ -15,6 +15,8 @@
 Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
+from typing import Sequence
+
 import pennylane as qml
 from pennylane.measurements import Expectation
 from pennylane.ops import Hamiltonian, Sum
@@ -186,32 +188,13 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     tapes = expanded_tapes + non_expanded_tape
     measurement_idxs = expanded_measurement_idxs + non_expanded_measurement_idxs
 
-    def inner_processing_fn(res, coeff, grouping: bool):
-        if grouping:
-            if qml.active_return():
-                dot_products = [
-                    qml.math.dot(
-                        qml.math.reshape(
-                            qml.math.convert_like(r_group, c_group), qml.math.shape(c_group)
-                        ),
-                        c_group,
-                    )
-                    for c_group, r_group in zip(coeff, res)
-                ]
-            else:
-                dot_products = [
-                    qml.math.dot(r_group, c_group) for c_group, r_group in zip(coeff, res)
-                ]
-        else:
-            dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeff, res)]
-        return qml.math.sum(qml.math.stack(dot_products), axis=0)
-
-    def outer_processing_fn(res):
+    def processing_fn(res):
         processed_results = []
         # process results of all tapes except the last one
         for idx, (coeff, grouping) in enumerate(zip(expanded_coeffs, expanded_grouping)):
+            expanded_results = res[idx : idx + len(coeff)]
             processed_results.extend(
-                [inner_processing_fn(res[idx : idx + len(coeff)], coeff, grouping)]
+                [_process_hamiltonian_results(expanded_results, coeff, grouping)]
             )
         # add results of tape containing all the non-sum observables
         if non_expanded_tape:
@@ -223,7 +206,36 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
             return [res[0] for res in sorted_results]
         return sorted_results[0][0]
 
-    return tapes, outer_processing_fn
+    return tapes, processing_fn
+
+
+def _process_hamiltonian_results(res: Sequence[float], coeff: Sequence[float], grouping: bool):
+    """Process results obtained from the expansion of a single Hamiltonian.
+
+    Args:
+        res (Sequence[float]): results from the expanded tapes
+        coeff (Sequence[float]): coefficient of each tape
+        grouping (bool): wether grouping was used during the expansion
+
+    Returns:
+        float: post-processed result
+    """
+    if grouping:
+        if qml.active_return():
+            dot_products = [
+                qml.math.dot(
+                    qml.math.reshape(
+                        qml.math.convert_like(r_group, c_group), qml.math.shape(c_group)
+                    ),
+                    c_group,
+                )
+                for c_group, r_group in zip(coeff, res)
+            ]
+        else:
+            dot_products = [qml.math.dot(r_group, c_group) for c_group, r_group in zip(coeff, res)]
+    else:
+        dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeff, res)]
+    return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
 
 def sum_expand(tape: QuantumScript, group=True):
