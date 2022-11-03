@@ -129,7 +129,9 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
         or len(tape.measurements) > 1
         or tape.measurements[0].return_type != qml.measurements.Expectation
     ):
-        return [tape], lambda res: res[0]
+        raise ValueError(
+            "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
+        )
 
     # note: for backward passes of some frameworks
     # it is crucial to use the hamiltonian.data attribute,

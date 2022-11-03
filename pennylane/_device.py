@@ -738,8 +738,12 @@ class Device(abc.ABC):
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
             # split tape into multiple tapes of diagonalizable known observables.
-            circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
-
+            try:
+                circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
+            except ValueError as e:
+                raise ValueError(
+                    "Can only return the expectation of a single Hamiltonian observable"
+                ) from e
         elif expval_sum_in_obs and not is_shadow:
             circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
 

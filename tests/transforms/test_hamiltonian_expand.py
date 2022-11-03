@@ -162,17 +162,13 @@ class TestHamiltonianExpand:
         tapes, fn = hamiltonian_expand(qs, group=True)
         assert len(tapes) == 2
 
-    def test_non_hamiltonian_tape(self):
-        """Test that the ``hamiltonian_expand`` function returns the input tape if it does not
-        contain a single measurement with the expectation value of a Hamiltonian."""
+    def test_hamiltonian_error(self):
 
         with QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
 
-        tapes, fn = hamiltonian_expand(tape)
-
-        assert tapes[0] is tape
-        assert fn([1]) == 1
+        with pytest.raises(ValueError, match=r"Passed tape must end in"):
+            tapes, fn = qml.transforms.hamiltonian_expand(tape)
 
     @pytest.mark.autograd
     def test_hamiltonian_dif_autograd(self, tol):
