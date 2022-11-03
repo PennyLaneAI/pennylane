@@ -1147,6 +1147,9 @@ class PauliRot(Operation):
                 f"{num_wires} was expected for wires {wires}"
             )
 
+    def __repr__(self):
+        return f"PauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires.tolist()})"
+
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
