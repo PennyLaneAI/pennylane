@@ -294,6 +294,7 @@ class PauliSentence(dict):
         Rasies:
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
+
         def _pw_wires(w):
             """To account for empty pauli_words which represent identity operations."""
             if w:
