@@ -25,7 +25,7 @@ from .pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z, mat_map, op_
 from .utils import is_pauli_word
 
 from pennylane.ops import Sum, Prod, SProd, PauliX, PauliY, PauliZ, Identity
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Tensor
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
@@ -79,22 +79,12 @@ def _(op: Tensor):
 
 @pauli_sentence.register
 def _(op: Prod):
-    if not is_pauli_word(op):
-        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
-
-    pw = {}
-    for factor in op.operands:
-        wire, pauli = (factor.wires[0], op_to_str_map[factor.__class__])
-        pw[wire] = pauli
-
-    return PauliSentence({PauliWord(pw): 1.0})
+    factors = [pauli_sentence(factor) for factor in op.operands]
+    return reduce(lambda a, b: a * b, factors)
 
 
 @pauli_sentence.register
 def _(op: SProd):
-    if not is_pauli_word(op):
-        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
-
     ps = pauli_sentence(op.base)
     for pw, coeff in ps.items():
         ps[pw] = coeff * op.scalar
@@ -118,9 +108,6 @@ def _(op: Hamiltonian):
 
 @pauli_sentence.register
 def _(op: Sum):
-    if not is_pauli_word(op):
-        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
-
     summands = [pauli_sentence(summand) for summand in op.operands]
     return reduce(lambda a, b: a + b, summands)
 

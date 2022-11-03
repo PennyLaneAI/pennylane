@@ -40,31 +40,6 @@ from pennylane.operation import Operator, Observable, Tensor
 ID_MAT = np.eye(2)
 
 
-def _is_pauli_linear_combination(op: Operator, level=0):
-    """Check if an arithmetic operator is formatted as a linear combination."""
-    pauli_ops = (Identity, PauliX, PauliY, PauliZ)
-
-    if isinstance(op, Sum) and level == 0:
-        return reduce(
-            lambda a, b: a and b,
-            (_is_pauli_linear_combination(summand, level=1) for summand in op.operands)
-        )
-
-    if isinstance(op, SProd) and level == 1:
-        return _is_pauli_linear_combination(op.base, level=2)
-
-    if isinstance(op, Prod) and level > 0:
-        return reduce(
-            lambda a, b: a and b,
-            (_is_pauli_linear_combination(factor, level=level+1) for factor in op.operands)
-        )
-
-    if isinstance(op, pauli_ops) and level > 0:
-        return True
-
-    return False
-
-
 def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
     """Generate a wire map from the union of wires of two Paulis.
 
@@ -117,7 +92,7 @@ def is_pauli_word(observable):
                 terms_pauli_word.append(ob.name in pauli_word_names)
         return all(terms_pauli_word)
 
-    return _is_pauli_linear_combination(observable)
+    return False
 
 
 def are_identical_pauli_words(pauli_1, pauli_2):

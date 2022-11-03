@@ -101,4 +101,4 @@ class TestDecomposition:
 # class TestPauliSentence:
 #     """Test the pauli_sentence function."""
 #
-#     def test_t
+#     def test_
