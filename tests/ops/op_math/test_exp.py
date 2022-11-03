@@ -17,6 +17,7 @@ from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import Exp
 
 
@@ -273,6 +274,40 @@ class TestMatrix:
 
         with pytest.raises(NotImplementedError):
             op.sparse_matrix(wire_order=[0, 1])
+
+
+class TestDecomposition:
+    @pytest.mark.parametrize("coeff", (1, 1 + 0.5j))
+    def test_non_imag_no_decomposition(self, coeff):
+        """Tests that the decomposition doesn't exist if the coefficient has a real component."""
+        op = Exp(coeff, qml.PauliX(0))
+        assert not op.has_decomposition
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+    def test_non_pauli_word_base_no_decomposition(self):
+        """Tests that the decomposition doesn't exist if the base is not a pauli word."""
+        op = Exp(-0.5j, qml.S(0))
+        assert not op.has_decomposition
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+    @pytest.mark.parametrize(
+        "base, base_string",
+        (
+            (qml.PauliX(0), "X"),
+            (qml.PauliZ(0) @ qml.PauliY(1), "ZY"),
+            (qml.PauliY(0) @ qml.Identity(1) @ qml.PauliZ(2), "YIZ"),
+        ),
+    )
+    def test_pauli_word_decompositioni(self, base, base_string):
+        """Check that Exp decomposes into PauliRot if possible."""
+        theta = 3.21
+        op = Exp(base, -0.5j * theta)
+
+        assert op.has_decomposition
+        pr = op.decomposition()[0]
+        assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
 
 class TestMiscMethods:
