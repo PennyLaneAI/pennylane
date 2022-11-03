@@ -173,9 +173,9 @@ class PauliWord(dict):
         return set(self)
 
     def to_mat(self, wire_order, format="dense"):
-        """Given a Pauli word, get the matrix representation.
+        """Returns the matrix representation.
 
-        KeywordArgs:
+        Keyword Args:
             wire_order (iterable or None): The order of qubits in the tensor product.
             format (str): The format of the matrix ("dense" by default), if not a dense
                 matrix, then the format for the sparse representation of the matrix.
@@ -278,9 +278,9 @@ class PauliSentence(dict):
         return set().union(*(pw.wires for pw in self.keys()))
 
     def to_mat(self, wire_order, format="dense"):
-        """Given a Pauli word, get the matrix representation.
+        """Returns the matrix representation.
 
-        KeywordArgs:
+        Keyword Args:
             wire_order (iterable or None): The order of qubits in the tensor product.
             format (str): The format of the matrix ("dense" by default), if not a dense
                 matrix, then the format for the sparse representation of the matrix.
