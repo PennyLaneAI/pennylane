@@ -25,10 +25,11 @@ def _process_jacs_new(jac, qhess):
     Combine the classical and quantum jacobians
     """
     # Check for a Jacobian equal to the identity matrix.
-    shape = qml.math.shape(jac)
-    is_square = len(shape) == 2 and shape[0] == shape[1]
-    if is_square and qml.math.allclose(jac, qml.numpy.eye(shape[0])):
-        return qhess if len(qhess) > 1 else qhess[0]
+    if not qml.math.is_abstract(jac):
+        shape = qml.math.shape(jac)
+        is_square = len(shape) == 2 and shape[0] == shape[1]
+        if is_square and qml.math.allclose(jac, qml.numpy.eye(shape[0])):
+            return qhess if len(qhess) > 1 else qhess[0]
 
     hess = []
     for qh in qhess:
@@ -45,14 +46,21 @@ def _process_jacs_new(jac, qhess):
         # The quantum Hessian has shape (num_params, num_params, output_shape)
         # contracting the quantum Hessian with the classical jacobian twice gives
         # a result with shape (num_qnode_args, num_qnode_args, output_shape)
+
+        qh_indices = "ab..."
+
+        # contract the first axis of the jacobian with the first and second axes of the hessian
+        first_jac_indices = f"a{ABC[2:2 + jac_ndim - 1]}"
+        second_jac_indices = f"b{ABC[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]}"
+
+        result_indices = f"{ABC[2:2 + 2 * jac_ndim - 2]}..."
         qh = qml.math.einsum(
-            f"ab...,a{ABC[2:2 + jac_ndim - 1]},"
-            f"b{ABC[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]}"
-            f"->{ABC[2:2 + 2 * jac_ndim - 2]}...",
+            f"{qh_indices},{first_jac_indices},{second_jac_indices}->{result_indices}",
             qh,
             jac,
             jac,
         )
+
         hess.append(qh)
 
     return tuple(hess) if len(hess) > 1 else hess[0]
