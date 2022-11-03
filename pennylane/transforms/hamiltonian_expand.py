@@ -14,11 +14,13 @@
 """
 Contains the hamiltonian expand tape transform
 """
+from collections import defaultdict
+
 # pylint: disable=protected-access
-from typing import Sequence
+from typing import List
 
 import pennylane as qml
-from pennylane.measurements import Expectation
+from pennylane.measurements import Expectation, MeasurementProcess
 from pennylane.ops import Sum
 from pennylane.tape import QuantumScript
 
@@ -281,98 +283,93 @@ def sum_expand(tape: QuantumScript, group=True):
     [expval(PauliZ(wires=[0])), expval(2*(PauliX(wires=[1])))]
     [expval(3*(PauliX(wires=[0])))]
     """
-    non_expanded_measurements = []
-    non_expanded_measurement_idxs = []
-    expanded_tapes = []
-    expanded_measurement_idxs = []
-    num_tapes = []
+    measurements_dict = {}  # {m_hash: measurement}
+    measurement_idxs_dict = {}  # {m_hash: [location_id]}
     for idx, m in enumerate(tape.measurements):
         if isinstance(m.obs, Sum) and m.return_type is Expectation:
             sum_op = m.obs
-            if group:
-                # make one tape per group of qwc observables
-                obs_groupings = _group_summands(sum_op)
-                tapes = [
-                    QuantumScript(tape._ops, [qml.expval(o) for o in obs], tape._prep)
-                    for obs in obs_groupings
-                ]
-            else:
-                # make one tape per summand
-                tapes = [
-                    QuantumScript(ops=tape.operations, measurements=[qml.expval(summand)])
-                    for summand in sum_op.operands
-                ]
-
-            expanded_tapes.extend(tapes)
-            expanded_measurement_idxs.append(idx)
-            num_tapes.append(len(tapes))
-
+            for summand in sum_op.operands:
+                s_m = qml.expval(summand)
+                if s_m.hash not in measurements_dict:
+                    measurements_dict[s_m.hash] = s_m
+                    measurement_idxs_dict[s_m.hash] = [idx]
+                else:
+                    measurement_idxs_dict[s_m.hash].append(idx)
         else:
-            non_expanded_measurements.append(m)
-            non_expanded_measurement_idxs.append(idx)
+            if m.hash not in measurements_dict:
+                measurements_dict[m.hash] = m
+                measurement_idxs_dict[m.hash] = [idx]
+            else:
+                measurement_idxs_dict[m.hash].append(idx)
 
-    non_expanded_tape = (
-        [QuantumScript(ops=tape._ops, measurements=non_expanded_measurements, prep=tape._prep)]
-        if non_expanded_measurements
-        else []
-    )
-    tapes = expanded_tapes + non_expanded_tape
-    # Indices used for reordering the obtained results in the postprocessing function
-    measurement_idxs = expanded_measurement_idxs + non_expanded_measurement_idxs
+    measurements = list(measurements_dict.values())
+    measurement_idxs = list(measurement_idxs_dict.values())
 
-    def processing_fn(res):
-        processed_results = []
-        # process results of all tapes except the last one
-        for idx, n_tapes in enumerate(num_tapes):
-            sum_results = res[idx : idx + n_tapes]
-            processed_results.extend([_process_sum_results(sum_results, group=group)])
-        # add results of last tape, which contains all the non-sum observables
-        if non_expanded_tape:
-            non_expanded_res = [res[-1]] if len(non_expanded_measurement_idxs) == 1 else res[-1]
-            processed_results.extend(non_expanded_res)
-        # sort results
-        sorted_results = sorted(zip(processed_results, measurement_idxs), key=lambda x: x[1])
-        if len(sorted_results) > 1:
-            return [res[0] for res in sorted_results]
-        return sorted_results[0][0]
+    if group:
+        grouped_measurements = _group_measurements(measurements)
+        tmp_measurement_idxs = []
+        for m_group in grouped_measurements:
+            if len(m_group) == 1:
+                tmp_measurement_idxs.append(measurement_idxs[measurements.index(m_group[0])])
+            else:
+                tmp_measurement_idxs.append(
+                    [measurement_idxs[measurements.index(m)] for m in m_group]
+                )
+        measurement_idxs = tmp_measurement_idxs
+        tapes = [
+            QuantumScript(ops=tape._ops, measurements=m_group, prep=tape._prep)
+            for m_group in grouped_measurements
+        ]
+    else:
+        tapes = [
+            QuantumScript(ops=tape._ops, measurements=[m], prep=tape._prep) for m in measurements
+        ]
+
+    def processing_fn(expanded_results):
+        results = defaultdict(lambda: 0)  # {m_idx: result}
+        for tape_res, tape_idxs in zip(expanded_results, measurement_idxs):
+            # tape_res contains only one result
+            if not isinstance(tape_idxs[0], list):
+                for idx in tape_idxs:
+                    results[idx] += tape_res[0]
+                continue
+            # tape_res contains multiple results
+            for res, idxs in zip(tape_res, tape_idxs):
+                if isinstance(idxs, list):  # result is shared among measurements
+                    for idx in idxs:
+                        results[idx] += res
+                else:
+                    results[idxs] += res
+
+        results = [results[key] for key in sorted(results)]
+        return results[0] if len(results) == 1 else results
 
     return tapes, processing_fn
 
 
-def _group_summands(sum: Sum):
-    """Group summands of Sum operator into qubit-wise commuting groups.
+def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[MeasurementProcess]]:
+    """Group observables of measurements list into qubit-wise commuting groups.
 
     Args:
-        sum (Sum): sum operator
+        measurements (List[MeasurementProcess]): list of measurement processes
 
     Returns:
-        list[list[Operator]]: list of lists of qubit-wise commuting operators
+        List[List[MeasurementProcess]]: list of qubit-wise commuting measurement groups
     """
     qwc_groups = []
-    for summand in sum.operands:
+    for m in measurements:
+        if len(m.wires) == 0:  # measurement acts on all wires: e.g. qml.counts()
+            qwc_groups.append()
+            continue
+
         op_added = False
         for idx, (wires, group) in enumerate(qwc_groups):
-            if all(wire not in summand.wires for wire in wires):
-                qwc_groups[idx] = (wires + summand.wires, group + [summand])
+            if len(wires) > 0 and all(wire not in m.wires for wire in wires):
+                qwc_groups[idx] = (wires + m.wires, group + [m])
                 op_added = True
                 break
 
         if not op_added:
-            qwc_groups.append((summand.wires, [summand]))
+            qwc_groups.append((m.wires, [m]))
 
     return [group[1] for group in qwc_groups]
-
-
-def _process_sum_results(res: Sequence[float], group: bool):
-    """Process the results obtained from the execution of the expanded tapes.
-
-    Args:
-        res (Sequence[float]): results of each expanded tape
-        group (bool): whether grouping was used during expansion
-
-    Returns:
-        float: processed result
-    """
-    if group:
-        res = [qml.math.sum(c_group) for c_group in res]
-    return qml.math.sum(qml.math.stack(res), axis=0)

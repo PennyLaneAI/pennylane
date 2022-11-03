@@ -304,7 +304,7 @@ with QuantumTape() as s_tape4:
     qml.PauliX(2)
 
     qml.expval(S4)
-    qml.expval(qml.PauliZ(2))
+    qml.expval(qml.PauliX(2))
     qml.expval(S4)
     qml.expval(qml.PauliX(2))
 
@@ -407,7 +407,7 @@ class TestSumExpand:
 
         assert len(tapes) == 1
         assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
-        assert fn([1]) == 1
+        assert fn([[1.0]]) == 1
 
     def test_multiple_sum_tape(self):
         """Test that the ``sum_expand`` function can expand tapes with multiple sum observables"""
