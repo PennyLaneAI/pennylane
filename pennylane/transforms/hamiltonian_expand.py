@@ -17,7 +17,7 @@ Contains the hamiltonian expand tape transform
 # pylint: disable=protected-access
 import pennylane as qml
 from pennylane.measurements import Expectation
-from pennylane.ops import Sum
+from pennylane.ops import Hamiltonian, Sum
 from pennylane.tape import QuantumScript
 
 
@@ -120,46 +120,71 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     >>> len(tapes)
     2
     """
+    non_expanded_measurements = []
+    non_expanded_measurement_idxs = []
+    expanded_tapes = []
+    expanded_measurement_idxs = []
+    expanded_coeffs = []
+    for idx, m in enumerate(tape.measurements):
+        if isinstance(m.obs, Hamiltonian) and m.return_type is Expectation:
+            hamiltonian = m.obs
+            # note: for backward passes of some frameworks
+            # it is crucial to use the hamiltonian.data attribute,
+            # and not hamiltonian.coeffs when recombining the results
 
-    hamiltonian = tape.measurements[0].obs
+            if group or hamiltonian.grouping_indices is not None:
 
-    if (
-        not isinstance(hamiltonian, qml.Hamiltonian)
-        or len(tape.measurements) > 1
-        or tape.measurements[0].return_type != qml.measurements.Expectation
-    ):
-        raise ValueError(
-            "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
-        )
+                if hamiltonian.grouping_indices is None:
+                    # explicitly selected grouping, but indices not yet computed
+                    hamiltonian.compute_grouping()
 
-    # note: for backward passes of some frameworks
-    # it is crucial to use the hamiltonian.data attribute,
-    # and not hamiltonian.coeffs when recombining the results
+                coeffs = [
+                    qml.math.stack([hamiltonian.data[i] for i in indices])
+                    for indices in hamiltonian.grouping_indices
+                ]
 
-    if group or hamiltonian.grouping_indices is not None:
+                obs_groupings = [
+                    [hamiltonian.ops[i] for i in indices]
+                    for indices in hamiltonian.grouping_indices
+                ]
 
-        if hamiltonian.grouping_indices is None:
-            # explicitly selected grouping, but indices not yet computed
-            hamiltonian.compute_grouping()
+                # make one tape per grouping, measuring the
+                # observables in that grouping
+                tapes = []
+                for obs in obs_groupings:
+                    new_tape = tape.__class__(tape._ops, (qml.expval(o) for o in obs), tape._prep)
 
-        coeff_groupings = [
-            qml.math.stack([hamiltonian.data[i] for i in indices])
-            for indices in hamiltonian.grouping_indices
-        ]
-        obs_groupings = [
-            [hamiltonian.ops[i] for i in indices] for indices in hamiltonian.grouping_indices
-        ]
+                    new_tape = new_tape.expand(stop_at=lambda obj: True)
+                    tapes.append(new_tape)
 
-        # make one tape per grouping, measuring the
-        # observables in that grouping
-        tapes = []
-        for obs in obs_groupings:
-            new_tape = tape.__class__(tape._ops, (qml.expval(o) for o in obs), tape._prep)
+            else:
+                coeffs = hamiltonian.data
 
-            new_tape = new_tape.expand(stop_at=lambda obj: True)
-            tapes.append(new_tape)
+                # make one tape per observable
+                tapes = []
+                for o in hamiltonian.ops:
+                    # pylint: disable=protected-access
+                    new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep)
+                    tapes.append(new_tape)
 
-        def processing_fn(res_groupings):
+            expanded_tapes.extend(tapes)
+            expanded_coeffs.append(coeffs)
+            expanded_measurement_idxs.append(idx)
+
+        else:
+            non_expanded_measurements.append(m)
+            non_expanded_measurement_idxs.append(idx)
+
+    non_expanded_tape = (
+        [QuantumScript(ops=tape._ops, measurements=non_expanded_measurements, prep=tape._prep)]
+        if non_expanded_measurements
+        else []
+    )
+    tapes = expanded_tapes + non_expanded_tape
+    measurement_idxs = expanded_measurement_idxs + non_expanded_measurement_idxs
+
+    def inner_processing_fn(res, coeff):
+        if group:
             if qml.active_return():
                 dot_products = [
                     qml.math.dot(
@@ -168,32 +193,32 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
                         ),
                         c_group,
                     )
-                    for c_group, r_group in zip(coeff_groupings, res_groupings)
+                    for c_group, r_group in zip(coeff, res)
                 ]
             else:
                 dot_products = [
-                    qml.math.dot(r_group, c_group)
-                    for c_group, r_group in zip(coeff_groupings, res_groupings)
+                    qml.math.dot(r_group, c_group) for c_group, r_group in zip(coeff, res)
                 ]
-            return qml.math.sum(qml.math.stack(dot_products), axis=0)
-
-        return tapes, processing_fn
-
-    coeffs = hamiltonian.data
-
-    # make one tape per observable
-    tapes = []
-    for o in hamiltonian.ops:
-        # pylint: disable=protected-access
-        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep)
-        tapes.append(new_tape)
-
-    # pylint: disable=function-redefined
-    def processing_fn(res):
-        dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
+        else:
+            dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
         return qml.math.sum(qml.math.stack(dot_products), axis=0)
 
-    return tapes, processing_fn
+    def outer_processing_fn(res):
+        processed_results = []
+        # process results of all tapes except the last one
+        for idx, coeffs in enumerate(expanded_coeffs):
+            processed_results.extend([inner_processing_fn(res[idx : idx + len(coeffs)], coeffs)])
+        # add results of tape containing all the non-sum observables
+        if non_expanded_tape:
+            non_expanded_res = [res[-1]] if len(non_expanded_measurement_idxs) == 1 else res[-1]
+            processed_results.extend(non_expanded_res)
+        # sort results
+        sorted_results = sorted(zip(processed_results, measurement_idxs), key=lambda x: x[1])
+        if len(sorted_results) > 1:
+            return [res[0] for res in sorted_results]
+        return sorted_results[0][0]
+
+    return tapes, outer_processing_fn
 
 
 def sum_expand(tape: QuantumScript, group=True):
@@ -322,7 +347,6 @@ def sum_expand(tape: QuantumScript, group=True):
             res = [qml.math.sum(c_group) for c_group in res]
         return qml.math.sum(qml.math.stack(res), axis=0)
 
-    # pylint: disable=function-redefined
     def outer_processing_fn(res):
         processed_results = []
         # process results of all tapes except the last one
