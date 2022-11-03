@@ -24,7 +24,7 @@ from pennylane.operation import (
     expand_matrix,
     OperatorPropertyUndefined,
 )
-from pennylane.pauli.utils import is_pauli_word, pauli_word_to_string
+
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
@@ -170,6 +170,7 @@ class Exp(SymbolicOp):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
+        from pennylane.pauli.utils import is_pauli_word
         return math.real(self.coeff) == 0 and is_pauli_word(self.base)
 
     def decomposition(self):
@@ -184,6 +185,7 @@ class Exp(SymbolicOp):
         Returns:
             list[PauliRot]: decomposition of the operator
         """
+        from pennylane.pauli.utils import is_pauli_word, pauli_word_to_string
         if math.real(self.coeff) != 0 or not is_pauli_word(self.base):
             raise DecompositionUndefinedError
         new_coeff = math.real(2j * self.coeff)
