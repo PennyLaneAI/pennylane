@@ -20,6 +20,8 @@ import os
 import pytest
 import pennylane as qml
 
+pytestmark = pytest.mark.data
+
 # TODO: Bring pytest skip to relevant tests.
 zstd = pytest.importorskip("zstd")
 dill = pytest.importorskip("dill")

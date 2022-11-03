@@ -25,6 +25,8 @@ import requests
 import pennylane as qml
 from pennylane.data.data_manager import _generate_folders as original_generate_folders
 
+pytestmark = pytest.mark.data
+
 # TODO: Bring pytest skip to relevant tests.
 zstd = pytest.importorskip("zstd")
 dill = pytest.importorskip("dill")
