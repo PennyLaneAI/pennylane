@@ -1275,7 +1275,7 @@ class TestTFInterface:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-# Multiple interfaces it will bee tested withxp math module
+# Multiple interfaces it will bee tested with math module
 @pytest.mark.all_interfaces
 class TestMultipleInterfaceIntegration:
     """Tests to ensure that interfaces agree and integrate correctly"""
