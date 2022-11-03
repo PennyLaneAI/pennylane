@@ -376,7 +376,7 @@ Users can specify the control wires as well as the values to control the operati
 
 This release contains contributions from (in alphabetical order):
 
-Kamal Ali,
+Kamal Mohamed Ali,
 Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Albert Mitjans Coma,

@@ -134,7 +134,6 @@ PARAMETRIZED_MEASUREMENTS = [
     qml.mutual_info(wires0=[1], wires1=[0], log_base=2),
     qml.classical_shadow(wires=[0, 1]),
     qml.classical_shadow(wires=[1, 0]),
-    qml.classical_shadow(wires=[0, 1], seed_recipes=False),
     qml.shadow_expval(
         H=qml.Hamiltonian(
             [1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
@@ -150,12 +149,6 @@ PARAMETRIZED_MEASUREMENTS = [
         H=qml.Hamiltonian(
             [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         )
-    ),
-    qml.shadow_expval(
-        H=qml.Hamiltonian(
-            [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
-        ),
-        seed_recipes=False,
     ),
     MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, -1]),
     MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, 2]),

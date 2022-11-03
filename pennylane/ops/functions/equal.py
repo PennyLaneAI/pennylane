@@ -153,6 +153,5 @@ def equal_shadow_measurements(op1, op2):
     wires_match = op1.wires == op2.wires
     H_match = op1.H == op2.H
     k_match = op1.k == op2.k
-    seed_class_match = op1.seed.__class__ == op2.seed.__class__  # seed can be None or a random int
 
-    return return_types_match and wires_match and H_match and k_match and seed_class_match
+    return return_types_match and wires_match and H_match and k_match
