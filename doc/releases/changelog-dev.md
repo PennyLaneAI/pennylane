@@ -231,6 +231,134 @@ Users can specify the control wires as well as the values to control the operati
   Largest Gradient: 0.00040841755397108586
   ``` 
 
+<h4>Data Module</h4>
+
+* Added the `data` module to allow downloading, loading, and creating quantum datasets.
+
+* Datasets hosted on the cloud can be downloaded with the `qml.data.load` function as follows:
+
+  ```pycon
+  >>> H2_dataset = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0")
+  >>> print(H2_dataset)
+  [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
+  ```
+
+* To see what datasets are available for download, we can call `qml.data.list_datasets`:
+
+  ```pycon
+  >>> available_data = qml.data.list_datasets()
+  >>> available_data.keys()
+  dict_keys(['qspin', 'qchem'])
+  >>> available_data['qchem'].keys()
+  dict_keys(['HF', 'LiH', ...])
+  >>> available_data['qchem']['H2'].keys()
+  dict_keys(['STO-3G'])
+  >>> print(available_data['qchem']['H2']['STO-3G'])
+  ['2.35', '1.75', '0.6', '1.85', ...]
+  ```
+
+* To download or load only specific properties of a dataset, we can specify the desired attributes in `qml.data.load`:
+
+  ```pycon
+  >>> H2_hamiltonian = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0", attributes=["molecule", "hamiltonian"])[0]
+  >>> H2_hamiltonian.hamiltonian
+  <Hamiltonian: terms=15, wires=[0, 1, 2, 3]>
+  ```
+
+* Properties of datasets can be downloaded without downloading the full dataset by using the `attributes` argument:
+
+  ```pycon
+  >>> H2_partial = qml.data.load(data_name='qchem',molname='H2', basis='STO-3G', bondlength=1.0, attributes=['molecule','fci_energy'])[0]
+  >>> H2_partial.molecule
+  <pennylane.qchem.molecule.Molecule at 0x7f56c9d78e50>
+  >>> H2_partial.fci_energy
+  -1.1011498981604342
+  ```
+
+* The available `attributes` can be found using `qml.data.list_attributes`:
+
+  ```pycon
+  >>> qml.data.list_attributes(data_name='qchem')
+  ['molecule',
+  'hamiltonian',
+  'wire_map',
+  ...
+  'vqe_params',
+  'vqe_circuit']
+  ```
+
+* To select data interactively by following a series of prompts, we can use `qml.data.load_interactive` as follows:
+
+  ```pycon
+  >>> qml.data.load_interactive()
+          Please select a data name:
+              1) qspin
+              2) qchem
+          Choice [1-2]: 1
+          Please select a sysname:
+              ...
+          Please select a periodicity:
+              ...
+          Please select a lattice:
+              ...
+          Please select a layout:
+              ...
+          Please select attributes:
+              ...
+          Force download files? (Default is no) [y/N]: N
+          Folder to download to? (Default is pwd, will download to /datasets subdirectory): /Users/jovyan/Downloads
+
+          Please confirm your choices:
+          dataset: qspin/Ising/open/rectangular/4x4
+          attributes: ['parameters', 'ground_states']
+          force: False
+          dest folder: /Users/jovyan/Downloads/datasets
+          Would you like to continue? (Default is yes) [Y/n]:
+          <pennylane.data.dataset.Dataset object at 0x10157ab50>
+    ```
+
+* Once loaded, properties of a dataset can be accessed easily as follows:
+
+  ```pycon
+  >>> dev = qml.device('default.qubit',wires=H2_dataset[0].hamiltonian.wires)
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...     return qml.expval(H2_dataset[0].hamiltonian)
+  >>> print(circuit())
+  2.173913043478261
+  ```
+
+* It is also possible to create custom datasets with `qml.data.Dataset`
+
+  ```pycon
+  >>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], observables=[qml.PauliZ(wires=0),qml.PauliX(wires=1)])
+  >>> example_energies, _ = np.linalg.eigh(qml.matrix(example_hamiltonian)) #Calculate the energies
+  >>> example_dataset = qml.data.Dataset(data_name = 'Example',hamiltonian=example_hamiltonian,energies=example_energies)
+  >>> example_dataset.data_name
+  'Example'
+  >>> example_dataset.hamiltonian
+      (0.5) [X1]
+  + (1) [Z0]
+  >>> example_dataset.energies
+  array([-1.5, -0.5,  0.5,  1.5])
+  ```
+
+* These custom datasets can be saved and read with the `Dataset.write` and `Dataset.read` functions as follows:
+
+  ```pycon
+  >>> example_dataset.write('./path/to/dataset.dat')
+  >>> read_dataset = qml.data.Dataset()
+  >>> read_dataset.read('./path/to/dataset.dat')
+  >>> read_dataset.data_name
+  'Example'
+  >>> read_dataset.hamiltonian
+      (0.5) [X1]
+  + (1) [Z0]
+  >>> read_dataset.energies
+  array([-1.5, -0.5,  0.5,  1.5])
+  ```
+
+
 <h3>Improvements</h3>
 
 * Added the `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track
