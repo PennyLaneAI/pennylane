@@ -32,14 +32,19 @@ def _process_jacs_new(jac, qhess):
 
     hess = []
     for qh in qhess:
-        if len(qml.math.shape(qh)) <= 1:
-            # single argument case
+        if not isinstance(qh, tuple) or not isinstance(qh[0], tuple):
+            # single parameter case
             qh = qml.math.expand_dims(qh, [0, 1])
         else:
+            # multi parameter case
             qh = qml.math.stack([qml.math.stack(row) for row in qh])
 
         jac_ndim = len(qml.math.shape(jac))
 
+        # The classical jacobian has shape (num_params, num_qnode_args)
+        # The quantum Hessian has shape (num_params, num_params, output_shape)
+        # contracting the quantum Hessian with the classical jacobian twice gives
+        # a result with shape (num_qnode_args, num_qnode_args, output_shape)
         qh = qml.math.einsum(
             f"ab...,a{ABC[2:2 + jac_ndim - 1]},"
             f"b{ABC[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]}"

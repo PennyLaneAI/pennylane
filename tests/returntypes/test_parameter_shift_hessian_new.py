@@ -1711,10 +1711,10 @@ class TestParamShiftHessianWithKwargs:
         assert np.allclose(hessian, expected.T)
 
 
-@pytest.mark.skip("Requires QNode integration for new return types")
 class TestInterfaces:
     """Test the param_shift_hessian method on different interfaces"""
 
+    @pytest.mark.skip("Requires Torch integration for new return types")
     @pytest.mark.torch
     def test_hessian_transform_with_torch(self):
         """Test that the Hessian transform can be used with Torch (1d -> 1d)"""
@@ -1738,6 +1738,7 @@ class TestInterfaces:
 
         assert np.allclose(expected, hess.detach())
 
+    @pytest.mark.skip("Requires Torch integration for new return types")
     @pytest.mark.torch
     def test_hessian_transform_is_differentiable_torch(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in Torch
@@ -1785,7 +1786,7 @@ class TestInterfaces:
         circuit.interface = "jax"
         hess = qml.gradients.param_shift_hessian(circuit)(x_jax)
 
-        assert np.allclose(expected, hess)
+        assert np.allclose(qml.math.transpose(expected, (1, 2, 0)), hess)
 
     @pytest.mark.jax
     @pytest.mark.slow
@@ -1807,11 +1808,18 @@ class TestInterfaces:
         x_jax = jax.numpy.array([0.1, 0.2])
 
         expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
+
+        def cost_fn(x):
+            hess = qml.gradients.param_shift_hessian(circuit)(x)
+            hess = qml.math.stack([qml.math.stack(row) for row in hess])
+            return hess
+
         circuit.interface = "jax"
-        jax_deriv = jax.jacobian(qml.gradients.param_shift_hessian(circuit))(x_jax)
+        jax_deriv = jax.jacobian(cost_fn)(x_jax)
 
-        assert np.allclose(expected, jax_deriv)
+        assert np.allclose(qml.math.transpose(expected, (1, 2, 0, 3)), jax_deriv)
 
+    @pytest.mark.skip("Requires TF integration for new return types")
     @pytest.mark.tf
     @pytest.mark.slow
     def test_hessian_transform_with_tensorflow(self):
@@ -1837,6 +1845,7 @@ class TestInterfaces:
 
         assert np.allclose(expected, hess)
 
+    @pytest.mark.skip("Requires TF integration for new return types")
     @pytest.mark.tf
     @pytest.mark.slow
     def test_hessian_transform_is_differentiable_tensorflow(self):
