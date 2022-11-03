@@ -14,20 +14,12 @@
 """
 Contains the hamiltonian expand tape transform
 """
-from collections import defaultdict
-
 # pylint: disable=protected-access
+from collections import defaultdict
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import (
-    AllCounts,
-    Counts,
-    Expectation,
-    MeasurementProcess,
-    Probability,
-    Sample,
-)
+from pennylane.measurements import Expectation, MeasurementProcess
 from pennylane.ops import SProd, Sum
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -300,7 +292,7 @@ def sum_expand(tape: QuantumScript, group=True):
     idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
     for idx, m in enumerate(tape.measurements):
         obs = m.obs
-        coeff = None if m.return_type in {Probability, Counts, Sample, AllCounts} else 1
+        coeff = 1 if m.return_type is Expectation else None
         if isinstance(obs, Sum) and m.return_type is Expectation:
             for summand in obs.operands:
                 if isinstance(summand, SProd):
