@@ -210,6 +210,74 @@ def sum_expand(tape: QuantumScript, group=True):
         tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions to compute the expectation value.
+
+    **Example**
+
+    Given a Sum operator,
+
+    .. code-block:: python3
+
+        S = qml.op_sum(qml.prod(qml.PauliY(2), qml.PauliZ(1)), qml.s_prod(0.5, qml.PauliZ(2)), qml.PauliZ(1))
+
+    and a tape of the form,
+
+    .. code-block:: python3
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+
+            qml.expval(qml.PauliZ(0))
+            qml.expval(S)
+            qml.expval(qml.PauliX(1))
+            qml.expval(qml.PauliZ(2))
+
+    We can use the ``sum_expand`` transform to generate new tapes and a classical
+    post-processing function to speed-up the computation of the expectation value of the `Sum`.
+
+    >>> tapes, fn = qml.transforms.sum_expand(tape, group=False)
+    >>> for tape in tapes:
+    ...     print(tape.measurements)
+    [expval(PauliY(wires=[2]) @ PauliZ(wires=[1]))]
+    [expval(0.5*(PauliZ(wires=[2])))]
+    [expval(PauliZ(wires=[1]))]
+    [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1])), expval(PauliZ(wires=[2]))]
+
+    Four tapes are generated: the first three contain the summands of the `Sum` operator,
+    and the last tape contains the remaining observables.
+
+    We can evaluate these tapes on a device:
+
+    >>> dev = qml.device("default.qubit", wires=3)
+    >>> res = dev.batch_execute(tapes)
+
+    Applying the processing function results in the expectation value of the Hamiltonian:
+
+        >>> fn(res)
+    [0.0, -0.5, 0.0, -0.9999999999999996]
+
+    Fewer tapes can be constructed by grouping commuting observables. This can be achieved
+    by the ``group`` keyword argument:
+
+    .. code-block:: python3
+
+        S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(S)
+
+    With grouping, the Sum gets split into two groups of observables (here
+    ``[qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1))]`` and ``[qml.s_prod(3, qml.PauliX(0))]``):
+
+    >>> tapes, fn = qml.transforms.sum_expand(tape, group=True)
+    >>> for tape in tapes:
+    ...     print(tape.measurements)
+    [expval(PauliZ(wires=[0])), expval(2*(PauliX(wires=[1])))]
+    [expval(3*(PauliX(wires=[0])))]
     """
     non_expanded_measurements = []
     non_expanded_measurement_idxs = []

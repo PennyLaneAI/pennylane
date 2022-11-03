@@ -54,7 +54,7 @@ Users can specify the control wires as well as the values to control the operati
 
 <h4>Pauli Module</h4>
 
-* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
+* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli`
   module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
   [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
 
@@ -62,7 +62,7 @@ Users can specify the control wires as well as the values to control the operati
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
   Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive
-  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. 
+  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`.
   Alternatively, the flipping condition can be :math:`n < L`. This is accessed via the `geq` keyword
   argument.
 
@@ -229,7 +229,30 @@ Users can specify the control wires as well as the values to control the operati
   4: ─├BasisState(M0)─├G²(0.20)────────────────────┤ ├<𝓗>
   5: ─╰BasisState(M0)─╰G²(0.20)────────────────────┤ ╰<𝓗>
   Largest Gradient: 0.00040841755397108586
-  ``` 
+  ```
+
+  * The `qml.transforms.sum_expand` transform is added.
+
+    This transform takes a tape object as input, and expands all `Sum` observables if there are any.
+
+    ```pycon
+    >>> S = qml.op_sum(qml.prod(qml.PauliY(2), qml.PauliZ(1)), qml.s_prod(0.5, qml.PauliZ(2)), qml.PauliZ(1))
+    >>> with qml.tape.QuantumTape() as tape:
+    ...     qml.Hadamard(wires=0)
+    ...     qml.CNOT(wires=[0, 1])
+    ...     qml.PauliX(wires=2)
+    ...     qml.expval(qml.PauliZ(0))
+    ...     qml.expval(S)
+    ...     qml.expval(qml.PauliX(1))
+    ...     qml.expval(qml.PauliZ(2))
+    >>> tapes, fn = qml.transforms.sum_expand(tape, group=False)
+    >>> for tape in tapes:
+    ...     print(tape.measurements)
+    [expval(PauliY(wires=[2]) @ PauliZ(wires=[1]))]
+    [expval(0.5*(PauliZ(wires=[2])))]
+    [expval(PauliZ(wires=[1]))]
+    [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1])), expval(PauliZ(wires=[2]))]
+    ```
 
 <h4>Data Module</h4>
 
@@ -358,14 +381,13 @@ Users can specify the control wires as well as the values to control the operati
   array([-1.5, -0.5,  0.5,  1.5])
   ```
 
-
 <h3>Improvements</h3>
 
 * Added the `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track
   if computational basis samples are being generated.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 
-* The parameters of a basis set containing different number of Gaussian functions are easier to 
+* The parameters of a basis set containing different number of Gaussian functions are easier to
   differentiate.
   [(#3213)](https://github.com/PennyLaneAI/pennylane/pull/3213)
 
