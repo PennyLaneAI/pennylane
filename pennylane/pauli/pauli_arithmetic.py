@@ -312,7 +312,7 @@ class PauliSentence(dict):
         mats_and_wires_gen = (
             (
                 coeff * pw.to_mat(wire_order=_pw_wires(list(pw.wires)), format=format),
-                wires.Wires(list(pw.wires)),
+                _pw_wires(list(pw.wires)),
             )
             for pw, coeff in self.items()
         )

@@ -304,12 +304,12 @@ class TestPauliSentence:
             - 4j * np.kron(np.kron(matX, np.kron(matX, matZ)), np.eye(8))
             + 0.5 * np.kron(np.kron(matI, np.kron(matZ, np.kron(matZ, matZ))), np.eye(4)),
         ),
-        # (
-        #     ps3,
-        #     [0, "b", "c"],
-        #     -0.5 * np.kron(matZ, np.kron(matZ, matZ))
-        #     + 1 * np.eye(8),
-        # ),  Uncomment after bug in expand_matrix is resolved
+        (
+            ps3,
+            [0, "b", "c"],
+            -0.5 * np.kron(matZ, np.kron(matZ, matZ))
+            + 1 * np.eye(8),
+        ),
     )
 
     @pytest.mark.parametrize("ps, wire_order, true_matrix", tup_ps_mat)
