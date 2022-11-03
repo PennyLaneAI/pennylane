@@ -1027,9 +1027,7 @@ class TestParameterShiftHessianQNode:
         x = np.ones([1, 3], requires_grad=True)
 
         expected = qml.jacobian(qml.jacobian(circuit))(x)
-        print(qml.math.shape(expected))
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
-        print(qml.math.shape(hessian))
 
         assert np.allclose(qml.math.transpose(expected, (0, 2, 3, 4, 5, 1)), hessian)
 
@@ -1515,9 +1513,6 @@ class TestParameterShiftHessianQNode:
 
         transform = [qml.math.shape(qml.gradients.param_shift_hessian(c)(x)) for c in circuits]
         expected = [(3, 3), (3, 3), (2, 3, 3), (3, 3, 4), (3, 3, 4), (2, 3, 3, 4)]
-
-        print(transform)
-        print(expected)
 
         assert all(t == e for t, e in zip(transform, expected))
 
