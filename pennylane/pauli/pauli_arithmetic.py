@@ -215,7 +215,7 @@ class PauliWord(dict):
         return prod(*(op_map[op](wire) for wire, op in self.items()))
 
     def hamiltonian(self, wire_order=None):
-        """Return ~.Hamiltonian representing the PauliWord """
+        """Return ~.Hamiltonian representing the PauliWord"""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the hamiltonian for an empty PauliWord.")
@@ -297,11 +297,9 @@ class PauliSentence(dict):
         if len(self) == 0:
             if wire_order is None or wire_order == wires.Wires([]):
                 raise ValueError("Can't get the matrix of an empty PauliSentence.")
-            return (
-                np.eye(2 ** len(wire_order))
-                if format == "dense"
-                else sparse.eye(2 ** len(wire_order), format=format)
-            )
+            if format == "dense":
+                return np.eye(2 ** len(wire_order))
+            return sparse.eye(2 ** len(wire_order), format=format)
 
         def _pw_wires(w):
             """To account for empty pauli_words which represent identity operations."""
