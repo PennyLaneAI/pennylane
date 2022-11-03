@@ -116,7 +116,7 @@
 * Optimizing quantum circuits can now be done *adaptively* with `qml.AdaptiveOptimizer`.
   [(#3192)](https://github.com/PennyLaneAI/pennylane/pull/3192)
 
-  The `AdaptiveOptimizer` optimizer takes an initial circuit and a collection of operators
+  The `qml.AdaptiveOptimizer` optimizer takes an initial circuit and a collection of operators
   as input and adds a selected gate to the circuits at each optimization step. The process of
   growing the circuit can be repeated until the circuit gradients converge to zero within a given
   threshold. The adaptive optimizer can be used to implement algorithms such as `ADAPT-VQE`.
@@ -221,7 +221,7 @@
 * The parameters of a basis set containing a different number of Gaussian functions are now easier to differentiate.
   [(#3213)](https://github.com/PennyLaneAI/pennylane/pull/3213)
 
-* Printing a `MultiControlledX` operator now shows the `control_values` keyword argument.
+* Printing a `qml.MultiControlledX` operator now shows the `control_values` keyword argument.
   [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
 * The matrix passed to `qml.Hermitian` is now validated when creating the observable if the input is not abstract.
@@ -290,7 +290,7 @@
 * Improved the performance of the `qml.math.expand_matrix` function for dense matrices.
   [(#3064)](https://github.com/PennyLaneAI/pennylane/pull/3064)
 
-* Improved `qml.math.expand_matrix` method for sparse matrices.
+* Improved the `qml.math.expand_matrix` method for sparse matrices.
   [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
 
 * Support sums and products of `Operator` classes with scalar tensors of any interface
