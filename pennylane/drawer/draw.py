@@ -420,7 +420,7 @@ def draw_mpl(
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circuit, wire_options={'color':'black', 'linewidth': 5},
+            fig, ax = qml.draw_mpl(circuit, wire_options={'color':'teal', 'linewidth': 5},
                         label_options={'size': 20})(1.2345,1.2345)
             fig.show()
 

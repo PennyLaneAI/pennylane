@@ -95,7 +95,7 @@ def use_style(tape):
 def wires_and_labels(tape):
 
     fig, ax = tape_mpl(
-        tape, wire_options={"color": "black", "linewidth": 5}, label_options={"size": 20}
+        tape, wire_options={"color": "teal", "linewidth": 5}, label_options={"size": 20}
     )
 
     plt.savefig(folder / "wires_labels.png")

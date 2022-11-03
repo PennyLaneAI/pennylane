@@ -111,7 +111,7 @@ def use_style(circuit):
 
 def wires_labels(circuit):
     fig, ax = draw_mpl(
-        circuit, wire_options={"color": "black", "linewidth": 5}, label_options={"size": 20}
+        circuit, wire_options={"color": "teal", "linewidth": 5}, label_options={"size": 20}
     )(1.2345, 1.2345)
     plt.savefig(folder / "wires_labels.png")
     plt.close()

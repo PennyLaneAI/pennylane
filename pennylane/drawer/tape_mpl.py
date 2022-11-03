@@ -331,7 +331,7 @@ def tape_mpl(
 
     .. code-block:: python
 
-        fig, ax = tape_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
+        fig, ax = tape_mpl(tape, wire_options={'color':'teal', 'linewidth': 5},
                     label_options={'size': 20})
 
     .. figure:: ../../_static/tape_mpl/wires_labels.png
