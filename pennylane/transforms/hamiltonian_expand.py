@@ -21,7 +21,7 @@ from typing import List
 
 import pennylane as qml
 from pennylane.measurements import Expectation, MeasurementProcess
-from pennylane.ops import Sum
+from pennylane.ops import SProd, Sum
 from pennylane.tape import QuantumScript
 
 
@@ -200,6 +200,7 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     return tapes, processing_fn
 
 
+# pylint: disable=too-many-branches
 def sum_expand(tape: QuantumScript, group=True):
     """Splits a tape measuring a Sum expectation into mutliple tapes of summand expectations,
     and provides a function to recombine the results.
@@ -284,41 +285,48 @@ def sum_expand(tape: QuantumScript, group=True):
     [expval(3*(PauliX(wires=[0])))]
     """
     measurements_dict = {}  # {m_hash: measurement}
-    measurement_idxs_dict = {}  # {m_hash: [location_id]}
+    idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
     for idx, m in enumerate(tape.measurements):
-        if isinstance(m.obs, Sum) and m.return_type is Expectation:
-            sum_op = m.obs
-            for summand in sum_op.operands:
+        obs = m.obs
+        coeff = 1
+        if isinstance(obs, Sum) and m.return_type is Expectation:
+            for summand in obs.operands:
+                if isinstance(summand, SProd):
+                    coeff = summand.scalar
+                    summand = summand.base
                 s_m = qml.expval(summand)
                 if s_m.hash not in measurements_dict:
                     measurements_dict[s_m.hash] = s_m
-                    measurement_idxs_dict[s_m.hash] = [idx]
+                    idxs_coeffs_dict[s_m.hash] = [(idx, coeff)]
                 else:
-                    measurement_idxs_dict[s_m.hash].append(idx)
+                    idxs_coeffs_dict[s_m.hash].append((idx, coeff))
+            continue
+
+        if isinstance(obs, SProd) and m.return_type is Expectation:
+            coeff = obs.scalar
+            m = qml.expval(obs.base)
+
+        if m.hash not in measurements_dict:
+            measurements_dict[m.hash] = m
+            idxs_coeffs_dict[m.hash] = [(idx, coeff)]
         else:
-            if m.hash not in measurements_dict:
-                measurements_dict[m.hash] = m
-                measurement_idxs_dict[m.hash] = [idx]
-            else:
-                measurement_idxs_dict[m.hash].append(idx)
+            idxs_coeffs_dict[m.hash].append((idx, coeff))
 
     measurements = list(measurements_dict.values())
-    measurement_idxs = list(measurement_idxs_dict.values())
+    idxs_coeffs = list(idxs_coeffs_dict.values())
 
     if group:
-        grouped_measurements = _group_measurements(measurements)
-        tmp_measurement_idxs = []
-        for m_group in grouped_measurements:
+        m_groups = _group_measurements(measurements)
+        tmp_idxs = []
+        for m_group in m_groups:
             if len(m_group) == 1:
-                tmp_measurement_idxs.append(measurement_idxs[measurements.index(m_group[0])])
+                tmp_idxs.append(idxs_coeffs[measurements.index(m_group[0])])
             else:
-                tmp_measurement_idxs.append(
-                    [measurement_idxs[measurements.index(m)] for m in m_group]
-                )
-        measurement_idxs = tmp_measurement_idxs
+                tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
+        idxs_coeffs = tmp_idxs
         tapes = [
             QuantumScript(ops=tape._ops, measurements=m_group, prep=tape._prep)
-            for m_group in grouped_measurements
+            for m_group in m_groups
         ]
     else:
         tapes = [
@@ -327,20 +335,21 @@ def sum_expand(tape: QuantumScript, group=True):
 
     def processing_fn(expanded_results):
         results = defaultdict(lambda: 0)  # {m_idx: result}
-        for tape_res, tape_idxs in zip(expanded_results, measurement_idxs):
+        for tape_res, tape_idxs in zip(expanded_results, idxs_coeffs):
             # tape_res contains only one result
-            if not isinstance(tape_idxs[0], list):
-                for idx in tape_idxs:
-                    results[idx] += tape_res[0]
+            if isinstance(tape_idxs[0], tuple):
+                for idx, coeff in tape_idxs:
+                    results[idx] += coeff * tape_res[0]
                 continue
             # tape_res contains multiple results
             for res, idxs in zip(tape_res, tape_idxs):
                 if isinstance(idxs, list):  # result is shared among measurements
-                    for idx in idxs:
-                        results[idx] += res
+                    for idx, coeff in idxs:
+                        results[idx] += coeff * res
                 else:
-                    results[idxs] += res
-
+                    idx, coeff = idxs
+                    results[idx] += coeff * res
+        # sort results by idx
         results = [results[key] for key in sorted(results)]
         return results[0] if len(results) == 1 else results
 
