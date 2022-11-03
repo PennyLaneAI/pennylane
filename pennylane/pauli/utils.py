@@ -83,11 +83,11 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
 
 def is_pauli_word(observable):
     """
-    Checks if an observable instance is a Pauli word.
+    Checks if an operator instance is a Pauli word.
 
     Args:
-        observable (Observable): an observable, either a :class:`~.Tensor` instance or
-            single-qubit observable.
+        observable (Union[~.Operator, ~.Hamiltonian]): the operator to be
+            examined
 
     Returns:
         bool: true if the input observable is a Pauli word, false otherwise.
