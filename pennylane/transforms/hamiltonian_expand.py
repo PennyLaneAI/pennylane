@@ -18,14 +18,13 @@ Contains the hamiltonian expand tape transform
 import pennylane as qml
 from pennylane.measurements import Expectation
 from pennylane.ops import Sum
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript
 
 
 def hamiltonian_expand(tape: QuantumScript, group=True):
     r"""
     Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
-    and provides a function to recombine the results. The tape is returned unchanged if it doesn't
-    measure a single Hamiltonian expectation.
+    and provides a function to recombine the results.
 
     Args:
         tape (.QuantumTape): the tape used when calculating the expectation value
@@ -155,7 +154,8 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
         # observables in that grouping
         tapes = []
         for obs in obs_groupings:
-            new_tape = QuantumTape(tape._ops, [qml.expval(o) for o in obs], tape._prep)
+            new_tape = tape.__class__(tape._ops, (qml.expval(o) for o in obs), tape._prep)
+
             new_tape = new_tape.expand(stop_at=lambda obj: True)
             tapes.append(new_tape)
 
@@ -185,7 +185,7 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     tapes = []
     for o in hamiltonian.ops:
         # pylint: disable=protected-access
-        new_tape = QuantumTape(tape._ops, [qml.expval(o)], tape._prep)
+        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep)
         tapes.append(new_tape)
 
     # pylint: disable=function-redefined
