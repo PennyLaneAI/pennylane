@@ -20,6 +20,10 @@ import os
 import pytest
 import pennylane as qml
 
+# TODO: Bring pytest skip to relevant tests.
+zstd = pytest.importorskip("zstd")
+dill = pytest.importorskip("dill")
+
 
 def test_build_dataset():
     """Test that a dataset builds correctly and returns the correct values."""

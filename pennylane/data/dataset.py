@@ -18,8 +18,19 @@ Contains the :class:`~pennylane.data.Dataset` class and its associated functions
 from abc import ABC
 from glob import glob
 import os
-import dill
-import zstd
+
+def _import_zstd_dill():
+    """Import zstd and dill."""
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        import zstd, dill
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires zstd and dill."
+            "They can be installed with: pip install zstd dill."
+        ) from Error
+
+    return zstd, dill
 
 from pennylane import Hamiltonian
 from pennylane.pauli import string_to_pauli_word
@@ -139,6 +150,7 @@ class Dataset(ABC):
         with open(filepath, "rb") as f:
             compressed_pickle = f.read()
 
+        zstd, dill = _import_zstd_dill()
         depressed_pickle = zstd.decompress(compressed_pickle)
         return dill.loads(depressed_pickle)
 
@@ -167,6 +179,7 @@ class Dataset(ABC):
     @staticmethod
     def _write_file(data, filepath, protocol=4):
         """General method to write data to a file."""
+        zstd, dill = _import_zstd_dill()
         pickled_data = dill.dumps(data, protocol=protocol)
         compressed_pickle = zstd.compress(pickled_data)
         with open(filepath, "wb") as f:
