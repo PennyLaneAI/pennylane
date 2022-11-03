@@ -171,6 +171,7 @@ class Exp(SymbolicOp):
     @property
     def has_decomposition(self):
         from pennylane.pauli.utils import is_pauli_word
+
         return math.real(self.coeff) == 0 and is_pauli_word(self.base)
 
     def decomposition(self):
@@ -186,6 +187,7 @@ class Exp(SymbolicOp):
             list[PauliRot]: decomposition of the operator
         """
         from pennylane.pauli.utils import is_pauli_word, pauli_word_to_string
+
         if math.real(self.coeff) != 0 or not is_pauli_word(self.base):
             raise DecompositionUndefinedError
         new_coeff = math.real(2j * self.coeff)
