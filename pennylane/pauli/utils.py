@@ -21,7 +21,7 @@ representation of Pauli words and applications, see:
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
 from itertools import product
-from typing import Union, List
+from typing import List
 from functools import reduce, lru_cache
 
 import numpy as np
@@ -31,7 +31,7 @@ from pennylane.wires import Wires
 from pennylane.tape import OperationRecorder
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ
-from pennylane.operation import Observable, Tensor
+from pennylane.operation import Tensor
 
 # To make this quicker later on
 ID_MAT = np.eye(2)
