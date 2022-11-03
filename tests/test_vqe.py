@@ -19,8 +19,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultMixed, DefaultQubit
-from pennylane.operation import EigvalsUndefinedError
+from pennylane.wires import Wires
+from pennylane.devices import DefaultQubit, DefaultMixed
 
 
 @pytest.fixture(scope="function")
@@ -1275,15 +1275,15 @@ class TestTFInterface:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-# Multiple interfaces it will bee tested with math module
+# Multiple interfaces it will bee tested withxp math module
 @pytest.mark.all_interfaces
 class TestMultipleInterfaceIntegration:
     """Tests to ensure that interfaces agree and integrate correctly"""
 
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
-        import tensorflow as tf
         import torch
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
