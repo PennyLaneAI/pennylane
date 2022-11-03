@@ -18,7 +18,7 @@ Contains the hamiltonian expand tape transform
 import pennylane as qml
 from pennylane.measurements import Expectation
 from pennylane.ops import Sum
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
 
 
 def hamiltonian_expand(tape: QuantumScript, group=True):
@@ -153,7 +153,7 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
         # observables in that grouping
         tapes = []
         for obs in obs_groupings:
-            new_tape = QuantumScript(tape._ops, (qml.expval(o) for o in obs), tape._prep)
+            new_tape = QuantumTape(tape._ops, [qml.expval(o) for o in obs], tape._prep)
             new_tape = new_tape.expand(stop_at=lambda obj: True)
             tapes.append(new_tape)
 
@@ -183,7 +183,7 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     tapes = []
     for o in hamiltonian.ops:
         # pylint: disable=protected-access
-        new_tape = QuantumScript(tape._ops, [qml.expval(o)], tape._prep)
+        new_tape = QuantumTape(tape._ops, [qml.expval(o)], tape._prep)
         tapes.append(new_tape)
 
     # pylint: disable=function-redefined
