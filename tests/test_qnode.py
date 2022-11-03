@@ -1516,27 +1516,6 @@ class TestTapeExpansion:
 
         assert len(tapes) == 2
 
-    def test_invalid_hamiltonian_expansion_finite_shots(self, mocker):
-        """Test that an error is raised if multiple expectations are requested
-        when using finite shots"""
-        dev = qml.device("default.qubit", wires=3, shots=50000)
-
-        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
-        c = np.array([-0.6543, 0.24, 0.54])
-        H = qml.Hamiltonian(c, obs)
-        H.compute_grouping()
-
-        assert len(H.grouping_indices) == 2
-
-        @qnode(dev)
-        def circuit():
-            return qml.expval(H), qml.expval(H)
-
-        with pytest.raises(
-            ValueError, match="Can only return the expectation of a single Hamiltonian"
-        ):
-            circuit()
-
     def test_device_expansion_strategy(self, mocker):
         """Test that the device expansion strategy performs the device
         decomposition at construction time, and not at execution time"""

@@ -19,8 +19,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.wires import Wires
-from pennylane.devices import DefaultQubit, DefaultMixed
+from pennylane.devices import DefaultMixed, DefaultQubit
+from pennylane.operation import EigvalsUndefinedError
 
 
 @pytest.fixture(scope="function")
@@ -1015,7 +1015,7 @@ class TestNewVQE:
         def circuit():
             return qml.sample(H)
 
-        with pytest.raises(ValueError, match="Can only return the expectation of a single"):
+        with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of Hamiltonian."):
             circuit()
 
     @pytest.mark.autograd
@@ -1282,8 +1282,8 @@ class TestMultipleInterfaceIntegration:
 
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
-        import torch
         import tensorflow as tf
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
