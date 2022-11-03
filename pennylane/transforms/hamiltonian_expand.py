@@ -359,17 +359,13 @@ def sum_expand(tape: QuantumScript, group=True):
     tapes = expanded_tapes + non_expanded_tape
     measurement_idxs = expanded_measurement_idxs + non_expanded_measurement_idxs
 
-    def inner_processing_fn(res):
-        if group:
-            res = [qml.math.sum(c_group) for c_group in res]
-        return qml.math.sum(qml.math.stack(res), axis=0)
-
     def outer_processing_fn(res):
         processed_results = []
         # process results of all tapes except the last one
         for idx, n_tapes in enumerate(num_tapes):
-            processed_results.extend([inner_processing_fn(res[idx : idx + n_tapes])])
-        # add results of tape containing all the non-sum observables
+            sum_results = res[idx : idx + n_tapes]
+            processed_results.extend([_process_sum_results(sum_results, group=group)])
+        # add results of last tape, which contains all the non-sum observables
         if non_expanded_tape:
             non_expanded_res = [res[-1]] if len(non_expanded_measurement_idxs) == 1 else res[-1]
             processed_results.extend(non_expanded_res)
@@ -404,3 +400,18 @@ def _group_summands(sum: Sum):
             qwc_groups.append((summand.wires, [summand]))
 
     return [group[1] for group in qwc_groups]
+
+
+def _process_sum_results(res: Sequence[float], group: bool):
+    """Process the results obtained from the execution of the expanded tapes.
+
+    Args:
+        res (Sequence[float]): results of each expanded tape
+        group (bool): whether grouping was used during expansion
+
+    Returns:
+        float: processed result
+    """
+    if group:
+        res = [qml.math.sum(c_group) for c_group in res]
+    return qml.math.sum(qml.math.stack(res), axis=0)
