@@ -247,8 +247,8 @@ def draw_mpl(
             Default ``None`` will omit parameters from operation labels.
         style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
             'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
-            'black_white' style will be used. Setting style does not modify matplotlib global plotting settings.
-            If None, the current matplotlib settings will be used.
+            ``'black_white'`` style will be used. Setting style does not modify matplotlib global plotting settings.
+            If ``None``, the current matplotlib settings will be used.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -392,7 +392,7 @@ def draw_mpl(
         You can also control the appearance with matplotlib's provided tools, see the
         `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
         For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
-        ``plt.rcParams``, qml.draw_mpl must be run with style=None:
+        ``plt.rcParams``, ``qml.draw_mpl`` must be run with ``style=None``:
 
         .. code-block:: python
 
