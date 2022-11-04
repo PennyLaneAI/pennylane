@@ -1039,13 +1039,10 @@ class TestStatisticsQueuing:
             A = op(0)
             stat_func(A)
 
-        assert q.queue[:-1] == [A]
         meas_proc = q.queue[-1]
+        assert A not in q.queue
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
-
-        assert q.get_info(A) == {"owner": meas_proc}
-        assert q.get_info(meas_proc) == {"owns": (A)}
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
         """Test that the return_type related info is updated for a measurement
@@ -1057,13 +1054,10 @@ class TestStatisticsQueuing:
             Herm = qml.Hermitian(mx, wires=[1])
             stat_func(Herm)
 
-        assert q.queue[:-1] == [Herm]
+        assert Herm not in q.queue
         meas_proc = q.queue[-1]
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
-
-        assert q.get_info(Herm) == {"owner": meas_proc}
-        assert q.get_info(meas_proc) == {"owns": (Herm)}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -1083,14 +1077,12 @@ class TestStatisticsQueuing:
             tensor_op = A @ B
             stat_func(tensor_op)
 
-        assert q.queue[:-1] == [A, B, tensor_op]
+        assert A not in q.queue
+        assert B not in q.queue
+        assert tensor_op not in q.queue
         meas_proc = q.queue[-1]
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
-
-        assert q.get_info(A) == {"owner": tensor_op}
-        assert q.get_info(B) == {"owner": tensor_op}
-        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -1111,14 +1103,11 @@ class TestStatisticsQueuing:
             tensor_op = A @ B
             stat_func(tensor_op)
 
-        assert len(q._queue) == 2
+        assert len(q.queue) == 1
 
-        assert q.queue[0] is tensor_op
         meas_proc = q.queue[-1]
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
-
-        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
 
 @pytest.mark.parametrize("stat_func", [expval, var, sample])

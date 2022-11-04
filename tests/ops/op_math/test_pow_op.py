@@ -85,8 +85,7 @@ class TestConstructor:
             original_op = qml.PauliX(0)
             new_op = qml.pow(original_op, 0.5, lazy=False)
 
-        assert q._queue[original_op]["owner"] is new_op
-        assert q._queue[new_op]["owns"] is original_op
+        assert original_op not in q.queue
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
@@ -534,8 +533,6 @@ class TestQueueing:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Pow(base, 1.2)
 
-        assert tape._queue[base]["owner"] is op
-        assert tape._queue[op]["owns"] is base
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
@@ -546,7 +543,6 @@ class TestQueueing:
             op = Pow(base, 3.4)
 
         assert len(tape.queue) == 1
-        assert tape._queue[op]["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_False(self):

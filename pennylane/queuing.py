@@ -235,8 +235,9 @@ class AnnotatedQueue:
         self._queue[obj] = kwargs
 
     def remove(self, obj):
-        """Remove ``obj`` from the queue.  Raises ``KeyError`` if ``obj`` is not already in the queue."""
-        del self._queue[obj]
+        """Remove ``obj`` from the queue. Passes silently if the object is not in the queue."""
+        if obj in self._queue:
+            del self._queue[obj]
 
     def update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""

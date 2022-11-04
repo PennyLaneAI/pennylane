@@ -176,18 +176,10 @@ class TestAnnotatedQueue:
     """Tests for the annotated queue class"""
 
     def test_remove_not_in_queue(self):
-        """Test that remove fails when the object to be removed is not in the queue."""
+        """Test that remove passes silently if the object is not in the queue"""
 
-        with AnnotatedQueue() as q1:
-            op1 = qml.PauliZ(0)
-            op2 = qml.PauliZ(1)
-            q1.append(op1)
-            q1.append(op2)
-
-        with AnnotatedQueue() as q2:
-            q2.append(op1)
-            with pytest.raises(KeyError):
-                q2.remove(op2)
+        q2 = AnnotatedQueue()
+        q2.remove(qml.PauliX(0))
 
     def test_append_qubit_gates(self):
         """Test that gates are successfully appended to the queue."""

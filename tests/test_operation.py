@@ -1189,8 +1189,6 @@ class TestTensor:
         assert len(tape.queue) == 1
         assert tape.queue[0] is T
 
-        assert tape._queue[T] == {"owns": (op1, op2)}
-
     def test_queuing(self):
         """Test the queuing of a Tensor object."""
 
@@ -1199,14 +1197,8 @@ class TestTensor:
             op2 = qml.PauliY(1)
             T = Tensor(op1, op2)
 
-        assert len(tape.queue) == 3
-        assert tape.queue[0] is op1
-        assert tape.queue[1] is op2
-        assert tape.queue[2] is T
-
-        assert tape._queue[op1] == {"owner": T}
-        assert tape._queue[op2] == {"owner": T}
-        assert tape._queue[T] == {"owns": (op1, op2)}
+        assert len(tape.queue) == 1
+        assert tape.queue[0] is T
 
     def test_queuing_observable_matmul(self):
         """Test queuing when tensor constructed with matmul."""
@@ -1216,10 +1208,7 @@ class TestTensor:
             op2 = qml.PauliY(1)
             t = op1 @ op2
 
-        assert len(tape.queue) == 3
-        assert tape._queue[op1] == {"owner": t}
-        assert tape._queue[op2] == {"owner": t}
-        assert tape._queue[t] == {"owns": (op1, op2)}
+        assert len(tape.queue) == 1
 
     def test_queuing_tensor_matmul(self):
         """Tests the tensor-specific matmul method updates queuing metadata."""
@@ -1232,8 +1221,8 @@ class TestTensor:
             op3 = qml.PauliZ(2)
             t2 = t @ op3
 
-        assert tape._queue[t2] == {"owns": (op1, op2, op3)}
-        assert tape._queue[op3] == {"owner": t2}
+        assert len(tape.queue) == 1
+        assert tape.queue[0] is t2
 
     def test_queuing_tensor_matmul_components_outside(self):
         """Tests the tensor-specific matmul method when components are defined outside the
@@ -1247,14 +1236,12 @@ class TestTensor:
             op3 = qml.PauliZ(2)
             t2 = t1 @ op3
 
-        assert len(tape._queue) == 2
-        assert tape._queue[op3] == {"owner": t2}
-        assert tape._queue[t2] == {"owns": (op1, op2, op3)}
+        assert len(tape.queue) == 1
 
     def test_queuing_tensor_rmatmul(self):
         """Tests tensor-specific rmatmul updates queuing metatadata."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.PauliX(0)
             op2 = qml.PauliY(1)
 
@@ -1264,8 +1251,8 @@ class TestTensor:
 
             t2 = op3 @ t1
 
-        assert tape._queue[op3] == {"owner": t2}
-        assert tape._queue[t2] == {"owns": (op3, op1, op2)}
+        assert len(q.queue) == 1
+        assert q.queue[0] is t2
 
     def test_name(self):
         """Test that the names of the observables are

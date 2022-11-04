@@ -171,8 +171,7 @@ class TestQueuing:
             base = TempOperator("a")
             op = SymbolicOp(base)
 
-        assert tape._queue[base]["owner"] is op
-        assert tape._queue[op]["owns"] is base
+        assert base not in tape.queue
         assert tape.operations == [op]
 
     def test_queuing_base_defined_outside(self):
@@ -183,7 +182,6 @@ class TestQueuing:
             op = SymbolicOp(base)
 
         assert len(tape._queue) == 1
-        assert tape._queue[op]["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_false(self):
