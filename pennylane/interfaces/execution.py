@@ -26,7 +26,7 @@ devices with autodifferentiation support.
 import inspect
 import warnings
 from contextlib import _GeneratorContextManager
-from functools import wraps
+from functools import wraps, partial
 from typing import Callable, Sequence
 
 from cachetools import LRUCache
@@ -445,6 +445,8 @@ def _execute_new(
 
             if not tf.executing_eagerly() or "autograph" in interface:  # pragma: no cover
                 from .tensorflow_autograph import execute as _execute  # pragma: no cover
+
+                _execute = partial(_execute, mode=_mode)
 
             else:
                 from .tensorflow import execute as _execute  # pragma: no cover
