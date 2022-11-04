@@ -900,6 +900,7 @@ class TestMeasurementTransformations:
         [PauliZ(0) @ Identity(1), PauliZ(0) @ PauliZ(1), PauliX(0) @ Identity(1)],
         [PauliX("a") @ PauliX(0), PauliZ(0) @ PauliZ("a")],
         [PauliZ("a") @ PauliY(1), PauliZ(1) @ PauliY("a")],
+        [Hamiltonian([1.0, 2.0], [PauliX("a"), PauliY("a")])],
     ]
 
     @pytest.mark.parametrize("not_qwc_grouping", not_qwc_groupings)

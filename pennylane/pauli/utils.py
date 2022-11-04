@@ -73,6 +73,7 @@ def is_pauli_word(observable):
     >>> is_pauli_word(qml.PauliZ(0) @ qml.Hadamard(1))
     False
     """
+    print(observable)
     if isinstance(observable, (Identity, PauliX, PauliY, PauliZ)):
         return True
 
@@ -1177,6 +1178,9 @@ def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branc
 
     if not are_pauli_words_qwc(qwc_grouping):
         raise ValueError("The list of Pauli words are not qubit-wise commuting.")
+
+    if not all(isinstance(op, (Tensor, PauliX, PauliY, PauliZ, Identity)) for op in qwc_grouping):
+        raise ValueError("This function only supports Tensor products of pauli ops.")
 
     pauli_operators = []
     diag_terms = []
