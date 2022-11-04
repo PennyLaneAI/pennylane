@@ -739,7 +739,7 @@ class Device(abc.ABC):
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
             # split tape into multiple tapes of diagonalizable known observables.
-            circuits, hamiltonian_fn = qml.transforms.split_tape(circuit, group=False)
+            circuits, hamiltonian_fn = qml.transforms.split_tape(circuit, group=True)
 
         elif (
             len(circuit._obs_sharing_wires) > 0

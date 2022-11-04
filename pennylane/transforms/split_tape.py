@@ -243,6 +243,7 @@ def split_tape(tape: QuantumScript, group=True):
                     )
                 continue
             # tape_res contains multiple results
+            tape_res = qml.math.transpose(tape_res)  # needed when batching
             for res, idxs in zip(tape_res, tape_idxs):
                 for idx, coeff in idxs:
                     results.append((idx, res if coeff is None else qml.math.dot(coeff, res)))

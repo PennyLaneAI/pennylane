@@ -14,6 +14,7 @@
 """This module contains the tape expansion function for expanding a
 broadcasted tape into multiple tapes."""
 import pennylane as qml
+
 from .batch_transform import batch_transform
 
 
@@ -103,4 +104,11 @@ def broadcast_expand(tape):
         new_tape.set_parameters(p, trainable_only=False)
         output_tapes.append(new_tape)
 
-    return output_tapes, lambda x: qml.math.squeeze(qml.math.stack(x))
+    def processing_fn(x):
+        res = qml.math.squeeze(qml.math.stack(x))
+        if not qml.active_return() and qml.math.shape(res) == ():
+            # old return types return a 1d-tensor when res only has one value
+            res = qml.math.convert_like([res], res)
+        return res
+
+    return output_tapes, processing_fn
