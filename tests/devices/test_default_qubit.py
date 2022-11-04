@@ -79,8 +79,6 @@ U_cswap = np.array(
     ]
 )
 
-H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
-
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
@@ -2544,6 +2542,17 @@ class TestHamiltonianSupport:
         H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(1)])
 
         with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
+            dev.expval(H)
+
+    def test_error_hamiltonian_expval_wrong_wires(self):
+        """Tests that expval fails if Hamiltonian uses non-device wires."""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+        H = qml.Hamiltonian([0.1, 0.2, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)])
+
+        with pytest.raises(
+            WireError,
+            match=r"Did not find some of the wires \(0, 1, 2\) on device with wires \(0, 1\).",
+        ):
             dev.expval(H)
 
 
