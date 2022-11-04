@@ -32,7 +32,7 @@ with QuantumTape() as tape1:
     qml.expval(H1)
     qml.expval(S1)
     qml.expval(S1)
-    qml.probs(wires=[0, 1])
+    qml.state()
 
 H2 = qml.Hamiltonian(
     [1, 3, -2, 1, 1],
@@ -108,7 +108,30 @@ with QuantumTape() as tape4:
 
 HAM_TAPES = [tape1, tape2, tape3, tape4]
 HAM_OUTPUTS = [
-    [-1.5, -1.5, -1.5, np.array([0.0, 0.0, 1.0, 0.0])],
+    [
+        -1.5,
+        -1.5,
+        np.array(
+            [
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                1.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
+            ]
+        ),
+    ],
     [-6, -6, np.array([0.5, 0.5]), -6],
     [-1.5, -1.5, np.array([1.0, 0.0, 0.0, 0.0]), 0.0, -1.5, np.array([0.5, 0.5])],
     [-8, -8, 0, -8, 0],
@@ -126,24 +149,14 @@ class TestSplitTape:
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
-        for o, e in zip(output, expval):
-            equal = np.isclose(o, e)
-            if np.shape(equal) == ():
-                assert equal
-            else:
-                assert all(equal)
+        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
         qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = split_tape(qs)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
-        for o, e in zip(output, expval):
-            equal = np.isclose(o, e)
-            if np.shape(equal) == ():
-                assert equal
-            else:
-                assert all(equal)
+        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
     @pytest.mark.parametrize(("tape", "output"), zip(HAM_TAPES, HAM_OUTPUTS))
     def test_no_grouping(self, tape, output):
@@ -154,24 +167,14 @@ class TestSplitTape:
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
-        for o, e in zip(output, expval):
-            equal = np.isclose(o, e)
-            if np.shape(equal) == ():
-                assert equal
-            else:
-                assert all(equal)
+        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
         qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = split_tape(qs, group=False)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
-        for o, e in zip(output, expval):
-            equal = np.isclose(o, e)
-            if np.shape(equal) == ():
-                assert equal
-            else:
-                assert all(equal)
+        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
     def test_number_of_tapes(self):
         """Tests that the the correct number of tapes is produced"""
