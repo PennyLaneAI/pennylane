@@ -169,6 +169,7 @@ def split_tape(tape: QuantumScript, group=True):
     # initial measurement on the tape and the coefficient
     # NOTE: expval(Sum) is expanded into the expectation of each summand
     # NOTE: expval(SProd) is transformed into expval(SProd.base) and the coeff is updated
+    # TODO: Separate expval(Prod) and expval(Tensor) into different measurements
     measurements_dict = {}  # {m_hash: measurement}
     idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
     for idx, m in enumerate(tape.measurements):
