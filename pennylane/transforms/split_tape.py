@@ -140,7 +140,7 @@ def split_tape(tape: QuantumScript, group=True):
 
     Applying the processing function results in the expectation value of the Hamiltonian:
 
-        >>> fn(res)
+    >>> fn(res)
     [0.0, -0.5, 0.0, -0.9999999999999996]
 
     Fewer tapes can be constructed by grouping commuting observables. This can be achieved
@@ -161,7 +161,7 @@ def split_tape(tape: QuantumScript, group=True):
 
     >>> tapes, fn = qml.transforms.split_tape(tape, group=True)
     >>> for tape in tapes:
-    ...     print(tape.measurements)
+    ...    print(tape.measurements)
     [expval(PauliZ(wires=[0])), expval(2*(PauliX(wires=[1])))]
     [expval(3*(PauliX(wires=[0])))]
     """
