@@ -108,7 +108,7 @@ def broadcast_expand(tape):
         res = qml.math.squeeze(qml.math.stack(x))
         if not qml.active_return() and qml.math.shape(res) == ():
             # old return types return a 1d-tensor when res only has one value
-            res = qml.math.convert_like([res], res)
+            res = qml.math.expand_dims(res, axis=0)
         return res
 
     return output_tapes, processing_fn
