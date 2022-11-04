@@ -2497,7 +2497,9 @@ Shot vectors may have some edge cases:
 """
 
 
-@pytest.mark.parametrize("shot_vec", [(100, 1, 10), (1, 1, 10), (*[1] * 2, 10), (1, 1, 1)])
+@pytest.mark.parametrize(
+    "shot_vec", [(100, 1, 10), (1, 1, 10), ((1, 2), 10), (10, (1, 2)), (1, 1, 1)]
+)
 class TestReturn:
     """Class to test the shape of Jacobian with different return types.
 

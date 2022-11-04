@@ -874,7 +874,7 @@ def _create_variance_proc_fn(
         # Note: if pdA2 != 0, then len(pdA2) == len(pdA)
         if shot_vector:
             final_res = []
-            len_shot_vec = len(f0)
+            len_shot_vec = _get_num_copies(shots)
             for idx_shot_comp in range(len_shot_vec):
                 f0_comp = f0[idx_shot_comp]
 
