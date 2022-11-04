@@ -17,11 +17,11 @@ PennyLane can be directly imported.
 """
 from importlib import reload
 import types
+from warnings import warn
 import pkg_resources
 
 
 import numpy as _np
-from warnings import warn
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
