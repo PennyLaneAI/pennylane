@@ -10,7 +10,7 @@ PennyLane provides the :mod:`~.data` subpackage to download, create, store and m
 
 .. note::
 
-    For using :mod:`~pennyalane.data` module, users would require `zstd` and `dill` packages.
+    The packages `zstd` and `dill` are required to use the :mod:`~pennyalane.data` module.
     These can be installed with `pip install zstd dill`.
 
 
