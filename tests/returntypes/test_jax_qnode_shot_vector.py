@@ -756,15 +756,17 @@ class TestReturnShotVectorsDevice:
 
     def test_jac_adjoint_fwd_error(self, shots):
         """Test that an error is raised for adjoint forward."""
-        if shots is not None:
-            pytest.skip("Adjoint returns analytic values even with finite shots")
         dev = qml.device("default.qubit", wires=1, shots=shots)
 
-        @qnode(dev, interface="jax", diff_method="adjoint", mode="forward")
-        def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0))
+        with pytest.warns(
+            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        ):
+
+            @qnode(dev, interface="jax", diff_method="adjoint", mode="forward")
+            def circuit(a):
+                qml.RY(a, wires=0)
+                qml.RX(0.2, wires=0)
+                return qml.expval(qml.PauliZ(0))
 
         a = jax.numpy.array(0.1)
 
@@ -777,16 +779,17 @@ class TestReturnShotVectorsDevice:
 
     def test_jac_adjoint_bwd_error(self, shots):
         """Test that an error is raised for adjoint backward."""
-        if shots is not None:
-            pytest.skip("Adjoint returns analytic values even with finite shots")
-
         dev = qml.device("default.qubit", wires=1, shots=shots)
 
-        @qnode(dev, interface="jax", diff_method="adjoint", mode="backward")
-        def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0))
+        with pytest.warns(
+            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        ):
+
+            @qnode(dev, interface="jax", diff_method="adjoint", mode="backward")
+            def circuit(a):
+                qml.RY(a, wires=0)
+                qml.RX(0.2, wires=0)
+                return qml.expval(qml.PauliZ(0))
 
         a = jax.numpy.array(0.1)
 
