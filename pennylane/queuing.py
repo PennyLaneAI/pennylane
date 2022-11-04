@@ -11,8 +11,116 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module contains the :class:`QueuingManager`.
+r"""
+This module contains the classes for placing objects into queues.
+
+Description
+-----------
+
+A *queuable object* is anything that can be placed into a queue. These will be :class:`~.Operator`,
+:class:`~.MeasurementProcess`, and :class:`~.QuantumTape` objects. :class:`~.Operator` and
+:class:`~.MeasurementProcess` objects achieve queuing via a ``queue`` method called upon construction.
+Note that even though :class:`~.QuantumTape` is a queuable object, it does not have a ``queue`` method.
+
+When an objects attempts to be queued, it sends itself to the :class:`~.QueuingManager`. The :class:`~.QueuingManager`
+is a global singleton class that facilitates placing objects in the queue. All of :class:`~.QueuingManager`'s methods
+and properties are class methods and properties, so all instances will access the same information.
+
+The :meth:`~.QueuingManager.active_context` is the queue where any new objects are placed.
+The :class:`~.QueuingManager` is said to be *recording* if an active context exists.
+
+Active contexts are :class:`~.AnnotatedQueue` instances. They are *context managers* where recording occurs
+with in a ``with`` block.
+
+Let's take a look at an example. If we query the :class:`~.QueuingManager` outside of an
+:class:`~.AnnotatedQueue`'s context, we can see that nothing is recording and no active context exists.
+
+>>> print("Are we recording? ", qml.QueuingManager.recording())
+Are we recording?  False
+>>> print("What's the active context?", qml.QueuingManager.active_context())
+What's the active context? None
+
+Inside of a context, we can see the active recording context:
+
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     print("Are we recording? ", qml.QueuingManager.recording())
+...     print("Is q the active queue? ",q is qml.QueuingManager.active_context())
+Are we recording?  True
+Is q the active queue?  True
+
+If we construct an operator inside the recording context, we can see is added to the queue.
+
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     op = qml.PauliX(0)
+>>> q.queue
+[PauliX(wires=[0])]
+
+If an operator is constructed outside of the context, we can manually add it to the queue by
+calling the :meth:`~.Operator.queue` method:
+
+>>> op = qml.PauliX(0)
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     op.queue()
+>>> q.queue
+[PauliX(wires=[0])]
+
+An object can only exist up to *once* in the queue, so calling queue multiple times will
+not do anything.
+
+>>> op = qml.PauliX(0)
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     op.queue()
+...     op.queue()
+>>> q.queue
+[PauliX(wires=[0])]
+
+Instead, we need to queue a copy of the operator:
+
+>>> from copy import copy
+>>> op = qml.PauliX(0)
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     op.queue()
+...     copy(op).queue()
+>>> q.queue
+[PauliX(wires=[0]), PauliX(wires=[0])]
+
+This can instead be accomplished with the :func:`~.apply` function:
+
+>>> op = qml.PauliX(0)
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     qml.apply(op)
+...     qml.apply(op)
+>>> q.queue
+[PauliX(wires=[0]), PauliX(wires=[0])]
+
+PennyLane has many nested operators, such as :class:`~.Adjoint`, :class:`~.Pow`, :class:`~.Sum`,
+and others.  See the `qml.ops.op_math` module for more examples. Each operator in the composite will be queued.
+For example, both ``PauliX`` and ``PauliX`` raised to a power.
+
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     base = qml.PauliX(0)
+...     pow_op = base ** 1.5
+>>> q.queue
+[PauliX(wires=[0]), PauliX(wires=[0])**1.5]
+
+In this case, each object will have metadata associated with it. At later processing steps, the original
+``PauliX`` will be ignored in favor of the operator that *owns* it.
+
+>>> q.get_info(base)
+{'owner': PauliX(wires=[0])**1.5}
+>>> q.get_info(base)["owner"] is pow_op
+True
+
+In order to construct new operators within a recording with out it entering the queue, either
+use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=False` upon construction:
+
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     qml.PauliX(0, do_queue=False)
+...     with qml.QueuingManager.stop_recording():
+...         qml.PauliY(1)
+>>> q.queue
+[]
+
 """
 
 import copy
