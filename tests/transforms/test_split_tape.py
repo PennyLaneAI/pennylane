@@ -23,7 +23,7 @@ from pennylane.transforms import split_tape
 dev = qml.device("default.qubit", wires=4)
 """Defines the device used for all tests"""
 
-H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
+H1 = qml.Hamiltonian([1.5, 1.5], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)])
 S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1)))
 
 """Defines circuits to be used in queueing/output tests"""
@@ -109,7 +109,7 @@ with QuantumTape() as tape4:
 TAPES = [tape1, tape2, tape3, tape4]
 OUTPUTS = [
     [
-        -1.5,
+        -3.0,
         -1.5,
         -1.5,
         np.array(
