@@ -82,7 +82,13 @@ Users can specify the control wires as well as the values to control the operati
 
 * Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
   module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
+* Implemented the `PauliWord` and `PauliSentence` classes as the foundation of our internal reduced representation
+  for linear combinations of Pauli operators. 
+* Added utility functions `operation()`, `hamiltonian()`, `pauli_sentence()` and `decompose()` to provide and 
+  an interface between well known PennyLane Operators and the new reduced representation.
   [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
+  [(#3195)](https://github.com/PennyLaneAI/pennylane/pull/3195)
+  [(#3252)](https://github.com/PennyLaneAI/pennylane/pull/3252)
 
 * The `IntegerComparator` arithmetic operation is now available.
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
