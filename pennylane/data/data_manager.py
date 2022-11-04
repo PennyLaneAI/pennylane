@@ -208,7 +208,7 @@ def _generate_folders(node, folders):
 def load(
     data_name, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
 ):
-    r"""Downloads the data if it is not already present in the directory and return it to user as a :class:`~.pennylane.Dataset` object.
+    r"""Downloads the data if it is not already present in the directory and return it to user as a :class:`~pennylane.data.Dataset` object.
 
     Args:
         data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
@@ -221,7 +221,7 @@ def load(
             Note that these are not optional
 
     Returns:
-        list[:class:`~.pennylane.Dataset`]
+        list[:class:`~pennylane.data.Dataset`]
     """
 
     _ = lazy
@@ -270,15 +270,15 @@ def _direc_to_dict(path):
 
 
 def list_datasets(path=None):
-    r"""Returns a list of datasets.
+    r"""Returns a dictionary of the available datasets.
 
     Return:
         dict: Nested dictionary representing the directory structure of the hosted datasets.
 
     **Example:**
 
-    Note that the available data will differ from this example as we add more datasets.
-    For updates on available data see :doc:`datasets`.
+    Note that the results of calling this function may differ from this example as more datasets
+    are added. For updates on available data see :doc:`datasets`.
 
     .. code-block :: pycon
 
@@ -296,6 +296,23 @@ def list_datasets(path=None):
                 'Ising': {'open': {'chain': ['1x8']}}
             }
         }
+        {'qspin': {'Heisenberg': {'open': {'chain': ['1x16', '1x4', '1x8'],
+        'rectangular': ['2x2', '2x4', '2x8', '4x4']},
+        'closed': {'rectangular': ['2x2', '2x4', '2x8', '4x4'],
+        'chain': ['1x16', '1x4', '1x8']}},
+        'Ising': {'open': {'chain': ['1x16', '1x4', '1x8'],
+        'rectangular': ['2x2', '2x4', '2x8', '4x4']},
+        'closed': {'rectangular': ['2x2', '2x4', '2x8', '4x4'],
+        'chain': ['1x16', '1x4', '1x8']}}},
+        'qchem': {'OH-': {'STO-3G': ['0.5',
+        '0.54',
+        '0.58',
+        ...
+        '0.86',
+        '0.9',
+        '0.94',
+        '0.98',
+        '1.02']}}}
     """
 
     if path:
@@ -361,7 +378,7 @@ def load_interactive():
     r"""Download a dataset using an interactive load prompt.
 
     Returns:
-        :class:`~.pennylane.Dataset`
+        :class:`~pennylane.data.Dataset`
 
     **Example**
 

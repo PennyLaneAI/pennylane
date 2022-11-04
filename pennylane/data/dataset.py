@@ -52,7 +52,7 @@ class Dataset(ABC):
         A `standard` Dataset uses previously generated, hosted quantum data. This special instance of the
         ``Dataset`` class makes certain assumptions about folder management for downloading the data and
         handling I/O. As such, the ``Dataset`` class should not be instantiated by the users directly with
-        ``standard=True``. Instead, they should use :meth:`~load.
+        ``standard=True``. Instead, they should use :meth:`~load`.
 
 
     .. seealso:: :meth:`~load`
