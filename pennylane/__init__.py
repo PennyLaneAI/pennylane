@@ -344,7 +344,7 @@ def version():
 def __getattr__(name):  # pragma: no-cover
     """Raise a deprecation warning and still allow `qml.grouping.func_name`
     syntax for one release."""
-    if name == "grouping":
+    if name == "grouping":  # pragma: no-cover
         warnings.warn(
             "The qml.grouping module is deprecated, please use qml.pauli instead.",
             DeprecationWarning,
