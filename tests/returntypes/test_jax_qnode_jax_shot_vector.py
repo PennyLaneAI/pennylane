@@ -34,6 +34,8 @@ qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", {}],
 ]
 
+jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
+
 
 @pytest.mark.parametrize("shots", shots)
 @pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
