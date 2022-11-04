@@ -208,7 +208,7 @@ def _generate_folders(node, folders):
 def load(
     data_name, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
 ):
-    r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object.
+    r"""Downloads the data if it is not already present in the directory and return it to user as a :class:`~.pennylane.Dataset` object.
 
     Args:
         data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
@@ -221,7 +221,7 @@ def load(
             Note that these are not optional
 
     Returns:
-        list[Dataset]
+        list[:class:`~.pennylane.Dataset`]
     """
 
     _ = lazy
@@ -305,7 +305,7 @@ def list_datasets(path=None):
 
 
 def list_attributes(data_name):
-    r"""List the attributes that exist for a specific data_name.
+    r"""List the attributes that exist for a specific ``data_name``.
 
     Args:
         data_name (str): The type of the desired data
@@ -361,7 +361,7 @@ def load_interactive():
     r"""Download a dataset using an interactive load prompt.
 
     Returns:
-        Dataset
+        :class:`~.pennylane.Dataset`
 
     **Example**
 
@@ -383,7 +383,7 @@ def load_interactive():
         Please select attributes:
             ...
         Force download files? (Default is no) [y/N]: N
-        Folder to download to? (Default is pwd, will download to /datasets subdirectory): /Users/jovyan/Downloads
+        Folder to download to? (Default is pwd, will download to /datasets subdirectory):
 
         Please confirm your choices:
         dataset: qspin/Ising/open/rectangular/4x4
