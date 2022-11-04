@@ -19,7 +19,6 @@ page in the developement guide.
 """
 
 import pytest
-import matplotlib as mpl
 
 import pennylane as qml
 
