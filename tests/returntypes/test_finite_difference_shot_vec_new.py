@@ -122,11 +122,13 @@ class TestFiniteDiff:
             g_tapes, post_processing = qml.gradients.finite_diff(
                 tape, h=h_val, shots=default_shot_vector
             )
-        res = post_processing(qml.execute(g_tapes, dev, None))
+        all_res = post_processing(qml.execute(g_tapes, dev, None))
+        assert len(all_res) == len(default_shot_vector)
 
-        assert g_tapes == []
-        assert isinstance(res, numpy.ndarray)
-        assert res.shape == (0,)
+        for res in all_res:
+            assert g_tapes == []
+            assert isinstance(res, numpy.ndarray)
+            assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -225,7 +227,7 @@ class TestFiniteDiff:
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
-        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
 
         @qml.qnode(dev)
         def circuit(params):
@@ -234,26 +236,28 @@ class TestFiniteDiff:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
+        all_result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
+        assert len(all_result) == len(default_shot_vector)
 
-        assert isinstance(result, tuple)
+        for result in all_result:
+            assert isinstance(result, tuple)
 
-        assert len(result) == 3
+            assert len(result) == 3
 
-        assert isinstance(result[0], numpy.ndarray)
-        assert result[0].shape == (4,)
-        assert np.allclose(result[0], 0)
+            assert isinstance(result[0], numpy.ndarray)
+            assert result[0].shape == (4,)
+            assert np.allclose(result[0], 0)
 
-        assert isinstance(result[1], numpy.ndarray)
-        assert result[1].shape == (4,)
-        assert np.allclose(result[1], 0)
+            assert isinstance(result[1], numpy.ndarray)
+            assert result[1].shape == (4,)
+            assert np.allclose(result[1], 0)
 
-        assert isinstance(result[2], numpy.ndarray)
-        assert result[2].shape == (4,)
-        assert np.allclose(result[2], 0)
+            assert isinstance(result[2], numpy.ndarray)
+            assert result[2].shape == (4,)
+            assert np.allclose(result[2], 0)
 
-        tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
-        assert tapes == []
+            tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
+            assert tapes == []
 
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -268,44 +272,46 @@ class TestFiniteDiff:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
+        all_result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
+        assert len(all_result) == len(default_shot_vector)
 
-        assert isinstance(result, tuple)
+        for result in all_result:
+            assert isinstance(result, tuple)
 
-        assert len(result) == 2
+            assert len(result) == 2
 
-        # First elem
-        assert len(result[0]) == 3
+            # First elem
+            assert len(result[0]) == 3
 
-        assert isinstance(result[0][0], numpy.ndarray)
-        assert result[0][0].shape == ()
-        assert np.allclose(result[0][0], 0)
+            assert isinstance(result[0][0], numpy.ndarray)
+            assert result[0][0].shape == ()
+            assert np.allclose(result[0][0], 0)
 
-        assert isinstance(result[0][1], numpy.ndarray)
-        assert result[0][1].shape == ()
-        assert np.allclose(result[0][1], 0)
+            assert isinstance(result[0][1], numpy.ndarray)
+            assert result[0][1].shape == ()
+            assert np.allclose(result[0][1], 0)
 
-        assert isinstance(result[0][2], numpy.ndarray)
-        assert result[0][2].shape == ()
-        assert np.allclose(result[0][2], 0)
+            assert isinstance(result[0][2], numpy.ndarray)
+            assert result[0][2].shape == ()
+            assert np.allclose(result[0][2], 0)
 
-        # Second elem
-        assert len(result[0]) == 3
+            # Second elem
+            assert len(result[0]) == 3
 
-        assert isinstance(result[1][0], numpy.ndarray)
-        assert result[1][0].shape == (4,)
-        assert np.allclose(result[1][0], 0)
+            assert isinstance(result[1][0], numpy.ndarray)
+            assert result[1][0].shape == (4,)
+            assert np.allclose(result[1][0], 0)
 
-        assert isinstance(result[1][1], numpy.ndarray)
-        assert result[1][1].shape == (4,)
-        assert np.allclose(result[1][1], 0)
+            assert isinstance(result[1][1], numpy.ndarray)
+            assert result[1][1].shape == (4,)
+            assert np.allclose(result[1][1], 0)
 
-        assert isinstance(result[1][2], numpy.ndarray)
-        assert result[1][2].shape == (4,)
-        assert np.allclose(result[1][2], 0)
+            assert isinstance(result[1][2], numpy.ndarray)
+            assert result[1][2].shape == (4,)
+            assert np.allclose(result[1][2], 0)
 
-        tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
-        assert tapes == []
+            tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
+            assert tapes == []
 
     def test_y0(self, mocker):
         """Test that if first order finite differences is used, then
