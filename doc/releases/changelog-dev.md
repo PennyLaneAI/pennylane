@@ -236,6 +236,132 @@
     D: ──RY(1.23)─┤   
     ```
 
+<h4>(TODO: title) Data Module</h4>
+
+* Added the `data` module to allow downloading, loading, and creating quantum datasets.
+
+* Datasets hosted on the cloud can be downloaded with the `qml.data.load` function as follows:
+
+  ```pycon
+  >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
+  >>> print(H2datasets)
+  [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
+  >>> H2data = H2datasets[0]
+  ```
+
+* To see what datasets are available for download, we can call `qml.data.list_datasets`:
+
+  ```pycon
+  >>> available_data = qml.data.list_datasets()
+  >>> available_data.keys()
+  dict_keys(["qspin", "qchem"])
+  >>> available_data["qchem"].keys()
+  dict_keys(["H2", "LiH", ...])
+  >>> available_data['qchem']['H2'].keys()
+  dict_keys(["6-31G", "STO-3G"])
+  >>> print(available_data['qchem']['H2']['STO-3G'])
+  ["0.5", "0.54", "0.62", "0.66", ...]
+  ```
+
+* To download or load only specific properties of a dataset, we can specify the desired attributes in `qml.data.load`:
+
+  ```pycon
+  >>> part = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1, 
+  ...                      attributes=["molecule", "fci_energy"])[0]
+  >>> part.molecule
+  <pennylane.qchem.molecule.Molecule at 0x7f56c9d78e50>
+  >>> part.fci_energy
+  -1.0791924385860894
+  ```
+
+* The available `attributes` can be found using `qml.data.list_attributes`:
+
+  ```pycon
+  >>> qml.data.list_attributes(data_name='qchem')
+  ['molecule',
+  'hamiltonian',
+  'sparse_hamiltonian',
+  ...
+  'tapered_hamiltonian',
+  'full']
+  ```
+
+* To select data interactively by following a series of prompts, we can use `qml.data.load_interactive` as follows:
+
+  ```pycon
+  >>> qml.data.load_interactive()
+          Please select a data name:
+              1) qspin
+              2) qchem
+          Choice [1-2]: 1
+          Please select a sysname:
+              ...
+          Please select a periodicity:
+              ...
+          Please select a lattice:
+              ...
+          Please select a layout:
+              ...
+          Please select attributes:
+              ...
+          Force download files? (Default is no) [y/N]: N
+          Folder to download to? (Default is pwd, will download to /datasets subdirectory):
+
+          Please confirm your choices:
+          dataset: qspin/Ising/open/rectangular/4x4
+          attributes: ['parameters', 'ground_states']
+          force: False
+          dest folder: /Users/jovyan/Downloads/datasets
+          Would you like to continue? (Default is yes) [Y/n]:
+          <pennylane.data.dataset.Dataset object at 0x10157ab50>
+    ```
+
+* Once loaded, properties of a dataset can be accessed easily as follows:
+
+  ```pycon
+  >>> dev = qml.device("default.qubit",wires=4)
+  >>> @qml.qnode(dev)
+  ... def circuit():
+  ...     qml.BasisState(H2_dataset.hf_state, wires = [0, 1, 2, 3])
+  ...     for op in H2_dataset.vqe_gates:
+  ...         qml.apply(op)
+  ...     return qml.expval(H2_dataset.hamiltonian)
+  >>> print(circuit())
+  -1.0791430411076344
+  ```
+
+* It is also possible to create custom datasets with `qml.data.Dataset`
+
+  ```pycon
+  >>> coeffs = [1, 0.5]
+  >>> observables = [qml.PauliZ(wires=0), qml.PauliX(wires=1)]
+  >>> H = qml.Hamiltonian(coeffs, observables)
+  >>> energies, _ = np.linalg.eigh(qml.matrix(H)) #Calculate the energies
+  >>> dataset = qml.data.Dataset(data_name = "Example", hamiltonian=H, energies=energies)
+  >>> dataset.data_name
+  "Example"
+  >>> dataset.hamiltonian
+  (0.5) [X1]
+  + (1) [Z0]
+  >>> dataset.energies
+  array([-1.5, -0.5,  0.5,  1.5])
+  ```
+
+* These custom datasets can be saved and read with the `Dataset.write` and `Dataset.read` functions as follows:
+
+  ```pycon
+  >>> dataset.write("./path/to/dataset.dat")
+  >>> read_dataset = qml.data.Dataset()
+  >>> read_dataset.read("./path/to/dataset.dat")
+  >>> read_dataset.data_name
+  'Example'
+  >>> read_dataset.hamiltonian
+  (0.5) [X1]
+  + (1) [Z0]
+  >>> read_dataset.energies
+  array([-1.5, -0.5,  0.5,  1.5])
+  ```
+
 <h3>Improvements</h3>
 
 * Added a `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track if computational basis samples are being generated when `qml.sample` or `qml.counts` are called without specifying an observable.
