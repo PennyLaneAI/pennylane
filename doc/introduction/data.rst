@@ -65,14 +65,15 @@ Once loaded, one can access properties of the datasets:
 The loaded data items are fully compatible with PennyLane. We can therefore
 use them directly in a PennyLane circuits as follows:
 
->>> dev = qml.device('default.qubit',wires=H2_dataset[0].hamiltonian.wires)
+>>> dev = qml.device('default.qubit',wires=4)
 >>> @qml.qnode(dev)
 ... def circuit():
+...     qml.BasisState(H2_dataset[0].hf_state, wires = [0, 1, 2, 3])
 ...     for op in H2_dataset[0].vqe_gates:
 ...         qml.apply(op)
 ...     return qml.expval(H2_dataset[0].hamiltonian)
 >>> print(circuit())
-0.4810692051726486
+-1.0791430411076344
 
 Dataset Structure
 -----------------
