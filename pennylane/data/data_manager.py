@@ -283,19 +283,6 @@ def list_datasets(path=None):
     .. code-block :: pycon
 
         >>> qml.data.list_datasets()
-        {
-            'qchem': {
-                'H2': {
-                    '6-31G': ['0.46', '1.16', '0.58'],
-                    'STO-3G': ['0.46', '1.05']
-                },
-                'HeH+': {'STO-3G': ['0.9', '0.74', '0.6', '0.8']}
-            },
-            'qspin': {
-                'Heisenberg': {'closed': {'chain': ['1x4']}},
-                'Ising': {'open': {'chain': ['1x8']}}
-            }
-        }
         {'qspin': {'Heisenberg': {'open': {'chain': ['1x16', '1x4', '1x8'],
         'rectangular': ['2x2', '2x4', '2x8', '4x4']},
         'closed': {'rectangular': ['2x2', '2x4', '2x8', '4x4'],
