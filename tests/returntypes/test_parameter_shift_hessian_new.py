@@ -1814,7 +1814,6 @@ class TestInterfaces:
 
         assert np.allclose(qml.math.transpose(expected, (1, 2, 0, 3)), jax_deriv)
 
-    @pytest.mark.skip("Requires TF integration for new return types")
     @pytest.mark.tf
     @pytest.mark.slow
     def test_hessian_transform_with_tensorflow(self):
@@ -1823,7 +1822,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1836,11 +1835,10 @@ class TestInterfaces:
         expected = qml.jacobian(qml.jacobian(circuit))(x_np)
         circuit.interface = "tf"
         with tf.GradientTape():
-            hess = qml.gradients.param_shift_hessian(circuit)(x_tf)[0]
+            hess = qml.gradients.param_shift_hessian(circuit)(x_tf)
 
-        assert np.allclose(expected, hess)
+        assert np.allclose(qml.math.transpose(expected, (1, 2, 0)), hess)
 
-    @pytest.mark.skip("Requires TF integration for new return types")
     @pytest.mark.tf
     @pytest.mark.slow
     def test_hessian_transform_is_differentiable_tensorflow(self):
@@ -1850,7 +1848,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        @qml.qnode(dev, max_diff=3)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1864,6 +1862,8 @@ class TestInterfaces:
         circuit.interface = "tf"
         with tf.GradientTape() as tf_tape:
             hessian = qml.gradients.param_shift_hessian(circuit)(x_tf)[0]
+            hessian = qml.math.stack([qml.math.stack(row) for row in hessian])
+
         tensorflow_deriv = tf_tape.jacobian(hessian, x_tf)
 
-        assert np.allclose(expected, tensorflow_deriv)
+        assert np.allclose(qml.math.transpose(expected, (1, 2, 0, 3)), tensorflow_deriv)
