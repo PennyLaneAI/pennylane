@@ -25,12 +25,13 @@ Here we use the :func:`~pennylane.data.load` function, for the
 To specify the dataset to be loaded, the data category (``data_name``) must be
 specified, alongside category-specific keyword arguments. For the full list
 of available datasets, please see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
-The :func:`~pennylane.data.load` function returns a list with the desired data.
+The :func:`~pennylane.data.load` function returns a ``list`` with the desired data.
 
->>> H2_dataset = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G",
+>>> H2_datasets = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G",
 ...                            bondlength="1.1")
->>> print(H2_dataset)
+>>> print(H2_datasets)
 [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
+>>> H2_dataset = H2_datasets[0]
 
 When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as `attributes`).
 For example, we can download or load only the molecule and energy of a dataset as follows:
@@ -57,9 +58,9 @@ Using Datasets in PennyLane
 
 Once loaded, one can access properties of the datasets:
 
->>> H2_dataset[0].molecule
+>>> H2_dataset.molecule
 <pennylane.qchem.molecule.Molecule object at 0x7f890b409280>
->>> print(H2_dataset[0].hf_state)
+>>> print(H2_dataset.hf_state)
 [1 1 0 0]
 
 The loaded data items are fully compatible with PennyLane. We can therefore
@@ -68,10 +69,10 @@ use them directly in a PennyLane circuits as follows:
 >>> dev = qml.device('default.qubit',wires=4)
 >>> @qml.qnode(dev)
 ... def circuit():
-...     qml.BasisState(H2_dataset[0].hf_state, wires = [0, 1, 2, 3])
-...     for op in H2_dataset[0].vqe_gates:
+...     qml.BasisState(H2_dataset.hf_state, wires = [0, 1, 2, 3])
+...     for op in H2_dataset.vqe_gates:
 ...         qml.apply(op)
-...     return qml.expval(H2_dataset[0].hamiltonian)
+...     return qml.expval(H2_dataset.hamiltonian)
 >>> print(circuit())
 -1.0791430411076344
 
