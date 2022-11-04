@@ -10,8 +10,8 @@ PennyLane provides the :mod:`~.data` subpackage to download, create, store and m
 
 .. note::
 
-    The packages `zstd` and `dill` are required to use the :mod:`~pennyalane.data` module.
-    These can be installed with `pip install zstd dill`.
+    The packages ``zstd`` and ``dill`` are required to use the :mod:`~pennyalane.data` module.
+    These can be installed with ``pip install zstd dill``.
 
 
 Loading Datasets in PennyLane
@@ -66,6 +66,8 @@ use them directly in a PennyLane circuits as follows:
 >>> dev = qml.device('default.qubit',wires=H2_dataset[0].hamiltonian.wires)
 >>> @qml.qnode(dev)
 ... def circuit():
+...     for op in H2_dataset[0].vqe_gates:
+...         qml.apply(op)
 ...     return qml.expval(H2_dataset[0].hamiltonian)
 >>> print(circuit())
 0.4810692051726486
