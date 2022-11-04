@@ -7,7 +7,7 @@ from .device_helpers import RegistrationsMetaclass
 from .device_config import DeviceConfig
 
 # Runtime specific utilities, such as pre and postprocessing annotations
-from ..runtime_manager.runtime_helpers import FnType
+from pennylane.runtime.runtime_config import FnType
 
 
 class AbstractDevice(metaclass=RegistrationsMetaclass):

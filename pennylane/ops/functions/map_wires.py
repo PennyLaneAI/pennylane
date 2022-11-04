@@ -20,7 +20,7 @@ from typing import Callable, Union
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
-from pennylane.qnode import QNode
+from pennylane.runtime.qnode import QNode
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumTape
 

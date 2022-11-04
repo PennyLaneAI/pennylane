@@ -40,6 +40,8 @@ from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
 from pennylane._qutrit_device import QutritDevice
+from pennylane.runtime import *
+
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
@@ -70,7 +72,6 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.qnode import QNode, qnode
 from pennylane.return_types import enable_return, disable_return, active_return
 from pennylane.transforms import (
     adjoint_metric_tensor,

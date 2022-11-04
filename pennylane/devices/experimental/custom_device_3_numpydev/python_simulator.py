@@ -40,13 +40,18 @@ class PlainNumpySimulator(AbstractDeviceDriver):
 
     @classmethod
     def execute(cls, quantumscript: QuantumScript, dtype=np.complex128):
-
-        num_indices = len(quantumscript.wires)
+        #print("EXECUTE")
+        #from IPython import embed; embed()
+        if isinstance(quantumscript, list):
+            qs = quantumscript[0]
+        else:
+            qs = quantumscript
+        num_indices = len(qs.wires)
         state = cls.create_zeroes_state(num_indices, dtype=dtype)
-        for op in quantumscript._ops:
+        for op in qs._ops:
             state = cls.apply_operation(state, op)
 
-        return tuple(cls.measure(state, m) for m in quantumscript.measurements)
+        return list(cls.measure(state, m) for m in qs.measurements)
 
     @staticmethod
     def create_zeroes_state(num_indices, dtype=np.complex128):
