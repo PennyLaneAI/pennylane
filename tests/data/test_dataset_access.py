@@ -25,6 +25,12 @@ import requests
 import pennylane as qml
 from pennylane.data.data_manager import _generate_folders as original_generate_folders
 
+pytestmark = pytest.mark.data
+
+# TODO: Bring pytest skip to relevant tests.
+zstd = pytest.importorskip("zstd")
+dill = pytest.importorskip("dill")
+
 _folder_map = {
     "qchem": {"H2": {"6-31G": ["0.46", "1.16", "1.0"]}},
     "qspin": {"Heisenberg": {"closed": {"chain": ["1x4"]}}},
