@@ -906,7 +906,8 @@ class TestInverseAdjoint:
             m1 = qml.probs(wires=0)
             m2 = qml.probs(wires="a")
 
-        tape.inv()
+        with pytest.warns(UserWarning, match="QuantumTape.inv is now deprecated."):
+            tape.inv()
 
         # check that operation order is reversed
         assert [o.name for o in tape.operations] == ["BasisState", "CNOT", "Rot", "RX"]
