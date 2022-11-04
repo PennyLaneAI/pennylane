@@ -749,7 +749,8 @@ class QuantumScript:
 
             elif ret_type == qml.measurements.Sample:
 
-                shape = (len(mps), device.shots)
+                dim = mps[0].shape(device)
+                shape = (len(mps),) + dim[1:]
 
             # No other measurement type to check
 
