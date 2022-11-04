@@ -37,8 +37,9 @@ def test_grouping_imports_with_warning():
         from pennylane import grouping  # pylint:import-outside-toplevel
 
         op = qml.PauliX(wires=0)
-        _ = qml.grouping.is_pauli_word(op)  # some function from grouping
+        is_pauli = qml.grouping.is_pauli_word(op)  # some function from grouping
 
+        assert is_pauli
         assert len(w) == 1  # warnings raised
         assert issubclass(w[-1].category, DeprecationWarning)
         assert (
