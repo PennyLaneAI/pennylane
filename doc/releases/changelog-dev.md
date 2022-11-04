@@ -649,6 +649,10 @@ Users can specify the control wires as well as the values to control the operati
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
 
+* Fixed a bug where `qml.expval(qml.Hamiltonian())` would not raise an error
+  if the Hamiltonian involved some wires that are not present on the device.
+  [(#3266)](https://github.com/PennyLaneAI/pennylane/pull/3266)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
