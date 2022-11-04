@@ -349,7 +349,7 @@ def __getattr__(name):
             "The qml.grouping module is deprecated, please use qml.pauli instead.",
             DeprecationWarning,
         )
-        import pennylane.grouping as grouping  # pylint:disable=import-outside-toplevel
+        import pennylane.grouping as grouping  # pylint:disable=import-outside-toplevel,consider-using-from-import
 
         return grouping
     raise AttributeError(f"Module {__name__} has no attribute {name}")
