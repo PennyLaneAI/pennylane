@@ -122,7 +122,7 @@
 * The `IntegerComparator` arithmetic operation is now available.
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
-  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n < L`. This is accessed via the `geq` keyword argument.
+  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n < L` as demonstrated below:
 
   ```python
   dev = qml.device("default.qubit", wires=2)
