@@ -34,7 +34,7 @@ def _validate_jax_version():
         "<0.3.17", jax.lib.__version__
     ):
         msg = (
-            "The JAX JIT interface of PennyLane requires 0.3.17 versions for JAX and JAX lib. "
+            "The JAX JIT interface of PennyLane requires version 0.3.17 or higher for JAX and JAX lib. "
             "Please upgrade these packages."
         )
         raise InterfaceUnsupportedError(msg)

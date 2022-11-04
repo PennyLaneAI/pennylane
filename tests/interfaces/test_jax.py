@@ -49,10 +49,7 @@ def test_raise_version_error(package, version, should_raise, monkeypatch):
         m.setattr(package, "__version__", version)
 
         if should_raise:
-            msg = (
-                "The JAX JIT interface of PennyLane requires 0.3.17 versions for JAX and JAX lib. "
-                "Please upgrade these packages."
-            )
+            msg = "requires version 0.3.17 or higher for JAX and JAX lib"
             with pytest.raises(InterfaceUnsupportedError, match=msg):
                 execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
         else:
