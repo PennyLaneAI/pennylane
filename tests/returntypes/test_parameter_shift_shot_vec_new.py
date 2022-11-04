@@ -1462,7 +1462,10 @@ class TestParameterShiftRule:
         assert isinstance(all_gradF, tuple)
         for gradF in all_gradF:
             assert len(tapes) == 3
-            assert gradF[0] == pytest.approx(expected, abs=1)
+
+            # Note: the tolerances here are significantly higher than in usual tests
+            # due to the stochasticity of the test case
+            assert gradF[0] == pytest.approx(expected, abs=2)
             assert gradF[1] == pytest.approx(expected, abs=1)
 
     @flaky(max_runs=8)
