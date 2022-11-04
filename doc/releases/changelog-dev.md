@@ -9,6 +9,8 @@
 * The `qml.GellMann` qutrit observable, the ternary generalization of the Pauli observables, is now available.
   ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
 
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
   When using `qml.GellMann`, the `index` keyword argument determines which of the 8 Gell-Mann matrices is used.
 
   ```python
@@ -104,12 +106,6 @@
         0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
         1: ───────────────────────┤ ╰<Z@Z>
   ```
-
-<h4>(TODO: title) Pauli Module</h4>
-
-* Reorganized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
-  module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
-  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
 
 <h4>(TODO: title) New operators and optimizers</h4>
 
@@ -213,9 +209,30 @@
     D: ──RY(1.23)─┤   
     ```
 
+* The `IntegerComparator` arithmetic operation is now available.
+[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
+
+  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n < L`. This is accessed via the `geq` keyword argument.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisState(np.array([0, 1]), wires=range(2))
+      qml.broadcast(qml.Hadamard, wires=range(2), pattern='single')
+      qml.IntegerComparator(2, geq=False, wires=[0, 1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit()
+  [-0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
+  ```
+
 <h3>Improvements</h3>
 
-* Added a `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track if computational basis samples are being generated.
+* Added a `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track if computational basis samples are being generated when `qml.sample` or `qml.counts` are called without specifying an observable.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 
 * The parameters of a basis set containing a different number of Gaussian functions are now easier to differentiate.
@@ -239,6 +256,10 @@
 
 * `OrbitalRotation` is now decomposed into two `SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `SingleExcitation`.
   [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
+
+* Reorganized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
+  module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
+  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
 
 * Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
   whether a corresponding `decomposition` or `adjoint` method is available.
@@ -320,7 +341,7 @@
   Toffoli(wires=[2, 1, 0])
   ```
 
-* Added caching to the `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations.
+* Calling `compute_matrix` and `compute_sparse_matrix` of simple non-parametric operations is now faster and more memory-efficient with the addition of caching.
   [(#3134)](https://github.com/PennyLaneAI/pennylane/pull/3134)
 
 * Added details to the output of `Exp.label()`.
@@ -342,7 +363,8 @@
   Stop using `op._wires = new_wires`, use `qml.map_wires(op, wire_map=dict(zip(op.wires, new_wires)))`
   instead.
   [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
-* Added a new `pennylane.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now `QuantumTape` inherits from `QuantumScript` as well as `AnnotatedQueue`.
+
+* Added a new `qml.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now, `QuantumTape` inherits from `QuantumScript` as well as `AnnotatedQueue`.
   [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
 
 <h3>Breaking changes</h3>
