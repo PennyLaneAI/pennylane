@@ -8,6 +8,12 @@ Quantum Datasets
 
 PennyLane provides the :mod:`~.data` subpackage to download, create, store and manipulate quantum datasets.
 
+.. note::
+
+    The packages `zstd` and `dill` are required to use the :mod:`~pennyalane.data` module.
+    These can be installed with `pip install zstd dill`.
+
+
 Loading Datasets in PennyLane
 -----------------------------
 

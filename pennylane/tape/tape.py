@@ -468,6 +468,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
         Inversion is performed in-place.
 
+        **This method is deprecated:** See :meth:`QuantumTape.adjoint` instead.
+
         .. note::
 
             This method only inverts the quantum operations/unitary recorded
@@ -518,6 +520,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         >>> tape.trainable_params
         [1, 4]
         """
+        message = "QuantumTape.inv is now deprecated. Please use QuantumTape.adjoint instead."
+        warn(message, UserWarning)
         # we must remap the old parameter
         # indices to the new ones after the operation order is reversed.
         parameter_indices = []
