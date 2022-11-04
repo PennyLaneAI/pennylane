@@ -21,11 +21,23 @@ import jax
 import jax.numpy as jnp
 
 import numpy as np
+import semantic_version
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
 
 dtype = jnp.float64
+
+
+def _validate_jax_version():
+    if semantic_version.match("<0.3.17", jax.__version__) or semantic_version.match(
+        "<0.3.17", jax.lib.__version__
+    ):
+        msg = (
+            "The JAX JIT interface of PennyLane requires version 0.3.17 or higher for JAX and JAX lib. "
+            "Please upgrade these packages."
+        )
+        raise InterfaceUnsupportedError(msg)
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
@@ -66,6 +78,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
+
+    _validate_jax_version()
 
     if gradient_fn is None:
         return _execute_with_fwd(
