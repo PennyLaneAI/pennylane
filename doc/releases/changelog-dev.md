@@ -590,7 +590,7 @@ Users can specify the control wires as well as the values to control the operati
 <h3>Deprecations</h3>
 
 * `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
-  The old functions will still be available untill v0.29.
+  The old functions will still be available until v0.29.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
 * `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
@@ -605,6 +605,10 @@ Users can specify the control wires as well as the values to control the operati
 
 * Deprecate `qml.transforms.qcut.remap_tape_wires`. Use `qml.map_wires` instead.
   [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
+
+* The grouping module `qml.grouping` is deprecated. Please use `qml.pauli` or `qml.pauli.grouping` instead.
+  The module is still made available until v0.28.
+  [(#3262)](https://github.com/PennyLaneAI/pennylane/pull/3262)
 
 <h3>Documentation</h3>
 
