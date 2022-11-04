@@ -278,7 +278,7 @@ def list_datasets(path=None):
     **Example:**
 
     Note that the available data will differ from this example as we add more datasets.
-    For updates on available data see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
+    For updates on available data see :doc:`datasets`.
 
     .. code-block :: pycon
 
