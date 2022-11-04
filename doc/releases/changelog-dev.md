@@ -667,6 +667,10 @@ Users can specify the control wires as well as the values to control the operati
 * Fixed a bug where `qml.BasisEmbedding` was not jit-compilable with JAX.
   [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
 
+* Fixed a bug where `qml.expval(qml.Hamiltonian())` would not raise an error
+  if the Hamiltonian involved some wires that are not present on the device.
+  [(#3266)](https://github.com/PennyLaneAI/pennylane/pull/3266)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
