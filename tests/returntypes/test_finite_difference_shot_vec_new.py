@@ -20,6 +20,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
+from pennylane._device import _process_shot_sequence, _get_num_copies
 from pennylane.gradients import (
     finite_diff,
     finite_diff_coeffs,
@@ -1146,6 +1147,7 @@ single_meas_with_shape = list(zip(single_scalar_output_measurements, [(), (4,), 
 @pytest.mark.parametrize(
     "shot_vec", [(100, 1, 10), (1, 1, 10), ((1, 2), 10), (10, (1, 2)), (1, 1, 1)]
 )
+@pytest.mark.parametrize("processed_shots", [True, False])
 class TestReturn:
     """Class to test the shape of Jacobian with different return types.
 
@@ -1159,7 +1161,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
     @pytest.mark.parametrize("op_wires", [0, 2])
-    def test_1_1(self, shot_vec, meas, shape, op_wires):
+    def test_1_1(self, shot_vec, meas, shape, op_wires, processed_shots):
         """Test one param one measurement case"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
         x = 0.543
@@ -1173,10 +1175,11 @@ class TestReturn:
         # One trainable param
         tape.trainable_params = {0}
 
-        tapes, fn = qml.gradients.finite_diff(tape, shots=shot_vec)
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1] if processed_shots else shot_vec
+        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == len(shot_vec)
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
         assert isinstance(all_res, tuple)
 
         for res in all_res:
@@ -1184,7 +1187,7 @@ class TestReturn:
             assert res.shape == shape
 
     @pytest.mark.parametrize("op_wire", [0, 1])
-    def test_1_N(self, shot_vec, op_wire):
+    def test_1_N(self, shot_vec, op_wire, processed_shots):
         """Test single param multi-measurement case"""
         dev = qml.device("default.qubit", wires=6, shots=shot_vec)
         x = 0.543
@@ -1205,10 +1208,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0}
 
-        tapes, fn = qml.gradients.finite_diff(tape, shots=shot_vec)
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1] if processed_shots else shot_vec
+        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == len(shot_vec)
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]
@@ -1219,7 +1223,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
     @pytest.mark.parametrize("op_wires", [0, 2])
-    def test_N_1(self, shot_vec, meas, shape, op_wires):
+    def test_N_1(self, shot_vec, meas, shape, op_wires, processed_shots):
         """Test multi-param single measurement case"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
         x = 0.543
@@ -1237,10 +1241,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0, 1}
 
-        tapes, fn = qml.gradients.finite_diff(tape, shots=shot_vec)
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1] if processed_shots else shot_vec
+        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == len(shot_vec)
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
         assert isinstance(all_res, tuple)
 
         for param_res in all_res:
@@ -1250,7 +1255,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
     @pytest.mark.parametrize("op_wires", [(0, 1, 2, 3, 4), (5, 5, 5, 5, 5)])
-    def test_N_N(self, shot_vec, meas, shape, op_wires):
+    def test_N_N(self, shot_vec, meas, shape, op_wires, processed_shots):
         """Test multi-param multi-measurement case"""
         dev = qml.device("default.qubit", wires=6, shots=shot_vec)
         params = np.random.random(6)
@@ -1276,10 +1281,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0, 1, 2, 3, 4}
 
-        tapes, fn = qml.gradients.finite_diff(tape, shots=shot_vec)
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1] if processed_shots else shot_vec
+        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == len(shot_vec)
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]
