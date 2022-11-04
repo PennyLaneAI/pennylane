@@ -40,7 +40,7 @@
 * Added the `qml.GellMann` qutrit observable, which is the ternary generalization of the Pauli observables. Users must include an index as a
 keyword argument when using `GellMann`, which determines which of the 8 Gell-Mann matrices is used as the observable.
   ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
-  
+
 * Added the `qml.ControlledQutritUnitary` qutrit operation for applying a controlled arbitrary unitary matrix to the specified set of wires.
 Users can specify the control wires as well as the values to control the operation on.
   ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
@@ -80,7 +80,7 @@ Users can specify the control wires as well as the values to control the operati
 
 <h4>Pauli Module</h4>
 
-* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
+* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli`
   module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
   [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
 
@@ -88,7 +88,7 @@ Users can specify the control wires as well as the values to control the operati
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
   Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive
-  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. 
+  integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`.
   Alternatively, the flipping condition can be :math:`n < L`. This is accessed via the `geq` keyword
   argument.
 
@@ -227,7 +227,7 @@ Users can specify the control wires as well as the values to control the operati
       if gradient < 1e-3:
           break
   ```
-  
+
    ```pycon
   Energy: -1.246549938420637
   0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
@@ -255,7 +255,7 @@ Users can specify the control wires as well as the values to control the operati
   4: ─├BasisState(M0)─├G²(0.20)────────────────────┤ ├<𝓗>
   5: ─╰BasisState(M0)─╰G²(0.20)────────────────────┤ ╰<𝓗>
   Largest Gradient: 0.00040841755397108586
-  ``` 
+  ```
 
 <h4>Data Module</h4>
 
@@ -395,7 +395,7 @@ Users can specify the control wires as well as the values to control the operati
   if computational basis samples are being generated.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 
-* The parameters of a basis set containing different number of Gaussian functions are easier to 
+* The parameters of a basis set containing different number of Gaussian functions are easier to
   differentiate.
   [(#3213)](https://github.com/PennyLaneAI/pennylane/pull/3213)
 
@@ -656,6 +656,12 @@ Users can specify the control wires as well as the values to control the operati
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
 
+* Fixed a bug where `qml.BasisStatePreparation` was not jit-compilable with JAX.
+  [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
+
+* Fixed a bug where `qml.BasisEmbedding` was not jit-compilable with JAX.
+  [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -670,6 +676,7 @@ Amintor Dusko,
 Lillian M. A. Frederiksen,
 Diego Guala,
 Soran Jahangiri,
+Edward Jiang,
 Christina Lee,
 Lee J. O'Riordan,
 Mudit Pandey,
