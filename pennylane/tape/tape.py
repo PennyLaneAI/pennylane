@@ -175,7 +175,6 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     if qscript._obs_sharing_wires:
         with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
-                print(f"here?\nObs sharing wires: {qscript._obs_sharing_wires}")
                 rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(
                     qscript._obs_sharing_wires
                 )
