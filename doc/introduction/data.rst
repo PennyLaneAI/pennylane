@@ -6,12 +6,13 @@
 Quantum Datasets
 ================
 
-PennyLane provides the :mod:`~.data` subpackage to download, create, store and manipulate quantum datasets.
-A quantum dataset is a collection of **quantum data** obtained from various quantum systems that describes it and its evolution.
+PennyLane provides the :mod:`~.data` subpackage to download, create, store and manipulate quantum datasets,
+where the quantum dataset is a collection of `quantum data` obtained from various quantum systems that describe it and its evolution.
 
 .. note::
 
     The packages ``zstd`` and ``dill`` are required to use the :mod:`~pennylane.data` module.
+    
     These can be installed with ``pip install zstd dill``.
 
 
@@ -83,13 +84,13 @@ This function returns a nested dictionary as we show below.
 
 >>> available_data = qml.data.list_datasets()
 >>> available_data.keys()
-dict_keys(['qspin', 'qchem'])
->>> available_data['qchem'].keys()
-dict_keys(['H2', 'LiH', ...])
+dict_keys(["qspin", "qchem"])
+>>> available_data["qchem"].keys()
+dict_keys(["H2", "LiH", ...])
 >>> available_data['qchem']['H2'].keys()
-dict_keys(['6-31G', 'STO-3G'])
+dict_keys(["6-31G", "STO-3G"])
 >>> print(available_data['qchem']['H2']['STO-3G'])
-['0.5', '0.54', '0.62', '0.66', ...]
+["0.5", "0.54", "0.62", "0.66", ...]
 
 Note that this example limits the results
 of the function calls for clarity and that as more data becomes available, the results of these
@@ -122,7 +123,7 @@ We can then write this :class:`~pennylane.data.Dataset` to storage and read it a
 >>> read_dataset = qml.data.Dataset()
 >>> read_dataset.read("./path/to/dataset.dat")
 >>> read_dataset.data_name
-'Example'
+"Example"
 >>> read_dataset.hamiltonian
 (0.5) [X1]
 + (1) [Z0]

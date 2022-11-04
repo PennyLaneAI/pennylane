@@ -276,13 +276,13 @@ Users can specify the control wires as well as the values to control the operati
   ```pycon
   >>> available_data = qml.data.list_datasets()
   >>> available_data.keys()
-  dict_keys(['qspin', 'qchem'])
-  >>> available_data['qchem'].keys()
-  dict_keys(['H2', 'LiH', ...])
+  dict_keys(["qspin", "qchem"])
+  >>> available_data["qchem"].keys()
+  dict_keys(["H2", "LiH", ...])
   >>> available_data['qchem']['H2'].keys()
-  dict_keys(['6-31G', 'STO-3G'])
+  dict_keys(["6-31G", "STO-3G"])
   >>> print(available_data['qchem']['H2']['STO-3G'])
-  ['0.5', '0.54', '0.62', '0.66', ...]
+  ["0.5", "0.54", "0.62", "0.66", ...]
   ```
 
 * To download or load only specific properties of a dataset, we can specify the desired attributes in `qml.data.load`:
