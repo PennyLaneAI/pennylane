@@ -235,15 +235,17 @@ def split_tape(tape: QuantumScript, group=True):
         results = []  # [(m_idx, result)]
         for tape_res, tape_idxs in zip(expanded_results, idxs_coeffs):
             if isinstance(tape_idxs[0], tuple):  # tape_res contains only one result
-                if not qml.active_return():  # old returntypes
+                if not qml.active_return() and len(tape_res) == 1:  # old returntypes
                     tape_res = tape_res[0]
                 for idx, coeff in tape_idxs:
-                    results.append((idx, tape_res if coeff is None else coeff * tape_res))
+                    results.append(
+                        (idx, tape_res if coeff is None else qml.math.dot(coeff, tape_res))
+                    )
                 continue
             # tape_res contains multiple results
             for res, idxs in zip(tape_res, tape_idxs):
                 for idx, coeff in idxs:
-                    results.append((idx, res if coeff is None else coeff * res))
+                    results.append((idx, res if coeff is None else qml.math.dot(coeff, tape_res)))
 
         # sum results by idx
         res_dict = {}

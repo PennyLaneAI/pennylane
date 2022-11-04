@@ -19,8 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.wires import Wires
-from pennylane.devices import DefaultQubit, DefaultMixed
+from pennylane.devices import DefaultMixed, DefaultQubit
 
 
 @pytest.fixture(scope="function")
@@ -1004,20 +1003,6 @@ class TestNewVQE:
         ):
             circuit()
 
-    def test_error_sample_measurement(self):
-        """Tests that error is thrown if sample(H) is measured."""
-        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
-        coeffs = [1.0] * len(observables)
-        dev = qml.device("default.qubit", wires=2, shots=10)
-        H = qml.Hamiltonian(coeffs, observables)
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.sample(H)
-
-        with pytest.raises(ValueError, match="Can only return the expectation of a single"):
-            circuit()
-
     @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
     def test_grad_autograd(self, diff_method, tol):
@@ -1282,8 +1267,8 @@ class TestMultipleInterfaceIntegration:
 
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
-        import torch
         import tensorflow as tf
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
