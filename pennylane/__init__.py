@@ -21,6 +21,7 @@ import pkg_resources
 
 
 import numpy as _np
+from warnings import warn
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
@@ -338,3 +339,17 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
+
+
+def __getattr__(name):
+    """Raise a deprecation warning and still allow `qml.grouping.func_name`
+    syntax for one release. """
+    if name == "grouping":
+        warn(
+            "The qml.grouping module is deprecated, please use qml.pauli instead.",
+            DeprecationWarning,
+        )
+        from pennylane import grouping  # pylint:disable=import-outside-toplevel
+
+        return grouping
+    raise AttributeError(f"Module {__name__} has no attribute {name}")
