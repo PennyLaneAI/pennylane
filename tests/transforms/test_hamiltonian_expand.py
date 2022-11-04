@@ -71,14 +71,14 @@ with QuantumTape() as h_tape4:
 
     qml.expval(H4)
 
-HAM_TAPES = [h_tape1, h_tape2, h_tape3, h_tape4]
-HAM_OUTPUTS = [-1.5, -6, -1.5, -8]
+TAPES = [h_tape1, h_tape2, h_tape3, h_tape4]
+OUTPUTS = [-1.5, -6, -1.5, -8]
 
 
 class TestHamiltonianExpand:
     """Tests for the hamiltonian_expand transform"""
 
-    @pytest.mark.parametrize(("tape", "output"), zip(HAM_TAPES, HAM_OUTPUTS))
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians(self, tape, output):
         """Tests that the hamiltonian_expand transform returns the correct value"""
 
@@ -95,7 +95,7 @@ class TestHamiltonianExpand:
 
         assert np.isclose(output, expval)
 
-    @pytest.mark.parametrize(("tape", "output"), zip(HAM_TAPES, HAM_OUTPUTS))
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians_no_grouping(self, tape, output):
         """Tests that the hamiltonian_expand transform returns the correct value
         if we switch grouping off"""
