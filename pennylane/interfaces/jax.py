@@ -604,6 +604,9 @@ def _to_jax(res):
 
 
 def _to_jax_shot_vector(res):
-    """From a list of tape results with shot vectors (all results are tuples), transform it to a list of Jax results."""
+    """Convert the results obtained by executing a list of tapes on a device with a shot vector to JAX objects while preserving the input structure.
+    
+    The expected structure of the inputs is a list of tape results with each element in the list being a tuple due to execution using shot vectors.
+    """
     res_ = [tuple(_to_jax([r_])[0] for r_ in r) for r in res]
     return res_
