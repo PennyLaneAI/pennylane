@@ -672,7 +672,7 @@ class QuantumScript:
     # ========================================================
 
     @staticmethod
-    def _single_measurement_shape(measurement_process, device):
+    def _single_measurement_shape(measurement_process, batch_size, device):
         """Auxiliary function of shape that determines the output
         shape of a quantum script with a single measurement.
 
@@ -684,10 +684,16 @@ class QuantumScript:
         Returns:
             tuple: output shape
         """
-        return measurement_process.shape(device)
+        shape = measurement_process.shape(device)
+
+        if batch_size is not None:
+            # insert the batch dimension
+            shape = shape[0:1] + (batch_size,) + shape[1:]
+
+        return shape
 
     @staticmethod
-    def _multi_homogenous_measurement_shape(mps, device):
+    def _multi_homogenous_measurement_shape(mps, batch_size, device):
         """Auxiliary function of shape that determines the output
         shape of a quantum script with multiple homogenous measurements.
 
@@ -747,7 +753,13 @@ class QuantumScript:
 
             # No other measurement type to check
 
+            if batch_size is not None:
+                # insert the batch dimension
+                shape = shape[0:1] + (batch_size,) + shape[1:]
+
         else:
+            # we don't need to pass in the batch size here because parameter
+            # broadcasting with shot vectors is not supported yet
             shape = QuantumScript._shape_shot_vector_multi_homogenous(mps, device)
 
         return shape
@@ -837,11 +849,15 @@ class QuantumScript:
         output_shape = tuple()
 
         if len(self.measurements) == 1:
-            output_shape = self._single_measurement_shape(self.measurements[0], device)
+            output_shape = self._single_measurement_shape(
+                self.measurements[0], self.batch_size, device
+            )
         else:
             num_measurements = len({meas.return_type for meas in self.measurements})
             if num_measurements == 1:
-                output_shape = self._multi_homogenous_measurement_shape(self.measurements, device)
+                output_shape = self._multi_homogenous_measurement_shape(
+                    self.measurements, self.batch_size, device
+                )
             else:
                 raise ValueError(
                     "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
@@ -878,7 +894,15 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
+        if device.shot_vector is not None and self.batch_size is not None:
+            raise NotImplementedError(
+                "Parameter broadcasting when using a shot vector is not supported yet."
+            )
+
         shapes = tuple(meas_process.shape(device) for meas_process in self.measurements)
+
+        if self.batch_size is not None:
+            shapes = tuple((self.batch_size,) + shape for shape in shapes)
 
         if len(shapes) == 1:
             return shapes[0]
