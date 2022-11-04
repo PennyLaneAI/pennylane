@@ -27,7 +27,7 @@ jnp = jax.numpy
 from jax.config import config
 
 config.update("jax_enable_x64", True)
-shots = [100, (1, 20, 100), (1, (20, 1), 100), ((5, 4), 1, 100)]
+shots = [(1, 20, 100), (1, (20, 1), 100), ((5, 4), 1, 100)]
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 10e-2}],
@@ -59,19 +59,14 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit)(a)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, jax.numpy.ndarray)
-            assert jac.shape == ()
-        else:
-            assert isinstance(jac, tuple)
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, jax.numpy.ndarray)
-                assert j.shape == ()
+        assert isinstance(jac, tuple)
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, jax.numpy.ndarray)
+            assert j.shape == ()
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jac_single_measurement_multiple_param(
@@ -91,23 +86,16 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit, argnums=[0, 1])(a, b)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, tuple)
-            assert len(jac) == 2
-            assert jac[0].shape == ()
-            assert jac[1].shape == ()
-        else:
-            assert isinstance(jac, tuple)
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, tuple)
-                assert len(j) == 2
-                assert j[0].shape == ()
-                assert j[1].shape == ()
+        assert isinstance(jac, tuple)
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, tuple)
+            assert len(j) == 2
+            assert j[0].shape == ()
+            assert j[1].shape == ()
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_single_measurement_multiple_param_array(
@@ -126,18 +114,13 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit)(a)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, jax.numpy.ndarray)
-            assert jac.shape == (2,)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, jax.numpy.ndarray)
-                assert j.shape == (2,)
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, jax.numpy.ndarray)
+            assert j.shape == (2,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_single_measurement_param_probs(
@@ -157,18 +140,13 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit)(a)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, jax.numpy.ndarray)
-            assert jac.shape == (4,)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, jax.numpy.ndarray)
-                assert j.shape == (4,)
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, jax.numpy.ndarray)
+            assert j.shape == (4,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_single_measurement_probs_multiple_param(
@@ -189,29 +167,18 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit, argnums=[0, 1])(a, b)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, tuple)
-            assert len(jac) == 2
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, tuple)
 
-            assert isinstance(jac[0], jax.numpy.ndarray)
-            assert jac[0].shape == (4,)
+            assert isinstance(j[0], jax.numpy.ndarray)
+            assert j[0].shape == (4,)
 
-            assert isinstance(jac[1], jax.numpy.ndarray)
-            assert jac[1].shape == (4,)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, tuple)
-
-                assert isinstance(j[0], jax.numpy.ndarray)
-                assert j[0].shape == (4,)
-
-                assert isinstance(j[1], jax.numpy.ndarray)
-                assert j[1].shape == (4,)
+            assert isinstance(j[1], jax.numpy.ndarray)
+            assert j[1].shape == (4,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
@@ -231,18 +198,13 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit)(a)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, jax.numpy.ndarray)
-            assert jac.shape == (4, 2)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, jax.numpy.ndarray)
-                assert j.shape == (4, 2)
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, jax.numpy.ndarray)
+            assert j.shape == (4, 2)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_expval_expval_multiple_params(
@@ -263,45 +225,26 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, tuple)
-            assert len(jac) == 2
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, tuple)
 
-            assert isinstance(jac[0], tuple)
-            assert len(jac[0]) == 2
-            assert isinstance(jac[0][0], jax.numpy.ndarray)
-            assert jac[0][0].shape == ()
-            assert isinstance(jac[0][1], jax.numpy.ndarray)
-            assert jac[0][1].shape == ()
+            assert isinstance(j[0], tuple)
+            assert len(j[0]) == 2
+            assert isinstance(j[0][0], jax.numpy.ndarray)
+            assert j[0][0].shape == ()
+            assert isinstance(j[0][1], jax.numpy.ndarray)
+            assert j[0][1].shape == ()
 
-            assert isinstance(jac[1], tuple)
-            assert len(jac[1]) == 2
-            assert isinstance(jac[1][0], jax.numpy.ndarray)
-            assert jac[1][0].shape == ()
-            assert isinstance(jac[1][1], jax.numpy.ndarray)
-            assert jac[1][1].shape == ()
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, tuple)
-
-                assert isinstance(j[0], tuple)
-                assert len(j[0]) == 2
-                assert isinstance(j[0][0], jax.numpy.ndarray)
-                assert j[0][0].shape == ()
-                assert isinstance(j[0][1], jax.numpy.ndarray)
-                assert j[0][1].shape == ()
-
-                assert isinstance(j[1], tuple)
-                assert len(j[1]) == 2
-                assert isinstance(j[1][0], jax.numpy.ndarray)
-                assert j[1][0].shape == ()
-                assert isinstance(j[1][1], jax.numpy.ndarray)
-                assert j[1][1].shape == ()
+            assert isinstance(j[1], tuple)
+            assert len(j[1]) == 2
+            assert isinstance(j[1][0], jax.numpy.ndarray)
+            assert j[1][0].shape == ()
+            assert isinstance(j[1][1], jax.numpy.ndarray)
+            assert j[1][1].shape == ()
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_expval_expval_multiple_params_array(
@@ -320,30 +263,19 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit)(a)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, tuple)
-            assert len(jac) == 2  # measurements
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, tuple)
+            assert len(j) == 2  # measurements
 
-            assert isinstance(jac[0], jax.numpy.ndarray)
-            assert jac[0].shape == (2,)
+            assert isinstance(j[0], jax.numpy.ndarray)
+            assert j[0].shape == (2,)
 
-            assert isinstance(jac[1], jax.numpy.ndarray)
-            assert jac[1].shape == (2,)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, tuple)
-                assert len(j) == 2  # measurements
-
-                assert isinstance(j[0], jax.numpy.ndarray)
-                assert j[0].shape == (2,)
-
-                assert isinstance(j[1], jax.numpy.ndarray)
-                assert j[1].shape == (2,)
+            assert isinstance(j[1], jax.numpy.ndarray)
+            assert j[1].shape == (2,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_var_var_multiple_params(
@@ -364,46 +296,27 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, tuple)
-            assert len(jac) == 2
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, tuple)
+            assert len(j) == 2
 
-            assert isinstance(jac[0], tuple)
-            assert len(jac[0]) == 2
-            assert isinstance(jac[0][0], jax.numpy.ndarray)
-            assert jac[0][0].shape == ()
-            assert isinstance(jac[0][1], jax.numpy.ndarray)
-            assert jac[0][1].shape == ()
+            assert isinstance(j[0], tuple)
+            assert len(j[0]) == 2
+            assert isinstance(j[0][0], jax.numpy.ndarray)
+            assert j[0][0].shape == ()
+            assert isinstance(j[0][1], jax.numpy.ndarray)
+            assert j[0][1].shape == ()
 
-            assert isinstance(jac[1], tuple)
-            assert len(jac[1]) == 2
-            assert isinstance(jac[1][0], jax.numpy.ndarray)
-            assert jac[1][0].shape == ()
-            assert isinstance(jac[1][1], jax.numpy.ndarray)
-            assert jac[1][1].shape == ()
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, tuple)
-                assert len(j) == 2
-
-                assert isinstance(j[0], tuple)
-                assert len(j[0]) == 2
-                assert isinstance(j[0][0], jax.numpy.ndarray)
-                assert j[0][0].shape == ()
-                assert isinstance(j[0][1], jax.numpy.ndarray)
-                assert j[0][1].shape == ()
-
-                assert isinstance(j[1], tuple)
-                assert len(j[1]) == 2
-                assert isinstance(j[1][0], jax.numpy.ndarray)
-                assert j[1][0].shape == ()
-                assert isinstance(j[1][1], jax.numpy.ndarray)
-                assert j[1][1].shape == ()
+            assert isinstance(j[1], tuple)
+            assert len(j[1]) == 2
+            assert isinstance(j[1][0], jax.numpy.ndarray)
+            assert j[1][0].shape == ()
+            assert isinstance(j[1][1], jax.numpy.ndarray)
+            assert j[1][1].shape == ()
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_var_var_multiple_params_array(
@@ -422,30 +335,19 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit)(a)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, tuple)
-            assert len(jac) == 2  # measurements
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, tuple)
+            assert len(j) == 2  # measurements
 
-            assert isinstance(jac[0], jax.numpy.ndarray)
-            assert jac[0].shape == (2,)
+            assert isinstance(j[0], jax.numpy.ndarray)
+            assert j[0].shape == (2,)
 
-            assert isinstance(jac[1], jax.numpy.ndarray)
-            assert jac[1].shape == (2,)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, tuple)
-                assert len(j) == 2  # measurements
-
-                assert isinstance(j[0], jax.numpy.ndarray)
-                assert j[0].shape == (2,)
-
-                assert isinstance(j[1], jax.numpy.ndarray)
-                assert j[1].shape == (2,)
+            assert isinstance(j[1], jax.numpy.ndarray)
+            assert j[1].shape == (2,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_single_param(
@@ -464,30 +366,19 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit)(a)
 
-        if isinstance(shots, int):
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
             assert isinstance(jac, tuple)
-            assert len(jac) == 2
+            assert len(j) == 2
 
-            assert isinstance(jac[0], jax.numpy.ndarray)
-            assert jac[0].shape == ()
+            assert isinstance(j[0], jax.numpy.ndarray)
+            assert j[0].shape == ()
 
-            assert isinstance(jac[1], jax.numpy.ndarray)
-            assert jac[1].shape == (4,)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(jac, tuple)
-                assert len(j) == 2
-
-                assert isinstance(j[0], jax.numpy.ndarray)
-                assert j[0].shape == ()
-
-                assert isinstance(j[1], jax.numpy.ndarray)
-                assert j[1].shape == (4,)
+            assert isinstance(j[1], jax.numpy.ndarray)
+            assert j[1].shape == (4,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_multiple_param(
@@ -507,46 +398,27 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit, argnums=[0, 1])(a, b)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, tuple)
-            assert len(jac) == 2
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, tuple)
+            assert len(j) == 2
 
-            assert isinstance(jac[0], tuple)
-            assert len(jac[0]) == 2
-            assert isinstance(jac[0][0], jax.numpy.ndarray)
-            assert jac[0][0].shape == ()
-            assert isinstance(jac[0][1], jax.numpy.ndarray)
-            assert jac[0][1].shape == ()
+            assert isinstance(j[0], tuple)
+            assert len(j[0]) == 2
+            assert isinstance(j[0][0], jax.numpy.ndarray)
+            assert j[0][0].shape == ()
+            assert isinstance(j[0][1], jax.numpy.ndarray)
+            assert j[0][1].shape == ()
 
-            assert isinstance(jac[1], tuple)
-            assert len(jac[1]) == 2
-            assert isinstance(jac[1][0], jax.numpy.ndarray)
-            assert jac[1][0].shape == (4,)
-            assert isinstance(jac[1][1], jax.numpy.ndarray)
-            assert jac[1][1].shape == (4,)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, tuple)
-                assert len(j) == 2
-
-                assert isinstance(j[0], tuple)
-                assert len(j[0]) == 2
-                assert isinstance(j[0][0], jax.numpy.ndarray)
-                assert j[0][0].shape == ()
-                assert isinstance(j[0][1], jax.numpy.ndarray)
-                assert j[0][1].shape == ()
-
-                assert isinstance(j[1], tuple)
-                assert len(j[1]) == 2
-                assert isinstance(j[1][0], jax.numpy.ndarray)
-                assert j[1][0].shape == (4,)
-                assert isinstance(j[1][1], jax.numpy.ndarray)
-                assert j[1][1].shape == (4,)
+            assert isinstance(j[1], tuple)
+            assert len(j[1]) == 2
+            assert isinstance(j[1][0], jax.numpy.ndarray)
+            assert j[1][0].shape == (4,)
+            assert isinstance(j[1][1], jax.numpy.ndarray)
+            assert j[1][1].shape == (4,)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_multiple_param_array(
@@ -565,30 +437,19 @@ class TestReturnWithShotVectors:
 
         jac = jacobian(circuit)(a)
 
-        if isinstance(shots, int):
-            assert isinstance(jac, tuple)
-            assert len(jac) == 2  # measurements
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(jac) == num_copies
+        for j in jac:
+            assert isinstance(j, tuple)
+            assert len(j) == 2  # measurements
 
-            assert isinstance(jac[0], jax.numpy.ndarray)
-            assert jac[0].shape == (2,)
+            assert isinstance(j[0], jax.numpy.ndarray)
+            assert j[0].shape == (2,)
 
-            assert isinstance(jac[1], jax.numpy.ndarray)
-            assert jac[1].shape == (4, 2)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(jac) == num_copies
-            for j in jac:
-                assert isinstance(j, tuple)
-                assert len(j) == 2  # measurements
-
-                assert isinstance(j[0], jax.numpy.ndarray)
-                assert j[0].shape == (2,)
-
-                assert isinstance(j[1], jax.numpy.ndarray)
-                assert j[1].shape == (4, 2)
+            assert isinstance(j[1], jax.numpy.ndarray)
+            assert j[1].shape == (4, 2)
 
     def test_hessian_expval_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
@@ -606,42 +467,25 @@ class TestReturnWithShotVectors:
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        if isinstance(shots, int):
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(hess) == num_copies
+        for h in hess:
             assert isinstance(hess, tuple)
-            assert len(hess) == 2
+            assert len(h) == 2
 
-            assert isinstance(hess[0], tuple)
-            assert len(hess[0]) == 2
-            assert isinstance(hess[0][0], jax.numpy.ndarray)
-            assert hess[0][0].shape == ()
-            assert hess[0][1].shape == ()
+            assert isinstance(h[0], tuple)
+            assert len(h[0]) == 2
+            assert isinstance(h[0][0], jax.numpy.ndarray)
+            assert h[0][0].shape == ()
+            assert h[0][1].shape == ()
 
-            assert isinstance(hess[1], tuple)
-            assert len(hess[1]) == 2
-            assert isinstance(hess[1][0], jax.numpy.ndarray)
-            assert hess[1][0].shape == ()
-            assert hess[1][1].shape == ()
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(hess) == num_copies
-            for h in hess:
-                assert isinstance(hess, tuple)
-                assert len(h) == 2
-
-                assert isinstance(h[0], tuple)
-                assert len(h[0]) == 2
-                assert isinstance(h[0][0], jax.numpy.ndarray)
-                assert h[0][0].shape == ()
-                assert h[0][1].shape == ()
-
-                assert isinstance(h[1], tuple)
-                assert len(h[1]) == 2
-                assert isinstance(h[1][0], jax.numpy.ndarray)
-                assert h[1][0].shape == ()
-                assert h[1][1].shape == ()
+            assert isinstance(h[1], tuple)
+            assert len(h[1]) == 2
+            assert isinstance(h[1][0], jax.numpy.ndarray)
+            assert h[1][0].shape == ()
+            assert h[1][1].shape == ()
 
     def test_hessian_expval_multiple_param_array(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -660,18 +504,13 @@ class TestReturnWithShotVectors:
 
         hess = jax.hessian(circuit)(params)
 
-        if isinstance(shots, int):
-            assert isinstance(hess, jax.numpy.ndarray)
-            assert hess.shape == (2, 2)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(hess) == num_copies
-            for h in hess:
-                assert isinstance(h, jax.numpy.ndarray)
-                assert h.shape == (2, 2)
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(hess) == num_copies
+        for h in hess:
+            assert isinstance(h, jax.numpy.ndarray)
+            assert h.shape == (2, 2)
 
     def test_hessian_var_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
@@ -689,42 +528,25 @@ class TestReturnWithShotVectors:
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        if isinstance(shots, int):
-            assert isinstance(hess, tuple)
-            assert len(hess) == 2
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(hess) == num_copies
+        for h in hess:
+            assert isinstance(h, tuple)
+            assert len(h) == 2
 
-            assert isinstance(hess[0], tuple)
-            assert len(hess[0]) == 2
-            assert isinstance(hess[0][0], jax.numpy.ndarray)
-            assert hess[0][0].shape == ()
-            assert hess[0][1].shape == ()
+            assert isinstance(h[0], tuple)
+            assert len(h[0]) == 2
+            assert isinstance(h[0][0], jax.numpy.ndarray)
+            assert h[0][0].shape == ()
+            assert h[0][1].shape == ()
 
-            assert isinstance(hess[1], tuple)
-            assert len(hess[1]) == 2
-            assert isinstance(hess[1][0], jax.numpy.ndarray)
-            assert hess[1][0].shape == ()
-            assert hess[1][1].shape == ()
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(hess) == num_copies
-            for h in hess:
-                assert isinstance(h, tuple)
-                assert len(h) == 2
-
-                assert isinstance(h[0], tuple)
-                assert len(h[0]) == 2
-                assert isinstance(h[0][0], jax.numpy.ndarray)
-                assert h[0][0].shape == ()
-                assert h[0][1].shape == ()
-
-                assert isinstance(h[1], tuple)
-                assert len(h[1]) == 2
-                assert isinstance(h[1][0], jax.numpy.ndarray)
-                assert h[1][0].shape == ()
-                assert h[1][1].shape == ()
+            assert isinstance(h[1], tuple)
+            assert len(h[1]) == 2
+            assert isinstance(h[1][0], jax.numpy.ndarray)
+            assert h[1][0].shape == ()
+            assert h[1][1].shape == ()
 
     def test_hessian_var_multiple_param_array(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of single measurement with a multiple params array return a single array."""
@@ -741,18 +563,13 @@ class TestReturnWithShotVectors:
 
         hess = jax.hessian(circuit)(params)
 
-        if isinstance(shots, int):
-            assert isinstance(hess, jax.numpy.ndarray)
-            assert hess.shape == (2, 2)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(hess) == num_copies
-            for h in hess:
-                assert isinstance(h, jax.numpy.ndarray)
-                assert h.shape == (2, 2)
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(hess) == num_copies
+        for h in hess:
+            assert isinstance(h, jax.numpy.ndarray)
+            assert h.shape == (2, 2)
 
     def test_hessian_probs_expval_multiple_params(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -772,78 +589,43 @@ class TestReturnWithShotVectors:
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        if isinstance(shots, int):
-            assert isinstance(hess, tuple)
-            assert len(hess) == 2
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(hess) == num_copies
+        for h in hess:
+            assert isinstance(h, tuple)
+            assert len(h) == 2
 
-            assert isinstance(hess[0], tuple)
-            assert len(hess[0]) == 2
-            assert isinstance(hess[0][0], tuple)
-            assert len(hess[0][0]) == 2
-            assert isinstance(hess[0][0][0], jax.numpy.ndarray)
-            assert hess[0][0][0].shape == ()
-            assert isinstance(hess[0][0][1], jax.numpy.ndarray)
-            assert hess[0][0][1].shape == ()
-            assert isinstance(hess[0][1], tuple)
-            assert len(hess[0][1]) == 2
-            assert isinstance(hess[0][1][0], jax.numpy.ndarray)
-            assert hess[0][1][0].shape == ()
-            assert isinstance(hess[0][1][1], jax.numpy.ndarray)
-            assert hess[0][1][1].shape == ()
+            assert isinstance(h[0], tuple)
+            assert len(h[0]) == 2
+            assert isinstance(h[0][0], tuple)
+            assert len(h[0][0]) == 2
+            assert isinstance(h[0][0][0], jax.numpy.ndarray)
+            assert h[0][0][0].shape == ()
+            assert isinstance(h[0][0][1], jax.numpy.ndarray)
+            assert h[0][0][1].shape == ()
+            assert isinstance(h[0][1], tuple)
+            assert len(h[0][1]) == 2
+            assert isinstance(h[0][1][0], jax.numpy.ndarray)
+            assert h[0][1][0].shape == ()
+            assert isinstance(h[0][1][1], jax.numpy.ndarray)
+            assert h[0][1][1].shape == ()
 
-            assert isinstance(hess[1], tuple)
-            assert len(hess[1]) == 2
-            assert isinstance(hess[1][0], tuple)
-            assert len(hess[1][0]) == 2
-            assert isinstance(hess[1][0][0], jax.numpy.ndarray)
-            assert hess[1][0][0].shape == (4,)
-            assert isinstance(hess[1][0][1], jax.numpy.ndarray)
-            assert hess[1][0][1].shape == (4,)
-            assert isinstance(hess[1][1], tuple)
-            assert len(hess[1][1]) == 2
-            assert isinstance(hess[1][1][0], jax.numpy.ndarray)
-            assert hess[1][1][0].shape == (4,)
-            assert isinstance(hess[1][1][1], jax.numpy.ndarray)
-            assert hess[1][1][1].shape == (4,)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(hess) == num_copies
-            for h in hess:
-                assert isinstance(h, tuple)
-                assert len(h) == 2
-
-                assert isinstance(h[0], tuple)
-                assert len(h[0]) == 2
-                assert isinstance(h[0][0], tuple)
-                assert len(h[0][0]) == 2
-                assert isinstance(h[0][0][0], jax.numpy.ndarray)
-                assert h[0][0][0].shape == ()
-                assert isinstance(h[0][0][1], jax.numpy.ndarray)
-                assert h[0][0][1].shape == ()
-                assert isinstance(h[0][1], tuple)
-                assert len(h[0][1]) == 2
-                assert isinstance(h[0][1][0], jax.numpy.ndarray)
-                assert h[0][1][0].shape == ()
-                assert isinstance(h[0][1][1], jax.numpy.ndarray)
-                assert h[0][1][1].shape == ()
-
-                assert isinstance(h[1], tuple)
-                assert len(h[1]) == 2
-                assert isinstance(h[1][0], tuple)
-                assert len(h[1][0]) == 2
-                assert isinstance(h[1][0][0], jax.numpy.ndarray)
-                assert h[1][0][0].shape == (4,)
-                assert isinstance(h[1][0][1], jax.numpy.ndarray)
-                assert h[1][0][1].shape == (4,)
-                assert isinstance(h[1][1], tuple)
-                assert len(h[1][1]) == 2
-                assert isinstance(h[1][1][0], jax.numpy.ndarray)
-                assert h[1][1][0].shape == (4,)
-                assert isinstance(h[1][1][1], jax.numpy.ndarray)
-                assert h[1][1][1].shape == (4,)
+            assert isinstance(h[1], tuple)
+            assert len(h[1]) == 2
+            assert isinstance(h[1][0], tuple)
+            assert len(h[1][0]) == 2
+            assert isinstance(h[1][0][0], jax.numpy.ndarray)
+            assert h[1][0][0].shape == (4,)
+            assert isinstance(h[1][0][1], jax.numpy.ndarray)
+            assert h[1][0][1].shape == (4,)
+            assert isinstance(h[1][1], tuple)
+            assert len(h[1][1]) == 2
+            assert isinstance(h[1][1][0], jax.numpy.ndarray)
+            assert h[1][1][0].shape == (4,)
+            assert isinstance(h[1][1][1], jax.numpy.ndarray)
+            assert h[1][1][1].shape == (4,)
 
     def test_hessian_expval_probs_multiple_param_array(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -865,30 +647,19 @@ class TestReturnWithShotVectors:
 
         hess = jax.hessian(circuit)(params)
 
-        if isinstance(shots, int):
-            assert isinstance(hess, tuple)
-            assert len(hess) == 2
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(hess) == num_copies
+        for h in hess:
+            assert isinstance(h, tuple)
+            assert len(h) == 2
 
-            assert isinstance(hess[0], jax.numpy.ndarray)
-            assert hess[0].shape == (2, 2)
+            assert isinstance(h[0], jax.numpy.ndarray)
+            assert h[0].shape == (2, 2)
 
-            assert isinstance(hess[1], jax.numpy.ndarray)
-            assert hess[1].shape == (4, 2, 2)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(hess) == num_copies
-            for h in hess:
-                assert isinstance(h, tuple)
-                assert len(h) == 2
-
-                assert isinstance(h[0], jax.numpy.ndarray)
-                assert h[0].shape == (2, 2)
-
-                assert isinstance(h[1], jax.numpy.ndarray)
-                assert h[1].shape == (4, 2, 2)
+            assert isinstance(h[1], jax.numpy.ndarray)
+            assert h[1].shape == (4, 2, 2)
 
     def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
@@ -906,78 +677,43 @@ class TestReturnWithShotVectors:
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
-        if isinstance(shots, int):
-            assert isinstance(hess, tuple)
-            assert len(hess) == 2
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(hess) == num_copies
+        for h in hess:
+            assert isinstance(h, tuple)
+            assert len(h) == 2
 
-            assert isinstance(hess[0], tuple)
-            assert len(hess[0]) == 2
-            assert isinstance(hess[0][0], tuple)
-            assert len(hess[0][0]) == 2
-            assert isinstance(hess[0][0][0], jax.numpy.ndarray)
-            assert hess[0][0][0].shape == ()
-            assert isinstance(hess[0][0][1], jax.numpy.ndarray)
-            assert hess[0][0][1].shape == ()
-            assert isinstance(hess[0][1], tuple)
-            assert len(hess[0][1]) == 2
-            assert isinstance(hess[0][1][0], jax.numpy.ndarray)
-            assert hess[0][1][0].shape == ()
-            assert isinstance(hess[0][1][1], jax.numpy.ndarray)
-            assert hess[0][1][1].shape == ()
+            assert isinstance(h[0], tuple)
+            assert len(h[0]) == 2
+            assert isinstance(h[0][0], tuple)
+            assert len(h[0][0]) == 2
+            assert isinstance(h[0][0][0], jax.numpy.ndarray)
+            assert h[0][0][0].shape == ()
+            assert isinstance(h[0][0][1], jax.numpy.ndarray)
+            assert h[0][0][1].shape == ()
+            assert isinstance(h[0][1], tuple)
+            assert len(h[0][1]) == 2
+            assert isinstance(h[0][1][0], jax.numpy.ndarray)
+            assert h[0][1][0].shape == ()
+            assert isinstance(h[0][1][1], jax.numpy.ndarray)
+            assert h[0][1][1].shape == ()
 
-            assert isinstance(hess[1], tuple)
-            assert len(hess[1]) == 2
-            assert isinstance(hess[1][0], tuple)
-            assert len(hess[1][0]) == 2
-            assert isinstance(hess[1][0][0], jax.numpy.ndarray)
-            assert hess[1][0][0].shape == (4,)
-            assert isinstance(hess[1][0][1], jax.numpy.ndarray)
-            assert hess[1][0][1].shape == (4,)
-            assert isinstance(hess[1][1], tuple)
-            assert len(hess[1][1]) == 2
-            assert isinstance(hess[1][1][0], jax.numpy.ndarray)
-            assert hess[1][1][0].shape == (4,)
-            assert isinstance(hess[1][1][1], jax.numpy.ndarray)
-            assert hess[1][1][1].shape == (4,)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(hess) == num_copies
-            for h in hess:
-                assert isinstance(h, tuple)
-                assert len(h) == 2
-
-                assert isinstance(h[0], tuple)
-                assert len(h[0]) == 2
-                assert isinstance(h[0][0], tuple)
-                assert len(h[0][0]) == 2
-                assert isinstance(h[0][0][0], jax.numpy.ndarray)
-                assert h[0][0][0].shape == ()
-                assert isinstance(h[0][0][1], jax.numpy.ndarray)
-                assert h[0][0][1].shape == ()
-                assert isinstance(h[0][1], tuple)
-                assert len(h[0][1]) == 2
-                assert isinstance(h[0][1][0], jax.numpy.ndarray)
-                assert h[0][1][0].shape == ()
-                assert isinstance(h[0][1][1], jax.numpy.ndarray)
-                assert h[0][1][1].shape == ()
-
-                assert isinstance(h[1], tuple)
-                assert len(h[1]) == 2
-                assert isinstance(h[1][0], tuple)
-                assert len(h[1][0]) == 2
-                assert isinstance(h[1][0][0], jax.numpy.ndarray)
-                assert h[1][0][0].shape == (4,)
-                assert isinstance(h[1][0][1], jax.numpy.ndarray)
-                assert h[1][0][1].shape == (4,)
-                assert isinstance(h[1][1], tuple)
-                assert len(h[1][1]) == 2
-                assert isinstance(h[1][1][0], jax.numpy.ndarray)
-                assert h[1][1][0].shape == (4,)
-                assert isinstance(h[1][1][1], jax.numpy.ndarray)
-                assert h[1][1][1].shape == (4,)
+            assert isinstance(h[1], tuple)
+            assert len(h[1]) == 2
+            assert isinstance(h[1][0], tuple)
+            assert len(h[1][0]) == 2
+            assert isinstance(h[1][0][0], jax.numpy.ndarray)
+            assert h[1][0][0].shape == (4,)
+            assert isinstance(h[1][0][1], jax.numpy.ndarray)
+            assert h[1][0][1].shape == (4,)
+            assert isinstance(h[1][1], tuple)
+            assert len(h[1][1]) == 2
+            assert isinstance(h[1][1][0], jax.numpy.ndarray)
+            assert h[1][1][0].shape == (4,)
+            assert isinstance(h[1][1][1], jax.numpy.ndarray)
+            assert h[1][1][1].shape == (4,)
 
     def test_hessian_var_probs_multiple_param_array(
         self, dev_name, diff_method, gradient_kwargs, shots
@@ -996,30 +732,19 @@ class TestReturnWithShotVectors:
 
         hess = jax.hessian(circuit)(params)
 
-        if isinstance(shots, int):
-            assert isinstance(hess, tuple)
-            assert len(hess) == 2
+        num_copies = sum(
+            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
+        )
+        assert len(hess) == num_copies
+        for h in hess:
+            assert isinstance(h, tuple)
+            assert len(h) == 2
 
-            assert isinstance(hess[0], jax.numpy.ndarray)
-            assert hess[0].shape == (2, 2)
+            assert isinstance(h[0], jax.numpy.ndarray)
+            assert h[0].shape == (2, 2)
 
-            assert isinstance(hess[1], jax.numpy.ndarray)
-            assert hess[1].shape == (4, 2, 2)
-        else:
-            num_copies = sum(
-                [1 for x in shots if isinstance(x, int)]
-                + [x[1] for x in shots if isinstance(x, tuple)]
-            )
-            assert len(hess) == num_copies
-            for h in hess:
-                assert isinstance(h, tuple)
-                assert len(h) == 2
-
-                assert isinstance(h[0], jax.numpy.ndarray)
-                assert h[0].shape == (2, 2)
-
-                assert isinstance(h[1], jax.numpy.ndarray)
-                assert h[1].shape == (4, 2, 2)
+            assert isinstance(h[1], jax.numpy.ndarray)
+            assert h[1].shape == (4, 2, 2)
 
 
 shots = [(1, 20, 100), (1, (20, 1), 100), (1, (5, 4), 100)]
