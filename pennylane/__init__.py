@@ -341,7 +341,7 @@ def version():
     return __version__
 
 
-def __getattr__(name):
+def __getattr__(name):  # pragma: no-cover
     """Raise a deprecation warning and still allow `qml.grouping.func_name`
     syntax for one release."""
     if name == "grouping":
