@@ -34,6 +34,7 @@ def test_grouping_imports_with_warning():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         import pennylane as qml  # pylint:import-outside-toplevel
+        from pennylane import grouping  # pylint:import-outside-toplevel
 
         op = qml.PauliX(wires=0)
         _ = qml.grouping.is_pauli_word(op)  # some function from grouping
