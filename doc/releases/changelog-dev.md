@@ -4,6 +4,8 @@
 
 <h3>New features since last release</h3>
 
+<h4>(TODO: title) JAX JIT</h4>
+
 <h4>(TODO: title) Qutrits</h4>
 
 * The `qml.GellMann` qutrit observable, the ternary generalization of the Pauli observables, is now available.
@@ -74,7 +76,7 @@
           [-1.00000000e+00,  2.58789009e-11]], requires_grad=True)]
   ```
 
-* Any gate operation can be tapered according to :math:`\mathbb{Z}_2` symmetries of the Hamiltonian via `qml.qchem.taper_operation`.
+* Any gate operation can now be tapered according to :math:`\mathbb{Z}_2` symmetries of the Hamiltonian via `qml.qchem.taper_operation`.
   [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
 
   ```pycon
@@ -139,6 +141,33 @@
   ```
 
 <h4>(TODO: title) QNode QoL boosts</h4>
+
+* Added support to the JAX-JIT interface for computing the gradient of QNodes that return a single vector of probabilities or multiple expectation values.
+  [(#3244)](https://github.com/PennyLaneAI/pennylane/pull/3244)
+  [(#3261)](https://github.com/PennyLaneAI/pennylane/pull/3261)
+
+  ```python
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @jax.jit
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  def circuit(x, y):
+      qml.RY(x, wires=0)
+      qml.RY(y, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+  x = jnp.array(1.0, dtype=jnp.float32)
+  y = jnp.array(2.0, dtype=jnp.float32)
+  ```
+
+  ```pycon
+  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
+  (DeviceArray([-0.84147096,  0.3501755 ], dtype=float32),
+   DeviceArray([ 4.474455e-18, -4.912955e-01], dtype=float32))
+  ```
+
+  Note that this change depends on `jax.pure_callback`, which requires `jax==0.3.17`.
 
 * The `QNode` class now accepts an `auto` interface, which automatically detects the interface of the given input.
   [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
@@ -206,27 +235,6 @@
     C: ──Z────────┤       
     D: ──RY(1.23)─┤   
     ```
-
-* The `IntegerComparator` arithmetic operation is now available.
-[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
-
-  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n < L`. This is accessed via the `geq` keyword argument.
-
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def circuit():
-      qml.BasisState(np.array([0, 1]), wires=range(2))
-      qml.broadcast(qml.Hadamard, wires=range(2), pattern='single')
-      qml.IntegerComparator(2, geq=False, wires=[0, 1])
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> circuit()
-  [-0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
-  ```
 
 <h3>Improvements</h3>
 
@@ -379,6 +387,9 @@
 * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
 
+* Extended `qml.equal` function to MeasurementProcesses
+  [(#3189)](https://github.com/PennyLaneAI/pennylane/pull/3189)
+  
 * `_multi_dispatch` functionality has been moved inside the `get_interface` function. This function
   can now be called with one or multiple tensors as arguments.
   [(#3136)](https://github.com/PennyLaneAI/pennylane/pull/3136)
@@ -410,6 +421,12 @@
   >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
   'torch'
   ```
+  
+* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling 
+  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global 
+  configuration for matplotlib plotting. If no `style` is passed, the function defaults 
+  to plotting with the `black_white` style.
+  [(#3247)](https://github.com/PennyLaneAI/pennylane/pull/3247)
 
 * `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
   instead. There is no longer a static method for this.
@@ -417,19 +434,23 @@
 
 <h3>Deprecations</h3>
 
-* `qml.tape.stop_recording` and `QuantumTape.stop_recording` are moved to `qml.QueuingManager.stop_recording`.
-  The old functions will still be available untill v0.29.
+* `qml.tape.stop_recording` and `QuantumTape.stop_recording` have been moved to `qml.QueuingManager.stop_recording`. The old functions will still be available until v0.29.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
-* `qml.tape.get_active_tape` is deprecated. Please use `qml.QueuingManager.active_context()` instead.
+* `qml.tape.get_active_tape` has been deprecated. Use `qml.QueuingManager.active_context()` instead.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
 
-* `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
-  instead. There is no longer a static method for this.
+* `Operator.compute_terms` has been removed. On a specific instance of an operator, use `op.terms()` instead. There is no longer a static method for this.
   [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
   
-* Deprecate `qml.transforms.qcut.remap_tape_wires`. Use `qml.map_wires` instead.
+* `qml.tape.QuantumTape.inv()` has been deprecated. Use `qml.tape.QuantumTape.adjoint` instead.
+  [(#3237)](https://github.com/PennyLaneAI/pennylane/pull/3237)
+
+* `qml.transforms.qcut.remap_tape_wires` has been deprecated. Use `qml.map_wires` instead.
   [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
+
+* The grouping module `qml.grouping` has been deprecated. Use `qml.pauli` or `qml.pauli.grouping` instead. The module will still be available until v0.28.
+  [(#3262)](https://github.com/PennyLaneAI/pennylane/pull/3262)
 
 <h3>Documentation</h3>
 
@@ -482,10 +503,21 @@
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
 
+* Fixed a bug where `qml.BasisStatePreparation` was not jit-compilable with JAX.
+  [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
+
+* Fixed a bug where `qml.BasisEmbedding` was not jit-compilable with JAX.
+  [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
+
+* Fixed a bug where `qml.expval(qml.Hamiltonian())` would not raise an error
+  if the Hamiltonian involved some wires that are not present on the device.
+  [(#3266)](https://github.com/PennyLaneAI/pennylane/pull/3266)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Kamal Mohamed Ali,
 Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Albert Mitjans Coma,
@@ -495,6 +527,7 @@ Amintor Dusko,
 Lillian M. A. Frederiksen,
 Diego Guala,
 Soran Jahangiri,
+Edward Jiang,
 Christina Lee,
 Lee J. O'Riordan,
 Mudit Pandey,
