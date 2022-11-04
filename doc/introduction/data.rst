@@ -34,8 +34,8 @@ The :func:`~pennylane.data.load` function returns a ``list`` with the desired da
 When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as `attributes`).
 For example, we can download or load only the molecule and energy of a dataset as follows:
 
->>> att = ["molecule", "fci_energy"]
->>> part = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1, attributes=att)[0]
+>>> part = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1, 
+...                      attributes=["molecule", "fci_energy"])[0]
 >>> part.molecule
 <pennylane.qchem.molecule.Molecule at 0x7f56c9d78e50>
 >>> part.fci_energy
@@ -48,7 +48,7 @@ To determine what attributes are available for a type of dataset, we can use the
 "hamiltonian",
 "sparse_hamiltonian",
 ...
-"tapered_wire_map",
+"tapered_hamiltonian",
 "full"]
 
 Using Datasets in PennyLane

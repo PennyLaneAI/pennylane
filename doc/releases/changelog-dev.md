@@ -265,9 +265,10 @@ Users can specify the control wires as well as the values to control the operati
 * Datasets hosted on the cloud can be downloaded with the `qml.data.load` function as follows:
 
   ```pycon
-  >>> H2_dataset = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.1")
-  >>> print(H2_dataset)
+  >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
+  >>> print(H2datasets)
   [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
+  >>> H2data = H2datasets[0]
   ```
 
 * To see what datasets are available for download, we can call `qml.data.list_datasets`:
@@ -287,8 +288,11 @@ Users can specify the control wires as well as the values to control the operati
 * To download or load only specific properties of a dataset, we can specify the desired attributes in `qml.data.load`:
 
   ```pycon
-  >>> H2_partial = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.1", attributes=["molecule", "fci_energy"])[0]
-  >>> H2_partial.fci_energy
+  >>> part = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1, 
+  ...                      attributes=["molecule", "fci_energy"])[0]
+  >>> part.molecule
+  <pennylane.qchem.molecule.Molecule at 0x7f56c9d78e50>
+  >>> part.fci_energy
   -1.0791924385860894
   ```
 
@@ -300,7 +304,7 @@ Users can specify the control wires as well as the values to control the operati
   'hamiltonian',
   'sparse_hamiltonian',
   ...
-  'tapered_wire_map',
+  'tapered_hamiltonian',
   'full']
   ```
 
@@ -323,7 +327,7 @@ Users can specify the control wires as well as the values to control the operati
           Please select attributes:
               ...
           Force download files? (Default is no) [y/N]: N
-          Folder to download to? (Default is pwd, will download to /datasets subdirectory): /Users/jovyan/Downloads
+          Folder to download to? (Default is pwd, will download to /datasets subdirectory):
 
           Please confirm your choices:
           dataset: qspin/Ising/open/rectangular/4x4
@@ -337,39 +341,44 @@ Users can specify the control wires as well as the values to control the operati
 * Once loaded, properties of a dataset can be accessed easily as follows:
 
   ```pycon
-  >>> dev = qml.device('default.qubit',wires=H2_dataset[0].hamiltonian.wires)
+  >>> dev = qml.device("default.qubit",wires=4)
   >>> @qml.qnode(dev)
   ... def circuit():
-  ...     return qml.expval(H2_dataset[0].hamiltonian)
+  ...     qml.BasisState(H2_dataset.hf_state, wires = [0, 1, 2, 3])
+  ...     for op in H2_dataset.vqe_gates:
+  ...         qml.apply(op)
+  ...     return qml.expval(H2_dataset.hamiltonian)
   >>> print(circuit())
-  0.4810692051726486
+  -1.0791430411076344
   ```
 
 * It is also possible to create custom datasets with `qml.data.Dataset`
 
   ```pycon
-  >>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], observables=[qml.PauliZ(wires=0),qml.PauliX(wires=1)])
-  >>> example_energies, _ = np.linalg.eigh(qml.matrix(example_hamiltonian)) #Calculate the energies
-  >>> example_dataset = qml.data.Dataset(data_name = 'Example',hamiltonian=example_hamiltonian,energies=example_energies)
-  >>> example_dataset.data_name
-  'Example'
-  >>> example_dataset.hamiltonian
-      (0.5) [X1]
+  >>> coeffs = [1, 0.5]
+  >>> observables = [qml.PauliZ(wires=0), qml.PauliX(wires=1)]
+  >>> H = qml.Hamiltonian(coeffs, observables)
+  >>> energies, _ = np.linalg.eigh(qml.matrix(H)) #Calculate the energies
+  >>> dataset = qml.data.Dataset(data_name = "Example", hamiltonian=H, energies=energies)
+  >>> dataset.data_name
+  "Example"
+  >>> dataset.hamiltonian
+  (0.5) [X1]
   + (1) [Z0]
-  >>> example_dataset.energies
+  >>> dataset.energies
   array([-1.5, -0.5,  0.5,  1.5])
   ```
 
 * These custom datasets can be saved and read with the `Dataset.write` and `Dataset.read` functions as follows:
 
   ```pycon
-  >>> example_dataset.write('./path/to/dataset.dat')
+  >>> dataset.write("./path/to/dataset.dat")
   >>> read_dataset = qml.data.Dataset()
-  >>> read_dataset.read('./path/to/dataset.dat')
+  >>> read_dataset.read("./path/to/dataset.dat")
   >>> read_dataset.data_name
   'Example'
   >>> read_dataset.hamiltonian
-      (0.5) [X1]
+  (0.5) [X1]
   + (1) [Z0]
   >>> read_dataset.energies
   array([-1.5, -0.5,  0.5,  1.5])
