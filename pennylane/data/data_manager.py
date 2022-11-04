@@ -24,7 +24,7 @@ from urllib.parse import quote
 import requests
 from pennylane.data.dataset import Dataset
 
-S3_URL = "https://xanadu-quantum-datasets-test.s3.amazonaws.com"
+S3_URL = "https://xanadu-quantum-datasets.s3.amazonaws.com"
 FOLDERMAP_URL = os.path.join(S3_URL, "foldermap.json")
 DATA_STRUCT_URL = os.path.join(S3_URL, "data_struct.json")
 
