@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
-import pytest
 import numpy as np
+import pytest
 
 pytestmark = pytest.mark.tf
 
 tf = pytest.importorskip("tensorflow")
 
 import pennylane as qml
-from pennylane import qnode, QNode
+from pennylane import QNode, qnode
 from pennylane.tape import QuantumTape
-
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", "backward"],
@@ -1199,7 +1198,7 @@ class TestTapeExpansion:
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
 
         dev = qml.device(dev_name, wires=3, shots=50000)
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_tape")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="tf")

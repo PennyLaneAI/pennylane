@@ -19,15 +19,15 @@ from typing import List
 
 import pennylane as qml
 from pennylane.measurements import Expectation, MeasurementProcess
-from pennylane.ops import SProd, Sum
+from pennylane.ops import Hamiltonian, SProd, Sum
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 
-def hamiltonian_expand(tape: QuantumScript, group=True):
-    r"""
-    Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
-    and provides a function to recombine the results.
+# pylint: disable=too-many-branches, too-many-statements
+def split_tape(tape: QuantumScript, group=True):
+    """If the tape is measuring any Hamiltonian or Sum expectation, this method splits it into
+    multiple tapes of Pauli expectations and provides a function to recombine the results.
 
     Args:
         tape (.QuantumTape): the tape used when calculating the expectation value
@@ -59,10 +59,10 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
 
             qml.expval(H)
 
-    We can use the ``hamiltonian_expand`` transform to generate new tapes and a classical
+    We can use the ``split_tape`` transform to generate new tapes and a classical
     post-processing function for computing the expectation value of the Hamiltonian.
 
-    >>> tapes, fn = qml.transforms.hamiltonian_expand(tape)
+    >>> tapes, fn = qml.transforms.split_tape(tape)
 
     We can evaluate these tapes on a device:
 
@@ -90,132 +90,15 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     With grouping, the Hamiltonian gets split into two groups of observables (here ``[qml.PauliZ(0)]`` and
     ``[qml.PauliX(1), qml.PauliX(0)]``):
 
-    >>> tapes, fn = qml.transforms.hamiltonian_expand(tape)
+    >>> tapes, fn = qml.transforms.split_tape(tape)
     >>> len(tapes)
     2
 
     Without grouping it gets split into three groups (``[qml.PauliZ(0)]``, ``[qml.PauliX(1)]`` and ``[qml.PauliX(0)]``):
 
-    >>> tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
+    >>> tapes, fn = qml.transforms.split_tape(tape, group=False)
     >>> len(tapes)
     3
-
-    Alternatively, if the Hamiltonian has already computed groups, they are used even if ``group=False``:
-
-    .. code-block:: python3
-
-        obs = [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)]
-        coeffs = [1., 2., 3.]
-        H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
-
-        # the initialisation already computes grouping information and stores it in the Hamiltonian
-        assert H.grouping_indices is not None
-
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
-            qml.expval(H)
-
-    Grouping information has been used to reduce the number of tapes from 3 to 2:
-
-    >>> tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
-    >>> len(tapes)
-    2
-    """
-
-    hamiltonian = tape.measurements[0].obs
-
-    if (
-        not isinstance(hamiltonian, qml.Hamiltonian)
-        or len(tape.measurements) > 1
-        or tape.measurements[0].return_type != qml.measurements.Expectation
-    ):
-        raise ValueError(
-            "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
-        )
-
-    # note: for backward passes of some frameworks
-    # it is crucial to use the hamiltonian.data attribute,
-    # and not hamiltonian.coeffs when recombining the results
-
-    if group or hamiltonian.grouping_indices is not None:
-
-        if hamiltonian.grouping_indices is None:
-            # explicitly selected grouping, but indices not yet computed
-            hamiltonian.compute_grouping()
-
-        coeff_groupings = [
-            qml.math.stack([hamiltonian.data[i] for i in indices])
-            for indices in hamiltonian.grouping_indices
-        ]
-        obs_groupings = [
-            [hamiltonian.ops[i] for i in indices] for indices in hamiltonian.grouping_indices
-        ]
-
-        # make one tape per grouping, measuring the
-        # observables in that grouping
-        tapes = []
-        for obs in obs_groupings:
-            new_tape = tape.__class__(tape._ops, (qml.expval(o) for o in obs), tape._prep)
-
-            new_tape = new_tape.expand(stop_at=lambda obj: True)
-            tapes.append(new_tape)
-
-        def processing_fn(res_groupings):
-            if qml.active_return():
-                dot_products = [
-                    qml.math.dot(
-                        qml.math.reshape(
-                            qml.math.convert_like(r_group, c_group), qml.math.shape(c_group)
-                        ),
-                        c_group,
-                    )
-                    for c_group, r_group in zip(coeff_groupings, res_groupings)
-                ]
-            else:
-                dot_products = [
-                    qml.math.dot(r_group, c_group)
-                    for c_group, r_group in zip(coeff_groupings, res_groupings)
-                ]
-            return qml.math.sum(qml.math.stack(dot_products), axis=0)
-
-        return tapes, processing_fn
-
-    coeffs = hamiltonian.data
-
-    # make one tape per observable
-    tapes = []
-    for o in hamiltonian.ops:
-        # pylint: disable=protected-access
-        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep)
-        tapes.append(new_tape)
-
-    # pylint: disable=function-redefined
-    def processing_fn(res):
-        dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
-        return qml.math.sum(qml.math.stack(dot_products), axis=0)
-
-    return tapes, processing_fn
-
-
-# pylint: disable=too-many-branches, too-many-statements
-def sum_expand(tape: QuantumScript, group=True):
-    """Splits a tape measuring a Sum expectation into mutliple tapes of summand expectations,
-    and provides a function to recombine the results.
-
-    Args:
-        tape (.QuantumTape): the tape used when calculating the expectation value
-            of the Hamiltonian
-        group (bool): Whether to compute disjoint groups of commuting Pauli observables, leading to fewer tapes.
-            If grouping information can be found in the Hamiltonian, it will be used even if group=False.
-
-    Returns:
-        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions to compute the expectation value.
-
-    **Example**
 
     Given a Sum operator,
 
@@ -237,10 +120,10 @@ def sum_expand(tape: QuantumScript, group=True):
             qml.expval(qml.PauliX(1))
             qml.expval(qml.PauliZ(2))
 
-    We can use the ``sum_expand`` transform to generate new tapes and a classical
+    We can use the ``split_tape`` transform to generate new tapes and a classical
     post-processing function to speed-up the computation of the expectation value of the `Sum`.
 
-    >>> tapes, fn = qml.transforms.sum_expand(tape, group=False)
+    >>> tapes, fn = qml.transforms.split_tape(tape, group=False)
     >>> for tape in tapes:
     ...     print(tape.measurements)
     [expval(PauliY(wires=[2]) @ PauliZ(wires=[1]))]
@@ -277,7 +160,7 @@ def sum_expand(tape: QuantumScript, group=True):
     With grouping, the Sum gets split into two groups of observables (here
     ``[qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1))]`` and ``[qml.s_prod(3, qml.PauliX(0))]``):
 
-    >>> tapes, fn = qml.transforms.sum_expand(tape, group=True)
+    >>> tapes, fn = qml.transforms.split_tape(tape, group=True)
     >>> for tape in tapes:
     ...     print(tape.measurements)
     [expval(PauliZ(wires=[0])), expval(2*(PauliX(wires=[1])))]
@@ -303,6 +186,16 @@ def sum_expand(tape: QuantumScript, group=True):
                     idxs_coeffs_dict[s_m.hash] = [(idx, coeff)]
                 else:
                     idxs_coeffs_dict[s_m.hash].append((idx, coeff))
+            continue
+
+        if isinstance(obs, Hamiltonian) and m.return_type is Expectation:
+            for o, coeff in zip(obs.ops, obs.data):
+                o_m = qml.expval(o)
+                if o_m.hash not in measurements_dict:
+                    measurements_dict[o_m.hash] = o_m
+                    idxs_coeffs_dict[o_m.hash] = [(idx, coeff)]
+                else:
+                    idxs_coeffs_dict[o_m.hash].append((idx, coeff))
             continue
 
         if isinstance(obs, SProd) and m.return_type is Expectation:

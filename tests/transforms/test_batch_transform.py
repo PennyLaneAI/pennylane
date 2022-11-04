@@ -16,6 +16,7 @@ Unit tests for the batch transform.
 """
 
 import functools
+
 import pytest
 
 import pennylane as qml
@@ -674,10 +675,8 @@ class TestMapBatchTransform:
             qml.CNOT(wires=[0, 1])
             qml.expval(H + 0.5 * qml.PauliY(0))
 
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
-        tapes, fn = qml.transforms.map_batch_transform(
-            qml.transforms.hamiltonian_expand, [tape1, tape2]
-        )
+        spy = mocker.spy(qml.transforms, "split_tape")
+        tapes, fn = qml.transforms.map_batch_transform(qml.transforms.split_tape, [tape1, tape2])
 
         spy.assert_called()
         assert len(tapes) == 5
@@ -708,7 +707,7 @@ class TestMapBatchTransform:
                 qml.expval(H + 0.5 * qml.PauliY(0))
 
             tapes, fn = qml.transforms.map_batch_transform(
-                qml.transforms.hamiltonian_expand, [tape1, tape2]
+                qml.transforms.split_tape, [tape1, tape2]
             )
             res = qml.execute(tapes, dev, qml.gradients.param_shift, device_batch_transform=False)
             return np.sum(fn(res))

@@ -21,7 +21,6 @@ from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.tape import QuantumTape
 
-
 qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],
     # Python
@@ -1301,7 +1300,7 @@ class TestTapeExpansion:
             pytest.skip("The adjoint method does not yet support Hamiltonians")
 
         dev = qml.device(dev_name, wires=3, shots=None)
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_tape")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode, max_diff=max_diff)
@@ -1356,7 +1355,7 @@ class TestTapeExpansion:
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
 
         dev = qml.device(dev_name, wires=3, shots=50000)
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_tape")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode, max_diff=max_diff)

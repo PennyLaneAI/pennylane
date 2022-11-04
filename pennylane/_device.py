@@ -731,21 +731,15 @@ class Device(abc.ABC):
 
         is_shadow = ShadowExpval in return_types
 
-        if hamiltonian_in_obs and (
-            (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known
-        ):
+        if (  # pylint: disable=too-many-boolean-expressions
+            hamiltonian_in_obs
+            and ((not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known)
+        ) or (expval_sum_in_obs and not is_shadow):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
             # split tape into multiple tapes of diagonalizable known observables.
-            try:
-                circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
-            except ValueError as e:
-                raise ValueError(
-                    "Can only return the expectation of a single Hamiltonian observable"
-                ) from e
-        elif expval_sum_in_obs and not is_shadow:
-            circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
+            circuits, hamiltonian_fn = qml.transforms.split_tape(circuit, group=False)
 
         elif (
             len(circuit._obs_sharing_wires) > 0
@@ -784,7 +778,7 @@ class Device(abc.ABC):
 
         # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
         # expansion. Note that the application order is reversed compared to the expansion order,
-        # i.e. while we first applied `hamiltonian_expand` to the tape, we need to process the
+        # i.e. while we first applied `split_tape` to the tape, we need to process the
         # results from the broadcast expansion first.
         def total_processing(results):
             return hamiltonian_fn(expanded_fn(results))
