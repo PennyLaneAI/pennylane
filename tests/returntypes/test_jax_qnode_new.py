@@ -2192,7 +2192,7 @@ class TestReturn:
         assert hess[1].shape == (4, 2, 2)
 
 
-shots = [100, (1, 20, 100), (1, (20, 1), 100), (1, (5, 4), 100)]
+shots = [100, (1, 20, 100), (1, (20, 1), 100), ((5, 4), 1, 100)]
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 10e-2}],
