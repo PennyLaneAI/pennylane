@@ -302,10 +302,6 @@ class Pow(SymbolicOp):
             # do we want Pow(base, -1) to be a "more fundamental" op
             raise DecompositionUndefinedError from e
 
-    @property
-    def has_diagonalizing_gates(self):
-        return self.base.has_diagonalizing_gates
-
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 

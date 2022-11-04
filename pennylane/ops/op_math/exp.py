@@ -190,7 +190,14 @@ class Exp(SymbolicOp):
         string_base = pauli_word_to_string(self.base)
         return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
 
+    @property
+    def has_matrix(self):
+        return self.base.has_matrix if self.base.batch_size is None else False
+
     def matrix(self, wire_order=None):
+
+        if self.base.batch_size is not None:
+            raise qml.operation.MatrixUndefinedError
 
         coeff_interface = math.get_interface(self.coeff)
         if coeff_interface == "autograd" and math.requires_grad(self.coeff):
@@ -229,11 +236,6 @@ class Exp(SymbolicOp):
             raise NotImplementedError("Wire order is not implemented for sparse_matrix")
 
         return sparse_expm(self.coeff * self.base.sparse_matrix().tocsc()).asformat(format)
-
-    # pylint: disable=arguments-renamed,invalid-overridden-method
-    @property
-    def has_diagonalizing_gates(self):
-        return self.base.has_diagonalizing_gates
 
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
