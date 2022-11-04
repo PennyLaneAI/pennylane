@@ -4,6 +4,32 @@
 
 <h3>New features since last release</h3>
 
+* Added support to the JAX JIT interface for computing the gradient of QNodes returning a single vector of probabilities
+  or multiple expectation values.
+  [(#3244)](https://github.com/PennyLaneAI/pennylane/pull/3244)
+
+  ```python
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @jax.jit
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  def circuit(x, y):
+      qml.RY(x, wires=0)
+      qml.RY(y, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+  x = jnp.array(1.0, dtype=jnp.float32)
+  y = jnp.array(2.0, dtype=jnp.float32)
+  ```
+
+  ```pycon
+  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
+  (DeviceArray([-0.84147096,  0.3501755 ], dtype=float32),
+   DeviceArray([ 4.474455e-18, -4.912955e-01], dtype=float32))
+  ```
+  Note that this change depends on `jax.pure_callback` which requires JAX version `0.3.17`.
+
 * The `qml.qchem.basis_rotation` function is added to the `qchem` module. This function returns
   grouped coefficients, grouped observables and basis rotation transformation matrices needed to
   construct a qubit Hamiltonian in the rotated basis of molecular orbitals. In this basis, the
@@ -571,6 +597,12 @@ Users can specify the control wires as well as the values to control the operati
   >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
   'torch'
   ```
+  
+* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling 
+  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global 
+  configuration for matplotlib plotting. If no `style` is passed, the function defaults 
+  to plotting with the `black_white` style.
+  [(#3247)](https://github.com/PennyLaneAI/pennylane/pull/3247)
 
 * `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
   instead. There is no longer a static method for this.
