@@ -22,7 +22,6 @@ import contextlib
 import copy
 import functools
 from enum import Enum
-from typing import Generic, TypeVar
 
 import numpy as np
 
@@ -693,83 +692,3 @@ class MeasurementProcess:
         if self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         return new_measurement
-
-
-T = TypeVar("T")
-
-
-class MeasurementValueError(ValueError):
-    """Error raised when an unknown measurement value is being used."""
-
-
-class MeasurementValue(Generic[T]):
-    """A class representing unknown measurement outcomes in the qubit model.
-
-    Measurements on a single qubit in the computational basis are assumed.
-
-    Args:
-        measurement_id (str): The id of the measurement that this object depends on.
-        zero_case (float): the first measurement outcome value
-        one_case (float): the second measurement outcome value
-    """
-
-    __slots__ = ("_depends_on", "_zero_case", "_one_case", "_control_value")
-
-    def __init__(
-        self,
-        measurement_id: str,
-        zero_case: float = 0,
-        one_case: float = 1,
-    ):
-        self._depends_on = measurement_id
-        self._zero_case = zero_case
-        self._one_case = one_case
-        self._control_value = one_case  # By default, control on the one case
-
-    @property
-    def branches(self):
-        """A dictionary representing all the possible outcomes of the MeasurementValue."""
-        branch_dict = {}
-        branch_dict[(0,)] = self._zero_case
-        branch_dict[(1,)] = self._one_case
-        return branch_dict
-
-    def __invert__(self):
-        """Return a copy of the measurement value with an inverted control
-        value."""
-        inverted_self = copy.copy(self)
-        zero = self._zero_case
-        one = self._one_case
-
-        inverted_self._control_value = one if self._control_value == zero else zero
-
-        return inverted_self
-
-    def __eq__(self, control_value):
-        """Allow asserting measurement values."""
-        measurement_outcomes = {self._zero_case, self._one_case}
-
-        if not isinstance(control_value, tuple(type(val) for val in measurement_outcomes)):
-            raise MeasurementValueError(
-                "The equality operator is used to assert measurement outcomes, but got a value "
-                + f"with type {type(control_value)}."
-            )
-
-        if control_value not in measurement_outcomes:
-            raise MeasurementValueError(
-                "Unknown measurement value asserted; the set of possible measurement outcomes is: "
-                + f"{measurement_outcomes}."
-            )
-
-        self._control_value = control_value
-        return self
-
-    @property
-    def control_value(self):
-        """The control value to consider for the measurement outcome."""
-        return self._control_value
-
-    @property
-    def measurements(self):
-        """List of all measurements this MeasurementValue depends on."""
-        return [self._depends_on]
