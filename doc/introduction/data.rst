@@ -106,9 +106,7 @@ To create a dataset, we can do the following:
 >>> observables = [qml.PauliZ(wires=0), qml.PauliX(wires=1)]
 >>> H = qml.Hamiltonian(coeffs, observables)
 >>> energies, _ = np.linalg.eigh(qml.matrix(H)) #Calculate the energies
->>> dataset = qml.data.Dataset(data_name = "Example", 
-...                                    hamiltonian=H,
-...                                    energies=energies)
+>>> dataset = qml.data.Dataset(data_name = "Example", hamiltonian=H, energies=energies)
 >>> dataset.data_name
 "Example"
 >>> dataset.hamiltonian
