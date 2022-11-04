@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane.measurements import Expectation, MeasurementProcess
 from pennylane.ops import SProd, Sum
 from pennylane.tape import QuantumScript
-from pennylane.wires import Wires
 
 
 def hamiltonian_expand(tape: QuantumScript, group=True):
@@ -381,7 +380,7 @@ def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[Mea
     qwc_groups = []
     for m in measurements:
         if len(m.wires) == 0:  # measurement acts on all wires: e.g. qml.counts()
-            qwc_groups.append((Wires([]), [m]))
+            qwc_groups.append((m.wires, [m]))
             continue
 
         op_added = False
