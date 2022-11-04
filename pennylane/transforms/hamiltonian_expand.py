@@ -343,16 +343,14 @@ def sum_expand(tape: QuantumScript, group=True):
         results = []  # [(m_idx, result)]
         for tape_res, tape_idxs in zip(expanded_results, idxs_coeffs):
             if isinstance(tape_idxs[0], tuple):  # tape_res contains only one result
+                if not qml.active_return():  # old returntypes
+                    tape_res = tape_res[0]
                 for idx, coeff in tape_idxs:
-                    results.append((idx, tape_res[0] if coeff is None else coeff * tape_res[0]))
+                    results.append((idx, tape_res if coeff is None else coeff * tape_res))
                 continue
             # tape_res contains multiple results
             for res, idxs in zip(tape_res, tape_idxs):
-                if isinstance(idxs, list):  # result is shared among measurements
-                    for idx, coeff in idxs:
-                        results.append((idx, res if coeff is None else coeff * res))
-                else:
-                    idx, coeff = idxs
+                for idx, coeff in idxs:
                     results.append((idx, res if coeff is None else coeff * res))
 
         # sum results by idx
