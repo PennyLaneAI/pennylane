@@ -17,7 +17,7 @@ PennyLane can be directly imported.
 """
 from importlib import reload
 import types
-from warnings import warn
+import warnings
 import pkg_resources
 
 
@@ -345,11 +345,11 @@ def __getattr__(name):
     """Raise a deprecation warning and still allow `qml.grouping.func_name`
     syntax for one release."""
     if name == "grouping":
-        warn(
+        warnings.warn(
             "The qml.grouping module is deprecated, please use qml.pauli instead.",
             DeprecationWarning,
         )
-        from pennylane import grouping  # pylint:disable=import-outside-toplevel
+        import pennylane.grouping as grouping  # pylint:disable=import-outside-toplevel
 
         return grouping
     raise AttributeError(f"Module {__name__} has no attribute {name}")
