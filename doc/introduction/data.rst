@@ -11,8 +11,7 @@ where the quantum dataset is a collection of `quantum data` obtained from variou
 
 .. note::
 
-    The packages ``zstd`` and ``dill`` are required to use the :mod:`~pennylane.data` module.
-    
+    The packages ``zstd`` and ``dill`` are required to use the :mod:`~pennylane.data` module. 
     These can be installed with ``pip install zstd dill``.
 
 
