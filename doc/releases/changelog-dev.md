@@ -117,7 +117,7 @@
   growing the circuit can be repeated until the circuit gradients converge to zero within a given
   threshold. The adaptive optimizer can be used to implement algorithms such as `ADAPT-VQE`.
 
-  For a detailed breakdown of its implementation, check out [our demo](https://pennylane.ai/qml/demos/tutorial_adaptive_circuits.html)!
+  For a detailed breakdown of its implementation, check out [our demo!](https://pennylane.ai/qml/demos/tutorial_adaptive_circuits.html)
 
 * The `IntegerComparator` arithmetic operation is now available.
 [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
