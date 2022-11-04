@@ -267,18 +267,6 @@ class TestProperties:
         base.data = [x_new2]
         assert op.data == [x_new2]
 
-    def test_private_wires_getter_setter(self, power_method):
-        """Test that we can get and set the private _wires."""
-        wires0 = qml.wires.Wires("a")
-        base = qml.PauliZ(wires0)
-        op: Pow = power_method(base=base, z=-2.1)
-
-        assert op._wires == base._wires == wires0
-
-        wires1 = qml.wires.Wires(1)
-        op._wires = wires1
-        assert op._wires == base._wires == wires1
-
     def test_has_matrix_true(self, power_method):
         """Test `has_matrix` property carries over when base op defines matrix."""
         base = qml.PauliX(0)

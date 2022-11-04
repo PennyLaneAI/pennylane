@@ -32,7 +32,7 @@ from networkx import MultiDiGraph, has_path, weakly_connected_components
 import pennylane as qml
 from pennylane import apply, expval
 from pennylane import numpy as np
-from pennylane.grouping import string_to_pauli_word
+from pennylane.pauli import string_to_pauli_word
 from pennylane.measurements import Expectation, MeasurementProcess, Sample
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
@@ -448,12 +448,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     with QuantumTape() as tape:
         for op in copy_ops:
-            new_wires = Wires([wire_map[w] for w in op.wires])
-
-            # TODO: find a better way to update operation wires
-            op._wires = new_wires
-            apply(op)
-
+            op = qml.map_wires(op, wire_map=wire_map, queue=True)
             if isinstance(op, MeasureNode):
                 assert len(op.wires) == 1
                 measured_wire = op.wires[0]
@@ -481,8 +476,8 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 )
 
             for meas in copy_meas:
+                meas = qml.map_wires(meas, wire_map=wire_map)
                 obs = meas.obs
-                obs._wires = Wires([wire_map[w] for w in obs.wires])
                 observables.append(obs)
 
                 if return_type is Sample:
@@ -630,7 +625,7 @@ def expand_fragment_tape(
 
     n_meas = len(measure_nodes)
     if n_meas >= 1:
-        measure_combinations = qml.grouping.partition_pauli_group(len(measure_nodes))
+        measure_combinations = qml.pauli.partition_pauli_group(len(measure_nodes))
     else:
         measure_combinations = [[""]]
 
@@ -1332,7 +1327,7 @@ def cut_circuit_mc(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
+    fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
 
     configurations, settings = expand_fragment_tapes_mc(
         fragment_tapes, communication_graph, shots=shots
@@ -1577,7 +1572,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
     1. Reshapes ``results`` into the intermediate shape ``(4,) * n_prep + (4**n_meas,)``
     2. Shuffles the final axis to follow the standard product over measurement settings. E.g., for
       ``n_meas = 2`` the standard product is: II, IX, IY, IZ, XI, ..., ZY, ZZ while the input order
-      will be the result of ``qml.grouping.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
+      will be the result of ``qml.pauli.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
       YY.
     3. Reshapes into the final target shape ``(4,) * (n_prep + n_meas)``
     4. Performs a change of basis for the preparation indices (the first ``n_prep`` indices) from
@@ -1599,7 +1594,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
     intermediate_tensor = qml.math.reshape(results, intermediate_shape)
 
     # Step 2
-    grouped = qml.grouping.partition_pauli_group(n_meas)
+    grouped = qml.pauli.partition_pauli_group(n_meas)
     grouped_flat = [term for group in grouped for term in group]
     order = qml.math.argsort(grouped_flat)
 
@@ -1801,7 +1796,7 @@ def cut_circuit(
 
             qml.CZ(wires=[1, 2])
 
-            return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+            return qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
     Executing ``circuit`` will run multiple configurations of the :math:`2`-qubit fragments which
     are then postprocessed to give the result of the original circuit:
@@ -1834,7 +1829,7 @@ def cut_circuit(
 
             qml.CZ(wires=[1, 2])
 
-            return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+            return qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
     >>> x = np.array(0.531, requires_grad=True)
     >>> circuit(x)
@@ -1882,7 +1877,7 @@ def cut_circuit(
 
                 qml.CZ(wires=[1, 2])
 
-                qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+                qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
         >>> print(qml.drawer.tape_text(tape))
         0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
@@ -1916,7 +1911,7 @@ def cut_circuit(
 
                 qml.CZ(wires=[1, 2])
 
-                qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+                qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
                 graph = qml.transforms.qcut.tape_to_graph(uncut_tape),
@@ -2061,7 +2056,7 @@ def cut_circuit(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
+    fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
     configurations = []
@@ -2194,6 +2189,12 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
      0: ──RX(0.5)──╭●──╭┤ ⟨Z ⊗ Z⟩
      1: ──RY(0.6)──╰X──╰┤ ⟨Z ⊗ Z⟩
     """
+    warnings.warn(
+        "The method remap_tape_wires is deprecated. Use "
+        "qml.map_wires(tape, dict(zip(tape.wires, wires))) instead.",
+        UserWarning,
+    )
+
     if len(tape.wires) > len(wires):
         raise ValueError(
             f"Attempting to run a {len(tape.wires)}-wire circuit on a "
@@ -2207,20 +2208,9 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
 
     with QuantumTape() as new_tape:
         for op in copy_ops:
-            new_wires = Wires([wire_map[w] for w in op.wires])
-            op._wires = new_wires
-            apply(op)
+            qml.map_wires(op, wire_map=wire_map, queue=True)
         for meas in copy_meas:
-            obs = meas.obs
-
-            if isinstance(obs, Tensor):
-                for obs in obs.obs:
-                    new_wires = Wires([wire_map[w] for w in obs.wires])
-                    obs._wires = new_wires
-            else:
-                new_wires = Wires([wire_map[w] for w in obs.wires])
-                obs._wires = new_wires
-            apply(meas)
+            qml.map_wires(meas, wire_map=wire_map, queue=True)
 
     return new_tape
 

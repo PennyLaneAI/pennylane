@@ -36,7 +36,7 @@ def mutual_info(wires0, wires1, log_base=None):
     Args:
         wires0 (Sequence[int] or int): the wires of the first subsystem
         wires1 (Sequence[int] or int): the wires of the second subsystem
-        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
+        log_base (float): Base for the logarithm.
 
     **Example:**
 

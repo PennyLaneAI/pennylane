@@ -26,21 +26,22 @@ devices with autodifferentiation support.
 import inspect
 import warnings
 from contextlib import _GeneratorContextManager
-from functools import wraps
+from functools import wraps, partial
 from typing import Callable, Sequence
 
 from cachetools import LRUCache
 
 import pennylane as qml
-from pennylane import Device
 from pennylane.tape import QuantumTape
 
 from .set_shots import set_shots
 
 INTERFACE_MAP = {
     None: "Numpy",
+    "auto": "auto",
     "autograd": "autograd",
     "numpy": "autograd",
+    "scipy": "numpy",
     "jax": "jax",
     "jax-jit": "jax",
     "jax-python": "jax",
@@ -229,7 +230,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
 def _execute_new(
     tapes: Sequence[QuantumTape],
-    device: Device,
+    device,
     gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
@@ -255,7 +256,7 @@ def _execute_new(
             for the gradient (if supported).
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
-            Available options include ``autograd``, ``torch``, ``tf``, and ``jax``.
+            Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
         mode (str): Whether the gradients should be computed on the forward
             pass (``forward``) or the backward pass (``backward``). Only applies
             if the device is queried for the gradient; gradient transform
@@ -341,6 +342,12 @@ def _execute_new(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+    if interface == "auto":
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = qml.math.get_interface(*params)
+
     gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
@@ -431,36 +438,42 @@ def _execute_new(
     try:
         if mapped_interface == "autograd":
             from .autograd import execute as _execute
+
         elif mapped_interface == "tf":
             # TODO: remove pragmas when TF is supported
             import tensorflow as tf  # pragma: no cover
 
             if not tf.executing_eagerly() or "autograph" in interface:  # pragma: no cover
                 from .tensorflow_autograph import execute as _execute  # pragma: no cover
+
+                _execute = partial(_execute, mode=_mode)
+
             else:
                 from .tensorflow import execute as _execute  # pragma: no cover
+
         elif mapped_interface == "torch":
             # TODO: remove pragmas when Torch is supported
             from .torch import execute as _execute  # pragma: no cover
-        else:  # is jax
-            # TODO: remove pragmas when Jax is supported
-            _execute = _get_jax_execute_fn(interface, tapes)  # pragma: no cover
+
+        elif mapped_interface == "jax":
+            _execute = _get_jax_execute_fn(interface, tapes)
+
+        res = _execute(
+            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+        )
+
     except ImportError as e:
         raise qml.QuantumFunctionError(
             f"{mapped_interface} not found. Please install the latest "
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
 
-    res = _execute(
-        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
-    )
-
     return batch_fn(res)
 
 
 def execute(
     tapes: Sequence[QuantumTape],
-    device: Device,
+    device,
     gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
@@ -485,7 +498,7 @@ def execute(
             for the gradient (if supported).
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
-            Available options include ``autograd``, ``torch``, ``tf``, and ``jax``.
+            Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
         mode (str): Whether the gradients should be computed on the forward
             pass (``forward``) or the backward pass (``backward``). Only applies
             if the device is queried for the gradient; gradient transform
@@ -587,6 +600,12 @@ def execute(
             max_expansion=max_expansion,
             device_batch_transform=device_batch_transform,
         )
+
+    if interface == "auto":
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = qml.math.get_interface(*params)
 
     gradient_kwargs = gradient_kwargs or {}
 
@@ -717,5 +736,8 @@ def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
     if interface == "jax-jit":
         from .jax_jit import execute as _execute
     else:
-        from .jax import execute as _execute
+        if qml.active_return():
+            from .jax import execute_new as _execute
+        else:
+            from .jax import execute as _execute
     return _execute

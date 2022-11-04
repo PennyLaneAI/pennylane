@@ -121,13 +121,22 @@ class MeasurementProcess:
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+        log_base (float): Base for the logarithm.
     """
 
     # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-arguments
 
     def __init__(
-        self, return_type, obs: Operator = None, wires=None, eigvals=None, id=None, log_base=None
+        self,
+        return_type: ObservableReturnTypes,
+        obs: Operator = None,
+        wires=None,
+        eigvals=None,
+        id=None,
+        log_base=None,
     ):
         self.return_type = return_type
         self.obs = obs
@@ -564,6 +573,17 @@ class MeasurementProcess:
         # `MeasurementProcess` within `expand` should never fail with the given parameters.
         return False if self.obs is None else self.obs.has_diagonalizing_gates
 
+    @property
+    def samples_computational_basis(self):
+        r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
+        computational basis states.
+        """
+        return (
+            self.return_type
+            in (qml.measurements.AllCounts, qml.measurements.Counts, qml.measurements.Sample)
+            and self.obs is None
+        )
+
     def expand(self):
         """Expand the measurement of an observable to a unitary
         rotation and a measurement in the computational basis.
@@ -657,6 +677,22 @@ class MeasurementProcess:
             return self
 
         return MeasurementProcess(return_type=self.return_type, obs=self.obs.simplify())
+
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current measurement process with its wires changed according to
+        the given wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .MeasurementProcess: new measurement process
+        """
+        new_measurement = copy.copy(self)
+        new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        if self.obs is not None:
+            new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
+        return new_measurement
 
 
 T = TypeVar("T")
