@@ -1094,15 +1094,14 @@ class Operator(abc.ABC):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decomposition()
+            if getattr(self, "inverse", False):
+                qml.adjoint(self.decomposition, lazy=False)()
+            else:
+                self.decomposition()
 
         if not self.data:
             # original operation has no trainable parameters
             tape.trainable_params = {}
-
-        # the inverse attribute can be defined by subclasses
-        if getattr(self, "inverse", False):
-            tape.inv()
 
         return tape
 
