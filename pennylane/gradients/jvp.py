@@ -19,6 +19,7 @@ from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
+from pennylane._device import _get_num_copies
 
 
 def _convert(jac, tangent):
@@ -232,7 +233,7 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
             return compute_jvp_single(tangent, jac)
 
         # The jacobian is calculated for shot vectors
-        len_shot_vec = _shots_copies(shots)
+        len_shot_vec = _get_num_copies(shots)
         jvps = []
         if multi_m:
             for i in range(len_shot_vec):
@@ -322,12 +323,3 @@ def _single_measurement_zero(m, tangent):
     res = qml.math.convert_like(np.zeros(dim), tangent)
     res = qml.math.cast_like(res, tangent)
     return res
-
-
-def _shots_copies(shot_vector):
-    """Helper function to determine the number of copies from a shot vector."""
-    if isinstance(shot_vector[0], tuple):
-        len_shot_vec = sum(shot_v.copies for shot_v in shot_vector)
-    else:
-        len_shot_vec = len(shot_vector)
-    return len_shot_vec

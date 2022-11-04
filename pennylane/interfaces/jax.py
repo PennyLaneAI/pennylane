@@ -524,7 +524,8 @@ def _execute_fwd_new(
 ):
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
-    provided. This function does not allow multiple derivatives. It does not support shot vectors."""
+    provided. This function does not allow multiple derivatives. It currently does not support shot vectors
+    because adjoint jacobian for default qubit does not support it.."""
 
     # pylint: disable=unused-variable
     @jax.custom_jvp
@@ -585,6 +586,8 @@ def _copy_tape(t, a):
 
 
 def _to_jax(res):
+    """From a list of tapes results (each result is either a np.array or tuple), transform it to a list of Jax
+    results (structure stay the same)."""
     res_ = []
     for r in res:
         if not isinstance(r, tuple):
@@ -601,5 +604,6 @@ def _to_jax(res):
 
 
 def _to_jax_shot_vector(res):
+    """From a list of tape results with shot vectors (all results are tuples), transform it to a list of Jax results."""
     res_ = [tuple(_to_jax([r_])[0] for r_ in r) for r in res]
     return res_

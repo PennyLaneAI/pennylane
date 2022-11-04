@@ -24,6 +24,7 @@ import numpy as np
 from scipy.special import factorial
 
 import pennylane as qml
+from pennylane._device import _get_num_copies
 
 from .gradient_transform import (
     gradient_transform,
@@ -32,7 +33,6 @@ from .gradient_transform import (
     gradient_analysis,
 )
 from .general_shift_rules import generate_shifted_tapes
-from .jvp import _shots_copies
 
 
 @functools.lru_cache(maxsize=None)
@@ -162,7 +162,7 @@ def _no_trainable_grad_new(tape, shots=None):
         "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
     )
     if isinstance(shots, Sequence):
-        len_shot_vec = _shots_copies(shots)
+        len_shot_vec = _get_num_copies(shots)
         if len(tape.measurements) == 1:
             return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len_shot_vec))
         return [], lambda _: tuple(
@@ -195,7 +195,7 @@ def _all_zero_grad_new(tape, shots=None):
         list_zeros.append(sub_list_zeros)
 
     if isinstance(shots, Sequence):
-        len_shot_vec = _shots_copies(shots)
+        len_shot_vec = _get_num_copies(shots)
         if len(tape.measurements) == 1:
             return [], lambda _: tuple(list_zeros[0] for _ in range(len_shot_vec))
         return [], lambda _: tuple(tuple(list_zeros) for _ in range(len_shot_vec))
@@ -409,7 +409,7 @@ def _finite_diff_new(
             grads_tuple = _single_shot_batch_result(results)
         else:
             grads_tuple = []
-            len_shot_vec = _shots_copies(shots)
+            len_shot_vec = _get_num_copies(shots)
             for idx in range(len_shot_vec):
                 res = [tape_res[idx] for tape_res in results]
                 g_tuple = _single_shot_batch_result(res)

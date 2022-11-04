@@ -24,6 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import MutualInfo, State, VnEntropy
+from pennylane._device import _get_num_copies
 
 from .finite_difference import finite_diff, _all_zero_grad_new, _no_trainable_grad_new
 from .general_shift_rules import (
@@ -38,7 +39,6 @@ from .gradient_transform import (
     gradient_analysis,
     gradient_transform,
 )
-from .jvp import _shots_copies
 
 NONINVOLUTORY_OBS = {
     "Hermitian": lambda obs: obs.__class__(obs.matrix() @ obs.matrix(), wires=obs.wires),
@@ -193,7 +193,7 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
         if not shot_vector:
             return _single_meas_grad(res, coeffs, unshifted_coeff, r0)
         g = []
-        len_shot_vec = _shots_copies(shots)
+        len_shot_vec = _get_num_copies(shots)
         # Res has order of axes:
         # 1. Number of parameters
         # 2. Shot vector
@@ -207,7 +207,7 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
     if not shot_vector:
         return _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
 
-    len_shot_vec = _shots_copies(shots)
+    len_shot_vec = _get_num_copies(shots)
     # Res has order of axes:
     # 1. Number of parameters
     # 2. Shot vector
@@ -548,7 +548,7 @@ def _expval_param_shift_tuple(
             return grads[0]
 
         num_params = len(tape.trainable_params)
-        len_shot_vec = _shots_copies(shots) if shot_vector else None
+        len_shot_vec = _get_num_copies(shots) if shot_vector else None
         if single_measure and shot_vector:
             return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
         if not single_measure:
@@ -1503,7 +1503,7 @@ def _param_shift_new(
                 supported_grads = fn(supported_res)
                 return _single_shot_batch_grad(unsupported_grads, supported_grads)
 
-            len_shot_vec = _shots_copies(shots)
+            len_shot_vec = _get_num_copies(shots)
 
             supported_grads = fn(supported_res)
             unsupported_grads = fallback_proc_fn(unsupported_res)

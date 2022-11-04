@@ -2203,7 +2203,7 @@ qubit_device_and_diff_method = [
 @pytest.mark.parametrize("shots", shots)
 @pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
 class TestReturnWithShotVectors:
-    """Class to test the shape of the Grad/Jacobian/Hessian with different return types and shoot vectors."""
+    """Class to test the shape of the Grad/Jacobian/Hessian with different return types and shot vectors."""
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jac_single_measurement_param(
@@ -2354,6 +2354,7 @@ class TestReturnWithShotVectors:
 
         if isinstance(shots, int):
             assert isinstance(jac, tuple)
+            assert len(jac) == 2
 
             assert isinstance(jac[0], jax.numpy.ndarray)
             assert jac[0].shape == (4,)
@@ -2427,6 +2428,7 @@ class TestReturnWithShotVectors:
 
         if isinstance(shots, int):
             assert isinstance(jac, tuple)
+            assert len(jac) == 2
 
             assert isinstance(jac[0], tuple)
             assert len(jac[0]) == 2
@@ -2753,11 +2755,6 @@ class TestReturnWithShotVectors:
 
     def test_hessian_expval_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = jax.numpy.array(0.1)
@@ -2813,11 +2810,6 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots
     ):
         """The hessian of single measurement with a multiple params array return a single array."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         params = jax.numpy.array([0.1, 0.2])
@@ -2846,11 +2838,6 @@ class TestReturnWithShotVectors:
 
     def test_hessian_var_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = jax.numpy.array(0.1)
@@ -2904,11 +2891,6 @@ class TestReturnWithShotVectors:
 
     def test_hessian_var_multiple_param_array(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of single measurement with a multiple params array return a single array."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         params = jax.numpy.array([0.1, 0.2])
@@ -2939,11 +2921,6 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = jax.numpy.array(0.1)
@@ -3035,11 +3012,6 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
@@ -3083,11 +3055,6 @@ class TestReturnWithShotVectors:
 
     def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = qml.numpy.array(0.1)
@@ -3179,11 +3146,6 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         params = jax.numpy.array([0.1, 0.2])
@@ -3228,6 +3190,8 @@ shots = [(1, 20, 100), (1, (20, 1), 100), (1, (5, 4), 100)]
 
 @pytest.mark.parametrize("shots", shots)
 class TestReturnShotVectorsDevice:
+    """Test for shot vectors with device method adjoint_jacobian."""
+
     def test_jac_adjoint_fwd_error(self, shots):
         """Test that an error is raised for adjoint forward."""
         dev = qml.device("default.qubit", wires=1, shots=shots)
@@ -3280,6 +3244,8 @@ shots = [(1000000, 900000, 800000), (1000000, (900000, 2))]
 @pytest.mark.parametrize("shots", shots)
 @pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
 class TestReturnShotVectorIntegration:
+    """Tests for the integration of shots with the Jax interface."""
+
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_single_expectation_value(
         self, dev_name, diff_method, gradient_kwargs, shots, jacobian
