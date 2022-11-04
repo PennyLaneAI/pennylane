@@ -101,12 +101,13 @@ Creating Custom Datasets
 The functionality in :mod:`~pennylane.data` also includes creating and reading custom-made datasets.
 To create a dataset, we can do the following:
 
->>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], 
-...                                       observables=[qml.PauliZ(wires=0),qml.PauliX(wires=1)])
+>>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], observables=[
+...     qml.PauliZ(wires=0),qml.PauliX(wires=1)])
 >>> example_energies, _ = np.linalg.eigh(
 ...     qml.matrix(example_hamiltonian)) #Calculate the energies
 >>> example_dataset = qml.data.Dataset(data_name = 'Example', 
-...                                    hamiltonian=example_hamiltonian,energies=example_energies)
+...                                    hamiltonian=example_hamiltonian,
+...                                    energies=example_energies)
 >>> example_dataset.data_name
 'Example'
 >>> example_dataset.hamiltonian
