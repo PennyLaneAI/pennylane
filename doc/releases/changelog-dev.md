@@ -656,6 +656,12 @@ Users can specify the control wires as well as the values to control the operati
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
 
+* Fixed a bug where `qml.BasisStatePreparation` was not jit-compilable with JAX.
+  [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
+
+* Fixed a bug where `qml.BasisEmbedding` was not jit-compilable with JAX.
+  [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
+  
 * Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
   [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)
 
