@@ -54,7 +54,6 @@ def test_raise_version_error(package, version, should_raise, monkeypatch):
                 execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
         else:
             execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
-            assert True
 
 
 @pytest.mark.parametrize("interface", ["jax-jit", "jax-python", "auto"])
