@@ -100,7 +100,7 @@ def _process_shot_sequence(shot_list):
 
 def _get_num_copies(shot_vector):
     """Helper function to determine the number of copies from a shot vector Sequence(int) or Sequence(ShotTuple)."""
-    if isinstance(shot_vector[0], ShotTuple):
+    if any(isinstance(shot_comp, ShotTuple) for shot_comp in shot_vector):
         len_shot_vec = sum(shot_v.copies for shot_v in shot_vector)
     else:
         len_shot_vec = len(shot_vector)
