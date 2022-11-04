@@ -261,6 +261,7 @@ with QuantumTape() as s_tape1:
     S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1)))
     qml.expval(S1)
     qml.expval(S1)
+    qml.probs(wires=[0, 1])
 
 with QuantumTape() as s_tape2:
     qml.Hadamard(0)
@@ -275,6 +276,7 @@ with QuantumTape() as s_tape2:
         qml.prod(qml.PauliZ(0), qml.PauliX(1)),
     )
     qml.expval(S2)
+    qml.probs(op=qml.PauliZ(0))
     qml.expval(S2)
 
 S3 = qml.op_sum(
@@ -284,8 +286,10 @@ S3 = qml.op_sum(
 with QuantumTape() as s_tape3:
     qml.PauliX(0)
     qml.expval(S3)
+    qml.probs(wires=[1, 3])
     qml.expval(qml.PauliX(1))
     qml.expval(S3)
+    qml.probs(op=qml.PauliY(0))
 
 
 S4 = (
@@ -309,7 +313,12 @@ with QuantumTape() as s_tape4:
     qml.expval(qml.PauliX(2))
 
 SUM_TAPES = [s_tape1, s_tape2, s_tape3, s_tape4]
-SUM_OUTPUTS = [[-1.5, -1.5], [-6, -6], [-1.5, 0.0, -1.5], [-8, 0, -8, 0]]
+SUM_OUTPUTS = [
+    [-1.5, -1.5, np.array([0.0, 0.0, 1.0, 0.0])],
+    [-6, np.array([0.5, 0.5]), -6],
+    [-1.5, np.array([1.0, 0.0, 0.0, 0.0]), 0.0, -1.5, np.array([0.5, 0.5])],
+    [-8, 0, -8, 0],
+]
 
 
 class TestSumExpand:
@@ -323,14 +332,24 @@ class TestSumExpand:
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
-        assert all(np.isclose(o, e) for o, e in zip(output, expval))
+        for o, e in zip(output, expval):
+            equal = np.isclose(o, e)
+            if np.shape(equal) == ():
+                assert equal
+            else:
+                assert all(equal)
 
         qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = sum_expand(qs)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
-        assert all(np.isclose(o, e) for o, e in zip(output, expval))
+        for o, e in zip(output, expval):
+            equal = np.isclose(o, e)
+            if np.shape(equal) == ():
+                assert equal
+            else:
+                assert all(equal)
 
     @pytest.mark.parametrize(("tape", "output"), zip(SUM_TAPES, SUM_OUTPUTS))
     def test_sums_no_grouping(self, tape, output):
@@ -341,14 +360,23 @@ class TestSumExpand:
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
-        assert all(np.isclose(o, e) for o, e in zip(output, expval))
-
+        for o, e in zip(output, expval):
+            equal = np.isclose(o, e)
+            if np.shape(equal) == ():
+                assert equal
+            else:
+                assert all(equal)
         qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = sum_expand(qs, group=False)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
-        assert all(np.isclose(o, e) for o, e in zip(output, expval))
+        for o, e in zip(output, expval):
+            equal = np.isclose(o, e)
+            if np.shape(equal) == ():
+                assert equal
+            else:
+                assert all(equal)
 
     def test_grouping(self):
         """Test the grouping functionality"""
