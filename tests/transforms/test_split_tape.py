@@ -106,8 +106,8 @@ with QuantumTape() as tape4:
     qml.expval(qml.PauliX(2))
 
 
-HAM_TAPES = [tape1, tape2, tape3, tape4]
-HAM_OUTPUTS = [
+TAPES = [tape1, tape2, tape3, tape4]
+OUTPUTS = [
     [
         -1.5,
         -1.5,
@@ -141,7 +141,7 @@ HAM_OUTPUTS = [
 class TestSplitTape:
     """Tests for the split_tape transform"""
 
-    @pytest.mark.parametrize(("tape", "output"), zip(HAM_TAPES, HAM_OUTPUTS))
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_tapes(self, tape, output):
         """Tests that the split_tape transform returns the correct value"""
 
@@ -158,7 +158,7 @@ class TestSplitTape:
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
-    @pytest.mark.parametrize(("tape", "output"), zip(HAM_TAPES, HAM_OUTPUTS))
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_no_grouping(self, tape, output):
         """Tests that the split_tape transform returns the correct value
         if we switch grouping off"""
