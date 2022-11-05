@@ -59,6 +59,7 @@ from pennylane.measurements import (
     var,
     vn_entropy,
     mutual_info,
+    vn_entanglement_entropy,
     classical_shadow,
     shadow_expval,
 )

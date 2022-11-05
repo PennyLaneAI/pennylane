@@ -35,6 +35,7 @@ from pennylane.measurements import (
     Expectation,
     MeasurementProcess,
     MutualInfo,
+    EntanglementEntropy,
     Probability,
     Sample,
     Shadow,
@@ -828,6 +829,18 @@ class QubitDevice(Device):
                     self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
                 )
 
+            elif obs.return_type is EntanglementEntropy:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the entanglement entropy is not supported when using custom wire labels"
+                    )
+                wires0, wires1 = obs.raw_wires
+                results.append(
+                    self.vn_entanglement_entropy(
+                        wires0=wires0, wires1=wires1, log_base=obs.log_base
+                    )
+                )
+
             elif obs.return_type is Shadow:
                 if len(observables) > 1:
                     raise qml.QuantumFunctionError(
@@ -1235,6 +1248,40 @@ class QubitDevice(Device):
         wires1 = wires1.tolist()
 
         return qml.math.mutual_info(
+            state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
+        )
+
+    def vn_entanglement_entropy(self, wires0, wires1, log_base):
+        r"""Returns the entanglement entropy prior to the measurement:
+
+        .. math::
+
+            S(\rho_A) = -Tr[\rho_A log \rho_A] = -Tr[\rho_B log \rho_B] = S(\rho_B)
+
+        where :math:`S` is the von Neumann entropy; :math:`\rho_A = Tr_B[\rho_{AB}]` and
+        :math:`\rho_B = Tr_A[\rho_{AB}]` are the reduced density matrices for each partition.
+
+        Args:
+            wires0 (Wires): wires of the first subsystem
+            wires1 (Wires): wires of the second subsystem
+            log_base (float): base to use in the logarithm
+
+        Returns:
+            float: the von Neumann entanglement entropy
+        """
+
+        try:
+            state = self.access_state()
+        except qml.QuantumFunctionError as e:  # pragma: no cover
+            raise NotImplementedError(
+                f"Cannot compute the entanglement entropy with device {self.name} that is not "
+                f"capable of returning the state. "
+            ) from e
+
+        wires0 = wires0.tolist()
+        wires1 = wires1.tolist()
+
+        return qml.math.vn_entanglement_entropy(
             state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
         )
 
