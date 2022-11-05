@@ -24,6 +24,7 @@ import numpy as np
 from scipy.special import factorial
 
 import pennylane as qml
+from pennylane._device import _get_num_copies
 
 from .gradient_transform import (
     gradient_transform,
@@ -161,7 +162,7 @@ def _no_trainable_grad_new(tape, shots=None):
         "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
     )
     if isinstance(shots, Sequence):
-        len_shot_vec = len(shots)
+        len_shot_vec = _get_num_copies(shots)
         if len(tape.measurements) == 1:
             return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len_shot_vec))
         return [], lambda _: tuple(
@@ -194,7 +195,7 @@ def _all_zero_grad_new(tape, shots=None):
         list_zeros.append(sub_list_zeros)
 
     if isinstance(shots, Sequence):
-        len_shot_vec = len(shots)
+        len_shot_vec = _get_num_copies(shots)
         if len(tape.measurements) == 1:
             return [], lambda _: tuple(list_zeros[0] for _ in range(len_shot_vec))
         return [], lambda _: tuple(tuple(list_zeros) for _ in range(len_shot_vec))
@@ -243,7 +244,8 @@ def _finite_diff_new(
             the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
-        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
+        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes outputted by this
+
             transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
             to the transform about the device shots and helps in determining if a shot sequence was used to define the
             device shots for the new return types output system.
@@ -264,7 +266,7 @@ def _finite_diff_new(
     #TODO: Add example for new return type.
     """
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape)
+        return _no_trainable_grad_new(tape, shots)
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
@@ -274,7 +276,7 @@ def _finite_diff_new(
         diff_methods = ["F" for i in tape.trainable_params]
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape)
+        return _all_zero_grad_new(tape, shots)
 
     gradient_tapes = []
     shapes = []
@@ -408,8 +410,8 @@ def _finite_diff_new(
             grads_tuple = _single_shot_batch_result(results)
         else:
             grads_tuple = []
-            shot_vec_len = len(shots)
-            for idx in range(shot_vec_len):
+            len_shot_vec = _get_num_copies(shots)
+            for idx in range(len_shot_vec):
                 res = [tape_res[idx] for tape_res in results]
                 g_tuple = _single_shot_batch_result(res)
                 grads_tuple.append(g_tuple)
