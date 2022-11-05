@@ -6,67 +6,34 @@
 
 <h4>An all-new data module</h4>
 
-A brand new `data` module is available, allowing users to download, load, and create quantum datasets.
+* A brand new `data` module is available, allowing users to download, load, and create quantum datasets.
 
-* Datasets hosted on the cloud can be downloaded with the `qml.data.load` function as follows:
+  Datasets are hosted on Xanadu Cloud (TODO: link?) and can be downloaded by using `qml.data.load()`:
 
   ```pycon
-  >>> H2_dataset = qml.data.load(data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0")
+  >>> H2_dataset = qml.data.load(
+    data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0"
+  )
   >>> print(H2_dataset)
   [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
   ```
 
-* To see what datasets are available for download, we can call `qml.data.list_datasets`:
+  - Datasets available to be downloaded can be listed with `qml.data.list_datasets()`. 
 
-  ```pycon
-  >>> available_data = qml.data.list_datasets()
-  >>> available_data.keys()
-  dict_keys(['qspin', 'qchem'])
-  >>> available_data['qchem'].keys()
-  dict_keys(['HF', 'LiH', ...])
-  >>> available_data['qchem']['H2'].keys()
-  dict_keys(['STO-3G'])
-  >>> print(available_data['qchem']['H2']['STO-3G'])
-  ['2.35', '1.75', '0.6', '1.85', ...]
-  ```
+  - To download or load only specific properties of a dataset, we can specify the desired properties in `qml.data.load` with the `attributes` keyword argument:
 
-* To download or load only specific properties of a dataset, we can specify the desired attributes in qml.data.load:
+    ```pycon
+    >>> H2_hamiltonian = qml.data.load(
+      data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0", 
+      attributes=["molecule", "hamiltonian"]
+    )[0]
+    >>> H2_hamiltonian.hamiltonian
+    <Hamiltonian: terms=15, wires=[0, 1, 2, 3]>
+    ```
 
-  ```pycon
-  >>> H2_hamiltonian = qml.data.load(
-    data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0", 
-    attributes=["molecule", "hamiltonian"]
-  )[0]
-  >>> H2_hamiltonian.hamiltonian
-  <Hamiltonian: terms=15, wires=[0, 1, 2, 3]>
-  ```
+    The available attributes can be found using `qml.data.list_attributes()`:
 
-* Properties of datasets can be downloaded without downloading the full dataset by using the `attributes` argument:
-
-  ```pycon
-  >>> H2_partial = qml.data.load(
-    data_name='qchem',molname='H2', basis='STO-3G', bondlength=1.0, 
-    attributes=['molecule','fci_energy']
-  )[0]
-  >>> H2_partial.molecule
-  <pennylane.qchem.molecule.Molecule at 0x7f56c9d78e50>
-  >>> H2_partial.fci_energy
-  -1.1011498981604342
-  ```
-
-* The available attributes can be found using `qml.data.list_attributes`:
-
-  ```pycon
-  >>> qml.data.list_attributes(data_name='qchem')
-  ['molecule',
-  'hamiltonian',
-  'wire_map',
-  ...
-  'vqe_params',
-  'vqe_circuit']
-  ```
-
-* To select data interactively by following a series of prompts, we can use qml.data.load_interactive as follows:
+  - To select data interactively, we can use `qml.data.load_interactive`:
 
   ```pycon
   >>> qml.data.load_interactive()
@@ -96,18 +63,18 @@ A brand new `data` module is available, allowing users to download, load, and cr
         <pennylane.data.dataset.Dataset object at 0x10157ab50>
   ```
 
-* Once loaded, properties of a dataset can be accessed easily as follows:
+  - Once a dataset is loaded, its properties can be accessed as follows:
 
-  ```pycon
-  >>> dev = qml.device('default.qubit',wires=H2_dataset[0].hamiltonian.wires)
-  >>> @qml.qnode(dev)
-  ... def circuit():
-  ...     return qml.expval(H2_dataset[0].hamiltonian)
-  >>> print(circuit())
-  2.173913043478261
-  ```
+    ```pycon
+    >>> dev = qml.device('default.qubit',wires=H2_dataset[0].hamiltonian.wires)
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     return qml.expval(H2_dataset[0].hamiltonian)
+    >>> print(circuit())
+    2.173913043478261
+    ```
 
-* It is also possible to create custom datasets with `qml.data.Dataset`:
+  It is also possible to create custom datasets with `qml.data.Dataset`:
 
   ```pycon
   >>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], observables=[qml.PauliZ(wires=0),qml.PauliX(wires=1)])
@@ -124,7 +91,7 @@ A brand new `data` module is available, allowing users to download, load, and cr
   array([-1.5, -0.5,  0.5,  1.5])
   ```
 
-* These custom datasets can be saved and read with the `Dataset.write` and `Dataset.read` functions as follows:
+  Custom datasets can be saved and read with the `qml.data.Dataset.write()` and `qml.data.Dataset.read()` methods.
 
   ```pycon
   >>> example_dataset.write('./path/to/dataset.dat')
