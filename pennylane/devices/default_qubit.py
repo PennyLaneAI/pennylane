@@ -533,6 +533,7 @@ class DefaultQubit(QubitDevice):
         if observable.name in ("Hamiltonian", "SparseHamiltonian"):
             assert self.shots is None, f"{observable.name} must be used with shots=None"
 
+            self.map_wires(observable.wires)
             backprop_mode = (
                 not isinstance(self.state, np.ndarray)
                 or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)

@@ -24,7 +24,7 @@ from urllib.parse import quote
 import requests
 from pennylane.data.dataset import Dataset
 
-S3_URL = "https://xanadu-quantum-datasets-test.s3.amazonaws.com"
+S3_URL = "https://xanadu-quantum-datasets.s3.amazonaws.com"
 FOLDERMAP_URL = os.path.join(S3_URL, "foldermap.json")
 DATA_STRUCT_URL = os.path.join(S3_URL, "data_struct.json")
 
@@ -208,7 +208,7 @@ def _generate_folders(node, folders):
 def load(
     data_name, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
 ):
-    r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object.
+    r"""Downloads the data if it is not already present in the directory and return it to user as a :class:`~pennylane.data.Dataset` object.
 
     Args:
         data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
@@ -221,7 +221,7 @@ def load(
             Note that these are not optional
 
     Returns:
-        list[Dataset]
+        list[:class:`~pennylane.data.Dataset`]
     """
 
     _ = lazy
@@ -270,32 +270,33 @@ def _direc_to_dict(path):
 
 
 def list_datasets(path=None):
-    r"""Returns a list of datasets.
+    r"""Returns a dictionary of the available datasets.
 
     Return:
         dict: Nested dictionary representing the directory structure of the hosted datasets.
 
     **Example:**
 
-    Note that the available data will differ from this example as we add more datasets.
-    For updates on available data see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
+    Note that the results of calling this function may differ from this example as more datasets
+    are added. For updates on available data see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
 
     .. code-block :: pycon
 
         >>> qml.data.list_datasets()
-        {
-            'qchem': {
-                'H2': {
-                    '6-31G': ['0.46', '1.16', '0.58'],
-                    'STO-3G': ['0.46', '1.05']
-                },
-                'HeH+': {'STO-3G': ['0.9', '0.74', '0.6', '0.8']}
-            },
-            'qspin': {
-                'Heisenberg': {'closed': {'chain': ['1x4']}},
-                'Ising': {'open': {'chain': ['1x8']}}
-            }
-        }
+        {'qchem': {'H2': {'6-31G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1'],
+                          'STO-3G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1']},
+                   'HeH+': {'6-31G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1'],
+                            'STO-3G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1']},
+                   'LiH': {'STO-3G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1']},
+                   'OH-': {'STO-3G': ['0.5', '0.54', '0.58', ... '0.94', '0.98', '1.02']}},
+        'qspin': {'Heisenberg': {'closed': {'chain': ['1x16', '1x4', '1x8'],
+                                            'rectangular': ['2x2', '2x4', '2x8', '4x4']},
+                                 'open': {'chain': ['1x16', '1x4', '1x8'],
+                                        'rectangular': ['2x2', '2x4', '2x8', '4x4']}},
+                  'Ising': {'closed': {'chain': ['1x16', '1x4', '1x8'],
+                                        'rectangular': ['2x2', '2x4', '2x8', '4x4']},
+                            'open': {'chain': ['1x16', '1x4', '1x8'],
+                                    'rectangular': ['2x2', '2x4', '2x8', '4x4']}}}}
     """
 
     if path:
@@ -305,7 +306,7 @@ def list_datasets(path=None):
 
 
 def list_attributes(data_name):
-    r"""List the attributes that exist for a specific data_name.
+    r"""List the attributes that exist for a specific ``data_name``.
 
     Args:
         data_name (str): The type of the desired data
@@ -361,7 +362,7 @@ def load_interactive():
     r"""Download a dataset using an interactive load prompt.
 
     Returns:
-        Dataset
+        :class:`~pennylane.data.Dataset`
 
     **Example**
 
@@ -383,7 +384,7 @@ def load_interactive():
         Please select attributes:
             ...
         Force download files? (Default is no) [y/N]: N
-        Folder to download to? (Default is pwd, will download to /datasets subdirectory): /Users/jovyan/Downloads
+        Folder to download to? (Default is pwd, will download to /datasets subdirectory):
 
         Please confirm your choices:
         dataset: qspin/Ising/open/rectangular/4x4

@@ -244,7 +244,7 @@ def _finite_diff_new(
             the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
-        shots (None, int, list[int], ShotTuple): The device shots that will be used to execute the tapes outputted by this
+        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes outputted by this
             transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
             to the transform about the device shots and helps in determining if a shot sequence was used to define the
             device shots for the new return types output system.
@@ -265,7 +265,7 @@ def _finite_diff_new(
     #TODO: Add example for new return type.
     """
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape)
+        return _no_trainable_grad_new(tape, shots)
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
@@ -275,7 +275,7 @@ def _finite_diff_new(
         diff_methods = ["F" for i in tape.trainable_params]
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape)
+        return _all_zero_grad_new(tape, shots)
 
     gradient_tapes = []
     shapes = []
