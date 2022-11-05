@@ -58,7 +58,15 @@ from .multi_dispatch import (
 )
 
 from .quantum import cov_matrix, marginal_prob
-from .quantum import reduced_dm, vn_entropy, mutual_info, sqrt_matrix, fidelity, relative_entropy
+from .quantum import (
+    reduced_dm,
+    vn_entropy,
+    mutual_info,
+    vn_entanglement_entropy,
+    sqrt_matrix,
+    fidelity,
+    relative_entropy,
+)
 
 from .utils import (
     allclose,
@@ -113,6 +121,7 @@ __all__ = [
     "is_independent",
     "marginal_prob",
     "mutual_info",
+    "vn_entanglement_entropy",
     "ones_like",
     "reduced_dm",
     "relative_entropy",

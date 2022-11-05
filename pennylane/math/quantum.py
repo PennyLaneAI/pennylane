@@ -586,9 +586,89 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
     .. seealso:: :func:`~.math.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.mutual_info`
     """
 
+    return _compute_bipartite_info(
+        "mutual information",
+        _compute_mutual_info,
+        state,
+        indices0,
+        indices1,
+        base,
+        check_state,
+        c_dtype,
+    )
+
+
+# pylint: disable=too-many-arguments
+def vn_entanglement_entropy(
+    state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
+):
+    r"""Compute the Von Neumann entanglement entropy between two subsystems in a given state
+
+    .. math::
+
+        S(\rho_A) = -Tr[\rho_A log \rho_A] = -Tr[\rho_B log \rho_B] = S(\rho_B)
+
+    where :math:`S` is the von Neumann entropy, and :math:`\rho_A = Tr_B[\rho_{AB}]` and
+    :math:`\rho_B = Tr_A[\rho_{AB}]` are the reduced density matrices for each partition.
+
+    The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
+    two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
+    Von Neumann entropy of the reduced density matrix for any of the subsystems. If it is non-zero,
+    it indicates the two subsystems are entangled.
+
+    Args:
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        indices0 (list[int]): List of indices in the first subsystem.
+        indices1 (list[int]): List of indices in the second subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: The von Neumann entanglement entropy of the bipartite state.
+
+    """
+
+    return _compute_bipartite_info(
+        "entanglement entropy",
+        _compute_vn_entanglement_entropy,
+        state,
+        indices0,
+        indices1,
+        base,
+        check_state,
+        c_dtype,
+    )
+
+
+# pylint: disable=too-many-arguments
+def _compute_bipartite_info(
+    name, func, state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
+):
+    """Computes some information of a bipartite state
+
+    This is a wrapper for any function that computes some information of a bipartite state. It
+    checks that the two subsystems do not overlap, and checks that the shape of the state before
+    executing the computation.
+
+    Args:
+        name (str): The name of the function to be computed.
+        func (callable): The function that does the computation
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        indices0 (list[int]): List of indices in the first subsystem.
+        indices1 (list[int]): List of indices in the second subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: The desired information of the bipartite state.
+
+    """
+
     # the subsystems cannot overlap
     if len([index for index in indices0 if index in indices1]) > 0:
-        raise ValueError("Subsystems for computing mutual information must not overlap.")
+        raise ValueError(f"Subsystems for computing {name} must not overlap.")
 
     # Cast to a complex array
     state = cast(state, dtype=c_dtype)
@@ -597,7 +677,7 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
     if len(state_shape) > 0:
         len_state = state_shape[0]
         if state_shape in [(len_state,), (len_state, len_state)]:
-            return _compute_mutual_info(
+            return func(
                 state, indices0, indices1, base=base, check_state=check_state, c_dtype=c_dtype
             )
 
@@ -621,6 +701,21 @@ def _compute_mutual_info(
     )
 
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
+
+
+def _compute_vn_entanglement_entropy(
+    state, indices0, _, base=None, check_state=False, c_dtype="complex128"
+):
+    """Computes the Von Neumann entanglement entropy between the subsystems."""
+
+    vn_entropy_1 = vn_entropy(
+        state, indices=indices0, base=base, check_state=check_state, c_dtype=c_dtype
+    )
+
+    # The Von Neumann entropy of the two subsystems should be the same if the overall state is a
+    # pure state. Here we trust that the user only uses this function for pure states, and do not
+    # perform any checks so that the code is compatible with jax.jit
+    return vn_entropy_1
 
 
 def fidelity(state0, state1, check_state=False, c_dtype="complex128"):

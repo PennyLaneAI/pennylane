@@ -164,6 +164,64 @@ class TestMutualInformation:
             qml.math.mutual_info(state, indices0=[0], indices1=[1])
 
 
+class TestEntanglementEntropy:
+    """Tests for the entanglement entropy functions
+
+    Three states are used for each test case: a separable state, a maximally
+    entangled state, and a partially entangled state.
+
+    test_subsystem_overlap and test_invalid_type are not tested in this module
+    as they are covered in TestMutualInformation.
+
+    """
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize(
+        "state, expected",
+        [
+            ([0.5, 0.5, -0.5, -0.5], 0),
+            ([0, -np.sqrt(2) / 2, np.sqrt(2) / 2, 0], np.log(2)),
+            ([1 / np.sqrt(1.25), 0, 0, 0.5 / np.sqrt(1.25)], 0.500402),
+        ],
+    )
+    def test_state(self, interface, state, expected):
+        """Test that mutual information works for states"""
+        state = qml.math.asarray(state, like=interface)
+        actual = qml.math.vn_entanglement_entropy(state, indices0=[0], indices1=[1])
+        assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize(
+        "state, expected",
+        [
+            (
+                [
+                    [0.25, 0.25, -0.25, -0.25],
+                    [0.25, 0.25, -0.25, -0.25],
+                    [-0.25, -0.25, 0.25, 0.25],
+                    [-0.25, -0.25, 0.25, 0.25],
+                ],
+                0,
+            ),
+            ([[0, 0, 0, 0], [0, 0.5, -0.5, 0], [0, -0.5, 0.5, 0], [0, 0, 0, 0]], np.log(2)),
+            (
+                [
+                    [1 / 1.25, 0, 0, 0.5 / 1.25],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0.5 / 1.25, 0, 0, 0.25 / 1.25],
+                ],
+                0.500402,
+            ),
+        ],
+    )
+    def test_density_matrix(self, interface, state, expected):
+        """Test that mutual information works for density matrices"""
+        state = qml.math.asarray(state, like=interface)
+        actual = qml.math.vn_entanglement_entropy(state, indices0=[0], indices1=[1])
+        assert np.allclose(actual, expected)
+
+
 class TestRelativeEntropy:
     """Tests for the relative entropy qml.math function"""
 
