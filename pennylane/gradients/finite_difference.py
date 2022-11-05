@@ -245,7 +245,6 @@ def _finite_diff_new(
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
         shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes outputted by this
-
             transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
             to the transform about the device shots and helps in determining if a shot sequence was used to define the
             device shots for the new return types output system.
