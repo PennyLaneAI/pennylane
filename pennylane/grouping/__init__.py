@@ -18,15 +18,6 @@ functionality used in measurement optimization.
 from warnings import warn
 
 
-def __getattr__(name):
-    """Raise deprecation warning!"""
-    warn("The qml.grouping module is deprecated, please use qml.pauli instead.", DeprecationWarning)
-    try:
-        globals()[name]
-    except KeyError as e:
-        raise AttributeError(f"Module {__name__} has no attribute {name}") from e
-
-
 from . import graph_colouring  # pylint:disable=wrong-import-position
 from .group_observables import (  # pylint:disable=wrong-import-position
     group_observables,
