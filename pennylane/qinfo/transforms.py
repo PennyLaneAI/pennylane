@@ -186,6 +186,44 @@ def mutual_info(qnode, wires0, wires1, base=None):
     return wrapper
 
 
+def vn_entanglement_entropy(qnode, wires0, wires1, base=None):
+    r"""Compute the Von Neumann entanglement entropy from a :class:`.QNode` returning a :func:`~.state`:
+
+    .. math::
+
+        S(\rho_A) = -Tr[\rho_A log \rho_A] = -Tr[\rho_B log \rho_B] = S(\rho_B)
+
+    where :math:`S` is the von Neumann entropy; :math:`\rho_A = Tr_B[\rho_{AB}]` and
+    :math:`\rho_B = Tr_A[\rho_{AB}]` are the reduced density matrices for each partition.
+
+    The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
+    two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
+    Von Neumann entropy of the reduced density matrix for any of the subsystems. If it is non-zero,
+    it indicates the two subsystems are entangled.
+
+    Args:
+        qnode (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        wires0 (Sequence(int)): List of wires in the first subsystem.
+        wires1 (Sequence(int)): List of wires in the second subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+
+    Returns:
+        func: A function with the same arguments as the QNode that returns
+        the Von Neumann entanglement entropy from its output state.
+
+    .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.vn_entanglement_entropy` and :func:`pennylane.vn_entanglement_entropy`
+    """
+
+    density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
+
+    def wrapper(*args, **kwargs):
+        density_matrix = density_matrix_qnode(*args, **kwargs)
+        entropy = qml.math.vn_entanglement_entropy(density_matrix, wires0, wires1, base=base)
+        return entropy
+
+    return wrapper
+
+
 # TODO: create qml.math.jacobian and replace it here
 def _torch_jac(circ):
     """Torch jacobian as a callable function"""

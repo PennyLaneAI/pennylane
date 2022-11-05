@@ -985,6 +985,66 @@ class TestMutualInformation:
             circuit(params)
 
 
+class TestEntanglementEntropy:
+    """Tests for the entanglement entropy functions"""
+
+    diff_methods = ["backprop", "finite-diff"]
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8)[1:])
+    def test_qnode_state(self, device, interface, params):
+        """Test that the entanglement entropy transform works for QNodes
+        by comparing against analytic values"""
+
+        dev = qml.device(device, wires=2)
+        params = qml.math.asarray(params, like=interface)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(params):
+            qml.RY(params, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        actual = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(params)
+
+        # compare transform results with analytic values
+        expected = -np.cos(params / 2) ** 2 * np.log(np.cos(params / 2) ** 2) - np.sin(
+            params / 2
+        ) ** 2 * np.log(np.sin(params / 2) ** 2)
+
+        assert np.allclose(actual, expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8)[1:])
+    def test_qnode_state_jax_jit(self, params):
+        """Test that the entanglement entropy transform works for QNodes by comparing against
+        analytic values, for the JAX-jit interface"""
+
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        params = jnp.array(params)
+
+        @qml.qnode(dev, interface="jax-jit")
+        def circuit(params):
+            qml.RY(params, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        actual = jax.jit(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(params)
+
+        # compare transform results with analytic values
+        expected = -np.cos(params / 2) ** 2 * np.log(np.cos(params / 2) ** 2) - np.sin(
+            params / 2
+        ) ** 2 * np.log(np.sin(params / 2) ** 2)
+
+        assert np.allclose(actual, expected)
+
+
 class TestRelativeEntropy:
     """Tests for the mutual information functions"""
 

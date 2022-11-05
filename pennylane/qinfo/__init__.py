@@ -17,6 +17,7 @@ from .transforms import (
     reduced_dm,
     vn_entropy,
     mutual_info,
+    vn_entanglement_entropy,
     classical_fisher,
     quantum_fisher,
     fidelity,
