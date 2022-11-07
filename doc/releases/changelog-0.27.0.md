@@ -515,7 +515,7 @@
 
 * Extended `qml.equal` function to MeasurementProcesses
   [(#3189)](https://github.com/PennyLaneAI/pennylane/pull/3189)
-  
+
 * `_multi_dispatch` functionality has been moved inside the `get_interface` function. This function
   can now be called with one or multiple tensors as arguments.
   [(#3136)](https://github.com/PennyLaneAI/pennylane/pull/3136)
@@ -547,10 +547,11 @@
   >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
   'torch'
   ```
-  
-* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling 
-  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global 
-  configuration for matplotlib plotting. If no `style` is passed, the function defaults 
+
+* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling
+  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global
+  configuration for matplotlib plotting. If no `style` is passed, the function defaults
+
   to plotting with the `black_white` style.
   [(#3247)](https://github.com/PennyLaneAI/pennylane/pull/3247)
 
@@ -634,6 +635,9 @@
 
 * Fixed a bug where `qml.BasisEmbedding` was not jit-compilable with JAX.
   [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
+
+* Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
+  [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)
 
 * Fixed a bug where `qml.expval(qml.Hamiltonian())` would not raise an error
   if the Hamiltonian involved some wires that are not present on the device.
