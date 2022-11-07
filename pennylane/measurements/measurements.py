@@ -47,6 +47,7 @@ class ObservableReturnTypes(Enum):
     MidMeasure = "measure"
     VnEntropy = "vnentropy"
     MutualInfo = "mutualinfo"
+    EntanglementEntropy = "entanglemententropy"
     Shadow = "shadow"
     ShadowExpval = "shadowexpval"
 
@@ -91,6 +92,9 @@ VnEntropy = ObservableReturnTypes.VnEntropy
 
 MutualInfo = ObservableReturnTypes.MutualInfo
 """Enum: An enumeration which represents returning the mutual information before measurements."""
+
+EntanglementEntropy = ObservableReturnTypes.EntanglementEntropy
+"""Enum: An enumeration which represents returning the entanglement entropy before measurements."""
 
 Shadow = ObservableReturnTypes.Shadow
 """Enum: An enumeration which represents returning the bitstrings and recipes from
@@ -182,7 +186,14 @@ class MeasurementProcess:
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        if self.return_type in (Expectation, MutualInfo, Probability, Variance, VnEntropy):
+        if self.return_type in (
+            Expectation,
+            MutualInfo,
+            EntanglementEntropy,
+            Probability,
+            Variance,
+            VnEntropy,
+        ):
             return float
 
         if self.return_type is State:
@@ -244,7 +255,7 @@ class MeasurementProcess:
 
         # First: prepare the shape for return types that do not require a
         # device
-        if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
+        if self.return_type in (Expectation, MutualInfo, EntanglementEntropy, Variance, VnEntropy):
             shape = (1,)
 
         if self.return_type == State and self.wires:
@@ -318,7 +329,7 @@ class MeasurementProcess:
 
         # First: prepare the shape for return types that do not require a
         # device
-        if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
+        if self.return_type in (Expectation, MutualInfo, EntanglementEntropy, Variance, VnEntropy):
             shape = ()
 
         if self.return_type == State and self.wires:
