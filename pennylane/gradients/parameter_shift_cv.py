@@ -129,7 +129,7 @@ def _gradient_analysis_cv(tape):
 
     tape._gradient_fn = param_shift_cv
 
-    for idx, info in tape._par_info.items():
+    for idx, info in enumerate(tape._par_info):
         info["grad_method"] = _grad_method(tape, idx)
 
 

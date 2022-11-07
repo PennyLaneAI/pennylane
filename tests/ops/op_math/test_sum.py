@@ -782,7 +782,7 @@ class TestIntegration:
         results = my_circ()
 
         assert len(results) == 20
-        assert (results == 2).all()
+        assert np.allclose(results, qnp.tensor([2.0] * 20, requires_grad=True))
 
     def test_measurement_process_count(self):
         """Test Sum class instance in counts measurement process."""
@@ -797,8 +797,9 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 2 in results
-        assert -2 not in results
+        assert np.allclose(
+            2, list(results.keys())[0]
+        )  # rounding errors due to float type of measurement outcome
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Sum op in the measurement process."""

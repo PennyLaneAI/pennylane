@@ -98,6 +98,15 @@ def _process_shot_sequence(shot_list):
     return total_shots, shot_vector
 
 
+def _get_num_copies(shot_vector):
+    """Helper function to determine the number of copies from a shot vector Sequence(int) or Sequence(ShotTuple)."""
+    if any(isinstance(shot_comp, ShotTuple) for shot_comp in shot_vector):
+        len_shot_vec = sum(shot_v.copies for shot_v in shot_vector)
+    else:
+        len_shot_vec = len(shot_vector)
+    return len_shot_vec
+
+
 class DeviceError(Exception):
     """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
     operation in the quantum circuit.
@@ -652,7 +661,11 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
-        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0
+
+        comp_basis_sampled_multi_measure = (
+            len(circuit.measurements) > 1 and circuit.samples_computational_basis
+        )
+        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
         obs_on_same_wire &= not any(
             isinstance(o, qml.Hamiltonian) for o in circuit._obs_sharing_wires
         )
@@ -887,7 +900,7 @@ class Device(abc.ABC):
             ValueError: if `operation` is not a :class:`~.Operation` class or string
 
         Returns:
-            bool: ``True`` iff supplied operation is supported
+            bool: ``True`` if supplied operation is supported
         """
         if isinstance(operation, type) and issubclass(operation, Operation):
             return operation.__name__ in self.operations
