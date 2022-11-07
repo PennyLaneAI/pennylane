@@ -87,7 +87,7 @@ class TestMapWiresOperators:
             m_op = qml.map_wires(op, wire_map=wire_map, queue=True, replace=True)
         assert len(tape.circuit) == 1
         assert tape.circuit[0] is m_op
-        assert tape._queue[op].get("owner", None) is m_op
+        assert len(tape.queue) == 1
 
     def test_map_wires_unsupported_object_raises_error(self):
         """Test that an error is raised when trying to map the wires of an unsupported object."""
