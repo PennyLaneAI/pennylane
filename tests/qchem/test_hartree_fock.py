@@ -101,6 +101,14 @@ def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_t
             # HF energy computed with pyscf using scf.hf.SCF(mol_pyscf).kernel()
             np.array([-2.84429553346549]),
         ),
+        (
+            ["H", "He"],
+            np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=False),
+            1,
+            "cc-pvdz",
+            # HF energy computed with pyscf using scf.hf.SCF(mol_pyscf).kernel()
+            np.array([-2.84060925839206]),
+        ),
     ],
 )
 def test_hf_energy(symbols, geometry, charge, basis_name, e_ref):

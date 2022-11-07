@@ -72,7 +72,16 @@ class Molecule:
         normalize=True,
     ):
 
-        if basis_name not in ["sto-3g", "STO-3G", "6-31g", "6-31G", "6-311g", "6-311G"]:
+        if basis_name not in [
+            "sto-3g",
+            "6-31g",
+            "6-311g",
+            "cc-pvdz",
+            "STO-3G",
+            "6-31G",
+            "6-311G",
+            "CC-PVDZ",
+        ]:
             raise ValueError(
                 "Currently, the only supported basis sets are 'sto-3g', '6-31g', '6-311g' and"
                 " 'cc-pvdz'."
