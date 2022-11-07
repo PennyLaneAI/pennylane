@@ -646,7 +646,6 @@ This release contains contributions from (in alphabetical order):
 Kamal Mohamed Ali,
 Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
-Astral Cai,
 Albert Mitjans Coma,
 Utkarsh Azad,
 Isaac De Vlugt,
