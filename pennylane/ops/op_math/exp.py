@@ -281,6 +281,21 @@ class Exp(SymbolicOp):
         return Exp(self.base.simplify(), self.coeff)
 
     def generator(self):
+        r"""Generator of an operator that is in single-parameter-form.
+
+        For example, for operator
+
+        .. math::
+
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+
+        we get the generator
+
+        >>> U.generator()
+          (0.5) [Y0]
+        + (1.0) [Z0 X1]
+
+        """
         if np.real(self.coeff) != 0 or not self.base.is_hermitian:
             raise GeneratorUndefinedError(
                 f"Exponential with coefficient {self.coeff} and base operator {self.base} does not have a generator."
