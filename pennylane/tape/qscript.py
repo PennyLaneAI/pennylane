@@ -672,7 +672,7 @@ class QuantumScript:
     # ========================================================
 
     @staticmethod
-    def _single_measurement_shape(measurement_process, batch_size, device):
+    def _single_measurement_shape(measurement_process, device):
         """Auxiliary function of shape that determines the output
         shape of a quantum script with a single measurement.
 
@@ -684,16 +684,10 @@ class QuantumScript:
         Returns:
             tuple: output shape
         """
-        shape = measurement_process.shape(device)
-
-        if batch_size is not None:
-            # insert the batch dimension
-            shape = shape[0:1] + (batch_size,) + shape[1:]
-
-        return shape
+        return measurement_process.shape(device)
 
     @staticmethod
-    def _multi_homogenous_measurement_shape(mps, batch_size, device):
+    def _multi_homogenous_measurement_shape(mps, device):
         """Auxiliary function of shape that determines the output
         shape of a quantum script with multiple homogenous measurements.
 
@@ -753,10 +747,6 @@ class QuantumScript:
                 shape = (len(mps),) + dim[1:]
 
             # No other measurement type to check
-
-            if batch_size is not None:
-                # insert the batch dimension
-                shape = shape[0:1] + (batch_size,) + shape[1:]
 
         else:
             # we don't need to pass in the batch size here because parameter
@@ -851,18 +841,23 @@ class QuantumScript:
 
         if len(self.measurements) == 1:
             output_shape = self._single_measurement_shape(
-                self.measurements[0], self.batch_size, device
+                self.measurements[0], device
             )
         else:
             num_measurements = len({meas.return_type for meas in self.measurements})
             if num_measurements == 1:
                 output_shape = self._multi_homogenous_measurement_shape(
-                    self.measurements, self.batch_size, device
+                    self.measurements, device
                 )
             else:
                 raise ValueError(
                     "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
                 )
+
+        if device._shot_vector is None and self.batch_size is not None:
+            # insert the batch dimension
+            output_shape = output_shape[0:1] + (self.batch_size,) + output_shape[1:]
+
         return output_shape
 
     def _shape_new(self, device):
