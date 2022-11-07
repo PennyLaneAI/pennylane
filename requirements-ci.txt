@@ -1,7 +1,6 @@
 numpy
 scipy
 cvxpy
-cvxopt
 networkx
 retworkx
 tensornetwork==0.3
