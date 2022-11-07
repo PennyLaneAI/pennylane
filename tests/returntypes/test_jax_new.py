@@ -858,6 +858,7 @@ class TestVectorValued:
         res = jax.jacobian(cost, argnums=(0, 1))(
             x, y, dev, interface="jax-python", ek=execute_kwargs
         )
+
         assert isinstance(res, list)
         assert len(res) == 2
 

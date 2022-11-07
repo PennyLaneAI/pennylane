@@ -18,11 +18,23 @@ Contains the :class:`~pennylane.data.Dataset` class and its associated functions
 from abc import ABC
 from glob import glob
 import os
-import dill
-import zstd
 
 from pennylane import Hamiltonian
 from pennylane.pauli import string_to_pauli_word
+
+
+def _import_zstd_dill():
+    """Import zstd and dill."""
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        import zstd, dill
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires zstd and dill."
+            "They can be installed with:\n\n pip install zstd dill."
+        ) from Error
+
+    return zstd, dill
 
 
 class Dataset(ABC):
@@ -32,14 +44,16 @@ class Dataset(ABC):
     and an efficient state-preparation circuit for that state.
 
     Args:
-        *args: For internal use only. These will be ignored if called with standard=False
-        standard (bool): For internal use only. See below for behaviour if this is set to True
+        *args: For internal use only. These will be ignored if called with ``standard=False``
+        standard (bool): For internal use only. See the note below for the behavior when this is set to ``True``
         **kwargs: variable-length keyword arguments specifying the data to be stored in the dataset
 
     Note on the ``standard`` kwarg:
-        A "standard" Dataset uses previously generated, downloadable quantum data. This special instance of
-        the Dataset class makes some assumptions for folder management and file downloading. As such, the
-        Dataset class should not be invoked directly with ``standard=True``. Instead, call :meth:`~load`
+        A `standard` Dataset uses previously generated, hosted quantum data. This special instance of the
+        ``Dataset`` class makes certain assumptions about folder management for downloading the data and
+        handling I/O. As such, the ``Dataset`` class should not be instantiated by the users directly with
+        ``standard=True``. Instead, they should use :meth:`~load`.
+
 
     .. seealso:: :meth:`~load`
 
@@ -139,6 +153,7 @@ class Dataset(ABC):
         with open(filepath, "rb") as f:
             compressed_pickle = f.read()
 
+        zstd, dill = _import_zstd_dill()
         depressed_pickle = zstd.decompress(compressed_pickle)
         return dill.loads(depressed_pickle)
 
@@ -167,6 +182,7 @@ class Dataset(ABC):
     @staticmethod
     def _write_file(data, filepath, protocol=4):
         """General method to write data to a file."""
+        zstd, dill = _import_zstd_dill()
         pickled_data = dill.dumps(data, protocol=protocol)
         compressed_pickle = zstd.compress(pickled_data)
         with open(filepath, "wb") as f:
