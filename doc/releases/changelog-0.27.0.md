@@ -593,6 +593,7 @@
 <h3>Bug fixes</h3>
 
 * `qml.SparseHamiltonian` now validates the size of the input matrix.
+  [(#3278)](https://github.com/PennyLaneAI/pennylane/pull/3278)
 
 * Fixed a bug where `qml.sample()` and `qml.counts()` would output incorrect results when mixed with measurements whose
   operators do not qubit-wise commute with computational basis projectors.
