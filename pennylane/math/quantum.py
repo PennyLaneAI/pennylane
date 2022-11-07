@@ -455,6 +455,70 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     return density_matrix
 
 
+def purity(state, indices, check_state=False, c_dtype="complex128"):
+    r"""Computes the purity from a state vector or density matrix.
+
+    .. math::
+        \gamma = Tr(\rho^2)
+
+    where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
+    :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
+    A pure state has a :math:`\gamma` of 1.
+
+    It is possible to compute the purity of a sub-system from a given state. To find the purity of
+    the overall state, include all wires in the "indices" argument.
+
+    Args:
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        indices (list(int)): List of indices in the considered subsystem.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: purity of the considered subsystem.
+
+    ** Example **
+
+    >>> x = [1, 0, 0, 1] / np.sqrt(2)
+    >>> purity(x, [0, 1])
+    1.0
+    >>> purity(x, [0])
+    0.5
+
+    >>> x = [[1 / 2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1 / 2]]
+    >>> purity(x, [0, 1])
+    0.5
+
+    """
+
+    density_matrix = reduced_dm(state, indices, check_state, c_dtype)
+    return _compute_purity(density_matrix)
+
+
+def _compute_purity(density_matrix):
+    """Compute the purity from a density matrix
+
+    Args:
+        density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
+
+    Returns:
+        float: purity of the density matrix.
+
+    **Example**
+
+    >>> x = [[1/2, 0], [0, 1/2]]
+    >>> _compute_purity(x)
+    0.5
+
+    >>> x = [[1/2, 1/2], [1/2, 1/2]]
+    >>> _compute_purity(x)
+    1
+
+    """
+    evs = qml.math.eigvalsh(density_matrix)
+    return np.sum(evs**2)
+
+
 def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
     r"""Compute the Von Neumann entropy from a state vector or density matrix on a given subsystem. It supports all
     interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).

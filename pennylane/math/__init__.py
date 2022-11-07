@@ -58,7 +58,15 @@ from .multi_dispatch import (
 )
 
 from .quantum import cov_matrix, marginal_prob
-from .quantum import reduced_dm, vn_entropy, mutual_info, sqrt_matrix, fidelity, relative_entropy
+from .quantum import (
+    reduced_dm,
+    vn_entropy,
+    purity,
+    mutual_info,
+    sqrt_matrix,
+    fidelity,
+    relative_entropy,
+)
 
 from .utils import (
     allclose,
@@ -123,6 +131,7 @@ __all__ = [
     "tensordot",
     "unwrap",
     "vn_entropy",
+    "purity",
     "where",
     "add",
     "iscomplex",
