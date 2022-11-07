@@ -7,6 +7,7 @@
 <h4>An all-new data module</h4>
 
 * A brand new `data` module is available, allowing users to download, load, and create quantum datasets.
+  [(#3156)](https://github.com/PennyLaneAI/pennylane/pull/3156)
 
   Datasets are hosted on Xanadu Cloud (TODO: link?) and can be downloaded by using `qml.data.load()`:
 
