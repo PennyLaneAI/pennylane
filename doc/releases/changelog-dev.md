@@ -56,7 +56,7 @@
 
 <h4>(TODO: title) QChem</h4>
 
-* Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`. 
+* Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`.
   ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
 
   ```pycon
@@ -108,10 +108,6 @@
   ```
 
 <h4>(TODO: title) New operators and optimizers</h4>
-
-* Re-organized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli`
-  module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
-  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
 
 * Optimizing quantum circuits can now be done *adaptively* with `qml.AdaptiveOptimizer`.
   [(#3192)](https://github.com/PennyLaneAI/pennylane/pull/3192)
@@ -198,12 +194,12 @@
   Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
   ```
 
-* Wires of operators or entire QNodes can now be mapped to other wires via `qml.map_wires()`. 
+* Wires of operators or entire QNodes can now be mapped to other wires via `qml.map_wires()`.
   [(#3145)](https://github.com/PennyLaneAI/pennylane/pull/3145)
 
   The `qml.map_wires()` function requires a dictionary representing a wire map. Use it with
 
-  - arbitrary operators:
+  * arbitrary operators:
 
     ```pycon
     >>> op = qml.RX(0.54, wires=0) + qml.PauliX(1) + (qml.PauliZ(2) @ qml.RY(1.23, wires=3))
@@ -214,7 +210,7 @@
     (RX(0.54, wires=[10]) + PauliX(wires=[11])) + (PauliZ(wires=[12]) @ RY(1.23, wires=[13]))
     ```
 
-  - entire QNodes:
+  * entire QNodes:
 
     ```python
     dev = qml.device("default.qubit", wires=["A", "B", "C", "D"])
@@ -393,6 +389,10 @@
 * `OrbitalRotation` is now decomposed into two `SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `SingleExcitation`.
   [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
 
+* Reorganized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli`
+  module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
+  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
+
 * Added the `Operator` attributes `has_decomposition` and `has_adjoint` that indicate
   whether a corresponding `decomposition` or `adjoint` method is available.
   [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
@@ -548,9 +548,9 @@
   'torch'
   ```
   
-* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling 
-  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global 
-  configuration for matplotlib plotting. If no `style` is passed, the function defaults 
+* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling
+  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global
+  configuration for matplotlib plotting. If no `style` is passed, the function defaults
   to plotting with the `black_white` style.
   [(#3247)](https://github.com/PennyLaneAI/pennylane/pull/3247)
 
