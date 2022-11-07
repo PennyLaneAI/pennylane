@@ -16,6 +16,7 @@ This submodule defines the symbolic operation that stands for an exponential of 
 """
 from warnings import warn
 from scipy.sparse.linalg import expm as sparse_expm
+import numpy as np
 
 import pennylane as qml
 from pennylane import math
@@ -23,6 +24,7 @@ from pennylane.operation import (
     DecompositionUndefinedError,
     expand_matrix,
     OperatorPropertyUndefined,
+    GeneratorUndefinedError,
 )
 from pennylane.pauli import is_pauli_word, pauli_word_to_string
 from pennylane.wires import Wires
@@ -271,3 +273,10 @@ class Exp(SymbolicOp):
         if isinstance(self.base, qml.ops.op_math.SProd):  # pylint: disable=no-member
             return Exp(self.base.base.simplify(), self.coeff * self.base.scalar)
         return Exp(self.base.simplify(), self.coeff)
+
+    def generator(self):
+        if np.real(self.coeff) != 0 or not self.base.is_hermitian:
+            raise GeneratorUndefinedError(
+                f"Exponential with coefficient {self.coeff} and base operator {self.base} does not have a generator."
+            )
+        return self.base
