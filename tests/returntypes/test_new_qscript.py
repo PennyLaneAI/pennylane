@@ -430,6 +430,21 @@ class TestOutputShape:
 
         assert res == expected_shape
 
+    def test_raises_broadcasting_shot_vector(self):
+        """Test that getting the output shape of a tape that uses parameter
+        broadcasting along with a device with a shot vector raises an error."""
+        dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(np.array([0.1, 0.2]), wires=0)
+            qml.RX(np.array([0.3, 0.4]), wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        msg = "Parameter broadcasting when using a shot vector is not supported yet"
+
+        with pytest.raises(NotImplementedError, match=msg):
+            tape.shape(dev)
+
 
 class TestNumericType:
     """Tests for determining the numeric type of the tape output."""
