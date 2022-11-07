@@ -14,8 +14,9 @@
 """
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
-from collections.abc import Sequence, Iterable
 import functools
+from collections.abc import Iterable, Sequence
+
 import numpy as np
 
 
@@ -105,6 +106,9 @@ class Wires(Sequence):
         if isinstance(idx, slice):
             return Wires(self._labels[idx])
         return self._labels[idx]
+
+    def __iter__(self):
+        return self._labels.__iter__()
 
     def __len__(self):
         """Method to support ``len()``."""

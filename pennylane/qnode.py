@@ -66,6 +66,9 @@ class QNode:
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
+            * ``"auto"``: The QNode automatically detects the interface from the input values of
+              the quantum function.
+
         diff_method (str or .gradient_transform): The method of differentiation to use in the created QNode.
             Can either be a :class:`~.gradient_transform`, which includes all quantum gradient
             transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
@@ -246,7 +249,7 @@ class QNode:
                 f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACES}."
             )
 
-        self._interface = value
+        self._interface = INTERFACE_MAP[value]
         self._update_gradient_fn()
 
     def _update_gradient_fn(self):
@@ -254,6 +257,8 @@ class QNode:
             self._interface = None
             self.gradient_fn = None
             self.gradient_kwargs = {}
+            return
+        if self.interface == "auto":
             return
 
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
@@ -479,21 +484,18 @@ class QNode:
                 " Adjoint differentiation always calculated exactly.",
                 UserWarning,
             )
-
         return "device", {"use_device_state": True, "method": "adjoint_jacobian"}, device
 
     @staticmethod
     def _validate_device_method(device):
         # determine if the device provides its own jacobian method
-        provides_jacobian = device.capabilities().get("provides_jacobian", False)
+        if device.capabilities().get("provides_jacobian", False):
+            return "device", {}, device
 
-        if not provides_jacobian:
-            raise qml.QuantumFunctionError(
-                f"The {device.short_name} device does not provide a native "
-                "method for computing the jacobian."
-            )
-
-        return "device", {}, device
+        raise qml.QuantumFunctionError(
+            f"The {device.short_name} device does not provide a native "
+            "method for computing the jacobian."
+        )
 
     @staticmethod
     def _validate_parameter_shift(device):
@@ -547,17 +549,19 @@ class QNode:
         terminal_measurements = [
             m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
         ]
-        if not all(ret == m for ret, m in zip(measurement_processes, terminal_measurements)):
+        if any(ret != m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
 
         for obj in self.tape.operations + self.tape.observables:
 
-            if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
+            if (
+                getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
+                and len(obj.wires) != self.device.num_wires
+            ):
                 # check here only if enough wires
-                if len(obj.wires) != self.device.num_wires:
-                    raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
+                raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
             # pylint: disable=no-member
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
@@ -587,8 +591,11 @@ class QNode:
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
 
-    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches
+    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
         override_shots = False
+        old_interface = self.interface
+        if old_interface == "auto":
+            self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
@@ -619,7 +626,7 @@ class QNode:
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         if qml.active_return():
-            res = qml.execute_new(
+            res = qml.execute(
                 [self.tape],
                 device=self.device,
                 gradient_fn=self.gradient_fn,
@@ -631,17 +638,25 @@ class QNode:
 
             res = res[0]
 
-            # Special case of single Measurement in a list
-            if isinstance(self._qfunc_output, list):
-                if len(self._qfunc_output) == 1:
-                    return [res]
-
             # Autograd or tensorflow: they do not support tuple return with backpropagation
             backprop = False
             if not isinstance(
                 self._qfunc_output, qml.measurements.MeasurementProcess
             ) and self.interface in ("tf", "autograd"):
-                backprop = any(qml.math.in_backprop(x) for x in res)
+                if isinstance(res, Sequence):
+                    backprop = any(qml.math.in_backprop(x) for x in res)
+                else:
+                    # res might not be a sequence even if the qfunc output is a sequence
+                    # of length 1
+                    backprop = qml.math.in_backprop(res)
+
+            if old_interface == "auto":
+                self.interface = "auto"
+
+            # Special case of single Measurement in a list
+            if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
+                return [res]
+
             if self.gradient_fn == "backprop" and backprop:
                 res = self.device._asarray(res)
 
@@ -650,11 +665,18 @@ class QNode:
                 not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
                 and not backprop
             ):
-                if not self.device._shot_vector:
-                    res = type(self.tape._qfunc_output)(res)
-                else:
+                if self.device._shot_vector:
                     res = [type(self.tape._qfunc_output)(r) for r in res]
                     res = tuple(res)
+
+                else:
+                    res = type(self.tape._qfunc_output)(res)
+
+            if override_shots is not False:
+                # restore the initialization gradient function
+                self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
+
+            self._update_original_device()
 
             return res
 
@@ -667,6 +689,9 @@ class QNode:
             override_shots=override_shots,
             **self.execute_kwargs,
         )
+
+        if old_interface == "auto":
+            self.interface = "auto"
 
         if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
             # If a device batch transform was applied, we need to 'unpack'
@@ -682,19 +707,19 @@ class QNode:
 
             res = res[0]
 
-        if (
-            not isinstance(self._qfunc_output, Sequence)
-            and self._qfunc_output.return_type is qml.measurements.Counts
+        if not isinstance(self._qfunc_output, Sequence) and self._qfunc_output.return_type in (
+            qml.measurements.Counts,
+            qml.measurements.AllCounts,
         ):
+            if self.device._has_partitioned_shots():
+                return tuple(res)
 
-            if not self.device._has_partitioned_shots():
-                # return a dictionary with counts not as a single-element array
-                return res[0]
-
-            return tuple(res)
+            # return a dictionary with counts not as a single-element array
+            return res[0]
 
         if isinstance(self._qfunc_output, Sequence) and any(
-            m.return_type is qml.measurements.Counts for m in self._qfunc_output
+            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+            for m in self._qfunc_output
         ):
 
             # If Counts was returned with other measurements, then apply the

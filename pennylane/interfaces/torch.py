@@ -97,7 +97,10 @@ class ExecuteTapes(torch.autograd.Function):
                 # For backwards compatibility, we flatten ragged tape outputs
                 r = np.hstack(r)
 
-            if any(m.return_type is qml.measurements.Counts for m in ctx.tapes[i].measurements):
+            if any(
+                m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+                for m in ctx.tapes[i].measurements
+            ):
                 continue
 
             if isinstance(r, (list, tuple)):

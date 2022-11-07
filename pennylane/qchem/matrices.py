@@ -95,7 +95,7 @@ def overlap_matrix(basis_functions):
         for (i, a), (j, b) in it.combinations(enumerate(basis_functions), r=2):
             args_ab = []
             if args:
-                args_ab.extend(arg[[i, j]] for arg in args)
+                args_ab.extend([arg[i], arg[j]] for arg in args)
             integral = overlap_integral(a, b, normalize=False)(*args_ab)
 
             o = anp.zeros((n, n))
@@ -147,7 +147,7 @@ def moment_matrix(basis_functions, order, idx):
 
             args_ab = []
             if args:
-                args_ab.extend(arg[[i, j]] for arg in args)
+                args_ab.extend([arg[i], arg[j]] for arg in args)
             integral = moment_integral(a, b, order, idx, normalize=False)(*args_ab)
 
             o = anp.zeros((n, n))
@@ -195,7 +195,7 @@ def kinetic_matrix(basis_functions):
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
             args_ab = []
             if args:
-                args_ab.extend(arg[[i, j]] for arg in args)
+                args_ab.extend([arg[i], arg[j]] for arg in args)
             integral = kinetic_integral(a, b, normalize=False)(*args_ab)
 
             o = anp.zeros((n, n))
@@ -248,9 +248,9 @@ def attraction_matrix(basis_functions, charges, r):
                 args_ab = []
 
                 if r.requires_grad:
-                    args_ab.extend(arg[[i, j]] for arg in args[1:])
+                    args_ab.extend([arg[i], arg[j]] for arg in args[1:])
                 else:
-                    args_ab.extend(arg[[i, j]] for arg in args)
+                    args_ab.extend([arg[i], arg[j]] for arg in args)
 
                 for k, c in enumerate(r):
                     if c.requires_grad:
@@ -320,7 +320,7 @@ def repulsion_tensor(basis_functions):
             if anp.isnan(e_calc[(i, j, k, l)]):
                 args_abcd = []
                 if args:
-                    args_abcd.extend(arg[[i, j, k, l]] for arg in args)
+                    args_abcd.extend([arg[i], arg[j], arg[k], arg[l]] for arg in args)
                 integral = repulsion_integral(a, b, c, d, normalize=False)(*args_abcd)
 
                 permutations = [

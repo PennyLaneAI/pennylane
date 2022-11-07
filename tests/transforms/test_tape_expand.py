@@ -668,28 +668,32 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[1].wires == Wires("a")
 
     def test_custom_decomp_with_control(self):
-        """Test that applying a controlled version of a gate results in the
-        controlled version of a decomposition."""
+        """Test that decomposing a controlled version of a gate uses the custom decomposition
+        for the base gate."""
 
+        class CustomOp(qml.operation.Operation):
+            num_wires = 1
+
+            @staticmethod
+            def compute_decomposition(wire):
+                return [qml.S(wire)]
+
+        custom_decomps = {CustomOp: lambda wires: [qml.T(wires), qml.T(wires)]}
+        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+
+        @qml.qnode(decomp_dev, expansion_strategy="device")
         def circuit():
-            qml.ctrl(qml.Hadamard, control=0)(wires=1)
+            qml.ctrl(CustomOp, control=1)(0)
             return qml.expval(qml.PauliZ(0))
 
-        custom_decomps = {qml.Hadamard: custom_hadamard}
-        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
-        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
-        _ = decomp_qnode()
-        decomp_ops = decomp_qnode.qtape.operations
+        circuit.construct(tuple(), {})
+        decomp_ops = circuit.tape.operations
 
         assert len(decomp_ops) == 2
 
-        assert decomp_ops[0].name == "CRZ"
-        assert np.isclose(decomp_ops[0].parameters[0], np.pi)
-        assert decomp_ops[0].wires == Wires([0, 1])
-
-        assert decomp_ops[1].name == "CRY"
-        assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
-        assert decomp_ops[1].wires == Wires([0, 1])
+        for op in decomp_ops:
+            assert isinstance(op, qml.ops.op_math.Controlled)
+            assert qml.equal(op.base, qml.T(0))
 
     def test_custom_decomp_in_separate_context(self):
         """Test that the set_decomposition context manager works."""

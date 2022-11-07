@@ -219,18 +219,14 @@ class TestConditionalOperations:
         assert len(tape.operations) == 2
         assert len(tape.measurements) == 1
 
-        # Check the two underlying ControlledOperation instance
+        # Check the two underlying Controlled instances
         first_ctrl_op = tape.operations[0]
-        assert isinstance(first_ctrl_op, qml.ops.op_math.ControlledOperation)
-        assert len(first_ctrl_op.subtape.operations) == 1
-        assert isinstance(first_ctrl_op.subtape.operations[0], qml.RY)
-        assert first_ctrl_op.data == [first_par]
+        assert isinstance(first_ctrl_op, qml.ops.op_math.Controlled)
+        assert qml.equal(first_ctrl_op.base, qml.RY(first_par, 1))
 
         sec_ctrl_op = tape.operations[1]
-        assert isinstance(sec_ctrl_op, qml.ops.op_math.ControlledOperation)
-        assert len(sec_ctrl_op.subtape.operations) == 1
-        assert isinstance(sec_ctrl_op.subtape.operations[0], qml.RZ)
-        assert sec_ctrl_op.data == [sec_par]
+        assert isinstance(sec_ctrl_op, qml.ops.op_math.Controlled)
+        assert qml.equal(sec_ctrl_op.base, qml.RZ(sec_par, 1))
 
         assert tape.measurements[0] is terminal_measurement
 
@@ -260,12 +256,10 @@ class TestConditionalOperations:
         assert isinstance(first_x, qml.PauliX)
         assert first_x.wires == qml.wires.Wires(0)
 
-        # Check the two underlying ControlledOperation instance
+        # Check the two underlying Controlled instance
         ctrl_op = tape.operations[1]
-        assert isinstance(ctrl_op, qml.ops.op_math.ControlledOperation)
-        assert len(ctrl_op.subtape.operations) == 1
-        assert isinstance(ctrl_op.subtape.operations[0], qml.RY)
-        assert ctrl_op.data == [first_par]
+        assert isinstance(ctrl_op, qml.ops.op_math.Controlled)
+        assert qml.equal(ctrl_op.base, qml.RY(first_par, 1))
 
         assert ctrl_op.wires == qml.wires.Wires([0, 1])
 
@@ -301,13 +295,10 @@ class TestConditionalOperations:
         assert isinstance(first_x, qml.PauliX)
         assert first_x.wires == qml.wires.Wires(0)
 
-        # Check the underlying ControlledOperation instance
+        # Check the underlying Controlled instance
         ctrl_op = tape.operations[1]
-        assert isinstance(ctrl_op, qml.ops.op_math.ControlledOperation)
-        assert len(ctrl_op.subtape.operations) == 1
-        assert isinstance(ctrl_op.subtape.operations[0], qml.RY)
-        assert ctrl_op.data == [first_par]
-        assert ctrl_op.wires == qml.wires.Wires([0, 1])
+        assert isinstance(ctrl_op, qml.ops.op_math.Controlled)
+        assert qml.equal(ctrl_op.base, qml.RY(first_par, 1))
 
         # We flip the control qubit back
         sec_x = tape.operations[2]
@@ -374,19 +365,14 @@ class TestConditionalOperations:
         assert isinstance(op5, qml.Hadamard)
         assert op5.wires == qml.wires.Wires([0])
 
-        # Check the two underlying ControlledOperation instance
+        # Check the two underlying  Controlled instances
         ctrl_op1 = tape.operations[5]
-        assert isinstance(ctrl_op1, qml.ops.op_math.ControlledOperation)
-        assert len(ctrl_op1.subtape.operations) == 1
-        assert isinstance(ctrl_op1.subtape.operations[0], qml.RX)
-        assert ctrl_op1.data == [math.pi]
-        assert ctrl_op1.wires == qml.wires.Wires([1, 2])
+        assert isinstance(ctrl_op1, qml.ops.op_math.Controlled)
+        assert qml.equal(ctrl_op1.base, qml.RX(math.pi, 2))
 
         ctrl_op2 = tape.operations[6]
-        assert isinstance(ctrl_op2, qml.ops.op_math.ControlledOperation)
-        assert len(ctrl_op2.subtape.operations) == 1
-        assert isinstance(ctrl_op2.subtape.operations[0], qml.RZ)
-        assert ctrl_op2.data == [math.pi]
+        assert isinstance(ctrl_op2, qml.ops.op_math.Controlled)
+        assert qml.equal(ctrl_op2.base, qml.RZ(math.pi, 2))
         assert ctrl_op2.wires == qml.wires.Wires([0, 2])
 
         # Check the measurement
@@ -439,12 +425,10 @@ class TestConditionalOperations:
         assert len(tape.operations) == 1
         assert len(tape.measurements) == 1
 
-        # Check the underlying ControlledOperation instance
+        # Check the underlying Controlled instances
         first_ctrl_op = tape.operations[0]
-        assert isinstance(first_ctrl_op, qml.ops.op_math.ControlledOperation)
-        assert len(first_ctrl_op.subtape.operations) == 1
-        assert isinstance(first_ctrl_op.subtape.operations[0], qml.RY)
-        assert first_ctrl_op.data == [rads]
+        assert isinstance(first_ctrl_op, qml.ops.op_math.Controlled)
+        assert qml.equal(first_ctrl_op.base, qml.RY(rads, 4))
 
         assert len(tape.measurements) == 1
         assert tape.measurements[0] == measurement
@@ -471,13 +455,10 @@ class TestConditionalOperations:
         assert len(tape.operations) == 1
         assert len(tape.measurements) == 1
 
-        # Check the underlying ControlledOperation instance
+        # Check the underlying Controlled instance
         first_ctrl_op = tape.operations[0]
-        assert isinstance(first_ctrl_op, qml.ops.op_math.ControlledOperation)
-        assert len(first_ctrl_op.subtape.operations) == 1
-        assert isinstance(first_ctrl_op.subtape.operations[0], qml.RY)
-        assert first_ctrl_op.data == [rads]
-
+        assert isinstance(first_ctrl_op, qml.ops.op_math.Controlled)
+        assert qml.equal(first_ctrl_op.base, qml.RY(rads, 4))
         assert len(tape.measurements) == 1
         assert isinstance(tape.measurements[0], qml.measurements.MeasurementProcess)
         assert tape.measurements[0].obs == H
@@ -804,8 +785,8 @@ class TestDrawing:
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         expected = (
-            "0: ─╭●────────────────────────────────────────────────────┤     \n"
-            "1: ─╰ControlledOperation(0.31)─╭ControlledOperation(0.31)─┤  <Z>\n"
-            "2: ────────────────────────────╰●─────────────────────────┤     "
+            "0: ─╭●──────────────────┤     \n"
+            "1: ─╰RY(0.31)─╭RY(0.31)─┤  <Z>\n"
+            "2: ───────────╰●────────┤     "
         )
         assert qml.draw(transformed_qnode)() == expected

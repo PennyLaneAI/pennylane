@@ -15,15 +15,17 @@
 Contains a context manager and decorator to turn off the PennyLane queuing system.
 """
 import contextlib
+from warnings import warn
 
-
-from .tape import get_active_tape
+from pennylane import QueuingManager
 
 
 @contextlib.contextmanager
 def stop_recording():
     """A context manager and decorator to ensure that contained logic is non-recordable
     or non-queueable within a QNode or quantum tape context.
+
+    Deprecated in favor of :meth:`pennylane.QueuingManager.stop_recording`.
 
     **Example**
 
@@ -80,13 +82,9 @@ def stop_recording():
     0: ──RZ(3.00)─┤  <Z>
 
     """
-    tape = get_active_tape()
-
-    if tape is None:
+    warn(
+        "qml.tape.stop_recording has moved to qml.QueuingManager.stop_recording.",
+        UserWarning,
+    )
+    with QueuingManager.stop_recording():
         yield
-        return
-
-    with tape.stop_recording():
-        yield
-
-    return

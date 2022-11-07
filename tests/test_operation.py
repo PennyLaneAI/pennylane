@@ -20,13 +20,13 @@ from functools import reduce
 
 import numpy as np
 import pytest
-from gate_data import CNOT, II, SWAP, I, Toffoli, X, TADD, TSWAP
+from gate_data import CNOT, II, SWAP, TADD, TSWAP, I, Toffoli, X
 from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import Operation, Operator, Tensor, operation_derivative
-from pennylane.ops import cv
+from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
@@ -34,16 +34,6 @@ from pennylane.wires import Wires
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
-
-
-@pytest.mark.parametrize(
-    "return_type", ("Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure")
-)
-def test_obersvablereturntypes_import_warnings(return_type):
-    """Test that accessing the observable return types through qml.operation emit a warning."""
-
-    with pytest.warns(UserWarning, match=r"is deprecated"):
-        getattr(qml.operation, return_type)
 
 
 class TestOperatorConstruction:
@@ -343,8 +333,8 @@ class TestOperatorConstruction:
             def compute_matrix():
                 return np.eye(2)
 
-        assert MyOp.has_matrix
-        assert MyOp(wires=0).has_matrix
+        assert MyOp.has_matrix is True
+        assert MyOp(wires=0).has_matrix is True
 
     def test_has_matrix_false(self):
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
@@ -352,8 +342,8 @@ class TestOperatorConstruction:
         class MyOp(qml.operation.Operator):
             num_wires = 1
 
-        assert not MyOp.has_matrix
-        assert not MyOp(wires=0).has_matrix
+        assert MyOp.has_matrix is False
+        assert MyOp(wires=0).has_matrix is False
 
     def test_has_matrix_false_concrete_template(self):
         """Test has_matrix with a concrete operation (StronglyEntanglingLayers)
@@ -363,7 +353,102 @@ class TestOperatorConstruction:
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
         op = qml.StronglyEntanglingLayers(params, wires=range(2))
-        assert not op.has_matrix
+        assert op.has_matrix is False
+
+    def test_has_adjoint_true(self):
+        """Test has_adjoint property detects overriding of `adjoint` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            adjoint = lambda self: self
+
+        assert MyOp.has_adjoint is True
+        assert MyOp(wires=0).has_adjoint is True
+
+    def test_has_adjoint_false(self):
+        """Test has_adjoint property defaults to false if `adjoint` not overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert MyOp.has_adjoint is False
+        assert MyOp(wires=0).has_adjoint is False
+
+    def test_has_decomposition_true_compute_decomposition(self):
+        """Test has_decomposition property detects overriding of `compute_decomposition` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            @staticmethod
+            def compute_decomposition(x, wires=None):
+                return [qml.RX(x, wires=wires)]
+
+        assert MyOp.has_decomposition is True
+        assert MyOp(0.2, wires=1).has_decomposition is True
+
+    def test_has_decomposition_true_decomposition(self):
+        """Test has_decomposition property detects overriding of `decomposition` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            def decomposition(self):
+                return [qml.RX(self.parameters[0], wires=self.wires)]
+
+        assert MyOp.has_decomposition is True
+        assert MyOp(0.2, wires=1).has_decomposition is True
+
+    def test_has_decomposition_false(self):
+        """Test has_decomposition property defaults to false if neither
+        `decomposition` nor `compute_decomposition` are overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert MyOp.has_decomposition is False
+        assert MyOp(wires=0).has_decomposition is False
+
+    def test_has_diagonalizing_gates_true_compute_diagonalizing_gates(self):
+        """Test has_diagonalizing_gates property detects
+        overriding of `compute_diagonalizing_gates` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            @staticmethod
+            def compute_diagonalizing_gates(x, wires=None):
+                return []
+
+        assert MyOp.has_diagonalizing_gates is True
+        assert MyOp(0.2, wires=1).has_diagonalizing_gates is True
+
+    def test_has_diagonalizing_gates_true_diagonalizing_gates(self):
+        """Test has_diagonalizing_gates property detects
+        overriding of `diagonalizing_gates` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+            def diagonalizing_gates(self):
+                return [qml.RX(self.parameters[0], wires=self.wires)]
+
+        assert MyOp.has_diagonalizing_gates is True
+        assert MyOp(0.2, wires=1).has_diagonalizing_gates is True
+
+    def test_has_diagonalizing_gates_false(self):
+        """Test has_diagonalizing_gates property defaults to false if neither
+        `diagonalizing_gates` nor `compute_diagonalizing_gates` are overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert MyOp.has_diagonalizing_gates is False
+        assert MyOp(wires=0).has_diagonalizing_gates is False
 
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])
@@ -391,6 +476,46 @@ class TestOperatorConstruction:
         fun1 = tf.function(fun, jit_compile=jit_compile, input_signature=signature)
         fun1(tf.Variable(0.2))
         fun1(tf.Variable([0.2, 0.5]))
+
+    def test_simplify_method(self):
+        """Test that simplify method returns the same instance."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            num_wires = 1
+
+        op = DummyOp(wires=0)
+        sim_op = op.simplify()
+        assert op is sim_op
+
+    def test_map_wires(self):
+        """Test the map_wires method."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            num_wires = 3
+
+        op = DummyOp(wires=[0, 1, 2])
+        wire_map = {0: 10, 1: 11, 2: 12}
+        mapped_op = op.map_wires(wire_map=wire_map)
+        assert op is not mapped_op
+        assert op.wires == Wires([0, 1, 2])
+        assert mapped_op.wires == Wires([10, 11, 12])
+
+    def test_map_wires_uncomplete_wire_map(self):
+        """Test that the map_wires method doesn't change wires that are not present in the wire
+        map."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            num_wires = 3
+
+        op = DummyOp(wires=[0, 1, 2])
+        wire_map = {0: 10, 2: 12}
+        mapped_op = op.map_wires(wire_map=wire_map)
+        assert op is not mapped_op
+        assert op.wires == Wires([0, 1, 2])
+        assert mapped_op.wires == Wires([10, 1, 12])
 
 
 class TestOperationConstruction:
@@ -740,18 +865,6 @@ class TestObservableConstruction:
         op = DummyObserv(wires=0)
         assert op.is_hermitian is True
 
-    def test_simplify_method(self):
-        """Test that simplify method returns the same instance."""
-
-        class DummyObserv(qml.operation.Observable):
-            r"""Dummy custom observable"""
-            num_wires = 1
-            grad_method = None
-
-        op = DummyObserv(wires=0)
-        sim_op = op.simplify()
-        assert op is sim_op
-
 
 class TestOperatorIntegration:
     """Integration tests for the Operator class"""
@@ -793,8 +906,8 @@ class TestOperatorIntegration:
         sum_op = qml.PauliX(0) + qml.RX(1, 0)
         final_op = qml.op_sum(qml.PauliX(0), qml.RX(1, 0))
         #  TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, qml.ops.Sum)
-        for s1, s2 in zip(sum_op.summands, final_op.summands):
+        assert isinstance(sum_op, Sum)
+        for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -805,23 +918,59 @@ class TestOperatorIntegration:
         sum_op = 5 + qml.PauliX(0) + 0
         final_op = qml.op_sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
         # TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, qml.ops.Sum)
-        for s1, s2 in zip(sum_op.summands, final_op.summands):
+        assert isinstance(sum_op, Sum)
+        for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
         assert np.allclose(a=sum_op.matrix(), b=final_op.matrix(), rtol=0)
+
+    def test_sum_scalar_tensor(self):
+        """Test the __sum__ dunder method with a scalar tensor."""
+        scalar = pnp.array(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert sum_op[1].scalar is scalar
+
+    @pytest.mark.torch
+    def test_sum_scalar_torch_tensor(self):
+        """Test the __sum__ dunder method with a scalar torch tensor."""
+        import torch
+
+        scalar = torch.tensor(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert isinstance(sum_op, Sum)
+        assert sum_op[1].scalar is scalar
+
+    @pytest.mark.tf
+    def test_sum_scalar_tf_tensor(self):
+        """Test the __sum__ dunder method with a scalar tf tensor."""
+        import tensorflow as tf
+
+        scalar = tf.constant(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert isinstance(sum_op, Sum)
+        assert sum_op[1].scalar is scalar
+
+    @pytest.mark.jax
+    def test_sum_scalar_jax_tensor(self):
+        """Test the __sum__ dunder method with a scalar jax tensor."""
+        from jax import numpy as jnp
+
+        scalar = jnp.array(5)
+        sum_op = qml.RX(1.23, 0) + scalar
+        assert isinstance(sum_op, Sum)
+        assert sum_op[1].scalar is scalar
 
     def test_sum_multi_wire_operator_with_scalar(self):
         """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
         sum_op = 5 + qml.CNOT(wires=[0, 1])
         final_op = qml.op_sum(
             qml.CNOT(wires=[0, 1]),
-            qml.s_prod(5, qml.prod(qml.Identity(0), qml.Identity(1))),
+            qml.s_prod(5, qml.Identity([0, 1])),
         )
         # TODO: Use qml.equal when fixed.
-        assert isinstance(sum_op, qml.ops.Sum)
-        for s1, s2 in zip(sum_op.summands, final_op.summands):
+        assert isinstance(sum_op, Sum)
+        for s1, s2 in zip(sum_op.operands, final_op.operands):
             assert s1.name == s2.name
             assert s1.wires == s2.wires
             assert s1.data == s2.data
@@ -851,11 +1000,48 @@ class TestOperatorIntegration:
         assert np.allclose(sprod_op.matrix(), sprod_op2.matrix(), rtol=0)
         assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
 
+    def test_mul_scalar_tensor(self):
+        """Test the __mul__ dunder method with a scalar tensor."""
+        scalar = pnp.array(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+    @pytest.mark.torch
+    def test_mul_scalar_torch_tensor(self):
+        """Test the __mul__ dunder method with a scalar torch tensor."""
+        import torch
+
+        scalar = torch.tensor(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+    @pytest.mark.tf
+    def test_mul_scalar_tf_tensor(self):
+        """Test the __mul__ dunder method with a scalar tf tensor."""
+        import tensorflow as tf
+
+        scalar = tf.constant(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
+    @pytest.mark.jax
+    def test_mul_scalar_jax_tensor(self):
+        """Test the __mul__ dunder method with a scalar jax tensor."""
+        from jax import numpy as jnp
+
+        scalar = jnp.array(5)
+        prod_op = qml.RX(1.23, 0) * scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar is scalar
+
     def test_mul_with_operator(self):
         """Test the __matmul__ dunder method with an operator."""
         prod_op = qml.RX(1, 0) @ qml.PauliX(0)
         final_op = qml.prod(qml.RX(1, 0), qml.PauliX(0))
-        assert isinstance(prod_op, qml.ops.Prod)
+        assert isinstance(prod_op, Prod)
         assert prod_op.name == final_op.name
         assert prod_op.wires == final_op.wires
         assert prod_op.data == final_op.data
@@ -890,11 +1076,13 @@ class TestInverse:
         dummy_op_class_name = dummy_op.name
 
         # Check that the name of the Operation was modified when applying the inverse
-        assert dummy_op.inv().name == dummy_op_class_name + ".inv"
+        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
+            assert dummy_op.inv().name == dummy_op_class_name + ".inv"
         assert dummy_op.inverse
 
         # Check that the name of the Operation is the original again, once applying the inverse a second time
-        assert dummy_op.inv().name == dummy_op_class_name
+        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
+            assert dummy_op.inv().name == dummy_op_class_name
         assert not dummy_op.inverse
 
     def test_inv_queuing(self):
@@ -905,7 +1093,8 @@ class TestInverse:
             num_wires = 1
 
         with qml.tape.QuantumTape() as tape:
-            op = DummyOp(wires=[0]).inv()
+            with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
+                op = DummyOp(wires=[0]).inv()
             assert op.inverse is True
 
         assert op.inverse is True
@@ -923,7 +1112,8 @@ class TestInverse:
             qml.RX(1.234, wires=0).inv()
             return qml.state()
 
-        assert qml.math.allclose(circuit()[0], 1)
+        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
+            assert qml.math.allclose(circuit()[0], 1)
 
     def test_inverse_operations_not_supported(self):
         """Test that the inverse of operations is not currently
@@ -1087,7 +1277,7 @@ class TestTensor:
 
     def test_num_wires(self):
         """Test that the correct number of wires is returned"""
-        p = np.array([0.5])
+        p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
@@ -1095,7 +1285,7 @@ class TestTensor:
 
     def test_wires(self):
         """Test that the correct nested list of wires is returned"""
-        p = np.array([0.5])
+        p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
@@ -1103,7 +1293,7 @@ class TestTensor:
 
     def test_params(self):
         """Test that the correct flattened list of parameters is returned"""
-        p = np.array([0.5])
+        p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
@@ -1111,7 +1301,7 @@ class TestTensor:
 
     def test_num_params(self):
         """Test that the correct number of parameters is returned"""
-        p = np.array([0.5])
+        p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         Z = qml.Hermitian(p, wires=[1, 2])
@@ -1120,7 +1310,7 @@ class TestTensor:
 
     def test_parameters(self):
         """Test that the correct nested list of parameters is returned"""
-        p = np.array([0.5])
+        p = np.eye(4)
         X = qml.PauliX(0)
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
@@ -1554,6 +1744,18 @@ class TestTensor:
         with pytest.raises(ValueError, match="Can only compute"):
             t.sparse_matrix()
 
+    def test_map_wires(self):
+        """Test the map_wires method."""
+        tensor = Tensor(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
+        wire_map = {0: 10, 1: 11, 2: 12}
+        mapped_tensor = tensor.map_wires(wire_map=wire_map)
+        final_obs = [qml.PauliX(10), qml.PauliY(11), qml.PauliZ(12)]
+        assert tensor is not mapped_tensor
+        assert tensor.wires == Wires([0, 1, 2])
+        assert mapped_tensor.wires == Wires([10, 11, 12])
+        for obs1, obs2 in zip(mapped_tensor.obs, final_obs):
+            assert qml.equal(obs1, obs2)
+
 
 equal_obs = [
     (qml.PauliZ(0), qml.PauliZ(0), True),
@@ -1789,8 +1991,6 @@ class TestDefaultRepresentations:
     def test_terms_undefined(self):
         """Tests that custom error is raised in the default terms representation."""
         with pytest.raises(qml.operation.TermsUndefinedError):
-            MyOp.compute_terms(wires=[1])
-        with pytest.raises(qml.operation.TermsUndefinedError):
             op.terms()
 
     def test_sparse_matrix_undefined(self):
@@ -1933,7 +2133,8 @@ class TestOperationDerivative:
 
         assert np.allclose(derivative, expected_derivative)
 
-        op.inv()
+        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
+            op.inv()
         derivative_inv = operation_derivative(op)
         expected_derivative_inv = 0.5 * np.array(
             [[-np.sin(p / 2), 1j * np.cos(p / 2)], [1j * np.cos(p / 2), -np.sin(p / 2)]]

@@ -47,7 +47,7 @@
 
 - *Machine learning on quantum hardware*. Connect to quantum hardware using **PyTorch**, **TensorFlow**, **JAX**, **Keras**, or **NumPy**. Build rich and flexible hybrid quantum-classical models.
 
-- *Device independent*. Run the same quantum circuit on different quantum backends. Install
+- *Device-independent*. Run the same quantum circuit on different quantum backends. Install
   [plugins](https://pennylane.ai/plugins.html) to access even more devices, including **Strawberry
   Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, **Qulacs**, **Pasqal**, **Honeywell**, and more.
 
@@ -105,6 +105,15 @@ scripts.
 
 If you would like to contribute your own demo, see our [demo submission
 guide](https://pennylane.ai/qml/demos_submission.html).
+
+## Videos
+
+Seeing is believing! Check out [our videos](https://pennylane.ai/qml/videos.html) to learn about
+PennyLane, quantum computing concepts, and more. 
+
+<a href="https://pennylane.ai/qml/videos.html)">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/videos.png" width="900px">
+</a>
 
 ## Contributing to PennyLane
 

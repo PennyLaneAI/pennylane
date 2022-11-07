@@ -17,6 +17,7 @@ from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import Exp
 
 
@@ -77,6 +78,17 @@ class TestInitialization:
         assert op.data == [coeff, [base_coeff]]
 
         assert op.wires == qml.wires.Wires(5)
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value, constructor):
+        """Test that Exp defers has_diagonalizing_gates to base operator."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        op = constructor(DummyOp(1), 2.312)
+        assert op.has_diagonalizing_gates is value
 
 
 class TestProperties:
@@ -139,13 +151,37 @@ class TestMatrix:
         assert qml.math.allclose(op.matrix(), isingxx.matrix())
 
     @pytest.mark.autograd
-    def test_matrix_autograd_rx(self):
+    @pytest.mark.parametrize("requires_grad", (True, False))
+    def test_matrix_autograd_rx(self, requires_grad):
         """Test the matrix comparing to the rx gate."""
-        phi = np.array(1.234)
+        phi = np.array(1.234, requires_grad=requires_grad)
         exp_rx = Exp(qml.PauliX(0), -0.5j * phi)
         rx = qml.RX(phi, 0)
 
         assert qml.math.allclose(exp_rx.matrix(), rx.matrix())
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("requires_grad", (True, False))
+    def test_matrix_autograd_rz(self, requires_grad):
+        """Test the matrix comparing to the rz gate. This is a gate with an
+        autograd coefficient but empty diagonalizing gates."""
+        phi = np.array(1.234, requires_grad=requires_grad)
+        exp_rz = Exp(qml.PauliZ(0), -0.5j * phi)
+        rz = qml.RZ(phi, 0)
+
+        assert qml.math.allclose(exp_rz.matrix(), rz.matrix())
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("requires_grad", (True, False))
+    def test_tensor_with_pauliz_autograd(self, requires_grad):
+        """Test the matrix for the case when the coefficient is autograd and
+        the diagonalizing gates don't act on every wire for the matrix."""
+        phi = qml.numpy.array(-0.345, requires_grad=requires_grad)
+        base = qml.PauliZ(0) @ qml.PauliY(1)
+        autograd_op = Exp(base, phi)
+        mat = qml.math.expm(phi * qml.matrix(base))
+
+        assert qml.math.allclose(autograd_op.matrix(), mat)
 
     @pytest.mark.autograd
     def test_base_no_diagonalizing_gates_autograd_coeff(self):
@@ -240,6 +276,40 @@ class TestMatrix:
             op.sparse_matrix(wire_order=[0, 1])
 
 
+class TestDecomposition:
+    @pytest.mark.parametrize("coeff", (1, 1 + 0.5j))
+    def test_non_imag_no_decomposition(self, coeff):
+        """Tests that the decomposition doesn't exist if the coefficient has a real component."""
+        op = Exp(coeff, qml.PauliX(0))
+        assert not op.has_decomposition
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+    def test_non_pauli_word_base_no_decomposition(self):
+        """Tests that the decomposition doesn't exist if the base is not a pauli word."""
+        op = Exp(-0.5j, qml.S(0))
+        assert not op.has_decomposition
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+    @pytest.mark.parametrize(
+        "base, base_string",
+        (
+            (qml.PauliX(0), "X"),
+            (qml.PauliZ(0) @ qml.PauliY(1), "ZY"),
+            (qml.PauliY(0) @ qml.Identity(1) @ qml.PauliZ(2), "YIZ"),
+        ),
+    )
+    def test_pauli_word_decompositioni(self, base, base_string):
+        """Check that Exp decomposes into PauliRot if possible."""
+        theta = 3.21
+        op = Exp(base, -0.5j * theta)
+
+        assert op.has_decomposition
+        pr = op.decomposition()[0]
+        assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
+
+
 class TestMiscMethods:
     """Test other representation methods."""
 
@@ -282,10 +352,20 @@ class TestMiscMethods:
         assert pow_op.base is base
         assert pow_op.coeff == coeff * z
 
-    def test_label(self):
-        """Test that the label is always EXP"""
-        op = Exp(qml.PauliZ(0), 2 + 3j)
-        assert op.label(decimals=4) == "Exp"
+    @pytest.mark.parametrize(
+        "op,decimals,expected",
+        [
+            (Exp(qml.PauliZ(0), 2 + 3j), None, "Exp((2+3j) Z)"),
+            (Exp(qml.PauliZ(0), 2 + 3j), 2, "Exp(2.00+3.00j Z)"),
+            (Exp(qml.prod(qml.PauliZ(0), qml.PauliY(1)), 2 + 3j), None, "Exp((2+3j) Z@Y)"),
+            (Exp(qml.prod(qml.PauliZ(0), qml.PauliY(1)), 2 + 3j), 2, "Exp(2.00+3.00j Z@Y)"),
+            (Exp(qml.RZ(1.234, wires=[0]), 5.678), None, "Exp(5.678 RZ)"),
+            (Exp(qml.RZ(1.234, wires=[0]), 5.678), 2, "Exp(5.68 RZ\n(1.23))"),
+        ],
+    )
+    def test_label(self, op, decimals, expected):
+        """Test that the label is informative and uses decimals."""
+        assert op.label(decimals=decimals) == expected
 
     def test_simplify_sprod(self):
         """Test that simplify merges SProd into the coefficent."""

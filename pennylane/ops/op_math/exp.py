@@ -20,9 +20,11 @@ from scipy.sparse.linalg import expm as sparse_expm
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import (
+    DecompositionUndefinedError,
     expand_matrix,
     OperatorPropertyUndefined,
 )
+from pennylane.pauli import is_pauli_word, pauli_word_to_string
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
@@ -165,17 +167,43 @@ class Exp(SymbolicOp):
             return "_ops"
         return None
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        return math.real(self.coeff) == 0 and is_pauli_word(self.base)
+
+    def decomposition(self):
+        r"""Representation of the operator as a product of other operators. Decomposes into
+        :class:`~.PauliRot` if the coefficient is imaginary and the base is a Pauli Word.
+
+        .. math:: O = O_1 O_2 \dots O_n
+
+        A ``DecompositionUndefinedError`` is raised if the coefficient is not imaginary or the base
+        is not a Pauli Word.
+
+        Returns:
+            list[PauliRot]: decomposition of the operator
+        """
+        if math.real(self.coeff) != 0 or not is_pauli_word(self.base):
+            raise DecompositionUndefinedError
+        new_coeff = math.real(2j * self.coeff)
+        string_base = pauli_word_to_string(self.base)
+        return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
+
     def matrix(self, wire_order=None):
 
         coeff_interface = math.get_interface(self.coeff)
-        if coeff_interface == "autograd":
+        if coeff_interface == "autograd" and math.requires_grad(self.coeff):
             # math.expm is not differentiable with autograd
             # So we try to do a differentiable construction if possible
             #
             # This won't catch situations when the base matrix is autograd,
             # but at least this provides as much trainablility as possible
             try:
-                diagonalizing_mat = qml.matrix(self.diagonalizing_gates)()
+                if len(self.diagonalizing_gates()) == 0:
+                    eigvals_mat = math.diag(self.eigvals())
+                    return expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
+                diagonalizing_mat = qml.matrix(self.diagonalizing_gates, wire_order=self.wires)()
                 eigvals_mat = math.diag(self.eigvals())
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
                 return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
@@ -202,6 +230,11 @@ class Exp(SymbolicOp):
 
         return sparse_expm(self.coeff * self.base.sparse_matrix().tocsc()).asformat(format)
 
+    # pylint: disable=arguments-renamed,invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
 
@@ -226,7 +259,10 @@ class Exp(SymbolicOp):
         return qml.math.exp(self.coeff * base_eigvals)
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "Exp"
+        coeff = (
+            self.coeff if decimals is None else format(math.toarray(self.coeff), f".{decimals}f")
+        )
+        return base_label or f"Exp({coeff} {self.base.label(decimals=decimals, cache=cache)})"
 
     def pow(self, z):
         return Exp(self.base, self.coeff * z)

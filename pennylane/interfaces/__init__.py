@@ -24,7 +24,6 @@ Execution functions and utilities
     :toctree: api
 
     ~execute
-    ~execute_new
     ~interfaces.cache_execute
     ~interfaces.set_shots
 
@@ -42,7 +41,7 @@ Supported interfaces
     ~interfaces.torch
 
 """
-from .execution import cache_execute, execute, execute_new, INTERFACE_MAP, SUPPORTED_INTERFACES
+from .execution import cache_execute, execute, INTERFACE_MAP, SUPPORTED_INTERFACES
 from .set_shots import set_shots
 
 

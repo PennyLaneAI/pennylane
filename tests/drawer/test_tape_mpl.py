@@ -301,9 +301,9 @@ class TestSpecialGates:
         _, ax = tape_mpl(tape)
 
         assert ax.patches[0].get_facecolor() == (1.0, 1.0, 1.0, 1.0)  # white
-        assert ax.patches[1].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
+        assert ax.patches[1].get_facecolor() == (0.0, 0.0, 0.0, 1.0)  # black
         assert ax.patches[2].get_facecolor() == (1.0, 1.0, 1.0, 1.0)
-        assert ax.patches[3].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
+        assert ax.patches[3].get_facecolor() == (0.0, 0.0, 0.0, 1.0)
 
         plt.close()
 
@@ -352,7 +352,8 @@ class TestSpecialGates:
         layer = 0
 
         assert len(ax.lines) == 2
-        assert len(ax.collections) == 2
+        assert len(ax.texts) == 3
+        assert len(ax.collections) == 1
 
         plt.close()
 
@@ -448,7 +449,7 @@ class TestControlledGates:
 
     def check_tape_controlled_qubit_unitary(self, tape):
         """Checks the control symbols for a tape with some version of a controlled qubit unitary."""
-        _, ax = tape_mpl(tape)
+        _, ax = tape_mpl(tape, style=None)  # set style to None to use plt.rcParams values
         layer = 0
 
         # 5 wires -> 4 control, 1 target

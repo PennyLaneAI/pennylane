@@ -201,7 +201,6 @@ Differentiable observables
     ~pennylane.qchem.jordan_wigner
     ~pennylane.qchem.molecular_hamiltonian
     ~pennylane.qchem.qubit_observable
-    ~pennylane.qchem.simplify
 
 :html:`</div>`
 
@@ -237,6 +236,7 @@ Qubit tapering
     ~pennylane.symmetry_generators
     ~pennylane.taper
     ~pennylane.qchem.taper_hf
+    ~pennylane.qchem.taper_operation
 
 :html:`</div>`
 

@@ -17,23 +17,26 @@ PennyLane can be directly imported.
 """
 from importlib import reload
 import types
+import warnings
 import pkg_resources
+
 
 import numpy as _np
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
-from pennylane.queuing import apply, QueuingContext
+from pennylane.queuing import QueuingManager, apply
 
 import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
-import pennylane.resource
 import pennylane.templates
+from pennylane import pauli
+import pennylane.resource
 import pennylane.qchem
-from pennylane.qchem import taper, symmetry_generators, paulix_ops, import_operator
+from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
@@ -60,7 +63,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, exp, op_sum, prod, s_prod
+from pennylane.ops import adjoint, ctrl, exp, op_sum, pow, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -98,13 +101,14 @@ from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
+import pennylane.data
 
-# QueuingContext and collections needs to be imported after all other pennylane imports
+# collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
-import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
-from pennylane.interfaces import execute, execute_new  # pylint:disable=wrong-import-order
+from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
+
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -335,3 +339,18 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
+
+
+# pragma: no cover
+def __getattr__(name):
+    """Raise a deprecation warning and still allow `qml.grouping.func_name`
+    syntax for one release."""
+    if name == "grouping":
+        warnings.warn(
+            "The qml.grouping module is deprecated, please use qml.pauli instead.",
+            DeprecationWarning,
+        )
+        import pennylane.grouping as grouping  # pylint:disable=import-outside-toplevel,consider-using-from-import
+
+        return grouping
+    raise AttributeError(f"Module {__name__} has no attribute {name}")

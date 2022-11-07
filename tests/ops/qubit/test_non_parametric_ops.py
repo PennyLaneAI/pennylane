@@ -14,19 +14,19 @@
 """
 Unit tests for the available non-parametric qubit operations
 """
-import itertools
-import pytest
 import copy
+import itertools
+
 import numpy as np
+import pytest
+from gate_data import CNOT, CSWAP, CZ, ECR, ISWAP, SISWAP, SWAP, H, I, S, T, Toffoli, X, Y, Z
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import math
+from pennylane.operation import AnyWires
 from pennylane.wires import Wires
-
-from gate_data import I, X, Y, Z, H, CNOT, SWAP, ISWAP, SISWAP, CZ, S, T, CSWAP, Toffoli, ECR
-
 
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
@@ -56,7 +56,7 @@ class TestOperations:
     @pytest.mark.parametrize("op_cls, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_nonparametrized_op_copy(self, op_cls, mat, tol):
         """Tests that copied nonparametrized ops function as expected"""
-        op = op_cls(wires=range(op_cls.num_wires))
+        op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
@@ -67,7 +67,7 @@ class TestOperations:
     @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, tol):
         """Test matrices of non-parametrized operations are correct"""
-        op = ops(wires=range(ops.num_wires))
+        op = ops(wires=0 if ops.num_wires is AnyWires else range(ops.num_wires))
         res_static = op.compute_matrix()
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
@@ -615,7 +615,7 @@ class TestBarrier:
         op = qml.Barrier(wires=(0, 1, 2), only_visual=True)
         simplified = op.simplify()
         assert isinstance(simplified, qml.ops.op_math.Prod)
-        for i, op in enumerate(simplified.factors):
+        for i, op in enumerate(simplified.operands):
             assert qml.equal(op, qml.Identity(i))
 
     def test_simplify_only_visual_False(self):
@@ -1034,6 +1034,13 @@ class TestMultiControlledX:
         mat1 = qml.MultiControlledX.compute_matrix([0, 1])
         mat2 = qml.MultiControlledX.compute_matrix([0, 1], control_values="11")
         assert np.allclose(mat1, mat2)
+
+    def test_repr(self):
+        """Test ``__repr__`` method that shows ``control_values``"""
+        wires = [0, 1, 2]
+        control_values = "01"
+        op_repr = qml.MultiControlledX(wires=wires, control_values=control_values).__repr__()
+        assert op_repr == f'MultiControlledX(wires={wires}, control_values="{control_values}")'
 
 
 period_two_ops = (
