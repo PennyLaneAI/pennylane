@@ -211,6 +211,28 @@ def vn_entanglement_entropy(qnode, wires0, wires1, base=None):
         func: A function with the same arguments as the QNode that returns
         the Von Neumann entanglement entropy from its output state.
 
+    **Example**
+
+    It is possible to obtain the entanglement entropy of two subsystems from a
+    :class:`.QNode` returning a :func:`~.state`.
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+    >>> entanglement_entropy_circuit = qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])
+    >>> entanglement_entropy_circuit(np.pi / 2)
+    0.69314718
+    >>> x = np.array(np.pi / 4, requires_grad=True)
+    >>> qml.grad(entanglement_entropy_circuit)(x)
+    0.62322524
+
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.vn_entanglement_entropy` and :func:`pennylane.vn_entanglement_entropy`
     """
 
@@ -285,6 +307,7 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
         qml.probs(wires=wires)
 
     if post_processing_fn is None:
+        # pylint: disable=unnecessary-lambda-assignment
         post_processing_fn = lambda x: qml.math.squeeze(qml.math.stack(x))
 
     return [new_tape], post_processing_fn

@@ -627,6 +627,26 @@ def vn_entanglement_entropy(
     Returns:
         float: The von Neumann entanglement entropy of the bipartite state.
 
+    **Examples**
+
+    The entanglement entropy between subsystems for a state vector can be returned as follows:
+
+    >>> x = np.array([0, -1, 1, 0]) / np.sqrt(2)
+    >>> qml.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1])
+    0.6931471805599453
+
+    It is also possible to change the log basis.
+
+    >>> qml.math.vn_entanglement_entropy(x, indices0=[0], indices1=[1], base=2)
+    1
+
+    Similarly the quantum state can be provided as a density matrix:
+
+    >>> y = np.array([[1, 1, -1, -1], [1, 1, -1, -1], [-1, -1, 1, 1], [-1, -1, 1, 1]]) * 0.25
+    >>> qml.math.vn_entanglement_entropy(y, indices0=[0], indices1=[1])
+    0
+
+    .. seealso:: :func:`~.math.vn_entropy`, :func:`pennylane.qinfo.transforms.vn_entanglement_entropy` and :func:`pennylane.vn_entanglement_entropy`
     """
 
     return _compute_bipartite_info(
