@@ -58,10 +58,6 @@ class TestProbs:
         ):
             measurement.shape()
 
-
-class TestBetaProbs:
-    """Tests for annotating the return types of the probs function"""
-
     @pytest.mark.parametrize("wires", [[0], [0, 1], [1, 0, 2]])
     def test_annotating_probs(self, wires):
         """Test annotating probs"""

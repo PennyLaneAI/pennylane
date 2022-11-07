@@ -186,12 +186,7 @@ class TestStatisticsQueuing:
 
         assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
-
-@pytest.mark.parametrize("stat_func", [expval, var, sample])
-class TestBetaStatisticsError:
-    """Tests for errors arising for the beta statistics functions"""
-
-    def test_not_an_observable(self, stat_func):
+    def test_not_an_observable(self, stat_func, return_type):
         """Test that a UserWarning is raised if the provided
         argument might not be hermitian."""
         if stat_func is sample:
