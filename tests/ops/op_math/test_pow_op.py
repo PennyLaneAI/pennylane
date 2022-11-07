@@ -59,8 +59,8 @@ class TestConstructor:
         """Test that nonlazy pow returns a single identity if the power decomposes
         to the identity."""
 
-        op = qml.pow(op, 2, lazy=False)
-        assert qml.equal(op, qml.Identity(0))
+        op_new = qml.pow(op, 2, lazy=False)
+        assert qml.equal(op_new, qml.Identity(op.wires))
 
     def test_simplification_multiple_ops(self):
         """Test that when the simplification method returns a list of multiple operators,

@@ -215,7 +215,7 @@ class TestAnnotatedQueue:
             A = qml.PauliZ(0)
             B = qml.PauliY(1)
             tensor_op = qml.operation.Tensor(A, B)
-        assert q.queue == [A, B, tensor_op]
+        assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
 
     def test_append_tensor_ops_overloaded(self):
@@ -226,7 +226,7 @@ class TestAnnotatedQueue:
             A = qml.PauliZ(0)
             B = qml.PauliY(1)
             tensor_op = A @ B
-        assert q.queue == [A, B, tensor_op]
+        assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
 
     def test_get_info(self):
@@ -297,10 +297,7 @@ class TestAnnotatedQueue:
             B = qml.PauliY(1)
             tensor_op = qml.operation.Tensor(A, B)
 
-        assert q.queue == [A, B, tensor_op]
-        assert q.get_info(A) == {"owner": tensor_op}
-        assert q.get_info(B) == {"owner": tensor_op}
-        assert q.get_info(tensor_op) == {"owns": (A, B)}
+        assert q.queue == [tensor_op]
 
     def test_annotated_queue_safe_update_info_deprecation(self):
         """Test that AnnotatedQueue.safe_update_info raises a deprecation warning."""
