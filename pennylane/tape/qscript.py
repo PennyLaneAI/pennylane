@@ -749,8 +749,6 @@ class QuantumScript:
             # No other measurement type to check
 
         else:
-            # we don't need to pass in the batch size here because parameter
-            # broadcasting with shot vectors is not supported yet
             shape = QuantumScript._shape_shot_vector_multi_homogenous(mps, device)
 
         return shape
@@ -840,15 +838,11 @@ class QuantumScript:
         output_shape = tuple()
 
         if len(self.measurements) == 1:
-            output_shape = self._single_measurement_shape(
-                self.measurements[0], device
-            )
+            output_shape = self._single_measurement_shape(self.measurements[0], device)
         else:
             num_measurements = len({meas.return_type for meas in self.measurements})
             if num_measurements == 1:
-                output_shape = self._multi_homogenous_measurement_shape(
-                    self.measurements, device
-                )
+                output_shape = self._multi_homogenous_measurement_shape(self.measurements, device)
             else:
                 raise ValueError(
                     "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
