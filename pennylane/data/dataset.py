@@ -44,14 +44,16 @@ class Dataset(ABC):
     and an efficient state-preparation circuit for that state.
 
     Args:
-        *args: For internal use only. These will be ignored if called with standard=False
-        standard (bool): For internal use only. See below for behaviour if this is set to True
+        *args: For internal use only. These will be ignored if called with ``standard=False``
+        standard (bool): For internal use only. See the note below for the behavior when this is set to ``True``
         **kwargs: variable-length keyword arguments specifying the data to be stored in the dataset
 
     Note on the ``standard`` kwarg:
-        A "standard" Dataset uses previously generated, downloadable quantum data. This special instance of
-        the Dataset class makes some assumptions for folder management and file downloading. As such, the
-        Dataset class should not be invoked directly with ``standard=True``. Instead, call :meth:`~load`
+        A `standard` Dataset uses previously generated, hosted quantum data. This special instance of the
+        ``Dataset`` class makes certain assumptions about folder management for downloading the data and
+        handling I/O. As such, the ``Dataset`` class should not be instantiated by the users directly with
+        ``standard=True``. Instead, they should use :meth:`~load`.
+
 
     .. seealso:: :meth:`~load`
 
