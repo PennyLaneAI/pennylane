@@ -16,7 +16,7 @@ This module contains functions and classes to create a
 :class:`~pennylane.qchem.basis_set.BasisFunction` object from standard basis sets such as STO-3G.
 """
 # pylint: disable=too-few-public-methods
-from .basis_data import STO3G, POPLE631G, POPLE6311G
+from .basis_data import STO3G, POPLE631G, POPLE6311G, CCPVDZ
 
 
 class BasisFunction:
@@ -94,10 +94,14 @@ def atom_basis_data(name, atom):
         "STO-3G": STO3G,
         "6-31G": POPLE631G,
         "6-311G": POPLE6311G,
+        "cc-pvdz": CCPVDZ,
+        "CC-PVDZ": CCPVDZ,
     }
 
     s = [(0, 0, 0)]
     p = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]  # for px, py, pz, respectively
+    # for dxy, dxz, dyz, dxx, dyy, dzz, respectively:
+    d = [(1, 1, 0), (1, 0, 1), (0, 1, 1), (2, 0, 0), (0, 2, 0), (0, 0, 2)]
 
     basis = basis_sets[name][atom]
     params = []
@@ -117,6 +121,12 @@ def atom_basis_data(name, atom):
                             (l, basis["exponents"][i], basis["coefficients"][i + sp_count + 1])
                         )
             sp_count += 1
+        if j == "P":
+            for l in p:
+                params.append((l, basis["exponents"][i], basis["coefficients"][i]))
+        if j == "D":
+            for l in d:
+                params.append((l, basis["exponents"][i], basis["coefficients"][i]))
     return params
 
 
