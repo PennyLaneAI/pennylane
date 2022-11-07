@@ -72,8 +72,10 @@ class Molecule:
         normalize=True,
     ):
 
-        if basis_name not in ["sto-3g", "STO-3G", "6-31g", "6-31G"]:
-            raise ValueError("Currently, the only supported basis sets are 'sto-3g' and '6-31g'.")
+        if basis_name not in ["sto-3g", "STO-3G", "6-31g", "6-31G", "6-311g", "6-311G"]:
+            raise ValueError(
+                "Currently, the only supported basis sets are 'sto-3g', '6-31g' and '6-311g'."
+            )
 
         if set(symbols) - set(atomic_numbers):
             raise ValueError(f"Atoms in {set(symbols) - set(atomic_numbers)} are not supported.")
