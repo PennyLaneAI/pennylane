@@ -17,6 +17,7 @@ PennyLane can be directly imported.
 """
 from importlib import reload
 import types
+import warnings
 import pkg_resources
 
 
@@ -31,8 +32,9 @@ import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
-import pennylane.resource
 import pennylane.templates
+from pennylane import pauli
+import pennylane.resource
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
 from pennylane._device import Device, DeviceError
@@ -99,10 +101,10 @@ from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
+import pennylane.data
 
 # collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
-import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
@@ -337,3 +339,18 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
+
+
+# pragma: no cover
+def __getattr__(name):
+    """Raise a deprecation warning and still allow `qml.grouping.func_name`
+    syntax for one release."""
+    if name == "grouping":
+        warnings.warn(
+            "The qml.grouping module is deprecated, please use qml.pauli instead.",
+            DeprecationWarning,
+        )
+        import pennylane.grouping as grouping  # pylint:disable=import-outside-toplevel,consider-using-from-import
+
+        return grouping
+    raise AttributeError(f"Module {__name__} has no attribute {name}")
