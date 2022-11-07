@@ -471,9 +471,15 @@ class TestParamShift:
         )
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
-        expected = [
-            -np.sin(x[0] + x[1]) if i not in ops_with_custom_recipe else 0 for i in range(2)
-        ]
+        if multi_measure:
+            expected = np.array([[-np.sin(x[0] + x[1])] * 2, [0, 0]])
+            # The custom recipe estimates gradients to be 0
+            for i in ops_with_custom_recipe:
+                expected[0, i] = 0
+        else:
+            expected = [
+                -np.sin(x[0] + x[1]) if i not in ops_with_custom_recipe else 0 for i in range(2)
+            ]
         assert qml.math.allclose(grad, expected, atol=1e-5)
 
     @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
