@@ -4,57 +4,193 @@
 
 <h3>New features since last release</h3>
 
-<h4>(TODO: title) JAX JIT</h4>
+<h4>An all-new data module</h4>
 
-<h4>(TODO: title) Qutrits</h4>
+* A brand new `data` module is available, allowing users to download, load, and create quantum datasets.
+  [(#3156)](https://github.com/PennyLaneAI/pennylane/pull/3156)
 
-* The `qml.GellMann` qutrit observable, the ternary generalization of the Pauli observables, is now available.
-  ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
+  Datasets are hosted on Xanadu Cloud (TODO: link?) and can be downloaded by using `qml.data.load()`:
 
-  When using `qml.GellMann`, the `index` keyword argument determines which of the 8 Gell-Mann matrices is used.
+  ```pycon
+  >>> H2_dataset = qml.data.load(
+    data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0"
+  )
+  >>> print(H2_dataset)
+  [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
+  ```
+
+  - Datasets available to be downloaded can be listed with `qml.data.list_datasets()`. 
+
+  - To download or load only specific properties of a dataset, we can specify the desired properties in `qml.data.load` with the `attributes` keyword argument:
+
+    ```pycon
+    >>> H2_hamiltonian = qml.data.load(
+      data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0", 
+      attributes=["molecule", "hamiltonian"]
+    )[0]
+    >>> H2_hamiltonian.hamiltonian
+    <Hamiltonian: terms=15, wires=[0, 1, 2, 3]>
+    ```
+
+    The available attributes can be found using `qml.data.list_attributes()`:
+
+  - To select data interactively, we can use `qml.data.load_interactive`:
+
+  ```pycon
+  >>> qml.data.load_interactive()
+        Please select a data name:
+            1) qspin
+            2) qchem
+        Choice [1-2]: 1
+        Please select a sysname:
+            ...
+        Please select a periodicity:
+            ...
+        Please select a lattice:
+            ...
+        Please select a layout:
+            ...
+        Please select attributes:
+            ...
+        Force download files? (Default is no) [y/N]: N
+        Folder to download to? (Default is pwd, will download to /datasets subdirectory): /Users/jovyan/Downloads
+
+        Please confirm your choices:
+        dataset: qspin/Ising/open/rectangular/4x4
+        attributes: ['parameters', 'ground_states']
+        force: False
+        dest folder: /Users/jovyan/Downloads/datasets
+        Would you like to continue? (Default is yes) [Y/n]:
+        <pennylane.data.dataset.Dataset object at 0x10157ab50>
+  ```
+
+  - Once a dataset is loaded, its properties can be accessed as follows:
+
+    ```pycon
+    >>> dev = qml.device('default.qubit',wires=H2_dataset[0].hamiltonian.wires)
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     return qml.expval(H2_dataset[0].hamiltonian)
+    >>> print(circuit())
+    2.173913043478261
+    ```
+
+  It is also possible to create custom datasets with `qml.data.Dataset`:
+
+  ```pycon
+  >>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], observables=[qml.PauliZ(wires=0),qml.PauliX(wires=1)])
+  >>> example_energies, _ = np.linalg.eigh(qml.matrix(example_hamiltonian)) 
+  >>> example_dataset = qml.data.Dataset(
+    data_name = 'Example', hamiltonian=example_hamiltonian, energies=example_energies
+  )
+  >>> example_dataset.data_name
+  'Example'
+  >>> example_dataset.hamiltonian
+      (0.5) [X1]
+  + (1) [Z0]
+  >>> example_dataset.energies
+  array([-1.5, -0.5,  0.5,  1.5])
+  ```
+
+  Custom datasets can be saved and read with the `qml.data.Dataset.write()` and `qml.data.Dataset.read()` methods.
+
+  ```pycon
+  >>> example_dataset.write('./path/to/dataset.dat')
+  >>> read_dataset = qml.data.Dataset()
+  >>> read_dataset.read('./path/to/dataset.dat')
+  >>> read_dataset.data_name
+  'Example'
+  >>> read_dataset.hamiltonian
+      (0.5) [X1]
+  + (1) [Z0]
+  >>> read_dataset.energies
+  array([-1.5, -0.5,  0.5,  1.5])
+  ```
+
+<h4>(TODO: title) Adaptive optimizer</h4>
+
+* Optimizing quantum circuits can now be done *adaptively* with `qml.AdaptiveOptimizer`.
+  [(#3192)](https://github.com/PennyLaneAI/pennylane/pull/3192)
+
+  The `qml.AdaptiveOptimizer` optimizer takes an initial circuit and a collection of operators as input and adds a selected gate to the circuit at each optimization step. The process of growing the circuit can be repeated until the circuit gradients converge to zero within a given threshold. The adaptive optimizer can be used to implement algorithms such as ADAPT-VQE as shown in the following example.
+
+  Firstly, we define some preliminary variables needed for VQE:
 
   ```python
-  dev = qml.device("default.qutrit", wires=2)
+  symbols = ["H", "H", "H"]
+  geometry = np.array([[0.01076341, 0.04449877, 0.0],
+                      [0.98729513, 1.63059094, 0.0],
+                      [1.87262415, -0.00815842, 0.0]], requires_grad=False)
+  H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge = 1)
+  ```
 
+  The collection of gates to grow the circuit is built to contain all single and double excitations:
+
+  ```python
+  n_electrons = 2
+  singles, doubles = qml.qchem.excitations(n_electrons, qubits)
+  singles_excitations = [qml.SingleExcitation(0.0, x) for x in singles]
+  doubles_excitations = [qml.DoubleExcitation(0.0, x) for x in doubles]
+  operator_pool = doubles_excitations + singles_excitations
+  ```
+
+  Next, an initial circuit that prepares a Hartree-Fock state and returns the expectation value of the Hamiltonian is defined:
+
+  ```python
+  hf_state = qml.qchem.hf_state(n_electrons, qubits)
+  dev = qml.device("default.qubit", wires=qubits)
   @qml.qnode(dev)
   def circuit():
-      qml.TClock(wires=0)
-      qml.TShift(wires=1)
-      qml.TAdd(wires=[0, 1])
-      return qml.expval(qml.GellMann(wires=0, index=8) + qml.GellMann(wires=1, index=3))
+      qml.BasisState(hf_state, wires=range(qubits))
+      return qml.expval(H)
+  ```
+
+  Finally, the optimizer is instantiated and then the circuit is created and optimized adaptively:
+
+  ```python 
+  opt = qml.optimize.AdaptiveOptimizer()
+  for i in range(len(operator_pool)):
+      circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
+      print('Energy:', energy)
+      print(qml.draw(circuit)())
+      print('Largest Gradient:', gradient)
+      print()
+      if gradient < 1e-3:
+          break
   ```
 
   ```pycon
-  >>> circuit()
-  -0.42264973081037416
+  Energy: -1.246549938420637
+  0: ─╭BasisState(M0)─╭G²(0.20)─┤ ╭<𝓗>
+  1: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
+  2: ─├BasisState(M0)─│─────────┤ ├<𝓗>
+  3: ─├BasisState(M0)─│─────────┤ ├<𝓗>
+  4: ─├BasisState(M0)─├G²(0.20)─┤ ├<𝓗>
+  5: ─╰BasisState(M0)─╰G²(0.20)─┤ ╰<𝓗>
+  Largest Gradient: 0.14399872776755085
+
+  Energy: -1.2613740231529604
+  0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)─┤ ╭<𝓗>
+  1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─┤ ├<𝓗>
+  2: ─├BasisState(M0)─│─────────├G²(0.19)─┤ ├<𝓗>
+  3: ─├BasisState(M0)─│─────────╰G²(0.19)─┤ ├<𝓗>
+  4: ─├BasisState(M0)─├G²(0.20)───────────┤ ├<𝓗>
+  5: ─╰BasisState(M0)─╰G²(0.20)───────────┤ ╰<𝓗>
+  Largest Gradient: 0.1349349562423238
+
+  Energy: -1.2743971719780331
+  0: ─╭BasisState(M0)─╭G²(0.20)─╭G²(0.19)──────────┤ ╭<𝓗>
+  1: ─├BasisState(M0)─├G²(0.20)─├G²(0.19)─╭G(0.00)─┤ ├<𝓗>
+  2: ─├BasisState(M0)─│─────────├G²(0.19)─│────────┤ ├<𝓗>
+  3: ─├BasisState(M0)─│─────────╰G²(0.19)─╰G(0.00)─┤ ├<𝓗>
+  4: ─├BasisState(M0)─├G²(0.20)────────────────────┤ ├<𝓗>
+  5: ─╰BasisState(M0)─╰G²(0.20)────────────────────┤ ╰<𝓗>
+  Largest Gradient: 0.00040841755397108586
   ```
 
-* Controlled qutrit operations can now be performed with `qml.ControlledQutritUnitary`.
-  ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
+  For a detailed breakdown of its implementation, check out [our demo!](https://pennylane.ai/qml/demos/tutorial_adaptive_circuits.html)
 
-  The control wires and values that define the operation are defined analogously to the qubit operation.
-
-  ```python
-  dev = qml.device("default.qutrit", wires=3)
-
-  @qml.qnode(dev)
-  def circuit(U):
-      qml.TShift(wires=0)
-      qml.TAdd(wires=[0, 1])
-      qml.ControlledQutritUnitary(U, control_wires=[0, 1], control_values='12', wires=2)
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-  >>> circuit(U)
-  tensor([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
-        0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
-        0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
-        0.+0.j, 0.+0.j, 0.+0.j], requires_grad=True)
-  ```
-
-<h4>(TODO: title) QChem</h4>
+<h4>(TODO: title) QChem things</h4>
 
 * Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`. 
   ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
@@ -107,42 +243,9 @@
         1: ───────────────────────┤ ╰<Z@Z>
   ```
 
-<h4>(TODO: title) New operators and optimizers</h4>
+<h4>(TODO: title) QNode things</h4>
 
-* Optimizing quantum circuits can now be done *adaptively* with `qml.AdaptiveOptimizer`.
-  [(#3192)](https://github.com/PennyLaneAI/pennylane/pull/3192)
-
-  The `qml.AdaptiveOptimizer` optimizer takes an initial circuit and a collection of operators
-  as input and adds a selected gate to the circuits at each optimization step. The process of
-  growing the circuit can be repeated until the circuit gradients converge to zero within a given
-  threshold. The adaptive optimizer can be used to implement algorithms such as `ADAPT-VQE`.
-
-  For a detailed breakdown of its implementation, check out [our demo!](https://pennylane.ai/qml/demos/tutorial_adaptive_circuits.html)
-
-* The `IntegerComparator` arithmetic operation is now available.
-[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
-
-  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive integer :math:`L`, the `IntegerComparator` operator flips a target qubit if :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n < L` as demonstrated below:
-
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def circuit():
-      qml.BasisState(np.array([0, 1]), wires=range(2))
-      qml.broadcast(qml.Hadamard, wires=range(2), pattern='single')
-      qml.IntegerComparator(2, geq=False, wires=[0, 1])
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> circuit()
-  [-0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
-  ```
-
-<h4>(TODO: title) QNode QoL boosts</h4>
-
-* Added support to the JAX-JIT interface for computing the gradient of QNodes that return a single vector of probabilities or multiple expectation values.
+* JAX-JIT support for computing the gradient of QNodes that return a single vector of probabilities or multiple expectation values is now available.
   [(#3244)](https://github.com/PennyLaneAI/pennylane/pull/3244)
   [(#3261)](https://github.com/PennyLaneAI/pennylane/pull/3261)
 
@@ -169,7 +272,7 @@
 
   Note that this change depends on `jax.pure_callback`, which requires `jax==0.3.17`.
 
-* The `QNode` class now accepts an `auto` interface, which automatically detects the interface of the given input.
+* QNodes now accept an `auto` interface which automatically detects the interface of the given input.
   [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
 
   ```python
@@ -236,130 +339,73 @@
     D: ──RY(1.23)─┤   
     ```
 
-<h4>(TODO: title) Data Module</h4>
+<h4>(TODO: title) New operations and observables</h4>
 
-* Added the `data` module to allow downloading, loading, and creating quantum datasets.
+* The `qml.IntegerComparator` arithmetic operation is now available.
+[(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
 
-* Datasets hosted on the cloud can be downloaded with the `qml.data.load` function as follows:
+  Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive integer, and a fixed positive integer :math:`L`, `qml.IntegerComparator` flips a target qubit if :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n < L` as demonstrated below:
 
-  ```pycon
-  >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
-  >>> print(H2datasets)
-  [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
-  >>> H2data = H2datasets[0]
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisState(np.array([0, 1]), wires=range(2))
+      qml.broadcast(qml.Hadamard, wires=range(2), pattern='single')
+      qml.IntegerComparator(2, geq=False, wires=[0, 1])
+      return qml.state()
   ```
 
-* To see what datasets are available for download, we can call `qml.data.list_datasets`:
-
   ```pycon
-  >>> available_data = qml.data.list_datasets()
-  >>> available_data.keys()
-  dict_keys(["qspin", "qchem"])
-  >>> available_data["qchem"].keys()
-  dict_keys(["H2", "LiH", ...])
-  >>> available_data['qchem']['H2'].keys()
-  dict_keys(["6-31G", "STO-3G"])
-  >>> print(available_data['qchem']['H2']['STO-3G'])
-  ["0.5", "0.54", "0.62", "0.66", ...]
+  >>> circuit()
+  [-0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
   ```
 
-* To download or load only specific properties of a dataset, we can specify the desired attributes in `qml.data.load`:
+* The `qml.GellMann` qutrit observable, the ternary generalization of the Pauli observables, is now available.
+  ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
 
-  ```pycon
-  >>> part = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1, 
-  ...                      attributes=["molecule", "fci_energy"])[0]
-  >>> part.molecule
-  <pennylane.qchem.molecule.Molecule at 0x7f56c9d78e50>
-  >>> part.fci_energy
-  -1.0791924385860894
+  When using `qml.GellMann`, the `index` keyword argument determines which of the 8 Gell-Mann matrices is used.
+
+  ```python
+  dev = qml.device("default.qutrit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.TClock(wires=0)
+      qml.TShift(wires=1)
+      qml.TAdd(wires=[0, 1])
+      return qml.expval(qml.GellMann(wires=0, index=8) + qml.GellMann(wires=1, index=3))
   ```
 
-* The available `attributes` can be found using `qml.data.list_attributes`:
-
   ```pycon
-  >>> qml.data.list_attributes(data_name='qchem')
-  ['molecule',
-  'hamiltonian',
-  'sparse_hamiltonian',
-  ...
-  'tapered_hamiltonian',
-  'full']
+  >>> circuit()
+  -0.42264973081037416
   ```
 
-* To select data interactively by following a series of prompts, we can use `qml.data.load_interactive` as follows:
+* Controlled qutrit operations can now be performed with `qml.ControlledQutritUnitary`.
+  ([#2844](https://github.com/PennyLaneAI/pennylane/pull/2844))
 
-  ```pycon
-  >>> qml.data.load_interactive()
-          Please select a data name:
-              1) qspin
-              2) qchem
-          Choice [1-2]: 1
-          Please select a sysname:
-              ...
-          Please select a periodicity:
-              ...
-          Please select a lattice:
-              ...
-          Please select a layout:
-              ...
-          Please select attributes:
-              ...
-          Force download files? (Default is no) [y/N]: N
-          Folder to download to? (Default is pwd, will download to /datasets subdirectory):
+  The control wires and values that define the operation are defined analogously to the qubit operation.
 
-          Please confirm your choices:
-          dataset: qspin/Ising/open/rectangular/4x4
-          attributes: ['parameters', 'ground_states']
-          force: False
-          dest folder: /Users/jovyan/Downloads/datasets
-          Would you like to continue? (Default is yes) [Y/n]:
-          <pennylane.data.dataset.Dataset object at 0x10157ab50>
-    ```
+  ```python
+  dev = qml.device("default.qutrit", wires=3)
 
-* Once loaded, properties of a dataset can be accessed easily as follows:
-
-  ```pycon
-  >>> dev = qml.device("default.qubit",wires=4)
-  >>> @qml.qnode(dev)
-  ... def circuit():
-  ...     qml.BasisState(H2_dataset.hf_state, wires = [0, 1, 2, 3])
-  ...     for op in H2_dataset.vqe_gates:
-  ...         qml.apply(op)
-  ...     return qml.expval(H2_dataset.hamiltonian)
-  >>> print(circuit())
-  -1.0791430411076344
+  @qml.qnode(dev)
+  def circuit(U):
+      qml.TShift(wires=0)
+      qml.TAdd(wires=[0, 1])
+      qml.ControlledQutritUnitary(U, control_wires=[0, 1], control_values='12', wires=2)
+      return qml.state()
   ```
 
-* It is also possible to create custom datasets with `qml.data.Dataset`
-
   ```pycon
-  >>> coeffs = [1, 0.5]
-  >>> observables = [qml.PauliZ(wires=0), qml.PauliX(wires=1)]
-  >>> H = qml.Hamiltonian(coeffs, observables)
-  >>> energies, _ = np.linalg.eigh(qml.matrix(H)) #Calculate the energies
-  >>> dataset = qml.data.Dataset(data_name = "Example", hamiltonian=H, energies=energies)
-  >>> dataset.data_name
-  "Example"
-  >>> dataset.hamiltonian
-  (0.5) [X1]
-  + (1) [Z0]
-  >>> dataset.energies
-  array([-1.5, -0.5,  0.5,  1.5])
-  ```
-
-* These custom datasets can be saved and read with the `Dataset.write` and `Dataset.read` functions as follows:
-
-  ```pycon
-  >>> dataset.write("./path/to/dataset.dat")
-  >>> read_dataset = qml.data.Dataset()
-  >>> read_dataset.read("./path/to/dataset.dat")
-  >>> read_dataset.data_name
-  'Example'
-  >>> read_dataset.hamiltonian
-  (0.5) [X1]
-  + (1) [Z0]
-  >>> read_dataset.energies
-  array([-1.5, -0.5,  0.5,  1.5])
+  >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
+  >>> circuit(U)
+  tensor([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+        0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+        0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
+        0.+0.j, 0.+0.j, 0.+0.j], requires_grad=True)
   ```
 
 <h3>Improvements</h3>
@@ -401,19 +447,16 @@
   [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
-  * `QueuingContext` is renamed to `QueuingManager`.
-  * `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
-  * `QueuingManager` is no longer an abstract base class.
-  * `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
-  * `QueuingManager` is no longer a context manager.
-  * Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and
-     `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
-  * `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
-      is now only available through `QueuingManager`.
-  * `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
-      and `_get_info` methods. The public analogues should be used instead.
-  * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to
-      `update_info`.
+  - `QueuingContext` is renamed to `QueuingManager`.
+  - `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
+  - `QueuingManager` is no longer an abstract base class.
+  - `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
+  - `QueuingManager` is no longer a context manager.
+  - Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and
+  -  `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
+  - `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information is now only available through `QueuingManager`.
+  - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`, and `_get_info` methods. The public analogues should be used instead.
+  - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to `update_info`.
 
 * `qml.Identity` now accepts multiple wires.
     [(#3049)](https://github.com/PennyLaneAI/pennylane/pull/3049)
@@ -515,7 +558,7 @@
 
 * Extended `qml.equal` function to MeasurementProcesses
   [(#3189)](https://github.com/PennyLaneAI/pennylane/pull/3189)
-
+  
 * `_multi_dispatch` functionality has been moved inside the `get_interface` function. This function
   can now be called with one or multiple tensors as arguments.
   [(#3136)](https://github.com/PennyLaneAI/pennylane/pull/3136)
@@ -547,11 +590,10 @@
   >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
   'torch'
   ```
-
-* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling
-  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global
-  configuration for matplotlib plotting. If no `style` is passed, the function defaults
-
+  
+* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling 
+  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global 
+  configuration for matplotlib plotting. If no `style` is passed, the function defaults 
   to plotting with the `black_white` style.
   [(#3247)](https://github.com/PennyLaneAI/pennylane/pull/3247)
 
