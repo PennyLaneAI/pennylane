@@ -16,6 +16,7 @@
 This module contains the qml.classical_shadow measurement.
 """
 from collections.abc import Iterable
+from typing import Sequence, Tuple
 
 import numpy as np
 
@@ -293,3 +294,8 @@ class ShadowMeasurementProcess(MeasurementProcess):
         obj.H = self.H
         obj.k = self.k
         return obj
+
+    def process(
+        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+    ):
+        pass
