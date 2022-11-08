@@ -8,7 +8,7 @@ on:
 
 env:
   TF_VERSION: 2.10.0
-  TORCH_VERSION: 1.13.0+cpu
+  TORCH_VERSION: 1.12.0+cpu
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
 
 
@@ -22,7 +22,7 @@ jobs:
           - {python-version: 3.8, suite: 'tf'}
           - {python-version: '3.10', suite: 'tf'}
           - {python-version: 3.8, suite: 'torch'}
-          - {python-version: '3.11', suite: 'torch'}
+          - {python-version: '3.10', suite: 'torch'}
           - {python-version: 3.8, suite: 'jax'}
           - {python-version: '3.11', suite: 'jax'}
           - {python-version: 3.8, suite: 'autograd'}
