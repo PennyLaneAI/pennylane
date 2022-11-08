@@ -370,6 +370,7 @@
 <h3>Improvements</h3>
 
 * Adds a Python 3.11 classification to the PennyLane package.
+  [(#3297)](https://github.com/PennyLaneAI/pennylane/pull/3297)
 
 * Added a `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track if computational basis samples are being generated when `qml.sample` or `qml.counts` are called without specifying an observable.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
