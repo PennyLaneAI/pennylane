@@ -328,12 +328,10 @@ class TestPurityMeasurement:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    def test_IsingXX_qnode_purity(self, device, param, wires, is_partial, interface):
+    def test_IsingXX_qnode_purity(self, device, param, wires, is_partial):
         """Tests purity for a qnode"""
 
         dev = qml.device(device, wires=2)
-        param = qml.math.asarray(np.array(param), like=interface)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -347,8 +345,7 @@ class TestPurityMeasurement:
     @pytest.mark.parametrize("device", mix_supported_devices)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("param", probs)
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    def test_bit_flip_qnode_purity(self, device, wires, param, is_partial, interface):
+    def test_bit_flip_qnode_purity(self, device, wires, param, is_partial):
         """Tests purity for a qnode on a noisy device with bit flips"""
 
         dev = qml.device(device, wires=2)
@@ -494,6 +491,26 @@ class TestPurityMeasurement:
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
 
     @pytest.mark.torch
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wires,is_partial", wires_list)
+    def test_IsingXX_qnode_purity_torch(self, device, param, wires, is_partial):
+        """Tests purity for a qnode"""
+
+        import torch
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.purity(wires=wires)
+
+        purity = circuit(torch.tensor(param))
+        expected_purity = expected_purity_ising_xx(param) if is_partial else 1
+        assert qml.math.allclose(purity, expected_purity)
+
+    @pytest.mark.torch
     @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
@@ -518,6 +535,26 @@ class TestPurityMeasurement:
         grad_purity = param.grad
 
         assert qml.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wires,is_partial", wires_list)
+    def test_IsingXX_qnode_purity_tf(self, device, param, wires, is_partial):
+        """Tests purity for a qnode"""
+
+        import tensorflow as tf
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.purity(wires=wires)
+
+        purity = circuit(tf.Variable(param))
+        expected_purity = expected_purity_ising_xx(param) if is_partial else 1
+        assert qml.math.allclose(purity, expected_purity)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", grad_supported_devices)
