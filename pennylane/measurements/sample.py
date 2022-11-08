@@ -114,6 +114,7 @@ def sample(op: Union[Observable, None] = None, wires=None):
     return _Sample(Sample, obs=op, wires=wires)
 
 
+# TODO: Make public when removing the ObservableReturnTypes enum
 class _Sample(MeasurementProcess):
     """Measurement process that returns the samples of a given observable."""
 
