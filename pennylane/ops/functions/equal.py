@@ -28,7 +28,7 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 def equal(
     op1: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
     op2: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
-    **kwargs
+    **kwargs,
 ):
     r"""Function for determining operator or measurement equality.
 
@@ -83,7 +83,7 @@ def equal(
         >>> qml.equal(op3, op4, check_trainability=False)
         True
     """
-    raise NotImplementedError("Cannot compare {type(op1)} and {type(op2)}")
+    raise NotImplementedError(f"Cannot compare {type(op1)} and {type(op2)}")
 
 
 def _obs_comparison_data(obs):
@@ -96,7 +96,7 @@ def _obs_comparison_data(obs):
 
 
 @equal.register
-def equal_operator(
+def equal_operation(
     op1: Operation,
     op2: Operation,
     check_interface: bool = True,
@@ -141,7 +141,7 @@ def equal_operator(
 @equal.register
 def equal_observable(op1: Observable, op2: Observable):
     """Determine whether two Observables objects are equal"""
-    return _obs_comparison_data(op1) != _obs_comparison_data(op2)
+    return _obs_comparison_data(op1) == _obs_comparison_data(op2)
 
 
 @equal.register
