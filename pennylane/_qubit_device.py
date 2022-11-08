@@ -1254,13 +1254,14 @@ class QubitDevice(Device):
         r"""Returns the purity prior to measurement.
 
         .. math::
-        \gamma = Tr(\rho^2)
+            \gamma = Tr(\rho^2)
 
         Args:
             wires (Wires): Wires of the considered subsystem.
 
         Returns:
             float: returns the purity
+
         """
         try:
             state = self.access_state()
