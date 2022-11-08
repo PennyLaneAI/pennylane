@@ -323,12 +323,15 @@ def test_inconsistent_active_spaces(
         ("InChI=1S/CH4/h1H4", "InChI", None),
         ("VNWKTOKETHGBQD-UHFFFAOYSA-N", "InChIKey", None),
         ("", "", 297),
+        ("H2", "name", None),
+        ("InChI=1S/H2/h1H", "InChI", None),
+        ("", "", 783),
     ],
 )
 def test_consistent_mol_data_from_pubchem(identifier, identifier_type, cid):
     r"""Test that consistent molecular data from PubChem database"""
     pcp = pytest.importorskip("pubchempy")
-    ref_mol_data = (
+    ref_mol_data_3d = (
         ["C", "H", "H", "H", "H"],
         np.array(
             [
@@ -341,7 +344,11 @@ def test_consistent_mol_data_from_pubchem(identifier, identifier_type, cid):
         ),
         0,
     )
+    ref_mol_data_2d = (["H", "H"], np.array([[3.77945225, 0.0, 0.0], [5.66917837, 0.0, 0.0]]), 0)
+
     pub_mol_data = qchem.mol_data_from_pubchem(identifier, identifier_type, cid)
+    ref_mol_data = ref_mol_data_2d if pub_mol_data[0] == ["H", "H"] else ref_mol_data_3d
+
     assert ref_mol_data[0] == pub_mol_data[0] and ref_mol_data[2] == pub_mol_data[2]
     assert np.allclose(ref_mol_data[1], pub_mol_data[1])
 
