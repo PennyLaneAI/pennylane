@@ -402,7 +402,7 @@ Missing entries:
   ```
 
 * The `qml.GellMann` qutrit observable, the ternary generalization of the Pauli observables, is now available.
-  ([#3035](https://github.com/PennyLaneAI/pennylane/pull/3035))
+  [(#3035)](https://github.com/PennyLaneAI/pennylane/pull/3035)
 
   When using `qml.GellMann`, the `index` keyword argument determines which of the 8 Gell-Mann matrices is used.
 
