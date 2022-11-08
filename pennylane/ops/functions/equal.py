@@ -17,19 +17,18 @@ This module contains the qml.equal function.
 # pylint: disable=too-many-arguments,too-many-return-statements
 from typing import Union
 from functools import singledispatch
+
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
-from pennylane.operation import Operator
+from pennylane.operation import Operator, Operation, Observable
+from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 @singledispatch
 def equal(
     op1: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
     op2: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
-    check_interface=True,
-    check_trainability=True,
-    rtol=1e-5,
-    atol=1e-9,
+    **kwargs
 ):
     r"""Function for determining operator or measurement equality.
 
@@ -63,7 +62,8 @@ def equal(
     .. details::
         :title: Usage Details
 
-        You can use the optional arguments when comparing Operators to get more specific results.
+        You can use the optional arguments when comparing Operations to get more specific results. Note this is not
+        implemented for comparisons of Observables, MeasurementProcesses or ShadowMeasurementProcesses.
 
         Consider the following comparisons:
 
@@ -86,25 +86,44 @@ def equal(
     raise NotImplementedError("Cannot compare {type(op1)} and {type(op2)}")
 
 
+def _obs_comparison_data(obs):
+    if isinstance(obs, Hamiltonian):
+        obs.simplify()
+        obs = obs._obs_data()  # pylint: disable=protected-access
+    else:
+        obs = {(1, frozenset(obs._obs_data()))}  # pylint: disable=protected-access
+    return obs
+
+
 @equal.register
-def equal_operator(op1: Operator, op2: Operator, check_interface, check_trainability, rtol, atol):
-    """Determine whether two Operator objects are equal"""
-    if op1.arithmetic_depth != op2.arithmetic_depth:
+def equal_operator(
+    op1: Operation,
+    op2: Operation,
+    check_interface: bool = True,
+    check_trainability: bool = True,
+    rtol: float = 1e-5,
+    atol: float = 1e-9,
+):
+    """Determine whether two Operations objects are equal"""
+    if [op1.name, op1.arithmetic_depth, op1.wires] != [
+        op2.name,
+        op2.arithmetic_depth,
+        op2.wires,
+    ]:
         return False
 
     if op1.arithmetic_depth > 0:
         raise NotImplementedError(
-            "Comparison of operators with an arithmetic depth larger than 0 is not yet implemented."
+            "Comparison of Operations with an arithmetic depth larger than 0 is not yet implemented."
         )
+
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
     ):
         return False
-    if op1.wires != op2.wires:
+
+    if op1.hyperparameters != op2.hyperparameters:
         return False
-    for kwarg in op1.hyperparameters:
-        if op1.hyperparameters[kwarg] != op2.hyperparameters[kwarg]:
-            return False
 
     if check_trainability:
         for params_1, params_2 in zip(op1.data, op2.data):
@@ -117,6 +136,12 @@ def equal_operator(op1: Operator, op2: Operator, check_interface, check_trainabi
                 return False
 
     return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
+
+
+@equal.register
+def equal_observable(op1: Observable, op2: Observable):
+    """Determine whether two Observables objects are equal"""
+    return _obs_comparison_data(op1) != _obs_comparison_data(op2)
 
 
 @equal.register
