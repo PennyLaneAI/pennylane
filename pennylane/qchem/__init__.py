@@ -64,7 +64,7 @@ from .structure import (
     excitations,
     hf_state,
     excitations_to_wires,
-    mol_data_from_pubchem,
+    pubchem_data,
 )
 from .tapering import (
     clifford,

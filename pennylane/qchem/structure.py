@@ -415,16 +415,20 @@ def excitations_to_wires(singles, doubles, wires=None):
     return singles_wires, doubles_wires
 
 
-def mol_data_from_pubchem(identifier, identifier_type="name", cid=None):
-    r"""Obtain molecular data of the compound from the PubChem Database
+def pubchem_data(identifier, identifier_type="name"):
+    r"""Obtain name, geometry and charge of a compound from the PubChem Database.
+
+    The `PubChem <https://pubchem.ncbi.nlm.nih.gov>`__ is one of the largest public repositories for
+    the information on chemical substances from which name, geometry (in Bohr radius), and charge can be
+    retrieved for a compound by its name, SMILES, InChI, InChIKey, and PubChem Compound ID (CID) to
+    build a molecule object for Hartree-Fock calculations.
 
     Args:
-        identifier (str): compound's idenitifer as required by the PubChem database
-        identifier_type (str): type of chemical indentifier - name, CAS, SMILES, InChI, InChIKey
-        cid (int): PubChem CID for the molecule. `identifier` will be ignored if this is not ``None``.
+        identifier (str or int): compound's identifier as required by the PubChem database
+        identifier_type (str): type of the provided identifier - name, CAS, CID, SMILES, InChI, InChIKey
 
     Returns:
-        Tuple(list(str), ndarray, int): symbols, geometry and charge of the compound
+        Tuple(list[str], array[float], int): symbols, geometry (in Bohr radius) and charge of the compound
 
     **Example**
 
@@ -434,7 +438,7 @@ def mol_data_from_pubchem(identifier, identifier_type="name", cid=None):
             [ 3.77946   , -0.29290815,  0.        ],
             [ 5.80884105, -0.29290815,  0.        ]]),
      0)
-    >>> mol_data_from_pubchem("NH4", cid=223)
+    >>> mol_data_from_pubchem(223, "CID")
     (['N', 'H', 'H', 'H', 'H'],
     array([[ 4.79404621,  0.        ,  0.        ],
             [ 5.80882913,  0.5858151 ,  0.        ],
@@ -507,7 +511,9 @@ def mol_data_from_pubchem(identifier, identifier_type="name", cid=None):
         ),
         "inchikey": re.compile(r"^[A-Z]{14}\-[A-Z]{10}(\-[A-Z])?"),
     }
-    if cid is None:
+    if identifier_type.lower() == "cid":
+        cid = int(identifier)
+    else:
         if identifier_type.lower() not in identifier_patterns.keys():
             raise ValueError(
                 "Specified identifier type is not supported. Supported type are: name, CAS, SMILES, InChI, InChIKey."
@@ -535,7 +541,7 @@ def mol_data_from_pubchem(identifier, identifier_type="name", cid=None):
     symbols = [atom["element"] for atom in mol_data["atoms"]]
     geometry = (
         np.array([[atom["x"], atom["y"], atom.get("z", 0.0)] for atom in mol_data["atoms"]])
-        / 0.529177210903
+        / bohr_angs
     )
     charge = mol_data["charge"]
 

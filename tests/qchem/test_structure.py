@@ -315,21 +315,21 @@ def test_inconsistent_active_spaces(
 
 
 @pytest.mark.parametrize(
-    ("identifier", "identifier_type", "cid"),
+    ("identifier", "identifier_type"),
     [
-        ("CH4", "name", None),
-        ("74-82-8", "CAS", None),
-        ("[C]", "SMILES", None),
-        ("InChI=1S/CH4/h1H4", "InChI", None),
-        ("VNWKTOKETHGBQD-UHFFFAOYSA-N", "InChIKey", None),
-        ("", "", 297),
-        ("H2", "name", None),
-        ("InChI=1S/H2/h1H", "InChI", None),
-        ("", "", 783),
+        ("CH4", "name"),
+        ("74-82-8", "CAS"),
+        ("[C]", "SMILES"),
+        ("InChI=1S/CH4/h1H4", "InChI"),
+        ("VNWKTOKETHGBQD-UHFFFAOYSA-N", "InChIKey"),
+        (297, "CID"),
+        ("H2", "name"),
+        ("InChI=1S/H2/h1H", "InChI"),
+        (783, "CID"),
     ],
 )
-def test_consistent_mol_data_from_pubchem(identifier, identifier_type, cid):
-    r"""Test that consistent molecular data from PubChem database"""
+def test_consistent_pubchem_data(identifier, identifier_type):
+    r"""Test that consistent molecular data from PubChem database is returned"""
     pcp = pytest.importorskip("pubchempy")
     ref_mol_data_3d = (
         ["C", "H", "H", "H", "H"],
@@ -346,7 +346,7 @@ def test_consistent_mol_data_from_pubchem(identifier, identifier_type, cid):
     )
     ref_mol_data_2d = (["H", "H"], np.array([[3.77945225, 0.0, 0.0], [5.66917837, 0.0, 0.0]]), 0)
 
-    pub_mol_data = qchem.mol_data_from_pubchem(identifier, identifier_type, cid)
+    pub_mol_data = qchem.pubchem_data(identifier, identifier_type)
     ref_mol_data = ref_mol_data_2d if pub_mol_data[0] == ["H", "H"] else ref_mol_data_3d
 
     assert ref_mol_data[0] == pub_mol_data[0] and ref_mol_data[2] == pub_mol_data[2]
@@ -354,27 +354,27 @@ def test_consistent_mol_data_from_pubchem(identifier, identifier_type, cid):
 
 
 @pytest.mark.parametrize(
-    ("identifier", "identifier_type", "cid", "message_match"),
+    ("identifier", "identifier_type", "message_match"),
     [
-        ("CH4", "IUPAC", None, "Specified identifier type is not supported"),
-        ("In=1S/H3N/h1H3/p+1", "InChI", None, "Specified identifier doesn't seem to match type"),
-        ("14798039", "CAS", None, "Specified identifier doesn't seem to match type"),
-        ("beh2+", "name", None, "Specified molecule does not exist in the PubChem Database"),
-        ("", "", 0, "Provided CID \(or Identifier\) is None"),
+        ("CH4", "IUPAC", "Specified identifier type is not supported"),
+        ("In=1S/H3N/h1H3/p+1", "InChI", "Specified identifier doesn't seem to match type"),
+        ("14798039", "CAS", "Specified identifier doesn't seem to match type"),
+        ("beh2+", "name", "Specified molecule does not exist in the PubChem Database"),
+        (0, "CID", "Provided CID \(or Identifier\) is None"),
     ],
 )
-def test_inconsistent_mol_data_from_pubchem(identifier, identifier_type, cid, message_match):
-    r"""Test that an error is raised if an inconsistent parameters are provided to `mol_data_from_pubchem`"""
+def test_inconsistent_pubchem_data(identifier, identifier_type, message_match):
+    r"""Test that an error is raised if an inconsistent parameters are provided to `pubchem_data`"""
     pcp = pytest.importorskip("pubchempy")
     with pytest.raises(ValueError, match=message_match):
-        qchem.mol_data_from_pubchem(identifier, identifier_type, cid)
+        qchem.pubchem_data(identifier, identifier_type)
 
 
-def test_import_mol_data_from_pubchem(monkeypatch):
+def test_import_pubchem_data(monkeypatch):
     """Test that an exception is caught on import error for pubchempy"""
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "pubchempy", None)
 
         with pytest.raises(ImportError, match="This feature requires pubchempy"):
-            qchem.mol_data_from_pubchem("", "", 227)
+            qchem.pubchem_data(227, "CID")
