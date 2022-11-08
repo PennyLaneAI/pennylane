@@ -4,8 +4,56 @@
 
 <h3>New features since last release</h3>
 
-Missing entries:
+<h4> (New heading) Pauli module</h4>
 
+* Reorganized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
+  module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
+  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
+
+* Introduced new classes `PauliWord` and `PauliSentence` to represent tensor products and linear combinations 
+  of Pauli operators. These classes provide a more performant method to compute sums and products of Pauli Operators.
+  [(#3195)](https://github.com/PennyLaneAI/pennylane/pull/3195)
+
+  The `PauliWord` class represents tensor products of Pauli operators. We can efficiently multiply and extract the
+  matrix of these operators using this representation. 
+  
+  ```pycon
+  >>> pw1 = qml.pauli.PauliWord({0:"X", 1:"Z"})
+  >>> pw2 = qml.pauli.PauliWord({0:"Y", 1:"Z"})
+  >>> pw1, pw2
+  (X(0) @ Z(1), Y(0) @ Z(1))
+  >>> pw1 * pw2
+  (Z(0), 1j)
+  >>> pw1.to_mat(wire_order=[0,1])
+  array([[ 0,  0,  1,  0],
+         [ 0,  0,  0, -1],
+         [ 1,  0,  0,  0],
+         [ 0, -1,  0,  0]])
+  ```
+  
+  The `PauliSentence` class represents linear combinations of Pauli words. We can efficiently add, multiply and extract 
+  the matrix of these operators in this representation. 
+
+  ```pycon
+  >>> ps1 = qml.pauli.PauliSentence({pw1: 1.2, pw2: 0.5j})
+  >>> ps2 = qml.pauli.PauliSentence({pw1: -1.2})
+  >>> ps1
+  1.2 * X(0) @ Z(1)
+  + 0.5j * Y(0) @ Z(1)
+  >>> ps1 + ps2
+  0.0 * X(0) @ Z(1)
+  + 0.5j * Y(0) @ Z(1)
+  >>> ps1 * ps2
+  -1.44 * I
+  + (-0.6+0j) * Z(0)
+  >>> (ps1 + ps2).to_mat(wire_order=[0,1])
+  array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
+         [ 0. +0.j,  0. +0.j,  0. +0.j, -0.5+0.j],
+         [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
+         [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
+  ```
+
+Missing entries:
 * Functionality is added to estimate the number of measurements required to compute an expectation
   value with a target error and estimate the error in computing an expectation value with a given 
   number of measurements.
@@ -303,6 +351,7 @@ Missing entries:
 
 * Any gate operation can now be tapered according to :math:`\mathbb{Z}_2` symmetries of the Hamiltonian via `qml.qchem.taper_operation`.
   [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
+  [(#3121)](https://github.com/PennyLaneAI/pennylane/pull/3121)
 
   ```pycon
     >>> symbols = ['He', 'H']
@@ -477,10 +526,6 @@ Missing entries:
 * `qml.OrbitalRotation` is now decomposed into two `qml.SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `qml.SingleExcitation`.
   [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
 
-* Reorganized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
-  module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
-  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
-
 * Added the operator attributes `has_decomposition` and `has_adjoint` that indicate
   whether a corresponding `decomposition` or `adjoint` method is available.
   [(#2986)](https://github.com/PennyLaneAI/pennylane/pull/2986)
@@ -496,7 +541,7 @@ Missing entries:
   - `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
   - `QueuingManager` is no longer a context manager.
   - Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and
-  -  `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
+  -  `QueuingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
   - `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information is now only available through `QueuingManager`.
   - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`, and `_get_info` methods. The public analogues should be used instead.
   - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to `update_info`.
@@ -601,6 +646,10 @@ Missing entries:
 
 * `QueuingContext` has been renamed to `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
+
+* `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
+  if the object isn't in the queue.
+  [(#3085)](https://github.com/PennyLaneAI/pennylane/pull/3085)
 
 * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
