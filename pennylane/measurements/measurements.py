@@ -21,7 +21,9 @@ and measurement samples using AnnotatedQueues.
 import contextlib
 import copy
 import functools
+from abc import abstractmethod
 from enum import Enum
+from typing import Sequence, Tuple
 
 import numpy as np
 
@@ -692,3 +694,18 @@ class MeasurementProcess:
         if self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         return new_measurement
+
+    @abstractmethod
+    def process(
+        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+    ):
+        """_summary_
+
+        Args:
+            samples (Sequence[complex]): computational basis samples generated for all wires
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+        """
