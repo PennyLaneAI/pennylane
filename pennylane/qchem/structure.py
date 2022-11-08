@@ -451,7 +451,7 @@ def pubchem_data(identifier, identifier_type="name"):
 
         **Usage Details**
 
-        ``mol_data_from_pubchem`` can be additonally be used with four chemical indentifiers - CAS, SMILES, InChI, InChIKey:
+        ``mol_data_from_pubchem`` can also be used with other chemical identifiers - CAS, SMILES, InChI, InChIKey:
 
         >>> mol_data_from_pubchem("74-82-8", "CAS")
         (['C', 'H', 'H', 'H', 'H'],
