@@ -1779,7 +1779,9 @@ class QubitDevice(Device):
         )
         return res
 
-    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
+    def adjoint_jacobian(
+        self, tape, starting_state=None, use_device_state=False
+    ):  # pylint: disable=too-many-statements
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -1817,7 +1819,7 @@ class QubitDevice(Device):
         """
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
-        # pylint: disable=unnecessary-lambda-assignment)
+        # pylint: disable=unnecessary-lambda-assignment
         dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
@@ -1834,6 +1836,9 @@ class QubitDevice(Device):
 
             if not hasattr(m.obs, "base_name"):
                 m.obs.base_name = None  # This is needed for when the observable is a tensor product
+
+        if self.shot_vector is not None:
+            raise qml.QuantumFunctionError("Adjoint does not support shot vectors.")
 
         if self.shots is not None:
             warnings.warn(

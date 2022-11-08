@@ -271,11 +271,6 @@ class TestVectorValuedQNode:
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
-
-            # No jax.jacobian support for call
-            pytest.xfail(reason="batching rules are implemented only for id_tap, not for call.")
-
         res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]).T
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -338,10 +333,6 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
 
-        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
-            # No jax.jacobian support for call
-            pytest.xfail(reason="batching rules are implemented only for id_tap, not for call.")
-
         jac_fn = jax.jacobian(circuit, argnums=[0, 1])
         res = jac_fn(a, b)
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]).T
@@ -374,10 +365,6 @@ class TestVectorValuedQNode:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0))
-
-        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
-            # No jax.jacobian support for call
-            pytest.xfail(reason="batching rules are implemented only for id_tap, not for call.")
 
         jax.jacobian(circuit)(a)
 
@@ -510,11 +497,6 @@ class TestQubitIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
-
-            # No jax.jacobian support for call
-            pytest.xfail(reason="batching rules are implemented only for id_tap, not for call.")
-
         res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         expected = np.array(
@@ -531,16 +513,9 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
 
-        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
-
-            # No jax.jacobian support for call
-            pytest.xfail(reason="batching rules are implemented only for id_tap, not for call.")
-
         dev = qml.device(dev_name, wires=3)
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support probs")
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(x, y):
@@ -558,21 +533,31 @@ class TestQubitIntegration:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
-        res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
-        expected = np.array(
-            [
-                [
-                    [-np.sin(x) / 2, np.sin(x) / 2],
-                    [-np.cos(y) * np.sin(x) / 2, np.sin(x) * np.cos(y) / 2],
-                ],
-                [
-                    [0, 0],
-                    [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
-                ],
-            ]
-        )
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
+
+            with pytest.raises(
+                InterfaceUnsupportedError,
+                match="The JAX-JIT interface doesn't support differentiating QNodes",
+            ):
+                jax.jacobian(circuit)(x, y)
+
+        else:
+            res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+            expected = np.array(
+                [
+                    [
+                        [-np.sin(x) / 2, np.sin(x) / 2],
+                        [-np.cos(y) * np.sin(x) / 2, np.sin(x) * np.cos(y) / 2],
+                    ],
+                    [
+                        [0, 0],
+                        [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+                    ],
+                ]
+            )
+
+            assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("ret", [qml.sample(qml.PauliZ(0)), qml.probs(wires=[1, 2])])
     def test_sample_probs_raises_jax_python(self, dev_name, diff_method, mode, ret, interface, tol):
@@ -1046,6 +1031,96 @@ class TestQubitIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_chained_gradient_value(self, dev_name, diff_method, mode, interface, tol):
+        """Test that the returned gradient value for two chained qubit QNodes
+        is correct."""
+        if mode == "forward":
+            pytest.skip(
+                "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
+            )
+        dev1 = qml.device(dev_name, wires=3)
+
+        @qnode(dev1, diff_method=diff_method, interface=interface, mode=mode)
+        def circuit1(a, b, c):
+            qml.RX(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.RX(c, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(2))
+
+        dev2 = qml.device("default.qubit", wires=2)
+
+        @qnode(dev2, diff_method=diff_method, interface=interface, mode=mode)
+        def circuit2(data, weights):
+            qml.RX(data[0], wires=0)
+            qml.RX(data[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(weights[0], wires=0)
+            qml.RZ(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
+
+        def cost(a, b, c, weights):
+            r = circuit1(a, b, c)
+            return circuit2(r, weights)
+
+        # Set the first parameter of circuit1 as non-differentiable.
+        # The remaining free parameters are all differentiable.
+        grad_fn = jax.grad(cost, argnums=[1, 2, 3])
+
+        a = jnp.array(0.4)
+        b = jnp.array(0.5)
+        c = jnp.array(0.1)
+        weights = jnp.array([0.2, 0.3])
+
+        res = grad_fn(a, b, c, weights)
+
+        # Output should have shape [dcost/db, dcost/dc, dcost/dw],
+        # where b,c are scalars, and w is a vector of length 2.
+        assert len(res) == 3
+        assert res[0].shape == ()  # scalar
+        assert res[1].shape == ()  # scalar
+        assert res[2].shape == (2,)  # vector
+
+        cacbsc = np.cos(a) * np.cos(b) * np.sin(c)
+
+        expected = jnp.array(
+            [
+                # analytic expression for dcost/db
+                -np.cos(a)
+                * np.sin(b)
+                * np.sin(c)
+                * np.cos(cacbsc)
+                * np.sin(weights[0])
+                * np.sin(np.cos(a)),
+                # analytic expression for dcost/dc
+                np.cos(a)
+                * np.cos(b)
+                * np.cos(c)
+                * np.cos(cacbsc)
+                * np.sin(weights[0])
+                * np.sin(np.cos(a)),
+                # analytic expression for dcost/dw[0]
+                np.sin(cacbsc) * np.cos(weights[0]) * np.sin(np.cos(a)),
+                # analytic expression for dcost/dw[1]
+                0,
+            ]
+        )
+
+        # np.hstack 'flattens' the ragged gradient array allowing it
+        # to be compared with the expected result
+        assert np.allclose(np.hstack(res), expected, atol=tol, rtol=0)
+
+        if diff_method != "backprop":
+            # Check that the gradient was computed
+            # for all parameters in circuit2
+            assert circuit2.qtape.trainable_params == [0, 1, 2, 3]
+
+            # Check that the parameter-shift rule was not applied
+            # to the first parameter of circuit1.
+            assert circuit1.qtape.trainable_params == [1, 2]
+
 
 @pytest.mark.parametrize(
     "diff_method,kwargs",
@@ -1332,6 +1407,67 @@ class TestJIT:
 
         expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+    def test_multi_expval_jit(self, dev_name, diff_method, mode, tol):
+        """Test derivative calculation of a QNode returning multiple expectation values"""
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "adjoint":
+            pytest.xfail(reason="The adjoint method is not using host-callback currently")
+
+        @jax.jit
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
+        def circuit(x, y):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+
+            qml.RY(y[0], wires=1)
+            qml.RX(y[1], wires=1)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        x = jnp.array([1.0, 2.0])
+        y = jnp.array([1.0, 2.0])
+        res = circuit(x, y)
+        g = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+
+        a, b = x
+
+        expected_res = np.cos(a) * np.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
+        assert np.allclose(g[0][0], expected_g, atol=tol, rtol=0)
+        assert np.allclose(g[0][1], 0, atol=tol, rtol=0)
+
+        assert np.allclose(g[1][0], 0, atol=tol, rtol=0)
+        assert np.allclose(g[1][1], expected_g, atol=tol, rtol=0)
+
+    def test_probability_differentiation_jit(self, dev_name, diff_method, mode, tol):
+        """Tests differentiating a jitted QNode that returns probabilities"""
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support probs")
+
+        dev = qml.device(dev_name, wires=2)
+        x = jnp.array(0.543)
+        y = jnp.array(-0.654)
+
+        @jax.jit
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[1])
+
+        res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+
+        expected = np.array(
+            [
+                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
+                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+            ]
+        )
+        assert np.allclose(res, expected.T, atol=tol, rtol=0)
 
     @pytest.mark.filterwarnings(
         "ignore:Requested adjoint differentiation to be computed with finite shots."
