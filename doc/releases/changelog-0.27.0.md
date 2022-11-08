@@ -37,7 +37,7 @@ Missing entries:
 * [(#3223)](https://github.com/PennyLaneAI/pennylane/pull/3223)
 * [(#3222)](https://github.com/PennyLaneAI/pennylane/pull/3222)
 
-<h4>An all-new data module</h4>
+<h4>An all-new data module 💾</h4>
 
 * A brand new `qml.data` module is available, allowing users to download, load, and create quantum datasets.
   [(#3156)](https://github.com/PennyLaneAI/pennylane/pull/3156)
@@ -223,6 +223,62 @@ Missing entries:
 
   For a detailed breakdown of its implementation, check out [our demo](https://pennylane.ai/qml/demos/tutorial_adaptive_circuits.html).
 
+<h4>Automatic interface detection 🧩</h4>
+
+* QNodes now accept an `auto` interface which automatically detects the interface of the given input.
+  [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev, interface="auto")
+  def circuit(weight):
+      qml.RX(weight[0], wires=0)
+      qml.RY(weight[1], wires=1)
+      return qml.expval(qml.PauliZ(0))
+
+  interface_tensors = [[0, 1], np.array([0, 1]), torch.Tensor([0, 1]), tf.Variable([0, 1], dtype=float), jnp.array([0, 1])]
+  for tensor in interface_tensors:
+      res = circuit(weight=tensor)
+      print(f"Result value: {res:.2f}; Result type: {type(res)}")
+  ```
+
+  ```pycon
+  Result value: 1.00; Result type: <class 'pennylane.numpy.tensor.tensor'>
+  Result value: 1.00; Result type: <class 'pennylane.numpy.tensor.tensor'>
+  Result value: 1.00; Result type: <class 'torch.Tensor'>
+  Result value: 1.00; Result type: <class 'tensorflow.python.framework.ops.EagerTensor'>
+  Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
+  ```
+
+<h4>More JAX-JIT gradient support 🏎</h4>
+
+* JAX-JIT support for computing the gradient of QNodes that return a single vector of probabilities or multiple expectation values is now available.
+  [(#3244)](https://github.com/PennyLaneAI/pennylane/pull/3244)
+  [(#3261)](https://github.com/PennyLaneAI/pennylane/pull/3261)
+
+  ```python
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @jax.jit
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  def circuit(x, y):
+      qml.RY(x, wires=0)
+      qml.RY(y, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+  x = jnp.array(1.0, dtype=jnp.float32)
+  y = jnp.array(2.0, dtype=jnp.float32)
+  ```
+
+  ```pycon
+  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
+  (DeviceArray([-0.84147096,  0.3501755 ], dtype=float32),
+   DeviceArray([ 4.474455e-18, -4.912955e-01], dtype=float32))
+  ```
+
+  Note that this change depends on `jax.pure_callback`, which requires `jax==0.3.17`.
+
 <h4>New basis rotation and tapering features in `qml.chem` 🤓</h4>
 
 * Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`. 
@@ -274,62 +330,6 @@ Missing entries:
     >>> print(drawer(params=[3.14159]))
         0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
         1: ───────────────────────┤ ╰<Z@Z>
-  ```
-
-<h4>More JAX-JIT gradient support 🏎</h4>
-
-* JAX-JIT support for computing the gradient of QNodes that return a single vector of probabilities or multiple expectation values is now available.
-  [(#3244)](https://github.com/PennyLaneAI/pennylane/pull/3244)
-  [(#3261)](https://github.com/PennyLaneAI/pennylane/pull/3261)
-
-  ```python
-  dev = qml.device("lightning.qubit", wires=2)
-
-  @jax.jit
-  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
-  def circuit(x, y):
-      qml.RY(x, wires=0)
-      qml.RY(y, wires=1)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-  x = jnp.array(1.0, dtype=jnp.float32)
-  y = jnp.array(2.0, dtype=jnp.float32)
-  ```
-
-  ```pycon
-  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
-  (DeviceArray([-0.84147096,  0.3501755 ], dtype=float32),
-   DeviceArray([ 4.474455e-18, -4.912955e-01], dtype=float32))
-  ```
-
-  Note that this change depends on `jax.pure_callback`, which requires `jax==0.3.17`.
-
-<h4>Automatic interface detection 🧩</h4>
-
-* QNodes now accept an `auto` interface which automatically detects the interface of the given input.
-  [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
-
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-  @qml.qnode(dev, interface="auto")
-  def circuit(weight):
-      qml.RX(weight[0], wires=0)
-      qml.RY(weight[1], wires=1)
-      return qml.expval(qml.PauliZ(0))
-
-  interface_tensors = [[0, 1], np.array([0, 1]), torch.Tensor([0, 1]), tf.Variable([0, 1], dtype=float), jnp.array([0, 1])]
-  for tensor in interface_tensors:
-      res = circuit(weight=tensor)
-      print(f"Result value: {res:.2f}; Result type: {type(res)}")
-  ```
-
-  ```pycon
-  Result value: 1.00; Result type: <class 'pennylane.numpy.tensor.tensor'>
-  Result value: 1.00; Result type: <class 'pennylane.numpy.tensor.tensor'>
-  Result value: 1.00; Result type: <class 'torch.Tensor'>
-  Result value: 1.00; Result type: <class 'tensorflow.python.framework.ops.EagerTensor'>
-  Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
   ```
 
 <h4>New functions, operations, observables 🤩</h4>
