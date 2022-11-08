@@ -23,12 +23,12 @@ import copy
 import functools
 from abc import abstractmethod
 from enum import Enum
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Union
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import Observable
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -133,7 +133,7 @@ class MeasurementProcess:  # TODO: Inherit from ABC
     def __init__(
         self,
         return_type: ObservableReturnTypes,
-        obs: Operator = None,
+        obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
         id=None,

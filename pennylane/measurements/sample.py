@@ -16,13 +16,18 @@
 This module contains the qml.sample measurement.
 """
 import warnings
+from typing import Sequence, Tuple, Union
 
+import numpy as np
+
+import pennylane as qml
+from pennylane.operation import Observable
 from pennylane.wires import Wires
 
 from .measurements import MeasurementProcess, Sample
 
 
-def sample(op=None, wires=None):
+def sample(op: Union[Observable, None] = None, wires=None):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
@@ -106,4 +111,59 @@ def sample(op=None, wires=None):
             )
         wires = Wires(wires)
 
-    return MeasurementProcess(Sample, obs=op, wires=wires)
+    return _Sample(Sample, obs=op, wires=wires)
+
+
+class _Sample(MeasurementProcess):
+    """Measurement process that returns the samples of a given observable."""
+
+    def process(
+        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+    ):
+        name = getattr(self.obs, "name", None)
+        # Select the samples from samples that correspond to ``shot_range`` if provided
+        if shot_range is None:
+            sub_samples = samples
+        else:
+            # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
+            # colon (:) is required because shots is the second-to-last axis and the
+            # Ellipsis (...) otherwise would take up broadcasting and shots axes.
+            sub_samples = samples[..., slice(*shot_range), :]
+
+        if self.obs is None:
+            # if no observable was provided then return the raw samples
+            if len(self.wires) != 0:
+                # if wires are provided, then we only return samples from those wires
+                samples = sub_samples[..., np.array(self.wires)]
+            else:
+                samples = sub_samples
+
+        elif isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
+            # Process samples for observables with eigenvalues {1, -1}
+            samples = 1 - 2 * sub_samples[..., self.wires[0]]
+
+        else:
+
+            # Replace the basis state in the computational basis with the correct eigenvalue.
+            # Extract only the columns of the basis samples required based on ``wires``.
+            samples = sub_samples[..., np.array(self.wires)]  # Add np.array here for Jax support.
+            powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
+            indices = samples @ powers_of_two
+            indices = np.array(indices)  # Add np.array here for Jax support.
+            try:
+                samples = self.obs.eigvals()[indices]
+            except qml.operation.EigvalsUndefinedError as e:
+                # if observable has no info on eigenvalues, we cannot return this measurement
+                raise qml.operation.EigvalsUndefinedError(
+                    f"Cannot compute samples of {self.obs.name}."
+                ) from e
+
+        num_wires = len(self.wires) if len(self.wires) > 0 else Ellipsis
+        if bin_size is None:
+            return samples
+
+        return (
+            samples.reshape((num_wires, bin_size, -1))
+            if self.obs is None
+            else samples.reshape((bin_size, -1))
+        )
