@@ -428,7 +428,7 @@ def mol_data_from_pubchem(identifier, identifier_type="name", cid=None):
         geometry (ndarray):  each row contains the coordinates of an atom in Bohr
         charge (int): charge on the molecule. This might be incorrect unless exact CID is provided explicity
 
-    ** Example **
+    **Example**
 
     >>> mol_data_from_pubchem("BeH2")
     (['Be', 'H', 'H'],
