@@ -16,6 +16,7 @@ build an active space and generate single and double excitations.
 """
 # pylint: disable=too-many-locals
 import os
+import re
 from shutil import copyfile
 
 from pennylane import numpy as np
@@ -412,3 +413,82 @@ def excitations_to_wires(singles, doubles, wires=None):
         doubles_wires.append([d1_wires, d2_wires])
 
     return singles_wires, doubles_wires
+
+
+def mol_data_from_pubchem(identifier, identifier_type="name", cid=None):
+    r"""Obtain molecular data of the compound from the PubChem Database
+
+    Args:
+        identifier (str): compound's idenitifer as required by the PubChem database
+        identifier_type (str): type of chemical indentifier - CAS, SMILES, InChI, InChIKey
+        cid (int): PubChem CID for the molecule. `identifier` will be ignored if this is not ``None``.
+
+    Returns:
+        symbols (list(str)): list of every atom in the compound
+        geometry (ndarray):  each row contains the coordinates of an atom in Bohr
+        charge (int): charge on the molecule. This might be incorrect unless exact CID is provided explicity
+
+    ** Example **
+
+    >>> mol_data_from_pubchem("BeH2")
+    (['Be', 'H', 'H'],
+     array([[ 4.79405604,  0.29290815,  0.        ],
+            [ 3.77946   , -0.29290815,  0.        ],
+            [ 5.80884105, -0.29290815,  0.        ]]),
+     0)
+    >>> mol_data_from_pubchem("NH4", cid=223)
+    (['N', 'H', 'H', 'H', 'H'],
+    array([[ 4.79404621,  0.        ,  0.        ],
+            [ 5.80882913,  0.5858151 ,  0.        ],
+            [ 3.77945225, -0.5858151 ,  0.        ],
+            [ 4.20823111,  1.01459396,  0.        ],
+            [ 5.3798613 , -1.01459396,  0.        ]]),
+    1)
+
+    """
+
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        import pubchempy as pcp
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires pubchempy.\nIt can be installed with: pip install pubchempy."
+        ) from Error
+
+    # https://gist.github.com/lsauer/1312860/264ae813c2bd2c27a769d261c8c6b38da34e22fb#file-smiles_inchi_annotated-js
+    identifier_patterns = {
+        "name": re.compile(r"^[a-zA-Z0-9_]+$"),
+        "cas": re.compile(r"^\d{1,7}\-\d{2}\-\d$"),
+        "smiles": re.compile(
+            r"^(?!InChI=)(?!\d{1,7}\-\d{2}\-\d)(?![A-Z]{14}\-[A-Z]{10}(\-[A-Z])?)[^J][a-zA-Z0-9@+\-\[\]\(\)\\\/%=#$]{1,}$"
+        ),
+        "inchi": re.compile(
+            r"^InChI\=1S?\/[A-Za-z0-9\.]+(\+[0-9]+)?(\/[cnpqbtmsih][A-Za-z0-9\-\+\(\)\,\/\?\;\.]+)*$"
+        ),
+        "inchikey": re.compile(r"^[A-Z]{14}\-[A-Z]{10}(\-[A-Z])?"),
+    }
+    if cid is None:
+        try:
+            if identifier_patterns[identifier_type.lower()].search(identifier):
+                cid = pcp.get_cids(identifier, namespace=identifier_type)[0]
+            else:
+                raise ValueError(
+                    f"Specified identifier doesn't seem to match type: {identifier_type}."
+                )
+        except IndexError as exc:
+            raise ValueError("Specified molecule does not exist in the PubChem Database.") from exc
+
+    try:
+        pcp_molecule = pcp.Compound.from_cid(cid, record_type="3d")
+    except:
+        pcp_molecule = pcp.Compound.from_cid(cid, record_type="2d")
+
+    mol_data = pcp_molecule.to_dict(properties=["atoms", "charge"])
+    symbols = [atom["element"] for atom in mol_data["atoms"]]
+    geometry = (
+        np.array([[atom["x"], atom["y"], atom.get("z", 0.0)] for atom in mol_data["atoms"]])
+        / 0.529177210903
+    )
+    charge = mol_data["charge"]
+
+    return symbols, geometry, charge
