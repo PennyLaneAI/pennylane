@@ -21,6 +21,8 @@ from functools import singledispatch
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
 from pennylane.operation import Operator, Operation, Observable
+from pennylane.ops.op_math.symbolicop import SymbolicOp
+from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
@@ -136,6 +138,28 @@ def equal_operation(
                 return False
 
     return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
+
+
+@equal.register
+def equal_symbolicop(
+    op1: SymbolicOp,
+    op2: SymbolicOp,
+):
+    """Determine whether two SymbolicOps objects are equal"""
+    raise NotImplementedError(
+        f"Comparison between SymbolicOps not implemented. Received {op1} and {op2}."
+    )
+
+
+@equal.register
+def equal_compositeop(
+    op1: CompositeOp,
+    op2: CompositeOp,
+):
+    """Determine whether two CompositeOps objects are equal"""
+    raise NotImplementedError(
+        f"Comparison between CompositeOps not implemented. Received {op1} and {op2}."
+    )
 
 
 @equal.register
