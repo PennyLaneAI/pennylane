@@ -108,7 +108,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess:
+class MeasurementProcess:  # TODO: Inherit from ABC
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
