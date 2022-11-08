@@ -116,7 +116,8 @@ def probs(wires=None, op=None):
     return _Probability(Probability, obs=op)
 
 
-class _Probability(MeasurementProcess):  # TODO: Make public when removing the Probability enum
+# TODO: Make public when removing the ObservableReturnTypes enum
+class _Probability(MeasurementProcess):
     """Measurement process that computes the probability of each computational basis state."""
 
     def process(
