@@ -120,11 +120,7 @@ class _Probability(MeasurementProcess):  # TODO: Make public when removing the P
     """Measurement process that computes the probability of each computational basis state."""
 
     def process(
-        self,
-        samples: Sequence[complex],
-        shot_range: Tuple[int] = None,
-        bin_size: int = None,
-        r_dtype=np.float64,
+        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
         wires = self.wires or Ellipsis  # if self.wires is None we use all wires
 
@@ -147,11 +143,8 @@ class _Probability(MeasurementProcess):  # TODO: Make public when removing the P
         # count the basis state occurrences, and construct the probability vector
         if bin_size is not None:
             num_bins = samples.shape[-2] // bin_size
-            prob = self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
-        else:
-            prob = self._count_unbinned_samples(indices, batch_size, dim)
-
-        return np.asarray(prob, dtype=r_dtype)
+            return self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
+        return self._count_unbinned_samples(indices, batch_size, dim)
 
     @staticmethod
     def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
