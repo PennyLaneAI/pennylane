@@ -74,9 +74,9 @@ def equal(
 
     Two Observables of different types can also be compared, for example a Hamiltonian and a Tensor:
 
-    >>>H = qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")])
-    >>>obs = qml.PauliZ(0) @ qml.PauliY(1)
-    >>>qml.equal(H1, obs)
+    >>> H = qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")])
+    >>> obs = qml.PauliZ(0) @ qml.PauliY(1)
+    >>> qml.equal(H1, obs)
     True
 
     Observables of the type Hermitian are, however, only comparable to other Hermitians, and must be identical to
@@ -84,11 +84,9 @@ def equal(
 
     >>> A = np.array([[1, 0], [0, -1]])
     >>> B = np.array([[1., 0], [0, -1.]])
-
     >>> H1 = qml.Hermitian(A, 0)
     >>> H2 = qml.Hermitian(A, 0)
     >>> H3 = qml.Hermitian(B, 0)
-
     >>> qml.equal(H1, H2), qml.equal(H1, H3)
     (True, False)
 
