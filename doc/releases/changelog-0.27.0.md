@@ -587,13 +587,19 @@ Missing entries:
 
 * Extended the `qml.equal` function to MeasurementProcesses
   [(#3189)](https://github.com/PennyLaneAI/pennylane/pull/3189)
+  
+* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling 
+  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global 
+  configuration for matplotlib plotting. If no `style` is passed, the function defaults 
+  to plotting with the `black_white` style.
+  [(#3247)](https://github.com/PennyLaneAI/pennylane/pull/3247)
 
 <h3>Breaking changes</h3>
 
 * `QuantumTape._par_info` is now a list of dictionaries, instead of a dictionary whose keys are integers starting from zero.
   [(#3185)](https://github.com/PennyLaneAI/pennylane/pull/3185)
 
-* `QueuingContext` is renamed `QueuingManager`.
+* `QueuingContext` has been renamed to `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
 * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
@@ -630,12 +636,6 @@ Missing entries:
   >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
   'torch'
   ```
-  
-* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling 
-  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global 
-  configuration for matplotlib plotting. If no `style` is passed, the function defaults 
-  to plotting with the `black_white` style.
-  [(#3247)](https://github.com/PennyLaneAI/pennylane/pull/3247)
 
 * `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
   instead. There is no longer a static method for this.
