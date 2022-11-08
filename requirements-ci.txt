@@ -3,7 +3,6 @@ scipy
 cvxpy
 networkx
 retworkx
-tensornetwork==0.3
 autograd
 toml
 appdirs
