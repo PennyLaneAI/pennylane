@@ -17,9 +17,9 @@ jobs:
       matrix:
         config:
           - {python-version: 3.8, suite: 'tf'}
-          - {python-version: '3.11', suite: 'tf'}
+          - {python-version: '3.10', suite: 'tf'}
           - {python-version: 3.8, suite: 'torch'}
-          - {python-version: '3.11', suite: 'torch'}
+          - {python-version: '3.10', suite: 'torch'}
           - {python-version: 3.8, suite: 'jax'}
           - {python-version: '3.11', suite: 'jax'}
           - {python-version: 3.8, suite: 'autograd'}
