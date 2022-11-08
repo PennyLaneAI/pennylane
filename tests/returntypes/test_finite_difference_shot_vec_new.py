@@ -20,6 +20,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
+from pennylane._device import _process_shot_sequence, _get_num_copies
 from pennylane.gradients import (
     finite_diff,
     finite_diff_coeffs,
@@ -122,11 +123,13 @@ class TestFiniteDiff:
             g_tapes, post_processing = qml.gradients.finite_diff(
                 tape, h=h_val, shots=default_shot_vector
             )
-        res = post_processing(qml.execute(g_tapes, dev, None))
+        all_res = post_processing(qml.execute(g_tapes, dev, None))
+        assert len(all_res) == len(default_shot_vector)
 
-        assert g_tapes == []
-        assert isinstance(res, numpy.ndarray)
-        assert res.shape == (0,)
+        for res in all_res:
+            assert g_tapes == []
+            assert isinstance(res, numpy.ndarray)
+            assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -225,7 +228,7 @@ class TestFiniteDiff:
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
-        dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
+        dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
 
         @qml.qnode(dev)
         def circuit(params):
@@ -234,26 +237,28 @@ class TestFiniteDiff:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
+        all_result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
+        assert len(all_result) == len(default_shot_vector)
 
-        assert isinstance(result, tuple)
+        for result in all_result:
+            assert isinstance(result, tuple)
 
-        assert len(result) == 3
+            assert len(result) == 3
 
-        assert isinstance(result[0], numpy.ndarray)
-        assert result[0].shape == (4,)
-        assert np.allclose(result[0], 0)
+            assert isinstance(result[0], numpy.ndarray)
+            assert result[0].shape == (4,)
+            assert np.allclose(result[0], 0)
 
-        assert isinstance(result[1], numpy.ndarray)
-        assert result[1].shape == (4,)
-        assert np.allclose(result[1], 0)
+            assert isinstance(result[1], numpy.ndarray)
+            assert result[1].shape == (4,)
+            assert np.allclose(result[1], 0)
 
-        assert isinstance(result[2], numpy.ndarray)
-        assert result[2].shape == (4,)
-        assert np.allclose(result[2], 0)
+            assert isinstance(result[2], numpy.ndarray)
+            assert result[2].shape == (4,)
+            assert np.allclose(result[2], 0)
 
-        tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
-        assert tapes == []
+            tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
+            assert tapes == []
 
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -268,44 +273,46 @@ class TestFiniteDiff:
 
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
-        result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
+        all_result = qml.gradients.finite_diff(circuit, h=h_val, shots=default_shot_vector)(params)
+        assert len(all_result) == len(default_shot_vector)
 
-        assert isinstance(result, tuple)
+        for result in all_result:
+            assert isinstance(result, tuple)
 
-        assert len(result) == 2
+            assert len(result) == 2
 
-        # First elem
-        assert len(result[0]) == 3
+            # First elem
+            assert len(result[0]) == 3
 
-        assert isinstance(result[0][0], numpy.ndarray)
-        assert result[0][0].shape == ()
-        assert np.allclose(result[0][0], 0)
+            assert isinstance(result[0][0], numpy.ndarray)
+            assert result[0][0].shape == ()
+            assert np.allclose(result[0][0], 0)
 
-        assert isinstance(result[0][1], numpy.ndarray)
-        assert result[0][1].shape == ()
-        assert np.allclose(result[0][1], 0)
+            assert isinstance(result[0][1], numpy.ndarray)
+            assert result[0][1].shape == ()
+            assert np.allclose(result[0][1], 0)
 
-        assert isinstance(result[0][2], numpy.ndarray)
-        assert result[0][2].shape == ()
-        assert np.allclose(result[0][2], 0)
+            assert isinstance(result[0][2], numpy.ndarray)
+            assert result[0][2].shape == ()
+            assert np.allclose(result[0][2], 0)
 
-        # Second elem
-        assert len(result[0]) == 3
+            # Second elem
+            assert len(result[0]) == 3
 
-        assert isinstance(result[1][0], numpy.ndarray)
-        assert result[1][0].shape == (4,)
-        assert np.allclose(result[1][0], 0)
+            assert isinstance(result[1][0], numpy.ndarray)
+            assert result[1][0].shape == (4,)
+            assert np.allclose(result[1][0], 0)
 
-        assert isinstance(result[1][1], numpy.ndarray)
-        assert result[1][1].shape == (4,)
-        assert np.allclose(result[1][1], 0)
+            assert isinstance(result[1][1], numpy.ndarray)
+            assert result[1][1].shape == (4,)
+            assert np.allclose(result[1][1], 0)
 
-        assert isinstance(result[1][2], numpy.ndarray)
-        assert result[1][2].shape == (4,)
-        assert np.allclose(result[1][2], 0)
+            assert isinstance(result[1][2], numpy.ndarray)
+            assert result[1][2].shape == (4,)
+            assert np.allclose(result[1][2], 0)
 
-        tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
-        assert tapes == []
+            tapes, _ = qml.gradients.finite_diff(circuit.tape, h=h_val, shots=default_shot_vector)
+            assert tapes == []
 
     def test_y0(self, mocker):
         """Test that if first order finite differences is used, then
@@ -1115,3 +1122,176 @@ class TestFiniteDiffGradients:
         for res in all_res:
             assert isinstance(res, tuple)
             assert np.allclose(res, expected, atol=finite_diff_shot_vec_tol, rtol=0)
+
+
+pauliz = qml.PauliZ(wires=0)
+proj = qml.Projector([1], wires=0)
+A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+hermitian = qml.Hermitian(A, wires=0)
+
+expval = qml.expval(pauliz)
+probs = qml.probs(wires=[1, 0])
+var_involutory = qml.var(proj)
+var_non_involutory = qml.var(hermitian)
+
+single_scalar_output_measurements = [
+    expval,
+    probs,
+    var_involutory,
+    var_non_involutory,
+]
+
+single_meas_with_shape = list(zip(single_scalar_output_measurements, [(), (4,), (), ()]))
+
+
+@pytest.mark.parametrize(
+    "shot_vec", [(100, 1, 10), (1, 1, 10), ((1, 2), 10), (10, (1, 2)), (1, 1, 1)]
+)
+class TestReturn:
+    """Class to test the shape of Jacobian with different return types.
+
+    The return types have the following major cases:
+
+    1. 1 trainable param, 1 measurement
+    2. 1 trainable param, >1 measurement
+    3. >1 trainable param, 1 measurement
+    4. >1 trainable param, >1 measurement
+    """
+
+    @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
+    @pytest.mark.parametrize("op_wires", [0, 2])
+    def test_1_1(self, shot_vec, meas, shape, op_wires):
+        """Test one param one measurement case"""
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        x = 0.543
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(
+                x, wires=[op_wires]
+            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qml.apply(meas)  # Measurements act on wires 0 and 1
+
+        # One trainable param
+        tape.trainable_params = {0}
+
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
+        all_res = fn(dev.batch_execute(tapes))
+
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert isinstance(all_res, tuple)
+
+        for res in all_res:
+            assert isinstance(res, np.ndarray)
+            assert res.shape == shape
+
+    @pytest.mark.parametrize("op_wire", [0, 1])
+    def test_1_N(self, shot_vec, op_wire):
+        """Test single param multi-measurement case"""
+        dev = qml.device("default.qubit", wires=6, shots=shot_vec)
+        x = 0.543
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(
+                x, wires=[op_wire]
+            )  # Op acts either on wire 0 (non-zero grad) or wire 1 (zero grad)
+
+            # 4 measurements
+            qml.expval(qml.PauliZ(wires=0))
+
+            # Note: wire 1 is skipped as a measurement to allow for zero grad case to be tested
+            qml.probs(wires=[3, 2])
+            qml.var(qml.Projector([1], wires=4))
+            qml.var(qml.Hermitian(A, wires=5))
+
+        # Multiple trainable params
+        tape.trainable_params = {0}
+
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
+        all_res = fn(dev.batch_execute(tapes))
+
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert isinstance(all_res, tuple)
+
+        expected_shapes = [(), (4,), (), ()]
+        for meas_res in all_res:
+            for res, shape in zip(meas_res, expected_shapes):
+                assert isinstance(res, np.ndarray)
+                assert res.shape == shape
+
+    @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
+    @pytest.mark.parametrize("op_wires", [0, 2])
+    def test_N_1(self, shot_vec, meas, shape, op_wires):
+        """Test multi-param single measurement case"""
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        x = 0.543
+        y = 0.213
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(
+                x, wires=[op_wires]
+            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qml.RY(
+                y, wires=[op_wires]
+            )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
+            qml.apply(meas)  # Measurements act on wires 0 and 1
+
+        # Multiple trainable params
+        tape.trainable_params = {0, 1}
+
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
+        all_res = fn(dev.batch_execute(tapes))
+
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert isinstance(all_res, tuple)
+
+        for param_res in all_res:
+            for res in param_res:
+                assert isinstance(res, np.ndarray)
+                assert res.shape == shape
+
+    @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
+    @pytest.mark.parametrize("op_wires", [(0, 1, 2, 3, 4), (5, 5, 5, 5, 5)])
+    def test_N_N(self, shot_vec, meas, shape, op_wires):
+        """Test multi-param multi-measurement case"""
+        dev = qml.device("default.qubit", wires=6, shots=shot_vec)
+        params = np.random.random(6)
+
+        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
+        with qml.tape.QuantumTape() as tape:
+            for idx, w in enumerate(op_wires):
+                qml.RY(
+                    params[idx], wires=[w]
+                )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+
+            # Extra op - 5 measurements in total
+            qml.RY(
+                params[5], wires=[w]
+            )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+
+            # 4 measurements
+            qml.expval(qml.PauliZ(wires=0))
+            qml.probs(wires=[2, 1])
+            qml.var(qml.Projector([1], wires=3))
+            qml.var(qml.Hermitian(A, wires=4))
+
+        # Multiple trainable params
+        tape.trainable_params = {0, 1, 2, 3, 4}
+
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        tapes, fn = qml.gradients.finite_diff(tape, shots=grad_transform_shots)
+        all_res = fn(dev.batch_execute(tapes))
+
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
+        assert isinstance(all_res, tuple)
+
+        expected_shapes = [(), (4,), (), ()]
+        for meas_res in all_res:
+            assert len(meas_res) == 4
+            for idx, param_res in enumerate(meas_res):
+                assert len(param_res) == 5
+                for res in param_res:
+                    assert isinstance(res, np.ndarray)
+                    assert res.shape == expected_shapes[idx]
