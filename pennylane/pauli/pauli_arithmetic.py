@@ -143,7 +143,7 @@ class PauliWord(dict):
     def __str__(self):
         """String representation of a PauliWord."""
         if len(self) == 0:
-            return "()"
+            return "I"
         return " @ ".join(f"{op}({w})" for w, op in self.items())
 
     def __repr__(self):
