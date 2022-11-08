@@ -32,8 +32,8 @@ class TestSample:
             return
         samples = self.dev._samples
         for call_args in self.spy.call_args_list:
-            meas = call_args[0][0]
-            shot_range, bin_size = (call_args[1]["shot_range"], call_args[1]["bin_size"])
+            meas = call_args.args[0]
+            shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
             if isinstance(meas, Operator):
                 meas = qml.sample(op=meas)
             assert qml.math.allequal(
