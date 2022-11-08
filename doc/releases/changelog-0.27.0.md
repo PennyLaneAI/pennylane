@@ -4,51 +4,6 @@
 
 <h3>New features since last release</h3>
 
-<h4>The `qml.pauli` module 👀</h4>
-
-* We've reorganized and grouped everything in PennyLane responsible for manipulating Pauli operators into a `pauli` module. The `grouping` module has been deprecated as a result, and logic was moved from `pennylane/grouping` to `pennylane/pauli/grouping`.
-  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
-
-* `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` can be used to represent tensor products and linear combinations of Pauli operators, respectively. These provide a more performant method to compute sums and products of Pauli operators.
-  [(#3195)](https://github.com/PennyLaneAI/pennylane/pull/3195)
-
-  - `qml.pauli.PauliWord` represents tensor products of Pauli operators. We can efficiently multiply and extract the matrix of these operators using this representation.
-
-    ```pycon
-    >>> pw1 = qml.pauli.PauliWord({0:"X", 1:"Z"})
-    >>> pw2 = qml.pauli.PauliWord({0:"Y", 1:"Z"})
-    >>> pw1, pw2
-    (X(0) @ Z(1), Y(0) @ Z(1))
-    >>> pw1 * pw2
-    (Z(0), 1j)
-    >>> pw1.to_mat(wire_order=[0,1])
-    array([[ 0,  0,  1,  0],
-          [ 0,  0,  0, -1],
-          [ 1,  0,  0,  0],
-          [ 0, -1,  0,  0]])
-    ```
-
-  - `qml.pauli.PauliSentence` represents linear combinations of Pauli words. We can efficiently add, multiply and extract the matrix of these operators in this representation.
-
-    ```pycon
-    >>> ps1 = qml.pauli.PauliSentence({pw1: 1.2, pw2: 0.5j})
-    >>> ps2 = qml.pauli.PauliSentence({pw1: -1.2})
-    >>> ps1
-    1.2 * X(0) @ Z(1)
-    + 0.5j * Y(0) @ Z(1)
-    >>> ps1 + ps2
-    0.0 * X(0) @ Z(1)
-    + 0.5j * Y(0) @ Z(1)
-    >>> ps1 * ps2
-    -1.44 * I
-    + (-0.6+0j) * Z(0)
-    >>> (ps1 + ps2).to_mat(wire_order=[0,1])
-    array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
-          [ 0. +0.j,  0. +0.j,  0. +0.j, -0.5+0.j],
-          [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
-          [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
-    ```
-
 <h4>An all-new data module 💾</h4>
 
 * The `qml.data` module is now available, allowing users to download, load, and create quantum datasets.
@@ -291,6 +246,51 @@
 
   Note that this change depends on `jax.pure_callback`, which requires `jax==0.3.17`.
 
+<h4>The `qml.pauli` module 👀</h4>
+
+* We've reorganized and grouped everything in PennyLane responsible for manipulating Pauli operators into a `pauli` module. The `grouping` module has been deprecated as a result, and logic was moved from `pennylane/grouping` to `pennylane/pauli/grouping`.
+  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
+
+* `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` can be used to represent tensor products and linear combinations of Pauli operators, respectively. These provide a more performant method to compute sums and products of Pauli operators.
+  [(#3195)](https://github.com/PennyLaneAI/pennylane/pull/3195)
+
+  - `qml.pauli.PauliWord` represents tensor products of Pauli operators. We can efficiently multiply and extract the matrix of these operators using this representation.
+
+    ```pycon
+    >>> pw1 = qml.pauli.PauliWord({0:"X", 1:"Z"})
+    >>> pw2 = qml.pauli.PauliWord({0:"Y", 1:"Z"})
+    >>> pw1, pw2
+    (X(0) @ Z(1), Y(0) @ Z(1))
+    >>> pw1 * pw2
+    (Z(0), 1j)
+    >>> pw1.to_mat(wire_order=[0,1])
+    array([[ 0,  0,  1,  0],
+          [ 0,  0,  0, -1],
+          [ 1,  0,  0,  0],
+          [ 0, -1,  0,  0]])
+    ```
+
+  - `qml.pauli.PauliSentence` represents linear combinations of Pauli words. We can efficiently add, multiply and extract the matrix of these operators in this representation.
+
+    ```pycon
+    >>> ps1 = qml.pauli.PauliSentence({pw1: 1.2, pw2: 0.5j})
+    >>> ps2 = qml.pauli.PauliSentence({pw1: -1.2})
+    >>> ps1
+    1.2 * X(0) @ Z(1)
+    + 0.5j * Y(0) @ Z(1)
+    >>> ps1 + ps2
+    0.0 * X(0) @ Z(1)
+    + 0.5j * Y(0) @ Z(1)
+    >>> ps1 * ps2
+    -1.44 * I
+    + (-0.6+0j) * Z(0)
+    >>> (ps1 + ps2).to_mat(wire_order=[0,1])
+    array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
+          [ 0. +0.j,  0. +0.j,  0. +0.j, -0.5+0.j],
+          [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
+          [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
+    ```
+
 <h4>New basis rotation and tapering features in `qml.qchem` 🤓</h4>
 
 * Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`.
@@ -463,10 +463,9 @@
         0.+0.j, 0.+0.j, 0.+0.j], requires_grad=True)
   ```
 
-<h4>(Experimental) Multi-measurement and gradient results: switch to tuples (and sequences) as output types</h4>
+<h4>(Experimental) More support for multi-measurement and gradient output types</h4>
 
-* PennyLane is switching to tuples and other sequences from array and tensor objects for nested outputs such as results of multiple
-  measurements or gradients.
+* More support for QNodes returning multiple measurements and gradient output types.
   [(#2886)](https://github.com/PennyLaneAI/pennylane/pull/2886)
   [(#3052)](https://github.com/PennyLaneAI/pennylane/pull/3052)
   [(#3041)](https://github.com/PennyLaneAI/pennylane/pull/3041)
@@ -487,51 +486,32 @@
   [(#3223)](https://github.com/PennyLaneAI/pennylane/pull/3223)
   [(#3222)](https://github.com/PennyLaneAI/pennylane/pull/3222)
 
-  The motivation of this change is deprecation of ragged ndarray creation in NumPy. This feature is experimental, all
-  feedback is welcome.
+  In v0.26, we introduced `qml.enable_return()` which separates measurements into their own tensors. The motivation of this change is the deprecation of ragged `ndarray` creation in NumPy.
 
-  Let's consider a QNode with multiple measurements such that the measurements have different output shapes (one
-  vector-valued and one scalar-valued):
+  With this release, we're continuing to elevate this feature by adding support for gradient transforms and some interfaces.
 
   ```python
-  dev = qml.device("default.qubit", wires=2)
+  import torch 
 
-  @qml.qnode(dev)
-  def circuit(x):
-      qml.Hadamard(wires=[0])
-      qml.CRX(x, wires=[0, 1])
-      return qml.probs(wires=[0]), qml.vn_entropy(wires=[0])
-  ```
-  PennyLane always wants to return a single array or tensor when evaluating a QNode. As the shape of the first result is
-  different from the shape of the second result, and creating the final result involves creating a ragged array
-  internally:
-  ```pycon
-  >>> circuit(0.5)
-  tensor([0.5       , 0.5       , 0.08014815], requires_grad=True)
-  ```
-  The above code emits a `VisibleDeprecationWarning`.
-
-  When the output system for tuples and other sequences is activated, the result is simply a tuple containing each
-  measurement result.
-
-  ```python
   qml.enable_return()
-
   dev = qml.device("default.qubit", wires=2)
 
-  @qml.qnode(dev)
+  @qml.qnode(dev, interface="torch")
   def circuit(x):
-      qml.Hadamard(wires=[0])
+      qml.Hadamard(0)
+      qml.Hadamard(1)
       qml.CRX(x, wires=[0, 1])
-      return qml.probs(wires=[0]), qml.vn_entropy(wires=[0])
+      return qml.probs(wires=[0, 1]), qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
   ```
+
   ```pycon
-  >>> circuit(0.5)
-  (tensor([0.5, 0.5], requires_grad=True),
-   tensor(0.08014815, requires_grad=True))
+  >>> circuit(torch.pi/3)
+  (tensor([0.2500, 0.2500, 0.2500, 0.2500], dtype=torch.float64),
+   tensor(0., dtype=torch.float64))
   ```
+
   For more details, please
-  [refer to the documentation of `enable_return`](https://docs.pennylane.ai/en/stable/code/api/pennylane.enable_return.html?highlight=enable_return#pennylane.enable_return).
+  [refer to the documentation of `qml.enable_return()`](https://docs.pennylane.ai/en/stable/code/api/pennylane.enable_return.html?highlight=enable_return#pennylane.enable_return).
 
 <h3>Improvements</h3>
 
