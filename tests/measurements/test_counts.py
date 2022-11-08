@@ -31,7 +31,7 @@ class TestCounts:
             return
         samples = self.dev._samples
         for call_args in self.spy.call_args_list:
-            if call_args.kwargs["counts"] is False:
+            if not call_args.kwargs.get("counts", False):
                 continue
             meas = call_args.args[0]
             shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
@@ -39,6 +39,9 @@ class TestCounts:
                 meas = qml.counts(op=meas)
             old_res = self.dev.sample(*call_args.args, **call_args.kwargs)
             new_res = meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size)
+            if isinstance(old_res, dict):
+                old_res = [old_res]
+                new_res = [new_res]
             for old, new in zip(old_res, new_res):
                 assert old.keys() == new.keys()
                 assert qml.math.allequal(list(old.values()), list(new.values()))

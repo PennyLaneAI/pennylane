@@ -170,7 +170,11 @@ class _Counts(_Sample):
         samples = super().process(samples, shot_range, bin_size)
         if bin_size is None:
             return self._samples_to_counts(samples)
-        return [self._samples_to_counts(bin_sample) for bin_sample in samples.transpose()]
+        num_wires = qml.math.shape(samples)[0 if self.obs is None else -1]
+        return [
+            self._samples_to_counts(bin_sample)
+            for bin_sample in samples.reshape((-1, bin_size, num_wires))
+        ]
 
     def _samples_to_counts(self, samples):
         """Groups the samples into a dictionary showing number of occurences for
