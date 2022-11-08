@@ -488,6 +488,7 @@ Missing entries:
 * Structural improvements are made to `QueuingManager`, formerly `QueuingContext`, and `AnnotatedQueue`.
   [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
+  [(#3085)](https://github.com/PennyLaneAI/pennylane/pull/3085)
 
   - `QueuingContext` is renamed to `QueuingManager`.
   - `QueuingManager` should now be the global communication point for putting queuable objects into the active queue.
@@ -595,10 +596,6 @@ Missing entries:
 * `QueuingContext` is renamed `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
 
-* `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
-   if the object isn't in the queue.
-   [(#3085)](https://github.com/PennyLaneAI/pennylane/pull/3085)
-
 * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
 
@@ -645,6 +642,10 @@ Missing entries:
   [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
 
 <h3>Deprecations</h3>
+
+* `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
+   if the object isn't in the queue.
+   [(#3085)](https://github.com/PennyLaneAI/pennylane/pull/3085)
 
 * `qml.tape.stop_recording` and `QuantumTape.stop_recording` have been moved to `qml.QueuingManager.stop_recording`. The old functions will still be available until v0.29.
   [(#3068)](https://github.com/PennyLaneAI/pennylane/pull/3068)
