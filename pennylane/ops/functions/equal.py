@@ -107,17 +107,8 @@ def equal_operation(
     atol: float = 1e-9,
 ):
     """Determine whether two Operations objects are equal"""
-    if [op1.name, op1.arithmetic_depth, op1.wires] != [
-        op2.name,
-        op2.arithmetic_depth,
-        op2.wires,
-    ]:
+    if [op1.name, op1.wires] != [op2.name, op2.wires]:
         return False
-
-    if op1.arithmetic_depth > 0:
-        raise NotImplementedError(
-            "Comparison of Operations with an arithmetic depth larger than 0 is not yet implemented."
-        )
 
     if not all(
         qml.math.allclose(d1, d2, rtol=rtol, atol=atol) for d1, d2 in zip(op1.data, op2.data)
