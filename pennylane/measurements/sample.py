@@ -16,7 +16,7 @@
 This module contains the qml.sample measurement.
 """
 import warnings
-from typing import Sequence, Tuple, Union
+from typing import Tuple, Union
 
 import numpy as np
 
@@ -117,9 +117,7 @@ def sample(op: Union[Observable, None] = None, wires=None):
 class _Sample(MeasurementProcess):
     """Measurement process that returns the samples of a given observable."""
 
-    def process(
-        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
-    ):
+    def process(self, samples: np.ndarray, shot_range: Tuple[int] = None, bin_size: int = None):
         name = getattr(self.obs, "name", None)
         # Select the samples from samples that correspond to ``shot_range`` if provided
         if shot_range is None:
@@ -137,8 +135,10 @@ class _Sample(MeasurementProcess):
                 samples = sub_samples[..., np.array(self.wires)]
             else:
                 samples = sub_samples
+            num_wires = qml.math.shape(samples)[-1]
+            return samples if bin_size is None else samples.reshape(num_wires, bin_size, -1)
 
-        elif isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
+        if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
             samples = 1 - 2 * sub_samples[..., self.wires[0]]
 
@@ -158,12 +158,4 @@ class _Sample(MeasurementProcess):
                     f"Cannot compute samples of {self.obs.name}."
                 ) from e
 
-        num_wires = len(self.wires) if len(self.wires) > 0 else Ellipsis
-        if bin_size is None:
-            return samples
-
-        return (
-            samples.reshape((num_wires, bin_size, -1))
-            if self.obs is None
-            else samples.reshape((bin_size, -1))
-        )
+        return samples if bin_size is None else samples.reshape((bin_size, -1))
