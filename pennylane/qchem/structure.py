@@ -420,7 +420,7 @@ def mol_data_from_pubchem(identifier, identifier_type="name", cid=None):
 
     Args:
         identifier (str): compound's idenitifer as required by the PubChem database
-        identifier_type (str): type of chemical indentifier - CAS, SMILES, InChI, InChIKey
+        identifier_type (str): type of chemical indentifier - name, CAS, SMILES, InChI, InChIKey
         cid (int): PubChem CID for the molecule. `identifier` will be ignored if this is not ``None``.
 
     Returns:
@@ -445,6 +445,48 @@ def mol_data_from_pubchem(identifier, identifier_type="name", cid=None):
             [ 5.3798613 , -1.01459396,  0.        ]]),
     1)
 
+    .. details::
+
+        **Usage Details**
+
+        ``mol_data_from_pubchem`` can be additonally be used with four chemical indentifiers - CAS, SMILES, InChI, InChIKey:
+
+        >>> mol_data_from_pubchem("74-82-8", "CAS")
+        (['C', 'H', 'H', 'H', 'H'],
+        array([[ 0.        ,  0.        ,  0.        ],
+                [ 1.04709725,  1.51102501,  0.93824902],
+                [ 1.29124986, -1.53710323, -0.47923455],
+                [-1.47058487, -0.70581271,  1.26460472],
+                [-0.86795121,  0.7320799 , -1.7236192 ]]),
+        0)
+
+        >>> mol_data_from_pubchem("[C]", "SMILES")
+        (['C', 'H', 'H', 'H', 'H'],
+        array([[ 0.        ,  0.        ,  0.        ],
+                [ 1.04709725,  1.51102501,  0.93824902],
+                [ 1.29124986, -1.53710323, -0.47923455],
+                [-1.47058487, -0.70581271,  1.26460472],
+                [-0.86795121,  0.7320799 , -1.7236192 ]]),
+        0)
+
+        >>> mol_data_from_pubchem("InChI=1S/CH4/h1H4", "InChI")
+        (['C', 'H', 'H', 'H', 'H'],
+        array([[ 0.        ,  0.        ,  0.        ],
+                [ 1.04709725,  1.51102501,  0.93824902],
+                [ 1.29124986, -1.53710323, -0.47923455],
+                [-1.47058487, -0.70581271,  1.26460472],
+                [-0.86795121,  0.7320799 , -1.7236192 ]]),
+        0)
+
+        >>> mol_data_from_pubchem("VNWKTOKETHGBQD-UHFFFAOYSA-N", "InChIKey")
+        (['C', 'H', 'H', 'H', 'H'],
+        array([[ 0.        ,  0.        ,  0.        ],
+                [ 1.04709725,  1.51102501,  0.93824902],
+                [ 1.29124986, -1.53710323, -0.47923455],
+                [-1.47058487, -0.70581271,  1.26460472],
+                [-0.86795121,  0.7320799 , -1.7236192 ]]),
+        0)
+
     """
 
     try:
@@ -457,7 +499,7 @@ def mol_data_from_pubchem(identifier, identifier_type="name", cid=None):
 
     # https://gist.github.com/lsauer/1312860/264ae813c2bd2c27a769d261c8c6b38da34e22fb#file-smiles_inchi_annotated-js
     identifier_patterns = {
-        "name": re.compile(r"^[a-zA-Z0-9_]+$"),
+        "name": re.compile(r"^[a-zA-Z0-9_+-]+$"),
         "cas": re.compile(r"^\d{1,7}\-\d{2}\-\d$"),
         "smiles": re.compile(
             r"^(?!InChI=)(?!\d{1,7}\-\d{2}\-\d)(?![A-Z]{14}\-[A-Z]{10}(\-[A-Z])?)[^J][a-zA-Z0-9@+\-\[\]\(\)\\\/%=#$]{1,}$"
@@ -468,20 +510,28 @@ def mol_data_from_pubchem(identifier, identifier_type="name", cid=None):
         "inchikey": re.compile(r"^[A-Z]{14}\-[A-Z]{10}(\-[A-Z])?"),
     }
     if cid is None:
+        if identifier_type.lower() not in identifier_patterns.keys():
+            raise ValueError(
+                "Specified identifier type is not supported. Supported type are: name, CAS, SMILES, InChI, InChIKey."
+            )
         try:
             if identifier_patterns[identifier_type.lower()].search(identifier):
-                cid = pcp.get_cids(identifier, namespace=identifier_type)[0]
+                if identifier_type.lower() == "cas":
+                    identifier_type = "name"
+                cid = pcp.get_cids(identifier, namespace=identifier_type.lower())[0]
             else:
                 raise ValueError(
                     f"Specified identifier doesn't seem to match type: {identifier_type}."
                 )
-        except IndexError as exc:
+        except (IndexError, pcp.NotFoundError) as exc:
             raise ValueError("Specified molecule does not exist in the PubChem Database.") from exc
 
     try:
         pcp_molecule = pcp.Compound.from_cid(cid, record_type="3d")
-    except:
+    except pcp.NotFoundError:
         pcp_molecule = pcp.Compound.from_cid(cid, record_type="2d")
+    except ValueError as exc:
+        raise ValueError("Provided CID (or Identifier) is None.") from exc
 
     mol_data = pcp_molecule.to_dict(properties=["atoms", "charge"])
     symbols = [atom["element"] for atom in mol_data["atoms"]]
