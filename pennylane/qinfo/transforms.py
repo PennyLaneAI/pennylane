@@ -67,6 +67,62 @@ def reduced_dm(qnode, wires):
     return wrapper
 
 
+def purity(qnode, wires):
+    r"""Compute the purity of a :class:`~.QNode` returning :func:`~.state`.
+
+    .. math::
+        \gamma = Tr(\rho^2)
+
+    where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
+    :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
+    A pure state has a :math:`\gamma` of 1.
+
+    It is possible to compute the purity of a sub-system from a given state. To find the purity of
+    the overall state, include all wires in the "wires" argument.
+
+    Args:
+        qnode (tensor_like): A :class:`.QNode` returning a :func:`~.state`.
+        wires (Sequence(int)): List of wires in the considered subsystem.
+
+    **Example**
+
+    .. code-block:: python
+
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev)
+        def noisy_circuit(p):
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.BitFlip(p, wires=0)
+            qml.BitFlip(p, wires=1)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+    >>> purity(noisy_circuit, wires=[0, 1])(0.2)
+    5648000000000398
+
+    >>> purity(circuit, wires=[0])(np.pi / 2)
+    0.5
+
+    >>> purity(circuit, wires=[0, 1])(np.pi / 2)
+    1.0
+
+    """
+
+    density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
+
+    def wrapper(*args, **kwargs):
+        density_matrix = density_matrix_qnode(*args, **kwargs)
+        return qml.math.purity(density_matrix, wires, c_dtype=qnode.device.C_DTYPE)
+
+    return wrapper
+
+
 def vn_entropy(qnode, wires, base=None):
     r"""Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
 
@@ -247,6 +303,7 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
         qml.probs(wires=wires)
 
     if post_processing_fn is None:
+        # pylint: disable=unnecessary-lambda-assignment
         post_processing_fn = lambda x: qml.math.squeeze(qml.math.stack(x))
 
     return [new_tape], post_processing_fn
