@@ -424,9 +424,7 @@ def mol_data_from_pubchem(identifier, identifier_type="name", cid=None):
         cid (int): PubChem CID for the molecule. `identifier` will be ignored if this is not ``None``.
 
     Returns:
-        symbols (list(str)): list of every atom in the compound
-        geometry (ndarray):  each row contains the coordinates of an atom in Bohr
-        charge (int): charge on the molecule. This might be incorrect unless exact CID is provided explicity
+        Tuple(list(str), ndarray, int): symbols, geometry and charge of the compound
 
     **Example**
 
