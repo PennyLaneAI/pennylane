@@ -33,9 +33,16 @@ from pennylane.interfaces.jax_jit import _execute_with_fwd
 
 
 @pytest.mark.parametrize(
-    "version, should_raise", [("0.3.16", True), ("0.3.17", False), ("0.3.18", False)]
+    "version, package, should_raise",
+    [
+        ("0.3.16", jax, True),
+        ("0.3.17", jax, False),
+        ("0.3.18", jax, False),
+        ("0.3.14", jax.lib, True),
+        ("0.3.15", jax.lib, False),
+        ("0.3.16", jax.lib, False),
+    ],
 )
-@pytest.mark.parametrize("package", [jax, jax.lib])
 def test_raise_version_error(package, version, should_raise, monkeypatch):
     """Test JAX version error"""
     a = jnp.array([0.1, 0.2])
@@ -49,7 +56,7 @@ def test_raise_version_error(package, version, should_raise, monkeypatch):
         m.setattr(package, "__version__", version)
 
         if should_raise:
-            msg = "requires version 0.3.17 or higher for JAX and JAX lib"
+            msg = "requires version 0.3.17 or higher for JAX and 0.3.15 or higher JAX lib"
             with pytest.raises(InterfaceUnsupportedError, match=msg):
                 execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
         else:
