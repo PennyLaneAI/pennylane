@@ -345,6 +345,7 @@ def test_consistent_mol_data_from_pubchem(identifier, identifier_type, cid):
     assert ref_mol_data[0] == pub_mol_data[0] and ref_mol_data[2] == pub_mol_data[2]
     assert np.allclose(ref_mol_data[1], pub_mol_data[1])
 
+
 @pytest.mark.parametrize(
     ("identifier", "identifier_type", "cid", "message_match"),
     [

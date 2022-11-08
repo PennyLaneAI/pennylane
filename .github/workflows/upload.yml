@@ -195,6 +195,9 @@ jobs:
       - name: Install openfermionpyscf
         run: pip3 install openfermionpyscf
 
+      - name: Install pubchempy
+        run: pip3 install pubchempy
+
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel
