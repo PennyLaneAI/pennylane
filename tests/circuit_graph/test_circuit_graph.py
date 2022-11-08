@@ -16,8 +16,8 @@ Unit tests for the :mod:`pennylane.circuit_graph` module.
 """
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -308,13 +308,13 @@ class TestCircuitGraph:
         none are explicitly provided."""
 
         ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
-        obs_no_wires = [qml.measurements.sample(op=None, wires=None)]
-        obs_w_wires = [qml.measurements.sample(op=None, wires=[0, 1, 2])]
+        obs_no_wires = [qml.sample(op=None, wires=None)]
+        obs_w_wires = [qml.sample(op=None, wires=[0, 1, 2])]
 
         circuit_no_wires = CircuitGraph(ops, obs_no_wires, wires=Wires([0, 1, 2]))
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
 
-        sample_w_wires_op = qml.measurements.sample(op=None, wires=[0, 1, 2])
+        sample_w_wires_op = qml.sample(op=None, wires=[0, 1, 2])
         expected_grid = {
             0: [ops[0], ops[1], sample_w_wires_op],
             1: [ops[1], sample_w_wires_op],
@@ -326,5 +326,8 @@ class TestCircuitGraph:
             lst_no_wires = circuit_no_wires._grid[key]
             lst_expected = expected_grid[key]
 
-            assert lst_mp_equality(lst_no_wires, lst_w_wires)
-            assert lst_mp_equality(lst_no_wires, lst_expected)
+            for el1, el2 in zip(lst_no_wires, lst_w_wires):
+                assert qml.equal(el1, el2)
+
+            for el1, el2 in zip(lst_no_wires, lst_expected):
+                assert qml.equal(el1, el2)

@@ -16,6 +16,7 @@ This module contains the qml.equal function.
 """
 # pylint: disable=too-many-arguments,too-many-return-statements
 from typing import Union
+
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
 from pennylane.operation import Operator
@@ -85,11 +86,11 @@ def equal(
     if op1.__class__ is not op2.__class__:
         return False
 
-    if op1.__class__ is MeasurementProcess:
-        return equal_measurements(op1, op2)
-
-    if op1.__class__ is ShadowMeasurementProcess:
+    if isinstance(op1, ShadowMeasurementProcess):
         return equal_shadow_measurements(op1, op2)
+
+    if isinstance(op1, MeasurementProcess):
+        return equal_measurements(op1, op2)
 
     return equal_operator(op1, op2, check_interface, check_trainability, rtol, atol)
 
