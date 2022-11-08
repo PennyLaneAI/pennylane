@@ -699,7 +699,7 @@ class MeasurementProcess:  # TODO: Inherit from ABC
     def process(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
-        """_summary_
+        """Process the given samples.
 
         Args:
             samples (Sequence[complex]): computational basis samples generated for all wires
