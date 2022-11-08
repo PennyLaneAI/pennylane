@@ -100,7 +100,7 @@ def _obs_comparison_data(obs):
 @equal.register
 def equal_operation(
     op1: Operation,
-    op2: Operation,
+    op2,
     check_interface: bool = True,
     check_trainability: bool = True,
     rtol: float = 1e-5,
@@ -134,7 +134,7 @@ def equal_operation(
 @equal.register
 def equal_symbolicop(
     op1: SymbolicOp,
-    op2: SymbolicOp,
+    op2,
 ):
     """Determine whether two SymbolicOps objects are equal"""
     raise NotImplementedError(
@@ -145,7 +145,7 @@ def equal_symbolicop(
 @equal.register
 def equal_compositeop(
     op1: CompositeOp,
-    op2: CompositeOp,
+    op2,
 ):
     """Determine whether two CompositeOps objects are equal"""
     raise NotImplementedError(
@@ -154,13 +154,17 @@ def equal_compositeop(
 
 
 @equal.register
-def equal_observable(op1: Observable, op2: Observable):
+def equal_observable(op1: Observable, op2):
     """Determine whether two Observables objects are equal"""
+    if isinstance(op2, Operation):
+        # if op1 is a Pauli observable, and it is being compared to an Operation, they should be
+        # compared as two Operations, but singledispatch selects a function to execute based on op1
+        return equal_operation(op1, op2)
     return _obs_comparison_data(op1) == _obs_comparison_data(op2)
 
 
 @equal.register
-def equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess):
+def equal_measurements(op1: MeasurementProcess, op2):
     """Determine whether two MeasurementProcess objects are equal"""
     return_types_match = op1.return_type == op2.return_type
     if op1.obs is not None and op2.obs is not None:
@@ -182,7 +186,7 @@ def equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess):
 
 
 @equal.register
-def equal_shadow_measurements(op1: ShadowMeasurementProcess, op2: ShadowMeasurementProcess):
+def equal_shadow_measurements(op1: ShadowMeasurementProcess, op2):
     """Determine whether two ShadowMeasurementProcess objects are equal"""
     return_types_match = op1.return_type == op2.return_type
     wires_match = op1.wires == op2.wires
