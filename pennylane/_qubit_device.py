@@ -814,7 +814,7 @@ class QubitDevice(Device):
 
                 if self._shot_vector is not None:
                     raise NotImplementedError(
-                        "Returning the Purity is not supported with shot vectors."
+                        "Returning the purity is not supported with shot vectors."
                     )
 
                 if self.shots is not None:

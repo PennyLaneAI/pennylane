@@ -91,6 +91,7 @@ class TestPurity:
         )
         assert qml.math.allclose(purity, expected_purity)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("device", grad_supported_devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
@@ -109,6 +110,7 @@ class TestPurity:
         expected_grad = expected_purity_grad_ising_xx(param) if is_partial else 0
         assert qml.math.allclose(grad_purity, expected_grad)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("device", mix_supported_devices)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("param", probs)
@@ -582,3 +584,35 @@ class TestPurityMeasurement:
         grad_purity = tape.gradient(purity, param)
 
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
+
+    @pytest.mark.parametrize("device", devices)
+    def test_qnode_entropy_no_custom_wires(self, device):
+        """Test that purity cannot be returned with custom wires."""
+
+        dev = qml.device(device, wires=["a", 1])
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=["a", 1])
+            return qml.purity(wires=["a"])
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Returning the purity is not supported when using custom wire labels",
+        ):
+            circuit(0.1)
+
+    def test_shot_vec_error(self):
+        """Test an error is raised when using shot vectors with purity."""
+
+        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.purity(wires=[0, 1])
+
+        with pytest.raises(
+            NotImplementedError, match="Returning the purity is not supported with shot vectors"
+        ):
+            circuit(0.5)
