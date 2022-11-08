@@ -298,4 +298,4 @@ class ShadowMeasurementProcess(MeasurementProcess):
     def process(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
-        pass
+        """TODO: Implement this method."""
