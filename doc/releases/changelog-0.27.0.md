@@ -4,60 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4> (New heading) Pauli module</h4>
-
-* Reorganized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
-  module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
-  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
-
-* Introduced new classes `PauliWord` and `PauliSentence` to represent tensor products and linear combinations 
-  of Pauli operators. These classes provide a more performant method to compute sums and products of Pauli Operators.
-  [(#3195)](https://github.com/PennyLaneAI/pennylane/pull/3195)
-
-  The `PauliWord` class represents tensor products of Pauli operators. We can efficiently multiply and extract the
-  matrix of these operators using this representation. 
-  
-  ```pycon
-  >>> pw1 = qml.pauli.PauliWord({0:"X", 1:"Z"})
-  >>> pw2 = qml.pauli.PauliWord({0:"Y", 1:"Z"})
-  >>> pw1, pw2
-  (X(0) @ Z(1), Y(0) @ Z(1))
-  >>> pw1 * pw2
-  (Z(0), 1j)
-  >>> pw1.to_mat(wire_order=[0,1])
-  array([[ 0,  0,  1,  0],
-         [ 0,  0,  0, -1],
-         [ 1,  0,  0,  0],
-         [ 0, -1,  0,  0]])
-  ```
-  
-  The `PauliSentence` class represents linear combinations of Pauli words. We can efficiently add, multiply and extract 
-  the matrix of these operators in this representation. 
-
-  ```pycon
-  >>> ps1 = qml.pauli.PauliSentence({pw1: 1.2, pw2: 0.5j})
-  >>> ps2 = qml.pauli.PauliSentence({pw1: -1.2})
-  >>> ps1
-  1.2 * X(0) @ Z(1)
-  + 0.5j * Y(0) @ Z(1)
-  >>> ps1 + ps2
-  0.0 * X(0) @ Z(1)
-  + 0.5j * Y(0) @ Z(1)
-  >>> ps1 * ps2
-  -1.44 * I
-  + (-0.6+0j) * Z(0)
-  >>> (ps1 + ps2).to_mat(wire_order=[0,1])
-  array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
-         [ 0. +0.j,  0. +0.j,  0. +0.j, -0.5+0.j],
-         [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
-         [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
-  ```
-
-Missing entries:
-* Functionality is added to estimate the number of measurements required to compute an expectation
-  value with a target error and estimate the error in computing an expectation value with a given 
-  number of measurements.
-  [(#3000)](https://github.com/PennyLaneAI/pennylane/pull/3000)
+<h4>(TODO: title) Return types</h4>
 
 * [(#2886)](https://github.com/PennyLaneAI/pennylane/pull/2886)
 * [(#3052)](https://github.com/PennyLaneAI/pennylane/pull/3052)
@@ -66,28 +13,67 @@ Missing entries:
 * [(#3069)](https://github.com/PennyLaneAI/pennylane/pull/3069)
 * [(#3137)](https://github.com/PennyLaneAI/pennylane/pull/3137)
 * [(#3127)](https://github.com/PennyLaneAI/pennylane/pull/3127)
-* [(#3121)](https://github.com/PennyLaneAI/pennylane/pull/3121)
 * [(#3099)](https://github.com/PennyLaneAI/pennylane/pull/3099)
 * [(#3098)](https://github.com/PennyLaneAI/pennylane/pull/3098)
 * [(#3095)](https://github.com/PennyLaneAI/pennylane/pull/3095)
 * [(#3091)](https://github.com/PennyLaneAI/pennylane/pull/3091)
 * [(#3176)](https://github.com/PennyLaneAI/pennylane/pull/3176)
 * [(#3170)](https://github.com/PennyLaneAI/pennylane/pull/3170)
-* [(#3157)](https://github.com/PennyLaneAI/pennylane/pull/3157)
-* [(#3195)](https://github.com/PennyLaneAI/pennylane/pull/3195)
 * [(#3194)](https://github.com/PennyLaneAI/pennylane/pull/3194)
-* [(#3184)](https://github.com/PennyLaneAI/pennylane/pull/3184)
-* [(#3249)](https://github.com/PennyLaneAI/pennylane/pull/3249)
 * [(#3267)](https://github.com/PennyLaneAI/pennylane/pull/3267)
 * [(#3234)](https://github.com/PennyLaneAI/pennylane/pull/3234)
-* [(#3233)](https://github.com/PennyLaneAI/pennylane/pull/3233)
 * [(#3232)](https://github.com/PennyLaneAI/pennylane/pull/3232)
 * [(#3223)](https://github.com/PennyLaneAI/pennylane/pull/3223)
 * [(#3222)](https://github.com/PennyLaneAI/pennylane/pull/3222)
 
+<h4>The `qml.pauli` module 👀</h4>
+
+* We've reorganized and grouped everything in PennyLane responsible for manipulating Pauli operators into a `pauli` module. The `grouping` module has been deprecated as a result, and logic was moved from `pennylane/grouping` to `pennylane/pauli/grouping`.
+  [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
+
+* `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` can be used to represent tensor products and linear combinations of Pauli operators, respectively. These provide a more performant method to compute sums and products of Pauli operators.
+  [(#3195)](https://github.com/PennyLaneAI/pennylane/pull/3195)
+
+  - `qml.pauli.PauliWord` represents tensor products of Pauli operators. We can efficiently multiply and extract the matrix of these operators using this representation. 
+  
+    ```pycon
+    >>> pw1 = qml.pauli.PauliWord({0:"X", 1:"Z"})
+    >>> pw2 = qml.pauli.PauliWord({0:"Y", 1:"Z"})
+    >>> pw1, pw2
+    (X(0) @ Z(1), Y(0) @ Z(1))
+    >>> pw1 * pw2
+    (Z(0), 1j)
+    >>> pw1.to_mat(wire_order=[0,1])
+    array([[ 0,  0,  1,  0],
+          [ 0,  0,  0, -1],
+          [ 1,  0,  0,  0],
+          [ 0, -1,  0,  0]])
+    ```
+  
+  - `qml.pauli.PauliSentence` represents linear combinations of Pauli words. We can efficiently add, multiply and extract the matrix of these operators in this representation. 
+
+    ```pycon
+    >>> ps1 = qml.pauli.PauliSentence({pw1: 1.2, pw2: 0.5j})
+    >>> ps2 = qml.pauli.PauliSentence({pw1: -1.2})
+    >>> ps1
+    1.2 * X(0) @ Z(1)
+    + 0.5j * Y(0) @ Z(1)
+    >>> ps1 + ps2
+    0.0 * X(0) @ Z(1)
+    + 0.5j * Y(0) @ Z(1)
+    >>> ps1 * ps2
+    -1.44 * I
+    + (-0.6+0j) * Z(0)
+    >>> (ps1 + ps2).to_mat(wire_order=[0,1])
+    array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
+          [ 0. +0.j,  0. +0.j,  0. +0.j, -0.5+0.j],
+          [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
+          [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
+    ```
+
 <h4>An all-new data module 💾</h4>
 
-* A brand new `qml.data` module is available, allowing users to download, load, and create quantum datasets.
+* The `qml.data` module is now available, allowing users to download, load, and create quantum datasets.
   [(#3156)](https://github.com/PennyLaneAI/pennylane/pull/3156)
 
   Datasets are hosted on Xanadu Cloud and can be downloaded by using `qml.data.load()`:
@@ -381,6 +367,9 @@ Missing entries:
         1: ───────────────────────┤ ╰<Z@Z>
   ```
 
+* Functionality has been added to estimate the number of measurements required to compute an expectation value with a target error and estimate the error in computing an expectation value with a given number of measurements.
+  [(#3000)](https://github.com/PennyLaneAI/pennylane/pull/3000)
+
 <h4>New functions, operations, observables 🤩</h4>
 
 * Wires of operators or entire QNodes can now be mapped to other wires via `qml.map_wires()`. 
@@ -571,14 +560,13 @@ Missing entries:
 * Modified the representation of `WireCut` by using `qml.draw_mpl`.
   [(#3067)](https://github.com/PennyLaneAI/pennylane/pull/3067)
 
-* Improved the performance of the `qml.math.expand_matrix` function for dense matrices.
+* Improved the performance of `qml.math.expand_matrix` function for dense
+  and sparse matrices.
+  [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
   [(#3064)](https://github.com/PennyLaneAI/pennylane/pull/3064)
 
-* Improved the `qml.math.expand_matrix` method for sparse matrices.
-  [(#3060)](https://github.com/PennyLaneAI/pennylane/pull/3060)
-
 * Added support for sums and products of operator classes with scalar tensors of any interface
-  (numpy, jax, tensorflow, torch...).
+  (NumPy, JAX, Tensorflow, PyTorch...).
   [(#3149)](https://github.com/PennyLaneAI/pennylane/pull/3149)
 
   ```pycon
@@ -646,10 +634,6 @@ Missing entries:
 
 * `QueuingContext` has been renamed to `QueuingManager`.
   [(#3061)](https://github.com/PennyLaneAI/pennylane/pull/3061)
-
-* `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated. Instead, `update_info` no longer raises errors
-  if the object isn't in the queue.
-  [(#3085)](https://github.com/PennyLaneAI/pennylane/pull/3085)
 
 * Deprecation patches for the return types enum's location and `qml.utils.expand` are removed.
   [(#3092)](https://github.com/PennyLaneAI/pennylane/pull/3092)
