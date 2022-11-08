@@ -134,9 +134,10 @@ class _Sample(MeasurementProcess):
             if len(self.wires) != 0:
                 # if wires are provided, then we only return samples from those wires
                 samples = sub_samples[..., np.array(self.wires)]
+                num_wires = len(self.wires)
             else:
                 samples = sub_samples
-            num_wires = qml.math.shape(samples)[-1]
+                num_wires = qml.math.shape(samples)[-1]
             return samples if bin_size is None else samples.reshape(num_wires, bin_size, -1)
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
