@@ -34,6 +34,16 @@ def equal(
 ):
     r"""Function for determining operator or measurement equality.
 
+    .. Warning::
+
+        The equal function does **not** check if the matrix representation
+        of a :class:`~.Hermitian` observable is equal to an equivalent
+        observable expressed in terms of Pauli matrices, or as a
+        linear combination of Hermitians.
+        To do so would require the matrix form of Hamiltonians and Tensors
+        be calculated, which would drastically increase runtime.
+        The function will only recognize Hermitians as equal if they are **exactly** the same.
+
     Args:
         op1 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): First object to compare
         op2 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): Second object to compare
@@ -50,16 +60,38 @@ def equal(
     Given two operators or measurement processes, ``qml.equal`` determines their equality:
 
     >>> op1 = qml.RX(np.array(.12), wires=0)
-    >>> op2 = qml.RY(np.array(1.23), wires=0)
-    >>> qml.equal(op1, op1), qml.equal(op1, op2)
+    >>> op2 = qml.RX(np.array(.12), wires=0)
+    >>> op3 = qml.RY(np.array(1.23), wires=0)
+    >>> qml.equal(op1, op2), qml.equal(op1, op3)
     True False
 
     >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)) )
-    >>> True
+    True
     >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)) )
-    >>> False
+    False
     >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]) )
-    >>> True
+    True
+
+    Two Observables of different types can also be compared, for example a Hamiltonian and a Tensor:
+
+    >>>H = qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")])
+    >>>obs = qml.PauliZ(0) @ qml.PauliY(1)
+    >>>qml.equal(H1, obs)
+    True
+
+    Observables of the type Hermitian are, however, only comparable to other Hermitians, and must be identical to
+    be recognized as equal:
+
+    >>> A = np.array([[1, 0], [0, -1]])
+    >>> B = np.array([[1., 0], [0, -1.]])
+
+    >>> H1 = qml.Hermitian(A, 0)
+    >>> H2 = qml.Hermitian(A, 0)
+    >>> H3 = qml.Hermitian(B, 0)
+
+    >>> qml.equal(H1, H2), qml.equal(H1, H3)
+    (True, False)
+
 
     .. details::
         :title: Usage Details
@@ -85,7 +117,7 @@ def equal(
         >>> qml.equal(op3, op4, check_trainability=False)
         True
     """
-    raise NotImplementedError(f"Cannot compare {type(op1)} and {type(op2)}")
+    raise NotImplementedError(f"Comparison between {type(op1)} and {type(op2)} not implemented.")
 
 
 def _obs_comparison_data(obs):
@@ -143,10 +175,7 @@ def equal_symbolicop(
 
 
 @equal.register
-def equal_compositeop(
-    op1: CompositeOp,
-    op2,
-):
+def equal_compositeop(op1: CompositeOp, op2):
     """Determine whether two CompositeOps objects are equal"""
     raise NotImplementedError(
         f"Comparison between CompositeOps not implemented. Received {op1} and {op2}."
@@ -159,6 +188,7 @@ def equal_observable(op1: Observable, op2):
     if isinstance(op2, Operation):
         # if op1 is a Pauli observable, and it is being compared to an Operation, they should be
         # compared as two Operations, but singledispatch selects a function to execute based on op1
+        # and considers the Pauli operators Observables
         return equal_operation(op1, op2)
     return _obs_comparison_data(op1) == _obs_comparison_data(op2)
 
@@ -166,6 +196,8 @@ def equal_observable(op1: Observable, op2):
 @equal.register
 def equal_measurements(op1: MeasurementProcess, op2):
     """Determine whether two MeasurementProcess objects are equal"""
+    if op1.__class__ is not op2.__class__:
+        return False
     return_types_match = op1.return_type == op2.return_type
     if op1.obs is not None and op2.obs is not None:
         observables_match = equal(op1.obs, op2.obs)
@@ -188,6 +220,8 @@ def equal_measurements(op1: MeasurementProcess, op2):
 @equal.register
 def equal_shadow_measurements(op1: ShadowMeasurementProcess, op2):
     """Determine whether two ShadowMeasurementProcess objects are equal"""
+    if op1.__class__ is not op2.__class__:
+        return False
     return_types_match = op1.return_type == op2.return_type
     wires_match = op1.wires == op2.wires
     H_match = op1.H == op2.H
