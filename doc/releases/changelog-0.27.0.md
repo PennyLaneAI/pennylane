@@ -4,28 +4,6 @@
 
 <h3>New features since last release</h3>
 
-<h4>(TODO: title) Return types</h4>
-
-* [(#2886)](https://github.com/PennyLaneAI/pennylane/pull/2886)
-* [(#3052)](https://github.com/PennyLaneAI/pennylane/pull/3052)
-* [(#3041)](https://github.com/PennyLaneAI/pennylane/pull/3041)
-* [(#3090)](https://github.com/PennyLaneAI/pennylane/pull/3090)
-* [(#3069)](https://github.com/PennyLaneAI/pennylane/pull/3069)
-* [(#3137)](https://github.com/PennyLaneAI/pennylane/pull/3137)
-* [(#3127)](https://github.com/PennyLaneAI/pennylane/pull/3127)
-* [(#3099)](https://github.com/PennyLaneAI/pennylane/pull/3099)
-* [(#3098)](https://github.com/PennyLaneAI/pennylane/pull/3098)
-* [(#3095)](https://github.com/PennyLaneAI/pennylane/pull/3095)
-* [(#3091)](https://github.com/PennyLaneAI/pennylane/pull/3091)
-* [(#3176)](https://github.com/PennyLaneAI/pennylane/pull/3176)
-* [(#3170)](https://github.com/PennyLaneAI/pennylane/pull/3170)
-* [(#3194)](https://github.com/PennyLaneAI/pennylane/pull/3194)
-* [(#3267)](https://github.com/PennyLaneAI/pennylane/pull/3267)
-* [(#3234)](https://github.com/PennyLaneAI/pennylane/pull/3234)
-* [(#3232)](https://github.com/PennyLaneAI/pennylane/pull/3232)
-* [(#3223)](https://github.com/PennyLaneAI/pennylane/pull/3223)
-* [(#3222)](https://github.com/PennyLaneAI/pennylane/pull/3222)
-
 <h4>The `qml.pauli` module 👀</h4>
 
 * We've reorganized and grouped everything in PennyLane responsible for manipulating Pauli operators into a `pauli` module. The `grouping` module has been deprecated as a result, and logic was moved from `pennylane/grouping` to `pennylane/pauli/grouping`.
@@ -34,8 +12,8 @@
 * `qml.pauli.PauliWord` and `qml.pauli.PauliSentence` can be used to represent tensor products and linear combinations of Pauli operators, respectively. These provide a more performant method to compute sums and products of Pauli operators.
   [(#3195)](https://github.com/PennyLaneAI/pennylane/pull/3195)
 
-  - `qml.pauli.PauliWord` represents tensor products of Pauli operators. We can efficiently multiply and extract the matrix of these operators using this representation. 
-  
+  - `qml.pauli.PauliWord` represents tensor products of Pauli operators. We can efficiently multiply and extract the matrix of these operators using this representation.
+
     ```pycon
     >>> pw1 = qml.pauli.PauliWord({0:"X", 1:"Z"})
     >>> pw2 = qml.pauli.PauliWord({0:"Y", 1:"Z"})
@@ -49,8 +27,8 @@
           [ 1,  0,  0,  0],
           [ 0, -1,  0,  0]])
     ```
-  
-  - `qml.pauli.PauliSentence` represents linear combinations of Pauli words. We can efficiently add, multiply and extract the matrix of these operators in this representation. 
+
+  - `qml.pauli.PauliSentence` represents linear combinations of Pauli words. We can efficiently add, multiply and extract the matrix of these operators in this representation.
 
     ```pycon
     >>> ps1 = qml.pauli.PauliSentence({pw1: 1.2, pw2: 0.5j})
@@ -86,13 +64,13 @@
   [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
   ```
 
-  - Datasets available to be downloaded can be listed with `qml.data.list_datasets()`. 
+  - Datasets available to be downloaded can be listed with `qml.data.list_datasets()`.
 
   - To download or load only specific properties of a dataset, we can specify the desired properties in `qml.data.load` with the `attributes` keyword argument:
 
     ```pycon
     >>> H2_hamiltonian = qml.data.load(
-      data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0", 
+      data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0",
       attributes=["molecule", "hamiltonian"]
     )[0]
     >>> H2_hamiltonian.hamiltonian
@@ -146,7 +124,7 @@
 
   ```pycon
   >>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], observables=[qml.PauliZ(wires=0),qml.PauliX(wires=1)])
-  >>> example_energies, _ = np.linalg.eigh(qml.matrix(example_hamiltonian)) 
+  >>> example_energies, _ = np.linalg.eigh(qml.matrix(example_hamiltonian))
   >>> example_dataset = qml.data.Dataset(
     data_name = 'Example', hamiltonian=example_hamiltonian, energies=example_energies
   )
@@ -214,7 +192,7 @@
 
   Finally, the optimizer is instantiated and then the circuit is created and optimized adaptively:
 
-  ```python 
+  ```python
   opt = qml.optimize.AdaptiveOptimizer()
   for i in range(len(operator_pool)):
       circuit, energy, gradient = opt.step_and_cost(circuit, operator_pool, drain_pool=True)
@@ -313,9 +291,9 @@
 
   Note that this change depends on `jax.pure_callback`, which requires `jax==0.3.17`.
 
-<h4>New basis rotation and tapering features in `qml.chem` 🤓</h4>
+<h4>New basis rotation and tapering features in `qml.qchem` 🤓</h4>
 
-* Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`. 
+* Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`.
   ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
 
   ```pycon
@@ -372,7 +350,7 @@
 
 <h4>New functions, operations, observables 🤩</h4>
 
-* Wires of operators or entire QNodes can now be mapped to other wires via `qml.map_wires()`. 
+* Wires of operators or entire QNodes can now be mapped to other wires via `qml.map_wires()`.
   [(#3143)](https://github.com/PennyLaneAI/pennylane/pull/3143)
   [(#3145)](https://github.com/PennyLaneAI/pennylane/pull/3145)
 
@@ -389,8 +367,8 @@
     (RX(0.54, wires=[10]) + PauliX(wires=[11])) + (PauliZ(wires=[12]) @ RY(1.23, wires=[13]))
     ```
 
-    A `map_wires` method has also been added to operators, which returns a copy 
-    of the operator with its wires changed according to the given wire map. 
+    A `map_wires` method has also been added to operators, which returns a copy
+    of the operator with its wires changed according to the given wire map.
 
   - entire QNodes:
 
@@ -398,7 +376,7 @@
     dev = qml.device("default.qubit", wires=["A", "B", "C", "D"])
     wire_map = {0: "A", 1: "B", 2: "C", 3: "D"}
 
-    @qml.qnode(dev) 
+    @qml.qnode(dev)
     def circuit():
         qml.RX(0.54, wires=0)
         qml.PauliX(1)
@@ -413,9 +391,9 @@
     tensor([0.92885434, 0.07114566], requires_grad=True)
     >>> print(qml.draw(mapped_circuit)())
     A: ──RX(0.54)─┤  Probs
-    B: ──X────────┤       
-    C: ──Z────────┤       
-    D: ──RY(1.23)─┤   
+    B: ──X────────┤
+    C: ──Z────────┤
+    D: ──RY(1.23)─┤
     ```
 
 * The `qml.IntegerComparator` arithmetic operation is now available.
@@ -484,6 +462,76 @@
         0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j,
         0.+0.j, 0.+0.j, 0.+0.j], requires_grad=True)
   ```
+
+<h4>(Experimental) Multi-measurement and gradient results: switch to tuples (and sequences) as output types</h4>
+
+* PennyLane is switching to tuples and other sequences from array and tensor objects for nested outputs such as results of multiple
+  measurements or gradients.
+  [(#2886)](https://github.com/PennyLaneAI/pennylane/pull/2886)
+  [(#3052)](https://github.com/PennyLaneAI/pennylane/pull/3052)
+  [(#3041)](https://github.com/PennyLaneAI/pennylane/pull/3041)
+  [(#3090)](https://github.com/PennyLaneAI/pennylane/pull/3090)
+  [(#3069)](https://github.com/PennyLaneAI/pennylane/pull/3069)
+  [(#3137)](https://github.com/PennyLaneAI/pennylane/pull/3137)
+  [(#3127)](https://github.com/PennyLaneAI/pennylane/pull/3127)
+  [(#3099)](https://github.com/PennyLaneAI/pennylane/pull/3099)
+  [(#3098)](https://github.com/PennyLaneAI/pennylane/pull/3098)
+  [(#3095)](https://github.com/PennyLaneAI/pennylane/pull/3095)
+  [(#3091)](https://github.com/PennyLaneAI/pennylane/pull/3091)
+  [(#3176)](https://github.com/PennyLaneAI/pennylane/pull/3176)
+  [(#3170)](https://github.com/PennyLaneAI/pennylane/pull/3170)
+  [(#3194)](https://github.com/PennyLaneAI/pennylane/pull/3194)
+  [(#3267)](https://github.com/PennyLaneAI/pennylane/pull/3267)
+  [(#3234)](https://github.com/PennyLaneAI/pennylane/pull/3234)
+  [(#3232)](https://github.com/PennyLaneAI/pennylane/pull/3232)
+  [(#3223)](https://github.com/PennyLaneAI/pennylane/pull/3223)
+  [(#3222)](https://github.com/PennyLaneAI/pennylane/pull/3222)
+
+  The motivation of this change is deprecation of ragged ndarray creation in NumPy. This feature is experimental, all
+  feedback is welcome.
+
+  Let's consider a QNode with multiple measurements such that the measurements have different output shapes (one
+  vector-valued and one scalar-valued):
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.Hadamard(wires=[0])
+      qml.CRX(x, wires=[0, 1])
+      return qml.probs(wires=[0]), qml.vn_entropy(wires=[0])
+  ```
+  PennyLane always wants to return a single array or tensor when evaluating a QNode. As the shape of the first result is
+  different from the shape of the second result, and creating the final result involves creating a ragged array
+  internally:
+  ```pycon
+  >>> circuit(0.5)
+  tensor([0.5       , 0.5       , 0.08014815], requires_grad=True)
+  ```
+  The above code emits a `VisibleDeprecationWarning`.
+
+  When the output system for tuples and other sequences is activated, the result is simply a tuple containing each
+  measurement result.
+
+  ```python
+  qml.enable_return()
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.Hadamard(wires=[0])
+      qml.CRX(x, wires=[0, 1])
+      return qml.probs(wires=[0]), qml.vn_entropy(wires=[0])
+  ```
+  ```pycon
+  >>> circuit(0.5)
+  (tensor([0.5, 0.5], requires_grad=True),
+   tensor(0.08014815, requires_grad=True))
+  ```
+  For more details, please
+  [refer to the documentation of `enable_return`](https://docs.pennylane.ai/en/stable/code/api/pennylane.enable_return.html?highlight=enable_return#pennylane.enable_return).
 
 <h3>Improvements</h3>
 
@@ -620,10 +668,10 @@
 
 * Extended the `qml.equal` function to MeasurementProcesses
   [(#3189)](https://github.com/PennyLaneAI/pennylane/pull/3189)
-  
-* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling 
-  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global 
-  configuration for matplotlib plotting. If no `style` is passed, the function defaults 
+
+* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling
+  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global
+  configuration for matplotlib plotting. If no `style` is passed, the function defaults
   to plotting with the `black_white` style.
   [(#3247)](https://github.com/PennyLaneAI/pennylane/pull/3247)
 
@@ -688,7 +736,7 @@
 
 * `Operator.compute_terms` has been removed. On a specific instance of an operator, use `op.terms()` instead. There is no longer a static method for this.
   [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
-  
+
 * `qml.tape.QuantumTape.inv()` has been deprecated. Use `qml.tape.QuantumTape.adjoint` instead.
   [(#3237)](https://github.com/PennyLaneAI/pennylane/pull/3237)
 
@@ -781,6 +829,7 @@ Diego Guala,
 Soran Jahangiri,
 Edward Jiang,
 Christina Lee,
+Romain Moyard,
 Lee J. O'Riordan,
 Mudit Pandey,
 Matthew Silverman,
