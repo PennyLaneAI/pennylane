@@ -42,6 +42,7 @@ from pennylane.measurements import (
     State,
     Variance,
     VnEntropy,
+    Purity,
 )
 from pennylane.operation import operation_derivative
 from pennylane.wires import Wires
@@ -687,6 +688,7 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
+    # pylint: disable=too-many-statements
     def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
         """Process measurement results from circuit execution and return statistics.
 
@@ -803,6 +805,27 @@ class QubitDevice(Device):
                     )
 
                 results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
+
+            elif obs.return_type is Purity:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the purity is not supported when using custom wire labels"
+                    )
+
+                if self._shot_vector is not None:
+                    raise NotImplementedError(
+                        "Returning the Purity is not supported with shot vectors."
+                    )
+
+                if self.shots is not None:
+                    warnings.warn(
+                        "Requested purity with finite shots; the returned "
+                        "result is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+
+                results.append(self.purity(wires=obs.wires))
 
             elif obs.return_type is MutualInfo:
                 if self.wires.labels != tuple(range(self.num_wires)):
@@ -959,6 +982,27 @@ class QubitDevice(Device):
                         UserWarning,
                     )
                 result = self.vn_entropy(wires=obs.wires, log_base=obs.log_base)
+
+            elif obs.return_type is Purity:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the purity is not supported when using custom wire labels"
+                    )
+
+                # TODO: qml.execute shot vec support required with new return types
+                # if self._shot_vector is not None:
+                #     raise NotImplementedError(
+                #         "Returning the Von Neumann entropy is not supported with shot vectors."
+                #     )
+
+                if self.shots is not None:
+                    warnings.warn(
+                        "Requested purity with finite shots; the returned "
+                        "result is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+                result = self.purity(wires=obs.wires)
 
             elif obs.return_type is MutualInfo:
                 if self.wires.labels != tuple(range(self.num_wires)):
@@ -1205,6 +1249,28 @@ class QubitDevice(Device):
             ) from e
         wires = wires.tolist()
         return qml.math.vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
+
+    def purity(self, wires):
+        r"""Returns the purity prior to measurement.
+
+        .. math::
+        \gamma = Tr(\rho^2)
+
+        Args:
+            wires (Wires): Wires of the considered subsystem.
+
+        Returns:
+            float: returns the purity
+        """
+        try:
+            state = self.access_state()
+        except qml.QuantumFunctionError as e:  # pragma: no cover
+            raise NotImplementedError(
+                f"Cannot compute the purity with device {self.name} that is "
+                f"not capable of returning the state."
+            ) from e
+        wires = wires.tolist()
+        return qml.math.purity(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def mutual_info(self, wires0, wires1, log_base):
         r"""Returns the mutual information prior to measurement:

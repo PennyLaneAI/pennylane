@@ -31,3 +31,4 @@ from .sample import Sample, sample
 from .state import State, density_matrix, state
 from .var import Variance, var
 from .vn_entropy import VnEntropy, vn_entropy
+from .purity import Purity, purity

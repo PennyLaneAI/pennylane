@@ -104,7 +104,7 @@ def purity(qnode, wires):
             return qml.state()
 
     >>> purity(noisy_circuit, wires=[0, 1])(0.2)
-    5648000000000398
+    0.5648000000000398
 
     >>> purity(circuit, wires=[0])(np.pi / 2)
     0.5
