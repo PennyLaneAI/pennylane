@@ -42,7 +42,7 @@ def equal(
         linear combination of Hermitians.
         To do so would require the matrix form of Hamiltonians and Tensors
         be calculated, which would drastically increase runtime.
-        The function will only recognize Hermitians as equal if they are **exactly** the same.
+        The function will only recognize Hermitians as equal if they are exactly the same.
 
     Args:
         op1 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): First object to compare
@@ -137,6 +137,7 @@ def equal_operation(
     atol: float = 1e-9,
 ):
     """Determine whether two Operations objects are equal"""
+
     if [op1.name, op1.wires] != [op2.name, op2.wires]:
         return False
 
@@ -167,6 +168,8 @@ def equal_symbolicop(
     op2,
 ):
     """Determine whether two SymbolicOps objects are equal"""
+    if not isinstance(op2, SymbolicOp):
+        return False
     raise NotImplementedError(
         f"Comparison between SymbolicOps not implemented. Received {op1} and {op2}."
     )
@@ -175,6 +178,8 @@ def equal_symbolicop(
 @equal.register
 def equal_compositeop(op1: CompositeOp, op2):
     """Determine whether two CompositeOps objects are equal"""
+    if not isinstance(op2, CompositeOp):
+        return False
     raise NotImplementedError(
         f"Comparison between CompositeOps not implemented. Received {op1} and {op2}."
     )
@@ -188,6 +193,8 @@ def equal_observable(op1: Observable, op2):
         # compared as two Operations, but singledispatch selects a function to execute based on op1
         # and considers the Pauli operators Observables
         return equal_operation(op1, op2)
+    if not isinstance(op2, Observable):
+        raise NotImplementedError(f"Comparison between Observable and {type(op2)} not implemented.")
     return _obs_comparison_data(op1) == _obs_comparison_data(op2)
 
 
