@@ -489,6 +489,7 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     >>> purity(x, [0, 1])
     0.5
 
+    .. seealso:: :func:`pennylane.qinfo.transforms.purity` and :func:`pennylane.purity`
     """
 
     density_matrix = reduced_dm(state, indices, check_state, c_dtype)

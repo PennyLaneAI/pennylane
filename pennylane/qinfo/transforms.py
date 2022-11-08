@@ -112,6 +112,7 @@ def purity(qnode, wires):
     >>> purity(circuit, wires=[0, 1])(np.pi / 2)
     1.0
 
+    .. seealso:: :func:`pennylane.math.purity` and :func:`pennylane.purity`
     """
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
