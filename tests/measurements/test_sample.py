@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import Sample
-from pennylane.operation import Observable
+from pennylane.operation import Operator
 
 
 class TestSample:
@@ -28,13 +28,13 @@ class TestSample:
     def teardown_method(self):
         """Method called at the end of every test. It loops over all the calls to
         QubitDevice.sample and compares its output with the new _Sample.process method."""
-        if not getattr(self, "circuit", False):
+        if not getattr(self, "spy", False):
             return
         samples = self.dev._samples
         for call_args in self.spy.call_args_list:
             meas = call_args.args[0]
             shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
-            if isinstance(meas, Observable):
+            if isinstance(meas, Operator):
                 meas = qml.sample(op=meas)
             assert qml.math.allequal(
                 self.dev.sample(*call_args.args, **call_args.kwargs),
