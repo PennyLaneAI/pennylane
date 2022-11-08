@@ -353,7 +353,7 @@
 * Functionality has been added to estimate the number of measurements required to compute an expectation value with a target error and estimate the error in computing an expectation value with a given number of measurements.
   [(#3000)](https://github.com/PennyLaneAI/pennylane/pull/3000)
 
-<h4>New functions, operations, observables 🤩</h4>
+<h4>New functions, operations, and observables 🤩</h4>
 
 * Wires of operators or entire QNodes can now be mapped to other wires via `qml.map_wires()`.
   [(#3143)](https://github.com/PennyLaneAI/pennylane/pull/3143)
@@ -491,7 +491,7 @@
   [(#3223)](https://github.com/PennyLaneAI/pennylane/pull/3223)
   [(#3222)](https://github.com/PennyLaneAI/pennylane/pull/3222)
 
-  In v0.26, we introduced `qml.enable_return()` which separates measurements into their own tensors. The motivation of this change is the deprecation of ragged `ndarray` creation in NumPy.
+  In v0.26, we introduced `qml.enable_return()`, which separates measurements into their own tensors. The motivation of this change is the deprecation of ragged `ndarray` creation in NumPy.
 
   With this release, we're continuing to elevate this feature by adding support for gradient transforms and some interfaces.
 
