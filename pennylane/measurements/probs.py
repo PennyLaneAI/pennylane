@@ -15,6 +15,10 @@
 """
 This module contains the qml.probs measurement.
 """
+from typing import Sequence, Tuple
+
+import numpy as np
+
 import pennylane as qml
 
 from .measurements import MeasurementProcess, Probability
@@ -108,5 +112,89 @@ def probs(wires=None, op=None):
                 "Cannot specify the wires to probs if an observable is "
                 "provided. The wires for probs will be determined directly from the observable."
             )
-        return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
-    return MeasurementProcess(Probability, obs=op)
+        return _Probability(Probability, wires=qml.wires.Wires(wires))
+    return _Probability(Probability, obs=op)
+
+
+class _Probability(MeasurementProcess):  # TODO: Make public when removing the Probability enum
+    """Measurement process that computes the probability of each computational basis state."""
+
+    def process(
+        self,
+        samples: Sequence[complex],
+        shot_range: Tuple[int] = None,
+        bin_size: int = None,
+        r_dtype=np.float64,
+    ):
+        wires = self.wires or Ellipsis  # if self.wires is None we use all wires
+
+        if shot_range is None:
+            # The Ellipsis (...) corresponds to broadcasting and shots dimensions or only shots
+            samples = samples[..., wires]
+        else:
+            # The Ellipsis (...) corresponds to the broadcasting dimension or no axis at all
+            samples = samples[..., slice(*shot_range), wires]
+
+        num_wires = len(samples[-1])
+        # convert samples from a list of 0, 1 integers, to base 10 representation
+        powers_of_two = 2 ** np.arange(num_wires)[::-1]
+        indices = samples @ powers_of_two
+
+        # `samples` typically has two axes ((shots, wires)) but can also have three with
+        # broadcasting ((batch_size, shots, wires)) so that we simply read out the batch_size.
+        batch_size = samples.shape[0] if np.ndim(samples) == 3 else None
+        dim = 2**num_wires
+        # count the basis state occurrences, and construct the probability vector
+        if bin_size is not None:
+            num_bins = samples.shape[-2] // bin_size
+            prob = self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
+        else:
+            prob = self._count_unbinned_samples(indices, batch_size, dim)
+
+        return np.asarray(prob, dtype=r_dtype)
+
+    @staticmethod
+    def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
+        """Count the occurences of bins of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability per bin."""
+
+        if batch_size is None:
+            prob = np.zeros((dim, num_bins), dtype=np.float64)
+            indices = indices.reshape((num_bins, bin_size))
+            # count the basis state occurrences, and construct the probability vector for each bin
+            for b, idx in enumerate(indices):
+                basis_states, counts = np.unique(idx, return_counts=True)
+                prob[basis_states, b] = counts / bin_size
+
+            return prob
+
+        prob = np.zeros((batch_size, dim, num_bins), dtype=np.float64)
+        indices = indices.reshape((batch_size, num_bins, bin_size))
+
+        # count the basis state occurrences, and construct the probability vector
+        # for each bin and broadcasting index
+        for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
+            for b, idx in enumerate(_indices):  # Then iterate over bins dimension
+                basis_states, counts = np.unique(idx, return_counts=True)
+                prob[i, basis_states, b] = counts / bin_size
+
+        return prob
+
+    @staticmethod
+    def _count_unbinned_samples(indices, batch_size, dim):
+        """Count the occurences of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability."""
+        if batch_size is None:
+            prob = np.zeros(dim, dtype=np.float64)
+            basis_states, counts = np.unique(indices, return_counts=True)
+            prob[basis_states] = counts / len(indices)
+
+            return prob
+
+        prob = np.zeros((batch_size, dim), dtype=np.float64)
+
+        for i, idx in enumerate(indices):  # iterate over the broadcasting dimension
+            basis_states, counts = np.unique(idx, return_counts=True)
+            prob[i, basis_states] = counts / len(idx)
+
+        return prob
