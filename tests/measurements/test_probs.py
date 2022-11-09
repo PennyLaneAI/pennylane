@@ -75,9 +75,10 @@ class TestProbs:
         with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
             qml.probs(wires=[])
 
-    def test_probs_no_arguments(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_probs_no_arguments(self, shots):
         """Test that using ``qml.probs`` with no arguments returns the probabilities of all wires."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit():

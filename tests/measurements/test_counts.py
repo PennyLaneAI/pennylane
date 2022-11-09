@@ -417,9 +417,10 @@ class TestCounts:
         with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
             qml.counts(wires=[])
 
-    def test_counts_no_arguments(self):
+    @pytest.mark.parametrize("shots", [1, 100])
+    def test_counts_no_arguments(self, shots):
         """Test that using ``qml.counts`` with no arguments returns the counts of all wires."""
-        dev = qml.device("default.qubit", wires=3, shots=100)
+        dev = qml.device("default.qubit", wires=3, shots=shots)
 
         @qml.qnode(dev)
         def circuit():
@@ -427,4 +428,4 @@ class TestCounts:
 
         res = circuit()
 
-        assert qml.math.allequal(res, {"000": 100})
+        assert qml.math.allequal(res, {"000": shots})
