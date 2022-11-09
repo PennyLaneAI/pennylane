@@ -14,12 +14,11 @@
 """
 Unit tests for the PennyLane qml.probs() measurement function.
 """
+import numpy as np
 import pytest
 
-import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
-
 
 # make the test deterministic
 np.random.seed(42)
@@ -436,25 +435,6 @@ def test_hamiltonian_error(coeffs, obs, init_state, tol):
         match="Hamiltonians are not supported for rotating probabilities.",
     ):
         circuit()
-
-
-def test_probs_no_wires_obs_raises():
-    """Test that an informative error is raised when no wires or observables
-    are passed to qml.probs."""
-    num_wires = 1
-
-    dev = qml.device("default.qubit", wires=num_wires, shots=None)
-
-    @qml.qnode(dev)
-    def circuit_probs():
-        qml.RY(0.34, wires=0)
-        return qml.probs()
-
-    with pytest.raises(
-        qml.QuantumFunctionError,
-        match="qml.probs requires either the wires or the observable to be passed.",
-    ):
-        circuit_probs()
 
 
 @pytest.mark.parametrize(
