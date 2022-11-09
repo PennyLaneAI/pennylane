@@ -35,7 +35,7 @@ def probs(wires=None, op=None):
     returned array will be ``[2**len(wires)]``.
 
     .. Note::
-        If no wires nor observable are given, the probabilities of all wires is returned.
+        If no wires or observable are given, the probabilities of all wires is returned.
 
     **Example:**
 
