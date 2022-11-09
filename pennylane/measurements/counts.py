@@ -170,17 +170,20 @@ class _Counts(_Sample):
 
     def process(self, samples: np.ndarray, shot_range: Tuple[int] = None, bin_size: int = None):
         samples = super().process(samples, shot_range, bin_size)
-        if bin_size is None:
-            return self._samples_to_counts(samples)
         if self.obs is None:
             num_wires = qml.math.shape(samples)[0]
             shape = (-1, bin_size, num_wires)
         else:
             num_wires = qml.math.shape(samples)[-1]
             shape = (-1, bin_size)
-        return [self._samples_to_counts(bin_sample) for bin_sample in samples.reshape(shape)]
 
-    def _samples_to_counts(self, samples):
+        if bin_size is None:
+            return self._samples_to_counts(samples, num_wires)
+        return [
+            self._samples_to_counts(bin_sample, num_wires) for bin_sample in samples.reshape(shape)
+        ]
+
+    def _samples_to_counts(self, samples, num_wires):
         """Groups the samples into a dictionary showing number of occurences for
         each possible outcome.
 
@@ -232,7 +235,6 @@ class _Counts(_Sample):
 
         if self.obs is None:
             # convert samples and outcomes (if using) from arrays to str for dict keys
-            num_wires = len(self.wires) if len(self.wires) > 0 else qml.math.shape(samples)[-1]
             samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
             if self.all_outcomes:
                 outcomes = qml.QubitDevice.generate_basis_states(num_wires)
