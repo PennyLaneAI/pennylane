@@ -95,7 +95,7 @@ def equal_operator(
 ):
 
     """Determine whether two Operator objects are equal"""
-    if not isinstance(op2, Operator):
+    if not isinstance(op2, type(op1)):
         return False
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
