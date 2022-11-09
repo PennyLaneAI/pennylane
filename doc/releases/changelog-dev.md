@@ -6,6 +6,10 @@
 
 <h3>Improvements</h3>
 
+* Now calling `qml.probs()` will return the probability of all wires. Calling any measurement
+  with an empty wire list will raise an error.
+  [#3299](https://github.com/PennyLaneAI/pennylane/pull/3299)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
