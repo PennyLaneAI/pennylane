@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the sample module"""
 
+import sys
+
 import numpy as np
 import pytest
 
@@ -30,6 +32,8 @@ class TestSample:
         QubitDevice.sample and compares its output with the new _Sample.process method."""
         if not getattr(self, "spy", False):
             return
+        if sys.version_info[1] <= 7:
+            return  # skip tests for python@3.7 because call_args.kwargs is a tuple instead of a dict
         samples = self.dev._samples
         for call_args in self.spy.call_args_list:
             meas = call_args.args[0]
