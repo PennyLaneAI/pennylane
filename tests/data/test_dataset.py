@@ -222,13 +222,13 @@ def test_repr_standard(tmp_path):
     dataset = qml.data.Dataset("qchem", str(folder), "H2_STO-3G_1.02", "", standard=True)
     assert (
         repr(dataset)
-        == "<Dataset = data name: qchem, description: H2/STO-3G/1.02, attributes: ['molecule', 'hf_state']>"
+        == "<Dataset = description: qchem/H2/STO-3G/1.02, attributes: ['molecule', 'hf_state']>"
     )
 
     dataset.vqe_energy = 1.1
     assert (
         repr(dataset)
-        == "<Dataset = data name: qchem, description: H2/STO-3G/1.02, attributes: ['molecule', 'hf_state', ...]>"
+        == "<Dataset = description: qchem/H2/STO-3G/1.02, attributes: ['molecule', 'hf_state', ...]>"
     )
 
 

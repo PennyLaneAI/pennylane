@@ -392,7 +392,7 @@ def load_interactive():
         force: False
         dest folder: /Users/jovyan/Downloads/datasets
         Would you like to continue? (Default is yes) [Y/n]:
-        <Dataset = data name: qspin, description: Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
+        <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
     """
 
     _refresh_foldermap()

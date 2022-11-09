@@ -250,7 +250,7 @@
   ```pycon
   >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
   >>> print(H2datasets)
-  [<Dataset = data name: qchem, description: H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
+  [<Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
   >>> H2data = H2datasets[0]
   ```
 
@@ -318,7 +318,7 @@
           force: False
           dest folder: /Users/jovyan/Downloads/datasets
           Would you like to continue? (Default is yes) [Y/n]:
-          <Dataset = data name: qspin, description: Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
+          <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
     ```
 
 * Once loaded, properties of a dataset can be accessed easily as follows:

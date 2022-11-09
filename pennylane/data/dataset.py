@@ -109,7 +109,7 @@ class Dataset(ABC):
         self._folder = folder.rstrip("/")
         self._prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
         self._prefix_len = len(attr_prefix) + 1
-        self._description = self._folder.split(data_name)[-1][1:]
+        self._description = os.path.join(data_name, self._folder.split(data_name)[-1][1:])
         self.__doc__ = docstring
 
         self._fullfile = self._prefix.format("full")
@@ -146,11 +146,7 @@ class Dataset(ABC):
             if len(self.attrs) < 3
             else str(list(self.attrs)[:2])[:-1] + ", ...]"
         )
-        std_str = (
-            f"data name: {self._dtype}, description: {self._description}, "
-            if self._is_standard
-            else ""
-        )
+        std_str = f"description: {self._description}, " if self._is_standard else ""
         return f"<Dataset = {std_str}attributes: {attr_str}>"
 
     @property

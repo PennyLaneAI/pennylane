@@ -28,7 +28,7 @@ The :func:`~pennylane.data.load` function returns a ``list`` with the desired da
 
 >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
 >>> print(H2datasets)
-[<Dataset = data name: qchem, description: H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
+[<Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
 >>> H2data = H2datasets[0]
 
 We can load multiple parameter values at once by providing a list of values instead of only a single value.
@@ -36,10 +36,10 @@ To load all possible values, use the special keyword "full".
 
 >>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
 >>> print(H2datasets)
-[<Dataset = data name: qchem, description: H2/6-31G/0.5, attributes: ['molecule', 'hamiltonian', ...]>,
- <Dataset = data name: qchem, description: H2/6-31G/1.1, attributes: ['molecule', 'hamiltonian', ...]>,
- <Dataset = data name: qchem, description: H2/STO-3G/0.5, attributes: ['molecule', 'hamiltonian', ...]>,
- <Dataset = data name: qchem, description: H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
+[<Dataset = description: qchem/H2/6-31G/0.5, attributes: ['molecule', 'hamiltonian', ...]>,
+ <Dataset = description: qchem/H2/6-31G/1.1, attributes: ['molecule', 'hamiltonian', ...]>,
+ <Dataset = description: qchem/H2/STO-3G/0.5, attributes: ['molecule', 'hamiltonian', ...]>,
+ <Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
 
 When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as `attributes`).
 For example, we can download or load only the molecule and energy of a dataset as follows:
