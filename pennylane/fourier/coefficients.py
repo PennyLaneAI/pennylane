@@ -174,7 +174,7 @@ def coefficients(
         raise ValueError("If multiple degrees are provided, their number has to match n_inputs.")
 
     if not lowpass_filter:
-        return _coefficients_no_filter(f, n_inputs, degree, use_broadcasting)
+        return _coefficients_no_filter(f, degree, use_broadcasting)
 
     if filter_threshold is None:
         filter_threshold = tuple(2 * d for d in degree)
@@ -186,7 +186,7 @@ def coefficients(
         )
 
     # Compute the fft of the function at 2x the specified degree
-    unfiltered_coeffs = _coefficients_no_filter(f, n_inputs, filter_threshold, use_broadcasting)
+    unfiltered_coeffs = _coefficients_no_filter(f, filter_threshold, use_broadcasting)
 
     # Shift the frequencies so that the 0s are at the centre
     shifted_unfiltered_coeffs = np.fft.fftshift(unfiltered_coeffs)
@@ -214,7 +214,7 @@ def coefficients(
     return coeffs
 
 
-def _coefficients_no_filter(f, n_inputs, degree, use_broadcasting):
+def _coefficients_no_filter(f, degree, use_broadcasting):
     r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi` periodic
     function, where :math:`d` is the highest desired frequency in the Fourier spectrum.
 
@@ -222,11 +222,10 @@ def _coefficients_no_filter(f, n_inputs, degree, use_broadcasting):
     is thus used as a helper function for the true ``coefficients`` function.
 
     Args:
-        f (callable): function that takes a 1D array of ``n_inputs`` scalar inputs
-        n_inputs (int): number of function inputs
+        f (callable): function that takes a 1D array of scalar inputs
         degree (int or tuple[int]): max frequency of Fourier coeffs to be computed. For degree
             :math:`d`, the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d `
-            will be computed. If multiple degrees are passed, their length must match ``n_inputs``.
+            will be computed.
         use_broadcasting (bool): Whether or not to broadcast the parameters to execute
             multiple function calls at once. Broadcasting is performed along the last axis
             of the grid of evaluation points.
