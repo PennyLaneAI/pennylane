@@ -420,7 +420,7 @@ class Wires(Sequence):
         converted_wires = (
             wires if isinstance(wires, Wires) else Wires(wires) for wires in list_of_wires
         )
-        all_wires_list = chain(*(w.labels for w in converted_wires)) 
+        all_wires_list = chain(*(w.labels for w in converted_wires))
         combined = list(dict.fromkeys(all_wires_list))
 
         if sort:
