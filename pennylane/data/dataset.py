@@ -37,6 +37,7 @@ def _import_zstd_dill():
     return zstd, dill
 
 
+# pylint: disable=too-many-instance-attributes
 class Dataset(ABC):
     """Create a dataset object to store a collection of information describing
     a physical system and its evolution. For example, a dataset for an arbitrary
@@ -140,8 +141,16 @@ class Dataset(ABC):
             self.__base_init__(**kwargs)
 
     def __repr__(self):
-        attr_str = str(list(self.attrs)) if len(self.attrs) < 3 else str(list(self.attrs)[:2])[:-1] + ", ...]"
-        std_str = f"data name: {self._dtype}, description: {self._description}, " if self._is_standard else ""
+        attr_str = (
+            str(list(self.attrs))
+            if len(self.attrs) < 3
+            else str(list(self.attrs)[:2])[:-1] + ", ...]"
+        )
+        std_str = (
+            f"data name: {self._dtype}, description: {self._description}, "
+            if self._is_standard
+            else ""
+        )
         return f"<Dataset = {std_str}attributes: {attr_str}>"
 
     @property
