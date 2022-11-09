@@ -1367,6 +1367,28 @@ def _param_shift_new(
         ((array(-0.3875172), array(-0.18884787), array(-0.38355704)),
          (array(0.69916862), array(0.34072424), array(0.69202359)))
 
+        Devices that have a shot vector defined can also be used for execution, provided
+        the ``shots`` argument was passed to the transform:
+
+        >>> shots = (10, 100, 1000)
+        >>> dev = qml.device("default.qubit", wires=2, shots=shots)
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> qml.gradients.param_shift(circuit, shots=shots)(params)
+        (((array(-0.6), array(-0.1), array(-0.1)),
+          (array(1.2), array(0.2), array(0.2))),
+         ((array(-0.39), array(-0.24), array(-0.49)),
+          (array(0.7488), array(0.4608), array(0.9408))),
+         ((array(-0.36), array(-0.191), array(-0.37)),
+          (array(0.65808), array(0.349148), array(0.67636))))
+
+        The outermost tuple contains results corresponding to each element of the shot vector.
+
         When setting the keyword argument ``broadcast`` to ``True``, the shifted
         circuit evaluations for each operation are batched together, resulting in
         broadcasted tapes:

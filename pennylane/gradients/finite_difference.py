@@ -325,6 +325,27 @@ def _finite_diff_new(
         >>> fn(qml.execute(gradient_tapes, dev, None))
         ((array(-0.38751724), array(-0.18884792), array(-0.38355709)),
          (array(0.69916868), array(0.34072432), array(0.69202366)))
+
+        Devices that have a shot vector defined can also be used for execution, provided
+        the ``shots`` argument was passed to the transform:
+
+        >>> shots = (10, 100, 1000)
+        >>> dev = qml.device("default.qubit", wires=2, shots=shots)
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> qml.gradients.finite_diff(circuit, shots=shots, h=10e-2)(params)
+        (((array(-2.), array(-2.), array(0.)), (array(3.6), array(3.6), array(0.))),
+         ((array(1.), array(0.4), array(1.)),
+          (array(-1.62), array(-0.624), array(-1.62))),
+         ((array(-0.48), array(-0.34), array(-0.46)),
+          (array(0.84288), array(0.6018), array(0.80868))))
+
+        The outermost tuple contains results corresponding to each element of the shot vector.
     """
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
