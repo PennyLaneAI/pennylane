@@ -147,7 +147,7 @@ class MeasurementProcess:  # TODO: Inherit from ABC
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
 
-        self._wires = wires or Wires([])
+        self._wires = wires
         self._eigvals = None
 
         if eigvals is not None:
@@ -508,15 +508,13 @@ class MeasurementProcess:  # TODO: Inherit from ABC
         return f"{self.obs}"
 
     def __copy__(self):
-        cls = self.__class__
-
-        if self.obs is not None:
-            return cls(self.return_type, obs=copy.copy(self.obs))
-
-        if self.log_base is not None:
-            return cls(self.return_type, wires=self._wires, log_base=self.log_base)
-
-        return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
+        return self.__class__(
+            self.return_type,
+            obs=copy.copy(self.obs),
+            eigvals=self._eigvals,
+            wires=self._wires,
+            log_base=self.log_base,
+        )
 
     @property
     def wires(self):
@@ -527,7 +525,9 @@ class MeasurementProcess:  # TODO: Inherit from ABC
         if self.obs is not None:
             return self.obs.wires
 
-        return Wires.all_wires(self._wires) if isinstance(self._wires, list) else self._wires
+        wires = self._wires or Wires([])
+
+        return Wires.all_wires(wires) if isinstance(wires, list) else wires
 
     @property
     def raw_wires(self):

@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the counts module"""
+import sys
+
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Counts
+from pennylane.measurements import AllCounts, Counts
 from pennylane.operation import Operator
 
 
@@ -29,6 +31,8 @@ class TestCounts:
         QubitDevice.sample and compares its output with the new _Sample.process method."""
         if not getattr(self, "spy", False):
             return
+        if sys.version_info[1] <= 7:
+            return  # skip tests for python@3.7 because call_args.kwargs is a tuple instead of a dict
         samples = self.dev._samples
         for call_args in self.spy.call_args_list:
             if not call_args.kwargs.get("counts", False):
@@ -36,7 +40,8 @@ class TestCounts:
             meas = call_args.args[0]
             shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
             if isinstance(meas, Operator):
-                meas = qml.counts(op=meas)
+                all_outcomes = meas.return_type is AllCounts
+                meas = qml.counts(op=meas, all_outcomes=all_outcomes)
             old_res = self.dev.sample(*call_args.args, **call_args.kwargs)
             new_res = meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size)
             if isinstance(old_res, dict):

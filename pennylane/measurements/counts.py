@@ -15,6 +15,8 @@
 """
 This module contains the qml.counts measurement.
 """
+import copy
+
 # pylint: disable=too-many-arguments
 import warnings
 from typing import Tuple, Union
@@ -170,11 +172,13 @@ class _Counts(_Sample):
         samples = super().process(samples, shot_range, bin_size)
         if bin_size is None:
             return self._samples_to_counts(samples)
-        num_wires = qml.math.shape(samples)[0 if self.obs is None else -1]
-        return [
-            self._samples_to_counts(bin_sample)
-            for bin_sample in samples.reshape((-1, bin_size, num_wires))
-        ]
+        if self.obs is None:
+            num_wires = qml.math.shape(samples)[0]
+            shape = (-1, bin_size, num_wires)
+        else:
+            num_wires = qml.math.shape(samples)[-1]
+            shape = (-1, bin_size)
+        return [self._samples_to_counts(bin_sample) for bin_sample in samples.reshape(shape)]
 
     def _samples_to_counts(self, samples):
         """Groups the samples into a dictionary showing number of occurences for
@@ -226,12 +230,15 @@ class _Counts(_Sample):
 
         outcomes = []
 
-        # convert samples and outcomes (if using) from arrays to str for dict keys
-        samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
-        if self.all_outcomes:
+        if self.obs is None:
+            # convert samples and outcomes (if using) from arrays to str for dict keys
             num_wires = len(self.wires) if len(self.wires) > 0 else qml.math.shape(samples)[-1]
-            outcomes = qml.QubitDevice.generate_basis_states(num_wires)
-            outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
+            samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+            if self.all_outcomes:
+                outcomes = qml.QubitDevice.generate_basis_states(num_wires)
+                outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
+        elif self.all_outcomes:
+            outcomes = qml.eigvals(self.obs)
 
         # generate empty outcome dict, populate values with state counts
         outcome_dict = {k: np.int64(0) for k in outcomes}
@@ -240,3 +247,13 @@ class _Counts(_Sample):
             outcome_dict[s] = c
 
         return outcome_dict
+
+    def __copy__(self):
+        return self.__class__(
+            self.return_type,
+            obs=copy.copy(self.obs),
+            eigvals=self._eigvals,
+            wires=self._wires,
+            log_base=self.log_base,
+            all_outcomes=self.all_outcomes,
+        )
