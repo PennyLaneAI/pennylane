@@ -14,7 +14,7 @@
 """
 This module contains the qml.equal function.
 """
-# pylint: disable=too-many-arguments,too-many-return-statements
+# pylint: disable=too-many-arguments,too-many-return-statements, too-many-branches
 from typing import Union
 from functools import singledispatch
 import pennylane as qml
@@ -95,6 +95,9 @@ def equal_operator(
 ):
 
     """Determine whether two Operator objects are equal"""
+    if not isinstance(op2, Operator):
+        return False
+
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
 
@@ -128,7 +131,7 @@ def equal_operator(
 @equal.register
 def equal_measurements(op1: MeasurementProcess, op2):
     """Determine whether two MeasurementProcess objects are equal"""
-    if op1.__class__ is not op2.__class__:
+    if not isinstance(op2, MeasurementProcess):
         return False
 
     return_types_match = op1.return_type == op2.return_type
@@ -153,7 +156,7 @@ def equal_measurements(op1: MeasurementProcess, op2):
 @equal.register
 def equal_shadow_measurements(op1: ShadowMeasurementProcess, op2):
     """Determine whether two ShadowMeasurementProcess objects are equal"""
-    if op1.__class__ is not op2.__class__:
+    if not isinstance(op2, ShadowMeasurementProcess):
         return False
 
     return_types_match = op1.return_type == op2.return_type
