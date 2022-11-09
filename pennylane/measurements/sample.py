@@ -119,36 +119,31 @@ class _Sample(MeasurementProcess):
     """Measurement process that returns the samples of a given observable."""
 
     def process(self, samples: np.ndarray, shot_range: Tuple[int] = None, bin_size: int = None):
-        name = getattr(self.obs, "name", None)
+        name = self.obs.name if self.obs is not None else None
         # Select the samples from samples that correspond to ``shot_range`` if provided
-        if shot_range is None:
-            sub_samples = samples
-        else:
+        if shot_range is not None:
             # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
             # colon (:) is required because shots is the second-to-last axis and the
             # Ellipsis (...) otherwise would take up broadcasting and shots axes.
-            sub_samples = samples[..., slice(*shot_range), :]
+            samples = samples[..., slice(*shot_range), :]
+
+        if len(self.wires) != 0:
+            # if wires are provided, then we only return samples from those wires
+            samples = samples[..., np.array(self.wires)]
+
+        num_wires = samples.shape[-1]  # wires is the last dimension
 
         if self.obs is None:
             # if no observable was provided then return the raw samples
-            if len(self.wires) != 0:
-                # if wires are provided, then we only return samples from those wires
-                samples = sub_samples[..., np.array(self.wires)]
-            else:
-                samples = sub_samples
-            num_wires = qml.math.shape(samples)[-1]
             return samples if bin_size is None else samples.reshape(num_wires, bin_size, -1)
 
-        if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
+        if name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            samples = 1 - 2 * sub_samples[..., self.wires[0]]
-
+            samples = 1 - 2 * qml.math.squeeze(samples)
         else:
-
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
-            samples = sub_samples[..., np.array(self.wires)]  # Add np.array here for Jax support.
-            powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
+            powers_of_two = 2 ** np.arange(num_wires)[::-1]
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
             try:
