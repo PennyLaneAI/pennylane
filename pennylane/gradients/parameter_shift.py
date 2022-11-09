@@ -153,7 +153,7 @@ def _single_meas_grad(result, coeffs, unshifted_coeff, r0):
             raise ValueError(
                 "This gradient component neither has a shifted nor an unshifted component. "
                 "It should have been identified to have a vanishing gradient earlier on."
-            ) # pragma: no cover
+            )  # pragma: no cover
         # return the unshifted term, which is the only contribution
         return qml.math.array(unshifted_coeff * r0)
 
