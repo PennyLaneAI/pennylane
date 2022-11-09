@@ -295,7 +295,7 @@ class TestSample:
         with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
             qml.sample(wires=[])
 
-    @pytest.mark.parametrize("shots", [1, 100])
+    @pytest.mark.parametrize("shots", [2, 100])
     def test_sample_no_arguments(self, shots):
         """Test that using ``qml.sample`` with no arguments returns the samples of all wires."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
@@ -306,4 +306,4 @@ class TestSample:
 
         res = circuit()
 
-        assert res.shape == (100, 3)
+        assert res.shape == (shots, 3)
