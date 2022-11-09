@@ -336,8 +336,9 @@ class QubitDevice(Device):
         self._num_executions += 1
 
         # if self.tracker.active:
-        #     self.tracker.update(executions=1, shots=self._shots)
+        #     self.tracker.update(executions=1, shots=self._shots, results=results)
         #     self.tracker.record()
+
         return results
 
     def execute(self, circuit, **kwargs):
@@ -425,7 +426,7 @@ class QubitDevice(Device):
         self._num_executions += 1
 
         if self.tracker.active:
-            self.tracker.update(executions=1, shots=self._shots)
+            self.tracker.update(executions=1, shots=self._shots, results=results)
             self.tracker.record()
 
         return results
