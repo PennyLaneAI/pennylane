@@ -142,8 +142,11 @@ class MeasurementProcess:
         self.id = id
         self.log_base = log_base
 
-        if wires is not None and obs is not None:
-            raise ValueError("Cannot set the wires if an observable is provided.")
+        if wires is not None:
+            if len(wires) == 0:
+                raise ValueError("Cannot set an empty list of wires.")
+            if obs is not None:
+                raise ValueError("Cannot set the wires if an observable is provided.")
 
         self._wires = wires or Wires([])
         self._eigvals = None
