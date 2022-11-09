@@ -68,8 +68,9 @@ def coefficients(
         lowpass_filter (bool): If ``True``, a simple low-pass filter is applied prior to
             computing the set of coefficients in order to filter out frequencies above the
             given degree(s). See examples below.
-        filter_threshold (None or int): The integer frequency at which to filter. If
-            ``lowpass_filter`` is set to ``True,`` but no value is specified, ``2 * degree`` is used.
+        filter_threshold (None or int or tuple[int]): The integer frequency at which to filter if
+            ``lowpass_filter`` is set to ``True``. If set to ``None``, ``2 * degree`` is used.
+            If multiple thresholds are passed, their length must match ``n_inputs``.
         use_broadcasting (bool): Whether or not to broadcast the parameters to execute
             multiple function calls at once. Broadcasting is performed along the last axis
             of the grid of evaluation points.
@@ -167,16 +168,22 @@ def coefficients(
     passed function allows broadcasted parameter inputs, the computation of the coefficients
     can be accelerated by setting ``use_broadcasting=True``.
     """
+    if isinstance(degree, int):
+        degree = (degree,) * n_inputs
+    elif len(degree) != n_inputs:
+        raise ValueError("If multiple degrees are provided, their number has to match n_inputs.")
+
     if not lowpass_filter:
         return _coefficients_no_filter(f, n_inputs, degree, use_broadcasting)
 
-    if isinstance(degree, int):
-        degree = (degree,) * n_inputs
-
     if filter_threshold is None:
-        filter_threshold = tuple((2 * d for d in degree))
+        filter_threshold = tuple(2 * d for d in degree)
     elif isinstance(filter_threshold, int):
         filter_threshold = (filter_threshold,) * n_inputs
+    elif len(filter_threshold) != n_inputs:
+        raise ValueError(
+            "If multiple filter_thresholds are provided, their number has to match n_inputs."
+        )
 
     # Compute the fft of the function at 2x the specified degree
     unfiltered_coeffs = _coefficients_no_filter(f, n_inputs, filter_threshold, use_broadcasting)
@@ -227,9 +234,6 @@ def _coefficients_no_filter(f, n_inputs, degree, use_broadcasting):
     Returns:
         array[complex]: The Fourier coefficients of the function f up to the specified degree.
     """
-    if isinstance(degree, int):
-        degree = [degree] * n_inputs
-
     degree = np.array(degree)
 
     # number of integer values for the indices n_i = -degree_i,...,0,...,degree_i

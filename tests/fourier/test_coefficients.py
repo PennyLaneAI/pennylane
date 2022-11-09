@@ -51,6 +51,23 @@ def fourier_function(freq_dict, x):
     return result.real
 
 
+class TestExceptions:
+    """Test that exceptions for ill-formatted inputs are raised."""
+
+    def dummy_fn(*args, **kwargs):
+        return None
+
+    @pytest.mark.parametrize("degree, n_inputs", [((2,), 2), ([3, 1, 2, 1], 2), ((1, 1), 1)])
+    def test_wrong_number_of_degrees(self, degree, n_inputs):
+        with pytest.raises(ValueError, match="If multiple degrees are provided, their number"):
+            coefficients(self.dummy_fn, n_inputs, degree)
+
+    @pytest.mark.parametrize("threshold, n_inputs", [((2,), 2), ([3, 1, 2, 1], 2), ((1, 1), 1)])
+    def test_wrong_number_of_filter_thresholds(self, threshold, n_inputs):
+        with pytest.raises(ValueError, match="If multiple filter_thresholds are provided"):
+            coefficients(self.dummy_fn, n_inputs, 2, True, filter_threshold=threshold)
+
+
 class TestFourierCoefficientSingleVariable:
     """Test that the Fourier coefficients of a single-variable function are computed correctly"""
 
