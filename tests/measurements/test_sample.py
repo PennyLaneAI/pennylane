@@ -289,3 +289,20 @@ class TestSample:
         assert isinstance(binned_samples, tuple)
         assert len(binned_samples) == len(shot_vec)
         assert binned_samples[0].shape == (shot_vec[0],)
+
+    def test_counts_empty_wires(self):
+        """Test that using ``qml.sample`` with an empty wire list raises an error."""
+        with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
+            qml.sample(wires=[])
+
+    def test_counts_no_arguments(self):
+        """Test that using ``qml.sample`` with no arguments returns the counts of all wires."""
+        dev = qml.device("default.qubit", wires=3, shots=100)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample()
+
+        res = circuit()
+
+        assert res.shape == (100, 3)

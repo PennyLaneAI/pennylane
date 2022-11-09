@@ -148,7 +148,7 @@ class MeasurementProcess:
             if obs is not None:
                 raise ValueError("Cannot set the wires if an observable is provided.")
 
-        self._wires = wires or Wires([])
+        self._wires = wires
         self._eigvals = None
 
         if eigvals is not None:
@@ -528,7 +528,9 @@ class MeasurementProcess:
         if self.obs is not None:
             return self.obs.wires
 
-        return Wires.all_wires(self._wires) if isinstance(self._wires, list) else self._wires
+        wires = self._wires or Wires([])
+
+        return Wires.all_wires(wires) if isinstance(wires, list) else wires
 
     @property
     def raw_wires(self):

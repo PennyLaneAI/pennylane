@@ -69,3 +69,20 @@ class TestProbs:
         meas_proc = q.queue[0]
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == Probability
+
+    def test_probs_empty_wires(self):
+        """Test that using ``qml.probs`` with an empty wire list raises an error."""
+        with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
+            qml.probs(wires=[])
+
+    def test_probs_no_arguments(self):
+        """Test that using ``qml.probs`` with no arguments returns the probabilities of all wires."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.probs()
+
+        res = circuit()
+
+        assert qml.math.allequal(res, [1, 0, 0, 0, 0, 0, 0, 0])
