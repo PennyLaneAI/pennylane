@@ -147,6 +147,11 @@
   [(#3261)](https://github.com/PennyLaneAI/pennylane/pull/3261)
 
   ```python
+  import jax
+  from jax import numpy as jnp
+  from jax.config import config
+  config.update("jax_enable_x64", True)
+
   dev = qml.device("lightning.qubit", wires=2)
 
   @jax.jit
@@ -157,17 +162,17 @@
       qml.CNOT(wires=[0, 1])
       return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-  x = jnp.array(1.0, dtype=jnp.float32)
-  y = jnp.array(2.0, dtype=jnp.float32)
+  x = jnp.array(1.0)
+  y = jnp.array(2.0)
   ```
 
   ```pycon
   >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
-  (DeviceArray([-0.84147096,  0.3501755 ], dtype=float32),
-   DeviceArray([ 4.474455e-18, -4.912955e-01], dtype=float32))
+  (DeviceArray([-0.84147098,  0.35017549], dtype=float64, weak_type=True),
+   DeviceArray([ 4.47445479e-18, -4.91295496e-01], dtype=float64, weak_type=True))
   ```
 
-  Note that this change depends on `jax.pure_callback`, which requires `jax==0.3.17`.
+  Note that this change depends on `jax.pure_callback`, which requires `jax>=0.3.17`.
 
 * The `QNode` class now accepts an `auto` interface, which automatically detects the interface of the given input.
   [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
@@ -591,6 +596,9 @@
   [(#3219)](https://github.com/PennyLaneAI/pennylane/pull/3219)
 
 <h3>Bug fixes</h3>
+
+* `qml.SparseHamiltonian` now validates the size of the input matrix.
+  [(#3278)](https://github.com/PennyLaneAI/pennylane/pull/3278)
 
 * Fixed a bug where `qml.sample()` and `qml.counts()` would output incorrect results when mixed with measurements whose
   operators do not qubit-wise commute with computational basis projectors.
