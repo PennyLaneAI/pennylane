@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import Sample
-from pennylane.operation import Operator
+from pennylane.operation import EigvalsUndefinedError, Operator
 
 
 class TestSample:
@@ -322,3 +322,12 @@ class TestSample:
         assert isinstance(binned_samples, tuple)
         assert len(binned_samples) == len(shot_vec)
         assert binned_samples[0].shape == (shot_vec[0],)
+
+    def test_new_sample_with_operator_with_no_eigvals(self):
+        """Test that calling process with an operator that has no eigvals defined raises an error."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+
+        with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
+            qml.sample(op=DummyOp(0)).process(samples=np.array([[1, 0]]))
