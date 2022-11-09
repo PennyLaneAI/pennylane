@@ -6,6 +6,9 @@
 
 <h3>Improvements</h3>
 
+* Improve performance of `Wires.all_wires`.
+  [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
+  
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
