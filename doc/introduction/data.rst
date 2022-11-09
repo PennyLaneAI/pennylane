@@ -28,7 +28,7 @@ The :func:`~pennylane.data.load` function returns a ``list`` with the desired da
 
 >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
 >>> print(H2datasets)
-[<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
+[<Dataset = data name: qchem, description: H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
 >>> H2data = H2datasets[0]
 
 When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as `attributes`).
