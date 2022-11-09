@@ -20,6 +20,7 @@ from typing import Sequence, Tuple
 import numpy as np
 
 import pennylane as qml
+from pennylane.wires import Wires
 
 from .measurements import MeasurementProcess, Probability
 
@@ -132,7 +133,7 @@ class _Probability(MeasurementProcess):
             # The Ellipsis (...) corresponds to the broadcasting dimension or no axis at all
             samples = samples[..., slice(*shot_range), wires]
 
-        num_wires = len(samples[-1])
+        num_wires = qml.math.shape(samples)[-1]
         # convert samples from a list of 0, 1 integers, to base 10 representation
         powers_of_two = 2 ** np.arange(num_wires)[::-1]
         indices = samples @ powers_of_two
@@ -146,6 +147,26 @@ class _Probability(MeasurementProcess):
             num_bins = samples.shape[-2] // bin_size
             return self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
         return self._count_unbinned_samples(indices, batch_size, dim)
+
+    def process_state(self, state: np.ndarray, device_wires: Wires):
+        num_wires = len(device_wires)
+        dim = 2**num_wires
+        batch_size = self._get_batch_size(state, [2] * num_wires, dim)
+        flat_state = qml.math.reshape(
+            state, (batch_size, dim) if batch_size is not None else (dim,)
+        )
+        real_state = qml.math.real(flat_state)
+        imag_state = qml.math.imag(flat_state)
+        return self.marginal_prob(real_state**2 + imag_state**2, device_wires)
+
+    def _get_batch_size(self, tensor, expected_shape, expected_size):
+        """Determine whether a tensor has an additional batch dimension for broadcasting,
+        compared to an expected_shape."""
+        size = qml.math.size(tensor)
+        if qml.math.ndim(tensor) > len(expected_shape) or size > expected_size:
+            return size // expected_size
+
+        return None
 
     @staticmethod
     def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
@@ -192,3 +213,81 @@ class _Probability(MeasurementProcess):
             prob[i, basis_states] = counts / len(idx)
 
         return prob
+
+    def marginal_prob(self, prob, device_wires):
+        r"""Return the marginal probability of the computational basis
+        states by summing the probabiliites on the non-specified wires.
+
+        If no wires are specified, then all the basis states representable by
+        the device are considered and no marginalization takes place.
+
+        .. note::
+
+            If the provided wires are not in the order as they appear on the device,
+            the returned marginal probabilities take this permutation into account.
+
+            For example, if the addressable wires on this device are ``Wires([0, 1, 2])`` and
+            this function gets passed ``wires=[2, 0]``, then the returned marginal
+            probability vector will take this 'reversal' of the two wires
+            into account:
+
+            .. math::
+
+                \mathbb{P}^{(2, 0)}
+                            = \left[
+                               |00\rangle, |10\rangle, |01\rangle, |11\rangle
+                              \right]
+
+        Args:
+            prob: The probabilities to return the marginal probabilities
+                for
+            wires (Iterable[Number, str], Number, str, Wires): wires to return
+                marginal probabilities for. Wires not provided
+                are traced out of the system.
+
+        Returns:
+            array[float]: array of the resulting marginal probabilities.
+        """
+        num_wires = len(device_wires)
+        dim = 2**num_wires
+        batch_size = self._get_batch_size(prob, (dim,), dim)  # pylint: disable=assignment-from-none
+
+        if self.wires is None:
+            # no need to marginalize
+            return prob
+
+        # determine which subsystems are to be summed over
+        inactive_wires = Wires.unique_wires([device_wires, self.wires])
+
+        # translate to wire labels used by device
+        device_wires = self.map_wires(self.wires)
+        inactive_device_wires = self.map_wires(inactive_wires)
+
+        # reshape the probability so that each axis corresponds to a wire
+        shape = [2] * num_wires
+        if batch_size is not None:
+            shape.insert(0, batch_size)
+        # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
+        prob = qml.math.reshape(prob, shape)
+
+        # sum over all inactive wires
+        # hotfix to catch when default.qubit uses this method
+        # since then device_wires is a list
+        if isinstance(inactive_device_wires, Wires):
+            inactive_device_wires = inactive_device_wires.labels
+
+        if batch_size is not None:
+            inactive_device_wires = [idx + 1 for idx in inactive_device_wires]
+        flat_shape = (-1,) if batch_size is None else (batch_size, -1)
+        prob = qml.math.reshape(qml.math.sum(prob, inactive_device_wires), flat_shape)
+
+        # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
+        # If this is the case, we must permute the marginalized probability so that
+        # it corresponds to the orders of the wires passed.
+        num_wires = len(device_wires)
+        basis_states = qml.QubitDevice.generate_basis_states(num_wires)
+        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
+
+        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
+        perm = basis_states @ powers_of_two
+        return qml.math.gather(prob, perm, axis=1 if batch_size is not None else 0)
