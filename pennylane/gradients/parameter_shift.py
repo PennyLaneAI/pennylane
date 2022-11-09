@@ -1365,8 +1365,8 @@ def _param_shift_new(
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        [[-0.38751721 -0.18884787 -0.38355704]
-         [ 0.69916862  0.34072424  0.69202359]]
+        ((array(-0.3875172), array(-0.18884787), array(-0.38355704)),
+         (array(0.69916862), array(0.34072424), array(0.69202359)))
 
         When setting the keyword argument ``broadcast`` to ``True``, the shifted
         circuit evaluations for each operation are batched together, resulting in
@@ -1387,7 +1387,7 @@ def _param_shift_new(
         The postprocessing function will know that broadcasting is used and handle
         the results accordingly:
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        array([[-0.3875172 , -0.18884787, -0.38355704]])
+        (array(-0.3875172), array(-0.18884787), array(-0.38355704))
 
         An advantage of using ``broadcast=True`` is a speedup:
 
