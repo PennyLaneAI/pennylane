@@ -188,7 +188,8 @@
   Largest Gradient: 0.00040841755397108586
   ```
 
-  For a detailed breakdown of its implementation, check out [our demo](https://pennylane.ai/qml/demos/tutorial_adaptive_circuits.html).
+  For a detailed breakdown of its implementation, check out the [Adaptive circuits for quantum chemistry
+  demo](https://pennylane.ai/qml/demos/tutorial_adaptive_circuits.html).
 
 <h4>Automatic interface detection 🧩</h4>
 
