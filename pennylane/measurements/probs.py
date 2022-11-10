@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, Probability
+from .measurements import Probability, SampleMeasurement, StateMeasurement
 
 
 def probs(wires=None, op=None):
@@ -119,7 +119,7 @@ def probs(wires=None, op=None):
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
-class _Probability(MeasurementProcess):
+class _Probability(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
 
     def process(
