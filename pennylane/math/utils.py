@@ -197,8 +197,8 @@ def get_interface(*values):
       they will always be treated as non-differentiable constants.
 
     .. warning: ``get_interface`` defaults to ``"numpy"`` whenever Python built-in objects are passed.
-        I.e. a list or tuple of ``torch`` tensors will be identified as ``"numpy"``: 
-        
+        I.e. a list or tuple of ``torch`` tensors will be identified as ``"numpy"``:
+
         >>> get_interface([torch.tensor([1]), torch.tensor([1])])
         "numpy"
 
