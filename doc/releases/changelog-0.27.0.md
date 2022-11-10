@@ -553,6 +553,15 @@
   'torch'
   ```
 
+  Note that when passing lists or tuples of without unpacking them, ``get_interface`` will always default to ``"numpy"``.
+
+  ```pycon
+  >>> qml.math.get_interface([torch_scalar, torch_tensor, numpy_tensor])
+  'numpy'
+  ```
+  
+
+
 * `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling
   `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global
   configuration for matplotlib plotting. If no `style` is passed, the function defaults
