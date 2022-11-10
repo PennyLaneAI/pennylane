@@ -165,7 +165,6 @@ def _execute(
 
         shape_dtype_structs = _extract_shape_dtype_structs(tapes, device)
         res = jax.pure_callback(wrapper, shape_dtype_structs, params)
-
         return res
 
     def wrapped_exec_fwd(params):
