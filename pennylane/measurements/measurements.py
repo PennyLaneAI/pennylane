@@ -21,7 +21,6 @@ and measurement samples using AnnotatedQueues.
 import contextlib
 import copy
 import functools
-from abc import abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Union
 
@@ -108,7 +107,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess:  # TODO: Inherit from ABC
+class MeasurementProcess:
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -696,7 +695,6 @@ class MeasurementProcess:  # TODO: Inherit from ABC
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
 
-    @abstractmethod
     def process(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
@@ -710,6 +708,7 @@ class MeasurementProcess:  # TODO: Inherit from ABC
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
         """
+        raise NotImplementedError(f"The class {self.__class__} cannot process samples.")
 
     def process_state(self, state: np.ndarray, device_wires: Wires):
         """Process the given quantum state.
