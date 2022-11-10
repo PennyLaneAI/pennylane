@@ -252,9 +252,9 @@ def _finite_diff_new(
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]] or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode, a tensor, tuple or tuple of tuple
-          representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
-          is returned.
+        - If the input is a QNode, an object representing the output Jacobian matrix.
+          The type of the object returned is either a tensor, a tuple or a nested tuple depending on the nesting
+          structure of the output.
 
         - If the input is a tape, a tuple containing a list of generated tapes,
           in addition to a post-processing function to be applied to the
