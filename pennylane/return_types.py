@@ -40,8 +40,7 @@ def enable_return():
 
         qnode = qml.QNode(circuit, dev)
 
-    >>> res = qnode(0.5)
-    >>> res
+    >>> qnode(0.5)
     tensor([0.5       , 0.5       , 0.08014815, 0.96939564, 0.03060436,
         0.93879128], requires_grad=True)
 
@@ -114,8 +113,6 @@ def enable_return():
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
                 return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
-
-            res = circuit(a, b)
 
             def cost(x, y):
                 return qml.numpy.hstack(circuit(x, y))
