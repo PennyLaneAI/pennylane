@@ -70,7 +70,9 @@ class _Variance(SampleMeasurement, StateMeasurement):
         if isinstance(self.obs, Projector):
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
-            probs = qml.probs(op=self.obs).process(
+            # we use ``self.wires`` instead of ``self.obs`` because the observable was
+            # already applied before the sampling
+            probs = qml.probs(wires=self.wires).process(
                 samples=samples, shot_range=shot_range, bin_size=bin_size
             )
             return probs[idx] - probs[idx] ** 2
@@ -89,7 +91,9 @@ class _Variance(SampleMeasurement, StateMeasurement):
         if isinstance(self.obs, Projector):
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
-            probs = qml.probs(op=self.obs).process_state(state=state, device_wires=device_wires)
+            # we use ``self.wires`` instead of ``self.obs`` because the observable was
+            # already applied to the state
+            probs = qml.probs(op=self.wires).process_state(state=state, device_wires=device_wires)
             return probs[idx] - probs[idx] ** 2
 
         try:
@@ -104,7 +108,9 @@ class _Variance(SampleMeasurement, StateMeasurement):
         old_obs = self.obs
         new_obs_wires = self._permute_wires(self.obs.wires)
         self.obs = qml.map_wires(self.obs, dict(zip(self.obs.wires, new_obs_wires)))
-        prob = qml.probs(op=self.obs).process_state(state=state, device_wires=device_wires)
+        # we use ``self.wires`` instead of ``self.obs`` because the observable was
+        # already applied to the state
+        prob = qml.probs(op=self.wires).process_state(state=state, device_wires=device_wires)
         self.obs = old_obs
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2
