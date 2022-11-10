@@ -205,7 +205,6 @@ def _execute(
 
             args = tuple(params) + (g,)
             vjps = jax.pure_callback(
-
                 non_diff_wrapper,
                 jax.ShapeDtypeStruct((total_params,), dtype),
                 args,
