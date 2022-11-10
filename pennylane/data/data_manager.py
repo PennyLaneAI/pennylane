@@ -392,7 +392,7 @@ def load_interactive():
         force: False
         dest folder: /Users/jovyan/Downloads/datasets
         Would you like to continue? (Default is yes) [Y/n]:
-        <pennylane.data.dataset.Dataset object at 0x10157ab50>
+        <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
     """
 
     _refresh_foldermap()

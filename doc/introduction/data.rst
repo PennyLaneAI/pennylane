@@ -28,8 +28,18 @@ The :func:`~pennylane.data.load` function returns a ``list`` with the desired da
 
 >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
 >>> print(H2datasets)
-[<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
+[<Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
 >>> H2data = H2datasets[0]
+
+We can load datasets for multiple parameter values by providing a list of values instead of a single value.
+To load all possible values, use the special keyword "full".
+
+>>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
+>>> print(H2datasets)
+[<Dataset = description: qchem/H2/6-31G/0.5, attributes: ['molecule', 'hamiltonian', ...]>,
+ <Dataset = description: qchem/H2/6-31G/1.1, attributes: ['molecule', 'hamiltonian', ...]>,
+ <Dataset = description: qchem/H2/STO-3G/0.5, attributes: ['molecule', 'hamiltonian', ...]>,
+ <Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
 
 When we only want to download portions of a large dataset, we can specify the desired properties  (referred to as `attributes`).
 For example, we can download or load only the molecule and energy of a dataset as follows:
@@ -51,14 +61,18 @@ To determine what attributes are available for a type of dataset, we can use the
 "tapered_hamiltonian",
 "full"]
 
+.. note::
+
+    "full" is the default value for ``attributes``, and it means that all available attributes for the Dataset will be downloaded.
+
 Using Datasets in PennyLane
 ---------------------------
 
 Once loaded, one can access properties of the datasets:
 
->>> H2_dataset.molecule
+>>> H2data.molecule
 <pennylane.qchem.molecule.Molecule object at 0x7f890b409280>
->>> print(H2_dataset.hf_state)
+>>> print(H2data.hf_state)
 [1 1 0 0]
 
 The loaded data items are fully compatible with PennyLane. We can therefore
@@ -67,10 +81,10 @@ use them directly in a PennyLane circuits as follows:
 >>> dev = qml.device("default.qubit",wires=4)
 >>> @qml.qnode(dev)
 ... def circuit():
-...     qml.BasisState(H2_dataset.hf_state, wires = [0, 1, 2, 3])
-...     for op in H2_dataset.vqe_gates:
+...     qml.BasisState(H2data.hf_state, wires = [0, 1, 2, 3])
+...     for op in H2data.vqe_gates:
 ...         qml.apply(op)
-...     return qml.expval(H2_dataset.hamiltonian)
+...     return qml.expval(H2data.hamiltonian)
 >>> print(circuit())
 -1.0791430411076344
 
