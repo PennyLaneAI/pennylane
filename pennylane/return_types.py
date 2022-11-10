@@ -58,8 +58,7 @@ def enable_return():
 
         qnode = qml.QNode(circuit, dev)
 
-    >>> res = qnode(0.5)
-    >>> res
+    >>> qnode(0.5)
     (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.96939564, 0.03060436], requires_grad=True), tensor(0.93879128, requires_grad=True))
 
     The new return types system unlocks the use of ``probs`` mixed with different measurements in backpropagation with JAX:
@@ -83,8 +82,7 @@ def enable_return():
 
         x = jax.numpy.array([0.1, 0.2, 0.3])
 
-    >>> res = jax.jacobian(circuit)(x)
-    >>> res
+    >>> jax.jacobian(circuit)(x)
     (DeviceArray([-9.9833414e-02, -7.4505806e-09, -3.9932679e-10], dtype=float32),
     DeviceArray([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
                [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
@@ -94,9 +92,13 @@ def enable_return():
 
     where before the following error was raised:
 
-    .. code-block:: text
+    .. code-block:: python
 
         ValueError: All input arrays must have the same shape.
+
+    .. details::
+        :title: Usage Details
+
     """
 
     global __activated
@@ -136,6 +138,9 @@ def disable_return():
 
 def active_return():
     """Function that checks if the new return types system is activated.
+
+    Returns:
+        bool: Returns ``True`` if the new return types system is activated.
 
     **Example**
 
