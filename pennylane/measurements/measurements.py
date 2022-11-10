@@ -688,6 +688,7 @@ class MeasurementProcess:
             .MeasurementProcess: new measurement process
         """
         new_measurement = copy.copy(self)
+        new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         if self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         return new_measurement
