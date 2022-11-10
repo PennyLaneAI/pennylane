@@ -23,10 +23,10 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import EigvalsUndefinedError, Operator
+from pennylane.ops import Projector
 from pennylane.wires import Wires
 
-from .measurements import Variance
-from .probs import _Probability
+from .measurements import MeasurementProcess, Variance
 
 
 def var(op: Operator):
@@ -61,14 +61,22 @@ def var(op: Operator):
     return _Variance(Variance, obs=op)
 
 
-class _Variance(_Probability):
+class _Variance(MeasurementProcess):
     """Measurement process that computes the variance of the supplied observable."""
 
     def process(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
+        if isinstance(self.obs, Projector):
+            # branch specifically to handle the projector observable
+            idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
+            probs = qml.probs(op=self.obs).process(
+                samples=samples, shot_range=shot_range, bin_size=bin_size
+            )
+            return probs[idx] - probs[idx] ** 2
+
         # estimate the variance
-        samples = super(_Probability, self).process(
+        samples = qml.sample(op=self.obs).process(
             samples=samples, shot_range=shot_range, bin_size=bin_size
         )
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
@@ -78,8 +86,14 @@ class _Variance(_Probability):
         return qml.math.squeeze(qml.math.var(samples, axis=axis))
 
     def process_state(self, state: np.ndarray, device_wires: Wires):
+        if isinstance(self.obs, Projector):
+            # branch specifically to handle the projector observable
+            idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
+            probs = qml.probs(op=self.obs).process_state(state=state, device_wires=device_wires)
+            return probs[idx] - probs[idx] ** 2
+
         try:
-            eigvals = qml.math.asarray(self.obs.eigvals())
+            eigvals = qml.math.asarray(self.obs.eigvals(), dtype=float)
         except EigvalsUndefinedError as e:
             # if observable has no info on eigenvalues, we cannot return this measurement
             raise qml.operation.EigvalsUndefinedError(
@@ -90,7 +104,7 @@ class _Variance(_Probability):
         old_obs = self.obs
         new_obs_wires = self._permute_wires(self.obs.wires)
         self.obs = qml.map_wires(self.obs, dict(zip(self.obs.wires, new_obs_wires)))
-        prob = super().process_state(state=state, device_wires=device_wires)
+        prob = qml.probs(op=self.obs).process_state(state=state, device_wires=device_wires)
         self.obs = old_obs
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2
