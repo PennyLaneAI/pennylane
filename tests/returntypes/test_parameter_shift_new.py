@@ -57,6 +57,22 @@ class TestGetOperationRecipe:
             assert qml.math.allclose(np.sort(s), exp_out_shifts)
             assert qml.math.allclose(np.sort(out_recipe[:, 2]), np.sort(exp_out_shifts))
 
+    def test_qnode_custom_recipe(self):
+        """Test a custom recipe using a QNode."""
+        dev = qml.device("default.qubit", wires=2)
+
+        x = np.array(0.4, requires_grad=True)
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, 0)
+            qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        # This is not a correct gradient recipe, but that's not the issue
+        recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],)
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=recipes)
+        res = fn(qml.execute(tapes, dev, None))
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+
     @pytest.mark.parametrize(
         "orig_op, frequencies, shifts",
         [
