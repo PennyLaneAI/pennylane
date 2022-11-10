@@ -19,9 +19,11 @@ __activated = False
 
 
 def enable_return():
-    """Function that turns on the new return type system. The new system guarantees intuitive return types such that a
-    sequence (e.g., list or tuple) is returned based on the ``return`` statement of the quantum function. This system
-    avoids the creation of ragged arrays, where multiple measurements are stacked together.
+    """Function that turns on the experimental return type system that prefers the use of sequences over arrays.
+
+    The new system guarantees that a sequence (e.g., list or tuple) is returned based on the ``return`` statement of the
+    quantum function. This system avoids the creation of ragged arrays, where multiple measurements are stacked
+    together.
 
     **Example**
 
@@ -61,44 +63,104 @@ def enable_return():
     >>> qnode(0.5)
     (tensor([0.5, 0.5], requires_grad=True), tensor(0.08014815, requires_grad=True), tensor([0.96939564, 0.03060436], requires_grad=True), tensor(0.93879128, requires_grad=True))
 
-    The new return types system unlocks the use of ``probs`` mixed with different measurements in backpropagation with JAX:
+    .. note::
 
-    .. code-block:: python
+        This is an experimental feature and may not support every feature in PennyLane. The list of supported features
+        from PennyLane include:
 
-        import jax
+        * :func:`~.pennylane.execute`
+        * Gradient transforms
 
-        qml.enable_return()
+          # :func:`~.pennylane.param_shift`;
+          # :func:`~.pennylane.finite_diff`;
+          # :func:`~.pennylane.hessian_transform`;
+          # :func:`~.pennylane.param_shift_hessian`.
 
-        dev = qml.device("default.qubit", wires=2)
-        qml.enable_return()
+        * Interfaces
 
-        @qml.qnode(dev, interface="jax")
-        def circuit(a):
-          qml.RX(a[0], wires=0)
-          qml.CNOT(wires=(0, 1))
-          qml.RY(a[1], wires=1)
-          qml.RZ(a[2], wires=1)
-          return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1]), qml.vn_entropy(wires=1)
+          # Autograd;
+          # TensorFlow;
+          # JAX (without jitting);
 
-        x = jax.numpy.array([0.1, 0.2, 0.3])
+        * PennyLane optimizers
+        * :meth:`~.QuantumTape.shape`
 
-    >>> jax.jacobian(circuit)(x)
-    (DeviceArray([-9.9833414e-02, -7.4505806e-09, -3.9932679e-10], dtype=float32),
-    DeviceArray([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
-               [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
-               [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
-               [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32),
-    DeviceArray([ 2.9899091e-01, -4.4703484e-08,  9.5104014e-10], dtype=float32))
-
-    where before the following error was raised:
-
-    .. code-block:: python
-
-        ValueError: All input arrays must have the same shape.
+    Note that this is an experimental feature and may not support every feature in PennyLane. See the ``Usage Details``
+    section for more details.
 
     .. details::
         :title: Usage Details
 
+        Autograd and TensorFlow only allow differentiating functions that have array or tensor outputs. QNodes that
+        have multiple measurements may output other sequences.
+
+        To bypass this, a function that post-processes QNode results may be used to get derivatives of the QNode:
+
+        .. code-block:: python
+
+            qml.enable_return()
+
+            a = np.array(0.1, requires_grad=True)
+            b = np.array(0.2, requires_grad=True)
+
+            dev = qml.device("lightning.qubit", wires=2)
+
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(a, b):
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+
+            res = circuit(a, b)
+
+            def cost(x, y):
+                return qml.numpy.hstack(circuit(x, y))
+
+        >>> qml.jacobian(cost)(a, b)
+        (array([-0.09983342,  0.01983384]), array([-5.54649074e-19, -9.75170327e-01]))
+
+        Attempting compute the gradient of the QNode would result in the following error with Autograd:
+
+        .. code-block:: python
+
+            TypeError: 'ArrayVSpace' object cannot be interpreted as an integer
+
+        The new return types system unlocks the use of ``probs`` mixed with different measurements in backpropagation with JAX:
+
+        .. code-block:: python
+
+            import jax
+
+            qml.enable_return()
+
+            dev = qml.device("default.qubit", wires=2)
+            qml.enable_return()
+
+            @qml.qnode(dev, interface="jax")
+            def circuit(a):
+              qml.RX(a[0], wires=0)
+              qml.CNOT(wires=(0, 1))
+              qml.RY(a[1], wires=1)
+              qml.RZ(a[2], wires=1)
+              return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1]), qml.vn_entropy(wires=1)
+
+            x = jax.numpy.array([0.1, 0.2, 0.3])
+
+        >>> res = jax.jacobian(circuit)(x)
+        >>> res
+        (DeviceArray([-9.9833414e-02, -7.4505806e-09, -3.9932679e-10], dtype=float32),
+        DeviceArray([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
+                   [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
+                   [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
+                   [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32),
+        DeviceArray([ 2.9899091e-01, -4.4703484e-08,  9.5104014e-10], dtype=float32))
+
+        where before the following error was raised:
+
+        .. code-block:: python
+
+            ValueError: All input arrays must have the same shape.
     """
 
     global __activated
