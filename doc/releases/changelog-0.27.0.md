@@ -147,6 +147,11 @@
   [(#3261)](https://github.com/PennyLaneAI/pennylane/pull/3261)
 
   ```python
+  import jax
+  from jax import numpy as jnp
+  from jax.config import config
+  config.update("jax_enable_x64", True)
+
   dev = qml.device("lightning.qubit", wires=2)
 
   @jax.jit
@@ -157,17 +162,17 @@
       qml.CNOT(wires=[0, 1])
       return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-  x = jnp.array(1.0, dtype=jnp.float32)
-  y = jnp.array(2.0, dtype=jnp.float32)
+  x = jnp.array(1.0)
+  y = jnp.array(2.0)
   ```
 
   ```pycon
   >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
-  (DeviceArray([-0.84147096,  0.3501755 ], dtype=float32),
-   DeviceArray([ 4.474455e-18, -4.912955e-01], dtype=float32))
+  (DeviceArray([-0.84147098,  0.35017549], dtype=float64, weak_type=True),
+   DeviceArray([ 4.47445479e-18, -4.91295496e-01], dtype=float64, weak_type=True))
   ```
 
-  Note that this change depends on `jax.pure_callback`, which requires `jax==0.3.17`.
+  Note that this change depends on `jax.pure_callback`, which requires `jax>=0.3.17`.
 
 * The `QNode` class now accepts an `auto` interface, which automatically detects the interface of the given input.
   [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
@@ -515,7 +520,7 @@
 
 * Extended `qml.equal` function to MeasurementProcesses
   [(#3189)](https://github.com/PennyLaneAI/pennylane/pull/3189)
-  
+
 * `_multi_dispatch` functionality has been moved inside the `get_interface` function. This function
   can now be called with one or multiple tensors as arguments.
   [(#3136)](https://github.com/PennyLaneAI/pennylane/pull/3136)
@@ -547,10 +552,11 @@
   >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
   'torch'
   ```
-  
-* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling 
-  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global 
-  configuration for matplotlib plotting. If no `style` is passed, the function defaults 
+
+* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling
+  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global
+  configuration for matplotlib plotting. If no `style` is passed, the function defaults
+
   to plotting with the `black_white` style.
   [(#3247)](https://github.com/PennyLaneAI/pennylane/pull/3247)
 
@@ -590,6 +596,9 @@
   [(#3219)](https://github.com/PennyLaneAI/pennylane/pull/3219)
 
 <h3>Bug fixes</h3>
+
+* `qml.SparseHamiltonian` now validates the size of the input matrix.
+  [(#3278)](https://github.com/PennyLaneAI/pennylane/pull/3278)
 
 * Fixed a bug where `qml.sample()` and `qml.counts()` would output incorrect results when mixed with measurements whose
   operators do not qubit-wise commute with computational basis projectors.
@@ -634,6 +643,9 @@
 
 * Fixed a bug where `qml.BasisEmbedding` was not jit-compilable with JAX.
   [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
+
+* Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
+  [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)
 
 * Fixed a bug where `qml.expval(qml.Hamiltonian())` would not raise an error
   if the Hamiltonian involved some wires that are not present on the device.
