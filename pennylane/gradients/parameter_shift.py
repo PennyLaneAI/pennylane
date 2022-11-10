@@ -1290,9 +1290,10 @@ def _param_shift_new(
     >>> qml.jacobian(circuit)(params)
     tensor([-0.38751725, -0.18884792, -0.38355708], requires_grad=True)
 
-    For QNode integration with Autograd respectively TensorFlow and multiple measurements, the results need to be
-    stacked before differentiate them. It is because those frameworks do not support differentiating tuple. On the other
-    side no additional requirement is needed for Jax and Torch.
+    When differentiating QNodes with multiple measurements using Autograd or TensorFlow, the outputs of the QNode first
+    need to be stacked. The reason is that those two frameworks only allow differentiating functions with array or
+    tensor outputs, instead of functions that output sequences. In contrast, Jax and Torch require no additional
+    post-processing.
 
     >>> import jax
     >>> dev = qml.device("default.qubit", wires=2)
