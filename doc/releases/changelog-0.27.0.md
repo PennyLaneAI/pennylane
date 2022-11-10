@@ -775,10 +775,7 @@
   composite operator.
   [(#3204)](https://github.com/PennyLaneAI/pennylane/pull/3204)
 
-* Fixed a bug where `qml.BasisStatePreparation` was not jit-compilable with JAX.
-  [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
-
-* Fixed a bug where `qml.BasisEmbedding` was not jit-compilable with JAX.
+* Fixed a bug where `qml.BasisStatePreparation` and `qml.BasisEmbedding` were not jit-compilable with JAX.
   [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
 
 * Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
