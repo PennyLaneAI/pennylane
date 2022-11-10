@@ -160,7 +160,8 @@ class _Probability(MeasurementProcess):
         imag_state = qml.math.imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, device_wires)
 
-    def _get_batch_size(self, tensor, expected_shape, expected_size):
+    @staticmethod
+    def _get_batch_size(tensor, expected_shape, expected_size):
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape."""
         size = qml.math.size(tensor)
