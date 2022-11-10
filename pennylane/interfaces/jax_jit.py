@@ -164,7 +164,7 @@ def _execute(
             return res
 
         shape_dtype_structs = _extract_shape_dtype_structs(tapes, device)
-        res = jax.pure_callback(wrapper, shape_dtype_structs, params)  # pylint: disable=no-member
+        res = jax.pure_callback(wrapper, shape_dtype_structs, params)
         return res
 
     def wrapped_exec_fwd(params):
@@ -204,7 +204,7 @@ def _execute(
                 return np.concatenate(res)
 
             args = tuple(params) + (g,)
-            vjps = jax.pure_callback(  # pylint: disable=no-member
+            vjps = jax.pure_callback(
                 non_diff_wrapper,
                 jax.ShapeDtypeStruct((total_params,), dtype),
                 args,
@@ -244,7 +244,7 @@ def _execute(
             jax.ShapeDtypeStruct((len(t.measurements), len(p)), dtype)
             for t, p in zip(tapes, params)
         ]
-        jacs = jax.pure_callback(jacs_wrapper, shapes, params)  # pylint: disable=no-member
+        jacs = jax.pure_callback(jacs_wrapper, shapes, params)
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
         res = [[jnp.array(p) for p in v] for v in vjps]
         return (tuple(res),)
@@ -291,7 +291,7 @@ def _execute_with_fwd(
             o = jax.ShapeDtypeStruct(tuple(shape), _dtype)
             jacobian_shape.append(o)
 
-        res, jacs = jax.pure_callback(  # pylint: disable=no-member
+        res, jacs = jax.pure_callback(
             wrapper, tuple([fwd_shape_dtype_struct, jacobian_shape]), params
         )
         return res, jacs
