@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* Support custom measurement processes:
+  * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
+    method to process samples/quantum state.
+    [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
+
+  * Add `_Probs` class.
+    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
@@ -21,3 +29,4 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+Albert Mitjans Coma
