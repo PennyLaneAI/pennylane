@@ -21,7 +21,6 @@ from typing import Sequence, Tuple
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops import Prod, SProd, Sum
 from pennylane.wires import Wires
 
 from .measurements import Probability, SampleMeasurement, StateMeasurement
@@ -99,7 +98,7 @@ def probs(wires=None, op=None):
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if isinstance(op, (Sum, SProd, Prod)):
+    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
         raise qml.QuantumFunctionError(
             "Symbolic Operations are not supported for rotating probabilities yet."
         )
