@@ -16,8 +16,8 @@ Unit tests for the :mod:`pennylane.circuit_graph` module.
 """
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -92,40 +92,6 @@ def circuit_measure_multiple_with_max_twice():
         qml.probs(wires=[0, 1, 2]),
         qml.var(qml.PauliX(wires=[1]) @ qml.PauliZ([2])),
     )
-
-
-def measurement_process_equality(mp1, mp2):
-    """Helper function to check for equality between two MeasurementProcess objects."""
-    same_return_type = mp1.return_type == mp2.return_type
-    same_obs = mp1.obs == mp2.obs
-    same_wires = mp1._wires == mp2._wires
-    same_eigs = mp1._eigvals == mp2._eigvals
-    same_name = mp1.name == mp2.name
-    same_data = mp1.data == mp2.data
-
-    if same_return_type and same_obs and same_wires and same_eigs and same_name and same_data:
-        return True
-
-    return False
-
-
-def lst_mp_equality(lst1, lst2):
-    """Wrapper function to check if two lists are identical when the
-    lists contain MeasurementProcess objects."""
-    assert len(lst1) == len(lst2)
-    lsts_same = True
-
-    for index in range(len(lst1)):
-        if not isinstance(lst1[index], type(lst2[index])):  # if they are different types
-            return False  # then return false
-
-        elif isinstance(lst1[index], qml.measurements.MeasurementProcess):
-            lsts_same = lsts_same and measurement_process_equality(lst1[index], lst2[index])
-
-        else:
-            lsts_same = lsts_same and (lst1[index] == lst2[index])
-
-    return lsts_same
 
 
 class TestCircuitGraph:
@@ -308,13 +274,13 @@ class TestCircuitGraph:
         none are explicitly provided."""
 
         ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
-        obs_no_wires = [qml.measurements.sample(op=None, wires=None)]
-        obs_w_wires = [qml.measurements.sample(op=None, wires=[0, 1, 2])]
+        obs_no_wires = [qml.sample(op=None, wires=None)]
+        obs_w_wires = [qml.sample(op=None, wires=[0, 1, 2])]
 
         circuit_no_wires = CircuitGraph(ops, obs_no_wires, wires=Wires([0, 1, 2]))
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
 
-        sample_w_wires_op = qml.measurements.sample(op=None, wires=[0, 1, 2])
+        sample_w_wires_op = qml.sample(op=None, wires=[0, 1, 2])
         expected_grid = {
             0: [ops[0], ops[1], sample_w_wires_op],
             1: [ops[1], sample_w_wires_op],
@@ -326,5 +292,8 @@ class TestCircuitGraph:
             lst_no_wires = circuit_no_wires._grid[key]
             lst_expected = expected_grid[key]
 
-            assert lst_mp_equality(lst_no_wires, lst_w_wires)
-            assert lst_mp_equality(lst_no_wires, lst_expected)
+            for el1, el2 in zip(lst_no_wires, lst_w_wires):
+                assert qml.equal(el1, el2)
+
+            for el1, el2 in zip(lst_no_wires, lst_expected):
+                assert qml.equal(el1, el2)
