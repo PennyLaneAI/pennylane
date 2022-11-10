@@ -22,6 +22,7 @@ from pennylane.measurements import AllCounts, Counts
 from pennylane.operation import Operator
 
 
+# pylint: disable=attribute-defined-outside-init
 class TestCounts:
     """Tests for the counts function"""
 
@@ -31,18 +32,22 @@ class TestCounts:
         QubitDevice.sample and compares its output with the new _Sample.process method."""
         if not getattr(self, "spy", False):
             return
+
         if sys.version_info[1] <= 7:
             return  # skip tests for python@3.7 because call_args.kwargs is a tuple instead of a dict
+
+        assert len(self.spy.call_args_list) > 0  # make sure method is mocked properly
+
         samples = self.dev._samples
         for call_args in self.spy.call_args_list:
             if not call_args.kwargs.get("counts", False):
                 continue
-            meas = call_args.args[0]
+            meas = call_args.args[1]
             shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
             if isinstance(meas, Operator):
                 all_outcomes = meas.return_type is AllCounts
                 meas = qml.counts(op=meas, all_outcomes=all_outcomes)
-            old_res = self.dev.sample(*call_args.args, **call_args.kwargs)
+            old_res = self.dev.sample(call_args.args[1], **call_args.kwargs)
             new_res = meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size)
             if isinstance(old_res, dict):
                 old_res = [old_res]
@@ -51,13 +56,12 @@ class TestCounts:
                 assert old.keys() == new.keys()
                 assert qml.math.allequal(list(old.values()), list(new.values()))
 
-    def test_providing_observable_and_wires(self, mocker):
+    def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are
         specified"""
-        self.dev = qml.device("default.qubit", wires=2)
-        self.spy = mocker.spy(self.dev, "sample")
+        dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(self.dev)
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
             return qml.counts(qml.PauliZ(0), wires=[0, 1])
@@ -73,7 +77,7 @@ class TestCounts:
         """Test that a UserWarning is raised if the provided
         argument might not be hermitian."""
         self.dev = qml.device("default.qubit", wires=2, shots=10)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -88,7 +92,7 @@ class TestCounts:
         n_sample = 10
 
         self.dev = qml.device("default.qubit", wires=2, shots=n_sample)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -105,7 +109,7 @@ class TestCounts:
         n_sample = 10
 
         self.dev = qml.device("default.qubit", wires=3, shots=n_sample)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev, diff_method="parameter-shift")
         def circuit():
@@ -127,7 +131,7 @@ class TestCounts:
         n_sample = 10
 
         self.dev = qml.device("default.qubit", wires=1, shots=n_sample)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -146,7 +150,7 @@ class TestCounts:
         n_sample = 10
 
         self.dev = qml.device("default.qubit", wires=3, shots=n_sample)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -168,7 +172,7 @@ class TestCounts:
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Counts`"""
         n_shots = 10
         self.dev = qml.device("default.qubit", wires=1, shots=n_shots)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -181,7 +185,7 @@ class TestCounts:
     def test_providing_no_observable_and_no_wires_counts(self, mocker):
         """Test that we can provide no observable and no wires to sample function"""
         self.dev = qml.device("default.qubit", wires=2, shots=1000)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -198,7 +202,7 @@ class TestCounts:
         wires = [0, 2]
         wires_obj = qml.wires.Wires(wires)
         self.dev = qml.device("default.qubit", wires=3, shots=1000)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -219,7 +223,7 @@ class TestCounts:
         finite shot"""
         n_shots = 10
         self.dev = qml.device("default.qubit", wires=3, shots=n_shots)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev, interface=interface)
         def circuit():
@@ -236,7 +240,7 @@ class TestCounts:
         shot"""
         n_shots = 10
         self.dev = qml.device("default.qubit", wires=3, shots=n_shots)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev, interface=interface)
         def circuit():
@@ -253,7 +257,7 @@ class TestCounts:
         """Check all interfaces with computational basis state counts and
         different shot vectors"""
         self.dev = qml.device("default.qubit", wires=3, shots=shot_vec)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev, interface=interface)
         def circuit():
@@ -276,7 +280,7 @@ class TestCounts:
         """Check all interfaces with observable measurement counts and different
         shot vectors"""
         self.dev = qml.device("default.qubit", wires=3, shots=shot_vec)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev, interface=interface)
         def circuit():
@@ -296,7 +300,7 @@ class TestCounts:
         """Check the autograd interface with computational basis state counts and
         different shot vectors on a device with 4 wires"""
         self.dev = qml.device("default.qubit", wires=4, shots=shot_vec)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev, interface="autograd")
         def circuit():
@@ -320,7 +324,7 @@ class TestCounts:
         """Check the autograd interface with observable samples to obtain
         counts from and different shot vectors on a device with 4 wires"""
         self.dev = qml.device("default.qubit", wires=4, shots=shot_vec)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev, interface="autograd")
         def circuit():
@@ -354,8 +358,6 @@ class TestCounts:
     def test_counts_observable_finite_shots(self, interface, meas2, shots, mocker):
         """Check all interfaces with observable measurement counts and finite
         shot"""
-        self.dev = qml.device("default.qubit", wires=3, shots=shots)
-        self.spy = mocker.spy(self.dev, "sample")
 
         if interface == "jax" and meas2.return_type in (
             qml.measurements.Probability,
@@ -363,6 +365,9 @@ class TestCounts:
         ):
             reason = "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
             pytest.skip(reason)
+
+        self.dev = qml.device("default.qubit", wires=3, shots=shots)
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev, interface=interface)
         def circuit():
@@ -383,7 +388,7 @@ class TestCounts:
 
         n_shots = 10
         self.dev = qml.device("default.qubit", wires=1, shots=n_shots)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -401,7 +406,7 @@ class TestCounts:
 
         n_shots = 10
         self.dev = qml.device("default.qubit", wires=2, shots=n_shots)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -418,7 +423,7 @@ class TestCounts:
 
         n_shots = 10
         self.dev = qml.device("default.qubit", wires=4, shots=n_shots)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -434,7 +439,7 @@ class TestCounts:
 
         n_shots = 10
         self.dev = qml.device("default.qubit", wires=2, shots=n_shots)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         A = np.array([[1, 0], [0, -1]])
 
@@ -451,7 +456,7 @@ class TestCounts:
         multiple measurements are performed"""
 
         self.dev = qml.device("default.qubit", wires=2, shots=10)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
