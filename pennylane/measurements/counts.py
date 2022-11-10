@@ -15,9 +15,8 @@
 """
 This module contains the qml.counts measurement.
 """
+# pylint: disable=too-many-arguments, abstract-method
 import copy
-
-# pylint: disable=too-many-arguments
 import warnings
 from typing import Tuple, Union
 
@@ -27,8 +26,7 @@ import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
 
-from .measurements import AllCounts, Counts, ObservableReturnTypes
-from .sample import _Sample
+from .measurements import AllCounts, Counts, MeasurementProcess, ObservableReturnTypes
 
 
 def counts(op=None, wires=None, all_outcomes=False):
@@ -152,7 +150,7 @@ def counts(op=None, wires=None, all_outcomes=False):
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
-class _Counts(_Sample):
+class _Counts(MeasurementProcess):
     """Measurement process that returns the samples of a given observable."""
 
     def __init__(
@@ -169,7 +167,7 @@ class _Counts(_Sample):
         super().__init__(return_type, obs, wires, eigvals, id, log_base)
 
     def process(self, samples: np.ndarray, shot_range: Tuple[int] = None, bin_size: int = None):
-        samples = super().process(samples, shot_range, bin_size)
+        samples = qml.sample(op=self.obs, wires=self._wires).process(samples, shot_range, bin_size)
 
         if bin_size is None:
             return self._samples_to_counts(samples)
