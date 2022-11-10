@@ -162,11 +162,13 @@ def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
     """Compute the gradient for multiple measurements by taking the linear combination of the coefficients and each
     measurement result."""
     g = []
+    if r0 is None:
+        r0 = [None] * num_measurements
     for meas_idx in range(num_measurements):
 
         # Gather the measurement results
         meas_result = [param_result[meas_idx] for param_result in res]
-        g_component = _single_meas_grad(meas_result, coeffs, unshifted_coeff, r0)
+        g_component = _single_meas_grad(meas_result, coeffs, unshifted_coeff, r0[meas_idx])
         g.append(g_component)
 
     return tuple(g)
@@ -197,6 +199,8 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
         # Res has order of axes:
         # 1. Number of parameters
         # 2. Shot vector
+        if r0 is None:
+            r0 = [None] * len_shot_vec
         for i in range(len_shot_vec):
             shot_comp_res = [r[i] for r in res]
             shot_comp_res = _single_meas_grad(shot_comp_res, coeffs, unshifted_coeff, r0[i])
@@ -506,9 +510,7 @@ def _expval_param_shift_tuple(
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size))
 
     def processing_fn(results):
-        start = 1 if at_least_one_unshifted and f0 is None else 0
-        r0 = f0 or results[0]
-
+        start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
         single_measure = len(tape.measurements) == 1
         single_param = len(tape.trainable_params) == 1
         shot_vector = isinstance(shots, Sequence)
@@ -674,8 +676,7 @@ def expval_param_shift(
             results = [qml.math.squeeze(res) for res in results]
 
         grads = []
-        start = 1 if at_least_one_unshifted and f0 is None else 0
-        r0 = f0 or results[0]
+        start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
 
         for data in gradient_data:
 
