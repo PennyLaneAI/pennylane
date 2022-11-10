@@ -117,15 +117,16 @@ class CircuitGraph:
             op.queue_idx = k  # store the queue index in the Operator
 
             if hasattr(op, "return_type"):
-                if op.return_type is State:
+                meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
+                if op.return_type is qml.measurements.State:
                     # State measurements contain no wires by default, but wires are
                     # required for the circuit drawer, so we recreate the state
                     # measurement with all wires
-                    op = MeasurementProcess(State, wires=wires)
+                    op = MeasurementProcess(State, wires=meas_wires)
 
                 elif op.return_type is Sample and op.wires == Wires([]):
                     # Sampling without specifying wires is treated as sampling all wires
-                    op = qml.sample(wires=wires)
+                    op = qml.sample(wires=meas_wires)
 
                 op.queue_idx = k
 
