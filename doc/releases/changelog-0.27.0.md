@@ -68,12 +68,15 @@
   - Once a dataset is loaded, its properties can be accessed as follows:
 
     ```pycon
-    >>> dev = qml.device('default.qubit',wires=H2data.hamiltonian.wires)
+    >>> dev = qml.device("default.qubit",wires=4)
     >>> @qml.qnode(dev)
     ... def circuit():
+    ...     qml.BasisState(H2data.hf_state, wires = [0, 1, 2, 3])
+    ...     for op in H2data.vqe_gates:
+    ...          qml.apply(op)
     ...     return qml.expval(H2data.hamiltonian)
     >>> print(circuit())
-    2.173913043478261
+    -1.0791430411076344
     ```
 
   It is also possible to create custom datasets with `qml.data.Dataset`:
