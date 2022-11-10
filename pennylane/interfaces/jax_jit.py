@@ -244,7 +244,8 @@ def _execute(
             jax.ShapeDtypeStruct((len(t.measurements), len(p)), dtype)
             for t, p in zip(tapes, params)
         ]
-        jacs = jax.pure_callback(jacs_wrapper, shapes, params)  # pylint: disable=no-member
+        jacs = jax.pure_callback(jacs_wrapper, shapes, params)
+
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
         res = [[jnp.array(p) for p in v] for v in vjps]
         return (tuple(res),)
