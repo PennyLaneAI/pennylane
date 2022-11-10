@@ -260,28 +260,6 @@ class TestSparse:
                     ]
                 ),
             ),
-            (
-                [0.5, 0.2, 2],
-                [
-                    qml.GellMann(1, wires=0) @ qml.GellMann(4, wires=1),
-                    qml.GellMann(2, wires=1),
-                    qml.GellMann(3, wires=0),
-                ],
-                None,
-                np.array(
-                    [
-                        [2, -0.2j, 0, 0, 0, 0.5, 0, 0, 0],
-                        [0.2j, 2, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 2, 0.5, 0, 0, 0, 0, 0],
-                        [0, 0, 0.5, -2, -0.2j, 0, 0, 0, 0],
-                        [0, 0, 0, 0.2j, -2, 0, 0, 0, 0],
-                        [0.5, 0, 0, 0, 0, -2, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, -0.2j, 0],
-                        [0, 0, 0, 0, 0, 0, 0.2j, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    ]
-                ),
-            ),
         ],
     )
     def test_sparse_matrix(self, coeffs, obs, wires, ref_matrix):

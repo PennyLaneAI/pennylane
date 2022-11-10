@@ -108,7 +108,7 @@ def decompose_hamiltonian(H, hide_identity=False, wire_order=None):
     return coeffs, obs
 
 
-def sparse_hamiltonian(H, wires=None, level=2):
+def sparse_hamiltonian(H, wires=None):
     r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
 
     Args:
@@ -151,7 +151,7 @@ def sparse_hamiltonian(H, wires=None, level=2):
         wires = qml.wires.Wires(wires)
 
     n = len(wires)
-    matrix = scipy.sparse.csr_matrix((level**n, level**n), dtype="complex128")
+    matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
 
     coeffs = qml.math.toarray(H.data)
 
@@ -175,7 +175,7 @@ def sparse_hamiltonian(H, wires=None, level=2):
         for wire_lab in wires:
             if wire_lab in op.wires:
                 if i_count > 0:
-                    mat.append(scipy.sparse.eye(level**i_count, format="coo"))
+                    mat.append(scipy.sparse.eye(2**i_count, format="coo"))
                 i_count = 0
                 idx = op.wires.index(wire_lab)
                 # obs is an array storing the single-wire observables which
@@ -186,7 +186,7 @@ def sparse_hamiltonian(H, wires=None, level=2):
                 i_count += 1
 
         if i_count > 0:
-            mat.append(scipy.sparse.eye(level**i_count, format="coo"))
+            mat.append(scipy.sparse.eye(2**i_count, format="coo"))
 
         red_mat = functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
 
