@@ -108,7 +108,7 @@ def decompose_hamiltonian(H, hide_identity=False, wire_order=None):
     return coeffs, obs
 
 
-def sparse_hamiltonian(H, wires=None, level=3):
+def sparse_hamiltonian(H, wires=None, level=2):
     r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
 
     Args:
