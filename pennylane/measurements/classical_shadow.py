@@ -299,3 +299,6 @@ class ShadowMeasurementProcess(MeasurementProcess):
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
         """TODO: Implement this method."""
+
+    def process_state(self, state: np.ndarray, device_wires: Wires):
+        """TODO: Implement this method."""
