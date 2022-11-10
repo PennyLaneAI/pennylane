@@ -26,7 +26,7 @@ from pennylane.operation import EigvalsUndefinedError, Operator
 from pennylane.ops import Projector
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, Variance
+from .measurements import SampleMeasurement, StateMeasurement, Variance
 
 
 def var(op: Operator):
@@ -61,7 +61,7 @@ def var(op: Operator):
     return _Variance(Variance, obs=op)
 
 
-class _Variance(MeasurementProcess):
+class _Variance(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the variance of the supplied observable."""
 
     def process(
