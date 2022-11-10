@@ -291,7 +291,8 @@ def _execute_with_fwd(
             o = jax.ShapeDtypeStruct(tuple(shape), _dtype)
             jacobian_shape.append(o)
 
-        res, jacs = jax.pure_callback(  # pylint: disable=no-member
+        res, jacs = jax.pure_callback(
+
             wrapper, tuple([fwd_shape_dtype_struct, jacobian_shape]), params
         )
         return res, jacs
