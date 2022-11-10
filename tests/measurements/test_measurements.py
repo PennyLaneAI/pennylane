@@ -25,9 +25,11 @@ from pennylane.measurements import (
     MutualInfo,
     Probability,
     Sample,
+    SampleMeasurement,
     Shadow,
     ShadowExpval,
     State,
+    StateMeasurement,
     Variance,
     VnEntropy,
     expval,
@@ -86,16 +88,6 @@ def test_shape_unrecognized_error():
     mp = MeasurementProcess("NotValidReturnType")
     with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the shape"):
         mp.shape()
-
-
-def test_process_methods():
-    """Test that ``process`` and ``process_state`` raise an error."""
-    mp = MeasurementProcess("test")
-    with pytest.raises(NotImplementedError):
-        mp.process(samples=[])
-
-    with pytest.raises(NotImplementedError):
-        mp.process_state(state=[], device_wires=[])
 
 
 @pytest.mark.parametrize(
