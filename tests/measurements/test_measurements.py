@@ -88,6 +88,16 @@ def test_shape_unrecognized_error():
         mp.shape()
 
 
+def test_process_methods():
+    """Test that ``process`` and ``process_state`` raise an error."""
+    mp = MeasurementProcess("test")
+    with pytest.raises(NotImplementedError):
+        mp.process(samples=[])
+
+    with pytest.raises(NotImplementedError):
+        mp.process_state(state=[], device_wires=[])
+
+
 @pytest.mark.parametrize(
     "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]
 )
