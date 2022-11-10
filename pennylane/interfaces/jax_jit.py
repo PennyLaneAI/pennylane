@@ -245,7 +245,6 @@ def _execute(
             for t, p in zip(tapes, params)
         ]
         jacs = jax.pure_callback(jacs_wrapper, shapes, params)
-
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
         res = [[jnp.array(p) for p in v] for v in vjps]
         return (tuple(res),)
