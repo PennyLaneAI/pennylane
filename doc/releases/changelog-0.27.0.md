@@ -12,11 +12,12 @@
   Datasets are hosted on Xanadu Cloud and can be downloaded by using `qml.data.load()`:
 
   ```pycon
-  >>> H2_dataset = qml.data.load(
-    data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0"
+  >>> H2_datasets = qml.data.load(
+    data_name="qchem", molname="H2", basis="STO-3G", bondlength=1.1
   )
-  >>> print(H2_dataset)
-  [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
+  >>> print(H2_datasets)
+  [<Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
+  >>> H2data = H2_datasets[0]
   ```
 
   - Datasets available to be downloaded can be listed with `qml.data.list_datasets()`.
@@ -25,7 +26,7 @@
 
     ```pycon
     >>> H2_hamiltonian = qml.data.load(
-      data_name="qchem", molname="H2", basis="STO-3G", bondlength="1.0",
+      data_name="qchem", molname="H2", basis="STO-3G", bondlength=1.1,
       attributes=["molecule", "hamiltonian"]
     )[0]
     >>> H2_hamiltonian.hamiltonian
@@ -61,16 +62,16 @@
         force: False
         dest folder: /Users/jovyan/Downloads/datasets
         Would you like to continue? (Default is yes) [Y/n]:
-        <pennylane.data.dataset.Dataset object at 0x10157ab50>
+        <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
   ```
 
   - Once a dataset is loaded, its properties can be accessed as follows:
 
     ```pycon
-    >>> dev = qml.device('default.qubit',wires=H2_dataset[0].hamiltonian.wires)
+    >>> dev = qml.device('default.qubit',wires=H2data.hamiltonian.wires)
     >>> @qml.qnode(dev)
     ... def circuit():
-    ...     return qml.expval(H2_dataset[0].hamiltonian)
+    ...     return qml.expval(H2data.hamiltonian)
     >>> print(circuit())
     2.173913043478261
     ```
