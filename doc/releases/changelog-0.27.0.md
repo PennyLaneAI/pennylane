@@ -250,7 +250,7 @@
   ```pycon
   >>> H2datasets = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
   >>> print(H2datasets)
-  [<Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
+  [<pennylane.data.dataset.Dataset object at 0x7f14e4369640>]
   >>> H2data = H2datasets[0]
   ```
 
@@ -318,7 +318,7 @@
           force: False
           dest folder: /Users/jovyan/Downloads/datasets
           Would you like to continue? (Default is yes) [Y/n]:
-          <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
+          <pennylane.data.dataset.Dataset object at 0x10157ab50>
     ```
 
 * Once loaded, properties of a dataset can be accessed easily as follows:
@@ -327,10 +327,10 @@
   >>> dev = qml.device("default.qubit",wires=4)
   >>> @qml.qnode(dev)
   ... def circuit():
-  ...     qml.BasisState(H2data.hf_state, wires = [0, 1, 2, 3])
-  ...     for op in H2data.vqe_gates:
+  ...     qml.BasisState(H2_dataset.hf_state, wires = [0, 1, 2, 3])
+  ...     for op in H2_dataset.vqe_gates:
   ...         qml.apply(op)
-  ...     return qml.expval(H2data.hamiltonian)
+  ...     return qml.expval(H2_dataset.hamiltonian)
   >>> print(circuit())
   -1.0791430411076344
   ```
