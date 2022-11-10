@@ -266,11 +266,7 @@ class TestSparse:
         """Tests that sparse_hamiltonian returns a correct sparse matrix"""
         H = qml.Hamiltonian(coeffs, obs)
 
-        sparse_matrix = (
-            qml.utils.sparse_hamiltonian(H, wires)
-            if ref_matrix.shape[0] % 2 == 0
-            else qml.utils.sparse_hamiltonian(H, wires, level=3)
-        )
+        sparse_matrix = qml.utils.sparse_hamiltonian(H, wires)
 
         assert np.allclose(sparse_matrix.toarray(), ref_matrix)
 
