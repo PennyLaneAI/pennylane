@@ -192,7 +192,7 @@
 
 <h4>Automatic interface detection 🧩</h4>
 
-* QNodes now accept an `auto` interface which automatically detects the interface of the given input.
+* QNodes now accept an `auto` interface argument which automatically detects the machine learning library to use.
   [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
 
   ```python
