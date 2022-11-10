@@ -525,7 +525,7 @@
 * The `Exp` class decomposes into a `PauliRot` class if the coefficient is imaginary and the base operator is a Pauli Word.
   [(#3249)](https://github.com/PennyLaneAI/pennylane/pull/3249)
 
-* Added a `samples_computational_basis` attribute to the `MeasurementProcess` and `QuantumScript` classes to track if computational basis samples are being generated when `qml.sample` or `qml.counts` are called without specifying an observable.
+* `qml.sample` and `qml.counts` function more efficiently and track if computational basis samples are being generated when they are called without specifying an observable.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 
 * The parameters of a basis set containing a different number of Gaussian functions are now easier to differentiate.
@@ -533,9 +533,6 @@
 
 * Printing a `qml.MultiControlledX` operator now shows the `control_values` keyword argument.
   [(#3113)](https://github.com/PennyLaneAI/pennylane/pull/3113)
-
-* The matrix passed to `qml.Hermitian` is now validated when creating the observable if the input is not abstract.
-  [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
 
 * `qml.simplify` and transforms like `qml.matrix`, `batch_transform`, `hamiltonian_expand`, and `split_non_commuting` now work with
   `QuantumScript` as well as `QuantumTape`.
@@ -642,13 +639,8 @@
 * `default.qubit` favours decomposition and avoids matrix construction for `QFT` and `GroverOperator` at larger qubit numbers.
   [(#3193)](https://github.com/PennyLaneAI/pennylane/pull/3193)
 
-* `ControlledQubitUnitary` now has a `control_values` property.
+* `qml.ControlledQubitUnitary` now has a `control_values` property.
   [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
-
-* Remove `_wires` properties and setters from the `ControlledClass` and the `SymbolicClass`.
-  Stop using `op._wires = new_wires`, use `qml.map_wires(op, wire_map=dict(zip(op.wires, new_wires)))`
-  instead.
-  [(#3186)](https://github.com/PennyLaneAI/pennylane/pull/3186)
 
 * Added a new `qml.tape.QuantumScript` class that contains all the non-queuing behavior of `QuantumTape`. Now, `QuantumTape` inherits from `QuantumScript` as well as `AnnotatedQueue`.
   [(#3097)](https://github.com/PennyLaneAI/pennylane/pull/3097)
@@ -749,15 +741,8 @@
 * `qml.SparseHamiltonian` now validates the size of the input matrix.
   [(#3278)](https://github.com/PennyLaneAI/pennylane/pull/3278)
 
-* Fixed a bug where `qml.sample()` and `qml.counts()` would output incorrect results when mixed with measurements whose
-  operators do not qubit-wise commute with computational basis projectors.
-  [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
-
 * Users no longer see unintuitive errors when inputing sequences to `qml.Hermitian`.
   [(#3181)](https://github.com/PennyLaneAI/pennylane/pull/3181)
-
-* `ControlledQubitUnitary.pow` now copies over the `control_values`.
-  [(#3206)](https://github.com/PennyLaneAI/pennylane/pull/3206)
 
 * The evaluation of QNodes that return either `vn_entropy` or `mutual_info` raises an
   informative error message when using devices that define a vector of shots.
