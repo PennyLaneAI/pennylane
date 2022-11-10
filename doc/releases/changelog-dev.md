@@ -4,11 +4,13 @@
 
 <h3>New features since last release</h3>
 
-* Added the `qml.TRX` qutrit operation, which applies an X rotation to a specified subspace. Also updated `pennylane/qnode.py` to support
-parameter-shift differentiation on qutrit devices.
+* Added the `qml.TRX` qutrit operation, which applies an X rotation to a specified subspace.
   ([#2845](https://github.com/PennyLaneAI/pennylane/pull/2845))
 
 <h3>Improvements</h3>
+
+* Also updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
+  ([#2845](https://github.com/PennyLaneAI/pennylane/pull/2845))
 
 <h3>Breaking changes</h3>
 
