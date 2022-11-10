@@ -21,6 +21,7 @@ and measurement samples using AnnotatedQueues.
 import contextlib
 import copy
 import functools
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Union
 
@@ -695,6 +696,11 @@ class MeasurementProcess:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
 
+
+class SampleMeasurement(MeasurementProcess, ABC):
+    """Sample-based measurement process."""
+
+    @abstractmethod
     def process(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
@@ -708,8 +714,12 @@ class MeasurementProcess:
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
         """
-        raise NotImplementedError(f"The class {self.__class__} cannot process samples.")
 
+
+class StateMeasurement(MeasurementProcess, ABC):
+    """State-based measurement process."""
+
+    @abstractmethod
     def process_state(self, state: np.ndarray, device_wires: Wires):
         """Process the given quantum state.
 
@@ -722,4 +732,3 @@ class MeasurementProcess:
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
         """
-        raise NotImplementedError(f"The class {self.__class__} cannot process quantum states.")
