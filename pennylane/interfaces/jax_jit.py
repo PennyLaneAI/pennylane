@@ -204,7 +204,8 @@ def _execute(
                 return np.concatenate(res)
 
             args = tuple(params) + (g,)
-            vjps = jax.pure_callback(  # pylint: disable=no-member
+            vjps = jax.pure_callback(
+
                 non_diff_wrapper,
                 jax.ShapeDtypeStruct((total_params,), dtype),
                 args,
