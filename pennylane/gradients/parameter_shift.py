@@ -24,6 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import MutualInfo, State, VnEntropy
+from pennylane._device import _get_num_copies
 
 from .finite_difference import finite_diff, _all_zero_grad_new, _no_trainable_grad_new
 from .general_shift_rules import (
@@ -161,11 +162,13 @@ def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
     """Compute the gradient for multiple measurements by taking the linear combination of the coefficients and each
     measurement result."""
     g = []
+    if r0 is None:
+        r0 = [None] * num_measurements
     for meas_idx in range(num_measurements):
 
         # Gather the measurement results
         meas_result = [param_result[meas_idx] for param_result in res]
-        g_component = _single_meas_grad(meas_result, coeffs, unshifted_coeff, r0)
+        g_component = _single_meas_grad(meas_result, coeffs, unshifted_coeff, r0[meas_idx])
         g.append(g_component)
 
     return tuple(g)
@@ -187,16 +190,18 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
         res = fn(res)
 
     num_measurements = len(tape.measurements)
+
     if num_measurements == 1:
         if not shot_vector:
             return _single_meas_grad(res, coeffs, unshifted_coeff, r0)
-        num_shot_components = len(shots)
         g = []
-
+        len_shot_vec = _get_num_copies(shots)
         # Res has order of axes:
         # 1. Number of parameters
         # 2. Shot vector
-        for i in range(num_shot_components):
+        if r0 is None:
+            r0 = [None] * len_shot_vec
+        for i in range(len_shot_vec):
             shot_comp_res = [r[i] for r in res]
             shot_comp_res = _single_meas_grad(shot_comp_res, coeffs, unshifted_coeff, r0[i])
             g.append(shot_comp_res)
@@ -206,13 +211,12 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
     if not shot_vector:
         return _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements)
 
-    num_shot_components = len(shots)
-
+    len_shot_vec = _get_num_copies(shots)
     # Res has order of axes:
     # 1. Number of parameters
     # 2. Shot vector
     # 3. Number of measurements
-    for idx_shot_comp in range(num_shot_components):
+    for idx_shot_comp in range(len_shot_vec):
         single_shot_component_result = [
             result_for_each_param[idx_shot_comp] for result_for_each_param in res
         ]
@@ -319,7 +323,7 @@ def _swap_two_axes(grads, first_axis_size, second_axis_size):
     )
 
 
-def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, num_shot_vec_components):
+def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec):
     """Reorder the axes for gradient results obtained for a tape with a single measurement from a device that defined a
     shot vector.
 
@@ -351,11 +355,11 @@ def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, num_shot_ve
         2. Num params
         3. Measurement shape
     """
-    return _swap_two_axes(grads, num_params, num_shot_vec_components)
+    return _swap_two_axes(grads, num_params, len_shot_vec)
 
 
 def _reorder_grad_axes_multi_measure(
-    grads, num_params, num_measurements, num_shot_vec_components, shot_vector_multi_measure
+    grads, num_params, num_measurements, len_shot_vec, shot_vector_multi_measure
 ):
     """Reorder the axes for gradient results obtained for a tape with multiple measurements.
 
@@ -409,7 +413,7 @@ def _reorder_grad_axes_multi_measure(
         new_grad = _swap_two_axes(grads, num_params, num_measurements)
     else:
         new_grad = []
-        for i in range(num_shot_vec_components):
+        for i in range(len_shot_vec):
             shot_vec_grad = []
             for j in range(num_measurements):
                 measurement_grad = []
@@ -450,7 +454,7 @@ def _expval_param_shift_tuple(
                 saving a quantum evaluation.
             broadcast (bool): Whether or not to use parameter broadcasting to create the
                 a single broadcasted tape per operation instead of one tape per shift angle.
-            shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
+            shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes outputted by this
                 transform. Note that this argument doesn't influence the shots used for tape execution, but provides
                 information to the transform about the device shots and helps in determining if a shot sequence was used
                 to define the device shots for the new return types output system.
@@ -506,9 +510,7 @@ def _expval_param_shift_tuple(
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size))
 
     def processing_fn(results):
-        start = 1 if at_least_one_unshifted and f0 is None else 0
-        r0 = f0 or results[0]
-
+        start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
         single_measure = len(tape.measurements) == 1
         single_param = len(tape.trainable_params) == 1
         shot_vector = isinstance(shots, Sequence)
@@ -548,11 +550,9 @@ def _expval_param_shift_tuple(
             return grads[0]
 
         num_params = len(tape.trainable_params)
-        num_shot_vec_components = len(shots) if shot_vector else None
+        len_shot_vec = _get_num_copies(shots) if shot_vector else None
         if single_measure and shot_vector:
-            return _reorder_grad_axes_single_measure_shot_vector(
-                grads, num_params, num_shot_vec_components
-            )
+            return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
         if not single_measure:
             shot_vector_multi_measure = not single_measure and shot_vector
             num_measurements = len(tape.measurements)
@@ -560,7 +560,7 @@ def _expval_param_shift_tuple(
                 grads,
                 num_params,
                 num_measurements,
-                num_shot_vec_components,
+                len_shot_vec,
                 shot_vector_multi_measure,
             )
 
@@ -676,8 +676,7 @@ def expval_param_shift(
             results = [qml.math.squeeze(res) for res in results]
 
         grads = []
-        start = 1 if at_least_one_unshifted and f0 is None else 0
-        r0 = f0 or results[0]
+        start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
 
         for data in gradient_data:
 
@@ -876,8 +875,8 @@ def _create_variance_proc_fn(
         # Note: if pdA2 != 0, then len(pdA2) == len(pdA)
         if shot_vector:
             final_res = []
-            num_shot_components = len(f0)
-            for idx_shot_comp in range(num_shot_components):
+            len_shot_vec = _get_num_copies(shots)
+            for idx_shot_comp in range(len_shot_vec):
                 f0_comp = f0[idx_shot_comp]
 
                 pdA_comp = pdA[idx_shot_comp]
@@ -1505,13 +1504,13 @@ def _param_shift_new(
                 supported_grads = fn(supported_res)
                 return _single_shot_batch_grad(unsupported_grads, supported_grads)
 
-            num_shot_vec_components = len(shots)
+            len_shot_vec = _get_num_copies(shots)
 
             supported_grads = fn(supported_res)
             unsupported_grads = fallback_proc_fn(unsupported_res)
 
             final_grad = []
-            for idx in range(num_shot_vec_components):
+            for idx in range(len_shot_vec):
                 u_grads = unsupported_grads[idx]
                 sup = supported_grads[idx]
                 final_grad.append(_single_shot_batch_grad(u_grads, sup))
