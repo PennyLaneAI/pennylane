@@ -9,8 +9,14 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
-  * Add `_Probs` class.
+  * Add `_Sample` class.
+    [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
+
+  * Add `_Probability` class.
     [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+
+  * Add `_Var` class.
+    [#3312](https://github.com/PennyLaneAI/pennylane/pull/3312)
 
 <h3>Improvements</h3>
 
