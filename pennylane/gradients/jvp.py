@@ -177,6 +177,8 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
             matching the number of trainable parameters.
         gradient_fn (callable): the gradient transform to use to differentiate
             the tape
+        shots (None, int, list[int]): The device shots that will be used to
+            execute the tapes outputted by this
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
 
@@ -258,6 +260,8 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
             matching the output shape of the corresponding tape.
         gradient_fn (callable): the gradient transform to use to differentiate
             the tapes
+        shots (None, int, list[int]): The device shots that will be used to
+            execute the tapes outputted by this
         reduction (str): Determines how the Jacobian-vector products are returned.
             If ``append``, then the output of the function will be of the form
             ``List[tensor_like]``, with each element corresponding to the JVP of each
