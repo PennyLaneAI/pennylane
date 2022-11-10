@@ -292,7 +292,6 @@ def _execute_with_fwd(
             jacobian_shape.append(o)
 
         res, jacs = jax.pure_callback(
-
             wrapper, tuple([fwd_shape_dtype_struct, jacobian_shape]), params
         )
         return res, jacs
