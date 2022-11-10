@@ -1,17 +1,18 @@
 """
 Contains the transpiler transform.
 """
-from typing import Union, List
+from typing import List, Union
+
 import networkx as nx
 
 import pennylane as qml
-from pennylane import apply, Hamiltonian
-from pennylane.ops.qubit import SWAP
+from pennylane import Hamiltonian, apply
 from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
+from pennylane.ops.qubit import SWAP
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
@@ -69,7 +70,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
     >>> dev = qml.device('default.qubit', wires=[0, 1, 2, 3])
     >>> transpiled_circuit = qml.transforms.transpile(coupling_map=[(0, 1), (1, 3), (3, 2), (2, 0)])(circuit)
-    >>> transpiled_qnode = qml.QNode(circuit, dev)
+    >>> transpiled_qnode = qml.QNode(transpiled_circuit, dev)
     >>> print(qml.draw(transpiled_qnode)())
     0: ─╭●────────────────╭●─┤ ╭Probs
     1: ─╰X─╭●───────╭●────│──┤ ├Probs
