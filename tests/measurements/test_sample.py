@@ -34,14 +34,17 @@ class TestSample:
             return
         if sys.version_info[1] <= 7:
             return  # skip tests for python@3.7 because call_args.kwargs is a tuple instead of a dict
+
+        assert len(self.spy.call_args_list) > 0  # make sure method is mocked properly
+
         samples = self.dev._samples
         for call_args in self.spy.call_args_list:
-            meas = call_args.args[0]
+            meas = call_args.args[1]
             shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
             if isinstance(meas, Operator):
                 meas = qml.sample(op=meas)
             assert qml.math.allequal(
-                self.dev.sample(*call_args.args, **call_args.kwargs),
+                self.dev.sample(call_args.args[1], **call_args.kwargs),
                 meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size),
             )
 
@@ -50,8 +53,7 @@ class TestSample:
         n_sample = 10
 
         self.dev = qml.device("default.qubit", wires=2, shots=n_sample)
-
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -68,7 +70,7 @@ class TestSample:
         n_sample = 10
 
         self.dev = qml.device("default.qubit", wires=3, shots=n_sample)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev, diff_method="parameter-shift")
         def circuit():
@@ -88,7 +90,7 @@ class TestSample:
         n_sample = 10
 
         self.dev = qml.device("default.qubit", wires=1, shots=n_sample)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -107,7 +109,7 @@ class TestSample:
         n_sample = 10
 
         self.dev = qml.device("default.qubit", wires=3, shots=n_sample)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -127,7 +129,7 @@ class TestSample:
         n_sample = 10
 
         self.dev = qml.device("default.qubit", wires=3, shots=n_sample)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev, diff_method="parameter-shift")
         def circuit():
@@ -146,7 +148,7 @@ class TestSample:
         """Test that a UserWarning is raised if the provided
         argument might not be hermitian."""
         self.dev = qml.device("default.qubit", wires=2, shots=10)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -160,7 +162,7 @@ class TestSample:
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
         n_shots = 10
         self.dev = qml.device("default.qubit", wires=1, shots=n_shots)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -189,7 +191,7 @@ class TestSample:
     def test_providing_no_observable_and_no_wires(self, mocker):
         """Test that we can provide no observable and no wires to sample function"""
         self.dev = qml.device("default.qubit", wires=2, shots=1000)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -210,7 +212,7 @@ class TestSample:
         shots2 = 10
         shots3 = 1000
         self.dev = qml.device("default.qubit", wires=num_wires, shots=[shots1, shots2, shots3])
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
@@ -230,7 +232,7 @@ class TestSample:
         wires = [0, 2]
         wires_obj = qml.wires.Wires(wires)
         self.dev = qml.device("default.qubit", wires=3, shots=1000)
-        self.spy = mocker.spy(self.dev, "sample")
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(self.dev)
         def circuit():
