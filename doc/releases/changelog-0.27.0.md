@@ -12,12 +12,12 @@
   Datasets are hosted on Xanadu Cloud and can be downloaded by using `qml.data.load()`:
 
   ```pycon
-  >>> H2_datasets = qml.data.load(
-    data_name="qchem", molname="H2", basis="STO-3G", bondlength=1.1
-  )
-  >>> print(H2_datasets)
-  [<Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>]
-  >>> H2data = H2_datasets[0]
+>>> H2_datasets = qml.data.load(
+...   data_name="qchem", molname="H2", basis="STO-3G", bondlength=1.1
+... )
+>>> H2data = H2_datasets[0]
+>>> H2data
+<Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>
   ```
 
   - Datasets available to be downloaded can be listed with `qml.data.list_datasets()`.
@@ -26,43 +26,43 @@
 
     ```pycon
     >>> H2_hamiltonian = qml.data.load(
-      data_name="qchem", molname="H2", basis="STO-3G", bondlength=1.1,
-      attributes=["molecule", "hamiltonian"]
-    )[0]
+    ... data_name="qchem", molname="H2", basis="STO-3G", bondlength=1.1,
+    ... attributes=["molecule", "hamiltonian"]
+    ... )[0]
     >>> H2_hamiltonian.hamiltonian
     <Hamiltonian: terms=15, wires=[0, 1, 2, 3]>
     ```
 
     The available attributes can be found using `qml.data.list_attributes()`:
 
-  - To select data interactively, we can use `qml.data.load_interactive`:
+  - To select data interactively, we can use `qml.data.load_interactive()`:
 
   ```pycon
   >>> qml.data.load_interactive()
-        Please select a data name:
-            1) qspin
-            2) qchem
-        Choice [1-2]: 1
-        Please select a sysname:
-            ...
-        Please select a periodicity:
-            ...
-        Please select a lattice:
-            ...
-        Please select a layout:
-            ...
-        Please select attributes:
-            ...
-        Force download files? (Default is no) [y/N]: N
-        Folder to download to? (Default is pwd, will download to /datasets subdirectory): /Users/jovyan/Downloads
+  Please select a data name:
+      1) qspin
+      2) qchem
+  Choice [1-2]: 1
+  Please select a sysname:
+      ...
+  Please select a periodicity:
+      ...
+  Please select a lattice:
+      ...
+  Please select a layout:
+      ...
+  Please select attributes:
+      ...
+  Force download files? (Default is no) [y/N]: N
+  Folder to download to? (Default is pwd, will download to /datasets subdirectory):
 
-        Please confirm your choices:
-        dataset: qspin/Ising/open/rectangular/4x4
-        attributes: ['parameters', 'ground_states']
-        force: False
-        dest folder: /Users/jovyan/Downloads/datasets
-        Would you like to continue? (Default is yes) [Y/n]:
-        <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
+  Please confirm your choices:
+  dataset: qspin/Ising/open/rectangular/4x4
+  attributes: ['parameters', 'ground_states']
+  force: False
+  dest folder: datasets
+  Would you like to continue? (Default is yes) [Y/n]:
+  <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
   ```
 
   - Once a dataset is loaded, its properties can be accessed as follows:
@@ -85,12 +85,12 @@
   >>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], observables=[qml.PauliZ(wires=0),qml.PauliX(wires=1)])
   >>> example_energies, _ = np.linalg.eigh(qml.matrix(example_hamiltonian))
   >>> example_dataset = qml.data.Dataset(
-    data_name = 'Example', hamiltonian=example_hamiltonian, energies=example_energies
-  )
+... data_name = 'Example', hamiltonian=example_hamiltonian, energies=example_energies
+... )
   >>> example_dataset.data_name
   'Example'
   >>> example_dataset.hamiltonian
-      (0.5) [X1]
+    (0.5) [X1]
   + (1) [Z0]
   >>> example_dataset.energies
   array([-1.5, -0.5,  0.5,  1.5])
@@ -116,7 +116,7 @@
 * Optimizing quantum circuits can now be done *adaptively* with `qml.AdaptiveOptimizer`.
   [(#3192)](https://github.com/PennyLaneAI/pennylane/pull/3192)
 
-  The `qml.AdaptiveOptimizer` optimizer takes an initial circuit and a collection of operators as input and adds a selected gate to the circuit at each optimization step. The process of growing the circuit can be repeated until the circuit gradients converge to zero within a given threshold. The adaptive optimizer can be used to implement algorithms such as ADAPT-VQE as shown in the following example.
+  The `qml.AdaptiveOptimizer` takes an initial circuit and a collection of operators as input and adds a selected gate to the circuit at each optimization step. The process of growing the circuit can be repeated until the circuit gradients converge to zero within a given threshold. The adaptive optimizer can be used to implement algorithms such as ADAPT-VQE as shown in the following example.
 
   Firstly, we define some preliminary variables needed for VQE:
 
@@ -201,6 +201,11 @@
   [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
 
   ```python
+  from pennylane import numpy as np
+  import torch
+  import tensorflow as tf
+  from jax import numpy as jnp
+
   dev = qml.device("default.qubit", wires=2)
   @qml.qnode(dev, interface="auto")
   def circuit(weight):
@@ -256,7 +261,7 @@
 
   Note that this change depends on `jax.pure_callback`, which requires `jax>=0.3.17`.
 
-<h4>The `qml.pauli` module 👀</h4>
+<h4>Construct Pauli words and sentences 🔤</h4>
 
 * We've reorganized and grouped everything in PennyLane responsible for manipulating Pauli operators into a `pauli` module. The `grouping` module has been deprecated as a result, and logic was moved from `pennylane/grouping` to `pennylane/pauli/grouping`.
   [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
@@ -338,7 +343,7 @@
     >>> tap_op = qml.qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
     ...                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
     >>> tap_op(3.14159)
-    [Exp(1.570795j, 'PauliY', wires=[0])]
+    [Exp(1.5707949999999993j PauliY)]
   ```
 
   Moreover, the obtained tapered operation can be used directly within a QNode.
@@ -351,8 +356,8 @@
     ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
-        0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
-        1: ───────────────────────┤ ╰<Z@Z>
+    0: ──Exp(0.00+1.57j Y)─┤ ╭<Z@Z>
+    1: ────────────────────┤ ╰<Z@Z>
   ```
 
 * Functionality has been added to estimate the number of measurements required to compute an expectation value with a target error and estimate the error in computing an expectation value with a given number of measurements.
@@ -528,7 +533,7 @@
 * The `Exp` class decomposes into a `PauliRot` class if the coefficient is imaginary and the base operator is a Pauli Word.
   [(#3249)](https://github.com/PennyLaneAI/pennylane/pull/3249)
 
-* `qml.sample` and `qml.counts` function more efficiently and track if computational basis samples are being generated when they are called without specifying an observable.
+* `qml.sample` and `qml.counts` work more efficiently and track if computational basis samples are being generated when they are called without specifying an observable.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 
 * The parameters of a basis set containing a different number of Gaussian functions are now easier to differentiate.
@@ -565,7 +570,7 @@
   - `AnnotatedQueue` and its children no longer inherit from `QueuingManager`.
   - `QueuingManager` is no longer a context manager.
   - Recording queues should start and stop recording via the `QueuingManager.add_active_queue` and
-  -  `QueuingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
+    `QueuingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
   - `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information is now only available through `QueuingManager`.
   - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`, and `_get_info` methods. The public analogues should be used instead.
   - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info` are deprecated.  Their functionality is moved to `update_info`.
