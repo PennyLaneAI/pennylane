@@ -71,19 +71,19 @@ def enable_return():
         * :func:`~.pennylane.execute`
         * Gradient transforms
 
-          # :func:`~.pennylane.param_shift`;
-          # :func:`~.pennylane.finite_diff`;
-          # :func:`~.pennylane.hessian_transform`;
-          # :func:`~.pennylane.param_shift_hessian`.
+          #. :func:`~.pennylane.gradients.param_shift`;
+          #. :func:`~.pennylane.gradients.finite_diff`;
+          #. :class:`~.pennylane.gradients.hessian_transform`;
+          #. :func:`~.pennylane.gradients.param_shift_hessian`.
 
         * Interfaces
 
-          # Autograd;
-          # TensorFlow;
-          # JAX (without jitting);
+          #. Autograd;
+          #. TensorFlow;
+          #. JAX (without jitting);
 
         * PennyLane optimizers
-        * :meth:`~.QuantumTape.shape`
+        * :meth:`~.pennylane.tape.QuantumTape.shape`
 
     Note that this is an experimental feature and may not support every feature in PennyLane. See the ``Usage Details``
     section for more details.
@@ -91,10 +91,14 @@ def enable_return():
     .. details::
         :title: Usage Details
 
-        Autograd and TensorFlow only allow differentiating functions that have array or tensor outputs. QNodes that
-        have multiple measurements may output other sequences.
+        Gotcha: Autograd and TensorFlow can only compute gradients of tensor-valued functions
+        #####################################################################################
 
-        To bypass this, a function that post-processes QNode results may be used to get derivatives of the QNode:
+        Autograd and TensorFlow only allow differentiating functions that have array or tensor outputs. QNodes that
+        have multiple measurements may output other sequences with the new return types may cause errors with Autograd
+        or TensorFlow. This issue can be overcome by stacking the QNode results before computing derivatives.
+
+        **Solution for Autograd**
 
         .. code-block:: python
 
@@ -120,13 +124,72 @@ def enable_return():
         >>> qml.jacobian(cost)(a, b)
         (array([-0.09983342,  0.01983384]), array([-5.54649074e-19, -9.75170327e-01]))
 
-        Attempting compute the gradient of the QNode would result in the following error with Autograd:
+        If no stacking is performed, Autograd raises the following error:
 
         .. code-block:: python
 
             TypeError: 'ArrayVSpace' object cannot be interpreted as an integer
 
-        The new return types system unlocks the use of ``probs`` mixed with different measurements in backpropagation with JAX:
+        **Solution for TensorFlow**
+
+        .. code-block:: python
+
+            a = tf.Variable(0.1, dtype=tf.float64)
+            b = tf.Variable(0.2, dtype=tf.float64)
+
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+            def circuit(a, b):
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+                return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+
+            with tf.GradientTape() as tape:
+                res = circuit(a, b)
+                res = tf.stack(res)
+
+            assert circuit.qtape.trainable_params == [0, 1]
+
+            tape.jacobian(res, [a, b])
+
+        If no stacking is performed, TensorFlow raises the following error:
+
+        .. code-block:: python
+
+            AttributeError: 'tuple' object has no attribute 'shape'
+
+        JAX interface upgrades: higher-order derivatives and mixing measurements
+        ########################################################################
+
+        Higher-order derivatives can now be computed with the JAX interface:
+
+        .. code-block:: python
+
+            import jax
+
+            qml.enable_return()
+
+            dev = qml.device("lightning.qubit", wires=2)
+
+            par_0 = jax.numpy.array(0.1)
+            par_1 = jax.numpy.array(0.2)
+
+            @qml.qnode(dev, interface="jax", diff_method="parameter-shift", max_diff=2)
+            def circuit(x, y):
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        >>> jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        ((DeviceArray(-0.19767681, dtype=float32, weak_type=True),
+          DeviceArray(-0.09784342, dtype=float32, weak_type=True)),
+         (DeviceArray(-0.09784339, dtype=float32, weak_type=True),
+          DeviceArray(-0.19767687, dtype=float32, weak_type=True)))
+
+        The new return types system also unlocks the use of ``probs`` mixed with different measurements with JAX:
 
         .. code-block:: python
 
@@ -143,18 +206,16 @@ def enable_return():
               qml.CNOT(wires=(0, 1))
               qml.RY(a[1], wires=1)
               qml.RZ(a[2], wires=1)
-              return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1]), qml.vn_entropy(wires=1)
+              return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1])
 
             x = jax.numpy.array([0.1, 0.2, 0.3])
 
-        >>> res = jax.jacobian(circuit)(x)
-        >>> res
-        (DeviceArray([-9.9833414e-02, -7.4505806e-09, -3.9932679e-10], dtype=float32),
-        DeviceArray([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
-                   [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
-                   [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
-                   [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32),
-        DeviceArray([ 2.9899091e-01, -4.4703484e-08,  9.5104014e-10], dtype=float32))
+        >>> jax.jacobian(circuit)(x)
+        (DeviceArray([-9.9833414e-02, -7.4505806e-09,  6.9285655e-10], dtype=float32),
+         DeviceArray([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
+                      [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
+                      [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
+                      [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32))
 
         where before the following error was raised:
 
