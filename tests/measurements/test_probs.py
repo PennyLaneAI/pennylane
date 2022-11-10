@@ -63,20 +63,14 @@ class TestProbs:
                 call_args.kwargs["shot_range"],
                 call_args.kwargs["bin_size"],
             )
-            meas = qml.probs(
-                wires=wires
-            )  # no need to use an operator because it has already applied to the state
-            assert qml.math.allequal(
-                self.dev.analytic_probability(wires=wires),
-                meas.process_state(state=state, device_wires=self.dev.wires),
-            )
-            if samples is not None:
-                assert qml.math.allequal(
-                    self.dev.estimate_probability(
-                        wires=wires, shot_range=shot_range, bin_size=bin_size
-                    ),
-                    meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size),
-                )
+            # no need to use op, because the observable has already been applied to ``self.dev._state``
+            meas = qml.probs(wires=wires)
+            old_res = self.dev.probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
+            if self.dev.shots is None:
+                new_res = meas.process_state(state=state, device_wires=self.dev.wires)
+            else:
+                new_res = meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size)
+            assert qml.math.allequal(old_res, new_res)
 
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
     def test_numeric_type(self, wires):
