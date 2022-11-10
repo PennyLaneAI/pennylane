@@ -162,11 +162,13 @@ def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
     """Compute the gradient for multiple measurements by taking the linear combination of the coefficients and each
     measurement result."""
     g = []
+    if r0 is None:
+        r0 = [None] * num_measurements
     for meas_idx in range(num_measurements):
 
         # Gather the measurement results
         meas_result = [param_result[meas_idx] for param_result in res]
-        g_component = _single_meas_grad(meas_result, coeffs, unshifted_coeff, r0)
+        g_component = _single_meas_grad(meas_result, coeffs, unshifted_coeff, r0[meas_idx])
         g.append(g_component)
 
     return tuple(g)
@@ -197,6 +199,8 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
         # Res has order of axes:
         # 1. Number of parameters
         # 2. Shot vector
+        if r0 is None:
+            r0 = [None] * len_shot_vec
         for i in range(len_shot_vec):
             shot_comp_res = [r[i] for r in res]
             shot_comp_res = _single_meas_grad(shot_comp_res, coeffs, unshifted_coeff, r0[i])
@@ -506,9 +510,7 @@ def _expval_param_shift_tuple(
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, g_tapes[0].batch_size))
 
     def processing_fn(results):
-        start = 1 if at_least_one_unshifted and f0 is None else 0
-        r0 = f0 or results[0]
-
+        start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
         single_measure = len(tape.measurements) == 1
         single_param = len(tape.trainable_params) == 1
         shot_vector = isinstance(shots, Sequence)
@@ -674,8 +676,7 @@ def expval_param_shift(
             results = [qml.math.squeeze(res) for res in results]
 
         grads = []
-        start = 1 if at_least_one_unshifted and f0 is None else 0
-        r0 = f0 or results[0]
+        start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
 
         for data in gradient_data:
 
@@ -1210,9 +1211,9 @@ def _param_shift_new(
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]] or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode, a tensor, tuple or tuple of tuple
-          representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
-          is returned.
+        - If the input is a QNode, an object representing the output Jacobian matrix.
+          The type of the object returned is either a tensor, a tuple or a nested tuple depending on the nesting
+          structure of the output.
 
         - If the input is a tape, a tuple containing a list of generated tapes,
           in addition to a post-processing function to be applied to the
@@ -1290,9 +1291,10 @@ def _param_shift_new(
     >>> qml.jacobian(circuit)(params)
     tensor([-0.38751725, -0.18884792, -0.38355708], requires_grad=True)
 
-    For QNode integration with Autograd respectively TensorFlow and multiple measurements, the results need to be
-    stacked before differentiate them. It is because those frameworks do not support differentiating tuple. On the other
-    side no additional requirement is needed for Jax and Torch.
+    When differentiating QNodes with multiple measurements using Autograd or TensorFlow, the outputs of the QNode first
+    need to be stacked. The reason is that those two frameworks only allow differentiating functions with array or
+    tensor outputs, instead of functions that output sequences. In contrast, Jax and Torch require no additional
+    post-processing.
 
     >>> import jax
     >>> dev = qml.device("default.qubit", wires=2)
