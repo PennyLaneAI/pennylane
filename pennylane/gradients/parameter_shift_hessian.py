@@ -704,8 +704,7 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
 def _param_shift_hessian_tuple(
     tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
 ):
-    r"""
-    Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
+    r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
     parameters. This is the Hessian transform to replace the old one in the new return types system
 
     Use this transform to explicitly generate and explore parameter-shift circuits for computing
