@@ -90,7 +90,7 @@ class TRX(Operation):
     _index_dict = {(0, 1): 1, (0, 2): 4, (1, 2): 6}
 
     def generator(self):
-        return -0.5 * qml.GellMann(self._index_dict[self.subspace], self.wires)
+        return -0.5 * qml.GellMann(self.wires, index=self._index_dict[self.subspace])
 
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
