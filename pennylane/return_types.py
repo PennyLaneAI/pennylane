@@ -151,6 +151,30 @@ def enable_return():
 
             tape.jacobian(res, [a, b])
 
+        If the measurements do not have the same shape then you need to use concatenation:
+
+        .. code-block:: python
+
+            a = tf.Variable(0.1, dtype=tf.float64)
+            b = tf.Variable(0.2, dtype=tf.float64)
+
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+            def circuit(a, b):
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+                return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+            with tf.GradientTape() as tape:
+                res = circuit(a, b)
+                res = tf.concat([tf.reshape(i, [-1]) for i in res], 0)
+
+            assert circuit.qtape.trainable_params == [0, 1]
+
+            tape.jacobian(res, [a, b])
+
         If no stacking is performed, TensorFlow raises the following error:
 
         .. code-block:: python
