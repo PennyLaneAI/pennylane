@@ -96,7 +96,7 @@ class TestPauliWord:
         (pw1, "X(1) @ Y(2)"),
         (pw2, "X(a) @ X(b) @ Z(c)"),
         (pw3, "Z(0) @ Z(b) @ Z(c)"),
-        (pw4, "I"),
+        (pw4, "()"),
     )
 
     @pytest.mark.parametrize("pw, str_rep", tup_pw_str)
@@ -185,9 +185,8 @@ class TestPauliSentence:
             ps2,
             "-1.23 * X(1) @ Y(2)\n" "+ (-0-4j) * X(a) @ X(b) @ Z(c)\n" "+ 0.5 * Z(0) @ Z(b) @ Z(c)",
         ),
-        (ps3, "-0.5 * Z(0) @ Z(b) @ Z(c)\n" "+ 1 * I"),
-        (ps4, "1 * I"),
-        (ps5, "I"),
+        (ps3, "-0.5 * Z(0) @ Z(b) @ Z(c)\n" "+ 1 * ()"),
+        (ps4, "1 * ()"),
     )
 
     @pytest.mark.parametrize("ps, str_rep", tup_ps_str)

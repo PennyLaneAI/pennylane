@@ -10,7 +10,7 @@ name: Sync release candidate with master
 on:
   # Scheduled trigger every weekday at 2:47am UTC
   schedule:
-  - cron:  '47 2 * * 1-5'
+    - cron: "47 2 * * 1-5"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -74,4 +74,4 @@ jobs:
           pr_body: "Automatic sync from the release candidate to master during a feature freeze."
           pr_allow_empty: false
           pr_draft: false
-          pr_reviewer: "Jaybsoni,albi3ro"
+          pr_reviewer: "antalszava,dime10"

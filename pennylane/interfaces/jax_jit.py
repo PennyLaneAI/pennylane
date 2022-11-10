@@ -31,11 +31,11 @@ dtype = jnp.float64
 
 def _validate_jax_version():
     if semantic_version.match("<0.3.17", jax.__version__) or semantic_version.match(
-        "<0.3.15", jax.lib.__version__
+        "<0.3.17", jax.lib.__version__
     ):
         msg = (
-            "The JAX JIT interface of PennyLane requires version 0.3.17 or higher for JAX "
-            "and 0.3.15 or higher JAX lib. Please upgrade these packages."
+            "The JAX JIT interface of PennyLane requires version 0.3.17 or higher for JAX and JAX lib. "
+            "Please upgrade these packages."
         )
         raise InterfaceUnsupportedError(msg)
 
@@ -164,7 +164,7 @@ def _execute(
             return res
 
         shape_dtype_structs = _extract_shape_dtype_structs(tapes, device)
-        res = jax.pure_callback(wrapper, shape_dtype_structs, params)
+        res = jax.pure_callback(wrapper, shape_dtype_structs, params)  # pylint: disable=no-member
         return res
 
     def wrapped_exec_fwd(params):
@@ -204,7 +204,7 @@ def _execute(
                 return np.concatenate(res)
 
             args = tuple(params) + (g,)
-            vjps = jax.pure_callback(
+            vjps = jax.pure_callback(  # pylint: disable=no-member
                 non_diff_wrapper,
                 jax.ShapeDtypeStruct((total_params,), dtype),
                 args,
@@ -244,7 +244,7 @@ def _execute(
             jax.ShapeDtypeStruct((len(t.measurements), len(p)), dtype)
             for t, p in zip(tapes, params)
         ]
-        jacs = jax.pure_callback(jacs_wrapper, shapes, params)
+        jacs = jax.pure_callback(jacs_wrapper, shapes, params)  # pylint: disable=no-member
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
         res = [[jnp.array(p) for p in v] for v in vjps]
         return (tuple(res),)
@@ -291,7 +291,7 @@ def _execute_with_fwd(
             o = jax.ShapeDtypeStruct(tuple(shape), _dtype)
             jacobian_shape.append(o)
 
-        res, jacs = jax.pure_callback(
+        res, jacs = jax.pure_callback(  # pylint: disable=no-member
             wrapper, tuple([fwd_shape_dtype_struct, jacobian_shape]), params
         )
         return res, jacs

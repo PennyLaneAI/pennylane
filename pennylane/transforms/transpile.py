@@ -1,18 +1,17 @@
 """
 Contains the transpiler transform.
 """
-from typing import List, Union
-
+from typing import Union, List
 import networkx as nx
 
 import pennylane as qml
-from pennylane import Hamiltonian, apply
+from pennylane import apply, Hamiltonian
+from pennylane.ops.qubit import SWAP
 from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
-from pennylane.ops.qubit import SWAP
-from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
