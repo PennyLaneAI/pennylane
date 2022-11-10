@@ -1208,9 +1208,9 @@ def _param_shift_new(
             device shots for the new return types output system.
 
     Returns:
-        tensor_like or tuple[list[QuantumTape], function]:
+        tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]] or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode, a tensor
+        - If the input is a QNode, a tensor, tuple or tuple of tuple
           representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
           is returned.
 
@@ -1280,16 +1280,31 @@ def _param_shift_new(
     to use during autodifferentiation:
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
+    >>> @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
+    ... def circuit(params):
+    ...     qml.RX(params[0], wires=0)
+    ...     qml.RY(params[1], wires=0)
+    ...     qml.RX(params[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> qml.jacobian(circuit)(params)
+    tensor([-0.38751725, -0.18884792, -0.38355708], requires_grad=True)
+
+    For QNode integration with Autograd respectively TensorFlow and multiple measurements, the results need to be
+    stacked before differentiate them. It is because those frameworks do not support differentiating tuple. On the other
+    side no additional requirement is needed for Jax and Torch.
+
+    >>> import jax
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
     ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> qml.jacobian(circuit)(params)
-    tensor([[-0.38751725, -0.18884792, -0.38355708],
-            [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+    >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+    >>> jax.jacobian(circuit)(params)
+    (DeviceArray([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32), DeviceArray([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
 
     .. note::
 
@@ -1333,8 +1348,12 @@ def _param_shift_new(
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
         >>> qml.gradients.param_shift(circuit)(params)
-        tensor([[-0.38751725, -0.18884792, -0.38355708],
-                [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+        ((tensor(-0.38751724, requires_grad=True),
+          tensor(-0.18884792, requires_grad=True),
+          tensor(-0.38355709, requires_grad=True)),
+         (tensor(0.69916868, requires_grad=True),
+          tensor(0.34072432, requires_grad=True),
+          tensor(0.69202366, requires_grad=True)))
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum

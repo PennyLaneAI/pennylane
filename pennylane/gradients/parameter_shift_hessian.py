@@ -547,8 +547,8 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
 
     >>> x = np.array([0.5, 0.2], requires_grad=True)
     >>> qml.gradients.param_shift_hessian(circuit)(x)
-    ((array(-0.86883595), array(0.04762358)),
-     (array(0.04762358), array(0.05998862)))
+    tensor([[-0.86883595,  0.04762358],
+            [ 0.04762358,  0.05998862]], requires_grad=True)
 
     .. details::
         :title: Usage Details
@@ -565,8 +565,8 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         >>> all(isinstance(tape, qml.tape.QuantumTape) for tape in hessian_tapes)
         True
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
-        ((array(-0.86883595), array(0.04762358)),
-         (array(0.04762358), array(0.05998862)))
+        array([[-0.86883595,  0.04762358],
+               [ 0.04762358,  0.05998862]])
 
         The Hessian tapes can be inspected via their draw function, which reveals the different
         gate arguments generated from parameter-shift rules (we only draw the first four out of
@@ -618,7 +618,8 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
 
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape, argnum=(1,))
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
-        ((array(0.), array(0.)), (array(0.), array(0.05998862)))
+        array([[0.        , 0.        ],
+               [0.        , 0.05998862]])
 
     """
     if qml.active_return():
@@ -703,8 +704,7 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
 def _param_shift_hessian_tuple(
     tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
 ):
-    r"""TODO: Update docstring examples
-
+    r"""
     Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
     parameters. This is the Hessian transform to replace the old one in the new return types system
 
@@ -772,8 +772,8 @@ def _param_shift_hessian_tuple(
 
     >>> x = np.array([0.5, 0.2], requires_grad=True)
     >>> qml.gradients.param_shift_hessian(circuit)(x)
-    tensor([[-0.86883595,  0.04762358],
-            [ 0.04762358,  0.05998862]], requires_grad=True)
+    ((array(-0.86883595), array(0.04762358)),
+     (array(0.04762358), array(0.05998862)))
 
     .. details::
         :title: Usage Details
@@ -790,8 +790,8 @@ def _param_shift_hessian_tuple(
         >>> all(isinstance(tape, qml.tape.QuantumTape) for tape in hessian_tapes)
         True
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
-        array([[-0.86883595,  0.04762358],
-               [ 0.04762358,  0.05998862]])
+        ((array(-0.86883595), array(0.04762358)),
+         (array(0.04762358), array(0.05998862)))
 
         The Hessian tapes can be inspected via their draw function, which reveals the different
         gate arguments generated from parameter-shift rules (we only draw the first four out of
@@ -843,8 +843,7 @@ def _param_shift_hessian_tuple(
 
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape, argnum=(1,))
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
-        array([[0.        , 0.        ],
-               [0.        , 0.05998862]])
+        ((array(0.), array(0.)), (array(0.), array(0.05998862)))
 
     """
 

@@ -218,6 +218,41 @@ def enable_return():
         .. code-block:: python
 
             ValueError: All input arrays must have the same shape.
+
+        The new return types system also unlocks the use of shot vectors with all the previous features. For example you
+        can take the second derivative and multiple measurement with with JAX:
+
+        .. code-block:: python
+
+            import jax
+
+            qml.enable_return()
+
+            dev = qml.device("default.qubit", wires=2, shots=(1, 10000))
+
+            params = jax.numpy.array([0.1, 0.2])
+
+            @qml.qnode(dev, interface="jax", diff_method="parameter-shift", max_diff=2)
+            def circuit(x):
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+
+        >>> jax.hessian(circuit)(params)
+        ((DeviceArray([[ 0.,  0.],
+                        [ 2., -3.]], dtype=float32),
+          DeviceArray([[[-0.5,  0. ],
+                       [ 0. ,  0. ]],
+                      [[ 0.5,  0. ],
+                       [ 0. ,  0. ]]], dtype=float32)),
+         (DeviceArray([[ 0.07677898,  0.0563341 ],
+                       [ 0.07238522, -1.830669  ]], dtype=float32),
+          DeviceArray([[[-4.9707499e-01,  2.9999996e-04],
+                        [-6.2500127e-04,  1.2500001e-04]],
+                       [[ 4.9707499e-01, -2.9999996e-04],
+                        [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
+
     """
 
     global __activated
