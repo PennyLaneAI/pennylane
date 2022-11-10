@@ -12,6 +12,9 @@
   * Add `_Sample` class.
     [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
+  * Add `_Counts` class.
+    [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
