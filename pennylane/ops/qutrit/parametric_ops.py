@@ -39,7 +39,9 @@ class TRX(Operation):
                 \text{The qutrit basis states are defined as follows:}\\
                 \displaystyle \begin{align} |0\rangle &= \left(\begin{array}{ccc} 1 \\ 0\\ 0\end{array}\right) \;\;\;\;\;\;\;\;\;\;
                 |1\rangle = \left(\begin{array}{ccc} 0 \\ 1\\ 0\end{array}\right)\;\;\;\;\;\;\;\;\;\;
-                |2\rangle = \left(\begin{array}{ccc} 0 \\ 0\\ 1\end{array}\right) \\
+                |2\rangle = \left(\begin{array}{ccc} 0 \\ 0\\ 1\end{array}\right) \\  \end{align}
+
+    .. seealso:: :class:`~.RX`
 
     **Details:**
 
@@ -88,9 +90,7 @@ class TRX(Operation):
     _index_dict = {(0, 1): 1, (0, 2): 4, (1, 2): 6}
 
     def generator(self):
-        return -0.5 * qml.GellMann(
-            self._index_dict[self.subspace], wires=self.wires
-        )  # pylint: disable=redundant-keyword-arg
+        return -0.5 * qml.GellMann(self._index_dict[self.subspace], self.wires)
 
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
