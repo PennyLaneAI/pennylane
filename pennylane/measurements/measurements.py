@@ -710,3 +710,17 @@ class MeasurementProcess:  # TODO: Inherit from ABC
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
         """
+
+    def process_state(self, state: np.ndarray, device_wires: Wires):
+        """Process the given quantum state.
+
+        Args:
+            state (ndarray[complex]): quantum state
+            num_wires (int): total number of wires
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+        """
+        raise NotImplementedError(f"The class {self.__class__} cannot process quantum states.")
