@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the var module"""
+import sys
+
 import numpy as np
 import pytest
 
@@ -19,16 +21,45 @@ import pennylane as qml
 from pennylane.measurements import Variance
 
 
+# pylint: disable=attribute-defined-outside-init
 class TestVar:
     """Tests for the var function"""
 
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_value(self, tol, r_dtype):
-        """Test that the var function works"""
-        dev = qml.device("default.qubit", wires=2)
-        dev.R_DTYPE = r_dtype
+    # TODO: Remove this when new CustomMP are the default
+    def teardown_method(self):
+        """Method called at the end of every test. It loops over all the calls to
+        QubitDevice.sample and compares its output with the new _Sample.process method."""
+        if not getattr(self, "spy", False):
+            return
+        if sys.version_info[1] <= 7:
+            return  # skip tests for python@3.7 because call_args.kwargs is a tuple instead of a dict
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        assert len(self.spy.call_args_list) > 0  # make sure method is mocked properly
+
+        samples = self.dev._samples
+        state = self.dev._state
+        for call_args in self.spy.call_args_list:
+            obs = call_args.args[1]
+            shot_range, bin_size = (
+                call_args.kwargs["shot_range"],
+                call_args.kwargs["bin_size"],
+            )
+            meas = qml.var(op=obs)
+            old_res = self.dev.var(obs, shot_range, bin_size)
+            if samples is not None:
+                new_res = meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size)
+            else:
+                new_res = meas.process_state(state=state, device_wires=self.dev.wires)
+            assert qml.math.allequal(old_res, new_res)
+
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_value(self, tol, r_dtype, mocker):
+        """Test that the var function works"""
+        self.dev = qml.device("default.qubit", wires=2)
+        self.spy = mocker.spy(qml.QubitDevice, "var")
+        self.dev.R_DTYPE = r_dtype
+
+        @qml.qnode(self.dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.var(qml.PauliZ(0))
@@ -40,12 +71,13 @@ class TestVar:
         assert np.allclose(res, expected, atol=tol, rtol=0)
         assert res.dtype == r_dtype
 
-    def test_not_an_observable(self):
+    def test_not_an_observable(self, mocker):
         """Test that a UserWarning is raised if the provided
         argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2)
+        self.dev = qml.device("default.qubit", wires=2)
+        self.spy = mocker.spy(qml.QubitDevice, "var")
 
-        @qml.qnode(dev)
+        @qml.qnode(self.dev)
         def circuit():
             qml.RX(0.52, wires=0)
             return qml.var(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
@@ -53,11 +85,12 @@ class TestVar:
         with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             _ = circuit()
 
-    def test_observable_return_type_is_variance(self):
+    def test_observable_return_type_is_variance(self, mocker):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Variance`"""
-        dev = qml.device("default.qubit", wires=2)
+        self.dev = qml.device("default.qubit", wires=2)
+        self.spy = mocker.spy(qml.QubitDevice, "var")
 
-        @qml.qnode(dev)
+        @qml.qnode(self.dev)
         def circuit():
             res = qml.var(qml.PauliZ(0))
             assert res.return_type is Variance

@@ -16,10 +16,17 @@
 This module contains the qml.var measurement.
 """
 import warnings
+from collections import OrderedDict
+from typing import Sequence, Tuple
 
-from pennylane.operation import Operator
+import numpy as np
 
-from .measurements import MeasurementProcess, Variance
+import pennylane as qml
+from pennylane.operation import EigvalsUndefinedError, Operator
+from pennylane.wires import Wires
+
+from .measurements import Variance
+from .probs import _Probability
 
 
 def var(op: Operator):
@@ -51,4 +58,54 @@ def var(op: Operator):
     """
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
-    return MeasurementProcess(Variance, obs=op)
+    return _Variance(Variance, obs=op)
+
+
+class _Variance(_Probability):
+    """Measurement process that computes the variance of the supplied observable."""
+
+    def process(
+        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+    ):
+        # estimate the variance
+        samples = super(_Probability, self).process(
+            samples=samples, shot_range=shot_range, bin_size=bin_size
+        )
+        # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
+        # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
+        axis = -1 if bin_size is None else -2
+        # TODO: do we need to squeeze here? Maybe remove with new return types
+        return qml.math.squeeze(qml.math.var(samples, axis=axis))
+
+    def process_state(self, state: np.ndarray, device_wires: Wires):
+        try:
+            eigvals = qml.math.asarray(self.obs.eigvals())
+        except EigvalsUndefinedError as e:
+            # if observable has no info on eigenvalues, we cannot return this measurement
+            raise qml.operation.EigvalsUndefinedError(
+                f"Cannot compute analytic variance of {self.obs.name}."
+            ) from e
+
+        # the probability vector must be permuted to account for the permuted wire order of the observable
+        old_obs = self.obs
+        new_obs_wires = self._permute_wires(self.obs.wires)
+        self.obs = qml.map_wires(self.obs, dict(zip(self.obs.wires, new_obs_wires)))
+        prob = super().process_state(state=state, device_wires=device_wires)
+        self.obs = old_obs
+        # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
+        return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2
+
+    def _permute_wires(self, device_wires: Wires):
+        num_wires = len(device_wires)
+        consecutive_wires = Wires(range(num_wires))
+        wire_map = OrderedDict(zip(device_wires, consecutive_wires))
+        ordered_obs_wire_lst = sorted(self.obs.wires.tolist(), key=lambda label: wire_map[label])
+
+        mapped_wires = self.obs.wires.map(device_wires)
+        if isinstance(mapped_wires, Wires):
+            # by default this should be a Wires obj, but it is overwritten to list object in default.qubit
+            mapped_wires = mapped_wires.tolist()
+
+        permutation = np.argsort(mapped_wires)  # extract permutation via argsort
+
+        return Wires([ordered_obs_wire_lst[index] for index in permutation])
