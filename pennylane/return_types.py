@@ -91,14 +91,13 @@ def enable_return():
     .. details::
         :title: Usage Details
 
-        Gotcha: Autograd and TensorFlow can only compute gradients of tensor-valued functions
-        #####################################################################################
+        **Gotcha: Autograd and TensorFlow can only compute gradients of tensor-valued functions**
 
         Autograd and TensorFlow only allow differentiating functions that have array or tensor outputs. QNodes that
         have multiple measurements may output other sequences with the new return types may cause errors with Autograd
-        or TensorFlow. This issue can be overcome by stacking the QNode results before computing derivatives.
+        or TensorFlow.
 
-        **Solution for Autograd**
+        This issue can be overcome by stacking the QNode results before computing derivatives:
 
         .. code-block:: python
 
@@ -130,7 +129,8 @@ def enable_return():
 
             TypeError: 'ArrayVSpace' object cannot be interpreted as an integer
 
-        **Solution for TensorFlow**
+        The solution with TensorFlow is similar with the difference that stacking happens within the
+        ``tf.GradientTape()`` context:
 
         .. code-block:: python
 
@@ -160,8 +160,7 @@ def enable_return():
 
             AttributeError: 'tuple' object has no attribute 'shape'
 
-        JAX interface upgrades: higher-order derivatives and mixing measurements
-        ########################################################################
+        **JAX interface upgrades: higher-order derivatives and mixing measurements**
 
         Higher-order derivatives can now be computed with the JAX interface:
 
