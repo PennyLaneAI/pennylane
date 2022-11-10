@@ -662,12 +662,11 @@ class TestQubitIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
         with tf.GradientTape() as tape:
             res = circuit(x, y)
-            if diff_method != "backprop":
-                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+            res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
 
         expected = np.array(
             [
@@ -872,8 +871,7 @@ class TestQubitIntegration:
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(x)
-                if diff_method != "backprop":
-                    res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
             g = tape2.jacobian(res, x, experimental_use_pfor=False)
 
         hess = tape1.jacobian(g, x)
