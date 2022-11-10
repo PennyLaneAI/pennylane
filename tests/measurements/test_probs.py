@@ -50,11 +50,11 @@ class TestProbs:
         QubitDevice.sample and compares its output with the new _Sample.process method."""
         if not getattr(self, "spy", False):
             return
+        if sys.version_info[1] <= 7:
+            return  # skip tests for python@3.7 because call_args.kwargs is a tuple instead of a dict
 
         assert len(self.spy.call_args_list) > 0  # make sure method is mocked properly
 
-        if sys.version_info[1] <= 7:
-            return  # skip tests for python@3.7 because call_args.kwargs is a tuple instead of a dict
         samples = self.dev._samples
         state = self.dev._state
         for call_args in self.spy.call_args_list:
