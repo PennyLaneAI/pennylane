@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
 
-from .measurements import AllCounts, Counts, MeasurementProcess, ObservableReturnTypes
+from .measurements import AllCounts, Counts, ObservableReturnTypes, SampleMeasurement
 
 
 def counts(op=None, wires=None, all_outcomes=False):
@@ -150,7 +150,7 @@ def counts(op=None, wires=None, all_outcomes=False):
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
-class _Counts(MeasurementProcess):
+class _Counts(SampleMeasurement):
     """Measurement process that returns the samples of a given observable."""
 
     def __init__(
