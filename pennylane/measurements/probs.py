@@ -15,6 +15,7 @@
 """
 This module contains the qml.probs measurement.
 """
+from collections import OrderedDict
 from typing import Sequence, Tuple
 
 import numpy as np
@@ -249,6 +250,8 @@ class _Probability(MeasurementProcess):
             array[float]: array of the resulting marginal probabilities.
         """
         num_wires = len(device_wires)
+        consecutive_wires = Wires(range(num_wires))
+        wire_map = OrderedDict(zip(device_wires, consecutive_wires))
         dim = 2**num_wires
         batch_size = self._get_batch_size(prob, (dim,), dim)  # pylint: disable=assignment-from-none
 
@@ -260,8 +263,8 @@ class _Probability(MeasurementProcess):
         inactive_wires = Wires.unique_wires([device_wires, self.wires])
 
         # translate to wire labels used by device
-        device_wires = self.map_wires(self.wires)
-        inactive_device_wires = self.map_wires(inactive_wires)
+        mapped_wires = [wire_map[w] for w in self.wires]
+        inactive_wires = [wire_map[w] for w in inactive_wires]
 
         # reshape the probability so that each axis corresponds to a wire
         shape = [2] * num_wires
@@ -272,22 +275,22 @@ class _Probability(MeasurementProcess):
 
         # sum over all inactive wires
         # hotfix to catch when default.qubit uses this method
-        # since then device_wires is a list
-        if isinstance(inactive_device_wires, Wires):
-            inactive_device_wires = inactive_device_wires.labels
+        # since then mapped_wires is a list
+        if isinstance(inactive_wires, Wires):
+            inactive_wires = inactive_wires.labels
 
         if batch_size is not None:
-            inactive_device_wires = [idx + 1 for idx in inactive_device_wires]
+            inactive_wires = [idx + 1 for idx in inactive_wires]
         flat_shape = (-1,) if batch_size is None else (batch_size, -1)
-        prob = qml.math.reshape(qml.math.sum(prob, inactive_device_wires), flat_shape)
+        prob = qml.math.reshape(qml.math.sum(prob, axis=tuple(inactive_wires)), flat_shape)
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
         # it corresponds to the orders of the wires passed.
-        num_wires = len(device_wires)
+        num_wires = len(mapped_wires)
         basis_states = qml.QubitDevice.generate_basis_states(num_wires)
-        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
+        basis_states = basis_states[:, np.argsort(np.argsort(mapped_wires))]
 
-        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
+        powers_of_two = 2 ** np.arange(num_wires)[::-1]
         perm = basis_states @ powers_of_two
-        return qml.math.gather(prob, perm, axis=1 if batch_size is not None else 0)
+        return prob[:, perm] if batch_size is not None else prob[perm]
