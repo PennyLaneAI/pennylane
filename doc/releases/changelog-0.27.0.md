@@ -327,10 +327,10 @@
   >>> dev = qml.device("default.qubit",wires=4)
   >>> @qml.qnode(dev)
   ... def circuit():
-  ...     qml.BasisState(H2_dataset.hf_state, wires = [0, 1, 2, 3])
-  ...     for op in H2_dataset.vqe_gates:
+  ...     qml.BasisState(H2data.hf_state, wires = [0, 1, 2, 3])
+  ...     for op in H2data.vqe_gates:
   ...         qml.apply(op)
-  ...     return qml.expval(H2_dataset.hamiltonian)
+  ...     return qml.expval(H2data.hamiltonian)
   >>> print(circuit())
   -1.0791430411076344
   ```

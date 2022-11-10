@@ -34,8 +34,8 @@ The :func:`~pennylane.data.load` function returns a ``list`` with the desired da
 We can load datasets for multiple parameter values by providing a list of values instead of a single value.
 To load all possible values, use the special keyword "full".
 
->>> multiple_datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
->>> print(multiple_datasets)
+>>> H2datasets = qml.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
+>>> print(H2datasets)
 [<Dataset = description: qchem/H2/6-31G/0.5, attributes: ['molecule', 'hamiltonian', ...]>,
  <Dataset = description: qchem/H2/6-31G/1.1, attributes: ['molecule', 'hamiltonian', ...]>,
  <Dataset = description: qchem/H2/STO-3G/0.5, attributes: ['molecule', 'hamiltonian', ...]>,
