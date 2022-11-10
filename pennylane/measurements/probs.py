@@ -152,23 +152,21 @@ class _Probability(MeasurementProcess):
     def process_state(self, state: np.ndarray, device_wires: Wires):
         num_wires = len(device_wires)
         dim = 2**num_wires
-        batch_size = self._get_batch_size(state, [2] * num_wires, dim)
+        # Compute batch_size
+        expected_shape = [2] * num_wires
+        expected_size = dim
+        size = qml.math.size(state)
+        batch_size = (
+            size // expected_size
+            if qml.math.ndim(state) > len(expected_shape) or size > expected_size
+            else None
+        )
         flat_state = qml.math.reshape(
             state, (batch_size, dim) if batch_size is not None else (dim,)
         )
         real_state = qml.math.real(flat_state)
         imag_state = qml.math.imag(flat_state)
-        return self.marginal_prob(real_state**2 + imag_state**2, device_wires)
-
-    @staticmethod
-    def _get_batch_size(tensor, expected_shape, expected_size):
-        """Determine whether a tensor has an additional batch dimension for broadcasting,
-        compared to an expected_shape."""
-        size = qml.math.size(tensor)
-        if qml.math.ndim(tensor) > len(expected_shape) or size > expected_size:
-            return size // expected_size
-
-        return None
+        return self.marginal_prob(real_state**2 + imag_state**2, device_wires, batch_size)
 
     @staticmethod
     def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
@@ -216,7 +214,7 @@ class _Probability(MeasurementProcess):
 
         return prob
 
-    def marginal_prob(self, prob, device_wires):
+    def marginal_prob(self, prob, device_wires, batch_size):
         r"""Return the marginal probability of the computational basis
         states by summing the probabiliites on the non-specified wires.
 
@@ -253,8 +251,6 @@ class _Probability(MeasurementProcess):
         num_wires = len(device_wires)
         consecutive_wires = Wires(range(num_wires))
         wire_map = OrderedDict(zip(device_wires, consecutive_wires))
-        dim = 2**num_wires
-        batch_size = self._get_batch_size(prob, (dim,), dim)  # pylint: disable=assignment-from-none
 
         if self.wires is None:
             # no need to marginalize
