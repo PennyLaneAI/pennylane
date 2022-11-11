@@ -222,7 +222,7 @@ class TestProbs:
         x = np.array([0, np.pi / 2])
         res = circuit(x)
         expected = [[1.0, 0.0], [0.5, 0.5]]
-        assert np.allclose(res, expected, atol=tol, rtol=0.1)
+        assert np.allclose(res, expected, atol=0.1, rtol=0.1)
 
     @pytest.mark.autograd
     def test_numerical_analytic_diff_agree(self, tol, mocker):
