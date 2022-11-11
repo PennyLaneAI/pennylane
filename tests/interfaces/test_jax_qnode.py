@@ -1121,6 +1121,31 @@ class TestQubitIntegration:
             # to the first parameter of circuit1.
             assert circuit1.qtape.trainable_params == [1, 2]
 
+    def test_param_broadcasting_fwd_pass(self, dev_name, diff_method, mode, interface, tol):
+        """Test that parameter-broadcasting works well with JAX on the forward pass."""
+        if mode == "forward":
+            pytest.skip(
+                "This test doesn't compute Jacobians - forward mode executions involves Jacobian computation."
+            )
+
+        num_layers = 2
+        num_qubits = 3
+        weight_shapes = (2 + num_layers, num_qubits)
+
+        dev = qml.device(dev_name, wires=num_qubits)
+
+        @qml.qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
+        def circuit(params):
+            qml.AngleEmbedding(params[0, :], wires=range(num_qubits), rotation="X")
+            qml.BasicEntanglerLayers(
+                weights=params[1:-1, :], rotation=qml.RY, wires=range(num_qubits)
+            )
+            qml.AngleEmbedding(params[-1, :], wires=range(num_qubits), rotation="Y")
+            return qml.expval(qml.PauliZ(0))
+
+        params = np.random.random((5, 3, 3))
+        assert circuit(params).shape == (3,)
+
 
 @pytest.mark.parametrize(
     "diff_method,kwargs",
@@ -1581,3 +1606,29 @@ class TestJIT:
 
         assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
         assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
+
+    def test_param_broadcasting_fwd_pass(self, dev_name, diff_method, mode, tol):
+        """Test that parameter-broadcasting works well with JAX JIT on the forward pass."""
+        if mode == "forward":
+            pytest.skip(
+                "This test doesn't compute Jacobians - forward mode executions involves Jacobian computation."
+            )
+
+        num_layers = 2
+        num_qubits = 3
+        weight_shapes = (2 + num_layers, num_qubits)
+
+        dev = qml.device(dev_name, wires=num_qubits)
+
+        @jax.jit
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
+        def circuit(params):
+            qml.AngleEmbedding(params[0, :], wires=range(num_qubits), rotation="X")
+            qml.BasicEntanglerLayers(
+                weights=params[1:-1, :], rotation=qml.RY, wires=range(num_qubits)
+            )
+            qml.AngleEmbedding(params[-1, :], wires=range(num_qubits), rotation="Y")
+            return qml.expval(qml.PauliZ(0))
+
+        params = np.random.random((5, 3, 3))
+        assert circuit(params).shape == (3,)
