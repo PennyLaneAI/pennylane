@@ -72,15 +72,11 @@ class Molecule:
         normalize=True,
     ):
 
-        if basis_name not in [
+        if basis_name.lower() not in [
             "sto-3g",
             "6-31g",
             "6-311g",
             "cc-pvdz",
-            "STO-3G",
-            "6-31G",
-            "6-311G",
-            "CC-PVDZ",
         ]:
             raise ValueError(
                 "Currently, the only supported basis sets are 'sto-3g', '6-31g', '6-311g' and"
@@ -94,7 +90,7 @@ class Molecule:
         self.coordinates = coordinates
         self.charge = charge
         self.mult = mult
-        self.basis_name = basis_name
+        self.basis_name = basis_name.lower()
 
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols)
 
