@@ -209,7 +209,7 @@ class TestProbs:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("shots", [None, 100])
-    def test_batch_size(self, tol, mocker, shots):
+    def test_batch_size(self, mocker, shots):
         """Test the probability is correct for a batched input."""
         self.dev = qml.device("default.qubit", wires=1, shots=shots)
         self.spy = mocker.spy(qml.QubitDevice, "probability")
@@ -551,3 +551,38 @@ class TestProbs:
             "provided. The wires for probs will be determined directly from the observable.",
         ):
             circuit()
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            (
+                [0],
+                [
+                    [[0, 0, 0.5], [1, 1, 0.5]],
+                    [[0.5, 0.5, 0], [0.5, 0.5, 1]],
+                    [[0, 0.5, 1], [1, 0.5, 0]],
+                ],
+            ),
+            (
+                [0, 1],
+                [
+                    [[0, 0, 0], [0, 0, 0.5], [0.5, 0, 0], [0.5, 1, 0.5]],
+                    [[0.5, 0.5, 0], [0, 0, 0], [0, 0, 0], [0.5, 0.5, 1]],
+                    [[0, 0.5, 0.5], [0, 0, 0.5], [0.5, 0, 0], [0.5, 0.5, 0]],
+                ],
+            ),
+        ],
+    )
+    def test_estimate_probability_with_binsize_with_broadcasting(self, wires, expected):
+        """Tests the estimate_probability method with a bin size and parameter broadcasting"""
+        samples = np.array(
+            [
+                [[1, 0], [1, 1], [1, 1], [1, 1], [1, 1], [0, 1]],
+                [[0, 0], [1, 1], [1, 1], [0, 0], [1, 1], [1, 1]],
+                [[1, 0], [1, 1], [1, 1], [0, 0], [0, 1], [0, 0]],
+            ]
+        )
+
+        res = qml.probs(wires=wires).process(samples=samples, shot_range=None, bin_size=2)
+
+        assert np.allclose(res, expected)
