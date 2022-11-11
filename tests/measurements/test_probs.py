@@ -192,10 +192,11 @@ class TestProbs:
         expected = np.array([0.5, 0.5, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_integration_analytic_false(self, tol, mocker):
+    @pytest.mark.parametrize("shots", [100, [1, 10, 100]])
+    def test_integration_analytic_false(self, tol, mocker, shots):
         """Test the probability is correct for a known state preparation when the
         analytic attribute is set to False."""
-        self.dev = qml.device("default.qubit", wires=3, shots=1000)
+        self.dev = qml.device("default.qubit", wires=3, shots=shots)
         self.spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(self.dev)
@@ -206,6 +207,22 @@ class TestProbs:
         res = circuit()
         expected = np.array([0, 1])
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_batch_size(self, tol, mocker, shots):
+        """Test the probability is correct for a batched input."""
+        self.dev = qml.device("default.qubit", wires=1, shots=shots)
+        self.spy = mocker.spy(qml.QubitDevice, "probability")
+
+        @qml.qnode(self.dev)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.probs(wires=self.dev.wires)  # TODO: Use ``qml.probs()`` when supported
+
+        x = np.array([0, np.pi / 2])
+        res = circuit(x)
+        expected = [[1.0, 0.0], [0.5, 0.5]]
+        assert np.allclose(res, expected, atol=tol, rtol=0.1)
 
     @pytest.mark.autograd
     def test_numerical_analytic_diff_agree(self, init_state, tol, mocker):
