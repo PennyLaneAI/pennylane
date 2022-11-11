@@ -69,7 +69,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
     >>> dev = qml.device('default.qubit', wires=[0, 1, 2, 3])
     >>> transpiled_circuit = qml.transforms.transpile(coupling_map=[(0, 1), (1, 3), (3, 2), (2, 0)])(circuit)
-    >>> transpiled_qnode = qml.QNode(circuit, dev)
+    >>> transpiled_qnode = qml.QNode(transpiled_circuit, dev)
     >>> print(qml.draw(transpiled_qnode)())
     0: ─╭●────────────────╭●─┤ ╭Probs
     1: ─╰X─╭●───────╭●────│──┤ ├Probs
