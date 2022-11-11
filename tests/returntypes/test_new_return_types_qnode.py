@@ -3020,7 +3020,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         with tf.GradientTape() as tape:
             out = circuit(x)
-            out = tf.concat([tf.reshape(i, [-1]) for i in out], 0)
+            out = tf.experimental.numpy.hstack(out)
 
         res = tape.jacobian(out, x)
 
