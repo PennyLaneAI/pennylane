@@ -73,6 +73,10 @@ Utility functions
     compute_vjp_multi_new
     batch_vjp
     vjp
+    compute_jvp_single
+    compute_jvp_multi
+    batch_jvp
+    jvp
 
 
 Registering autodifferentiation gradients
