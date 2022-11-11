@@ -300,6 +300,8 @@ class TestDecomposition:
 
         with pytest.raises(NotImplementedError):
             op.has_decomposition()
+
+         with pytest.raises(NotImplementedError):
             op.decomposition()
 
     @pytest.mark.parametrize(
