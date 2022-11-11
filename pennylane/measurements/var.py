@@ -93,7 +93,9 @@ class _Variance(SampleMeasurement, StateMeasurement):
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             # we use ``self.wires`` instead of ``self.obs`` because the observable was
             # already applied to the state
-            probs = qml.probs(op=self.wires).process_state(state=state, device_wires=device_wires)
+            probs = qml.probs(wires=self.wires).process_state(
+                state=state, device_wires=device_wires
+            )
             return probs[idx] - probs[idx] ** 2
 
         try:
@@ -110,7 +112,7 @@ class _Variance(SampleMeasurement, StateMeasurement):
         self.obs = qml.map_wires(self.obs, dict(zip(self.obs.wires, new_obs_wires)))
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
-        prob = qml.probs(op=self.wires).process_state(state=state, device_wires=device_wires)
+        prob = qml.probs(wires=self.wires).process_state(state=state, device_wires=device_wires)
         self.obs = old_obs
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2
