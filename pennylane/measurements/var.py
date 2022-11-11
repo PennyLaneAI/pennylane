@@ -22,7 +22,7 @@ from typing import Sequence, Tuple
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import EigvalsUndefinedError, Operator
+from pennylane.operation import Operator
 from pennylane.ops import Projector
 from pennylane.wires import Wires
 
@@ -98,13 +98,7 @@ class _Variance(SampleMeasurement, StateMeasurement):
             )
             return probs[idx] - probs[idx] ** 2
 
-        try:
-            eigvals = qml.math.asarray(self.obs.eigvals(), dtype=float)
-        except EigvalsUndefinedError as e:
-            # if observable has no info on eigenvalues, we cannot return this measurement
-            raise qml.operation.EigvalsUndefinedError(
-                f"Cannot compute analytic variance of {self.obs.name}."
-            ) from e
+        eigvals = qml.math.asarray(self.obs.eigvals(), dtype=float)
 
         # the probability vector must be permuted to account for the permuted wire order of the observable
         old_obs = self.obs
@@ -123,10 +117,7 @@ class _Variance(SampleMeasurement, StateMeasurement):
         wire_map = OrderedDict(zip(device_wires, consecutive_wires))
         ordered_obs_wire_lst = sorted(self.obs.wires.tolist(), key=lambda label: wire_map[label])
 
-        mapped_wires = self.obs.wires.map(device_wires)
-        if isinstance(mapped_wires, Wires):
-            # by default this should be a Wires obj, but it is overwritten to list object in default.qubit
-            mapped_wires = mapped_wires.tolist()
+        mapped_wires = list(self.obs.wires.map(device_wires))
 
         permutation = np.argsort(mapped_wires)  # extract permutation via argsort
 
