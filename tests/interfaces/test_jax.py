@@ -14,6 +14,7 @@
 """Unit tests for the jax interface"""
 
 import pytest
+import platform
 
 pytestmark = pytest.mark.jax
 
@@ -43,8 +44,8 @@ from pennylane.interfaces.jax_jit import _execute_with_fwd
         ("0.3.16", jax.lib, False),
     ],
 )
-def test_raise_version_error(package, version, should_raise, monkeypatch):
-    """Test JAX version error"""
+def test_raise_version_error_non_win(package, version, should_raise, monkeypatch):
+    """Test JAX version error for platforms other than Windows."""
     a = jnp.array([0.1, 0.2])
 
     dev = qml.device("default.qubit", wires=1)
@@ -55,8 +56,47 @@ def test_raise_version_error(package, version, should_raise, monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(package, "__version__", version)
 
+        # Set the other JAX package to an accepted version number
+        m.setattr(jax.lib if package is jax else jax, "__version__", "0.3.25")
+        m.setattr(platform, "system", lambda: "SomeNonWinPlatform")
+
         if should_raise:
             msg = "requires version 0.3.17 or higher for JAX and 0.3.15 or higher JAX lib"
+            with pytest.raises(InterfaceUnsupportedError, match=msg):
+                execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
+        else:
+            execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
+
+
+@pytest.mark.parametrize(
+    "version, package, should_raise",
+    [
+        ("0.3.23", jax, True),
+        ("0.3.24", jax, False),
+        ("0.3.25", jax, False),
+        ("0.3.21", jax.lib, True),
+        ("0.3.22", jax.lib, False),
+        ("0.3.23", jax.lib, False),
+    ],
+)
+def test_raise_version_error_win(version, package, should_raise, monkeypatch):
+    """Test JAX version error for Windows."""
+    a = jnp.array([0.1, 0.2])
+
+    dev = qml.device("default.qubit", wires=1)
+
+    with qml.tape.QuantumTape() as tape:
+        qml.expval(qml.PauliZ(0))
+
+    with monkeypatch.context() as m:
+        m.setattr(package, "__version__", version)
+
+        # Set the other JAX package to an accepted version number
+        m.setattr(jax.lib if package is jax else jax, "__version__", "0.3.25")
+        m.setattr(platform, "system", lambda: "Windows")
+
+        if should_raise:
+            msg = "requires version 0.3.24 or higher for JAX and 0.3.22 or higher JAX lib"
             with pytest.raises(InterfaceUnsupportedError, match=msg):
                 execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
         else:

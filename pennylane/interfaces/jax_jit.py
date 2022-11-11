@@ -38,19 +38,20 @@ def _validate_jax_version():
     and JAX lib.
     """
 
-    if platform.system() == "Windows":
-        jax_version_to_check = "<0.3.24"
-        jax_lib_version_to_check = "<0.3.22"
+    platform_used = platform.system()
+    if platform_used == "Windows":
+        jax_version_to_check = "0.3.24"
+        jax_lib_version_to_check = "0.3.22"
     else:
-        jax_version_to_check = "<0.3.17"
-        jax_lib_version_to_check = "<0.3.15"
+        jax_version_to_check = "0.3.17"
+        jax_lib_version_to_check = "0.3.15"
 
-    if semantic_version.match(jax_version_to_check, jax.__version__) or semantic_version.match(
-        jax_lib_version_to_check, jax.lib.__version__
-    ):
+    if semantic_version.match(
+        "<" + jax_version_to_check, jax.__version__
+    ) or semantic_version.match("<" + jax_lib_version_to_check, jax.lib.__version__):
         msg = (
-            "The JAX JIT interface of PennyLane requires version 0.3.17 or higher for JAX "
-            "and 0.3.15 or higher JAX lib. Please upgrade these packages."
+            f"The JAX JIT interface of PennyLane requires version {jax_version_to_check} or higher for JAX "
+            f"and {jax_lib_version_to_check} or higher JAX lib on {platform_used}. Please upgrade these packages."
         )
         raise InterfaceUnsupportedError(msg)
 
