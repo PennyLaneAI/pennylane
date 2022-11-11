@@ -52,10 +52,11 @@ class TestVar:
                 new_res = meas.process_state(state=state, device_wires=self.dev.wires)
             assert qml.math.allequal(old_res, new_res)
 
+    @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_value(self, tol, r_dtype, mocker):
+    def test_value(self, tol, r_dtype, mocker, shots):
         """Test that the var function works"""
-        self.dev = qml.device("default.qubit", wires=2)
+        self.dev = qml.device("default.qubit", wires=2, shots=shots)
         self.spy = mocker.spy(qml.QubitDevice, "var")
         self.dev.R_DTYPE = r_dtype
 
@@ -66,9 +67,9 @@ class TestVar:
 
         x = 0.54
         res = circuit(x)
-        expected = np.sin(x) ** 2
+        expected = [np.sin(x) ** 2, np.sin(x) ** 2] if isinstance(shots, list) else np.sin(x) ** 2
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=0.05, rtol=0.05)
         assert res.dtype == r_dtype
 
     def test_not_an_observable(self, mocker):
