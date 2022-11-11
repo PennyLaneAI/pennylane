@@ -62,7 +62,7 @@ def is_pauli_word(observable):
         This function will only confirm that all operators are Pauli or Identity operators,
         and not whether the Observable is mathematically a Pauli word.
         If an Observable consists of multiple Pauli operators targeting the same wire, the
-        function will return `True` regardless of any complex coeffients.
+        function will return ``True`` regardless of any complex coefficients.
 
 
     Args:
