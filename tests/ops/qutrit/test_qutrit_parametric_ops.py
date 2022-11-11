@@ -18,6 +18,7 @@ from functools import reduce
 import pytest
 import copy
 import numpy as np
+import tensorflow as tf
 from pennylane import numpy as npp
 
 import pennylane as qml
@@ -218,9 +219,7 @@ class TestMatrix:
         )
 
         # test identity for broadcasted theta=pi/2 with tensorflow interface
-        import tensorflow as tf
-
-        pi_half = tf.Tensor([np.pi / 2] * 2)
+        pi_half = tf.Variable([np.pi / 2] * 2)
         expected = tf.convert_to_tensor(
             np.tensordot(
                 [1, 1],
