@@ -553,7 +553,7 @@
   'torch'
   ```
 
-  Note that when passing lists or tuples of without unpacking them, ``get_interface`` will always default to ``"numpy"``.
+  Note that when passing lists or tuples without unpacking them, ``get_interface`` will always default to ``"numpy"``.
 
   ```pycon
   >>> qml.math.get_interface([torch_scalar, torch_tensor, numpy_tensor])
