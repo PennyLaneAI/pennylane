@@ -16,12 +16,14 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 
+import platform
+
 # pylint: disable=too-many-arguments
 import jax
 import jax.numpy as jnp
-
 import numpy as np
 import semantic_version
+
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
@@ -30,8 +32,21 @@ dtype = jnp.float64
 
 
 def _validate_jax_version():
-    if semantic_version.match("<0.3.17", jax.__version__) or semantic_version.match(
-        "<0.3.15", jax.lib.__version__
+    """Validate the JAX version used.
+
+    The jax.pure_callback feature requires at least JAX version >=0.3.17. Windows requires even higher versions for JAX
+    and JAX lib.
+    """
+
+    if platform.system() == "Windows":
+        jax_version_to_check = "<0.3.24"
+        jax_lib_version_to_check = "<0.3.22"
+    else:
+        jax_version_to_check = "<0.3.17"
+        jax_lib_version_to_check = "<0.3.15"
+
+    if semantic_version.match(jax_version_to_check, jax.__version__) or semantic_version.match(
+        jax_lib_version_to_check, jax.lib.__version__
     ):
         msg = (
             "The JAX JIT interface of PennyLane requires version 0.3.17 or higher for JAX "
