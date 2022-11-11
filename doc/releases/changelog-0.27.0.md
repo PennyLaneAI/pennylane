@@ -339,6 +339,7 @@
   With this release, we're continuing to elevate this feature by adding support for:
   
   - `qml.execute`
+  - Jacobian vector product (JVP) computation
   - Gradient transforms
     + `qml.gradients.param_shift`
     + `qml.gradients.finite_diff`
@@ -347,7 +348,7 @@
 
   - Interfaces 
     + Autograd
-    + TensoriFlow
+    + TensorFlow
     + JAX (without jitting)
     
   With this added support, the JAX interface can handle multiple shots (shots vectors), measurements, and gradient output types with `qml.enable_return()`:
