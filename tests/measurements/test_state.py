@@ -395,6 +395,8 @@ class TestDensityMatrix:
         expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
         assert np.allclose(expected, density_mat)
 
+        dev = func.device
+
         assert np.allclose(
             expected,
             qml.density_matrix(wires=0).process_state(state=dev.state, device_wires=dev.wires),
