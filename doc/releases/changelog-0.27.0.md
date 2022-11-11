@@ -387,7 +387,7 @@
 
   For more details, please [refer to the documentation of `qml.enable_return()`](https://docs.pennylane.ai/en/stable/code/api/pennylane.enable_return.html?highlight=enable_return#pennylane.enable_return).
 
-<h4>New basis rotation and tapering features in `qml.qchem` 🤓</h4>
+<h4>New basis rotation and tapering features in qml.qchem 🤓</h4>
 
 * Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`.
   ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
