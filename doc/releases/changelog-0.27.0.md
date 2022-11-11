@@ -56,7 +56,7 @@
 
 <h4>(TODO: title) QChem</h4>
 
-* Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`. 
+* Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`.
   ([#3011](https://github.com/PennyLaneAI/pennylane/pull/3011))
 
   ```pycon
@@ -147,6 +147,11 @@
   [(#3261)](https://github.com/PennyLaneAI/pennylane/pull/3261)
 
   ```python
+  import jax
+  from jax import numpy as jnp
+  from jax.config import config
+  config.update("jax_enable_x64", True)
+
   dev = qml.device("lightning.qubit", wires=2)
 
   @jax.jit
@@ -157,17 +162,17 @@
       qml.CNOT(wires=[0, 1])
       return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-  x = jnp.array(1.0, dtype=jnp.float32)
-  y = jnp.array(2.0, dtype=jnp.float32)
+  x = jnp.array(1.0)
+  y = jnp.array(2.0)
   ```
 
   ```pycon
   >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
-  (DeviceArray([-0.84147096,  0.3501755 ], dtype=float32),
-   DeviceArray([ 4.474455e-18, -4.912955e-01], dtype=float32))
+  (DeviceArray([-0.84147098,  0.35017549], dtype=float64, weak_type=True),
+   DeviceArray([ 4.47445479e-18, -4.91295496e-01], dtype=float64, weak_type=True))
   ```
 
-  Note that this change depends on `jax.pure_callback`, which requires `jax==0.3.17`.
+  Note that this change depends on `jax.pure_callback`, which requires `jax>=0.3.17`.
 
 * The `QNode` class now accepts an `auto` interface, which automatically detects the interface of the given input.
   [(#3132)](https://github.com/PennyLaneAI/pennylane/pull/3132)
@@ -194,7 +199,7 @@
   Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
   ```
 
-* Wires of operators or entire QNodes can now be mapped to other wires via `qml.map_wires()`. 
+* Wires of operators or entire QNodes can now be mapped to other wires via `qml.map_wires()`.
   [(#3145)](https://github.com/PennyLaneAI/pennylane/pull/3145)
 
   The `qml.map_wires()` function requires a dictionary representing a wire map. Use it with
@@ -216,7 +221,7 @@
     dev = qml.device("default.qubit", wires=["A", "B", "C", "D"])
     wire_map = {0: "A", 1: "B", 2: "C", 3: "D"}
 
-    @qml.qnode(dev) 
+    @qml.qnode(dev)
     def circuit():
         qml.RX(0.54, wires=0)
         qml.PauliX(1)
@@ -266,7 +271,7 @@
 * To download or load only specific properties of a dataset, we can specify the desired attributes in `qml.data.load`:
 
   ```pycon
-  >>> part = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1, 
+  >>> part = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1,
   ...                      attributes=["molecule", "fci_energy"])[0]
   >>> part.molecule
   <pennylane.qchem.molecule.Molecule at 0x7f56c9d78e50>
@@ -389,7 +394,7 @@
 * `OrbitalRotation` is now decomposed into two `SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `SingleExcitation`.
   [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
 
-* Reorganized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli` 
+* Reorganized and grouped all functions in PennyLane responsible for manipulation of Pauli operators into a `pauli`
   module. Deprecated the `grouping` module and moved logic from `pennylane/grouping` to `pennylane/pauli/grouping`.
   [(#3179)](https://github.com/PennyLaneAI/pennylane/pull/3179)
 
@@ -515,7 +520,7 @@
 
 * Extended `qml.equal` function to MeasurementProcesses
   [(#3189)](https://github.com/PennyLaneAI/pennylane/pull/3189)
-  
+
 * `_multi_dispatch` functionality has been moved inside the `get_interface` function. This function
   can now be called with one or multiple tensors as arguments.
   [(#3136)](https://github.com/PennyLaneAI/pennylane/pull/3136)
@@ -547,10 +552,11 @@
   >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
   'torch'
   ```
-  
-* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling 
-  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global 
-  configuration for matplotlib plotting. If no `style` is passed, the function defaults 
+
+* `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling
+  `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global
+  configuration for matplotlib plotting. If no `style` is passed, the function defaults
+
   to plotting with the `black_white` style.
   [(#3247)](https://github.com/PennyLaneAI/pennylane/pull/3247)
 
@@ -568,7 +574,7 @@
 
 * `Operator.compute_terms` has been removed. On a specific instance of an operator, use `op.terms()` instead. There is no longer a static method for this.
   [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
-  
+
 * `qml.tape.QuantumTape.inv()` has been deprecated. Use `qml.tape.QuantumTape.adjoint` instead.
   [(#3237)](https://github.com/PennyLaneAI/pennylane/pull/3237)
 
@@ -590,6 +596,9 @@
   [(#3219)](https://github.com/PennyLaneAI/pennylane/pull/3219)
 
 <h3>Bug fixes</h3>
+
+* `qml.SparseHamiltonian` now validates the size of the input matrix.
+  [(#3278)](https://github.com/PennyLaneAI/pennylane/pull/3278)
 
 * Fixed a bug where `qml.sample()` and `qml.counts()` would output incorrect results when mixed with measurements whose
   operators do not qubit-wise commute with computational basis projectors.
@@ -635,9 +644,15 @@
 * Fixed a bug where `qml.BasisEmbedding` was not jit-compilable with JAX.
   [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
 
+* Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
+  [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)
+
 * Fixed a bug where `qml.expval(qml.Hamiltonian())` would not raise an error
   if the Hamiltonian involved some wires that are not present on the device.
   [(#3266)](https://github.com/PennyLaneAI/pennylane/pull/3266)
+
+* Fixed a bug where `qml.tape.QuantumTape.shape()` did not account for the batch dimension of the tape
+  [(#3269)](https://github.com/PennyLaneAI/pennylane/pull/3269)
 
 <h3>Contributors</h3>
 
