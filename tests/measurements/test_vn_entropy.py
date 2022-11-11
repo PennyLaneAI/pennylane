@@ -24,12 +24,10 @@ class TestVnEntropy:
 
         @qml.qnode(dev)
         def circuit():
-            return qml.vn_entropy(wires=0, log_base=2), qml.mutual_info(
-                wires0=[0], wires1=[1], log_base=2
-            )
+            return qml.vn_entropy(wires=0, log_base=2)
 
         res = circuit()
-        expected = np.array([0, 0])
+        expected = 0
         assert np.allclose(res, expected)
         assert np.allclose(
             qml.vn_entropy(wires=0, log_base=2).process_state(
