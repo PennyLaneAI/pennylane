@@ -15,31 +15,34 @@
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
 import pennylane as qml
+
 from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
+from pennylane.devices import DefaultQubit
 
 
 def reduced_dm(qnode, wires):
-    """Compute the reduced density matrix from a :class:`~.QNode` returning :func:`~.state`.
+    """Compute the reduced density matrix from a :class:`~.QNode` returning
+    :func:`~.state`.
 
-     Args:
-         qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
-         wires (Sequence(int)): List of wires in the considered subsystem.
+    Args:
+        qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
+        wires (Sequence(int)): List of wires in the considered subsystem.
 
-     Returns:
-         func: Function which wraps the QNode and accepts the same arguments. When called, this function will
-            return the density matrix.
+    Returns:
+        func: Function which wraps the QNode and accepts the same arguments. When called, this function will
+        return the density matrix.
 
-     **Example**
+    **Example**
 
-     .. code-block:: python
+    .. code-block:: python
 
-         import numpy as np
+        import numpy as np
 
-         dev = qml.device("default.qubit", wires=2)
-         @qml.qnode(dev)
-         def circuit(x):
-           qml.IsingXX(x, wires=[0,1])
-           return qml.state()
+        dev = qml.device("default.qubit", wires=2)
+        @qml.qnode(dev)
+        def circuit(x):
+          qml.IsingXX(x, wires=[0,1])
+          return qml.state()
 
     >>> reduced_dm(circuit, wires=[0])(np.pi/2)
      [[0.5+0.j 0.+0.j]
@@ -80,17 +83,26 @@ def vn_entropy(qnode, wires, base=None):
 
     **Example**
 
-        .. code-block:: python
+    It is possible to obtain the entropy of a subsystem from a :class:`.QNode` returning a :func:`~.state`.
 
-            dev = qml.device("default.qubit", wires=2)
-            @qml.qnode(dev)
-            def circuit(x):
-                qml.IsingXX(x, wires=[0, 1])
-                return qml.state()
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
 
     >>> vn_entropy(circuit, wires=[0])(np.pi/2)
     0.6931472
 
+    The function is differentiable with backpropagation for all interfaces, e.g.:
+
+    >>> param = np.array(np.pi/4, requires_grad=True)
+    >>> qml.grad(vn_entropy(circuit, wires=[0]))(param)
+    0.6232252401402305
+
+    .. seealso:: :func:`pennylane.math.vn_entropy` and :func:`pennylane.vn_entropy`
     """
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
@@ -140,14 +152,17 @@ def mutual_info(qnode, wires0, wires1, base=None):
 
     **Example**
 
-        .. code-block:: python
+    It is possible to obtain the mutual information of two subsystems from a
+    :class:`.QNode` returning a :func:`~.state`.
 
-            dev = qml.device("default.qubit", wires=2)
+    .. code-block:: python
 
-            @qml.qnode(dev)
-            def circuit(x):
-                qml.IsingXX(x, wires=[0, 1])
-                return qml.state()
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
 
     >>> mutual_info_circuit = qinfo.mutual_info(circuit, wires0=[0], wires1=[1])
     >>> mutual_info_circuit(np.pi/2)
@@ -155,12 +170,10 @@ def mutual_info(qnode, wires0, wires1, base=None):
     >>> x = np.array(0.4, requires_grad=True)
     >>> mutual_info_circuit(x)
     0.3325090393262875
-    >>> qml.grad(mutual_info_circuit)(0.4)
+    >>> qml.grad(mutual_info_circuit)(np.array(0.4, requires_grad=True))
     1.2430067731198946
 
-    .. seealso::
-
-        :func:`~.qinfo.vn_entropy_transform`
+    .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
@@ -181,8 +194,8 @@ def _torch_jac(circ):
     def wrapper(*args, **kwargs):
         loss = functools.partial(circ, **kwargs)
         if len(args) > 1:
-            return torch.autograd.functional.jacobian(loss, (args))
-        return torch.autograd.functional.jacobian(loss, *args)
+            return torch.autograd.functional.jacobian(loss, args, create_graph=True)
+        return torch.autograd.functional.jacobian(loss, *args, create_graph=True)
 
     return wrapper
 
@@ -195,7 +208,7 @@ def _tf_jac(circ):
     def wrapper(*args, **kwargs):
         with tf.GradientTape() as tape:
             loss = circ(*args, **kwargs)
-        return tape.jacobian(loss, (args))
+        return tape.jacobian(loss, args)
 
     return wrapper
 
@@ -207,12 +220,12 @@ def _compute_cfim(p, dp):
     # Exclude values where p=0 and calculate 1/p
     nonzeros_p = qml.math.where(p > 0, p, qml.math.ones_like(p))
     one_over_p = qml.math.where(p > 0, qml.math.ones_like(p), qml.math.zeros_like(p))
-    one_over_p = qml.math.divide(one_over_p, nonzeros_p)
+    one_over_p = one_over_p / nonzeros_p
 
     # Multiply dp and p
     # Note that casting and being careful about dtypes is necessary as interfaces
     # typically treat derivatives (dp) with float32, while standard execution (p) comes in float64
-    dp = qml.math.cast(dp, dtype=p.dtype)
+    dp = qml.math.cast_like(dp, p)
     dp = qml.math.reshape(
         dp, (len(p), -1)
     )  # Squeeze does not work, as you could have shape (num_probs, num_params) with num_params = 1
@@ -266,9 +279,6 @@ def classical_fisher(qnode, argnums=0):
         returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
         it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
 
-    .. warning::
-
-        The ``classical_fisher()`` matrix is currently not differentiable.
 
     .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.transforms.quantum_fisher`
 
@@ -333,7 +343,7 @@ def classical_fisher(qnode, argnums=0):
 
     .. code-block:: python
 
-        H = qml.Hamiltonian(coeffs = [0.5, 0.5], ops = [qml.PauliZ(0), qml.PauliZ(1)])
+        H = qml.Hamiltonian(coeffs=[0.5, 0.5], observables=[qml.PauliZ(0), qml.PauliZ(1)])
 
         @qml.qnode(dev)
         def circ(params):
@@ -361,6 +371,29 @@ def classical_fisher(qnode, argnums=0):
     >>> print(rescaled_grad)
     [-0.66772533 -0.16618756 -0.05865127 -0.06696078]
 
+    The ``classical_fisher`` matrix itself is again differentiable:
+
+    .. code-block:: python
+
+        @qml.qnode(dev)
+        def circ(params):
+            qml.RX(qml.math.cos(params[0]), wires=0)
+            qml.RX(qml.math.cos(params[0]), wires=1)
+            qml.RX(qml.math.cos(params[1]), wires=0)
+            qml.RX(qml.math.cos(params[1]), wires=1)
+            return qml.probs(wires=range(2))
+
+        params = pnp.random.random(2)
+
+    >>> print(qml.qinfo.classical_fisher(circ)(params))
+    (tensor([[0.13340679, 0.03650311],
+             [0.03650311, 0.00998807]], requires_grad=True)
+    >>> print(qml.jacobian(qml.qinfo.classical_fisher(circ))(params))
+    array([[[9.98030491e-01, 3.46944695e-18],
+            [1.36541817e-01, 5.15248592e-01]],
+           [[1.36541817e-01, 5.15248592e-01],
+            [2.16840434e-18, 2.81967252e-01]]]))
+
     """
     new_qnode = _make_probs(qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.stack(x)))
 
@@ -385,13 +418,13 @@ def classical_fisher(qnode, argnums=0):
         p = new_qnode(*args, **kwargs)
 
         # In case multiple variables are used, we create a list of cfi matrices
-        if isinstance(j, tuple) and len(j) > 1:
+        if isinstance(j, tuple):
             res = []
             for j_i in j:
-                if interface == "tf":
-                    j_i = qml.math.transpose(qml.math.cast(j_i, dtype=p.dtype))
-
                 res.append(_compute_cfim(p, j_i))
+
+            if len(j) == 1:
+                return res[0]
 
             return res
 
@@ -400,8 +433,8 @@ def classical_fisher(qnode, argnums=0):
     return wrapper
 
 
-def quantum_fisher(qnode, *args, hardware=False, **kwargs):
-    r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode` or quantum tape.
+def quantum_fisher(qnode, *args, **kwargs):
+    r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
     are reflected in the quantum state. The metric used to induce the QFIM is the fidelity :math:`f = |\langle \psi | \psi' \rangle|^2` between two (pure) quantum states.
@@ -418,16 +451,17 @@ def quantum_fisher(qnode, *args, hardware=False, **kwargs):
         :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.transforms.classical_fisher`
 
     Args:
-        qnode (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
-        hardware (bool): Indicate if execution needs to be hardware compatible (True)
+        qnode (:class:`.QNode`): A :class:`.QNode` that may have arbitrary return types.
+        *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
 
     Returns:
         func: The function that computes the quantum fisher information matrix.
 
     .. note::
 
-        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. In case of ``hardware=True``, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
-        In case of  ``hardware=False``, :func:`~.pennylane.adjoint_metric_tensor` is used. Please refer to their respective documentations for details on the arguments.
+        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. Internally, :func:`~.pennylane.adjoint_metric_tensor` is used when executing on a device with
+        exact expectations (``shots=None``) that inherits from ``"default.qubit"``. In all other cases, i.e. if a device with finite shots is used, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
+        Please refer to their respective documentations for details on the arguments.
 
     **Example**
 
@@ -455,24 +489,36 @@ def quantum_fisher(qnode, *args, hardware=False, **kwargs):
     The natural gradient is then simply the QFIM multiplied by the gradient:
 
     >>> grad = qml.grad(circ)(params)
-    [ 0.59422561, -0.02615095, -0.05146226]
-
+    >>> grad
+    array([ 0.59422561, -0.02615095, -0.05146226])
     >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
-    np.diag([1., 1., 0.77517241])
+    >>> qfim
+    tensor([[1.        , 0.        , 0.        ],
+            [0.        , 1.        , 0.        ],
+            [0.        , 0.        , 0.77517241]], requires_grad=True)
+    >>> qfim @ grad
+    tensor([ 0.59422561, -0.02615095, -0.03989212], requires_grad=True)
 
-    >>> q_nat_grad = qfim @ grad
-    [ 0.59422561 -0.02615095 -0.03989212]
-
-    When using real hardware with finite shots, we have to specify ``hardware=True`` in order to compute the QFIM.
-    Additionally, we need to provide a device that has a spare wire for the Hadamard test, otherwise it will just be able to compute the block diagonal terms.
+    When using real hardware or finite shots, ``quantum_fisher`` is internally calling :func:`~.pennylane.metric_tensor`.
+    To obtain the full QFIM, we need an auxilary wire to perform the Hadamard test.
 
     >>> dev = qml.device("default.qubit", wires=n_wires+1, shots=1000)
-    >>> circ = qml.QNode(circ, dev)
-    >>> qfim = qml.qinfo.quantum_fisher(circ, hardware=True)(params)
+    >>> @qml.qnode(dev)
+    ... def circ(params):
+    ...     qml.RY(params[0], wires=1)
+    ...     qml.CNOT(wires=(1,0))
+    ...     qml.RY(params[1], wires=1)
+    ...     qml.RZ(params[2], wires=1)
+    ...     return qml.expval(H)
+    >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
+
+    Alternatively, we can fall back on the block-diagonal QFIM without the additional wire.
+
+    >>> qfim = qml.qinfo.quantum_fisher(circ, approx="block-diag")(params)
 
     """
-    # TODO: ``hardware`` argument will be obsolete in future releases when ``shots`` can be inferred.
-    if hardware:
+
+    if qnode.device.shots is not None and isinstance(qnode.device, DefaultQubit):
 
         def wrapper(*args0, **kwargs0):
             return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
@@ -523,9 +569,9 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     **Example**
 
     First, let's consider two QNodes with potentially different signatures: a circuit with two parameters
-    and another circuit with a single parameter. The output of the `qml.qinfo.fidelity` transform then requires
-    two tuples to be passed as arguments, each containing the args and kwargs of their respective circuit, e.g. `all_args0 = (0.1, 0.3)` and
-    `all_args1 = (0.2)` in the following case:
+    and another circuit with a single parameter. The output of the :func:`~.qinfo.fidelity` transform then requires
+    two tuples to be passed as arguments, each containing the args and kwargs of their respective circuit, e.g.
+    ``all_args0 = (0.1, 0.3)`` and ``all_args1 = (0.2)`` in the following case:
 
     .. code-block:: python
 
@@ -545,8 +591,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
     0.9905158135644924
 
-    It is also possible to use QNodes that do not depend on any parameters. When it is the case for the first QNode, you
-    need to pass an empty tuple as an argument for the first QNode.
+    It is also possible to use QNodes that do not depend on any parameters. When it is the case for the first QNode, it
+    is required to pass an empty tuple as an argument for the first QNode.
 
     .. code-block:: python
 
@@ -570,8 +616,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> qml.qinfo.fidelity(circuit_ry, circuit_rx, wires0=[0], wires1=[0])((0.2))
     0.9900332889206207
 
-    The `qml.qinfo.fidelity` transform is also differentiable and you can use the gradient in the different frameworks
-    with backpropagation, the following example uses `jax` and `backprop`.
+    The :func:`~.qinfo.fidelity` transform is also differentiable and the gradient can be obtained in the different frameworks
+    with backpropagation, the following example uses ``jax`` and ``backprop``.
 
     .. code-block:: python
 
@@ -590,6 +636,29 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))((jax.numpy.array(0.3)))
     -0.14776011
 
+    There is also the possibility to pass a single dictionary at the end of the tuple for fixing args,
+    you can follow this example:
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit_rx(x, y):
+            qml.RX(x, wires=0)
+            qml.RZ(y, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit_ry(y, use_ry):
+            if use_ry:
+                qml.RY(y, wires=0)
+            return qml.state()
+
+    >>> fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.9, {'use_ry': True}))
+    0.8208074192135424
+
+    .. seealso:: :func:`pennylane.math.fidelity`
     """
 
     if len(wires0) != len(wires1):
@@ -612,8 +681,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         the args and kwargs to each :class:`.QNode`.
 
         Args:
-            all_args0 (tuple): Tuple containing the arguments (*args, **kwargs) of the first :class:`.QNode`.
-            all_args1 (tuple): Tuple containing the arguments (*args, **kwargs) of the second :class:`.QNode`.
+            all_args0 (tuple): Tuple containing the arguments (*args, kwargs) of the first :class:`.QNode`.
+            all_args1 (tuple): Tuple containing the arguments (*args, kwargs) of the second :class:`.QNode`.
 
         Returns:
             float: Fidelity between two quantum states
@@ -626,14 +695,28 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
         # If no all_args is given, evaluate the QNode without args
         if all_args0 is not None:
-            state0 = state_qnode0(*all_args0)
+            # Handle a dictionary as last argument
+            if isinstance(all_args0[-1], dict):
+                args0 = all_args0[:-1]
+                kwargs0 = all_args0[-1]
+            else:
+                args0 = all_args0
+                kwargs0 = {}
+            state0 = state_qnode0(*args0, **kwargs0)
         else:
             # No args
             state0 = state_qnode0()
 
         # If no all_args is given, evaluate the QNode without args
         if all_args1 is not None:
-            state1 = state_qnode1(*all_args1)
+            # Handle a dictionary as last argument
+            if isinstance(all_args1[-1], dict):
+                args1 = all_args1[:-1]
+                kwargs1 = all_args1[-1]
+            else:
+                args1 = all_args1
+                kwargs1 = {}
+            state1 = state_qnode1(*args1, **kwargs1)
         else:
             # No args
             state1 = state_qnode1()
@@ -643,3 +726,130 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         return fid
 
     return evaluate_fidelity
+
+
+def relative_entropy(qnode0, qnode1, wires0, wires1):
+    r"""
+    Compute the relative entropy for two :class:`.QNode` returning a :func:`~.state` (a state can be a state vector
+    or a density matrix, depending on the device) acting on quantum systems with the same size.
+
+    .. math::
+        S(\rho\,\|\,\sigma)=-\text{Tr}(\rho\log\sigma)-S(\rho)=\text{Tr}(\rho\log\rho)-\text{Tr}(\rho\log\sigma)
+        =\text{Tr}(\rho(\log\rho-\log\sigma))
+
+    Roughly speaking, quantum relative entropy is a measure of distinguishability between two
+    quantum states. It is the quantum mechanical analog of relative entropy.
+
+    Args:
+        qnode0 (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        qnode1 (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        wires0 (Sequence[int]): the subsystem of the first QNode
+        wires1 (Sequence[int]): the subsystem of the second QNode
+
+    Returns:
+        func: A function that takes as input the joint arguments of the two QNodes,
+        and returns the relative entropy from their output states.
+
+    **Example**
+
+    Consider the following QNode:
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def circuit(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+    The ``qml.qinfo.relative_entropy`` transform can be used to compute the relative
+    entropy between the output states of the QNode:
+
+    >>> relative_entropy_circuit = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])
+
+    The returned function takes two tuples as input, the first being the arguments to the
+    first QNode and the second being the arguments to the second QNode:
+
+    >>> x, y = np.array(0.4), np.array(0.6)
+    >>> relative_entropy_circuit((x,), (y,))
+    0.017750012490703237
+
+    This transform is fully differentiable:
+
+    .. code-block:: python
+
+        def wrapper(x, y):
+            return relative_entropy_circuit((x,), (y,))
+
+    >>> wrapper(x, y)
+    0.017750012490703237
+    >>> qml.grad(wrapper)(x, y)
+    (array(-0.16458856), array(0.16953273))
+    """
+
+    if len(wires0) != len(wires1):
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    # Get the state vector if all wires are selected
+    if len(wires0) == len(qnode0.device.wires):
+        state_qnode0 = qnode0
+    else:
+        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+
+    # Get the state vector if all wires are selected
+    if len(wires1) == len(qnode1.device.wires):
+        state_qnode1 = qnode1
+    else:
+        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+
+    def evaluate_relative_entropy(all_args0=None, all_args1=None):
+        """Wrapper used for evaluation of the fidelity between two states computed from QNodes. It allows giving
+        the args and kwargs to each :class:`.QNode`.
+
+        Args:
+            all_args0 (tuple): Tuple containing the arguments (*args, kwargs) of the first :class:`.QNode`.
+            all_args1 (tuple): Tuple containing the arguments (*args, kwargs) of the second :class:`.QNode`.
+
+        Returns:
+            float: Fidelity between two quantum states
+        """
+        if not isinstance(all_args0, tuple) and all_args0 is not None:
+            all_args0 = (all_args0,)
+
+        if not isinstance(all_args1, tuple) and all_args1 is not None:
+            all_args1 = (all_args1,)
+
+        # If no all_args is given, evaluate the QNode without args
+        if all_args0 is not None:
+            # Handle a dictionary as last argument
+            if isinstance(all_args0[-1], dict):
+                args0 = all_args0[:-1]
+                kwargs0 = all_args0[-1]
+            else:
+                args0 = all_args0
+                kwargs0 = {}
+            state0 = state_qnode0(*args0, **kwargs0)
+        else:
+            # No args
+            state0 = state_qnode0()
+
+        # If no all_args is given, evaluate the QNode without args
+        if all_args1 is not None:
+            # Handle a dictionary as last argument
+            if isinstance(all_args1[-1], dict):
+                args1 = all_args1[:-1]
+                kwargs1 = all_args1[-1]
+            else:
+                args1 = all_args1
+                kwargs1 = {}
+            state1 = state_qnode1(*args1, **kwargs1)
+        else:
+            # No args
+            state1 = state_qnode1()
+
+        # From the two generated states, compute the relative entropy
+        return qml.math.relative_entropy(state0, state1)
+
+    return evaluate_relative_entropy

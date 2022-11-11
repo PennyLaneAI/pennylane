@@ -13,7 +13,7 @@
 # limitations under the License.
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
-# pylint: disable=unused-argument,invalid-unary-operand-type
+# pylint: disable=unused-argument,invalid-unary-operand-type, unsupported-binary-operation
 import contextlib
 
 import pennylane as qml
@@ -99,7 +99,7 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
 
     def expand_fn(tape, depth=depth, **kwargs):
 
-        with qml.tape.stop_recording():
+        with qml.QueuingManager.stop_recording():
 
             if stop_at is None:
                 tape = tape.expand(depth=depth)

@@ -26,10 +26,11 @@ pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 
 
+@pytest.mark.parametrize("interface", ["auto", "tf"])
 class TestTensorFlowExecuteUnitTests:
     """Unit tests for autograd execution"""
 
-    def test_jacobian_options(self, mocker, tol):
+    def test_jacobian_options(self, interface, mocker, tol):
         """Test setting jacobian options"""
         spy = mocker.spy(qml.gradients, "param_shift")
 
@@ -48,7 +49,7 @@ class TestTensorFlowExecuteUnitTests:
                 dev,
                 gradient_fn=param_shift,
                 gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
-                interface="tf",
+                interface=interface,
             )[0]
 
         res = t.jacobian(res, a)
@@ -56,7 +57,7 @@ class TestTensorFlowExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shifts"] == [(np.pi / 4,)] * 2
 
-    def test_incorrect_mode(self):
+    def test_incorrect_mode(self, interface):
         """Test that an error is raised if a gradient transform
         is used with mode=forward"""
         a = tf.Variable([0.1, 0.2])
@@ -72,9 +73,11 @@ class TestTensorFlowExecuteUnitTests:
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with mode='forward'"
         ):
-            res = execute([tape], dev, gradient_fn=param_shift, mode="forward", interface="tf")[0]
+            res = execute(
+                [tape], dev, gradient_fn=param_shift, mode="forward", interface=interface
+            )[0]
 
-    def test_forward_mode(self, mocker):
+    def test_forward_mode(self, interface, mocker):
         """Test that forward mode uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         a = tf.Variable([0.1, 0.2])
@@ -91,14 +94,14 @@ class TestTensorFlowExecuteUnitTests:
                 dev,
                 gradient_fn="device",
                 gradient_kwargs={"method": "adjoint_jacobian", "use_device_state": True},
-                interface="tf",
+                interface=interface,
             )[0]
 
         # adjoint method only performs a single device execution, but gets both result and gradient
         assert dev.num_executions == 1
         spy.assert_called()
 
-    def test_backward_mode(self, mocker):
+    def test_backward_mode(self, interface, mocker):
         """Test that backward mode uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
@@ -117,7 +120,7 @@ class TestTensorFlowExecuteUnitTests:
                 gradient_fn="device",
                 mode="backward",
                 gradient_kwargs={"method": "adjoint_jacobian"},
-                interface="tf",
+                interface=interface,
             )[0]
 
         assert dev.num_executions == 1
@@ -287,6 +290,19 @@ execute_kwargs = [
         "mode": "backward",
         "gradient_kwargs": {"method": "adjoint_jacobian"},
         "interface": "tf",
+    },
+    {"gradient_fn": param_shift, "interface": "auto"},
+    {
+        "gradient_fn": "device",
+        "mode": "forward",
+        "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
+        "interface": "auto",
+    },
+    {
+        "gradient_fn": "device",
+        "mode": "backward",
+        "gradient_kwargs": {"method": "adjoint_jacobian"},
+        "interface": "auto",
     },
 ]
 
@@ -575,12 +591,7 @@ class TestTensorFlowExecuteIntegration:
                 U3(p[0], p[1], p[2], wires=0)
                 qml.expval(qml.PauliX(0))
 
-            qtape = qtape.expand()
             res = execute([qtape], dev, **execute_kwargs)[0]
-
-            assert qtape.trainable_params == [1, 2, 3, 4]
-            assert [i.name for i in qtape.operations] == ["RX", "Rot", "PhaseShift"]
-            assert np.all(qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
 
         expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (
             tf.cos(p[2]) * tf.sin(p[1]) + tf.cos(p[0]) * tf.cos(p[1]) * tf.sin(p[2])
@@ -682,6 +693,8 @@ class TestTensorFlowExecuteIntegration:
         """Test sampling works as expected"""
         if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
             pytest.skip("Adjoint differentiation does not support samples")
+        if execute_kwargs["interface"] == "auto":
+            pytest.skip("Can't detect interface without a parametrized gate in the tape")
 
         dev = qml.device("default.qubit", wires=2, shots=10)
 

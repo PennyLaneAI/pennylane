@@ -19,6 +19,8 @@ with preparing a certain state on the device.
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 
+state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
+
 
 class BasisState(Operation):
     r"""BasisState(n, wires)
@@ -121,6 +123,9 @@ class QubitStateVector(Operation):
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (1,)
+    """int: Number of dimensions per trainable parameter of the operator."""
 
     grad_method = None
 

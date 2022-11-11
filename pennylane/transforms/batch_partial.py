@@ -41,22 +41,23 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
     """
     Create a batched partial callable object from the QNode specified.
 
-    This transform provides functionality akin to `functools.partial` and
+    This transform provides functionality akin to ``functools.partial`` and
     allows batching the arguments used for calling the batched partial object.
 
     Args:
         qnode (pennylane.QNode): QNode to pre-supply arguments to
         all_operations (bool): If ``True``, a batch dimension will be added to *all* operations
             in the QNode, rather than just trainable QNode parameters.
+        preprocess (dict): If provided, maps every QNode argument name to a preprocessing
+            function. When the returned partial function is called, the arguments are
+            first passed to the preprocessing functions, and the return values are
+            passed to the QNode.
         partial_kwargs (dict): pre-supplied arguments to pass to the QNode.
 
     Returns:
         func: Function which wraps the QNode and accepts the same arguments minus the
-        pre-supplied arguments provided, and behaves the same as the QNode called with
-        both the pre-supplied arguments and the other arguments passed to this wrapper
-        function. However, the first dimension of each argument of the wrapper function
-        will be treated as a batch dimension. The function output will also contain
-        an initial batch dimension.
+        pre-supplied arguments provided. The first dimension of each argument of the
+        wrapper function will be treated as a batch dimension.
 
     **Example**
 
@@ -101,7 +102,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
 
     >>> x = np.array(0.1)
     >>> y_fn = lambda y0: y0 * 0.2 + 0.3
-    >>> batched_lambda_circuit = qml.batch_partial(circuit, x=x, y=y_fn)
+    >>> batched_lambda_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": y_fn})
 
     The wrapped function ``batched_lambda_circuit`` also expects arguments to
     have an initial batch dimension:
@@ -153,6 +154,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
 
     @functools.wraps(qnode)
     def wrapper(*args, **kwargs):
+        # pylint: disable=not-callable
 
         # raise an error if keyword arguments are passed, since the
         # arguments are passed to the lambda statement instead of the QNode

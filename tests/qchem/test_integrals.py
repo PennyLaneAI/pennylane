@@ -400,7 +400,7 @@ class TestMoment:
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
         args = [p for p in [geometry] if p.requires_grad]
-        s = qchem.moment_integral(basis_a, basis_b, e, idx)(*args)
+        s = qchem.moment_integral(basis_a, basis_b, e, idx, normalize=False)(*args)
 
         assert np.allclose(s, ref)
 

@@ -69,17 +69,19 @@ def test_standard_use():
 
 
 @pytest.mark.parametrize(
-    "strategy, initial_strategy, n_patches", [("gradient", "device", 4), ("device", "gradient", 9)]
+    "strategy, initial_strategy, n_lines", [("gradient", "device", 3), ("device", "gradient", 13)]
 )
-def test_expansion_strategy(strategy, initial_strategy, n_patches):
-    @qml.qnode(qml.device("default.qubit", wires=range(2)), expansion_strategy=initial_strategy)
+def test_expansion_strategy(strategy, initial_strategy, n_lines):
+    """Test that the expansion strategy keyword controls what operations are drawn."""
+
+    @qml.qnode(qml.device("default.qubit", wires=3), expansion_strategy=initial_strategy)
     def circuit():
-        qml.GroverOperator(wires=range(2))
+        qml.Permute([2, 0, 1], wires=(0, 1, 2))
         return qml.expval(qml.PauliZ(0))
 
     fig, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
 
-    assert len(ax.patches) == n_patches
+    assert len(ax.lines) == n_lines
     assert circuit.expansion_strategy == initial_strategy
     plt.close()
 
@@ -136,6 +138,37 @@ class TestKwargs:
 
         assert len(ax.patches) == n_patches
         plt.close()
+
+    def test_black_white_is_default_style(self):
+        """Test that if no style is specified, the black_white style is the default for mpl_draw,
+        rather than general matplotlib settings."""
+
+        _, ax = qml.draw_mpl(circuit1)(1.234, 1.234)
+
+        assert ax.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert ax.patches[4].get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert ax.patches[4].get_edgecolor() == (0.0, 0.0, 0.0, 1.0)
+
+    def test_style(self):
+        """Test style is set by keyword argument."""
+
+        _, ax = qml.draw_mpl(circuit1, style="sketch")(1.234, 1.234)
+
+        assert ax.get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
+        assert ax.patches[0].get_edgecolor() == (0.0, 0.0, 0.0, 1.0)
+        assert ax.patches[0].get_facecolor() == (1.0, 0.9333333333333333, 0.8313725490196079, 1.0)
+        assert ax.patches[2].get_facecolor() == (0.0, 0.0, 0.0, 1.0)
+        assert ax.patches[3].get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
 
 
 class TestWireBehaviour:
@@ -208,14 +241,14 @@ class TestMPLIntegration:
     """Test using matplotlib styling to modify look of graphic."""
 
     def test_rcparams(self):
-        """Test setting rcParams modifies style."""
+        """Test setting rcParams modifies style for draw_mpl(circuit, style=None)."""
 
         rgba_red = (1, 0, 0, 1)
         rgba_green = (0, 1, 0, 1)
         plt.rcParams["patch.facecolor"] = rgba_red
         plt.rcParams["lines.color"] = rgba_green
 
-        _, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, style=None)(1.23, 2.34)
 
         assert ax.patches[0].get_facecolor() == rgba_red
         assert ax.patches[1].get_facecolor() == rgba_red
@@ -226,12 +259,12 @@ class TestMPLIntegration:
         plt.style.use("default")
         plt.close()
 
-    def test_style(self):
-        """Test matplotlib styles impact figure styling."""
+    def test_style_with_matplotlib(self):
+        """Test matplotlib styles impact figure styling for draw_mpl(circuit, style=None)."""
 
         plt.style.use("fivethirtyeight")
 
-        _, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, style=None)(1.23, 2.34)
 
         expected_facecolor = mpl.colors.to_rgba(plt.rcParams["patch.facecolor"])
         assert ax.patches[0].get_facecolor() == expected_facecolor
@@ -243,3 +276,32 @@ class TestMPLIntegration:
 
         plt.style.use("default")
         plt.close()
+
+    def test_style_restores_settings(self):
+        """Test that selecting style as draw_mpl(circuit, style=None) does not modify the users
+        general matplotlib plotting settings"""
+
+        initial_facecolor = mpl.rcParams["axes.facecolor"]
+        initial_patch_facecolor = mpl.rcParams["patch.facecolor"]
+        initial_patch_edgecolor = mpl.rcParams["patch.edgecolor"]
+
+        # confirm settings were updated for the draw_mpl plot
+        _, ax = qml.draw_mpl(circuit1, style="sketch")(1.234, 1.234)
+        assert ax.get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
+        assert ax.patches[3].get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
+        assert ax.patches[3].get_edgecolor() == (0.0, 0.0, 0.0, 1.0)
+
+        # confirm general matplotlib settings were reset after plotting
+        assert mpl.rcParams["axes.facecolor"] == initial_facecolor
+        assert mpl.rcParams["patch.facecolor"] == initial_patch_facecolor
+        assert mpl.rcParams["patch.edgecolor"] == initial_patch_edgecolor

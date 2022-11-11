@@ -28,8 +28,8 @@ from pennylane.grouping.utils import (
     pauli_word_to_string,
     string_to_pauli_word,
     pauli_word_to_matrix,
-    is_commuting,
     is_qwc,
+    are_pauli_words_qwc,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
@@ -195,6 +195,28 @@ class TestGroupingUtils:
             == True
         )
 
+    obs_lsts = [
+        ([qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(2), qml.PauliX(1) @ qml.PauliY(2)], True),
+        ([qml.PauliZ(0) @ qml.Identity(1), qml.PauliY(2), qml.PauliX(2) @ qml.PauliY(1)], False),
+        (
+            [
+                qml.PauliZ(0) @ qml.PauliX(1),
+                qml.PauliY(2),
+                qml.Identity(1) @ qml.PauliY(2),
+                qml.Identity(0),
+            ],
+            True,
+        ),  # multi I
+        ([qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(2), qml.PauliX(1) @ qml.PauliY(2)], False),
+    ]
+
+    @pytest.mark.parametrize("obs_lst, expected_qwc", obs_lsts)
+    def test_are_qwc_pauli_words(self, obs_lst, expected_qwc):
+        """Given a list of Pauli words test that this function accurately
+        determines if they are pairwise qubit-wise commuting."""
+        qwc = are_pauli_words_qwc(obs_lst)
+        assert qwc == expected_qwc
+
     def test_is_qwc_not_equal_lengths(self):
         """Tests ValueError is raised when input Pauli vectors are not of equal length."""
 
@@ -232,6 +254,14 @@ class TestGroupingUtils:
         assert is_pauli_word(observable_2)
         assert not is_pauli_word(observable_3)
         assert not is_pauli_word(observable_4)
+
+    def test_is_pauli_word_non_observable(self):
+        """Test that non-observables are not Pauli Words."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert not is_pauli_word(DummyOp(1))
 
     def test_are_identical_pauli_words(self):
         """Tests for determining if two Pauli words have the same ``wires`` and ``name`` attributes."""
@@ -446,38 +476,3 @@ class TestGroupingUtils:
         """Ensure invalid inputs are handled properly when converting Pauli words to matrices."""
         with pytest.raises(TypeError):
             pauli_word_to_matrix(non_pauli_word)
-
-    @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2,wire_map,commute_status",
-        [
-            (Identity(0), PauliZ(0), {0: 0}, True),
-            (PauliY(0), PauliZ(0), {0: 0}, False),
-            (PauliX(0), PauliX(1), {0: 0, 1: 1}, True),
-            (PauliY("x"), PauliX("y"), None, True),
-            (
-                PauliZ("a") @ PauliY("b") @ PauliZ("d"),
-                PauliX("a") @ PauliZ("c") @ PauliY("d"),
-                {"a": 0, "b": 1, "c": 2, "d": 3},
-                True,
-            ),
-            (
-                PauliX("a") @ PauliY("b") @ PauliZ("d"),
-                PauliX("a") @ PauliZ("c") @ PauliY("d"),
-                {"a": 0, "b": 1, "c": 2, "d": 3},
-                False,
-            ),
-        ],
-    )
-    def test_is_commuting(self, pauli_word_1, pauli_word_2, wire_map, commute_status):
-        """Test that (non)-commuting Pauli words are correctly identified."""
-        do_they_commute = is_commuting(pauli_word_1, pauli_word_2, wire_map=wire_map)
-        assert do_they_commute == commute_status
-
-    @pytest.mark.parametrize(
-        "pauli_word_1,pauli_word_2",
-        [(non_pauli_words[0], PauliX(0) @ PauliY(2)), (PauliX(0) @ PauliY(2), non_pauli_words[0])],
-    )
-    def test_is_commuting_invalid_input(self, pauli_word_1, pauli_word_2):
-        """Ensure invalid inputs are handled properly when determining commutativity."""
-        with pytest.raises(TypeError):
-            is_commuting(pauli_word_1, pauli_word_2)

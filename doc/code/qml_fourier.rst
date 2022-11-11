@@ -103,7 +103,7 @@ However, estimates based on the input-encoding strategy can still be useful to u
 the potential expressivity of a type of ansatz.
 
 The theoretically supported frequencies can be computed
-using the :func:`~.pennylane.fourier.spectrum` function. To mark which gates encode
+using the :func:`~.pennylane.fourier.circuit_spectrum` function. To mark which gates encode
 inputs (and, for example, which ones are only used for trainable parameters), we
 have to give input-encoding gates an ``id``:
 
@@ -124,8 +124,8 @@ We can then compute the frequencies supported by the input-encoding gates as:
 
 .. code::
 
-   >>> from pennylane.fourier import spectrum
-   >>> freqs = spectrum(simple_circuit_marked)([0.1])
+   >>> from pennylane.fourier import circuit_spectrum
+   >>> freqs = circuit_spectrum(simple_circuit_marked)([0.1])
    >>> for k, v in freqs.items():
    >>>     print(k, ":", v)
 
@@ -134,7 +134,7 @@ We can then compute the frequencies supported by the input-encoding gates as:
 .. note::
 
     Some encoding-gate types may give rise to non-integer-valued frequencies. In this case,
-    the :func:`~.pennylane.fourier.spectrum` function computes the frequency sets :math:`\Omega_j`
+    the :func:`~.pennylane.fourier.circuit_spectrum` function computes the frequency sets :math:`\Omega_j`
     of the *Fourier sum* of the form
 
     .. math::

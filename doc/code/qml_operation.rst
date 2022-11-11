@@ -14,7 +14,7 @@ qml.operation
 .. automodapi:: pennylane.operation
     :no-heading:
     :include-all-objects:
-    :skip: IntEnum, ClassPropertyDescriptor, multi_dot, pauli_eigs, Wires, eye, kron, coo_matrix
+    :skip: IntEnum, ClassPropertyDescriptor, multi_dot, pauli_eigs, Wires, eye, kron, coo_matrix, expand_matrix, QueuingManager
 
 
 Operation attributes
@@ -36,5 +36,6 @@ new :class:`~pennylane.ops.qubit.attributes.Attribute` objects.
     ~ops.qubit.attributes.diagonal_in_z_basis
     ~ops.qubit.attributes.has_unitary_generator
     ~ops.qubit.attributes.self_inverses
+    ~ops.qubit.attributes.supports_broadcasting
     ~ops.qubit.attributes.symmetric_over_all_wires
     ~ops.qubit.attributes.symmetric_over_control_wires

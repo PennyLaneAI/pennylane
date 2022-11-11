@@ -15,12 +15,14 @@
 Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
-import pytest
-import numpy as np
-from pennylane import numpy as npp
-import pennylane as qml
 import itertools
 
+import numpy as np
+import pytest
+
+import pennylane as qml
+from pennylane import numpy as npp
+from pennylane.measurements import MeasurementProcess, ObservableReturnTypes
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qml.RX,
@@ -106,6 +108,59 @@ PARAMETRIZED_OPERATIONS_COMBINATIONS = list(
 )
 
 
+PARAMETRIZED_MEASUREMENTS = [
+    qml.sample(qml.PauliY(0)),
+    qml.sample(wires=0),
+    qml.sample(),
+    qml.counts(qml.PauliZ(0)),
+    qml.counts(wires=[0, 1]),
+    qml.counts(wires=[1, 0]),
+    qml.counts(),
+    qml.density_matrix(wires=0),
+    qml.density_matrix(wires=1),
+    qml.var(qml.PauliY(1)),
+    qml.var(qml.PauliY(0)),
+    qml.expval(qml.PauliX(0)),
+    qml.expval(qml.PauliX(1)),
+    qml.probs(wires=1),
+    qml.probs(wires=0),
+    qml.probs(qml.PauliZ(0)),
+    qml.probs(qml.PauliZ(1)),
+    qml.state(),
+    qml.vn_entropy(wires=0),
+    qml.vn_entropy(wires=0, log_base=np.e),
+    qml.mutual_info(wires0=[0], wires1=[1]),
+    qml.mutual_info(wires0=[1], wires1=[0]),
+    qml.mutual_info(wires0=[1], wires1=[0], log_base=2),
+    qml.classical_shadow(wires=[0, 1]),
+    qml.classical_shadow(wires=[1, 0]),
+    qml.shadow_expval(
+        H=qml.Hamiltonian(
+            [1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+        ),
+        k=2,
+    ),
+    qml.shadow_expval(
+        H=qml.Hamiltonian(
+            [1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+        )
+    ),
+    qml.shadow_expval(
+        H=qml.Hamiltonian(
+            [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        )
+    ),
+    MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, -1]),
+    MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, 2]),
+]
+PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
+    itertools.combinations(
+        PARAMETRIZED_MEASUREMENTS,
+        2,
+    )
+)
+
+
 class TestEqual:
     @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
     def test_equal_simple_diff_op(self, ops):
@@ -147,9 +202,9 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = 0
 
-        import torch
-        import tensorflow as tf
         import jax
+        import tensorflow as tf
+        import torch
 
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
@@ -193,9 +248,9 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = [0, 1]
 
-        import torch
-        import tensorflow as tf
         import jax
+        import tensorflow as tf
+        import torch
 
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
@@ -263,9 +318,9 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = [0, 1, 2, 3]
 
-        import torch
-        import tensorflow as tf
         import jax
+        import tensorflow as tf
+        import torch
 
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
@@ -333,9 +388,9 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = 0
 
-        import torch
-        import tensorflow as tf
         import jax
+        import tensorflow as tf
+        import torch
 
         param_torch = torch.tensor([1, 2, 3])
         param_tf = tf.Variable([1, 2, 3])
@@ -402,9 +457,9 @@ class TestEqual:
         """Test optional arguments are working"""
         wire = 0
 
-        import torch
-        import tensorflow as tf
         import jax
+        import tensorflow as tf
+        import torch
 
         param_torch = torch.tensor([1, 2])
         param_tf = tf.Variable([1, 2])
@@ -832,3 +887,127 @@ class TestEqual:
             check_trainability=False,
             check_interface=False,
         )
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_1W)
+    def test_equal_trainable_different_interface(self, op1):
+        """Test equal method with two operators with trainable inputs and
+        different interfaces.
+
+        This test case tests the 4 interface with each other pairwise,
+        totalling a 4*3/2=6 total assertions in the following order (assuming
+        symmetry doesn't affect the behaviour):
+
+        -JAX and Autograd
+        -JAX and TF
+        -JAX and Torch
+        -TF and Autograd
+        -TF and Torch
+        -Autograd and Torch
+        """
+        import jax
+        import tensorflow as tf
+        import torch
+
+        wire = 0
+
+        pl_tensor = qml.numpy.array(0.3, requires_grad=True)
+        tf_tensor = tf.Variable(0.3)
+        torch_tensor = torch.tensor(0.3, requires_grad=True)
+
+        non_jax_tensors = [pl_tensor, tf_tensor, torch_tensor]
+
+        # JAX and the others
+        # ------------------
+        # qml.math.requires_grad returns True for a Tracer with JAX, the
+        # assertion involves using a JAX function that transforms a JAX NumPy
+        # array into a Tracer
+        def jax_assertion_func(x, other_tensor):
+            operation1 = op1(jax.numpy.array(x), wires=1)
+            operation2 = op1(other_tensor, wires=1)
+            if isinstance(other_tensor, tf.Variable):
+                with tf.GradientTape() as tape:
+                    assert qml.equal(
+                        operation1, operation2, check_interface=False, check_trainability=True
+                    )
+            else:
+                assert qml.equal(
+                    operation1, operation2, check_interface=False, check_trainability=True
+                )
+            return x
+
+        par = 0.3
+        for tensor in non_jax_tensors:
+            jax.grad(jax_assertion_func, argnums=0)(par, tensor)
+
+        # TF and Autograd
+        # ------------------
+        with tf.GradientTape() as tape:
+            assert qml.equal(
+                op1(tf_tensor, wires=wire),
+                op1(pl_tensor, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+
+        # TF and Torch
+        # ------------------
+        with tf.GradientTape() as tape:
+            assert qml.equal(
+                op1(tf_tensor, wires=wire),
+                op1(torch_tensor, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+
+        # Autograd and Torch
+        # ------------------
+        assert qml.equal(
+            op1(pl_tensor, wires=wire),
+            op1(torch_tensor, wires=wire),
+            check_trainability=True,
+            check_interface=False,
+        )
+
+    def test_equal_with_different_arithmetic_depth(self):
+        """Test equal method with two operators with different arithmetic depth."""
+        assert not qml.equal(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.adjoint(qml.PauliX(0))))
+
+    def test_equal_with_nested_operators_raises_error(self):
+        """Test that the equal method with two operators with the same arithmetic depth (>0) raises
+        an error."""
+        with pytest.raises(
+            NotImplementedError,
+            match="Comparison of operators with an arithmetic"
+            + " depth larger than 0 is not yet implemented.",
+        ):
+            qml.equal(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)))
+
+    def test_equal_same_inversion(self):
+        """Test operations are equal if they are both inverted."""
+        op1 = qml.RX(1.2, wires=0).inv()
+        op2 = qml.RX(1.2, wires=0).inv()
+        assert qml.equal(op1, op2)
+
+    def test_not_equal_different_inversion(self):
+        """Test operations are not equal if one is inverted and the other is not."""
+        op1 = qml.PauliX(0)
+        op2 = qml.PauliX(0).inv()
+        assert not qml.equal(op1, op2)
+
+    # Measurements test cases
+    @pytest.mark.parametrize("ops", PARAMETRIZED_MEASUREMENTS_COMBINATIONS)
+    def test_not_equal_diff_measurement(self, ops):
+        """Test different measurements return False"""
+        assert not qml.equal(ops[0], ops[1])
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_MEASUREMENTS)
+    def test_equal_same_measurement(self, op1):
+        """Test same measurements return True"""
+        assert qml.equal(op1, op1)
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
+    @pytest.mark.parametrize("op2", PARAMETRIZED_MEASUREMENTS)
+    def test_not_equal_operator_measurement(self, op1, op2):
+        """Test operator not equal to measurement"""
+        assert not qml.equal(op1, op2)

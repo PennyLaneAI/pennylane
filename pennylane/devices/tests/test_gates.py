@@ -61,6 +61,7 @@ ops = {
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
     "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
     "MultiControlledX": qml.MultiControlledX(control_wires=[1, 2], wires=[0]),
+    "IntegerComparator": qml.IntegerComparator(1, geq=True, wires=[0, 1, 2]),
     "RX": qml.RX(0, wires=[0]),
     "RY": qml.RY(0, wires=[0]),
     "RZ": qml.RZ(0, wires=[0]),
@@ -69,6 +70,7 @@ ops = {
     "Adjoint(S)": qml.adjoint(qml.S(wires=[0])),
     "SWAP": qml.SWAP(wires=[0, 1]),
     "ISWAP": qml.ISWAP(wires=[0, 1]),
+    "PSWAP": qml.PSWAP(0, wires=[0, 1]),
     "ECR": qml.ECR(wires=[0, 1]),
     "Adjoint(ISWAP)": qml.adjoint(qml.ISWAP(wires=[0, 1])),
     "T": qml.T(wires=[0]),
@@ -229,6 +231,15 @@ IsingZZ = lambda phi: np.array(
     ]
 )
 
+PSWAP = lambda phi: np.array(
+    [
+        [1, 0, 0, 0],
+        [0, 0, exp(1.0j * phi), 0],
+        [0, exp(1.0j * phi), 0, 0],
+        [0, 0, 0, 1],
+    ]
+)
+
 
 def adjoint_tuple(op, orig_mat):
     """Returns op constructor and matrix for provided base ops."""
@@ -278,6 +289,7 @@ two_qubit_param = [
     (qml.IsingXY, IsingXY),
     (qml.IsingYY, IsingYY),
     (qml.IsingZZ, IsingZZ),
+    (qml.PSWAP, PSWAP),
 ]
 two_qubit_multi_param = [(qml.CRot, crot)]
 # list of all three-qubit gates

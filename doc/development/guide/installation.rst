@@ -8,7 +8,8 @@ PennyLane requires the following libraries be installed:
 
 * `Python <http://python.org/>`_ >= 3.7
 
-as well as the following Python packages:
+The following Python packages are hard dependencies, and will automatically
+be installed alongside PennyLane:
 
 * `numpy <http://numpy.org/>`_ >= 1.13.3
 * `scipy <http://scipy.org/>`_ >= 1.0.0
@@ -16,13 +17,14 @@ as well as the following Python packages:
 * `autograd <https://github.com/HIPS/autograd>`_
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
-* `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ == 2.6
+* `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ >= 2.7
 * `autoray <https://github.com/jcmgray/autoray>`__
 
 The following Python packages are optional:
 
 * `dask["parallel"] <https://dask.org/>`_, for parallel QNodeCollection execution
 * `tensornetwork <https://github.com/google/TensorNetwork>`_ >= 0.3, for the ``default.tensor`` plugin
+* `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qml.qchem`` module
 
 If you currently do not have Python 3 installed, we recommend
 `Anaconda for Python 3 <https://www.anaconda.com/download/>`_, a distributed version
@@ -33,8 +35,10 @@ of Python packaged for scientific computation.
 Interface dependencies
 ~~~~~~~~~~~~~~~~~~~~~~
 
-For development of the TensorFlow and PyTorch interfaces, there are additional
-requirements:
+For development of the TensorFlow, PyTorch, and JAX interfaces, there are additional
+requirements which must be installed manually:
+
+* **JAX interface**: ``jax > 0.2.0`` and ``jaxlib``
 
 * **PyTorch interface**: ``pytorch >= 1.1``
 

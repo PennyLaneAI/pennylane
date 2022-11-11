@@ -18,4 +18,3 @@ repos:
     hooks:
     - id: black
       exclude: ^doc/
-      language_version: python3.8

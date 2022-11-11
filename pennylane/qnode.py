@@ -14,17 +14,18 @@
 """
 This module contains the QNode class and qnode decorator.
 """
-# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access
-from collections.abc import Sequence
+# pylint: disable=too-many-instance-attributes,too-many-arguments,protected-access,unnecessary-lambda-assignment
 import functools
 import inspect
 import warnings
+from collections.abc import Sequence
 
 import autograd
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES, INTERFACE_MAP
+from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
+from pennylane.tape import QuantumTape
 
 
 class QNode:
@@ -64,6 +65,9 @@ class QNode:
               (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
+
+            * ``"auto"``: The QNode automatically detects the interface from the input values of
+              the quantum function.
 
         diff_method (str or .gradient_transform): The method of differentiation to use in the created QNode.
             Can either be a :class:`~.gradient_transform`, which includes all quantum gradient
@@ -245,7 +249,7 @@ class QNode:
                 f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACES}."
             )
 
-        self._interface = value
+        self._interface = INTERFACE_MAP[value]
         self._update_gradient_fn()
 
     def _update_gradient_fn(self):
@@ -253,6 +257,8 @@ class QNode:
             self._interface = None
             self.gradient_fn = None
             self.gradient_kwargs = {}
+            return
+        if self.interface == "auto":
             return
 
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
@@ -297,7 +303,6 @@ class QNode:
             tuple[str or .gradient_transform, dict, .Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
-
         if diff_method == "best":
             return QNode.get_best_method(device, interface)
 
@@ -479,21 +484,18 @@ class QNode:
                 " Adjoint differentiation always calculated exactly.",
                 UserWarning,
             )
-
         return "device", {"use_device_state": True, "method": "adjoint_jacobian"}, device
 
     @staticmethod
     def _validate_device_method(device):
         # determine if the device provides its own jacobian method
-        provides_jacobian = device.capabilities().get("provides_jacobian", False)
+        if device.capabilities().get("provides_jacobian", False):
+            return "device", {}, device
 
-        if not provides_jacobian:
-            raise qml.QuantumFunctionError(
-                f"The {device.short_name} device does not provide a native "
-                "method for computing the jacobian."
-            )
-
-        return "device", {}, device
+        raise qml.QuantumFunctionError(
+            f"The {device.short_name} device does not provide a native "
+            "method for computing the jacobian."
+        )
 
     @staticmethod
     def _validate_parameter_shift(device):
@@ -511,7 +513,7 @@ class QNode:
         )
 
     @property
-    def tape(self):
+    def tape(self) -> QuantumTape:
         """The quantum tape"""
         return self._tape
 
@@ -529,7 +531,9 @@ class QNode:
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        if not isinstance(self._qfunc_output, Sequence):
+        if isinstance(self._qfunc_output, qml.numpy.ndarray):
+            measurement_processes = tuple(self.tape.measurements)
+        elif not isinstance(self._qfunc_output, Sequence):
             measurement_processes = (self._qfunc_output,)
         else:
             measurement_processes = self._qfunc_output
@@ -545,17 +549,19 @@ class QNode:
         terminal_measurements = [
             m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
         ]
-        if not all(ret == m for ret, m in zip(measurement_processes, terminal_measurements)):
+        if any(ret != m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
 
         for obj in self.tape.operations + self.tape.observables:
 
-            if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
+            if (
+                getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
+                and len(obj.wires) != self.device.num_wires
+            ):
                 # check here only if enough wires
-                if len(obj.wires) != self.device.num_wires:
-                    raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
+                raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
             # pylint: disable=no-member
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
@@ -585,8 +591,11 @@ class QNode:
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
         override_shots = False
+        old_interface = self.interface
+        if old_interface == "auto":
+            self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
@@ -616,6 +625,61 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
+        if qml.active_return():
+            res = qml.execute(
+                [self.tape],
+                device=self.device,
+                gradient_fn=self.gradient_fn,
+                interface=self.interface,
+                gradient_kwargs=self.gradient_kwargs,
+                override_shots=override_shots,
+                **self.execute_kwargs,
+            )
+
+            res = res[0]
+
+            # Autograd or tensorflow: they do not support tuple return with backpropagation
+            backprop = False
+            if not isinstance(
+                self._qfunc_output, qml.measurements.MeasurementProcess
+            ) and self.interface in ("tf", "autograd"):
+                if isinstance(res, Sequence):
+                    backprop = any(qml.math.in_backprop(x) for x in res)
+                else:
+                    # res might not be a sequence even if the qfunc output is a sequence
+                    # of length 1
+                    backprop = qml.math.in_backprop(res)
+
+            if old_interface == "auto":
+                self.interface = "auto"
+
+            # Special case of single Measurement in a list
+            if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
+                return [res]
+
+            if self.gradient_fn == "backprop" and backprop:
+                res = self.device._asarray(res)
+
+            # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
+            if (
+                not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
+                and not backprop
+            ):
+                if self.device._shot_vector:
+                    res = [type(self.tape._qfunc_output)(r) for r in res]
+                    res = tuple(res)
+
+                else:
+                    res = type(self.tape._qfunc_output)(res)
+
+            if override_shots is not False:
+                # restore the initialization gradient function
+                self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
+
+            self._update_original_device()
+
+            return res
+
         res = qml.execute(
             [self.tape],
             device=self.device,
@@ -625,6 +689,9 @@ class QNode:
             override_shots=override_shots,
             **self.execute_kwargs,
         )
+
+        if old_interface == "auto":
+            self.interface = "auto"
 
         if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
             # If a device batch transform was applied, we need to 'unpack'
@@ -640,6 +707,26 @@ class QNode:
 
             res = res[0]
 
+        if not isinstance(self._qfunc_output, Sequence) and self._qfunc_output.return_type in (
+            qml.measurements.Counts,
+            qml.measurements.AllCounts,
+        ):
+            if self.device._has_partitioned_shots():
+                return tuple(res)
+
+            # return a dictionary with counts not as a single-element array
+            return res[0]
+
+        if isinstance(self._qfunc_output, Sequence) and any(
+            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+            for m in self._qfunc_output
+        ):
+
+            # If Counts was returned with other measurements, then apply the
+            # data structure used in the qfunc
+            qfunc_output_type = type(self._qfunc_output)
+            return qfunc_output_type(res)
+
         if override_shots is not False:
             # restore the initialization gradient function
             self.gradient_fn, self.gradient_kwargs, self.device = original_grad_fn
@@ -651,6 +738,12 @@ class QNode:
         ):
             return res
 
+        if self._qfunc_output.return_type is qml.measurements.Shadow:
+            # if classical shadows is returned, then don't squeeze the
+            # last axis corresponding to the number of qubits
+            return qml.math.squeeze(res, axis=0)
+
+        # Squeeze arraylike outputs
         return qml.math.squeeze(res)
 
 

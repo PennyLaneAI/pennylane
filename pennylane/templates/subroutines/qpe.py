@@ -167,6 +167,6 @@ class QuantumPhaseEstimation(Operation):
                 ControlledQubitUnitary(unitary_powers.pop(), control_wires=wire, wires=target_wires)
             )
 
-        op_list.append(qml.templates.QFT(wires=estimation_wires).inv())
+        op_list.append(qml.adjoint(qml.templates.QFT(wires=estimation_wires)))
 
         return op_list

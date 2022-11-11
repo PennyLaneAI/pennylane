@@ -84,3 +84,12 @@ class TestDecomposition:
         assert len(ops1) == len(ops2) == 1
         assert isinstance(ops1[0], qml.MottonenStatePreparation)
         assert isinstance(ops2[0], qml.MottonenStatePreparation)
+
+    def test_QubitStateVector_broadcasting(self):
+        """Test broadcasting for QubitStateVector."""
+
+        U = np.eye(4)[:3]
+        wires = (0, 1)
+
+        op = qml.QubitStateVector(U, wires=wires)
+        assert op.batch_size == 3

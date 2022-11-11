@@ -76,7 +76,7 @@ Features
 
 ..
 
-- *Device independent*.
+- *Device-independent*.
   The same quantum circuit model can be **run on different backends**. Install
   `plugins <https://pennylane.ai/plugins.html>`_ to access even more
   devices, including **Strawberry Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**,
@@ -116,11 +116,9 @@ If you are doing research using PennyLane, please cite
 
 .. rst-class:: admonition warning
 
-    Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, M. Sohaib Alam, Shahnawaz Ahmed,
-    Juan Miguel Arrazola, Carsten Blank, Alain Delgado, Soran Jahangiri, Keri McKiernan, Johannes Jakob Meyer,
-    Zeyue Niu, Antal Száva, and Nathan Killoran.
-    *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018.
-    `arXiv:1811.04968 <https://arxiv.org/abs/1811.04968>`_
+    Ville Bergholm et al. *PennyLane: Automatic differentiation of hybrid
+    quantum-classical computations.* 2018. `arXiv:1811.04968
+    <https://arxiv.org/abs/1811.04968>`_
 
 Support and contribution
 ------------------------
@@ -158,6 +156,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/inspecting_circuits
    introduction/compiling_circuits
    introduction/chemistry
+   introduction/data
 
 .. toctree::
    :maxdepth: 1
@@ -167,6 +166,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    development/guide
    development/plugins
    development/adding_operators
+   development/deprecations
    development/release_notes.md
 
 .. toctree::
@@ -175,22 +175,31 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/qml
-   code/qml_interfaces
-   code/qml_operation
-   code/qml_devices
+   code/qml_data
+   code/qml_drawer
    code/qml_fourier
    code/qml_gradients
-   code/qml_grouping
    code/qml_kernels
    code/qml_math
-   code/qml_qinfo
    code/qml_numpy
+   code/qml_ops_op_math
+   code/qml_pauli
+   code/qml_qinfo
+   code/qml_resource
+   code/qml_shadows
+   code/qml_transforms
    code/qml_qaoa
-   code/qml_hf
    code/qml_qchem
    code/qml_qnn
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Internals
+   :hidden:
+
+   code/qml_devices
+   code/qml_interfaces
+   code/qml_operation
    code/qml_tape
-   code/qml_transforms
-   code/qml_drawer
    code/qml_utils
    code/qml_wires

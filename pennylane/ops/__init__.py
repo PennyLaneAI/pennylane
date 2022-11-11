@@ -18,11 +18,12 @@
 This module contains core quantum operations supported by PennyLane -
 such as gates, state preparations and observables.
 """
-from .op_math import adjoint, ctrl
 
 from .cv import *
 from .qubit import *
 from .channel import *
+from .op_math import *
+from .qutrit import *
 
 from .cv import __all__ as _cv__all__
 from .cv import ops as _cv__ops__
@@ -32,9 +33,13 @@ from .qubit import __all__ as _qubit__all__
 from .qubit import ops as _qubit__ops__
 from .qubit import obs as _qubit__obs__
 
+from .qutrit import __all__ as _qutrit__all__
+from .qutrit import ops as _qutrit__ops__
+from .qutrit import obs as _qutrit__obs__
+
 from .channel import __all__ as _channel__ops__
 
 
-__all__ = _cv__all__ + _qubit__all__ + _channel__ops__
-__all_ops__ = list(_cv__ops__ | _qubit__ops__)
-__all_obs__ = list(_cv__obs__ | _qubit__obs__)
+__all__ = _cv__all__ + _qubit__all__ + _qutrit__all__ + _channel__ops__
+__all_ops__ = list(_cv__ops__ | _qubit__ops__ | _qutrit__ops__)
+__all_obs__ = list(_cv__obs__ | _qubit__obs__ | _qutrit__obs__)

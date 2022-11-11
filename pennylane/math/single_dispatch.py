@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autoray registrations"""
-# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position
+# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
 import numbers
 
@@ -76,6 +76,16 @@ ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
 ar.register_function("numpy", "eigvalsh", np.linalg.eigvalsh)
 ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x)))
 
+
+def _cond(pred, true_fn, false_fn, args):
+    if pred:
+        return true_fn(*args)
+
+    return false_fn(*args)
+
+
+ar.register_function("numpy", "cond", _cond)
+ar.register_function("builtins", "cond", _cond)
 
 # -------------------------------- Autograd --------------------------------- #
 
@@ -174,6 +184,7 @@ ar.register_function(
 )
 
 ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
+ar.register_function("autograd", "cond", _cond)
 
 
 # -------------------------------- TensorFlow --------------------------------- #
@@ -190,6 +201,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experiment
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
@@ -361,6 +373,41 @@ ar.register_function(
 )
 
 
+def _kron_tf(a, b):
+    import tensorflow as tf
+
+    a_shape = a.shape
+    b_shape = b.shape
+
+    if len(a_shape) == 1:
+        a = a[:, tf.newaxis]
+        b = b[tf.newaxis, :]
+        return tf.reshape(a * b, (a_shape[0] * b_shape[0],))
+
+    a = a[:, tf.newaxis, :, tf.newaxis]
+    b = b[tf.newaxis, :, tf.newaxis, :]
+    return tf.reshape(a * b, (a_shape[0] * b_shape[0], a_shape[1] * b_shape[1]))
+
+
+ar.register_function("tensorflow", "kron", _kron_tf)
+
+
+def _cond_tf(pred, true_fn, false_fn, args):
+    import tensorflow as tf
+
+    return tf.cond(pred, lambda: true_fn(*args), lambda: false_fn(*args))
+
+
+ar.register_function("tensorflow", "cond", _cond_tf)
+
+
+ar.register_function(
+    "tensorflow",
+    "vander",
+    lambda *args, **kwargs: _i("tf").experimental.numpy.vander(*args, **kwargs),
+)
+
+
 # -------------------------------- Torch --------------------------------- #
 
 ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
@@ -402,6 +449,7 @@ ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagona
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
+ar.register_function("torch", "equal", lambda x, y: _i("torch").eq(x, y))
 
 ar.register_function(
     "torch",
@@ -559,7 +607,7 @@ def _ndim_torch(tensor):
 
 
 ar.register_function("torch", "ndim", _ndim_torch)
-# pylint: disable=unnecessary-lambda
+
 ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
 ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
 
@@ -577,6 +625,7 @@ def _sum_torch(tensor, axis=None, keepdims=False, dtype=None):
 
 
 ar.register_function("torch", "sum", _sum_torch)
+ar.register_function("torch", "cond", _cond)
 
 
 # -------------------------------- JAX --------------------------------- #
@@ -605,6 +654,17 @@ ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
+
+
+def _scatter_jax(indices, array, new_dimensions):
+    from jax import numpy as jnp
+
+    new_array = jnp.zeros(new_dimensions, dtype=array.dtype.type)
+    new_array = new_array.at[indices].set(array)
+    return new_array
+
+
+ar.register_function("jax", "scatter", _scatter_jax)
 ar.register_function(
     "jax",
     "scatter_element_add",
@@ -614,3 +674,9 @@ ar.register_function("jax", "unstack", list)
 # pylint: disable=unnecessary-lambda
 ar.register_function("jax", "eigvalsh", lambda x: _i("jax").numpy.linalg.eigvalsh(x))
 ar.register_function("jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x)))
+
+ar.register_function(
+    "jax",
+    "cond",
+    lambda pred, true_fn, false_fn, args: _i("jax").lax.cond(pred, true_fn, false_fn, *args),
+)

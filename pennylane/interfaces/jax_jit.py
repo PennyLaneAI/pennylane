@@ -19,14 +19,25 @@ to a PennyLane Device class.
 # pylint: disable=too-many-arguments
 import jax
 import jax.numpy as jnp
-from jax.experimental import host_callback
 
 import numpy as np
+import semantic_version
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
 
 dtype = jnp.float64
+
+
+def _validate_jax_version():
+    if semantic_version.match("<0.3.17", jax.__version__) or semantic_version.match(
+        "<0.3.15", jax.lib.__version__
+    ):
+        msg = (
+            "The JAX JIT interface of PennyLane requires version 0.3.17 or higher for JAX "
+            "and 0.3.15 or higher JAX lib. Please upgrade these packages."
+        )
+        raise InterfaceUnsupportedError(msg)
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
@@ -67,6 +78,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
+
+    _validate_jax_version()
 
     if gradient_fn is None:
         return _execute_with_fwd(
@@ -151,7 +164,7 @@ def _execute(
             return res
 
         shape_dtype_structs = _extract_shape_dtype_structs(tapes, device)
-        res = host_callback.call(wrapper, params, result_shape=shape_dtype_structs)
+        res = jax.pure_callback(wrapper, shape_dtype_structs, params)
         return res
 
     def wrapped_exec_fwd(params):
@@ -160,6 +173,17 @@ def _execute(
     def wrapped_exec_bwd(params, g):
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
+            for t in tapes:
+                multi_probs = (
+                    any(o.return_type is qml.measurements.Probability for o in t.observables)
+                    and len(t.observables) > 1
+                )
+
+                if multi_probs:
+                    raise InterfaceUnsupportedError(
+                        "The JAX-JIT interface doesn't support differentiating QNodes that "
+                        "return multiple probabilities."
+                    )
 
             def non_diff_wrapper(args):
                 """Compute the VJP in a non-differentiable manner."""
@@ -180,10 +204,10 @@ def _execute(
                 return np.concatenate(res)
 
             args = tuple(params) + (g,)
-            vjps = host_callback.call(
+            vjps = jax.pure_callback(
                 non_diff_wrapper,
+                jax.ShapeDtypeStruct((total_params,), dtype),
                 args,
-                result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
             )
 
             param_idx = 0
@@ -220,7 +244,7 @@ def _execute(
             jax.ShapeDtypeStruct((len(t.measurements), len(p)), dtype)
             for t, p in zip(tapes, params)
         ]
-        jacs = host_callback.call(jacs_wrapper, params, result_shape=shapes)
+        jacs = jax.pure_callback(jacs_wrapper, shapes, params)
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
         res = [[jnp.array(p) for p in v] for v in vjps]
         return (tuple(res),)
@@ -255,22 +279,20 @@ def _execute_with_fwd(
 
         fwd_shape_dtype_struct = _extract_shape_dtype_structs(tapes, device)
 
-        jacobian_shape = [t.shape(device) + (len(p),) for t in tapes for p in params]
-        jac_dtypes = [_numeric_type_to_dtype(t.numeric_type) for t in tapes]
+        # params should be the parameters for each tape queried prior, assert
+        # to double-check
+        assert len(tapes) == len(params)
 
-        # Note: for qml.probs we'll first have a [1,dim] shape for the tape
-        # which is then reduced by the QNode
-        jacobian_shape = [
-            jax.ShapeDtypeStruct(tuple([shape]), dtype)
-            if isinstance(shape, int)
-            else jax.ShapeDtypeStruct(tuple(shape), dtype)
-            for shape, dtype in zip(jacobian_shape, jac_dtypes)
-        ]
+        jacobian_shape = []
+        for t, p in zip(tapes, params):
+            shape = t.shape(device) + (len(p),)
+            _dtype = _numeric_type_to_dtype(t.numeric_type)
+            shape = [shape] if isinstance(shape, int) else shape
+            o = jax.ShapeDtypeStruct(tuple(shape), _dtype)
+            jacobian_shape.append(o)
 
-        res, jacs = host_callback.call(
-            wrapper,
-            params,
-            result_shape=tuple([fwd_shape_dtype_struct, jacobian_shape]),
+        res, jacs = jax.pure_callback(
+            wrapper, tuple([fwd_shape_dtype_struct, jacobian_shape]), params
         )
         return res, jacs
 

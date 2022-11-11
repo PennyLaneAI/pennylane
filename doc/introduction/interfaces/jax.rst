@@ -108,7 +108,7 @@ DeviceArray([-0.47942555,  0.        ], dtype=float32)
 DeviceArray(-3.4332792e-10, dtype=float32)
 
 
-.. _jax_optimize:
+.. _jax_jit:
 
 Using jax.jit on QNodes
 -----------------------
@@ -196,3 +196,75 @@ Example:
 
     If you don't pass a PRNGKey when sampling with a ``jax.jit``, every call to the sample function
     will return the same result.
+
+.. _jax_optimize:
+
+Optimization using JAXopt and Optax
+-----------------------------------
+
+To optimize your hybrid classical-quantum model using the JAX interface, you
+**must** make use of a package meant for optimizing JAX code (such as `JAXopt
+<https://jaxopt.github.io/stable/>`_ or `Optax
+<https://optax.readthedocs.io/en/latest/>`_) or your own custom JAX optimizer.
+**The** :ref:`PennyLane optimizers <intro_ref_opt>` **cannot be used with the
+JAX interface**.
+
+As an example of using ``JAXopt``, the ``GradientDescent`` optimizer may be
+used to optimize a QNode that is transformed by ``jax.jit``:
+
+.. code-block:: python
+
+    import pennylane as qml
+    import jax
+    import jaxopt
+
+    jax.config.update("jax_enable_x64", True)
+
+    dev = qml.device("default.qubit", wires=1, shots=None)
+
+    @jax.jit
+    @qml.qnode(dev, interface="jax")
+    def energy(a):
+        qml.RX(a, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    gd = jaxopt.GradientDescent(energy, maxiter=5)
+
+    res = gd.run(0.5)
+    optimized_params = res.params
+
+>>> optimized_params
+DeviceArray(3.1415861, dtype=float64, weak_type=True)
+
+Alternatively, optimizers from ``Optax`` may also be used to optimize the same
+QNode:
+
+.. code-block:: python
+
+    import pennylane as qml
+    from jax import numpy as jnp
+    import jax
+    import optax
+
+    learning_rate = 0.15
+
+    dev = qml.device("default.qubit", wires=1, shots=None)
+
+    @jax.jit
+    @qml.qnode(dev, interface="jax")
+    def energy(a):
+        qml.RX(a, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    optimizer = optax.adam(learning_rate)
+
+    params = jnp.array(0.5)
+    opt_state = optimizer.init(params)
+
+    for _ in range(200):
+        grads = jax.grad(energy)(params)
+        updates, opt_state = optimizer.update(grads, opt_state)
+        params = optax.apply_updates(params, updates)
+
+>>> params
+DeviceArray(3.14159111, dtype=float64)

@@ -32,7 +32,7 @@ from networkx import MultiDiGraph, has_path, weakly_connected_components
 import pennylane as qml
 from pennylane import apply, expval
 from pennylane import numpy as np
-from pennylane.grouping import string_to_pauli_word
+from pennylane.pauli import string_to_pauli_word
 from pennylane.measurements import Expectation, MeasurementProcess, Sample
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
@@ -448,12 +448,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     with QuantumTape() as tape:
         for op in copy_ops:
-            new_wires = Wires([wire_map[w] for w in op.wires])
-
-            # TODO: find a better way to update operation wires
-            op._wires = new_wires
-            apply(op)
-
+            op = qml.map_wires(op, wire_map=wire_map, queue=True)
             if isinstance(op, MeasureNode):
                 assert len(op.wires) == 1
                 measured_wire = op.wires[0]
@@ -481,8 +476,8 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 )
 
             for meas in copy_meas:
+                meas = qml.map_wires(meas, wire_map=wire_map)
                 obs = meas.obs
-                obs._wires = Wires([wire_map[w] for w in obs.wires])
                 observables.append(obs)
 
                 if return_type is Sample:
@@ -630,7 +625,7 @@ def expand_fragment_tape(
 
     n_meas = len(measure_nodes)
     if n_meas >= 1:
-        measure_combinations = qml.grouping.partition_pauli_group(len(measure_nodes))
+        measure_combinations = qml.pauli.partition_pauli_group(len(measure_nodes))
     else:
         measure_combinations = [[""]]
 
@@ -657,7 +652,7 @@ def expand_fragment_tape(
                     elif not isinstance(op, MeasureNode):
                         apply(op)
 
-                with qml.tape.stop_recording():
+                with qml.QueuingManager.stop_recording():
                     measurements = _get_measurements(group, tape.measurements)
                 for meas in measurements:
                     apply(meas)
@@ -1332,7 +1327,7 @@ def cut_circuit_mc(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
+    fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
 
     configurations, settings = expand_fragment_tapes_mc(
         fragment_tapes, communication_graph, shots=shots
@@ -1577,7 +1572,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
     1. Reshapes ``results`` into the intermediate shape ``(4,) * n_prep + (4**n_meas,)``
     2. Shuffles the final axis to follow the standard product over measurement settings. E.g., for
       ``n_meas = 2`` the standard product is: II, IX, IY, IZ, XI, ..., ZY, ZZ while the input order
-      will be the result of ``qml.grouping.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
+      will be the result of ``qml.pauli.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
       YY.
     3. Reshapes into the final target shape ``(4,) * (n_prep + n_meas)``
     4. Performs a change of basis for the preparation indices (the first ``n_prep`` indices) from
@@ -1599,7 +1594,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
     intermediate_tensor = qml.math.reshape(results, intermediate_shape)
 
     # Step 2
-    grouped = qml.grouping.partition_pauli_group(n_meas)
+    grouped = qml.pauli.partition_pauli_group(n_meas)
     grouped_flat = [term for group in grouped for term in group]
     order = qml.math.argsort(grouped_flat)
 
@@ -1801,7 +1796,7 @@ def cut_circuit(
 
             qml.CZ(wires=[1, 2])
 
-            return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+            return qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
     Executing ``circuit`` will run multiple configurations of the :math:`2`-qubit fragments which
     are then postprocessed to give the result of the original circuit:
@@ -1834,7 +1829,7 @@ def cut_circuit(
 
             qml.CZ(wires=[1, 2])
 
-            return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+            return qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
     >>> x = np.array(0.531, requires_grad=True)
     >>> circuit(x)
@@ -1882,7 +1877,7 @@ def cut_circuit(
 
                 qml.CZ(wires=[1, 2])
 
-                qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+                qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
         >>> print(qml.drawer.tape_text(tape))
         0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
@@ -1916,7 +1911,7 @@ def cut_circuit(
 
                 qml.CZ(wires=[1, 2])
 
-                qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+                qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
                 graph = qml.transforms.qcut.tape_to_graph(uncut_tape),
@@ -2061,7 +2056,7 @@ def cut_circuit(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
-    fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
+    fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, device_wires))) for t in fragment_tapes]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
     configurations = []
@@ -2194,6 +2189,12 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
      0: ──RX(0.5)──╭●──╭┤ ⟨Z ⊗ Z⟩
      1: ──RY(0.6)──╰X──╰┤ ⟨Z ⊗ Z⟩
     """
+    warnings.warn(
+        "The method remap_tape_wires is deprecated. Use "
+        "qml.map_wires(tape, dict(zip(tape.wires, wires))) instead.",
+        UserWarning,
+    )
+
     if len(tape.wires) > len(wires):
         raise ValueError(
             f"Attempting to run a {len(tape.wires)}-wire circuit on a "
@@ -2207,20 +2208,9 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
 
     with QuantumTape() as new_tape:
         for op in copy_ops:
-            new_wires = Wires([wire_map[w] for w in op.wires])
-            op._wires = new_wires
-            apply(op)
+            qml.map_wires(op, wire_map=wire_map, queue=True)
         for meas in copy_meas:
-            obs = meas.obs
-
-            if isinstance(obs, Tensor):
-                for obs in obs.obs:
-                    new_wires = Wires([wire_map[w] for w in obs.wires])
-                    obs._wires = new_wires
-            else:
-                new_wires = Wires([wire_map[w] for w in obs.wires])
-                obs._wires = new_wires
-            apply(meas)
+            qml.map_wires(meas, wire_map=wire_map, queue=True)
 
     return new_tape
 
@@ -2392,14 +2382,15 @@ class CutStrategy:
         ... ]
 
         """
-        tape_wires = set(w for _, _, w in tape_dag.edges.data("wire"))
-        num_tape_wires = len(tape_wires)
-        num_tape_gates = sum(not isinstance(n, WireCut) for n in tape_dag.nodes)
+        wire_depths = {}
+        for g in tape_dag.nodes:
+            if not isinstance(g, WireCut):
+                for w in g.wires:
+                    wire_depths[w] = wire_depths.get(w, 0) + 1 / len(g.wires)
         self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
 
         probed_cuts = self._infer_probed_cuts(
-            num_tape_wires=num_tape_wires,
-            num_tape_gates=num_tape_gates,
+            wire_depths=wire_depths,
             max_wires_by_fragment=max_wires_by_fragment,
             max_gates_by_fragment=max_gates_by_fragment,
             exhaustive=exhaustive,
@@ -2408,10 +2399,11 @@ class CutStrategy:
         return probed_cuts
 
     @staticmethod
-    def _infer_imbalance(
-        k, num_wires, num_gates, free_wires, free_gates, imbalance_tolerance=None
-    ) -> float:
+    def _infer_imbalance(k, wire_depths, free_wires, free_gates, imbalance_tolerance=None) -> float:
         """Helper function for determining best imbalance limit."""
+        num_wires = len(wire_depths)
+        num_gates = sum(wire_depths.values())
+
         avg_fragment_wires = (num_wires - 1) // k + 1
         avg_fragment_gates = (num_gates - 1) // k + 1
         if free_wires < avg_fragment_wires:
@@ -2434,8 +2426,9 @@ class CutStrategy:
             balancing_adjustment = 2 if avg_fragment_gates > 5 else 0
             free_gates = free_gates - (k - 1 + balancing_adjustment)
 
-        gate_imbalance = free_gates / avg_fragment_gates - 1
-        imbalance = max(gate_imbalance, 0.1 / avg_fragment_gates)  # numerical stability
+        depth_imbalance = max(wire_depths.values()) * num_wires / num_gates - 1
+        max_imbalance = free_gates / avg_fragment_gates - 1
+        imbalance = min(depth_imbalance, max_imbalance)
         if imbalance_tolerance is not None:
             imbalance = min(imbalance, imbalance_tolerance)
 
@@ -2476,8 +2469,7 @@ class CutStrategy:
 
     def _infer_probed_cuts(
         self,
-        num_tape_wires,
-        num_tape_gates,
+        wire_depths,
         max_wires_by_fragment=None,
         max_gates_by_fragment=None,
         exhaustive=True,
@@ -2505,6 +2497,9 @@ class CutStrategy:
             List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph
                 partitioner method.
         """
+
+        num_tape_wires = len(wire_depths)
+        num_tape_gates = int(sum(wire_depths.values()))
 
         # Assumes unlimited width/depth if not supplied.
         max_free_wires = self.max_free_wires or num_tape_wires
@@ -2568,8 +2563,7 @@ class CutStrategy:
         for k in ks:
             imbalance = self._infer_imbalance(
                 k,
-                num_tape_wires,
-                num_tape_gates,
+                wire_depths,
                 max_free_wires if max_wires_by_fragment is None else max(max_wires_by_fragment),
                 max_free_gates if max_gates_by_fragment is None else max(max_gates_by_fragment),
                 imbalance_tolerance,

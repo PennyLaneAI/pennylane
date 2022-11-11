@@ -155,9 +155,9 @@ class TestIntegration:
         n_wires = 2
 
         dev = qml.device("default.qubit", wires=n_wires)
+        dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000)
 
-        @qml.qnode(dev)
-        def circ(params):
+        def qfunc(params):
             qml.RX(params[0], wires=0)
             qml.RX(params[1], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -165,13 +165,15 @@ class TestIntegration:
 
         params = pnp.random.random(2)
 
-        QFIM_hard = quantum_fisher(circ, hardware=True)(params)
-        QFIM1_hard = 4.0 * qml.metric_tensor(circ)(params)
+        circ_hard = qml.QNode(qfunc, dev_hard)
+        QFIM_hard = quantum_fisher(circ_hard)(params)
+        QFIM1_hard = 4.0 * qml.metric_tensor(circ_hard)(params)
 
-        QFIM = quantum_fisher(circ, hardware=False)(params)
+        circ = qml.QNode(qfunc, dev)
+        QFIM = quantum_fisher(circ)(params)
         QFIM1 = 4.0 * qml.adjoint_metric_tensor(circ)(params)
         assert np.allclose(QFIM, QFIM1)
-        assert np.allclose(QFIM_hard, QFIM1_hard)
+        assert np.allclose(QFIM_hard, QFIM1_hard, atol=1e-1)
 
 
 class TestInterfacesClassicalFisher:
@@ -401,21 +403,184 @@ class TestInterfacesClassicalFisher:
 
         @qml.qnode(dev, interface="tf")
         def circ(x, y, z):
-            for xi in x:
+            for xi in tf.unstack(x):
                 qml.RX(xi, wires=0)
                 qml.RX(xi, wires=1)
-            for yi in y:
+            for yi in tf.unstack(y):
                 qml.RY(yi, wires=0)
                 qml.RY(yi, wires=1)
-            for zi in z:
+            for zi in tf.unstack(z):
                 qml.RZ(zi, wires=0)
                 qml.RZ(zi, wires=1)
             return qml.probs(wires=range(n_wires))
 
-        x = [tf.Variable(np.pi / 8) for _ in range(2)]
-        y = [tf.Variable(np.pi / 8) for _ in range(10)]
-        z = [tf.Variable(1.0) for _ in range(1)]
+        x = tf.Variable(np.pi / 8 * np.ones(2), trainable=True)
+        y = tf.Variable(np.pi / 8 * np.ones(10), trainable=True)
+        z = tf.Variable([1.0], trainable=True)
         cfim = qml.qinfo.classical_fisher(circ)(x, y, z)
         assert np.allclose(cfim[0], 2.0 / 3.0 * np.ones((2, 2)))
         assert np.allclose(cfim[1], 2.0 / 3.0 * np.ones((10, 10)))
         assert np.allclose(cfim[2], np.zeros((1, 1)))
+
+
+class TestDiffCFIM:
+    """Testing differentiability of classical fisher info matrix (CFIM)"""
+
+    @pytest.mark.autograd
+    def test_diffability_autograd(
+        self,
+    ):
+        """Testing diffability with an analytic example for autograd. The CFIM of this single qubit is constant, so the gradient should be zero."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="autograd")
+        def circ(params):
+            qml.RY(params, wires=0)
+            return qml.probs(wires=range(1))
+
+        params = pnp.array([np.pi / 4], requires_grad=True)
+
+        assert np.allclose(qml.qinfo.classical_fisher(circ)(params), 1)
+
+        result = np.zeros((1, 1, 1), dtype="float64")
+
+        result_calc = qml.jacobian(qml.qinfo.classical_fisher(circ))(params)
+
+        assert np.allclose(result, result_calc, atol=1e-6)
+
+    @pytest.mark.jax
+    def test_diffability_jax(
+        self,
+    ):
+        """Testing diffability with an analytic example for jax. The CFIM of this single qubit is constant, so the gradient should be zero."""
+        import jax.numpy as jnp
+        import jax
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def circ(params):
+            qml.RY(params[0], wires=0)
+            return qml.probs(wires=range(1))
+
+        # no matter what the input the CFIM here is always constant = 1
+        # so the derivative should be 0
+
+        params = np.pi / 4 * jnp.array([1.0])
+
+        assert qml.math.allclose(qml.qinfo.classical_fisher(circ)(params), 1.0)
+
+        result = np.zeros((1, 1, 1), dtype="float64")
+
+        result_calc = jax.jacobian(qml.qinfo.classical_fisher(circ))(params)
+
+        assert np.allclose(result, result_calc, atol=1e-6)
+
+    @pytest.mark.tf
+    def test_diffability_tf(
+        self,
+    ):
+        """Testing diffability with an analytic example for tf. The CFIM of this single qubit is constant, so the gradient should be zero."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="tf")
+        def circ(params):
+            qml.RY(params, wires=0)
+            return qml.probs(wires=range(1))
+
+        params = tf.Variable([np.pi / 4])
+
+        assert np.allclose(qml.qinfo.classical_fisher(circ)(params), 1)
+
+        result = np.zeros((1, 1, 1), dtype="float64")
+
+        with tf.GradientTape() as tape:
+            loss = qml.qinfo.classical_fisher(circ)(params)
+        result_calc = tape.jacobian(loss, params)
+
+        assert np.allclose(result, result_calc, atol=1e-6)
+
+    @pytest.mark.torch
+    def test_diffability_torch(
+        self,
+    ):
+        """Testing diffability with an analytic example for torch. The CFIM of this single qubit is constant, so the gradient should be zero."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="torch")
+        def circ(params):
+            qml.RY(params, wires=0)
+            return qml.probs(wires=range(1))
+
+        params = np.pi / 4 * torch.tensor([1.0], requires_grad=True)
+
+        assert np.allclose(qml.qinfo.classical_fisher(circ)(params).detach().numpy(), 1)
+
+        result = np.zeros((1, 1, 1), dtype="float64")
+
+        result_calc = torch.autograd.functional.jacobian(qml.qinfo.classical_fisher(circ), params)
+
+        assert np.allclose(result, result_calc, atol=1e-6)
+
+    @pytest.mark.all_interfaces
+    def test_consistency(self):
+        """Testing that the derivative of the cfim is giving consistently the same results for all interfaces.
+        Currently failing as (jax and autograd) and (torch and tf) are giving two different results."""
+        import tensorflow as tf
+        import torch
+        import jax.numpy as jnp
+        import jax
+
+        dev = qml.device("default.qubit", wires=3)
+
+        def qfunc(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RX(weights[1], wires=1)
+            qml.RX(weights[2], wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(weights[4], wires=0)
+            qml.RY(weights[5], wires=1)
+            qml.RY(weights[6], wires=2)
+            qml.CNOT(wires=[1, 2])
+            qml.CRX(weights[7], wires=[0, 1])
+            qml.CRY(weights[8], wires=[1, 2])
+            qml.CRZ(weights[9], wires=[2, 0])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        # Compute gradients of CFIM for different interfaces
+        circuit = qml.QNode(qfunc, dev, interface="torch")
+        weights = torch.tensor(
+            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], requires_grad=True
+        )
+        grad_torch = torch.autograd.functional.jacobian(
+            qml.qinfo.classical_fisher(circuit), weights
+        )
+
+        circuit = qml.QNode(qfunc, dev, interface="autograd")
+        weights = pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], requires_grad=True)
+        grad_autograd = qml.jacobian(qml.qinfo.classical_fisher(circuit))(weights)
+
+        circuit = qml.QNode(qfunc, dev, interface="jax")
+        weights = jnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+        grad_jax = jax.jacobian(qml.qinfo.classical_fisher(circuit))(weights)
+
+        circuit = qml.QNode(qfunc, dev, interface="tf")
+        weights = tf.Variable([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+        with tf.GradientTape() as tape:
+            loss = qml.qinfo.classical_fisher(circuit)(weights)
+        grad_tf = tape.jacobian(loss, weights)
+
+        # Evaluate and compare
+        grads = [grad_autograd, grad_tf, grad_torch, grad_jax]
+
+        is_same = np.zeros((4, 4))
+
+        for i, g1 in enumerate(grads):
+            for j, g2 in enumerate(grads):
+                is_same[i, j] = np.allclose(g1, g2, atol=1e-6)
+
+        assert np.allclose(is_same, np.ones((4, 4)))

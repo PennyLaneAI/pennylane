@@ -15,6 +15,7 @@
 """
 import autoray
 import numpy as onp
+import scipy as s
 import pytest
 from autoray import numpy as anp
 from pennylane import numpy as np
@@ -35,6 +36,21 @@ test_multi_dispatch_stack_data = [
     jax.numpy.array([[1.0, 0.0], [2.0, 3.0]]),
     tf.constant([[1.0, 0.0], [2.0, 3.0]]),
 ]
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("dev", ["cpu", "cuda"])
+@pytest.mark.parametrize("func", [fn.array, fn.eye])
+def test_array_cuda(func, dev):
+    """Test that a new Torch tensor created with math.array/math.eye preserves
+    the Torch device"""
+    if not torch.cuda.is_available() and dev == "cuda":
+        pytest.skip("A GPU would be required to run this test, but CUDA is not available.")
+
+    original = torch.tensor(3, device=dev)
+    new = func(2, like=original)
+    assert isinstance(new, torch.Tensor)
+    assert new.device == original.device
 
 
 @pytest.mark.parametrize("x", test_multi_dispatch_stack_data)
@@ -108,3 +124,47 @@ def test_multi_dispatch_decorate_non_dispatch(values):
         return coefficient * np.sum([fn.dot(v, v) for v in values])
 
     assert fn.allequal(custom_function(values), 700)
+
+
+@pytest.mark.all_interfaces
+def test_unwrap():
+    """Test that unwrap converts lists to lists and interface variables to numpy."""
+    import torch
+    import tensorflow as tf
+    from jax import numpy as jnp
+
+    params = [
+        [torch.tensor(2)],
+        [[3, 4], torch.tensor([5, 6])],
+        tf.Variable([-1.0, -2.0]),
+        [jnp.array(0.5), jnp.array([6, 7])],
+        torch.tensor(0.5),
+    ]
+
+    out = fn.unwrap(params)
+
+    assert out[0] == [2]
+    assert out[1][0] == [3, 4]
+    assert fn.allclose(out[1][1], np.array([5, 6]))
+    assert fn.get_interface(out[1][1]) == "numpy"
+
+    assert fn.allclose(out[2], np.array([-1.0, -2.0]))
+    assert fn.get_interface(out[2]) == "numpy"
+
+    assert out[3][0] == 0.5
+    assert fn.allclose(out[3][1], np.array([6, 7]))
+    assert fn.get_interface(out[3][1]) == "numpy"
+
+    assert out[4] == 0.5
+
+
+def test_kron():
+    """Test that a deprecation warning is avoided when arrays
+    are dispatched to scipy.kron."""
+    m1 = s.array([[0, 1], [1, 0]])
+    m2 = s.array([[1, 0], [0, 1]])
+    expected_result = onp.kron(m1, m2)
+
+    assert np.allclose(expected_result, fn.kron(m1, m2, like="scipy"))
+    with pytest.warns(DeprecationWarning):
+        _ = s.kron(m1, m2)

@@ -15,9 +15,12 @@
 This module contains the Identity operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
-import numpy as np
+from functools import lru_cache
 
-from pennylane.operation import CVObservable, Operation
+from scipy import sparse
+
+import pennylane as qml
+from pennylane.operation import AnyWires, CVObservable, Operation
 
 
 class Identity(CVObservable, Operation):
@@ -33,19 +36,25 @@ class Identity(CVObservable, Operation):
     simulators should always be equal to 1.
     """
     num_params = 0
-    num_wires = 1
+    num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
     grad_method = None
     """Gradient computation method."""
 
+    _queue_category = "_ops"
+
     ev_order = 1
+
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        self._hyperparameters = {"n_wires": len(self.wires)}
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
+    def compute_eigvals(n_wires=1):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
@@ -67,10 +76,11 @@ class Identity(CVObservable, Operation):
         >>> print(qml.Identity.compute_eigvals())
         [ 1 1]
         """
-        return np.array([1, 1])
+        return qml.math.ones(2**n_wires)
 
     @staticmethod
-    def compute_matrix():  # pylint: disable=arguments-differ
+    @lru_cache()
+    def compute_matrix(n_wires=1):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -87,19 +97,26 @@ class Identity(CVObservable, Operation):
         [[1. 0.]
          [0. 1.]]
         """
-        return np.eye(2)
+        return qml.math.eye(int(2**n_wires))
+
+    @staticmethod
+    @lru_cache()
+    def compute_sparse_matrix(n_wires=1):  # pylint: disable=arguments-differ
+        return sparse.eye(int(2**n_wires), format="csr")
 
     @staticmethod
     def _heisenberg_rep(p):
-        return np.array([1, 0, 0])
+        return qml.math.array([1, 0, 0])
 
     @staticmethod
-    def compute_diagonalizing_gates(wires):  # pylint: disable=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(
+        wires, n_wires=1
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -120,7 +137,7 @@ class Identity(CVObservable, Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(wires=None):  # pylint:disable=arguments-differ,unused-argument
+    def compute_decomposition(wires, n_wires=1):  # pylint:disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

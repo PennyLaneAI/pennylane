@@ -857,6 +857,7 @@ class TestErrors:
         def ansatz(x, wires):
             qml.RX(x, wires=0)
 
-        cost = qml.ExpvalCost(ansatz, H, [dev1, dev2])
+        with pytest.warns(UserWarning, match="is deprecated,"):
+            cost = qml.ExpvalCost(ansatz, H, [dev1, dev2])
         with pytest.warns(UserWarning, match="ExpvalCost was instantiated"):
             mt = qml.adjoint_metric_tensor(cost)

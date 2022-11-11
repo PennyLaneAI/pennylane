@@ -531,3 +531,14 @@ The documentation can then be found in the :file:`doc/_build/html/` directory.
 
     To build the interfaces documentation, PyTorch and TensorFlow will need to
     be installed, see :ref:`install_interfaces`.
+
+.. note::
+
+  If you are running Python3.8 on an M1 Mac you need to set the following environment variables
+  before installing the requirements to be able to install the grpcio package required by TensorFlow
+  (`see thread <https://github.com/grpc/grpc/issues/25082#issuecomment-778392661>`):
+
+  .. code-block:: bash
+
+    export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1
+    export GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1
