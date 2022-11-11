@@ -125,14 +125,15 @@ class _Probability(SampleMeasurement, StateMeasurement):
     def process(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
-        wires = self.wires or Ellipsis  # if self.wires is None we use all wires
+        if shot_range is not None:
+            # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
+            # colon (:) is required because shots is the second-to-last axis and the
+            # Ellipsis (...) otherwise would take up broadcasting and shots axes.
+            samples = samples[..., slice(*shot_range), :]
 
-        if shot_range is None:
-            # The Ellipsis (...) corresponds to broadcasting and shots dimensions or only shots
-            samples = samples[..., wires]
-        else:
-            # The Ellipsis (...) corresponds to the broadcasting dimension or no axis at all
-            samples = samples[..., slice(*shot_range), wires]
+        if len(self.wires) != 0:
+            # if wires are provided, then we only return samples from those wires
+            samples = samples[..., np.array(self.wires)]
 
         num_wires = qml.math.shape(samples)[-1]
         # convert samples from a list of 0, 1 integers, to base 10 representation
@@ -252,9 +253,10 @@ class _Probability(SampleMeasurement, StateMeasurement):
         consecutive_wires = Wires(range(num_wires))
         wire_map = OrderedDict(zip(device_wires, consecutive_wires))
 
-        if self.wires is None:
-            # no need to marginalize
-            return prob
+        # TODO: Add when ``qml.probs()`` is supported
+        # if self.wires == Wires([]):
+        #     # no need to marginalize
+        #     return prob
 
         # determine which subsystems are to be summed over
         inactive_wires = Wires.unique_wires([device_wires, self.wires])
@@ -267,17 +269,11 @@ class _Probability(SampleMeasurement, StateMeasurement):
         shape = [2] * num_wires
         if batch_size is not None:
             shape.insert(0, batch_size)
+            inactive_wires = [idx + 1 for idx in inactive_wires]
         # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
         prob = qml.math.reshape(prob, shape)
 
         # sum over all inactive wires
-        # hotfix to catch when default.qubit uses this method
-        # since then mapped_wires is a list
-        if isinstance(inactive_wires, Wires):
-            inactive_wires = inactive_wires.labels
-
-        if batch_size is not None:
-            inactive_wires = [idx + 1 for idx in inactive_wires]
         flat_shape = (-1,) if batch_size is None else (batch_size, -1)
         prob = qml.math.reshape(qml.math.sum(prob, axis=tuple(inactive_wires)), flat_shape)
 

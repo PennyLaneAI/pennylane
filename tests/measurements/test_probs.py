@@ -28,7 +28,7 @@ np.random.seed(42)
 
 
 @pytest.fixture
-def init_state(scope="session"):
+def init_state():
     """Fixture that creates an initial state"""
 
     def _init_state(n):
@@ -40,7 +40,7 @@ def init_state(scope="session"):
     return _init_state
 
 
-# pylint: disable=attribute-defined-outside-init
+# pylint: disable=attribute-defined-outside-init, redefined-outer-name
 class TestProbs:
     """Tests for the probs function"""
 
@@ -55,8 +55,8 @@ class TestProbs:
 
         assert len(self.spy.call_args_list) > 0  # make sure method is mocked properly
 
-        samples = self.dev._samples
-        state = self.dev._state
+        samples = self.dev._samples  # pylint: disable=protected-access
+        state = self.dev._state  # pylint: disable=protected-access
         for call_args in self.spy.call_args_list:
             wires, shot_range, bin_size = (
                 call_args.kwargs["wires"],
@@ -192,10 +192,11 @@ class TestProbs:
         expected = np.array([0.5, 0.5, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_integration_analytic_false(self, tol, mocker):
+    @pytest.mark.parametrize("shots", [100, [1, 10, 100]])
+    def test_integration_analytic_false(self, tol, mocker, shots):
         """Test the probability is correct for a known state preparation when the
         analytic attribute is set to False."""
-        self.dev = qml.device("default.qubit", wires=3, shots=1000)
+        self.dev = qml.device("default.qubit", wires=3, shots=shots)
         self.spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(self.dev)
@@ -207,14 +208,29 @@ class TestProbs:
         expected = np.array([0, 1])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_batch_size(self, tol, mocker, shots):
+        """Test the probability is correct for a batched input."""
+        self.dev = qml.device("default.qubit", wires=1, shots=shots)
+        self.spy = mocker.spy(qml.QubitDevice, "probability")
+
+        @qml.qnode(self.dev)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.probs(wires=self.dev.wires)  # TODO: Use ``qml.probs()`` when supported
+
+        x = np.array([0, np.pi / 2])
+        res = circuit(x)
+        expected = [[1.0, 0.0], [0.5, 0.5]]
+        assert np.allclose(res, expected, atol=0.1, rtol=0.1)
+
     @pytest.mark.autograd
-    def test_numerical_analytic_diff_agree(self, init_state, tol, mocker):
+    def test_numerical_analytic_diff_agree(self, tol, mocker):
         """Test that the finite difference and parameter shift rule
         provide the same Jacobian."""
         w = 4
         self.dev = qml.device("default.qubit", wires=w)
         self.spy = mocker.spy(qml.QubitDevice, "probability")
-        state = init_state(w)
 
         def circuit(x, y, z):
             for i in range(w):
@@ -457,7 +473,7 @@ class TestProbs:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("coeffs, obs", [([1, 1], [qml.PauliX(wires=0), qml.PauliX(wires=1)])])
-    def test_hamiltonian_error(self, coeffs, obs, init_state, tol):
+    def test_hamiltonian_error(self, coeffs, obs, init_state):
         "Test that an error is returned for hamiltonians."
         H = qml.Hamiltonian(coeffs, obs)
 
