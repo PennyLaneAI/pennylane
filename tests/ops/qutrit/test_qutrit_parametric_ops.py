@@ -18,7 +18,6 @@ from functools import reduce
 import pytest
 import copy
 import numpy as np
-import tensorflow as tf
 from pennylane import numpy as npp
 
 import pennylane as qml
@@ -217,6 +216,11 @@ class TestMatrix:
         assert np.allclose(
             qml.TRX(np.pi, wires=0, subspace=[0, 2]).matrix(), expected, atol=tol, rtol=0
         )
+
+    @pytest.mark.tf
+    def test_trx_tf(self, tol):
+        """Test that compute_matrix works with tensorflow variables"""
+        import tensorflow as tf
 
         # test identity for broadcasted theta=pi/2 with tensorflow interface
         pi_half = tf.Variable([np.pi / 2] * 2)
