@@ -77,10 +77,13 @@ mul_map = {I: _map_I, X: _map_X, Y: _map_Y, Z: _map_Z}
 
 
 class PauliWord(dict):
-    """Immutable dictionary used to represent a Pauli Word.
+    """Immutable dictionary used to represent a Pauli Word,
+    associating wires with their respective operators.
     Can be constructed from a standard dictionary.
 
-    >>> w = PauliWord({"a": X, 2: Y, 3: Z})
+    >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
+    >>> w
+    X(a) @ Y(2) @ Z(3)
     """
 
     def __missing__(self, key):
@@ -185,13 +188,16 @@ class PauliWord(dict):
 
 
 class PauliSentence(dict):
-    """Dict representing a Pauli Sentence. The keys are
-    PauliWord instances and the values correspond to coefficients.
+    """Dict representing a linear combination of Pauli words. The keys
+    are PauliWord instances and the values correspond to coefficients.
 
     >>> ps = PauliSentence({
-            PauliWord({0:X, 1:Y}): 1.23
-            PauliWord({2:Z, 0:Y}): -0.45j
+            PauliWord({0:'X', 1:'Y'}): 1.23,
+            PauliWord({2:'Z', 0:'Y'}): -0.45j
         })
+    >>> ps
+    1.23 * X(0) @ Y(1)
+    + (-0-0.45j) * Z(2) @ Y(0)
     """
 
     def __missing__(self, key):
