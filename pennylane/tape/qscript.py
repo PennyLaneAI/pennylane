@@ -742,7 +742,8 @@ class QuantumScript:
 
             elif ret_type == qml.measurements.Sample:
 
-                shape = (len(mps), device.shots)
+                dim = mps[0].shape(device)
+                shape = (len(mps),) + dim[1:]
 
             # No other measurement type to check
 
@@ -845,6 +846,11 @@ class QuantumScript:
                     "Getting the output shape of a quantum script that contains multiple types of "
                     "measurements is unsupported."
                 )
+
+        if device._shot_vector is None and self.batch_size is not None:
+            # insert the batch dimension
+            output_shape = output_shape[0:1] + (self.batch_size,) + output_shape[1:]
+
         return output_shape
 
     def _shape_new(self, device):
@@ -876,7 +882,15 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
+        if device.shot_vector is not None and self.batch_size is not None:
+            raise NotImplementedError(
+                "Parameter broadcasting when using a shot vector is not supported yet."
+            )
+
         shapes = tuple(meas_process.shape(device) for meas_process in self.measurements)
+
+        if self.batch_size is not None:
+            shapes = tuple((self.batch_size,) + shape for shape in shapes)
 
         if len(shapes) == 1:
             return shapes[0]
