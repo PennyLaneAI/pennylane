@@ -345,7 +345,6 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
     >>> tangent_0 = [jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0)]
     >>> tangent_1 = [jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0)]
     >>> tangents = [tangent_0, tangent_1]
-    >>> vjp_tapes, fn = qml.gradients.batch_vjp(tapes, dys, qml.gradients.param_shift)
 
     Note that each ``tangents`` has shape matching the parameter dimension of the tape.
 
