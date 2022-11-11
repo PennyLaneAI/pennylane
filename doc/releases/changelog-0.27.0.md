@@ -12,12 +12,12 @@
   Datasets are hosted on Xanadu Cloud and can be downloaded by using `qml.data.load()`:
 
   ```pycon
->>> H2_datasets = qml.data.load(
-...   data_name="qchem", molname="H2", basis="STO-3G", bondlength=1.1
-... )
->>> H2data = H2_datasets[0]
->>> H2data
-<Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>
+  >>> H2_datasets = qml.data.load(
+  ...   data_name="qchem", molname="H2", basis="STO-3G", bondlength=1.1
+  ... )
+  >>> H2data = H2_datasets[0]
+  >>> H2data
+  <Dataset = description: qchem/H2/STO-3G/1.1, attributes: ['molecule', 'hamiltonian', ...]>
   ```
 
   - Datasets available to be downloaded can be listed with `qml.data.list_datasets()`.
@@ -37,33 +37,33 @@
 
   - To select data interactively, we can use `qml.data.load_interactive()`:
 
-  ```pycon
-  >>> qml.data.load_interactive()
-  Please select a data name:
-      1) qspin
-      2) qchem
-  Choice [1-2]: 1
-  Please select a sysname:
-      ...
-  Please select a periodicity:
-      ...
-  Please select a lattice:
-      ...
-  Please select a layout:
-      ...
-  Please select attributes:
-      ...
-  Force download files? (Default is no) [y/N]: N
-  Folder to download to? (Default is pwd, will download to /datasets subdirectory):
+    ```pycon
+    >>> qml.data.load_interactive()
+    Please select a data name:
+        1) qspin
+        2) qchem
+    Choice [1-2]: 1
+    Please select a sysname:
+        ...
+    Please select a periodicity:
+        ...
+    Please select a lattice:
+        ...
+    Please select a layout:
+        ...
+    Please select attributes:
+        ...
+    Force download files? (Default is no) [y/N]: N
+    Folder to download to? (Default is pwd, will download to /datasets subdirectory):
 
-  Please confirm your choices:
-  dataset: qspin/Ising/open/rectangular/4x4
-  attributes: ['parameters', 'ground_states']
-  force: False
-  dest folder: datasets
-  Would you like to continue? (Default is yes) [Y/n]:
-  <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
-  ```
+    Please confirm your choices:
+    dataset: qspin/Ising/open/rectangular/4x4
+    attributes: ['parameters', 'ground_states']
+    force: False
+    dest folder: datasets
+    Would you like to continue? (Default is yes) [Y/n]:
+    <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
+    ```
 
   - Once a dataset is loaded, its properties can be accessed as follows:
 
@@ -79,14 +79,14 @@
     -1.0791430411076344
     ```
 
-  It is also possible to create custom datasets with `qml.data.Dataset`:
+  It's also possible to create custom datasets with `qml.data.Dataset`:
 
   ```pycon
   >>> example_hamiltonian = qml.Hamiltonian(coeffs=[1,0.5], observables=[qml.PauliZ(wires=0),qml.PauliX(wires=1)])
   >>> example_energies, _ = np.linalg.eigh(qml.matrix(example_hamiltonian))
   >>> example_dataset = qml.data.Dataset(
-... data_name = 'Example', hamiltonian=example_hamiltonian, energies=example_energies
-... )
+  ... data_name = 'Example', hamiltonian=example_hamiltonian, energies=example_energies
+  ... )
   >>> example_dataset.data_name
   'Example'
   >>> example_dataset.hamiltonian
@@ -96,7 +96,7 @@
   array([-1.5, -0.5,  0.5,  1.5])
   ```
 
-  Custom datasets can be saved and read with the `qml.data.Dataset.write()` and `qml.data.Dataset.read()` methods.
+  Custom datasets can be saved and read with the `qml.data.Dataset.write()` and `qml.data.Dataset.read()` methods, respectively.
 
   ```pycon
   >>> example_dataset.write('./path/to/dataset.dat')
@@ -111,9 +111,12 @@
   array([-1.5, -0.5,  0.5,  1.5])
   ```
 
+  We will continue to work on adding more datasets and features for `qml.data` in future releases.
+ 
 <h4>Adaptive optimization 🏃🏋️🏊</h4>
 
-* Optimizing quantum circuits can now be done *adaptively* with `qml.AdaptiveOptimizer`.
+* Optimizing quantum circuits can now be done *adaptively* with 
+  `qml.AdaptiveOptimizer`.
   [(#3192)](https://github.com/PennyLaneAI/pennylane/pull/3192)
 
   The `qml.AdaptiveOptimizer` takes an initial circuit and a collection of operators as input and adds a selected gate to the circuit at each optimization step. The process of growing the circuit can be repeated until the circuit gradients converge to zero within a given threshold. The adaptive optimizer can be used to implement algorithms such as ADAPT-VQE as shown in the following example.
@@ -306,6 +309,83 @@
           [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
     ```
 
+<h4>(Experimental) More support for multi-measurement and gradient output types 🧪</h4>
+
+* `qml.enable_return()` now supports QNodes returning multiple measurements, 
+  including shots vectors, and gradient output types.
+  [(#2886)](https://github.com/PennyLaneAI/pennylane/pull/2886)
+  [(#3052)](https://github.com/PennyLaneAI/pennylane/pull/3052)
+  [(#3041)](https://github.com/PennyLaneAI/pennylane/pull/3041)
+  [(#3090)](https://github.com/PennyLaneAI/pennylane/pull/3090)
+  [(#3069)](https://github.com/PennyLaneAI/pennylane/pull/3069)
+  [(#3137)](https://github.com/PennyLaneAI/pennylane/pull/3137)
+  [(#3127)](https://github.com/PennyLaneAI/pennylane/pull/3127)
+  [(#3099)](https://github.com/PennyLaneAI/pennylane/pull/3099)
+  [(#3098)](https://github.com/PennyLaneAI/pennylane/pull/3098)
+  [(#3095)](https://github.com/PennyLaneAI/pennylane/pull/3095)
+  [(#3091)](https://github.com/PennyLaneAI/pennylane/pull/3091)
+  [(#3176)](https://github.com/PennyLaneAI/pennylane/pull/3176)
+  [(#3170)](https://github.com/PennyLaneAI/pennylane/pull/3170)
+  [(#3194)](https://github.com/PennyLaneAI/pennylane/pull/3194)
+  [(#3267)](https://github.com/PennyLaneAI/pennylane/pull/3267)
+  [(#3234)](https://github.com/PennyLaneAI/pennylane/pull/3234)
+  [(#3232)](https://github.com/PennyLaneAI/pennylane/pull/3232)
+  [(#3223)](https://github.com/PennyLaneAI/pennylane/pull/3223)
+  [(#3222)](https://github.com/PennyLaneAI/pennylane/pull/3222)
+  [(#3315)](https://github.com/PennyLaneAI/pennylane/pull/3315)
+
+  In v0.25, we introduced `qml.enable_return()`, which separates measurements into their own tensors. The motivation of this change is the deprecation of ragged `ndarray` creation in NumPy.
+
+  With this release, we're continuing to elevate this feature by adding support for:
+  
+  - `qml.execute`
+  - Gradient transforms
+    + `qml.gradients.param_shift`
+    + `qml.gradients.finite_diff`
+    + `qml.gradients.hessian_transform`
+    + `qml.gradients.param_shift_hessian`
+
+  - Interfaces 
+    + Autograd
+    + TensoriFlow
+    + JAX (without jitting)
+    
+  With this added support, the JAX interface can handle multiple shots (shots vectors), measurements, and gradient output types with `qml.enable_return()`:
+  
+  ```python
+  import jax
+
+  qml.enable_return()
+  dev = qml.device("default.qubit", wires=2, shots=(1, 10000))
+
+  params = jax.numpy.array([0.1, 0.2])
+
+  @qml.qnode(dev, interface="jax", diff_method="parameter-shift", max_diff=2)
+  def circuit(x):
+      qml.RX(x[0], wires=[0])
+      qml.RY(x[1], wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+  ```
+
+  ```pycon
+  >>> jax.hessian(circuit)(params)
+  ((DeviceArray([[ 0.,  0.],
+                [ 2., -3.]], dtype=float32),
+  DeviceArray([[[-0.5,  0. ],
+                [ 0. ,  0. ]],
+              [[ 0.5,  0. ],
+                [ 0. ,  0. ]]], dtype=float32)),
+  (DeviceArray([[ 0.07677898,  0.0563341 ],
+                [ 0.07238522, -1.830669  ]], dtype=float32),
+  DeviceArray([[[-4.9707499e-01,  2.9999996e-04],
+                [-6.2500127e-04,  1.2500001e-04]],
+                [[ 4.9707499e-01, -2.9999996e-04],
+                [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
+  ```
+
+  For more details, please [refer to the documentation of `qml.enable_return()`](https://docs.pennylane.ai/en/stable/code/api/pennylane.enable_return.html?highlight=enable_return#pennylane.enable_return).
+
 <h4>New basis rotation and tapering features in `qml.qchem` 🤓</h4>
 
 * Grouped coefficients, observables, and basis rotation transformation matrices needed to construct a qubit Hamiltonian in the rotated basis of molecular orbitals are now calculable via `qml.qchem.basis_rotation()`.
@@ -478,60 +558,7 @@
         0.+0.j, 0.+0.j, 0.+0.j], requires_grad=True)
   ```
 
-<h4>(Experimental) More support for multi-measurement and gradient output types</h4>
-
-* More support for QNodes returning multiple measurements and gradient output types.
-  [(#2886)](https://github.com/PennyLaneAI/pennylane/pull/2886)
-  [(#3052)](https://github.com/PennyLaneAI/pennylane/pull/3052)
-  [(#3041)](https://github.com/PennyLaneAI/pennylane/pull/3041)
-  [(#3090)](https://github.com/PennyLaneAI/pennylane/pull/3090)
-  [(#3069)](https://github.com/PennyLaneAI/pennylane/pull/3069)
-  [(#3137)](https://github.com/PennyLaneAI/pennylane/pull/3137)
-  [(#3127)](https://github.com/PennyLaneAI/pennylane/pull/3127)
-  [(#3099)](https://github.com/PennyLaneAI/pennylane/pull/3099)
-  [(#3098)](https://github.com/PennyLaneAI/pennylane/pull/3098)
-  [(#3095)](https://github.com/PennyLaneAI/pennylane/pull/3095)
-  [(#3091)](https://github.com/PennyLaneAI/pennylane/pull/3091)
-  [(#3176)](https://github.com/PennyLaneAI/pennylane/pull/3176)
-  [(#3170)](https://github.com/PennyLaneAI/pennylane/pull/3170)
-  [(#3194)](https://github.com/PennyLaneAI/pennylane/pull/3194)
-  [(#3267)](https://github.com/PennyLaneAI/pennylane/pull/3267)
-  [(#3234)](https://github.com/PennyLaneAI/pennylane/pull/3234)
-  [(#3232)](https://github.com/PennyLaneAI/pennylane/pull/3232)
-  [(#3223)](https://github.com/PennyLaneAI/pennylane/pull/3223)
-  [(#3222)](https://github.com/PennyLaneAI/pennylane/pull/3222)
-
-  In v0.26, we introduced `qml.enable_return()`, which separates measurements into their own tensors. The motivation of this change is the deprecation of ragged `ndarray` creation in NumPy.
-
-  With this release, we're continuing to elevate this feature by adding support for gradient transforms and some interfaces.
-
-  ```python
-  import torch 
-
-  qml.enable_return()
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev, interface="torch")
-  def circuit(x):
-      qml.Hadamard(0)
-      qml.Hadamard(1)
-      qml.CRX(x, wires=[0, 1])
-      return qml.probs(wires=[0, 1]), qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-  ```
-
-  ```pycon
-  >>> circuit(torch.pi/3)
-  (tensor([0.2500, 0.2500, 0.2500, 0.2500], dtype=torch.float64),
-   tensor(0., dtype=torch.float64))
-  ```
-
-  For more details, please
-  [refer to the documentation of `qml.enable_return()`](https://docs.pennylane.ai/en/stable/code/api/pennylane.enable_return.html?highlight=enable_return#pennylane.enable_return).
-
 <h3>Improvements</h3>
-
-* The `Exp` class decomposes into a `PauliRot` class if the coefficient is imaginary and the base operator is a Pauli Word.
-  [(#3249)](https://github.com/PennyLaneAI/pennylane/pull/3249)
 
 * `qml.sample` and `qml.counts` work more efficiently and track if computational basis samples are being generated when they are called without specifying an observable.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
@@ -554,6 +581,9 @@
 
 * `qml.OrbitalRotation` is now decomposed into two `qml.SingleExcitation` operations for faster execution and more efficient parameter-shift gradient calculations on devices that natively support `qml.SingleExcitation`.
   [(#3171)](https://github.com/PennyLaneAI/pennylane/pull/3171)
+
+* The `Exp` class decomposes into a `PauliRot` class if the coefficient is imaginary and the base operator is a Pauli Word.
+  [(#3249)](https://github.com/PennyLaneAI/pennylane/pull/3249)
 
 * Added the operator attributes `has_decomposition` and `has_adjoint` that indicate
   whether a corresponding `decomposition` or `adjoint` method is available.
