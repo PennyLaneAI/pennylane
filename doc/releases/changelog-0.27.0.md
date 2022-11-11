@@ -734,7 +734,7 @@
   >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
   'torch'
   ```
-
+ 
 * `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
   instead. There is no longer a static method for this.
   [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
@@ -820,6 +820,9 @@
   if the Hamiltonian involved some wires that are not present on the device.
   [(#3266)](https://github.com/PennyLaneAI/pennylane/pull/3266)
 
+* Fixed a bug where `qml.tape.QuantumTape.shape()` did not account for the batch dimension of the tape
+  [(#3269)](https://github.com/PennyLaneAI/pennylane/pull/3269)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -837,7 +840,7 @@ Diego Guala,
 Josh Izaac,
 Soran Jahangiri,
 Edward Jiang,
-Korbinian Kottmann
+Korbinian Kottmann,
 Christina Lee,
 Romain Moyard,
 Lee J. O'Riordan,
