@@ -17,7 +17,7 @@ import numpy as np
 import pennylane as qml
 
 
-class MutualInfo:
+class TestMutualInfo:
     """Tests for the mutual_info function"""
 
     def test_mutual_info(self):
@@ -31,4 +31,9 @@ class MutualInfo:
         res = circuit()
         expected = 0
         assert np.allclose(res, expected)
-        assert np.allclose(qml.mutual_info(wires0=[0], wires1=[1], log_base=2), expected)
+        assert np.allclose(
+            qml.mutual_info(wires0=[0], wires1=[1], log_base=2).process_state(
+                state=dev.state, device_wires=dev.wires
+            ),
+            expected,
+        )
