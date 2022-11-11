@@ -93,6 +93,7 @@ class TestHamiltonianExpand:
         expval = fn(results)
 
         assert np.isclose(output, expval)
+        assert type(results[0]) == type(expval)
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians_no_grouping(self, tape, output):
@@ -111,6 +112,7 @@ class TestHamiltonianExpand:
         expval = fn(results)
 
         assert np.isclose(output, expval)
+        assert type(results[0]) == type(expval)
 
     def test_grouping_is_used(self):
         """Test that the grouping in a Hamiltonian is used"""
