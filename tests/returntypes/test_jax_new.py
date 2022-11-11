@@ -551,7 +551,6 @@ class TestJaxExecuteIntegration:
             result = execute(
                 tapes=[tape1, tape2], device=dev, interface=interface, **execute_kwargs
             )
-            print(result)
             return result[0] + result[1] - 7 * result[1]
 
         res = jax.grad(cost_fn)(params)
@@ -578,7 +577,6 @@ class TestJaxExecuteIntegration:
             return execute(tapes=[tape1, tape2], device=dev, interface=interface, **execute_kwargs)
 
         res = cost_fn(params)
-        print(res)
         assert isinstance(res, list)
         assert all(isinstance(r, jnp.ndarray) for r in res)
         assert all(r.shape == () for r in res)
@@ -670,7 +668,6 @@ class TestJaxExecuteIntegration:
                 qml.expval(qml.PauliZ(1))
 
             res = execute([tape], dev, cache=cache, interface=interface, **execute_kwargs)
-            print(res)
             return res[0]
 
         res = jax.grad(cost)(params, cache=None)
