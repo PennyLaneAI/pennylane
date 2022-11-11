@@ -357,7 +357,7 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
     >>> jvps
     [(DeviceArray(-0.62073976, dtype=float32), DeviceArray([-0.3259707 ,  0.32597077], dtype=float32)), DeviceArray(-0.6900841, dtype=float32)]
 
-    We have two JVPs; one per tape. Each one corresponds to the shape of the output of respective tape
+    We have two JVPs; one per tape. Each one corresponds to the shape of the output of their respective tape.
     """
     # pylint: disable=too-many-arguments
     gradient_kwargs = gradient_kwargs or {}
