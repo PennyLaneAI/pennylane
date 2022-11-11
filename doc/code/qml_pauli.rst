@@ -32,9 +32,9 @@ the :math:`i^{th}` qubit. The full :math:`n`-qubit Pauli group has size
 :math:`4^n` (neglecting the four possible global phases that may arise from
 multiplication of its elements).
 
-`PauliWord` is a lightweight class which uses a dictionary approach to represent
-Pauli words. A `PauliWord` can be instantiated by passing a dictionary of wires
-and their associated Pauli operators.
+:class:`~pennylane.pauli.PauliWord` is a lightweight class which uses a dictionary
+approach to represent Pauli words. A :class:`~pennylane.pauli.PauliWord` can be
+instantiated by passing a dictionary of wires and their associated Pauli operators.
 
 >>> from pennylane.pauli import PauliWord
 >>> pw1 = qml.pauli.PauliWord({0:"X", 1:"Z"})  # X@Z
@@ -47,16 +47,16 @@ obtain the matrix representation.
 
 >>> pw1 * pw2
 (Z(0), 1j)
->>> pw1.to_mat(wire_order=[0,1])
+>>> pw1.to_mat(wire_order=[0, 1])
 array([[ 0,  0,  1,  0],
        [ 0,  0,  0, -1],
        [ 1,  0,  0,  0],
        [ 0, -1,  0,  0]])
 
 
-The `PauliSentence` class represents linear combinations of Pauli words. Using a
-similar dictionary based approach we can efficiently add, multiply and extract
-the matrix of operators in this representation.
+The :class:`~pennylane.pauli.PauliSentence` class represents linear combinations of
+Pauli words. Using a similar dictionary based approach we can efficiently add, multiply
+and extract the matrix of operators in this representation.
 
 >>> ps1 = qml.pauli.PauliSentence({pw1: 1.2, pw2: 0.5j})
 >>> ps2 = qml.pauli.PauliSentence({pw1: -1.2})
@@ -69,7 +69,7 @@ the matrix of operators in this representation.
 >>> ps1 * ps2
 -1.44 * I
 + (-0.6+0j) * Z(0)
->>> (ps1 + ps2).to_mat(wire_order=[0,1])
+>>> (ps1 + ps2).to_mat(wire_order=[0, 1])
 array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
        [ 0. +0.j,  0. +0.j,  0. +0.j, -0.5+0.j],
        [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
