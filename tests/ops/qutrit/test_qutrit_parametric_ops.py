@@ -217,6 +217,52 @@ class TestMatrix:
             qml.TRX(np.pi, wires=0, subspace=[0, 2]).matrix(), expected, atol=tol, rtol=0
         )
 
+        # test identity for broadcasted theta=pi/2 with tensorflow interface
+        import tensorflow as tf
+
+        pi_half = tf.Tensor([np.pi / 2] * 2)
+        expected = tf.convert_to_tensor(
+            np.tensordot(
+                [1, 1],
+                np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2),
+                axes=0,
+            )
+        )
+        assert qml.math.allclose(
+            qml.TRX.compute_matrix(pi_half, subspace=[0, 1]), expected, atol=tol, rtol=0
+        )
+        assert qml.math.allclose(
+            qml.TRX(pi_half, wires=0, subspace=[0, 1]).matrix(), expected, atol=tol, rtol=0
+        )
+
+        expected = tf.convert_to_tensor(
+            np.tensordot(
+                [1, 1],
+                np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2),
+                axes=0,
+            )
+        )
+        assert qml.math.allclose(
+            qml.TRX.compute_matrix(pi_half, subspace=[0, 2]), expected, atol=tol, rtol=0
+        )
+        assert qml.math.allclose(
+            qml.TRX(pi_half, wires=0, subspace=[0, 2]).matrix(), expected, atol=tol, rtol=0
+        )
+
+        expected = tf.convert_to_tensor(
+            np.tensordot(
+                [1, 1],
+                np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2),
+                axes=0,
+            )
+        )
+        assert qml.math.allclose(
+            qml.TRX.compute_matrix(pi_half, subspace=[1, 2]), expected, atol=tol, rtol=0
+        )
+        assert qml.math.allclose(
+            qml.TRX(pi_half, wires=0, subspace=[1, 2]).matrix(), expected, atol=tol, rtol=0
+        )
+
 
 # TODO: Add tests for grad
 
