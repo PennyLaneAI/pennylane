@@ -252,7 +252,7 @@ class _Probability(SampleMeasurement, StateMeasurement):
         consecutive_wires = Wires(range(num_wires))
         wire_map = OrderedDict(zip(device_wires, consecutive_wires))
 
-        if self.wires is None:
+        if self.wires == Wires([]):
             # no need to marginalize
             return prob
 
@@ -271,11 +271,6 @@ class _Probability(SampleMeasurement, StateMeasurement):
         prob = qml.math.reshape(prob, shape)
 
         # sum over all inactive wires
-        # hotfix to catch when default.qubit uses this method
-        # since then mapped_wires is a list
-        if isinstance(inactive_wires, Wires):
-            inactive_wires = inactive_wires.labels
-
         if batch_size is not None:
             inactive_wires = [idx + 1 for idx in inactive_wires]
         flat_shape = (-1,) if batch_size is None else (batch_size, -1)
