@@ -6,6 +6,7 @@
 
 * Added operation `qml.THadamard`, which is the qutrit Hadamard gate. The operation accepts a `subspace`
   keyword argument which determines which variant of the qutrit Hadamard to use.
+  [#3340](https://github.com/PennyLaneAI/pennylane/pull/3340)
 
 <h3>Improvements</h3>
 
@@ -24,3 +25,5 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Mudit Pandey
