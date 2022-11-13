@@ -555,7 +555,7 @@ class THadamard(Operation):
                 "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
             )
 
-        if not all([s in {0, 1, 2} for s in subspace]):
+        if not all(s in {0, 1, 2} for s in subspace):
             raise ValueError("Elements of the subspace must be 0, 1, or 2.")
 
         if subspace[0] == subspace[1]:
