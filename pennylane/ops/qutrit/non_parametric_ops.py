@@ -550,7 +550,7 @@ class THadamard(Operation):
                 [[1, 1, 1], [1, OMEGA, OMEGA**2], [1, OMEGA**2, OMEGA]]
             )
 
-        if len(subspace) != 2:
+        if not hasattr(subspace, "__iter__") or len(subspace) != 2:
             raise ValueError(
                 "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
             )
