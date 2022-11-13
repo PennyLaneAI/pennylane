@@ -409,6 +409,7 @@ Qutrit non-parametrized gates
 
     ~pennylane.TShift
     ~pennylane.TClock
+    ~pennylane.THadamard
     ~pennylane.TAdd
     ~pennylane.TSWAP
 
