@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added operation `qml.THadamard`, which is the qutrit Hadamard gate. The operation accepts a `subspace`
+  keyword argument which determines which variant of the qutrit Hadamard to use.
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>

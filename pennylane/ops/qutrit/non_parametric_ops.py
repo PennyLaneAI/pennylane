@@ -430,3 +430,163 @@ class TSWAP(Operation):
 
     def adjoint(self):
         return TSWAP(wires=self.wires)
+
+
+class THadamard(Operation):
+    r"""THadamard(wires, subspace)
+    The ternary Hadamard operator
+
+    Performs the Hadamard operation on the specified 2D subspace if specified. The subspace is
+    given as a keyword argument and determines which two of three single-qutrit basis states the
+    operation applies to. When a subspace is not specified, the generalized Hadamard operation
+    is used.
+
+    The construction of this operator is based on section 2 of
+    `Di et al. (2012) <https://arxiv.org/abs/1105.5485>`_ when the subspace is specified, and
+    definition 4 and equation 5 from `Yeh et al. (2022) <https://arxiv.org/abs/2204.00552>`_
+    when no subspace is specified.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+        subspace (Sequence[int]): the 2D subspace on which to apply operation. This should be
+            `None` for the generalized Hadamard.
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+
+    **Example**
+
+    The specified subspace will determine which basis states the operation actually
+    applies to:
+
+    >>> qml.THadamard(wires=0, subspace=[0, 1]).matrix()
+    array([[ 1.,  1.,  0.],
+           [ 1., -1.,  0.],
+           [ 0.,  0.,  1.]])
+
+    >>> qml.THadamard(wires=0, subspace=[0, 2]).matrix()
+    array([[ 1.,  0.,  1.],
+           [ 0.,  1.,  0.],
+           [ 1.,  0., -1.]])
+
+    >>> qml.THadamard(wires=0, subspace=[1, 2]).matrix()
+    array([[ 1.,  0.,  0.],
+           [ 0.,  1.,  1.],
+           [ 0.,  1., -1.]])
+
+    >>> qml.THadamard(wires=0, subspace=None).matrix()
+    array([[ 0. -0.57735027j,  0. -0.57735027j,  0. -0.57735027j],
+           [ 0. -0.57735027j,  0.5+0.28867513j, -0.5+0.28867513j],
+           [ 0. -0.57735027j, -0.5+0.28867513j,  0.5+0.28867513j]])
+    """
+    num_wires = 1
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        label = base_label or "TH"
+        if self.subspace is None and self.inverse:
+            label += "⁻¹"
+
+        return label
+
+    def __init__(
+        self, wires, subspace=None, do_queue=True
+    ):  # pylint: disable=dangerous-default-value
+        if subspace is not None and not hasattr(subspace, "__iter__"):
+            raise ValueError(
+                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
+            )
+
+        self._subspace = subspace
+        self._hyperparameters = {
+            "subspace": self.subspace,
+        }
+        super().__init__(wires=wires, do_queue=do_queue)
+
+    @property
+    def subspace(self):
+        """The single-qutrit basis states which the operator acts on
+
+        This property returns the 2D subspace on which the operator acts. This subspace
+        determines which two single-qutrit basis states the operator acts on. The remaining
+        basis state is not affected by the operator.
+
+        Returns:
+            tuple[int]: subspace on which operator acts
+        """
+        return tuple(sorted(self._subspace)) if self._subspace is not None else None
+
+    @staticmethod
+    def compute_matrix(subspace=None):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.THadamard.matrix`
+
+        Args:
+            subspace (Sequence[int]): the 2D subspace on which to apply operation. This should be
+            `None` for the generalized Hadamard.
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.TH.compute_matrix(subspace=[0, 2]))
+        array([[ 1.,  0.,  1.],
+               [ 0.,  1.,  0.],
+               [ 1.,  0., -1.]])
+        """
+
+        if subspace is None:
+            return (-1j / np.sqrt(3)) * np.array(
+                [[1, 1, 1], [1, OMEGA, OMEGA**2], [1, OMEGA**2, OMEGA]]
+            )
+
+        if len(subspace) != 2:
+            raise ValueError(
+                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
+            )
+
+        if not all([s in {0, 1, 2} for s in subspace]):
+            raise ValueError("Elements of the subspace must be 0, 1, or 2.")
+
+        if subspace[0] == subspace[1]:
+            raise ValueError("Elements of subspace list must be unique.")
+
+        subspace = tuple(sorted(subspace))
+
+        mat = np.eye(3, dtype=np.complex128)
+
+        unused_ind = list({0, 1, 2}.difference(set(subspace))).pop()
+
+        mat[unused_ind, unused_ind] = np.sqrt(2)
+        mat[subspace[0], subspace[1]] = 1
+        mat[subspace[1], subspace[0]] = 1
+        mat[subspace[1], subspace[1]] = -1
+
+        return mat / np.sqrt(2)
+
+    def adjoint(self):
+        op = THadamard(wires=self.wires, subspace=self.subspace)
+
+        if self.subspace is None:
+            op.inverse = not self.inverse
+
+        return op
+
+    def pow(self, z):
+        if self.subspace is not None:
+            if not isinstance(z, int):
+                return super().pow(z)
+
+            return super().pow(z % 2)
+
+        return super().pow(z)
