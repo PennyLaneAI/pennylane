@@ -41,6 +41,7 @@ subspace_error_data = [
     ([3, 1], "Elements of the subspace must be 0, 1, or 2."),
     ([3, 3], "Elements of the subspace must be 0, 1, or 2."),
     ([1], "The subspace must be a sequence with"),
+    (0, "The subspace must be a sequence with two unique"),
 ]
 
 
