@@ -328,7 +328,7 @@ def test_inconsistent_active_spaces(
         (783, "CID"),
     ],
 )
-def test_consistent_pubchem_data(identifier, identifier_type):
+def test_consistent_pubchem_mol_data(identifier, identifier_type):
     r"""Test that consistent molecular data from PubChem database is returned"""
     pcp = pytest.importorskip("pubchempy")
     ref_mol_data_3d = (
@@ -346,7 +346,7 @@ def test_consistent_pubchem_data(identifier, identifier_type):
     )
     ref_mol_data_2d = (["H", "H"], np.array([[3.77945225, 0.0, 0.0], [5.66917837, 0.0, 0.0]]), 0)
 
-    pub_mol_data = qchem.pubchem_data(identifier, identifier_type)
+    pub_mol_data = qchem.mol_data(identifier, identifier_type)
     ref_mol_data = ref_mol_data_2d if pub_mol_data[0] == ["H", "H"] else ref_mol_data_3d
 
     assert ref_mol_data[0] == pub_mol_data[0] and ref_mol_data[2] == pub_mol_data[2]
@@ -363,18 +363,18 @@ def test_consistent_pubchem_data(identifier, identifier_type):
         (0, "CID", "Provided CID \(or Identifier\) is None"),
     ],
 )
-def test_inconsistent_pubchem_data(identifier, identifier_type, message_match):
-    r"""Test that an error is raised if an inconsistent parameters are provided to `pubchem_data`"""
+def test_inconsistent_pubchem_mol_data(identifier, identifier_type, message_match):
+    r"""Test that an error is raised if an inconsistent parameters are provided to `mol_data`"""
     pcp = pytest.importorskip("pubchempy")
     with pytest.raises(ValueError, match=message_match):
-        qchem.pubchem_data(identifier, identifier_type)
+        qchem.mol_data(identifier, identifier_type)
 
 
-def test_import_pubchem_data(monkeypatch):
+def test_import_pubchem_mol_data(monkeypatch):
     """Test that an exception is caught on import error for pubchempy"""
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "pubchempy", None)
 
         with pytest.raises(ImportError, match="This feature requires pubchempy"):
-            qchem.pubchem_data(227, "CID")
+            qchem.mol_data(227, "CID")

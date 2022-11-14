@@ -415,11 +415,11 @@ def excitations_to_wires(singles, doubles, wires=None):
     return singles_wires, doubles_wires
 
 
-def pubchem_data(identifier, identifier_type="name"):
-    r"""Obtain name, geometry and charge of a compound from the PubChem Database.
+def mol_data(identifier, identifier_type="name"):
+    r"""Obtain symbols and geometry of a compound from the PubChem Database.
 
     The `PubChem <https://pubchem.ncbi.nlm.nih.gov>`__ is one of the largest public repositories for
-    the information on chemical substances from which name, geometry (in Bohr radius), and charge can be
+    information on chemical substances from which symbols and geometry (in Bohr radius) can be
     retrieved for a compound by its name, SMILES, InChI, InChIKey, and PubChem Compound ID (CID) to
     build a molecule object for Hartree-Fock calculations.
 
@@ -428,66 +428,59 @@ def pubchem_data(identifier, identifier_type="name"):
         identifier_type (str): type of the provided identifier - name, CAS, CID, SMILES, InChI, InChIKey
 
     Returns:
-        Tuple(list[str], array[float], int): symbols, geometry (in Bohr radius) and charge of the compound
+        Tuple(list[str], array[float]): symbols and geometry (in Bohr radius) of the compound
 
     **Example**
 
-    >>> mol_data_from_pubchem("BeH2")
+    >>> mol_data("BeH2")
     (['Be', 'H', 'H'],
      array([[ 4.79405604,  0.29290815,  0.        ],
             [ 3.77946   , -0.29290815,  0.        ],
-            [ 5.80884105, -0.29290815,  0.        ]]),
-     0)
-    >>> mol_data_from_pubchem(223, "CID")
+            [ 5.80884105, -0.29290815,  0.        ]]))
+
+    >>> mol_data(223, "CID")
     (['N', 'H', 'H', 'H', 'H'],
     array([[ 4.79404621,  0.        ,  0.        ],
             [ 5.80882913,  0.5858151 ,  0.        ],
             [ 3.77945225, -0.5858151 ,  0.        ],
             [ 4.20823111,  1.01459396,  0.        ],
-            [ 5.3798613 , -1.01459396,  0.        ]]),
-    1)
+            [ 5.3798613 , -1.01459396,  0.        ]]))
 
     .. details::
 
-        **Usage Details**
+        ``mol_data`` can also be used with other chemical identifiers - CAS, SMILES, InChI, InChIKey:
 
-        ``mol_data_from_pubchem`` can also be used with other chemical identifiers - CAS, SMILES, InChI, InChIKey:
-
-        >>> mol_data_from_pubchem("74-82-8", "CAS")
+        >>> mol_data("74-82-8", "CAS")
         (['C', 'H', 'H', 'H', 'H'],
         array([[ 0.        ,  0.        ,  0.        ],
                 [ 1.04709725,  1.51102501,  0.93824902],
                 [ 1.29124986, -1.53710323, -0.47923455],
                 [-1.47058487, -0.70581271,  1.26460472],
-                [-0.86795121,  0.7320799 , -1.7236192 ]]),
-        0)
+                [-0.86795121,  0.7320799 , -1.7236192 ]]))
 
-        >>> mol_data_from_pubchem("[C]", "SMILES")
+        >>> mol_data("[C]", "SMILES")
         (['C', 'H', 'H', 'H', 'H'],
         array([[ 0.        ,  0.        ,  0.        ],
                 [ 1.04709725,  1.51102501,  0.93824902],
                 [ 1.29124986, -1.53710323, -0.47923455],
                 [-1.47058487, -0.70581271,  1.26460472],
-                [-0.86795121,  0.7320799 , -1.7236192 ]]),
-        0)
+                [-0.86795121,  0.7320799 , -1.7236192 ]]))
 
-        >>> mol_data_from_pubchem("InChI=1S/CH4/h1H4", "InChI")
+        >>> mol_data("InChI=1S/CH4/h1H4", "InChI")
         (['C', 'H', 'H', 'H', 'H'],
         array([[ 0.        ,  0.        ,  0.        ],
                 [ 1.04709725,  1.51102501,  0.93824902],
                 [ 1.29124986, -1.53710323, -0.47923455],
                 [-1.47058487, -0.70581271,  1.26460472],
-                [-0.86795121,  0.7320799 , -1.7236192 ]]),
-        0)
+                [-0.86795121,  0.7320799 , -1.7236192 ]]))
 
-        >>> mol_data_from_pubchem("VNWKTOKETHGBQD-UHFFFAOYSA-N", "InChIKey")
+        >>> mol_data("VNWKTOKETHGBQD-UHFFFAOYSA-N", "InChIKey")
         (['C', 'H', 'H', 'H', 'H'],
         array([[ 0.        ,  0.        ,  0.        ],
                 [ 1.04709725,  1.51102501,  0.93824902],
                 [ 1.29124986, -1.53710323, -0.47923455],
                 [-1.47058487, -0.70581271,  1.26460472],
-                [-0.86795121,  0.7320799 , -1.7236192 ]]),
-        0)
+                [-0.86795121,  0.7320799 , -1.7236192 ]]))
 
     """
 
