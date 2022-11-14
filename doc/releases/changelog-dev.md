@@ -27,6 +27,9 @@
   * Add `_State` class.
     [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
+  * Add `_VnEntropy` class.
+    [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
