@@ -723,32 +723,13 @@ def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
         interface = get_jax_interface_name(tapes)
 
     if interface == "jax-jit":
-        from .jax_jit import execute as _execute
+        if qml.active_return():
+            from .jax_jit import execute_new as _execute
+        else:
+            from .jax_jit import execute as _execute
     else:
         if qml.active_return():
             from .jax import execute_new as _execute
         else:
             from .jax import execute as _execute
-    return _execute
-
-
-def _get_jax_execute_fn_new(interface: str, tapes: Sequence[QuantumTape]):
-    """Auxiliary function to determine the execute function to use with the JAX
-    interface."""
-
-    # The most general JAX interface was specified, automatically determine if
-    # support for jitting is needed by swapping to "jax-jit" or "jax-python"
-
-    print("In the get JAX execute fn function")
-    if interface == "jax":
-        from .jax import get_jax_interface_name
-
-        interface = get_jax_interface_name(tapes)
-
-    if interface == "jax-jit":
-        print("getting jax jit")
-        from .jax_jit import execute_new as _execute
-    else:
-        from .jax import execute_new as _execute
-
     return _execute
