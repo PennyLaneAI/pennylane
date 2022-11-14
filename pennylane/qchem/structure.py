@@ -530,12 +530,11 @@ def mol_data(identifier, identifier_type="name"):
     except ValueError as exc:
         raise ValueError("Provided CID (or Identifier) is None.") from exc
 
-    mol_data = pcp_molecule.to_dict(properties=["atoms", "charge"])
-    symbols = [atom["element"] for atom in mol_data["atoms"]]
+    data_mol = pcp_molecule.to_dict(properties=["atoms", "charge"])
+    symbols = [atom["element"] for atom in data_mol["atoms"]]
     geometry = (
-        np.array([[atom["x"], atom["y"], atom.get("z", 0.0)] for atom in mol_data["atoms"]])
+        np.array([[atom["x"], atom["y"], atom.get("z", 0.0)] for atom in data_mol["atoms"]])
         / bohr_angs
     )
-    charge = mol_data["charge"]
 
-    return symbols, geometry, charge
+    return symbols, geometry
