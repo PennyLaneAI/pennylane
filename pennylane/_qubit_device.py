@@ -1815,7 +1815,7 @@ class QubitDevice(Device):
                 provided, that takes precedence.
 
         Returns:
-            array: the derivative of the tape with respect to trainable parameters.
+            array or tuple[array]: the derivative of the tape with respect to trainable parameters.
             Dimensions are ``(len(observables), len(trainable_params))``.
 
         Raises:
