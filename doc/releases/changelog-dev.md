@@ -30,6 +30,9 @@
   * Add `_VnEntropy` class.
     [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
+  * Add `_MutualInfo` class.
+    [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
