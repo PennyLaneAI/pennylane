@@ -105,7 +105,7 @@
   >>> read_dataset.data_name
   'Example'
   >>> read_dataset.hamiltonian
-      (0.5) [X1]
+    (0.5) [X1]
   + (1) [Z0]
   >>> read_dataset.energies
   array([-1.5, -0.5,  0.5,  1.5])
@@ -340,7 +340,7 @@
   
   - Execution (`qml.execute`)
   - Jacobian vector product (JVP) computation
-  - Gradient transforms (`qml.gradients.param_shift`, `qml.gradients.finite_diff`, qml.gradients.hessian_transform`, `qml.gradients.param_shift_hessian`).
+  - Gradient transforms (`qml.gradients.param_shift`, `qml.gradients.finite_diff`, `qml.gradients.hessian_transform`, `qml.gradients.param_shift_hessian`).
 
   - Interfaces (Autograd, TensorFlow, and JAX, although without JIT)
     
@@ -407,31 +407,31 @@
   [(#3121)](https://github.com/PennyLaneAI/pennylane/pull/3121)
 
   ```pycon
-    >>> symbols = ['He', 'H']
-    >>> geometry =  np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry, charge=1)
-    >>> H, n_qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
-    >>> generators = qml.qchem.symmetry_generators(H)
-    >>> paulixops = qml.qchem.paulix_ops(generators, n_qubits)
-    >>> paulix_sector = qml.qchem.optimal_sector(H, generators, mol.n_electrons)
-    >>> tap_op = qml.qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
-    ...                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
-    >>> tap_op(3.14159)
-    [Exp(1.5707949999999993j PauliY)]
+  >>> symbols = ['He', 'H']
+  >>> geometry =  np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
+  >>> mol = qml.qchem.Molecule(symbols, geometry, charge=1)
+  >>> H, n_qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
+  >>> generators = qml.qchem.symmetry_generators(H)
+  >>> paulixops = qml.qchem.paulix_ops(generators, n_qubits)
+  >>> paulix_sector = qml.qchem.optimal_sector(H, generators, mol.n_electrons)
+  >>> tap_op = qml.qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
+  ...                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
+  >>> tap_op(3.14159)
+  [Exp(1.5707949999999993j PauliY)]
   ```
 
   Moreover, the obtained tapered operation can be used directly within a QNode.
 
   ```pycon
-    >>> dev = qml.device('default.qubit', wires=[0, 1])
-    >>> @qml.qnode(dev)
-    ... def circuit(params):
-    ...     tap_op(params[0])
-    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-    >>> drawer = qml.draw(circuit, show_all_wires=True)
-    >>> print(drawer(params=[3.14159]))
-    0: ──Exp(0.00+1.57j Y)─┤ ╭<Z@Z>
-    1: ────────────────────┤ ╰<Z@Z>
+  >>> dev = qml.device('default.qubit', wires=[0, 1])
+  >>> @qml.qnode(dev)
+  ... def circuit(params):
+  ...     tap_op(params[0])
+  ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  >>> drawer = qml.draw(circuit, show_all_wires=True)
+  >>> print(drawer(params=[3.14159]))
+  0: ──Exp(0.00+1.57j Y)─┤ ╭<Z@Z>
+  1: ────────────────────┤ ╰<Z@Z>
   ```
 
 * Functionality has been added to estimate the number of measurements required to compute an expectation value with a target error and estimate the error in computing an expectation value with a given number of measurements.
@@ -554,7 +554,7 @@
 
 <h3>Improvements</h3>
 
-* Adds a Python 3.11 classification to the PennyLane package.
+* PennyLane now supports Python 3.11!
   [(#3297)](https://github.com/PennyLaneAI/pennylane/pull/3297)
 
 * `qml.sample` and `qml.counts` work more efficiently and track if computational basis samples are being generated when they are called without specifying an observable.
@@ -828,7 +828,7 @@ Kamal Mohamed Ali,
 Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Utkarsh Azad,
-Tom Bromley, 
+Thomas Bromley, 
 Albert Mitjans Coma,
 Isaac De Vlugt,
 Olivia Di Matteo,
