@@ -28,7 +28,9 @@ def equal(
     op2: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
     **kwargs,
 ):
-    r"""Function for determining operator or measurement equality.
+    r"""equal(op1, op2, **kwargs)
+
+    Function for determining operator or measurement equality.
 
     Args:
         op1 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): First object to compare
@@ -97,7 +99,6 @@ def _equal(
     raise NotImplementedError(f"Comparison between {type(op1)} and {type(op2)} not implemented.")
 
 
-
 @_equal.register
 def _equal_operator(
     op1: Operator,
@@ -123,9 +124,9 @@ def _equal_operator(
         return False
     if op1.wires != op2.wires:
         return False
-    for kwarg in op1.hyperparameters:
-        if op1.hyperparameters[kwarg] != op2.hyperparameters[kwarg]:
-            return False
+
+    if op1.hyperparameters != op2.hyperparameters:
+        return False
 
     if check_trainability:
         for params_1, params_2 in zip(op1.data, op2.data):
