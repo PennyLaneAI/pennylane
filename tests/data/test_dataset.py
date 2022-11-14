@@ -209,3 +209,33 @@ def test_import_zstd_dill(monkeypatch):
 
         with pytest.raises(ImportError, match="This feature requires zstd and dill"):
             qml.data.dataset._import_zstd_dill()
+
+
+def test_repr_standard(tmp_path):
+    """Test that __repr__ for standard Datasets look as expected."""
+    folder = tmp_path / "qchem" / "H2" / "STO-3G" / "1.02"
+    os.makedirs(folder)
+    qml.data.Dataset._write_file(
+        {"molecule": 1, "hf_state": 2}, str(folder / "H2_STO-3G_1.02_full.dat")
+    )
+
+    dataset = qml.data.Dataset("qchem", str(folder), "H2_STO-3G_1.02", "", standard=True)
+    assert (
+        repr(dataset)
+        == "<Dataset = description: qchem/H2/STO-3G/1.02, attributes: ['molecule', 'hf_state']>"
+    )
+
+    dataset.vqe_energy = 1.1
+    assert (
+        repr(dataset)
+        == "<Dataset = description: qchem/H2/STO-3G/1.02, attributes: ['molecule', 'hf_state', ...]>"
+    )
+
+
+def test_repr_non_standard():
+    """Test that __repr__ for non-standard Datasets look as expected."""
+    dataset = qml.data.Dataset(foo=1, bar=2)
+    assert repr(dataset) == "<Dataset = attributes: ['foo', 'bar']>"
+
+    dataset.baz = 3
+    assert repr(dataset) == "<Dataset = attributes: ['foo', 'bar', ...]>"
