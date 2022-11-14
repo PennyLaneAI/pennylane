@@ -230,7 +230,7 @@
   Result value: 1.00; Result type: <class 'jaxlib.xla_extension.DeviceArray'>
   ```
 
-<h4>More JAX-JIT gradient support 🏎</h4>
+<h4>Upgraded JAX-JIT gradient support 🏎</h4>
 
 * JAX-JIT support for computing the gradient of QNodes that return a single vector of probabilities or multiple expectation values is now available.
   [(#3244)](https://github.com/PennyLaneAI/pennylane/pull/3244)
