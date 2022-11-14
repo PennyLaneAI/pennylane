@@ -203,23 +203,24 @@ class TestSingleOperation:
     )
     def test_sparse_hamiltonian(self, row, col, dat, val_ref):
         """Test that the eigenvalues of a sparse Hamiltonian are correctly returned"""
-        # N x N matrix with N = 20
-        h_sparse = scipy.sparse.csr_matrix((dat, (row, col)), shape=(len(row), len(col)))
-        h_sparse = qml.SparseHamiltonian(h_sparse, wires=all)
+        # N x N matrix with N = 16
+        h_mat = scipy.sparse.csr_matrix((dat, (row, col)), shape=(16, 16))
+        h_sparse = qml.SparseHamiltonian(h_mat, wires=range(4))
+
+        dense_mat = h_mat.todense()
+        dense_eigvals = np.sort(np.linalg.eigvals(dense_mat))
 
         # k = 1  (< N-1) scipy.sparse.linalg is used:
         val_groundstate = qml.eigvals(h_sparse, k=1)
-        # k = 18  (< N-1) scipy.sparse.linalg is used:
-        val_n_sparse = qml.eigvals(h_sparse, k=len(val_ref) - 2)
-        # k = 20 (> N-1) qml.math.linalg is used:
-        val_all = qml.eigvals(h_sparse, k=len(val_ref))
-        # k = 19 (= N-1) qml.math.linalg is used:
-        val_n_dense = qml.eigvals(h_sparse, k=len(val_ref) - 1)
+        assert np.allclose(val_groundstate, dense_eigvals[0])
 
-        assert np.allclose(val_groundstate, val_ref[0])
-        assert np.allclose(np.sort(val_n_sparse), val_ref[0:18])
-        assert np.allclose(np.sort(val_all), val_ref)
-        assert np.allclose(np.sort(val_n_dense), val_ref)
+        # k = 14  (< N-1) scipy.sparse.linalg is used:
+        val_n_sparse = np.sort(qml.eigvals(h_sparse, k=14))
+        assert np.allclose(val_n_sparse, dense_eigvals[0:-2])
+
+        # k = 16 (> N-1) qml.math.linalg is used:
+        val_all = np.sort(qml.eigvals(h_sparse, k=16))
+        assert np.allclose(val_all, dense_eigvals)
 
 
 class TestMultipleOperations:
