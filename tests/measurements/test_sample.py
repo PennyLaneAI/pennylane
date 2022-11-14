@@ -13,23 +13,49 @@
 # limitations under the License.
 """Unit tests for the sample module"""
 
+import sys
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.measurements import Sample
+from pennylane.operation import EigvalsUndefinedError, Operator
 
 
 class TestSample:
     """Tests for the sample function"""
 
-    def test_sample_dimension(self):
+    # TODO: Remove this when new CustomMP are the default
+    def teardown_method(self):
+        """Method called at the end of every test. It loops over all the calls to
+        QubitDevice.sample and compares its output with the new _Sample.process method."""
+        if not getattr(self, "spy", False):
+            return
+        if sys.version_info[1] <= 7:
+            return  # skip tests for python@3.7 because call_args.kwargs is a tuple instead of a dict
+
+        assert len(self.spy.call_args_list) > 0  # make sure method is mocked properly
+
+        samples = self.dev._samples
+        for call_args in self.spy.call_args_list:
+            meas = call_args.args[1]
+            shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
+            if isinstance(meas, Operator):
+                meas = qml.sample(op=meas)
+            assert qml.math.allequal(
+                self.dev.sample(call_args.args[1], **call_args.kwargs),
+                meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size),
+            )
+
+    def test_sample_dimension(self, mocker):
         """Test that the sample function outputs samples of the right size"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=2, shots=n_sample)
+        self.dev = qml.device("default.qubit", wires=2, shots=n_sample)
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
-        @qml.qnode(dev)
+        @qml.qnode(self.dev)
         def circuit():
             qml.RX(0.54, wires=0)
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
@@ -39,13 +65,14 @@ class TestSample:
         assert np.array_equal(sample.shape, (2, n_sample))
 
     @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
-    def test_sample_combination(self):
+    def test_sample_combination(self, mocker):
         """Test the output of combining expval, var and sample"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        self.dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(self.dev, diff_method="parameter-shift")
         def circuit():
             qml.RX(0.54, wires=0)
 
@@ -58,13 +85,14 @@ class TestSample:
         assert isinstance(result[1], np.ndarray)
         assert isinstance(result[2], np.ndarray)
 
-    def test_single_wire_sample(self):
+    def test_single_wire_sample(self, mocker):
         """Test the return type and shape of sampling a single wire"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=1, shots=n_sample)
+        self.dev = qml.device("default.qubit", wires=1, shots=n_sample)
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
-        @qml.qnode(dev)
+        @qml.qnode(self.dev)
         def circuit():
             qml.RX(0.54, wires=0)
 
@@ -75,14 +103,15 @@ class TestSample:
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (n_sample,))
 
-    def test_multi_wire_sample_regular_shape(self):
+    def test_multi_wire_sample_regular_shape(self, mocker):
         """Test the return type and shape of sampling multiple wires
         where a rectangular array is expected"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        self.dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
-        @qml.qnode(dev)
+        @qml.qnode(self.dev)
         def circuit():
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
 
@@ -94,14 +123,15 @@ class TestSample:
         assert result.dtype == np.dtype("int")
 
     @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
-    def test_sample_output_type_in_combination(self):
+    def test_sample_output_type_in_combination(self, mocker):
         """Test the return type and shape of sampling multiple works
         in combination with expvals and vars"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        self.dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(self.dev, diff_method="parameter-shift")
         def circuit():
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
 
@@ -114,12 +144,13 @@ class TestSample:
         assert result[2].dtype == np.dtype("int")
         assert np.array_equal(result[2].shape, (n_sample,))
 
-    def test_not_an_observable(self):
+    def test_not_an_observable(self, mocker):
         """Test that a UserWarning is raised if the provided
         argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2, shots=10)
+        self.dev = qml.device("default.qubit", wires=2, shots=10)
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
-        @qml.qnode(dev)
+        @qml.qnode(self.dev)
         def circuit():
             qml.RX(0.52, wires=0)
             return qml.sample(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
@@ -127,12 +158,13 @@ class TestSample:
         with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             _ = circuit()
 
-    def test_observable_return_type_is_sample(self):
+    def test_observable_return_type_is_sample(self, mocker):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
         n_shots = 10
-        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+        self.dev = qml.device("default.qubit", wires=1, shots=n_shots)
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
-        @qml.qnode(dev)
+        @qml.qnode(self.dev)
         def circuit():
             res = qml.sample(qml.PauliZ(0))
             assert res.return_type is Sample
@@ -156,11 +188,12 @@ class TestSample:
         ):
             _ = circuit()
 
-    def test_providing_no_observable_and_no_wires(self):
+    def test_providing_no_observable_and_no_wires(self, mocker):
         """Test that we can provide no observable and no wires to sample function"""
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        self.dev = qml.device("default.qubit", wires=2, shots=1000)
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
-        @qml.qnode(dev)
+        @qml.qnode(self.dev)
         def circuit():
             qml.Hadamard(wires=0)
             res = qml.sample()
@@ -170,7 +203,7 @@ class TestSample:
 
         circuit()
 
-    def test_providing_no_observable_and_no_wires_shot_vector(self):
+    def test_providing_no_observable_and_no_wires_shot_vector(self, mocker):
         """Test that we can provide no observable and no wires to sample
         function when using a shot vector"""
         num_wires = 2
@@ -178,9 +211,10 @@ class TestSample:
         shots1 = 1
         shots2 = 10
         shots3 = 1000
-        dev = qml.device("default.qubit", wires=num_wires, shots=[shots1, shots2, shots3])
+        self.dev = qml.device("default.qubit", wires=num_wires, shots=[shots1, shots2, shots3])
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
-        @qml.qnode(dev)
+        @qml.qnode(self.dev)
         def circuit():
             qml.Hadamard(wires=0)
             return qml.sample()
@@ -193,13 +227,14 @@ class TestSample:
         assert len(res) == len(expected_shapes)
         assert (r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
 
-    def test_providing_no_observable_and_wires(self):
+    def test_providing_no_observable_and_wires(self, mocker):
         """Test that we can provide no observable but specify wires to the sample function"""
         wires = [0, 2]
         wires_obj = qml.wires.Wires(wires)
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        self.dev = qml.device("default.qubit", wires=3, shots=1000)
+        self.spy = mocker.spy(qml.QubitDevice, "sample")
 
-        @qml.qnode(dev)
+        @qml.qnode(self.dev)
         def circuit():
             qml.Hadamard(wires=0)
             res = qml.sample(wires=wires)
@@ -289,3 +324,12 @@ class TestSample:
         assert isinstance(binned_samples, tuple)
         assert len(binned_samples) == len(shot_vec)
         assert binned_samples[0].shape == (shot_vec[0],)
+
+    def test_new_sample_with_operator_with_no_eigvals(self):
+        """Test that calling process with an operator that has no eigvals defined raises an error."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+
+        with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
+            qml.sample(op=DummyOp(0)).process(samples=np.array([[1, 0]]))
