@@ -839,7 +839,9 @@ class QubitDevice(Device):
                     )
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
-            elif process := getattr(self, m.m_name, False):
+            elif hasattr(self, m.m_name):
+                # TODO: Use walrus operator when support for python@3.7 is removed
+                process = getattr(self, m.m_name)
                 results.append(process(obs, shot_range=shot_range, bin_size=bin_size))
 
             else:
