@@ -341,15 +341,14 @@ def test_consistent_pubchem_mol_data(identifier, identifier_type):
                 [-1.47058487, -0.70581271, 1.26460472],
                 [-0.86795121, 0.7320799, -1.7236192],
             ]
-        ),
-        0,
+        )
     )
-    ref_mol_data_2d = (["H", "H"], np.array([[3.77945225, 0.0, 0.0], [5.66917837, 0.0, 0.0]]), 0)
+    ref_mol_data_2d = (["H", "H"], np.array([[3.77945225, 0.0, 0.0], [5.66917837, 0.0, 0.0]]))
 
     pub_mol_data = qchem.mol_data(identifier, identifier_type)
     ref_mol_data = ref_mol_data_2d if pub_mol_data[0] == ["H", "H"] else ref_mol_data_3d
 
-    assert ref_mol_data[0] == pub_mol_data[0] and ref_mol_data[2] == pub_mol_data[2]
+    assert ref_mol_data[0] == pub_mol_data[0]
     assert np.allclose(ref_mol_data[1], pub_mol_data[1])
 
 
