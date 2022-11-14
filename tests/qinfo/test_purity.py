@@ -607,6 +607,9 @@ class TestPurityMeasurement:
         ):
             circuit(0.1)
 
+        if return_new:
+            qml.disable_return()
+
     def test_shot_vec_error(self):
         """Test an error is raised when using shot vectors with purity."""
 
@@ -643,3 +646,6 @@ class TestPurityMeasurement:
             "warning, set shots=None on the device.",
         ):
             circuit(0.5)
+
+        if return_new:
+            qml.disable_return()
