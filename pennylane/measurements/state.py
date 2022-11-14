@@ -15,9 +15,14 @@
 """
 This module contains the qml.state measurement.
 """
+from collections import OrderedDict
+
+import numpy as np
+
+import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, State
+from .measurements import State, StateMeasurement
 
 
 def state():
@@ -74,7 +79,7 @@ def state():
         -0.07471906623679961
     """
     # pylint: disable=protected-access
-    return MeasurementProcess(State)
+    return _State(State)
 
 
 def density_matrix(wires):
@@ -116,4 +121,19 @@ def density_matrix(wires):
     """
     # pylint: disable=protected-access
     wires = Wires(wires)
-    return MeasurementProcess(State, wires=wires)
+    return _State(State, wires=wires)
+
+
+class _State(StateMeasurement):
+    """Measurement process that returns the quantum state."""
+
+    # pylint: disable=redefined-outer-name
+    def process_state(self, state: np.ndarray, device_wires: Wires):
+        if self.wires == Wires([]):
+            return state
+
+        num_wires = len(device_wires)
+        consecutive_wires = Wires(range(num_wires))
+        wire_map = OrderedDict(zip(device_wires, consecutive_wires))
+        wires = [wire_map[w] for w in self.wires]
+        return qml.math.reduced_dm(state, indices=wires, c_dtype=np.complex128)

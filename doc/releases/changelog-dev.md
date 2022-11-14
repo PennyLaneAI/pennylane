@@ -27,6 +27,9 @@
   * Add `_MutualInfo` class.
     [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
 
+  * Add `_State` class.
+    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
