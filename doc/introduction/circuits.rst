@@ -114,7 +114,7 @@ The two most important device options are the ``wires`` and ``shots`` arguments.
 Wires
 *****
 
-The wires argument can either be an integer that defines the *number of wires*
+The wires argument can be an integer that defines the *number of wires*
 that you can address by consecutive integer labels ``0, 1, 2, ...``.
 
 .. code-block:: python
@@ -254,6 +254,38 @@ For example:
         return qml.expval(qml.PauliZ(1))
 
     result = circuit(0.543)
+
+Parameter Broadcasting in QNodes
+--------------------------------
+
+Some :class:`~.pennylane.QNode` circuits support the execution at multiple parameters
+simultaneously:
+
+>>> x = np.array([0.543, 1.234])
+>>> result = circuit(x)
+>>> result
+tensor([0.85616242, 0.33046511], requires_grad=True)
+
+This is called *parameter broadcasting* (as for, say, NumPy functions executed along an axis)
+or *parameter batching* (as in the application of a function to a *batch* of parameters in classical
+machine learning).
+
+In addition to a more flexible execution syntax, broadcasting can yield performance boosts
+compared to the separate execution of the QNode for each parameter setting. Whether or not this is
+the case depends on quite a few details, but in particular for (at most) moderately sized circuits
+(:math:`\lesssim 20` wires) with a moderate number of parameters (:math:`\lesssim 200`) executed
+on a classical simulator, one can expect to benefit from broadcasting.
+See the :class:`~.pennylane.QNode` documentation for details.
+
+Many standard quantum operators support broadcasting, see the corresponding attribute
+:attr:`~.pennylane.ops.qubit.attributes.supports_broadcasting` for a list, and the
+:class:`~.pennylane.Operator` documentation for details on how to support it in custom operators.
+Broadcasting can be used with any device, but will usually only yield performance upgrades for
+classical simulator devices like `"default.qubit"` that indicate that they support it:
+
+>>> cap = dev.capabilities()  
+>>> cap["supports_broadcasting"]
+True
 
 Importing circuits from other frameworks
 ----------------------------------------
