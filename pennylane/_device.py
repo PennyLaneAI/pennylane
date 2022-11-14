@@ -440,7 +440,7 @@ class Device(abc.ABC):
         self._obs_queue = observables
         self._parameters = {}
         if parameters is not None:
-            self._parameters |= parameters
+            self._parameters.update(parameters)
 
         results = []
         if self._shot_vector is not None:
