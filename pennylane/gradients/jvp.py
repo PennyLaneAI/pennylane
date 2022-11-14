@@ -33,7 +33,9 @@ def _convert(jac, tangent):
         jac = tuple(jac_new)
     else:
         jac = qml.math.convert_like(jac, tangent)
-        # jac = math.cast_like(jac, tangent)
+
+        if not qml.math.is_abstract(jac) and not qml.math.is_abstract(tangent):
+            jac = qml.math.cast_like(jac, tangent)
     return jac
 
 
@@ -90,8 +92,9 @@ def compute_jvp_single(tangent, jac):
     if jac is None:
         return None
 
-    # tangent = qml.math.stack(tangent)
-    # jac = _convert(jac, tangent)
+    if not qml.math.is_abstract(jac) and not qml.math.is_abstract(tangent):
+        tangent = qml.math.stack(tangent)
+        jac = _convert(jac, tangent)
 
     # Single param
     if not isinstance(jac, tuple):
