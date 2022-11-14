@@ -1147,6 +1147,9 @@ class PauliRot(Operation):
                 f"{num_wires} was expected for wires {wires}"
             )
 
+    def __repr__(self):
+        return f"PauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires.tolist()})"
+
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
@@ -1276,7 +1279,7 @@ class PauliRot(Operation):
     def generator(self):
         pauli_word = self.hyperparameters["pauli_word"]
         wire_map = {w: i for i, w in enumerate(self.wires)}
-        return -0.5 * qml.grouping.string_to_pauli_word(pauli_word, wire_map=wire_map)
+        return -0.5 * qml.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map)
 
     @staticmethod
     def compute_eigvals(theta, pauli_word):  # pylint: disable=arguments-differ

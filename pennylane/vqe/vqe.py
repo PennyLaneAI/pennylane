@@ -188,7 +188,7 @@ class ExpvalCost:
             if self._multiple_devices:
                 raise ValueError("Using multiple devices is not supported when optimize=True")
 
-            obs_groupings, coeffs_groupings = qml.grouping.group_observables(observables, coeffs)
+            obs_groupings, coeffs_groupings = qml.pauli.group_observables(observables, coeffs)
             d = device[0] if self._multiple_devices else device
             w = d.wires.tolist()
 
