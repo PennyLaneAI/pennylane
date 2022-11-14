@@ -891,18 +891,19 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     return g
 
 
-def repulsion_integral(alphas, coeffs, rs, basis_a, basis_b, basis_c, basis_d):
-    r"""Compute the electron-electron repulsion integral for four contracted Gaussian functions.
+def repulsion_integral(alphas, coeffs, rs, ls):
+    r"""Compute the electron-electron repulsion integral for four contracted
+        Gaussian functions.
 
     Args:
-        args (array[float]): initial values of the differentiable parameters
-        basis_a (~qchem.basis_set.BasisFunction): first basis function
-        basis_b (~qchem.basis_set.BasisFunction): second basis function
-        basis_c (~qchem.basis_set.BasisFunction): third basis function
-        basis_d (~qchem.basis_set.BasisFunction): fourth basis function
+        alphas (jnp.array): A (N, 4) array of all the alpha values.
+        coeffs (jnp.array): A (N, 4) array of all the coefficient values.
+        rs (jnp.array): A (N, 4) array of all the r values.
+        ls (tuple): A tuple of the angular momentum values.
 
     Returns:
-        array[float]: the electron repulsion integral between four contracted Gaussian functions
+        array[float]: the electron repulsion integral between four contracted
+        Gaussian functions
 
     **Example**
 
@@ -923,16 +924,17 @@ def repulsion_integral(alphas, coeffs, rs, basis_a, basis_b, basis_c, basis_d):
     beta, cb, rb = alphas[1], coeffs[1], rs[1]
     gamma, cc, rc = alphas[2], coeffs[2], rs[2]
     delta, cd, rd = alphas[3], coeffs[3], rs[3]
+    la, lb, lc, ld = ls
 
-    ca = ca * primitive_norm(basis_a.l, alpha)
-    cb = cb * primitive_norm(basis_b.l, beta)
-    cc = cc * primitive_norm(basis_c.l, gamma)
-    cd = cd * primitive_norm(basis_d.l, delta)
+    ca = ca * primitive_norm(la, alpha)
+    cb = cb * primitive_norm(lb, beta)
+    cc = cc * primitive_norm(lc, gamma)
+    cd = cd * primitive_norm(ld, delta)
 
-    n1 = contracted_norm(basis_a.l, alpha, ca)
-    n2 = contracted_norm(basis_b.l, beta, cb)
-    n3 = contracted_norm(basis_c.l, gamma, cc)
-    n4 = contracted_norm(basis_d.l, delta, cd)
+    n1 = contracted_norm(la, alpha, ca)
+    n2 = contracted_norm(lb, beta, cb)
+    n3 = contracted_norm(lc, gamma, cc)
+    n4 = contracted_norm(ld, delta, cd)
 
     e = (
         n1
@@ -947,10 +949,10 @@ def repulsion_integral(alphas, coeffs, rs, basis_a, basis_b, basis_c, basis_d):
                 * cd[:, jnp.newaxis, jnp.newaxis, jnp.newaxis]
             )
             * electron_repulsion(
-                basis_a.l,
-                basis_b.l,
-                basis_c.l,
-                basis_d.l,
+                la,
+                lb,
+                lc,
+                ld,
                 ra,
                 rb,
                 rc,

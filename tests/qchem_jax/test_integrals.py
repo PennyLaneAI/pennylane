@@ -908,23 +908,25 @@ def test_repulsion_integral(symbols, geometry, alpha, coeff, e_ref):
     integral."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
 
-    basis_a = mol.basis_set[0]
-    basis_b = mol.basis_set[1]
-
     alphas = alpha
     coeffs = coeff
 
     # We repeat the basis
-    rs = jnp.array([mol.r, mol.r]).reshape((alphas.shape[0], -1))
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    rs = jnp.array([basis.r for basis in [basis_a, basis_b, basis_a, basis_b]])
+    ls = tuple([tuple(basis.l) for basis in [basis_a, basis_b, basis_a, basis_b]])
+    print(ls)
 
     # Here alphas, coeffs should have shape (4, N) for all four basis
-    a = qchem.repulsion_integral(alphas, coeffs, rs, basis_a, basis_b, basis_a, basis_b)
+    a = qchem.repulsion_integral(alphas, coeffs, rs, ls)
 
     assert np.allclose(a, e_ref)
 
     # JIT
-    jitted_repuslion_integral = jax.jit(qchem.repulsion_integral, static_argnums=(3, 4, 5, 6))
-    a_jitted = jitted_repuslion_integral(alphas, coeffs, rs, basis_a, basis_b, basis_a, basis_b)
+    jitted_repuslion_integral = jax.jit(qchem.repulsion_integral, static_argnums=(3))
+    a_jitted = jitted_repuslion_integral(alphas, coeffs, rs, ls)
     assert np.allclose(a_jitted, e_ref)
 
 
@@ -958,21 +960,18 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
     correct."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
 
-    basis_a = mol.basis_set[0]
-    basis_b = mol.basis_set[1]
-
     alphas = alpha
     coeffs = coeff
 
     # We repeat the basis
-    rs = jnp.array([mol.r, mol.r]).reshape((alphas.shape[0], -1))
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
 
-    g_alpha = jax.grad(qchem.repulsion_integral, argnums=0)(
-        alphas, coeffs, rs, basis_a, basis_b, basis_a, basis_b
-    )
-    g_coeff = jax.grad(qchem.repulsion_integral, argnums=1)(
-        alphas, coeffs, rs, basis_a, basis_b, basis_a, basis_b
-    )
+    rs = jnp.array([basis.r for basis in [basis_a, basis_b, basis_a, basis_b]])
+    ls = tuple([tuple(basis.l) for basis in [basis_a, basis_b, basis_a, basis_b]])
+
+    g_alpha = jax.grad(qchem.repulsion_integral, argnums=0)(alphas, coeffs, rs, ls)
+    g_coeff = jax.grad(qchem.repulsion_integral, argnums=1)(alphas, coeffs, rs, ls)
 
     # compute repulsion gradients with respect to alpha and coeff using finite diff
     delta = 0.00001
@@ -988,24 +987,8 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
 
-            o_minus = qchem.repulsion_integral(
-                alpha_minus,
-                coeff,
-                rs,
-                basis_a,
-                basis_b,
-                basis_a,
-                basis_b,
-            )
-            o_plus = qchem.repulsion_integral(
-                alpha_plus,
-                coeff,
-                rs,
-                basis_a,
-                basis_b,
-                basis_a,
-                basis_b,
-            )
+            o_minus = qchem.repulsion_integral(alpha_minus, coeff, rs, ls)
+            o_plus = qchem.repulsion_integral(alpha_plus, coeff, rs, ls)
 
             g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
 
@@ -1015,24 +998,8 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
 
-            o_minus = qchem.repulsion_integral(
-                alpha,
-                coeff_minus,
-                rs,
-                basis_a,
-                basis_b,
-                basis_a,
-                basis_b,
-            )
-            o_plus = qchem.repulsion_integral(
-                alpha,
-                coeff_plus,
-                rs,
-                basis_a,
-                basis_b,
-                basis_a,
-                basis_b,
-            )
+            o_minus = qchem.repulsion_integral(alpha, coeff_minus, rs, ls)
+            o_plus = qchem.repulsion_integral(alpha, coeff_plus, rs, ls)
 
             g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
 
@@ -1040,26 +1007,10 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
     assert np.allclose(g_coeff, g_ref_coeff)
 
     # JIT
-    repulsion_integral_jitted = jax.jit(qchem.repulsion_integral, static_argnums=(3, 4, 5, 6))
+    repulsion_integral_jitted = jax.jit(qchem.repulsion_integral, static_argnums=(3))
 
-    g_alpha_jitted = jax.grad(repulsion_integral_jitted, argnums=0)(
-        alphas,
-        coeffs,
-        rs,
-        basis_a,
-        basis_b,
-        basis_a,
-        basis_b,
-    )
-    g_coeff_jitted = jax.grad(repulsion_integral_jitted, argnums=1)(
-        alphas,
-        coeffs,
-        rs,
-        basis_a,
-        basis_b,
-        basis_a,
-        basis_b,
-    )
+    g_alpha_jitted = jax.grad(repulsion_integral_jitted, argnums=0)(alphas, coeffs, rs, ls)
+    g_coeff_jitted = jax.grad(repulsion_integral_jitted, argnums=1)(alphas, coeffs, rs, ls)
 
     assert np.allclose(g_alpha_jitted, g_ref_alpha)
     assert np.allclose(g_coeff_jitted, g_ref_coeff)
