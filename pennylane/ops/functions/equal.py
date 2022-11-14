@@ -59,7 +59,7 @@ def equal(
     False
     >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]) )
     True
-    
+
 
     .. details::
         :title: Usage Details
