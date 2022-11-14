@@ -554,6 +554,9 @@
 
 <h3>Improvements</h3>
 
+* Adds a Python 3.11 classification to the PennyLane package.
+  [(#3297)](https://github.com/PennyLaneAI/pennylane/pull/3297)
+
 * `qml.sample` and `qml.counts` work more efficiently and track if computational basis samples are being generated when they are called without specifying an observable.
   [(#3207)](https://github.com/PennyLaneAI/pennylane/pull/3207)
 
