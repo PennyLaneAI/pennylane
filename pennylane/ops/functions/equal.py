@@ -22,7 +22,6 @@ from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
 from pennylane.operation import Operator
 
 
-@singledispatch
 def equal(
     op1: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
     op2: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
@@ -81,11 +80,24 @@ def equal(
         True
     """
 
+    if not isinstance(op2, type(op1)):
+        return False
+
+    return _equal(op1, op2, **kwargs)
+
+
+@singledispatch
+def _equal(
+    op1,
+    op2,
+    **kwargs,
+):
+
     raise NotImplementedError(f"Comparison between {type(op1)} and {type(op2)} not implemented.")
 
 
-@equal.register
-def equal_operator(
+@_equal.register
+def _equal_operator(
     op1: Operator,
     op2,
     check_interface: bool = True,
@@ -95,8 +107,6 @@ def equal_operator(
 ):
 
     """Determine whether two Operator objects are equal"""
-    if not isinstance(op2, type(op1)):
-        return False
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
@@ -128,11 +138,9 @@ def equal_operator(
     return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
 
 
-@equal.register
-def equal_measurements(op1: MeasurementProcess, op2):
+@_equal.register
+def _equal_measurements(op1: MeasurementProcess, op2):
     """Determine whether two MeasurementProcess objects are equal"""
-    if not isinstance(op2, MeasurementProcess):
-        return False
 
     return_types_match = op1.return_type == op2.return_type
     if op1.obs is not None and op2.obs is not None:
@@ -153,11 +161,9 @@ def equal_measurements(op1: MeasurementProcess, op2):
     )
 
 
-@equal.register
-def equal_shadow_measurements(op1: ShadowMeasurementProcess, op2):
+@_equal.register
+def _equal_shadow_measurements(op1: ShadowMeasurementProcess, op2):
     """Determine whether two ShadowMeasurementProcess objects are equal"""
-    if not isinstance(op2, ShadowMeasurementProcess):
-        return False
 
     return_types_match = op1.return_type == op2.return_type
     wires_match = op1.wires == op2.wires
