@@ -6,6 +6,9 @@
 
 <h3>Improvements</h3>
 
+* The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency. 
+  [(#3284)](https://github.com/PennyLaneAI/pennylane/pull/3284)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
