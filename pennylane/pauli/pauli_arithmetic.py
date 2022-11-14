@@ -188,8 +188,8 @@ class PauliWord(dict):
 
 
 class PauliSentence(dict):
-    """Dict representing a linear combination of Pauli words. The keys
-    are PauliWord instances and the values correspond to coefficients.
+    """Dictionary representing a linear combination of Pauli words, with the keys
+    as PauliWord instances and the values correspond to coefficients.
 
     >>> ps = PauliSentence({
             PauliWord({0:'X', 1:'Y'}): 1.23,
