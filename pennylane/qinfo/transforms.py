@@ -247,7 +247,8 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
         qml.probs(wires=wires)
 
     if post_processing_fn is None:
-        post_processing_fn = lambda x: qml.math.squeeze(qml.math.stack(x))
+        def post_processing_fn(x):
+            return qml.math.squeeze(qml.math.stack(x))
 
     return [new_tape], post_processing_fn
 
