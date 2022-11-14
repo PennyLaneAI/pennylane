@@ -25,22 +25,18 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
+    Expectation,
+    MidMeasure,
+    Probability,
     Sample,
+    ShadowExpval,
     State,
     Variance,
-    Expectation,
-    Probability,
-    MidMeasure,
-    ShadowExpval,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.tape import QuantumScript
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -414,7 +410,7 @@ class Device(abc.ABC):
         return cls._capabilities
 
     # pylint: disable=too-many-branches,unused-argument
-    def execute(self, queue, observables, parameters=None, **kwargs):
+    def execute(self, circuit: QuantumScript, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
@@ -437,12 +433,15 @@ class Device(abc.ABC):
         Returns:
             array[float]: measured value(s)
         """
+        queue = circuit.operations
+        observables = circuit.observables
+
         self.check_validity(queue, observables)
         self._op_queue = queue
         self._obs_queue = observables
         self._parameters = {}
         if parameters is not None:
-            self._parameters.update(parameters)
+            self._parameters |= parameters
 
         results = []
         if self._shot_vector is not None:
@@ -464,22 +463,17 @@ class Device(abc.ABC):
 
             for obs in observables:
 
-                if isinstance(obs, Tensor):
-                    wires = [ob.wires for ob in obs.obs]
-                else:
-                    wires = obs.wires
-
                 if obs.return_type is Expectation:
-                    results.append(self.expval(obs.name, wires, obs.parameters))
+                    results.append(self.expval(obs.name, obs.wires, obs.parameters))
 
                 elif obs.return_type is Variance:
-                    results.append(self.var(obs.name, wires, obs.parameters))
+                    results.append(self.var(obs.name, obs.wires, obs.parameters))
 
                 elif obs.return_type is Sample:
-                    results.append(np.array(self.sample(obs.name, wires, obs.parameters)))
+                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
 
                 elif obs.return_type is Probability:
-                    results.append(list(self.probability(wires=wires).values()))
+                    results.append(list(self.probability(wires=obs.wires).values()))
 
                 elif obs.return_type is State:
                     raise qml.QuantumFunctionError("Returning the state is not supported")
@@ -532,7 +526,7 @@ class Device(abc.ABC):
             # not start the next computation in the zero state
             self.reset()
 
-            res = self.execute(circuit.operations, circuit.observables)
+            res = self.execute(circuit=circuit)
             results.append(res)
 
         if self.tracker.active:
