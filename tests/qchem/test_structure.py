@@ -341,7 +341,7 @@ def test_consistent_pubchem_mol_data(identifier, identifier_type):
                 [-1.47058487, -0.70581271, 1.26460472],
                 [-0.86795121, 0.7320799, -1.7236192],
             ]
-        )
+        ),
     )
     ref_mol_data_2d = (["H", "H"], np.array([[3.77945225, 0.0, 0.0], [5.66917837, 0.0, 0.0]]))
 
