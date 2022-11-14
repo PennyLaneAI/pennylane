@@ -321,6 +321,7 @@ class TestPurityMeasurement:
     mix_supported_devices = ["default.mixed"]
 
     diff_methods = ["backprop", "finite-diff"]
+    return_new = [True, False]
 
     parameters = np.linspace(0, 2 * np.pi, 10)
     probs = np.array([0.001, 0.01, 0.1, 0.2])
@@ -586,8 +587,12 @@ class TestPurityMeasurement:
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
 
     @pytest.mark.parametrize("device", devices)
-    def test_qnode_entropy_no_custom_wires(self, device):
+    @pytest.mark.parametrize("return_new", return_new)
+    def test_qnode_entropy_no_custom_wires(self, device, return_new):
         """Test that purity cannot be returned with custom wires."""
+
+        if return_new:
+            qml.enable_return()
 
         dev = qml.device(device, wires=["a", 1])
 
@@ -617,8 +622,12 @@ class TestPurityMeasurement:
         ):
             circuit(0.5)
 
-    def test_shot_warnings(self):
+    @pytest.mark.parametrize("return_new", return_new)
+    def test_shot_warnings(self, return_new):
         """Tests the warning message when using shots"""
+
+        if return_new:
+            qml.enable_return()
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
