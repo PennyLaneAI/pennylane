@@ -8,6 +8,13 @@
 
 <h3>Breaking changes</h3>
 
+* Update signatures of the `Device.execute` and `QubitDevice.statistics` methods.
+
+  * `Device.execute` now accepts a `QuantumScript` object instead of two lists of operations and
+  observables.
+
+  * `QubitDevice.statistics` now accepts a `QuantumScript` object instead of a list of observables.
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
