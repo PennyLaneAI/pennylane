@@ -1157,7 +1157,6 @@ def var_param_shift(
     return gradient_tapes, processing_fn
 
 
-# TODO: docstrings & mention shots arg
 @gradient_transform
 def _param_shift_new(
     tape,
@@ -1210,11 +1209,11 @@ def _param_shift_new(
             device shots for the new return types output system.
 
     Returns:
-        tensor_like or tuple[list[QuantumTape], function]:
+        tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]] or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode, a tensor
-          representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
-          is returned.
+        - If the input is a QNode, an object representing the output Jacobian matrix.
+          The type of the object returned is either a tensor, a tuple or a nested tuple depending on the nesting
+          structure of the output.
 
         - If the input is a tape, a tuple containing a list of generated tapes,
           in addition to a post-processing function to be applied to the
@@ -1282,16 +1281,32 @@ def _param_shift_new(
     to use during autodifferentiation:
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
+    >>> @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
+    ... def circuit(params):
+    ...     qml.RX(params[0], wires=0)
+    ...     qml.RY(params[1], wires=0)
+    ...     qml.RX(params[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> qml.jacobian(circuit)(params)
+    tensor([-0.38751725, -0.18884792, -0.38355708], requires_grad=True)
+
+    When differentiating QNodes with multiple measurements using Autograd or TensorFlow, the outputs of the QNode first
+    need to be stacked. The reason is that those two frameworks only allow differentiating functions with array or
+    tensor outputs, instead of functions that output sequences. In contrast, Jax and Torch require no additional
+    post-processing.
+
+    >>> import jax
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
     ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> qml.jacobian(circuit)(params)
-    tensor([[-0.38751725, -0.18884792, -0.38355708],
-            [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+    >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+    >>> jax.jacobian(circuit)(params)
+    (DeviceArray([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32), DeviceArray([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
 
     .. note::
 
@@ -1335,8 +1350,12 @@ def _param_shift_new(
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
         >>> qml.gradients.param_shift(circuit)(params)
-        tensor([[-0.38751725, -0.18884792, -0.38355708],
-                [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+        ((tensor(-0.38751724, requires_grad=True),
+          tensor(-0.18884792, requires_grad=True),
+          tensor(-0.38355709, requires_grad=True)),
+         (tensor(0.69916868, requires_grad=True),
+          tensor(0.34072432, requires_grad=True),
+          tensor(0.69202366, requires_grad=True)))
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -1366,8 +1385,30 @@ def _param_shift_new(
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        [[-0.38751721 -0.18884787 -0.38355704]
-         [ 0.69916862  0.34072424  0.69202359]]
+        ((array(-0.3875172), array(-0.18884787), array(-0.38355704)),
+         (array(0.69916862), array(0.34072424), array(0.69202359)))
+
+        Devices that have a shot vector defined can also be used for execution, provided
+        the ``shots`` argument was passed to the transform:
+
+        >>> shots = (10, 100, 1000)
+        >>> dev = qml.device("default.qubit", wires=2, shots=shots)
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> qml.gradients.param_shift(circuit, shots=shots)(params)
+        (((array(-0.6), array(-0.1), array(-0.1)),
+          (array(1.2), array(0.2), array(0.2))),
+         ((array(-0.39), array(-0.24), array(-0.49)),
+          (array(0.7488), array(0.4608), array(0.9408))),
+         ((array(-0.36), array(-0.191), array(-0.37)),
+          (array(0.65808), array(0.349148), array(0.67636))))
+
+        The outermost tuple contains results corresponding to each element of the shot vector.
 
         When setting the keyword argument ``broadcast`` to ``True``, the shifted
         circuit evaluations for each operation are batched together, resulting in
@@ -1388,10 +1429,16 @@ def _param_shift_new(
         The postprocessing function will know that broadcasting is used and handle
         the results accordingly:
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        array([[-0.3875172 , -0.18884787, -0.38355704]])
+        (array(-0.3875172), array(-0.18884787), array(-0.38355704))
 
         An advantage of using ``broadcast=True`` is a speedup:
 
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     return qml.expval(qml.PauliZ(0))
         >>> number = 100
         >>> serial_call = "qml.gradients.param_shift(circuit, broadcast=False)(params)"
         >>> timeit.timeit(serial_call, globals=globals(), number=number) / number
@@ -1768,6 +1815,12 @@ def param_shift(
 
         An advantage of using ``broadcast=True`` is a speedup:
 
+        >>> @qml.qnode(dev)
+        ... def circuit(params):
+        ...     qml.RX(params[0], wires=0)
+        ...     qml.RY(params[1], wires=0)
+        ...     qml.RX(params[2], wires=0)
+        ...     return qml.expval(qml.PauliZ(0))
         >>> number = 100
         >>> serial_call = "qml.gradients.param_shift(circuit, broadcast=False)(params)"
         >>> timeit.timeit(serial_call, globals=globals(), number=number) / number

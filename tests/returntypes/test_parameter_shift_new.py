@@ -66,9 +66,11 @@ class TestGetOperationRecipe:
             qml.RX(x, 0)
             qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        # This is not a correct gradient recipe, but that's not the issue
+        # Incorrect gradient recipe, but this test only checks execution with an unshifted term.
         recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],)
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=recipes)
+        assert len(tapes) == 2
+
         res = fn(qml.execute(tapes, dev, None))
         assert len(res) == 2
         assert isinstance(res, tuple)
