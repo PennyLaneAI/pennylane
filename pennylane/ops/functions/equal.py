@@ -16,6 +16,7 @@ This module contains the qml.equal function.
 """
 # pylint: disable=too-many-arguments,too-many-return-statements, too-many-branches
 from typing import Union
+
 from functools import singledispatch
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
@@ -94,6 +95,7 @@ def _equal(
 ):
 
     raise NotImplementedError(f"Comparison between {type(op1)} and {type(op2)} not implemented.")
+
 
 
 @_equal.register
