@@ -819,9 +819,9 @@ class QubitDevice(Device):
 
                 if self.shots is not None:
                     warnings.warn(
-                        "Requested purity with finite shots; the returned "
-                        "result is analytic and is unaffected by sampling. To silence "
-                        "this warning, set shots=None on the device.",
+                        "Requested purity with finite shots; the returned result is "
+                        "analytic and is unaffected by sampling. To silence this "
+                        "warning, set shots=None on the device.",
                         UserWarning,
                     )
 
@@ -992,14 +992,14 @@ class QubitDevice(Device):
                 # TODO: qml.execute shot vec support required with new return types
                 # if self._shot_vector is not None:
                 #     raise NotImplementedError(
-                #         "Returning the Von Neumann entropy is not supported with shot vectors."
+                #         "Returning the purity is not supported with shot vectors."
                 #     )
 
                 if self.shots is not None:
                     warnings.warn(
-                        "Requested purity with finite shots; the returned "
-                        "result is analytic and is unaffected by sampling. To silence "
-                        "this warning, set shots=None on the device.",
+                        "Requested purity with finite shots; the returned result is "
+                        "analytic and is unaffected by sampling. To silence this warning, "
+                        "set shots=None on the device.",
                         UserWarning,
                     )
                 result = self.purity(wires=obs.wires)

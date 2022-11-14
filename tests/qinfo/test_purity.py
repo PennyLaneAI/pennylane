@@ -616,3 +616,21 @@ class TestPurityMeasurement:
             NotImplementedError, match="Returning the purity is not supported with shot vectors"
         ):
             circuit(0.5)
+
+    def test_shot_warnings(self):
+        """Tests the warning message when using shots"""
+
+        dev = qml.device("default.qubit", wires=2, shots=1000)
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.purity(wires=[0, 1])
+
+        with pytest.warns(
+            UserWarning,
+            match="Requested purity with finite shots; the returned result "
+            "is analytic and is unaffected by sampling. To silence this "
+            "warning, set shots=None on the device.",
+        ):
+            circuit(0.5)
