@@ -258,17 +258,17 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     return ExecuteTapes.apply(kwargs, *parameters)
 
 
-def _compute_vjp_new(dy, jacs, device=None):
+def _compute_vjps_new(dys, jacs, multi_measurements, device=None):
+    """Compute the vjps of multiple tapes, directly for a Jacobian and tangents."""
     vjps = []
 
-    for d, jac in zip(dy, jacs):
-        if isinstance(jac, np.ndarray):
-            jac = torch.from_numpy(jac)
-
-        jac = torch.as_tensor(jac, device=device)
-        vjp = qml.gradients.compute_vjp(d, jac)
-        vjps.extend(vjp)
-
+    for i, multi in enumerate(multi_measurements):
+        compute_func = (
+            qml.gradients.compute_vjp_multi_new if multi else qml.gradients.compute_vjp_single_new
+        )
+        print(dys, jacs[i])
+        print("inside", compute_func(dys[i], jacs[i]))
+        vjps.extend(compute_func(dys[i], jacs[i]))
     return vjps
 
 
@@ -329,9 +329,6 @@ class ExecuteTapesNew(torch.autograd.Function):
                 break
 
         for i, r in enumerate(res):
-            if isinstance(r, np.ndarray) and r.dtype is np.dtype("object"):
-                # For backwards compatibility, we flatten ragged tape outputs
-                r = np.hstack(r)
 
             if any(
                 m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
@@ -340,7 +337,7 @@ class ExecuteTapesNew(torch.autograd.Function):
                 continue
 
             if isinstance(r, (list, tuple)):
-                res[i] = [torch.as_tensor(t) for t in r]
+                res[i] = [torch.as_tensor(t, device=ctx.torch_device) for t in r]
 
                 if isinstance(r, tuple):
                     res[i] = tuple(res[i])
@@ -348,7 +345,23 @@ class ExecuteTapesNew(torch.autograd.Function):
                 res[i] = torch.as_tensor(r, device=ctx.torch_device)
 
             if ctx.jacs:
-                ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
+                print(ctx.jacs[i])
+                multi_m = len(ctx.tapes[i].measurements) > 1
+                multi_p = len(parameters) > 1
+
+                if multi_p and multi_m:
+                    res = []
+                    for res in ctx.jacs[i]:
+                        sub_jac = [torch.as_tensor(t, device=ctx.torch_device) for t in res]
+                        sub_jac = tuple(sub_jac)
+                        res.append(sub_jac)
+                    ctx.jacs[i] = tuple(res)
+
+                elif not multi_p and not multi_m:
+                    ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
+                else:
+                    sub_res = [torch.as_tensor(t, device=ctx.torch_device) for t in ctx.jacs[i]]
+                    ctx.jacs[i] = tuple(sub_res)
 
         return tuple(res)
 
@@ -356,11 +369,12 @@ class ExecuteTapesNew(torch.autograd.Function):
     def backward(ctx, *dy):
         """Returns the vector-Jacobian product with given
         parameter values p and output gradient dy"""
+        multi_measurements = [len(tape.measurements) > 1 for tape in ctx.tapes]
 
         if ctx.jacs:
             # Jacobians were computed on the forward pass (mode="forward")
             # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = _compute_vjp(dy, ctx.jacs)
+            vjps = _compute_vjps_new(dy, ctx.jacs, multi_measurements, device=ctx.torch_device)
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -376,11 +390,11 @@ class ExecuteTapesNew(torch.autograd.Function):
                     # This will allow higher-order derivatives to be computed
                     # if requested.
 
+                    # reduction extend
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                         ctx.tapes,
                         dy,
                         ctx.gradient_fn,
-                        reduction="extend",
                         gradient_kwargs=ctx.gradient_kwargs,
                     )
 
@@ -402,6 +416,7 @@ class ExecuteTapesNew(torch.autograd.Function):
                     # The derivative order is at the maximum. Compute the VJP
                     # in a non-differentiable manner to reduce overhead.
 
+                    # Reduction extend
                     with qml.tape.Unwrap(*ctx.tapes):
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             ctx.tapes,
@@ -426,7 +441,7 @@ class ExecuteTapesNew(torch.autograd.Function):
                 with qml.tape.Unwrap(*ctx.tapes):
                     jacs = ctx.gradient_fn(ctx.tapes, **ctx.gradient_kwargs)
 
-                vjps = _compute_vjp(dy, jacs, device=ctx.torch_device)
+                vjps = _compute_vjps_new(dy, jacs, multi_measurements, device=ctx.torch_device)
 
         # The output of backward must match the input of forward.
         # Therefore, we return `None` for the gradient of `kwargs`.

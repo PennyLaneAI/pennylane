@@ -1493,7 +1493,7 @@ class TestReturn:
 
         a = torch.tensor(0.1, requires_grad=True)
 
-        jac = jacobian(circuit)(a)
+        jac = jacobian(circuit, a)
 
         assert isinstance(jac, torch.Tensor)
         assert jac.shape == (4,)
@@ -1519,7 +1519,7 @@ class TestReturn:
         a = torch.tensor(0.1, requires_grad=True)
         b = torch.tensor(0.2, requires_grad=True)
 
-        jac = jacobian(circuit, argnums=[0, 1])(a, b)
+        jac = jacobian(circuit, (a, b))
 
         assert isinstance(jac, tuple)
 
