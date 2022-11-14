@@ -15,14 +15,16 @@
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 import importlib
-import pkg_resources
+from collections import OrderedDict
 
-import pytest
 import numpy as np
+import pkg_resources
+import pytest
+
 import pennylane as qml
 from pennylane import Device, DeviceError, QuantumFunctionError
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
-from collections import OrderedDict
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 
@@ -661,12 +663,12 @@ class TestOperations:
             qml.PauliZ(wires=2),
         ]
 
-        observables = [
+        measurements = [
             qml.expval(qml.PauliZ(0)),
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
+        qscript = QuantumScript(ops=queue, measurements=measurements)
 
         queue_at_pre_measure = []
 
@@ -674,7 +676,7 @@ class TestOperations:
             m.setattr(
                 Device, "pre_measure", lambda self: queue_at_pre_measure.extend(self.op_queue)
             )
-            dev.execute(queue, observables)
+            dev.execute(circuit=qscript)
 
         assert queue_at_pre_measure == queue
 
@@ -690,13 +692,13 @@ class TestOperations:
             qml.PauliZ(wires=2),
         ]
 
-        observables = [
+        measurements = [
             qml.expval(qml.PauliZ(0)),
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
 
-        observables = [o.obs for o in observables]
+        qscript = QuantumScript(ops=queue, measurements=measurements)
 
         call_history = []
         with monkeypatch.context() as m:
@@ -705,7 +707,7 @@ class TestOperations:
                 "apply",
                 lambda self, op, wires, params: call_history.append([op, wires, params]),
             )
-            dev.execute(queue, observables)
+            dev.execute(qscript)
 
         assert call_history[0] == ["PauliX", Wires([0]), []]
         assert call_history[1] == ["PauliY", Wires([1]), []]
@@ -721,16 +723,16 @@ class TestOperations:
             qml.Hadamard(wires=2),
         ]
 
-        observables = [
+        measurements = [
             qml.expval(qml.PauliZ(0)),
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
 
-        observables = [o.obs for o in observables]
+        qscript = QuantumScript(ops=queue, measurements=measurements)
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
-            dev.execute(queue, observables)
+            dev.execute(qscript)
 
 
 class TestObservables:
@@ -761,12 +763,13 @@ class TestObservables:
             qml.PauliZ(wires=2),
         ]
 
-        observables = [
+        measurements = [
             qml.expval(qml.PauliZ(0)),
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
+
+        qscript = QuantumScript(ops=queue, measurements=measurements)
 
         queue_at_pre_measure = []
 
@@ -774,9 +777,9 @@ class TestObservables:
             m.setattr(
                 Device, "pre_measure", lambda self: queue_at_pre_measure.extend(self.obs_queue)
             )
-            dev.execute(queue, observables)
+            dev.execute(qscript)
 
-        assert queue_at_pre_measure == observables
+        assert queue_at_pre_measure == qscript.observables
 
     def test_obs_queue_is_filled_during_execution(
         self, monkeypatch, mock_device_with_paulis_and_methods
@@ -784,10 +787,13 @@ class TestObservables:
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods(wires=3)
 
-        observables = []
-        for m in [qml.expval(qml.PauliX(0)), qml.var(qml.PauliY(1)), qml.sample(qml.PauliZ(2))]:
-            m.obs.return_type = m.return_type
-            observables.append(m.obs)
+        measurements = [
+            qml.expval(qml.PauliX(0)),
+            qml.var(qml.PauliY(1)),
+            qml.sample(qml.PauliZ(2)),
+        ]
+
+        qscript = QuantumScript(measurements=measurements)
 
         # capture the arguments passed to dev methods
         expval_args = []
@@ -797,7 +803,7 @@ class TestObservables:
             m.setattr(Device, "expval", lambda self, *args: expval_args.extend(args))
             m.setattr(Device, "var", lambda self, *args: var_args.extend(args))
             m.setattr(Device, "sample", lambda self, *args: sample_args.extend(args))
-            dev.execute([], observables)
+            dev.execute(qscript)
 
         assert expval_args == ["PauliX", Wires([0]), []]
         assert var_args == ["PauliY", Wires([1]), []]
@@ -813,15 +819,15 @@ class TestObservables:
             qml.PauliZ(wires=2),
         ]
 
-        observables = [
+        measurements = [
             qml.expval(qml.Hadamard(0)),
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
+        qscript = QuantumScript(ops=queue, measurements=measurements)
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
-            dev.execute(queue, observables)
+            dev.execute(qscript)
 
     def test_unsupported_observable_return_type_raise_error(
         self, mock_device_with_paulis_and_methods
@@ -832,14 +838,15 @@ class TestObservables:
         queue = [qml.PauliX(wires=0)]
 
         # Make a observable without specifying a return operation upon measuring
-        obs = qml.PauliZ(0)
-        obs.return_type = "SomeUnsupportedReturnType"
-        observables = [obs]
+        m = qml.expval(qml.PauliZ(0))
+        m.return_type = "SomeUnsupportedReturnType"
+
+        qscript = QuantumScript(ops=queue, measurements=[m])
 
         with pytest.raises(
             qml.QuantumFunctionError, match="Unsupported return type specified for observable"
         ):
-            dev.execute(queue, observables)
+            dev.execute(qscript)
 
 
 class TestParameters:
@@ -871,18 +878,19 @@ class TestParameters:
 
         parameters = {0: (0, 0), 1: (2, 3)}
 
-        observables = [
+        measurements = [
             qml.expval(qml.PauliZ(0)),
             qml.var(qml.PauliZ(1)),
             qml.sample(qml.PauliZ(2)),
         ]
-        observables = [o.obs for o in observables]
 
         p_mapping = {}
 
+        qscript = QuantumScript(ops=queue, measurements=measurements)
+
         with monkeypatch.context() as m:
             m.setattr(Device, "pre_measure", lambda self: p_mapping.update(self.parameters))
-            dev.execute(queue, observables, parameters=parameters)
+            dev.execute(qscript, parameters=parameters)
 
         assert p_mapping == parameters
 
@@ -1002,12 +1010,8 @@ class TestBatchExecution:
         res = dev.batch_execute(tapes)
 
         assert len(res) == 2
-        assert np.allclose(
-            res[0], dev.execute(self.tape1.operations, self.tape1.observables), rtol=tol, atol=0
-        )
-        assert np.allclose(
-            res[1], dev.execute(self.tape2.operations, self.tape2.observables), rtol=tol, atol=0
-        )
+        assert np.allclose(res[0], dev.execute(self.tape1), rtol=tol, atol=0)
+        assert np.allclose(res[1], dev.execute(self.tape2), rtol=tol, atol=0)
 
     def test_result_empty_tape(self, mock_device_with_paulis_and_methods, tol):
         """Tests that the result has the correct shape and entry types for empty tapes."""
@@ -1019,6 +1023,4 @@ class TestBatchExecution:
         res = dev.batch_execute(tapes)
 
         assert len(res) == 3
-        assert np.allclose(
-            res[0], dev.execute(empty_tape.operations, empty_tape.observables), rtol=tol, atol=0
-        )
+        assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
