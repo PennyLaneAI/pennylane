@@ -153,6 +153,8 @@ def counts(op=None, wires=None, all_outcomes=False):
 class _Counts(SampleMeasurement):
     """Measurement process that returns the samples of a given observable."""
 
+    m_name = "counts"
+
     def __init__(
         self,
         return_type: ObservableReturnTypes,

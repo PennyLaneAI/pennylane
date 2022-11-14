@@ -118,6 +118,8 @@ def sample(op: Union[Observable, None] = None, wires=None):
 class _Sample(SampleMeasurement):
     """Measurement process that returns the samples of a given observable."""
 
+    m_name = "sample"
+
     def process(self, samples: np.ndarray, shot_range: Tuple[int] = None, bin_size: int = None):
         name = self.obs.name if self.obs is not None else None
         # Select the samples from samples that correspond to ``shot_range`` if provided

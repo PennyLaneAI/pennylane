@@ -19,8 +19,8 @@ executed by a device.
 
 import contextlib
 import copy
-from typing import List, Union
 from collections import Counter, defaultdict
+from typing import List, Union
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -28,8 +28,11 @@ from pennylane.measurements import (
     Counts,
     MeasurementProcess,
     Sample,
+    SampleMeasurement,
     Shadow,
     ShadowExpval,
+    State,
+    StateMeasurement,
 )
 from pennylane.operation import Observable, Operator
 
@@ -291,7 +294,7 @@ class QuantumScript:
         return obs
 
     @property
-    def measurements(self) -> List[MeasurementProcess]:
+    def measurements(self) -> List[Union[StateMeasurement, SampleMeasurement]]:
         """Returns the measurements on the quantum script.
 
         Returns:
@@ -1281,3 +1284,18 @@ class QuantumScript:
                 qasm_str += f"measure q[{wire_indx}] -> c[{wire_indx}];\n"
 
         return qasm_str
+
+    def _validate_measurements(self):
+        """Make sure that the quantum script's measurements are valid."""
+        if any(m.return_type is State for m in self.measurements) and len(self.measurements) > 1:
+            raise qml.QuantumFunctionError(
+                "The state or density matrix cannot be returned in combination"
+                " with other return types"
+            )
+        if (
+            any(m.return_type in {Shadow, ShadowExpval} for m in self.measurements)
+            and len(self.measurements) > 1
+        ):
+            raise qml.QuantumFunctionError(
+                "Classical shadows cannot be returned in combination with other return types"
+            )

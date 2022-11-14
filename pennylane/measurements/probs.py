@@ -122,6 +122,8 @@ def probs(wires=None, op=None):
 class _Probability(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
 
+    m_name = "probability"
+
     def process(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):

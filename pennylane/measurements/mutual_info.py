@@ -85,7 +85,13 @@ def mutual_info(wires0, wires1, log_base=None):
 class _MutualInfo(StateMeasurement):
     """Measurement process that returns the mutual information."""
 
+    m_name = "mutual_info"
+
     def process_state(self, state: np.ndarray, device_wires: Wires):
+        if device_wires.labels != tuple(range(len(device_wires))):
+            raise qml.QuantumFunctionError(
+                "Returning the Von Neumann entropy is not supported when using custom wire labels"
+            )
         return qml.math.mutual_info(
             state,
             indices0=[self.wires[0]],

@@ -70,7 +70,13 @@ def vn_entropy(wires, log_base=None):
 class _VnEntropy(StateMeasurement):
     """Measurement process that returns the Von Neumann entropy."""
 
+    m_name = "vn_entropy"
+
     def process_state(self, state: np.ndarray, device_wires: Wires):
+        if device_wires.labels != tuple(range(len(device_wires))):
+            raise qml.QuantumFunctionError(
+                "Returning the Von Neumann entropy is not supported when using custom wire labels"
+            )
         return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=np.complex128, base=self.log_base
         )

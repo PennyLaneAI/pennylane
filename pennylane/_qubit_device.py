@@ -44,6 +44,7 @@ from pennylane.measurements import (
     VnEntropy,
 )
 from pennylane.operation import operation_derivative
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 
@@ -249,7 +250,7 @@ class QubitDevice(Device):
 
         for shot_tuple in self._shot_vector:
             s2 = s1 + np.prod(shot_tuple)
-            r = self.statistics(circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots)
+            r = self.statistics(circuit=circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
                 r = r[0]
@@ -324,7 +325,7 @@ class QubitDevice(Device):
             results = self.shot_vec_statistics(circuit)
 
         else:
-            results = self._statistics_new(circuit.observables)
+            results = self._statistics_new(circuit)
             single_measurement = len(circuit.measurements) == 1
 
             if single_measurement:
@@ -387,7 +388,7 @@ class QubitDevice(Device):
         if not self.analytic and self._shot_vector is not None:
             results = self._collect_shotvector_results(circuit, counts_exist)
         else:
-            results = self.statistics(circuit.observables, circuit=circuit)
+            results = self.statistics(circuit=circuit)
 
         if not circuit.is_sampled:
 
@@ -460,7 +461,7 @@ class QubitDevice(Device):
         for shot_tuple in self._shot_vector:
             s2 = s1 + np.prod(shot_tuple)
             r = self._statistics_new(
-                circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
+                circuit=circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots
             )
 
             # This will likely be required:
@@ -687,20 +688,19 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
-    def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
+    def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
         density matrices.
 
         Args:
-            observables (List[.Observable]): the observables to be measured
+            circuit (~.tape.QuantumScript): the quantum script currently being executed
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
-            circuit (~.tape.QuantumTape): the quantum tape currently being executed
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -736,17 +736,12 @@ class QubitDevice(Device):
         """
         results = []
 
-        for obs in observables:
-            # Pass instances directly
-            if obs.return_type is Expectation:
-                # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
-                results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
+        measurements = circuit.measurements
 
-            elif obs.return_type is Variance:
-                # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
-                results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
+        for m in measurements:
+            obs = m.obs or m
 
-            elif obs.return_type is Sample:
+            if obs.return_type is Sample:
                 # Appends a result of shape (shots, num_bins,) if bin_size is not None else (shots,)
                 results.append(
                     self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
@@ -765,7 +760,7 @@ class QubitDevice(Device):
                 )
 
             elif obs.return_type is State:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination"
                         " with other return types"
@@ -829,7 +824,7 @@ class QubitDevice(Device):
                 )
 
             elif obs.return_type is Shadow:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
                         " with other return types"
@@ -837,28 +832,33 @@ class QubitDevice(Device):
                 results.append(self.classical_shadow(obs, circuit=circuit))
 
             elif obs.return_type is ShadowExpval:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
                         " with other return types"
                     )
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
-            elif obs.return_type is not None:
-                raise qml.QuantumFunctionError(
-                    f"Unsupported return type specified for observable {obs.name}"
+            elif process := getattr(self, m.m_name, False):
+                results.append(process(obs, shot_range=shot_range, bin_size=bin_size))
+
+            else:
+                results.append(
+                    m.process_state(state=self.state, device_wires=self.wires)
+                    if self.shots is None
+                    else m.process(samples=self._samples, shot_range=shot_range, bin_size=bin_size)
                 )
 
         return results
 
-    def _statistics_new(self, observables, shot_range=None, bin_size=None):
+    def _statistics_new(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
         density matrices.
 
         Args:
-            observables (List[.Observable]): the observables to be measured
+            circuit (~.tape.QuantumScript): the quantum script currently being executed
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
@@ -897,6 +897,8 @@ class QubitDevice(Device):
             * Finally, we repeat the measurement statistics for the final 100 shots,
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
+        observables = circuit.observables
+
         results = []
 
         for obs in observables:

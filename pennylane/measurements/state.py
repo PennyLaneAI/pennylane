@@ -127,6 +127,8 @@ def density_matrix(wires):
 class _State(StateMeasurement):
     """Measurement process that returns the quantum state."""
 
+    m_name = "state"
+
     # pylint: disable=redefined-outer-name
     def process_state(self, state: np.ndarray, device_wires: Wires):
         if self.wires == Wires([]):

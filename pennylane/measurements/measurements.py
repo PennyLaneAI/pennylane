@@ -127,6 +127,9 @@ class MeasurementProcess:
         log_base (float): Base for the logarithm.
     """
 
+    m_name = "measurement"
+    """Name used to identify if the device has a custom measurement defined."""
+
     # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-arguments
 

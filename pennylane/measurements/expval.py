@@ -65,6 +65,8 @@ def expval(op: Operator):
 class _Expectation(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
 
+    m_name = "expval"
+
     def process(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
