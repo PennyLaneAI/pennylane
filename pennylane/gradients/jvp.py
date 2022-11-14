@@ -35,7 +35,7 @@ def _convert(jac, tangent):
         jac = qml.math.convert_like(jac, tangent)
 
         if not qml.math.is_abstract(jac) and not qml.math.is_abstract(tangent):
-            jac = qml.math.cast_like(jac, tangent)
+            jac = qml.math.cast(jac, tangent.dtype)
     return jac
 
 

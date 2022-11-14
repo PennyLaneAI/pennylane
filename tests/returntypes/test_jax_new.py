@@ -32,9 +32,7 @@ from pennylane.interfaces import execute, InterfaceUnsupportedError
 from pennylane.interfaces.jax_jit import _execute_with_fwd
 
 
-# TODO: add jax-jit when it supports new return types.
-# "jax-jit"
-@pytest.mark.parametrize("interface", ["jax-python"])
+@pytest.mark.parametrize("interface", ["jax-python", "jax-jit"])
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""
 
@@ -192,9 +190,7 @@ class TestJaxExecuteUnitTests:
         spy_gradients.assert_called()
 
 
-# TODO: add jax-jit when it supports new return types.
-# "jax-jit"
-@pytest.mark.parametrize("interface", ["jax-python"])
+@pytest.mark.parametrize("interface", ["jax-python", "jax-jit"])
 class TestCaching:
     """Test for caching behaviour"""
 
@@ -577,7 +573,6 @@ class TestJaxExecuteIntegration:
             return execute(tapes=[tape1, tape2], device=dev, interface=interface, **execute_kwargs)
 
         res = cost_fn(params)
-        print(res)
         assert isinstance(res, list)
         assert all(isinstance(r, jnp.ndarray) for r in res)
         assert all(r.shape == () for r in res)
@@ -669,7 +664,6 @@ class TestJaxExecuteIntegration:
                 qml.expval(qml.PauliZ(1))
 
             res = execute([tape], dev, cache=cache, interface=interface, **execute_kwargs)
-            print(res)
             return res[0]
 
         res = jax.grad(cost)(params, cache=None)
@@ -888,8 +882,6 @@ class TestVectorValued:
         assert res[1][1][1].shape == (2,)
 
 
-# TODO: add jit tests
-@pytest.mark.xfail(reason="Add interface for Jax-jit")
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
 class TestVectorValuedJIT:
     """Test vector-valued returns for the JAX jit Python interface."""
@@ -1145,8 +1137,6 @@ class TestVectorValuedJIT:
             )
 
 
-# TODO: add jit tests
-@pytest.mark.xfail(reason="Add interface for Jax-jit")
 def test_diff_method_None_jit():
     """Test that jitted execution works when `gradient_fn=None`."""
 
