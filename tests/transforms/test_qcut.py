@@ -2963,10 +2963,10 @@ class TestQCutProcessingFn:
         def f(state, measurement):
             qml.QubitStateVector(state, wires=range(n))
             qml.QubitUnitary(U, wires=range(n))
-            return [qml.expval(qml.grouping.string_to_pauli_word(m)) for m in measurement]
+            return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
 
         prod_inp = itertools.product(range(4), repeat=n)
-        prod_out = qml.grouping.partition_pauli_group(n)
+        prod_out = qml.pauli.partition_pauli_group(n)
 
         results = []
 
@@ -3784,6 +3784,17 @@ class TestRemapTapeWires:
         new_tape = qcut.remap_tape_wires(tape, [0, 1])
 
         compare_tapes(expected_tape, new_tape)
+
+    def test_deprecation_warning(self):
+        """Test that a deprecation warning is raised when calling `remap_tape_wires`."""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.5, wires=2)
+            qml.RY(0.6, wires=3)
+            qml.CNOT(wires=[2, 3])
+            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
+
+        with pytest.warns(UserWarning, match="The method remap_tape_wires is deprecated."):
+            qcut.remap_tape_wires(tape, [0, 1])
 
 
 class TestCutCircuitTransformValidation:
@@ -4717,7 +4728,7 @@ class TestAutoCutCircuit:
         with qml.tape.QuantumTape() as tape0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             if measure_all_wires:
-                qml.expval(qml.grouping.string_to_pauli_word("Z" * n_wires))
+                qml.expval(qml.pauli.string_to_pauli_word("Z" * n_wires))
             else:
                 qml.expval(qml.PauliZ(wires=n_wires - 1))
 

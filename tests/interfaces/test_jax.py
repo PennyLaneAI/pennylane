@@ -32,6 +32,37 @@ from pennylane.interfaces import InterfaceUnsupportedError, execute
 from pennylane.interfaces.jax_jit import _execute_with_fwd
 
 
+@pytest.mark.parametrize(
+    "version, package, should_raise",
+    [
+        ("0.3.16", jax, True),
+        ("0.3.17", jax, False),
+        ("0.3.18", jax, False),
+        ("0.3.14", jax.lib, True),
+        ("0.3.15", jax.lib, False),
+        ("0.3.16", jax.lib, False),
+    ],
+)
+def test_raise_version_error(package, version, should_raise, monkeypatch):
+    """Test JAX version error"""
+    a = jnp.array([0.1, 0.2])
+
+    dev = qml.device("default.qubit", wires=1)
+
+    with qml.tape.QuantumTape() as tape:
+        qml.expval(qml.PauliZ(0))
+
+    with monkeypatch.context() as m:
+        m.setattr(package, "__version__", version)
+
+        if should_raise:
+            msg = "requires version 0.3.17 or higher for JAX and 0.3.15 or higher JAX lib"
+            with pytest.raises(InterfaceUnsupportedError, match=msg):
+                execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
+        else:
+            execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
+
+
 @pytest.mark.parametrize("interface", ["jax-jit", "jax-python", "auto"])
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""

@@ -906,7 +906,8 @@ class TestInverseAdjoint:
             m1 = qml.probs(wires=0)
             m2 = qml.probs(wires="a")
 
-        tape.inv()
+        with pytest.warns(UserWarning, match="QuantumTape.inv is now deprecated."):
+            tape.inv()
 
         # check that operation order is reversed
         assert [o.name for o in tape.operations] == ["BasisState", "CNOT", "Rot", "RX"]
@@ -1174,6 +1175,34 @@ class TestExpand:
             qml.RY(0.4, wires=1)
             qml.expval(qml.PauliX(0))
             ret(op=qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+            tape.expand(expand_measurements=True)
+
+    @pytest.mark.parametrize("ret", [expval, var, probs])
+    @pytest.mark.parametrize("wires", [None, 0, [0]])
+    def test_expand_tape_multiple_wires_non_commuting_no_obs_sampling(self, ret, wires):
+        """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
+        observables (also involving computational basis sampling) are on the same wire"""
+        with QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            ret(op=qml.PauliX(0))
+            qml.sample(wires=wires)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
+            tape.expand(expand_measurements=True)
+
+    @pytest.mark.parametrize("ret", [expval, var, probs])
+    @pytest.mark.parametrize("wires", [None, 0, [0]])
+    def test_expand_tape_multiple_wires_non_commuting_no_obs_counting(self, ret, wires):
+        """Test if a QuantumFunctionError is raised during tape expansion if non-commuting
+        observables (also involving computational basis sampling) are on the same wire"""
+        with QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.RY(0.4, wires=1)
+            ret(op=qml.PauliX(0))
+            qml.counts(wires=wires)
 
         with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
             tape.expand(expand_measurements=True)
@@ -2199,6 +2228,60 @@ class TestOutputShape:
         execution_results = cost(tape, dev)[0]
         for r, e in zip(res, execution_results):
             assert r == e.shape
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("measurement, expected_shape", measures)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_broadcasting_single(self, measurement, expected_shape, shots):
+        """Test that the output shape produced by the tape matches the expected
+        output shape for a single measurement and parameter broadcasting"""
+        if shots is None and measurement.return_type is qml.measurements.Sample:
+            pytest.skip("Sample doesn't support analytic computations.")
+
+        if measurement.return_type is qml.measurements.State and measurement.wires is not None:
+            pytest.skip("Density matrix does not support parameter broadcasting")
+
+        num_wires = 3
+        dev = qml.device("default.qubit", wires=num_wires, shots=shots)
+
+        a = np.array([0.1, 0.2, 0.3])
+        b = np.array([0.4, 0.5, 0.6])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.apply(measurement)
+
+        expected_shape = qml.execute([tape], dev, gradient_fn=None)[0].shape
+
+        assert tape.shape(dev) == expected_shape
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("measurement, expected", measures)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_broadcasting_multi(self, measurement, expected, shots):
+        """Test that the output shape produced by the tape matches the expected
+        output shape for multiple measurements and parameter broadcasting"""
+        if shots is None and measurement.return_type is qml.measurements.Sample:
+            pytest.skip("Sample doesn't support analytic computations.")
+
+        if measurement.return_type is qml.measurements.State:
+            pytest.skip("State does not support multiple measurements")
+
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array([0.1, 0.2, 0.3])
+        b = np.array([0.4, 0.5, 0.6])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for _ in range(2):
+                qml.apply(measurement)
+
+        expected = qml.execute([tape], dev, gradient_fn=None)[0].shape
+
+        assert tape.shape(dev) == expected
 
     def test_multi_measure_probs_shot_vector_errors(self):
         """Test that getting the output shape of a tape containing multiple

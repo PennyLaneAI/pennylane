@@ -582,29 +582,27 @@ class TestJaxExecuteIntegration:
         assert all(isinstance(r, jnp.ndarray) for r in res)
         assert all(r.shape == () for r in res)
 
-    # TODO: Fix matrix parameters
-    @pytest.mark.xfail
     def test_matrix_parameter(self, execute_kwargs, interface, tol):
         """Test that the jax interface works correctly
         with a matrix parameter"""
         a = jnp.array(0.1)
-        U = qml.RY(a, wires=0).matrix()
+        U = jnp.array([[0, 1], [1, 0]])
 
-        def cost(U, device):
+        def cost(a, U, device):
             with qml.tape.QuantumTape() as tape:
-                qml.PauliX(0)
                 qml.QubitUnitary(U, wires=0)
+                qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
 
             tape.trainable_params = [0]
             return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
-        res = cost(U, device=dev)
+        res = cost(a, U, device=dev)
         assert np.allclose(res, -np.cos(a), atol=tol, rtol=0)
 
         jac_fn = jax.grad(cost, argnums=(0))
-        res = jac_fn(U, device=dev)
+        res = jac_fn(a, U, device=dev)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
     def test_differentiable_expand(self, execute_kwargs, interface, tol):
@@ -766,8 +764,6 @@ class TestVectorValued:
         res = cost_fn(params)
         assert jnp.allclose(expected, res)
 
-    # TODO: Add test after Autograd interface for return types is added
-    @pytest.mark.xfail(reason="Need autograd")
     def test_multi_tape_jacobian(self, execute_kwargs):
         """Test the jacobian computation with multiple tapes."""
 
@@ -786,7 +782,7 @@ class TestVectorValued:
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            return qml.execute([tape1, tape2], device, **ek, interface=interface)[0]
+            return qml.execute([tape1, tape2], device, **ek, interface=interface)
 
         dev = qml.device("default.qubit", wires=2)
         x = jnp.array(0.543)
@@ -795,18 +791,29 @@ class TestVectorValued:
         x_ = np.array(0.543)
         y_ = np.array(-0.654)
 
+        exec_jax = cost(x, y, dev, interface="jax-python", ek=execute_kwargs)
+        exec_autograd = cost(x_, y_, dev, interface="autograd", ek=execute_kwargs)
+
+        assert np.allclose(exec_jax, exec_autograd)
+
         res = jax.jacobian(cost, argnums=(0, 1))(
             x, y, dev, interface="jax-python", ek=execute_kwargs
         )
 
-        exp = qml.jacobian(cost, argnum=(0, 1))(
+        import autograd.numpy as anp
+
+        def cost_stack(x, y, device, interface, ek):
+            return anp.hstack(cost(x, y, device, interface, ek))
+
+        exp = qml.jacobian(cost_stack, argnum=(0, 1))(
             x_, y_, dev, interface="autograd", ek=execute_kwargs
         )
-        for r, e in zip(res, exp):
-            assert jnp.allclose(r, e, atol=1e-7)
+        res_0 = jnp.array([res[0][0][0], res[0][1][0], res[1][0][0], res[1][1][0]])
+        res_1 = jnp.array([res[0][0][1], res[0][1][1], res[1][0][1], res[1][1][1]])
 
-    # TODO: Add test after Autograd interface for return types is added
-    @pytest.mark.xfail(reason="Need autograd")
+        assert np.allclose(res_0, exp[0])
+        assert np.allclose(res_1, exp[1])
+
     def test_multi_tape_jacobian_probs_expvals(self, execute_kwargs):
         """Test the jacobian computation with multiple tapes with probability
         and expectation value computations."""
@@ -830,7 +837,7 @@ class TestVectorValued:
                 qml.probs(wires=[0])
                 qml.probs(wires=[1])
 
-            return qml.execute([tape1, tape2], device, **ek, interface=interface)[0]
+            return qml.execute([tape1, tape2], device, **ek, interface=interface)
 
         dev = qml.device("default.qubit", wires=2)
         x = jnp.array(0.543)
@@ -839,15 +846,46 @@ class TestVectorValued:
         x_ = np.array(0.543)
         y_ = np.array(-0.654)
 
+        exec_jax = cost(x, y, dev, interface="jax-python", ek=execute_kwargs)
+        exec_autograd = cost(x_, y_, dev, interface="autograd", ek=execute_kwargs)
+
+        assert np.allclose(exec_jax[0][0], exec_autograd[0][0])
+        assert np.allclose(exec_jax[0][1], exec_autograd[0][1])
+        assert np.allclose(exec_jax[1][0], exec_autograd[1][0])
+        assert np.allclose(exec_jax[1][1], exec_autograd[1][1])
+
         res = jax.jacobian(cost, argnums=(0, 1))(
             x, y, dev, interface="jax-python", ek=execute_kwargs
         )
 
-        exp = qml.jacobian(cost, argnum=(0, 1))(
-            x_, y_, dev, interface="autograd", ek=execute_kwargs
-        )
-        for r, e in zip(res, exp):
-            assert jnp.allclose(r, e, atol=1e-7)
+        assert isinstance(res, list)
+        assert len(res) == 2
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 2
+        assert len(res[0][0]) == 2
+        assert isinstance(res[0][0][0], jax.numpy.ndarray)
+        assert res[0][0][0].shape == ()
+        assert isinstance(res[0][0][1], jax.numpy.ndarray)
+        assert res[0][0][1].shape == ()
+        assert len(res[0][1]) == 2
+        assert isinstance(res[0][1][0], jax.numpy.ndarray)
+        assert res[0][1][0].shape == ()
+        assert isinstance(res[0][1][1], jax.numpy.ndarray)
+        assert res[0][1][1].shape == ()
+
+        assert isinstance(res[1], tuple)
+        assert len(res[1]) == 2
+        assert len(res[1][0]) == 2
+        assert isinstance(res[1][0][0], jax.numpy.ndarray)
+        assert res[1][0][0].shape == (2,)
+        assert isinstance(res[1][0][1], jax.numpy.ndarray)
+        assert res[1][0][1].shape == (2,)
+        assert len(res[1][1]) == 2
+        assert isinstance(res[1][1][0], jax.numpy.ndarray)
+        assert res[1][1][0].shape == (2,)
+        assert isinstance(res[1][1][1], jax.numpy.ndarray)
+        assert res[1][1][1].shape == (2,)
 
 
 # TODO: add jit tests

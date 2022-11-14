@@ -26,13 +26,12 @@ devices with autodifferentiation support.
 import inspect
 import warnings
 from contextlib import _GeneratorContextManager
-from functools import wraps
+from functools import wraps, partial
 from typing import Callable, Sequence
 
 from cachetools import LRUCache
 
 import pennylane as qml
-from pennylane import Device
 from pennylane.tape import QuantumTape
 
 from .set_shots import set_shots
@@ -230,7 +229,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
 def _execute_new(
     tapes: Sequence[QuantumTape],
-    device: Device,
+    device,
     gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
@@ -429,9 +428,6 @@ def _execute_new(
         if mapped_interface == "autograd":
             from .autograd import execute as _execute
 
-            res = _execute(
-                tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-            )
         elif mapped_interface == "tf":
             # TODO: remove pragmas when TF is supported
             import tensorflow as tf  # pragma: no cover
@@ -439,42 +435,21 @@ def _execute_new(
             if not tf.executing_eagerly() or "autograph" in interface:  # pragma: no cover
                 from .tensorflow_autograph import execute as _execute  # pragma: no cover
 
-                res = _execute(
-                    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-                )  # pragma: no cover
+                _execute = partial(_execute, mode=_mode)
+
             else:
                 from .tensorflow import execute as _execute  # pragma: no cover
-
-                res = _execute(
-                    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-                )  # pragma: no cover
 
         elif mapped_interface == "torch":
             # TODO: remove pragmas when Torch is supported
             from .torch import execute as _execute  # pragma: no cover
 
-            res = _execute(
-                tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-            )  # pragma: no cover
         elif mapped_interface == "jax":
+            _execute = _get_jax_execute_fn(interface, tapes)
 
-            if interface == "jax":
-                from .jax import get_jax_interface_name
-
-                interface = get_jax_interface_name(tapes)
-
-            if interface == "jax-jit":
-                from .jax_jit import execute_new as _execute
-
-                res = _execute(
-                    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-                )
-            else:
-                from .jax import execute_new as _execute
-
-                res = _execute(
-                    tapes, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
-                )
+        res = _execute(
+            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+        )
 
     except ImportError as e:
         raise qml.QuantumFunctionError(
@@ -487,7 +462,7 @@ def _execute_new(
 
 def execute(
     tapes: Sequence[QuantumTape],
-    device: Device,
+    device,
     gradient_fn: Callable = None,
     interface="autograd",
     mode="best",
@@ -750,7 +725,10 @@ def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
     if interface == "jax-jit":
         from .jax_jit import execute as _execute
     else:
-        from .jax import execute as _execute
+        if qml.active_return():
+            from .jax import execute_new as _execute
+        else:
+            from .jax import execute as _execute
     return _execute
 
 

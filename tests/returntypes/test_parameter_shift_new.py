@@ -57,6 +57,24 @@ class TestGetOperationRecipe:
             assert qml.math.allclose(np.sort(s), exp_out_shifts)
             assert qml.math.allclose(np.sort(out_recipe[:, 2]), np.sort(exp_out_shifts))
 
+    def test_qnode_custom_recipe(self):
+        """Test a custom recipe using a QNode."""
+        dev = qml.device("default.qubit", wires=2)
+
+        x = np.array(0.4, requires_grad=True)
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, 0)
+            qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        # Incorrect gradient recipe, but this test only checks execution with an unshifted term.
+        recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],)
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=recipes)
+        assert len(tapes) == 2
+
+        res = fn(qml.execute(tapes, dev, None))
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+
     @pytest.mark.parametrize(
         "orig_op, frequencies, shifts",
         [
@@ -967,7 +985,7 @@ class TestParameterShiftRule:
     def test_fallback(self, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
         spy = mocker.spy(qml.gradients, "finite_diff")
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = qml.device("default.qubit", wires=3)
         x = 0.543
         y = -0.654
 
@@ -983,6 +1001,7 @@ class TestParameterShiftRule:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.var(qml.PauliX(1))
+                qml.expval(qml.PauliZ(2))
 
             tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
             assert len(tapes) == 5
@@ -997,19 +1016,18 @@ class TestParameterShiftRule:
 
         assert isinstance(res, tuple)
 
-        assert len(res) == 2
+        assert len(res) == 3
 
-        assert isinstance(res[0], tuple)
-        assert len(res[0]) == 2
-        assert isinstance(res[0][0], np.ndarray)
-        assert res[0][0].shape == ()
-        assert isinstance(res[0][1], np.ndarray)
-        assert res[0][1].shape == ()
+        for r in res:
+            assert isinstance(r, tuple)
+            assert len(r) == 2
 
-        assert isinstance(res[1], tuple)
-        assert len(res[1]) == 2
+            assert isinstance(r[0], np.ndarray)
+            assert r[0].shape == ()
+            assert isinstance(r[1], np.ndarray)
+            assert r[1].shape == ()
 
-        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
+        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)], [0, 0]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # TODO: support Hessian with the new return types
