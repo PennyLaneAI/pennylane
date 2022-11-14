@@ -127,7 +127,9 @@ def _extract_shape_dtype_structs(tapes, device):
     shape_dtypes = []
 
     for t in tapes:
+        print(list(t))
         shape = t.shape(device)
+        print("Extracted shape: ", shape)
 
         tape_dtype = _numeric_type_to_dtype(t.numeric_type)
         shape_and_dtype = jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
@@ -394,41 +396,6 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
     )
 
 
-def _numeric_type_to_dtype(numeric_type):
-    """Auxiliary function for converting from Python numeric types to JAX
-    dtypes based on the precision defined for the interface."""
-
-    single_precision = dtype is jnp.float32
-    if numeric_type is int:
-        return jnp.int32 if single_precision else jnp.int64
-
-    if numeric_type is float:
-        return jnp.float32 if single_precision else jnp.float64
-
-    # numeric_type is complex
-    return jnp.complex64 if single_precision else jnp.complex128
-
-
-def _extract_shape_dtype_structs(tapes, device):
-    """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
-    the tapes and the device.
-
-    The jax.pure_callback function expects jax.ShapeDtypeStruct objects to
-    describe the output of the function call.
-    """
-    shape_dtypes = []
-
-    for t in tapes:
-        shape = t.shape(device)
-
-        tape_dtype = _numeric_type_to_dtype(t.numeric_type)
-        shape_and_dtype = jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
-
-        shape_dtypes.append(shape_and_dtype)
-
-    return shape_dtypes
-
-
 def _execute_bwd_new(
     params,
     tapes=None,
@@ -460,6 +427,8 @@ def _execute_bwd_new(
 
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):
+        params = primals[0]
+
         def wrapper(params):
             jacs = []
             for t, a in zip(tapes, params):
@@ -470,14 +439,24 @@ def _execute_bwd_new(
                 gradient_tapes, fn = gradient_fn(new_tape, **gradient_kwargs)
                 jvp = fn(execute_fn(gradient_tapes)[0])
                 jacs.append(jvp)
-            return jacs
+            return [jax.numpy.array(jacs)]
 
-        shape_dtype_structs = _extract_shape_dtype_structs(tapes, device)
-        jacs = jax.pure_callback(wrapper, shape_dtype_structs, primals[0])
+            # jax.ShapeDtypeStruct((total_params,), dtype),
+
+        total_params = np.sum([len(p) for p in params])
+        shape_dtype_structs = jax.ShapeDtypeStruct(
+            (1, total_params), dtype
+        )  # _extract_shape_dtype_structs(tapes, device)
+        from jax.experimental.host_callback import call
+
+        jacs = jax.pure_callback(wrapper, [shape_dtype_structs], params)
+        # jacs = wrapper(params)
+        # print(jacs, (total_params,))
+        # jacs = call(wrapper, params, result_shape=[shape_dtype_structs])
 
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
         jvps = _compute_jvps(jacs, tangents, multi_measurements)
-        return execute_wrapper(primals[0]), [jvps[0][0]]
+        return execute_wrapper(params), [jvps[0][0]]
 
     return execute_wrapper(params)
 
@@ -570,9 +549,9 @@ def _compute_jvps(jacs, tangents, multi_measurements):
     jvps = []
     for i, multi in enumerate(multi_measurements):
         if multi:
-            jvps.append(qml.gradients.compute_jvp_multi(tangents[i], jacs[i]))
+            jvps.append(qml.gradients.compute_jvp_multi(tangents[i], jacs[i], jitting=True))
         else:
-            jvps.append(qml.gradients.compute_jvp_single(tangents[i], jacs[i]))
+            jvps.append(qml.gradients.compute_jvp_single(tangents[i], jacs[i], jitting=True))
     return jvps
 
 

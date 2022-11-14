@@ -34,18 +34,18 @@ def _convert(jac, tangent):
     else:
         jac = qml.math.convert_like(jac, tangent)
 
-        if not qml.math.is_abstract(jac) and not qml.math.is_abstract(tangent):
-            jac = qml.math.cast(jac, tangent.dtype)
+        jac = qml.math.cast(jac, tangent.dtype)
     return jac
 
 
-def compute_jvp_single(tangent, jac):
+def compute_jvp_single(tangent, jac, jitting=False):
     """Convenience function to compute the Jacobian vector product for a given
     tangent vector and a Jacobian for a single measurement tape.
 
     Args:
         tangent (list, tensor_like): tangent vector
         jac (tensor_like, tuple): Jacobian matrix
+        jitting (boolean): if we're using the JAX JIT interface
 
     Returns:
         tensor_like: the Jacobian vector product
@@ -92,7 +92,20 @@ def compute_jvp_single(tangent, jac):
     if jac is None:
         return None
 
-    if not qml.math.is_abstract(jac) and not qml.math.is_abstract(tangent):
+    # def _nested_is_abstract(input_param):
+    #     if isinstance(input_param, Sequence):
+    #         if len(input_param) > 0 and any(isinstance(i_p, Sequence) for i_p in input_param):
+    #             print(list(type(t) for i_p in input_param for t in i_p), type(input_param[0][0]), "1")
+    #             return any(any(qml.math.is_abstract(t) for t in i_p) for i_p in input_param)
+
+    #         print(len(input_param), list(isinstance(i_p, Sequence) for i_p in input_param))
+    #         print(list(qml.math.is_abstract(t) for t in input_param), type(input_param), "2")
+    #         return any(qml.math.is_abstract(t) for t in input_param)
+
+    #     print(qml.math.is_abstract(input_param), type(input_param), "3")
+    #     return qml.math.is_abstract(input_param)
+
+    if not jitting:
         tangent = qml.math.stack(tangent)
         jac = _convert(jac, tangent)
 
@@ -103,7 +116,8 @@ def compute_jvp_single(tangent, jac):
             res = qml.math.zeros((1, 0))
             return res
 
-        tangent = qml.math.reshape(tangent, (1,))
+        if not jitting:
+            tangent = qml.math.reshape(tangent, (1,))
 
         # No dimension e.g. expval
         if jac.shape == ():
@@ -132,7 +146,7 @@ def compute_jvp_single(tangent, jac):
     return res
 
 
-def compute_jvp_multi(tangent, jac):
+def compute_jvp_multi(tangent, jac, jitting=False):
     """Convenience function to compute the Jacobian-vector product for a given
     vector of gradient outputs and a Jacobian for a tape with multiple measurements.
 
@@ -166,7 +180,7 @@ def compute_jvp_multi(tangent, jac):
     """
     if jac is None:
         return None
-    res = tuple(compute_jvp_single(tangent, j) for j in jac)
+    res = tuple(compute_jvp_single(tangent, j, jitting=False) for j in jac)
     return res
 
 
