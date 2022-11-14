@@ -338,18 +338,11 @@
 
   With this release, we're continuing to elevate this feature by adding support for:
   
-  - `qml.execute`
+  - Execution (`qml.execute`)
   - Jacobian vector product (JVP) computation
-  - Gradient transforms
-    + `qml.gradients.param_shift`
-    + `qml.gradients.finite_diff`
-    + `qml.gradients.hessian_transform`
-    + `qml.gradients.param_shift_hessian`
+  - Gradient transforms (`qml.gradients.param_shift`, `qml.gradients.finite_diff`, qml.gradients.hessian_transform`, `qml.gradients.param_shift_hessian`).
 
-  - Interfaces 
-    + Autograd
-    + TensorFlow
-    + JAX (without jitting)
+  - Interfaces (Autograd, TensorFlow, and JAX, although without JIT)
     
   With this added support, the JAX interface can handle multiple shots (shots vectors), measurements, and gradient output types with `qml.enable_return()`:
   
@@ -385,7 +378,7 @@
                 [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
   ```
 
-  For more details, please [refer to the documentation of `qml.enable_return()`](https://docs.pennylane.ai/en/stable/code/api/pennylane.enable_return.html?highlight=enable_return#pennylane.enable_return).
+  For more details, please [refer to the documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.enable_return.html?highlight=enable_return#pennylane.enable_return).
 
 <h4>New basis rotation and tapering features in qml.qchem 🤓</h4>
 
