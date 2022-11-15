@@ -12,6 +12,9 @@
   * Add `_Sample` class.
     [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
+  * Add `_Counts` class.
+    [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
+
   * Add `_Probability` class.
     [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
