@@ -159,9 +159,6 @@ class QNode:
     >>> qnode = qml.QNode(circuit, dev)
 
     .. details::
-        :title: Test
-
-    .. details::
         :title: Parameter broadcasting
 
         QNodes can be executed simultaneously for multiple parameter settings, which is called
