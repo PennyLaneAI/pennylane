@@ -19,23 +19,6 @@
     >>> qml.math.purity(x, [0, 1])
     0.5
     ```
-    The `qml.purity` measurement process can be returned from a QNode:
-    
-    ```python3
-    dev = qml.device("default.mixed", wires=2)
-
-    @qml.qnode(dev)
-    def noisy_circuit_purity(p):
-        qml.Hadamard(wires=0)
-        qml.CNOT(wires=[0, 1])
-        qml.BitFlip(p, wires=0)
-        qml.BitFlip(p, wires=1)
-        return qml.purity(wires=[0, 1])
-    ```
-    ```pycon
-    >>> noisy_circuit_purity(0.2)
-    0.5648000000000398
-    ```
     The `qml.qinfo.purity` can be used to transform a QNode returning a state to a function that returns the mutual information:
     ```python3
     dev = qml.device("default.mixed", wires=2)
