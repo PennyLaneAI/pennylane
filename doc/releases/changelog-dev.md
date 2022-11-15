@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-<h4>Purity</h4>
+* New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
+  [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
 * Support for purity computation is added. The `qml.math.purity` function computes the purity from a state vector or a density matrix:
 
