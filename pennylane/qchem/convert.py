@@ -18,6 +18,7 @@ This module contains the functions for converting an external operator to a Penn
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.wires import Wires
+import warnings
 
 
 def _process_wires(wires, n_wires=None):
@@ -284,7 +285,7 @@ def _openfermion_pennylane_equivalent(
     return openfermion_qubit_operator == _pennylane_to_openfermion(coeffs, ops, wires=wires)
 
 
-def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08):
+def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e012):
     r"""Convert an external operator to a PennyLane operator.
 
     The external format currently supported is openfermion.
@@ -322,7 +323,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08
     if any(
         np.iscomplex(np.real_if_close(coef, tol=tol)) for coef in qubit_observable.terms.values()
     ):
-        raise TypeError(
+        warnings.warn(
             f"The coefficients entering the QubitOperator must be real;"
             f" got complex coefficients in the operator {qubit_observable}"
         )
