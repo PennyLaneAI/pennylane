@@ -253,3 +253,17 @@ class TestMolecule:
         mo_value = mo(x, y, z)
 
         assert np.allclose(mo_value, ref_value)
+
+    def test_repr(self):
+        """Test that __repr__ for Molecule returns correct representation."""
+
+        symbols, geometry = (
+            ["H", "H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]]),
+        )
+        mol = qchem.Molecule(symbols, geometry, 1)
+        assert repr(mol) == "<Molecule = H3 charge: 1 basis: STO-3G n_orbs: 3 n_elecs: 2>"
+
+        symbols, geometry = (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]))
+        mol = qchem.Molecule(symbols, geometry)
+        assert repr(mol) == "<Molecule = FH charge: 0 basis: STO-3G n_orbs: 6 n_elecs: 10>"
