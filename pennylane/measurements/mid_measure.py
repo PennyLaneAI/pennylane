@@ -19,7 +19,6 @@ import uuid
 from typing import Generic, TypeVar
 
 import pennylane as qml
-from pennylane.wires import Wires
 import pennylane.numpy as np
 
 from .measurements import MeasurementProcess, MidMeasure
