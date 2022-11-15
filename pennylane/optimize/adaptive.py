@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Adaptive optimizer"""
+import copy
+
 # pylint: disable= no-value-for-parameter, protected-access
 import pennylane as qml
-
 from pennylane import numpy as np
 
 
@@ -31,7 +32,7 @@ def append_gate(tape, params, gates):
         qml.apply(o)
 
     for i, g in enumerate(gates):
-        g = g.__copy__()
+        g = copy.copy(g)
         g.data[0] = params[i]
         qml.apply(g)
 
