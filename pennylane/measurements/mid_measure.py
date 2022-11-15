@@ -70,7 +70,7 @@ def measure(wires):  # TODO: Change name to mid_measure
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
     MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
-    return MeasurementValue(measurement_id, fn=lambda v: v)
+    return MeasurementValue([measurement_id], fn=lambda v: v)
 
 
 T = TypeVar("T")
@@ -86,12 +86,11 @@ class MeasurementValue(Generic[T]):
     Measurements on a single qubit in the computational basis are assumed.
 
     Args:
-        measurement_ids (str): The id of the measurement that this object depends on.
+        measurement_ids (list of str): The id of the measurement that this object depends on.
         fn (Callable): a transformation applied to the measurements.
     """
 
-    def __init__(self, *measurement_ids, fn=None):
-        assert fn is not None
+    def __init__(self, measurement_ids, fn):
         self.measurement_ids = measurement_ids
         self.fn = fn
 
@@ -128,7 +127,7 @@ class MeasurementValue(Generic[T]):
 
     def apply(self, fn):
         """Apply a post computation to this measurement"""
-        return MeasurementValue(*self.measurement_ids, fn=lambda *x: fn(self.fn(*x)))
+        return MeasurementValue(self.measurement_ids, lambda *x: fn(self.fn(*x)))
 
     def merge(self, other: "MeasurementValue"):
         """merge two measurement values"""
@@ -148,7 +147,7 @@ class MeasurementValue(Generic[T]):
 
             return out_1, out_2
 
-        return MeasurementValue(*merged_measurement_ids, fn=merged_fn)
+        return MeasurementValue(merged_measurement_ids, merged_fn)
 
     def __getitem__(self, i):
         # branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)).split())
