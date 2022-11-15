@@ -17,6 +17,8 @@ atoms. The data are taken from the Basis Set Exchange `library <https://www.basi
 The current data include the STO-3G and 6-31G basis sets for atoms with atomic numbers 1-10.
 """
 
+import itertools
+
 atomic_numbers = {
     "H": 1,
     "He": 2,
@@ -754,3 +756,52 @@ basis_sets = {
     "6-311g": POPLE6311G,
     "cc-pvdz": CCPVDZ,
 }
+
+
+def load_basisset(basis, element):
+    r"""Extracts basis set data from Basis Set Exchange library."""
+
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        import basis_set_exchange as bse
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires basis_set_exchange. "
+            "It can be installed with: pip install basis-set-exchange."
+        ) from Error
+
+    orbital_map = {
+        "[0]": "S",
+        "[0, 1]": "SP",
+        "[1]": "P",
+        "[2]": "D",
+        "[3]": "F",
+        "[4]": "G",
+        "[5]": "H",
+    }
+
+    element = str(atomic_numbers[element])
+
+    data = bse.get_basis(basis)["elements"][element]["electron_shells"]
+
+    orbitals = []
+    exponents = []
+    coefficients = []
+
+    for term in data:
+        if orbital_map[str(term["angular_momentum"])] == "SP":
+            orbitals.append(["S", "P"])
+        else:
+            orbitals.append(
+                [orbital_map[str(term["angular_momentum"])]] * len(term["coefficients"])
+            )
+        exponents.append(
+            [list(map(float, item)) for item in [term["exponents"]] * len(term["coefficients"])]
+        )
+        coefficients.append([list(map(float, item)) for item in term["coefficients"]])
+
+    return {
+        "orbitals": list(itertools.chain(*orbitals)),
+        "exponents": list(itertools.chain(*exponents)),
+        "coefficients": list(itertools.chain(*coefficients)),
+    }
