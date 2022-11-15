@@ -14,8 +14,8 @@
 """
 This submodule defines the symbolic operation that indicates the control of an operator.
 """
-from copy import copy
 import warnings
+from copy import copy
 from inspect import signature
 from typing import List
 
@@ -28,6 +28,7 @@ from pennylane import operation
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
+
 
 # pylint: disable=protected-access
 def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Operator"]:
@@ -272,33 +273,20 @@ class Controlled(SymbolicOp):
     def wires(self):
         return self.control_wires + self.target_wires + self.work_wires
 
-    # pylint: disable=protected-access
-    @property
-    def _wires(self):
-        return self.wires
+    def map_wires(self, wire_map: dict):
+        new_op = copy(self)
 
-    # pylint: disable=protected-access
-    @_wires.setter
-    def _wires(self, new_wires):
-        new_wires = new_wires if isinstance(new_wires, Wires) else Wires(new_wires)
-
-        num_control = len(self.control_wires)
-        num_base = len(self.base.wires)
-        num_control_and_base = num_control + num_base
-
-        assert num_control_and_base <= len(new_wires), (
-            f"{self.name} needs at least {num_control_and_base} wires."
-            f" {len(new_wires)} provided."
+        new_op.hyperparameters["control_wires"] = Wires(
+            [wire_map.get(wire, wire) for wire in self.control_wires]
         )
 
-        self.hyperparameters["control_wires"] = new_wires[:num_control]
+        new_op.base._wires = Wires([wire_map.get(wire, wire) for wire in self.base.wires])
 
-        self.base._wires = new_wires[num_control:num_control_and_base]
+        new_op.hyperparameters["work_wires"] = Wires(
+            [wire_map.get(wire, wire) for wire in self.work_wires]
+        )
 
-        if len(new_wires) > num_control_and_base:
-            self.hyperparameters["work_wires"] = new_wires[num_control_and_base:]
-        else:
-            self.hyperparameters["work_wires"] = Wires([])
+        return new_op
 
     # Methods ##########################################
 

@@ -18,13 +18,20 @@ executed by a device.
 # pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
 
 import contextlib
-from collections import Counter, defaultdict
 import copy
-from typing import List
+from collections import Counter, defaultdict
+from typing import List, Union
 
 import pennylane as qml
-from pennylane.measurements import Counts, Sample, Shadow, ShadowExpval, AllCounts
-from pennylane.operation import Operator
+from pennylane.measurements import (
+    AllCounts,
+    Counts,
+    MeasurementProcess,
+    Sample,
+    Shadow,
+    ShadowExpval,
+)
+from pennylane.operation import Observable, Operator
 
 _empty_wires = qml.wires.Wires([])
 
@@ -79,7 +86,6 @@ class QuantumScript:
 
     Keyword Args:
         name (str): a name given to the quantum script
-        do_queue=False (bool): Whether or not to queue. Defaults to ``False`` for ``QuantumScript``.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -139,7 +145,7 @@ class QuantumScript:
 
     >>> dev = qml.device('default.qubit', wires=(0,'a'))
     >>> qml.execute([qscript], dev, gradient_fn=None)
-    [array([0.77750694])]
+    [array([-0.77750694])]
 
     ``ops``, ``measurements``, and ``prep`` are converted to lists upon initialization,
     so those arguments accept any iterable object:
@@ -160,10 +166,9 @@ class QuantumScript:
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
 
-        self._par_info = {}
-        """dict[int, dict[str, Operator or int]]: Parameter information. Keys are
-        parameter indices (in the order they appear on the quantum script), and values are a
-        dictionary containing the corresponding operation and operation parameter index."""
+        self._par_info = []
+        """list[dict[str, Operator or int]]: Parameter information.
+        Values are dictionaries containing the corresponding operation and operation parameter index."""
 
         self._trainable_params = []
         self._graph = None
@@ -257,11 +262,11 @@ class QuantumScript:
         return self._prep + self._ops
 
     @property
-    def observables(self):
+    def observables(self) -> List[Union[MeasurementProcess, Observable]]:
         """Returns the observables on the quantum script.
 
         Returns:
-            list[.Operator]]: list of observables
+            list[.MeasurementProcess, .Observable]]: list of observables
 
         **Example**
 
@@ -275,7 +280,7 @@ class QuantumScript:
         # measurement processes rather than specific observables.
         obs = []
 
-        for m in self._measurements:
+        for m in self.measurements:
             if m.obs is not None:
                 m.obs.return_type = m.return_type
                 obs.append(m.obs)
@@ -285,7 +290,7 @@ class QuantumScript:
         return obs
 
     @property
-    def measurements(self):
+    def measurements(self) -> List[MeasurementProcess]:
         """Returns the measurements on the quantum script.
 
         Returns:
@@ -299,6 +304,11 @@ class QuantumScript:
         [expval(PauliZ(wires=[0]))]
         """
         return self._measurements
+
+    @property
+    def samples_computational_basis(self):
+        """Determines if any of the measurements do sampling/counting in the computational basis."""
+        return any(o.samples_computational_basis for o in self.measurements)
 
     @property
     def num_params(self):
@@ -346,7 +356,7 @@ class QuantumScript:
         self._graph = None
         self._specs = None
         self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
-        self._update_par_info()  # Updates the _par_info dictionary; O(ops+obs)
+        self._update_par_info()  # Updates _par_info; O(ops+obs)
 
         # The following line requires _par_info to be up to date
         self._update_trainable_params()  # Updates the _trainable_params; O(1)
@@ -377,21 +387,19 @@ class QuantumScript:
         self.all_sampled = all(is_sample_type)
 
     def _update_par_info(self):
-        """Update the parameter information dictionary.
+        """Update the parameter information list. Each entry in the list with an operation and an index
+        into that operation's data.
 
         Sets:
-            _par_info (dict): Parameter information dictionary
+            _par_info (list): Parameter information
         """
-        param_count = 0
+        self._par_info = []
+        for op in self.operations:
+            self._par_info.extend({"op": op, "p_idx": i} for i, d in enumerate(op.data))
 
-        for obj in self.operations + self.observables:
-
-            for p in range(len(obj.data)):
-                info = self._par_info.get(param_count, {})
-                info.update({"op": obj, "p_idx": p})
-
-                self._par_info[param_count] = info
-                param_count += 1
+        for m in self.measurements:
+            if m.obs is not None:
+                self._par_info.extend({"op": m.obs, "p_idx": i} for i, d in enumerate(m.obs.data))
 
     def _update_trainable_params(self):
         """Set the trainable parameters
@@ -399,13 +407,9 @@ class QuantumScript:
         Sets:
             _trainable_params (list[int]): Script parameter indices of trainable parameters
 
-        self._par_info.keys() is assumed to be sorted and up to date when calling
-        this method. This assumes that self._par_info was created in a sorted manner,
-        as in _update_par_info.
-
         Call `_update_par_info` before `_update_trainable_params`
         """
-        self._trainable_params = list(self._par_info)
+        self._trainable_params = list(range(len(self._par_info)))
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -555,14 +559,7 @@ class QuantumScript:
 
         # get the info for the parameter
         info = self._par_info[t_idx]
-
-        # get the corresponding operation
-        op = info["op"]
-
-        # get the corresponding operation parameter index
-        # (that is, index of the parameter within the operation)
-        p_idx = info["p_idx"]
-        return op, p_idx
+        return info["op"], info["p_idx"]
 
     def get_parameters(
         self, trainable_only=True, operations_only=False, **kwargs
@@ -602,7 +599,7 @@ class QuantumScript:
         [0.432, 0.543, 0.133]
         """
         params = []
-        iterator = self.trainable_params if trainable_only else self._par_info
+        iterator = self.trainable_params if trainable_only else range(len(self._par_info))
 
         for p_idx in iterator:
             op = self._par_info[p_idx]["op"]
@@ -745,7 +742,8 @@ class QuantumScript:
 
             elif ret_type == qml.measurements.Sample:
 
-                shape = (len(mps), device.shots)
+                dim = mps[0].shape(device)
+                shape = (len(mps),) + dim[1:]
 
             # No other measurement type to check
 
@@ -805,24 +803,23 @@ class QuantumScript:
         return shape
 
     def shape(self, device):
-        """Produces the output shape of the tape by inspecting its measurements
+        """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
 
         .. note::
 
-            The computed shape is not stored because the output shape may be
-            dependent on the device used for execution.
+            The computed shape is not stored because the output shape may be dependent on the device
+                used for execution.
 
         Args:
-            device (.Device): the device that will be used for the tape execution
+            device (.Device): the device that will be used for the script execution
 
         Raises:
-            ValueError: raised for unsupported cases for
-                example when the tape contains heterogeneous measurements
+            ValueError: raised for unsupported cases for example when the script contains
+                heterogeneous measurements
 
         Returns:
-            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
-            tape result
+            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the quantum script result
 
         **Example:**
 
@@ -838,20 +835,26 @@ class QuantumScript:
 
         output_shape = tuple()
 
-        if len(self._measurements) == 1:
-            output_shape = self._single_measurement_shape(self._measurements[0], device)
+        if len(self.measurements) == 1:
+            output_shape = self._single_measurement_shape(self.measurements[0], device)
         else:
-            num_measurements = len({meas.return_type for meas in self._measurements})
+            num_measurements = len({meas.return_type for meas in self.measurements})
             if num_measurements == 1:
-                output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
+                output_shape = self._multi_homogenous_measurement_shape(self.measurements, device)
             else:
                 raise ValueError(
-                    "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
+                    "Getting the output shape of a quantum script that contains multiple types of "
+                    "measurements is unsupported."
                 )
+
+        if device._shot_vector is None and self.batch_size is not None:
+            # insert the batch dimension
+            output_shape = output_shape[0:1] + (self.batch_size,) + output_shape[1:]
+
         return output_shape
 
     def _shape_new(self, device):
-        """Produces the output shape of the tape by inspecting its measurements
+        """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
 
         .. note::
@@ -860,11 +863,10 @@ class QuantumScript:
             dependent on the device used for execution.
 
         Args:
-            device (.Device): the device that will be used for the tape execution
+            device (.Device): the device that will be used for the script execution
 
         Returns:
-            Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the
-            tape result
+            Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result
 
         **Examples**
 
@@ -880,7 +882,15 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
-        shapes = tuple(meas_process.shape(device) for meas_process in self._measurements)
+        if device.shot_vector is not None and self.batch_size is not None:
+            raise NotImplementedError(
+                "Parameter broadcasting when using a shot vector is not supported yet."
+            )
+
+        shapes = tuple(meas_process.shape(device) for meas_process in self.measurements)
+
+        if self.batch_size is not None:
+            shapes = tuple((self.batch_size,) + shape for shape in shapes)
 
         if len(shapes) == 1:
             return shapes[0]
@@ -912,7 +922,7 @@ class QuantumScript:
         """
         if qml.active_return():
             return self._numeric_type_new
-        measurement_types = {meas.return_type for meas in self._measurements}
+        measurement_types = {meas.return_type for meas in self.measurements}
         if len(measurement_types) > 1:
             raise ValueError(
                 "Getting the numeric type of a quantum script that contains multiple types of measurements is unsupported."
@@ -921,18 +931,18 @@ class QuantumScript:
         # Note: if one of the sample measurements contains outputs that
         # are real, then the entire result will be real
         if list(measurement_types)[0] == qml.measurements.Sample:
-            return next((float for mp in self._measurements if mp.numeric_type is float), int)
+            return next((float for mp in self.measurements if mp.numeric_type is float), int)
 
-        return self._measurements[0].numeric_type
+        return self.measurements[0].numeric_type
 
     @property
     def _numeric_type_new(self):
-        """Returns the expected numeric type of the tape result by inspecting
+        """Returns the expected numeric type of the quantum script result by inspecting
         its measurements.
 
         Returns:
             Union[type, Tuple[type]]: The numeric type corresponding to the result type of the
-            tape, or a tuple of such types if the tape contains multiple measurements
+            quantum script, or a tuple of such types if the script contains multiple measurements
 
         **Example:**
 
@@ -944,12 +954,12 @@ class QuantumScript:
             >>> qs.numeric_type
             complex
         """
-        types = tuple(observable.numeric_type for observable in self._measurements)
+        types = tuple(observable.numeric_type for observable in self.measurements)
 
         return types[0] if len(types) == 1 else types
 
     # ========================================================
-    # Transforms: Tape to Tape
+    # Transforms: QuantumScript to QuantumScript
     # ========================================================
 
     def copy(self, copy_operations=False):
@@ -966,18 +976,18 @@ class QuantumScript:
         """
         if copy_operations:
             # Perform a shallow copy of all operations in the state prep, operation, and measurement
-            # queues. The operations will continue to share data with the original tape operations
+            # queues. The operations will continue to share data with the original script operations
             # unless modified.
             _prep = [copy.copy(op) for op in self._prep]
             _ops = [copy.copy(op) for op in self._ops]
-            _measurements = [copy.copy(op) for op in self._measurements]
+            _measurements = [copy.copy(op) for op in self.measurements]
         else:
             # Perform a shallow copy of the state prep, operation, and measurement queues. The
-            # operations within the queues will be references to the original tape operations;
-            # changing the original operations will always alter the operations on the copied tape.
+            # operations within the queues will be references to the original script operations;
+            # changing the original operations will always alter the operations on the copied script.
             _prep = self._prep.copy()
             _ops = self._ops.copy()
-            _measurements = self._measurements.copy()
+            _measurements = self.measurements.copy()
 
         new_qscript = self.__class__(ops=_ops, measurements=_measurements, prep=_prep)
         new_qscript._graph = None if copy_operations else self._graph
@@ -1061,7 +1071,7 @@ class QuantumScript:
         """
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
-        adj = self.__class__(ops=ops_adj, measurements=self._measurements, prep=self._prep)
+        adj = self.__class__(ops=ops_adj, measurements=self.measurements, prep=self._prep)
         if self.do_queue:
             qml.QueuingManager.append(adj)
         return adj
@@ -1092,7 +1102,7 @@ class QuantumScript:
         return qml.tape.UnwrapTape(self)
 
     # ========================================================
-    # Transforms: Tape to Information
+    # Transforms: QuantumScript to Information
     # ========================================================
 
     @property
