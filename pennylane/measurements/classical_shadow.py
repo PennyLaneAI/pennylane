@@ -21,7 +21,7 @@ import numpy as np
 
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, MeasurementShapeError, Shadow, ShadowExpval
+from .measurements import MeasurementProcess, Shadow, ShadowExpval
 
 
 def shadow_expval(H, k=1, seed_recipes=True):
@@ -242,7 +242,7 @@ class ShadowMeasurementProcess(MeasurementProcess):
         """
         return int if self.return_type is Shadow else float
 
-    def shape(self, device=None):
+    def shape(self, device):
         """The expected output shape of the ShadowMeasurementProcess.
 
         Args:
@@ -261,13 +261,6 @@ class ShadowMeasurementProcess(MeasurementProcess):
         # the return value of expval is always a scalar
         if self.return_type is ShadowExpval:
             return (1,)
-
-        # otherwise, the return type requires a device
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of a classical "
-                "shadow measurement process."
-            )
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used

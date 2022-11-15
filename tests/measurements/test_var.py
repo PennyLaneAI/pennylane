@@ -114,8 +114,9 @@ class TestVar:
     )
     def test_shape(self, obs):
         """Test that the shape is correct."""
+        dev = qml.device("default.qubit", wires=3)
         res = qml.var(obs)
-        assert res.shape() == (1,)
+        assert res.shape(dev) == (1,)
 
     @pytest.mark.parametrize(
         "obs",

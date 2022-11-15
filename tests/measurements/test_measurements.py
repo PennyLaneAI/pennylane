@@ -83,9 +83,10 @@ def test_numeric_type_unrecognized_error():
 def test_shape_unrecognized_error():
     """Test that querying the shape of a measurement process with an
     unrecognized return type raises an error."""
+    dev = qml.device("default.qubit", wires=2)
     mp = MeasurementProcess("NotValidReturnType")
     with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the shape"):
-        mp.shape()
+        mp.shape(dev)
 
 
 @pytest.mark.parametrize(

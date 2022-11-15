@@ -166,6 +166,10 @@ class _Counts(SampleMeasurement):
         self.all_outcomes = all_outcomes
         super().__init__(return_type, obs, wires, eigvals, id, log_base)
 
+    @property
+    def numeric_type(self):
+        return int  # TODO: Might need to raise an error here?
+
     def process(self, samples: np.ndarray, shot_range: Tuple[int] = None, bin_size: int = None):
         samples = qml.sample(op=self.obs, wires=self._wires).process(samples, shot_range, bin_size)
 

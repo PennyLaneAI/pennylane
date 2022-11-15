@@ -108,7 +108,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess:
+class MeasurementProcess(ABC):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -173,7 +173,6 @@ class MeasurementProcess:
         self.queue()
 
     @property
-    @functools.lru_cache()
     def numeric_type(self):
         """The Python numeric type of the measurement result.
 
@@ -184,32 +183,12 @@ class MeasurementProcess:
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        if self.return_type in (Expectation, MutualInfo, Probability, Variance, VnEntropy):
-            return float
-
-        if self.return_type is State:
-            return complex
-
-        if self.return_type is Sample:
-
-            # Note: we only assume an integer numeric type if the observable is a
-            # built-in observable with integer eigenvalues or a tensor product thereof
-            if self.obs is None:
-
-                # Computational basis samples
-                return int
-            int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
-            tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
-            every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
-            return int if every_term_standard else float
-
         raise qml.QuantumFunctionError(
             "Cannot deduce the numeric type of the measurement process with unrecognized "
             + f"return_type {self.return_type}."
         )
 
-    @functools.lru_cache()
-    def shape(self, device=None):
+    def shape(self, device):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device when:
@@ -239,59 +218,12 @@ class MeasurementProcess:
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        if qml.active_return():
-            return self._shape_new(device=device)
-
-        shape = None
-
-        # First: prepare the shape for return types that do not require a
-        # device
-        if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
-            shape = (1,)
-
-        if self.return_type == State and self.wires:
-            dim = 2 ** len(self.wires)
-            shape = (1, dim, dim)
-
-        # Determine shape if device with shot vector
-        if device is not None and device._shot_vector is not None:
-            shape = self._shot_vector_shape(device, main_shape=shape)
-
-        # If we have a shape, return it here
-        if shape is not None:
-            return shape
-
-        # Then: handle return types that require a device; no shot vector
-        if device is None and self.return_type in (Probability, State, Sample):
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
-            )
-
-        if self.return_type == Probability:
-            len_wires = len(self.wires)
-            dim = self._get_num_basis_states(len_wires, device)
-            return (1, dim)
-
-        if self.return_type == State:
-
-            # Note: qml.density_matrix has its shape defined, so we're handling
-            # the qml.state case; acts on all device wires
-            dim = 2 ** len(device.wires)
-            return (1, dim)
-
-        if self.return_type == Sample:
-            len_wires = len(device.wires)
-            # qml.sample(some_observable) case  // qml.sample() case
-            return (1, device.shots) if self.obs is not None else (1, device.shots, len_wires)
-
         raise qml.QuantumFunctionError(
             "Cannot deduce the shape of the measurement process with unrecognized return_type "
             + f"{self.return_type}."
         )
 
-    @functools.lru_cache()
-    def _shape_new(self, device=None):
+    def _shape_new(self, device):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device when:
@@ -316,149 +248,10 @@ class MeasurementProcess:
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        shape = None
-
-        # First: prepare the shape for return types that do not require a
-        # device
-        if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
-            shape = ()
-
-        if self.return_type == State and self.wires:
-            dim = 2 ** len(self.wires)
-            shape = (dim, dim)
-
-        # Determine shape if device with shot vector
-        if device is not None and device._shot_vector is not None:
-            shape = self._shot_vector_shape(device, main_shape=shape)
-
-        # If we have a shape, return it here
-        if shape is not None:
-            return shape
-
-        # Then: handle return types that require a device; no shot vector
-        if device is None and self.return_type in (Probability, State, Sample):
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
-            )
-
-        if self.return_type == Probability:
-            len_wires = len(self.wires)
-            dim = self._get_num_basis_states(len_wires, device)
-            return (dim,)
-
-        if self.return_type == State:
-            # Note: qml.density_matrix has its shape defined, so we're handling
-            # the qml.state case; acts on all device wires
-            dim = 2 ** len(device.wires)
-            return (dim,)
-
-        if self.return_type == Sample:
-            if self.obs is not None:
-                # qml.sample(some_observable) case
-                return () if device.shots == 1 else (device.shots,)
-
-            # qml.sample() case
-            len_wires = len(device.wires)
-            return (len_wires,) if device.shots == 1 else (device.shots, len_wires)
-
         raise qml.QuantumFunctionError(
             "Cannot deduce the shape of the measurement process with unrecognized return_type "
             + f"{self.return_type}."
         )
-
-    @functools.lru_cache()
-    def _shot_vector_shape(self, device, main_shape=None):
-        """Auxiliary function for getting the output shape when the device has
-        the shot vector defined.
-
-        The shape is device dependent even if the return type has a main shape
-        pre-defined (e.g., expectation values, states, etc.).
-        """
-        if qml.active_return():
-            return self._shot_vector_shape_new(device, main_shape=main_shape)
-
-        shot_vector = device._shot_vector
-        # pylint: disable=consider-using-generator
-        num_shot_elements = sum(s.copies for s in shot_vector)
-        shape = ()
-
-        if main_shape is not None:
-
-            # Expval, var and density_matrix case
-            shape = list(main_shape)
-            shape[0] *= num_shot_elements
-            shape = tuple(shape)
-
-        elif self.return_type == qml.measurements.Probability:
-
-            len_wires = len(self.wires)
-            dim = self._get_num_basis_states(len_wires, device)
-            shape = (num_shot_elements, dim)
-
-        elif self.return_type == qml.measurements.Sample:
-            if self.obs is not None:
-                shape = tuple(
-                    (shot_val,) if shot_val != 1 else tuple()
-                    for shot_val in device._raw_shot_sequence
-                )
-            else:
-                # TODO: revisit when qml.sample without an observable fully
-                # supports shot vectors
-                raise MeasurementShapeError(
-                    "Getting the output shape of a measurement returning samples along with "
-                    "a device with a shot vector is not supported."
-                )
-
-        elif self.return_type == qml.measurements.State:
-
-            # Note: qml.density_matrix has its shape defined, so we're handling
-            # the qml.state case; acts on all device wires
-            dim = 2 ** len(device.wires)
-            shape = (num_shot_elements, dim)
-
-        return shape
-
-    @functools.lru_cache()
-    def _shot_vector_shape_new(self, device, main_shape=None):
-        """Auxiliary function for getting the output shape when the device has
-        the shot vector defined.
-
-        The shape is device dependent even if the return type has a main shape
-        pre-defined (e.g., expectation values, states, etc.).
-        """
-        shot_vector = device._shot_vector
-        # pylint: disable=consider-using-generator
-        num_shot_elements = sum(s.copies for s in shot_vector)
-        shape = ()
-
-        if main_shape is not None:
-            shape = tuple(main_shape for _ in range(num_shot_elements))
-
-        elif self.return_type == qml.measurements.Probability:
-            dim = self._get_num_basis_states(len(self.wires), device)
-            shape = tuple((dim,) for _ in range(num_shot_elements))
-
-        elif self.return_type == qml.measurements.Sample:
-            if self.obs is not None:
-                shape = tuple(
-                    (shot_val,) if shot_val != 1 else tuple()
-                    for shot_val in device._raw_shot_sequence
-                )
-            else:
-                shape = tuple(
-                    (shot_val, len(device.wires)) if shot_val != 1 else (len(device.wires),)
-                    for shot_val in device._raw_shot_sequence
-                )
-
-        elif self.return_type == qml.measurements.State:
-
-            # Note: qml.density_matrix has its shape defined, so we're handling
-            # the qml.state case; acts on all device wires
-            dim = 2 ** len(device.wires)
-            shape = tuple((dim,) for _ in range(num_shot_elements))
-
-        return shape
 
     @staticmethod
     @functools.lru_cache()
@@ -697,7 +490,7 @@ class MeasurementProcess:
         return new_measurement
 
 
-class SampleMeasurement(MeasurementProcess, ABC):
+class SampleMeasurement(MeasurementProcess):
     """Sample-based measurement process."""
 
     @abstractmethod
@@ -716,7 +509,7 @@ class SampleMeasurement(MeasurementProcess, ABC):
         """
 
 
-class StateMeasurement(MeasurementProcess, ABC):
+class StateMeasurement(MeasurementProcess):
     """State-based measurement process."""
 
     @abstractmethod
