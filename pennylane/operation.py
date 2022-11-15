@@ -389,7 +389,7 @@ class Operator(abc.ABC):
         Many quantum functions need to be executed repeatedly at different parameters, which
         can be done with parameter broadcasting. For usage details and examples see the
         :class:`~.pennylane.QNode` documentation.
-        
+
         In order to support parameter broadcasting with an operator class ``Op``,
         the following steps are necessary:
 
@@ -423,7 +423,7 @@ class Operator(abc.ABC):
                 c = qml.math.cos(theta / 2)
                 s = qml.math.sin(theta / 2)
                 return qml.math.array([[c, -1j * s], [-1j * s, c]])
-                
+
         If we passed a broadcasted argument ``theta`` of shape ``(batch_size,)`` to this method,
         which would have one instead of zero dimensions, ``cos`` and ``sin`` would correctly
         be applied elementwise.
