@@ -388,7 +388,7 @@ class Operator(abc.ABC):
 
         Many quantum functions need to be executed repeatedly at different parameters, which
         can be done with parameter broadcasting. For usage details and examples see the
-        :class:`~.pennylane.qnode` documentation.
+        :class:`~.pennylane.QNode` documentation.
         
         In order to support parameter broadcasting with an operator class ``Op``,
         the following steps are necessary:
@@ -409,7 +409,7 @@ class Operator(abc.ABC):
            :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting` in the file
            ``pennylane/ops/qubit/attributes.py``.
 
-        **Example**
+        **Examples**
 
         Consider an operator with the same matrix as ``qml.RX``. A basic variant of
         ``compute_matrix`` (that may not be compatible with all autodifferentiation
