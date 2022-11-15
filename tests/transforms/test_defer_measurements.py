@@ -792,4 +792,3 @@ class TestDrawing:
             "2: ───────────╰●────────┤     "
         )
         assert qml.draw(transformed_qnode)() == expected
-

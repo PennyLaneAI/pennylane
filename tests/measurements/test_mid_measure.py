@@ -30,7 +30,7 @@ class TestMeasure:
             match="Only a single qubit can be measured in the middle of the circuit",
         ):
             qml.measure(wires=[0, 1])
-            
+
 
 class TestMeasurementValueManipulation:
     def test_apply_function_to_measurement(self):
@@ -127,3 +127,7 @@ class TestMeasurementValueManipulation:
     def test_complex_str(self):
         a = MeasurementValue("a", fn=lambda v: v)
         b = MeasurementValue("b", fn=lambda v: v)
+        assert str(a + b) == """if a=0,b=0 => 0
+if a=0,b=1 => 1
+if a=1,b=0 => 1
+if a=1,b=1 => 2"""
