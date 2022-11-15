@@ -6,6 +6,9 @@
 
 <h3>Improvements</h3>
 
+* `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
+   [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
