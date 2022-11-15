@@ -165,6 +165,13 @@ class _Sample(SampleMeasurement):
             return (device.shots, len_wires) if device.shots != 1 else (len_wires,)
         return (device.shots,) if device.shots != 1 else ()
 
+    @property
+    def samples_computational_basis(self):
+        r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
+        computational basis states.
+        """
+        return self.obs is None
+
     def process(self, samples: np.ndarray, shot_range: Tuple[int] = None, bin_size: int = None):
         name = self.obs.name if self.obs is not None else None
         # Select the samples from samples that correspond to ``shot_range`` if provided

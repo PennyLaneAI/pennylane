@@ -372,11 +372,7 @@ class MeasurementProcess(ABC):
         r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
         computational basis states.
         """
-        return (
-            self.return_type
-            in (qml.measurements.AllCounts, qml.measurements.Counts, qml.measurements.Sample)
-            and self.obs is None
-        )
+        return False
 
     def expand(self):
         """Expand the measurement of an observable to a unitary
