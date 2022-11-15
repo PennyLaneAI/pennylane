@@ -161,6 +161,69 @@ PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
 )
 
 
+equal_hamiltonians = [
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
+        True,
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliY(2) @ qml.PauliZ(0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliY(2) @ qml.Identity(1)]),
+        True,
+    ),
+    (
+        qml.Hamiltonian(
+            [1, 1, 1], [qml.PauliX(0) @ qml.Identity(1), qml.PauliZ(0), qml.Identity(1)]
+        ),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
+        False,
+    ),
+    (qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliX(1)]), qml.PauliZ(0) @ qml.PauliX(1), True),
+    (qml.Hamiltonian([1], [qml.PauliZ(0)]), qml.PauliZ(0), True),
+    (
+        qml.Hamiltonian(
+            [1, 1, 1],
+            [
+                qml.Hermitian(np.array([[1, 0], [0, -1]]), "b") @ qml.Identity(7),
+                qml.PauliZ(3),
+                qml.Identity(1.2),
+            ],
+        ),
+        qml.Hamiltonian(
+            [1, 1, 1],
+            [qml.Hermitian(np.array([[1, 0], [0, -1]]), "b"), qml.PauliZ(3), qml.Identity(1.2)],
+        ),
+        True,
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliZ(3) @ qml.Identity(1.2), qml.PauliZ(3)]),
+        qml.Hamiltonian([2], [qml.PauliZ(3)]),
+        True,
+    ),
+]
+
+equal_tensors = [
+    (qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliX(0), True),
+    (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliX(0) @ qml.PauliZ(2), True),
+    (qml.PauliX(0) @ qml.Identity(2) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
+]
+
+equal_hamiltonians_and_tensors = [
+    (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)]), qml.PauliY(1) @ qml.PauliX(0), True),
+    (
+        qml.Hamiltonian(
+            [0.5, 0.5],
+            [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")],
+        ),
+        qml.PauliZ(0) @ qml.PauliY(1),
+        True,
+    ),
+    (qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)]), qml.PauliX(0) @ qml.PauliY(1), False),
+    (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)]), qml.PauliX(4) @ qml.PauliY(1), False),
+]
+
+
 class TestEqual:
     @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
     def test_equal_simple_diff_op(self, ops):
@@ -985,7 +1048,7 @@ class TestEqual:
             match="Comparison of operators with an arithmetic"
             + " depth larger than 0 is not yet implemented.",
         ):
-            qml.equal(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.PauliX(0)))
+            qml.equal(qml.adjoint(qml.RX(1.2, 0)), qml.adjoint(qml.RX(1.2, 0)))
 
     def test_equal_same_inversion(self):
         """Test operations are equal if they are both inverted."""
@@ -1015,3 +1078,19 @@ class TestEqual:
     def test_not_equal_operator_measurement(self, op1, op2):
         """Test operator not equal to measurement"""
         assert not qml.equal(op1, op2)
+
+    # Test with Observables
+    @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
+    def test_hamiltonian_equal(self, H1, H2, res):
+        """Tests that equality can be checked between Hamiltonians"""
+        assert qml.equal(H1, H2) == res
+
+    @pytest.mark.parametrize(("T1", "T2", "res"), equal_tensors)
+    def test_tensors_equal(self, T1, T2, res):
+        """Tests that equality can be checked between Tensors"""
+        assert qml.equal(T1, T2) == res
+
+    @pytest.mark.parametrize(("H", "T", "res"), equal_hamiltonians_and_tensors)
+    def test_hamiltonians_and_tensors_equal(self, H, T, res):
+        """Tests that equality can be checked between a Hamiltonian and a Tensor"""
+        qml.equal(H, T) == res
