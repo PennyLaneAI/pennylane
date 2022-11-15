@@ -14,10 +14,12 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
+import numpy as np
 import pennylane as qml
 
 from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
 from pennylane.devices import DefaultQubit
+from pennylane.ops.channel import Channel
 
 
 def reduced_dm(qnode, wires):
@@ -71,18 +73,21 @@ def purity(qnode, wires):
     r"""Compute the purity of a :class:`~.QNode` returning :func:`~.state`.
 
     .. math::
-        \gamma = Tr(\rho^2)
+        \gamma = \Text{Tr}(\rho^2)
 
     where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
     :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
-    A pure state has a :math:`\gamma` of 1.
+    A pure state has a purity of 1.
 
     It is possible to compute the purity of a sub-system from a given state. To find the purity of
-    the overall state, include all wires in the "wires" argument.
+    the overall state, include all wires in the ``wires`` argument.
 
     Args:
         qnode (tensor_like): A :class:`.QNode` returning a :func:`~.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
+
+    Returns:
+        A function that computes the purity of the wrapped circuit.
 
     **Example**
 
@@ -105,21 +110,38 @@ def purity(qnode, wires):
 
     >>> purity(noisy_circuit, wires=[0, 1])(0.2)
     0.5648000000000398
-
     >>> purity(circuit, wires=[0])(np.pi / 2)
     0.5
-
     >>> purity(circuit, wires=[0, 1])(np.pi / 2)
     1.0
 
-    .. seealso:: :func:`pennylane.math.purity` and :func:`pennylane.purity`
+    .. seealso:: :func:`pennylane.math.purity`
     """
 
-    density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
-
     def wrapper(*args, **kwargs):
-        density_matrix = density_matrix_qnode(*args, **kwargs)
-        return qml.math.purity(density_matrix, wires, c_dtype=qnode.device.C_DTYPE)
+
+        # Construct tape
+        qnode.construct(args, kwargs)
+
+        # Check return type
+        return_type = qnode.tape.observables[0].return_type
+        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+            raise ValueError("The qfunc return type needs to be a state.")
+
+        # Check if the system in question is a sub-system or the full state.
+        num_wires = qnode.tape.num_wires
+        # Check if the circuit contains noisy channels
+        noisy = np.any([isinstance(op, Channel) for op in qnode.tape.operations])
+
+        # The full state of a non-noisy circuit is always pure
+        if num_wires == len(wires) and not noisy:
+            # Returning 1 in this weird way for torch grad compatibility. When taking the
+            # gradient with torch, it is required that the return type is of torch.tensor
+            # so that res.backward() can be called on the output.
+            return (args[0] + 1) / (args[0] + 1)
+
+        state_built = qnode(*args, **kwargs)
+        return qml.math.purity(state_built, wires, c_dtype=qnode.device.C_DTYPE)
 
     return wrapper
 

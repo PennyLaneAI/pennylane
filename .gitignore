@@ -22,4 +22,6 @@ timer.dat
 tmp/*
 benchmark/revisions/
 venv
+Pipfile
+Pipfile.lock
 config.toml

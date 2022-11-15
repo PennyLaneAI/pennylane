@@ -459,14 +459,14 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     r"""Computes the purity from a state vector or density matrix.
 
     .. math::
-        \gamma = Tr(\rho^2)
+        \gamma = \Text{Tr}(\rho^2)
 
     where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
     :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
-    A pure state has a :math:`\gamma` of 1.
+    A pure state has a purity of 1.
 
     It is possible to compute the purity of a sub-system from a given state. To find the purity of
-    the overall state, include all wires in the "indices" argument.
+    the overall state, include all wires in the ``indices`` argument.
 
     Args:
         state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
@@ -477,7 +477,7 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     Returns:
         float: purity of the considered subsystem.
 
-    ** Example **
+    **Example**
 
     >>> x = [1, 0, 0, 1] / np.sqrt(2)
     >>> purity(x, [0, 1])
@@ -485,14 +485,31 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     >>> purity(x, [0])
     0.5
 
-    >>> x = [[1 / 2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1 / 2]]
+    >>> x = [[1/2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1/2]]
     >>> purity(x, [0, 1])
     0.5
 
-    .. seealso:: :func:`pennylane.qinfo.transforms.purity` and :func:`pennylane.purity`
+    .. seealso:: :func:`pennylane.qinfo.transforms.purity`
     """
 
-    density_matrix = reduced_dm(state, indices, check_state, c_dtype)
+    # Cast as a c_dtype array
+    state = cast(state, dtype=c_dtype)
+    len_state = state.shape[0]
+    num_wires = np.log2(len_state)
+
+    # If the state is a state vector and the system in question is the entire system,
+    # return 1 directly because a valid state vector always represents a pure state.
+    if state.shape == (len_state,) and len(indices) == num_wires:
+        return 1.0
+
+    # If the state is a state vector but the system in question is a sub-system of the
+    # overall state, then the purity of the sub-system still needs to be computed.
+    if state.shape == (len_state,):
+        density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
+        return _compute_purity(density_matrix)
+
+    # If the state is a density matrix, compute the purity.
+    density_matrix = _density_matrix_from_matrix(state, indices, check_state)
     return _compute_purity(density_matrix)
 
 
