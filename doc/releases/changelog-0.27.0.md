@@ -80,31 +80,31 @@
   [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
 
   ```pycon
-    >>> symbols = ['He', 'H']
-    >>> geometry =  np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry, charge=1)
-    >>> H, n_qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
-    >>> generators = qml.qchem.symmetry_generators(H)
-    >>> paulixops = qml.qchem.paulix_ops(generators, n_qubits)
-    >>> paulix_sector = qml.qchem.optimal_sector(H, generators, mol.n_electrons)
-    >>> tap_op = qml.qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
-    ...                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
-    >>> tap_op(3.14159)
-    [Exp(1.570795j, 'PauliY', wires=[0])]
+  >>> symbols = ['He', 'H']
+  >>> geometry =  np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
+  >>> mol = qml.qchem.Molecule(symbols, geometry, charge=1)
+  >>> H, n_qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
+  >>> generators = qml.qchem.symmetry_generators(H)
+  >>> paulixops = qml.qchem.paulix_ops(generators, n_qubits)
+  >>> paulix_sector = qml.qchem.optimal_sector(H, generators, mol.n_electrons)
+  >>> tap_op = qml.qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
+  ...                                    paulix_sector, wire_order=H.wires, op_wires=[0, 2])
+  >>> tap_op(3.14159)
+  [Exp(1.570795j PauliY)]
   ```
 
   Moreover, the obtained tapered operation can be used directly within a QNode.
 
   ```pycon
-    >>> dev = qml.device('default.qubit', wires=[0, 1])
-    >>> @qml.qnode(dev)
-    ... def circuit(params):
-    ...     tap_op(params[0])
-    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-    >>> drawer = qml.draw(circuit, show_all_wires=True)
-    >>> print(drawer(params=[3.14159]))
-        0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
-        1: ───────────────────────┤ ╰<Z@Z>
+  >>> dev = qml.device('default.qubit', wires=[0, 1])
+  >>> @qml.qnode(dev)
+  ... def circuit(params):
+  ...     tap_op(params[0])
+  ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  >>> drawer = qml.draw(circuit, show_all_wires=True)
+  >>> print(drawer(params=[3.14159]))
+  0: ──Exp(0.00+1.57j Y)─┤ ╭<Z@Z>
+  1: ────────────────────┤ ╰<Z@Z>
   ```
 
 <h4>(TODO: title) New operators and optimizers</h4>
@@ -553,6 +553,13 @@
   'torch'
   ```
 
+  Note that when passing lists or tuples without unpacking them, ``get_interface`` will always default to ``"numpy"``.
+
+  ```pycon
+  >>> qml.math.get_interface([torch_scalar, torch_tensor, numpy_tensor])
+  'numpy'
+  ```
+
 * `qml.drawer.draw.draw_mpl` now accepts a `style` kwarg to select a style for plotting, rather than calling
   `qml.drawer.use_style(style)` before plotting. Setting a style for `draw_mpl` does not change the global
   configuration for matplotlib plotting. If no `style` is passed, the function defaults
@@ -669,6 +676,7 @@ Lillian M. A. Frederiksen,
 Diego Guala,
 Soran Jahangiri,
 Edward Jiang,
+Korbinian Kottmann,
 Christina Lee,
 Lee J. O'Riordan,
 Mudit Pandey,

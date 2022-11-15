@@ -151,7 +151,7 @@ def enable_return():
 
             tape.jacobian(res, [a, b])
 
-        If the measurements do not have the same shape then you need to use concatenation:
+        If the measurements do not have the same shape then you need to use TF hstack:
 
         .. code-block:: python
 
@@ -169,7 +169,7 @@ def enable_return():
 
             with tf.GradientTape() as tape:
                 res = circuit(a, b)
-                res = tf.concat([tf.reshape(i, [-1]) for i in res], 0)
+                res = tf.experimental.numpy.hstack(res)
 
             assert circuit.qtape.trainable_params == [0, 1]
 
