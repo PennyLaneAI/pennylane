@@ -13,8 +13,9 @@
 # limitations under the License.
 """Unit tests for the classical shadows expval measurement process"""
 
-import pytest
 import copy
+
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -75,7 +76,6 @@ class TestExpvalMeasurement:
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         H = qml.PauliZ(0)
         res = qml.shadow_expval(H)
-        assert res.shape() == (1,)
         assert res.shape(dev) == (1,)
 
     def test_shape_matches(self):
@@ -89,7 +89,7 @@ class TestExpvalMeasurement:
         circuit.construct((H,), {})
 
         res = qml.execute([circuit.tape], circuit.device, None)[0]
-        expected_shape = qml.shadow_expval(H).shape()
+        expected_shape = qml.shadow_expval(H).shape(circuit.device)
 
         assert res.shape == expected_shape
 

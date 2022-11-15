@@ -14,6 +14,7 @@
 """Unit tests for the classical shadows measurement process"""
 # pylint:disable=no-self-use, import-outside-toplevel, redefined-outer-name, unpacking-non-sequence, too-few-public-methods, not-an-iterable, inconsistent-return-statements
 import copy
+
 import pytest
 
 import pennylane as qml
@@ -130,11 +131,6 @@ class TestShadowMeasurement:
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
         assert res.shape(device=dev) == (1, 2, shots, wires)
-
-        # test an error is raised when device is None
-        msg = "The device argument is required to obtain the shape of a classical shadow measurement process"
-        with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
-            res.shape(device=None)
 
     def test_shape_matches(self, wires):
         """Test that the shape of the MeasurementProcess matches the shape
