@@ -210,8 +210,8 @@ To view the quantum circuit given specific parameter values, we can use the :fun
 transform,
 
 >>> print(qml.draw(circuit)(np.pi/4, 0.7))
-aux: ───────────╭●─┤     
- q1: ──RZ(0.79)─╰X─┤     
+aux: ───────────╭●─┤
+ q1: ──RZ(0.79)─╰X─┤
  q2: ──RY(0.70)────┤  <Z>
 
 or the :func:`~.pennylane.draw_mpl` transform:
@@ -267,7 +267,7 @@ simultaneously:
 tensor([0.85616242, 0.33046511], requires_grad=True)
 
 This is called *parameter broadcasting* (as for, say, NumPy functions executed along an axis)
-or *parameter batching* (as in the application of a function to a *batch* of parameters in classical
+or *parameter batching* (as in the application of a function to a *batch* of parameters in
 machine learning).
 
 In addition to a more flexible execution syntax, broadcasting can yield performance boosts
@@ -278,12 +278,12 @@ on a classical simulator, one can expect to benefit from broadcasting.
 See the :class:`~.pennylane.QNode` documentation for details.
 
 Many standard quantum operators support broadcasting, see the corresponding attribute
-:attr:`~.pennylane.ops.qubit.attributes.supports_broadcasting` for a list, and the
-:class:`~.pennylane.Operator` documentation for details on how to support it in custom operators.
+:obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting` for a list, and the
+:class:`~.pennylane.operation.Operator` documentation for details on how to support it in custom operators.
 Broadcasting can be used with any device, but will usually only yield performance upgrades for
-classical simulator devices like `"default.qubit"` that indicate that they support it:
+classical simulator devices like ``"default.qubit"`` that indicate that they support it:
 
->>> cap = dev.capabilities()  
+>>> cap = dev.capabilities()
 >>> cap["supports_broadcasting"]
 True
 
