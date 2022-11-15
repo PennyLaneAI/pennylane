@@ -138,12 +138,15 @@ class MeasurementValue(Generic[T]):
 
         # create a new function that selects the correct indices for each sub function
         def merged_fn(*x):
-            out_1 = self.fn(
-                *(x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids])
+            sub_args_1 = (
+                x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]
             )
-            out_2 = other.fn(
-                *(x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids])
+            out_1 = self.fn(*sub_args_1)
+
+            sub_args_2 = (
+                x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]
             )
+            out_2 = other.fn(*sub_args_2)
 
             return out_1, out_2
 
