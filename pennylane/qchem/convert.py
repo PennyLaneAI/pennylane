@@ -326,7 +326,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
         warnings.warn(
             f"The coefficients entering the QubitOperator must be real;"
             f" got complex coefficients in the operator"
-            f" {[coeff for coeff in coeffs if np.iscomplex(coeff)]}"
+            f" {[coef for coef in coeffs if np.iscomplex(coef)]}"
         )
 
     return qml.Hamiltonian(*_openfermion_to_pennylane(qubit_observable, wires=wires))
