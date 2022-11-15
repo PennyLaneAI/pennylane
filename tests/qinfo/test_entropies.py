@@ -366,7 +366,6 @@ class TestVonNeumannEntropy:
 
 
 class TestVonNeumannEntropyQNode:
-
     parameters = np.linspace(0, 2 * np.pi, 10)
 
     devices = ["default.qubit", "default.mixed", "lightning.qubit"]
@@ -988,15 +987,12 @@ class TestMutualInformation:
 class TestEntanglementEntropy:
     """Tests for the entanglement entropy functions"""
 
-    diff_methods = ["backprop", "finite-diff"]
-
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
-    def test_qnode_state(self, device, interface, params):
-        """Test that the entanglement entropy transform works for QNodes
-        by comparing against analytic values"""
+    def test_qnode_entanglement_entropy(self, device, interface, params):
+        """Test entanglement entropy transform by comparing against analytic values"""
 
         dev = qml.device(device, wires=2)
         params = qml.math.asarray(params, like=interface)
@@ -1016,39 +1012,35 @@ class TestEntanglementEntropy:
 
         assert np.allclose(actual, expected)
 
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
-    def test_qnode_vn_entanglement_entropy(self, device, interface, params):
-        """Test that the measurement process for entanglement entropy works for QNodes
-        by comparing against the entanglement entropy transform"""
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
+    def test_qnode_entanglement_entropy_grad(self, param):
+        """Test that the gradient of entanglement entropy works with the autograd interface"""
 
-        dev = qml.device(device, wires=2)
-        params = qml.math.asarray(np.array(params), like=interface)
+        dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=interface)
-        def circuit_entanglement_entropy(params):
-            qml.RY(params, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.vn_entanglement_entropy(wires0=[0], wires1=[1])
-
-        @qml.qnode(dev, interface=interface)
-        def circuit_state(params):
-            qml.RY(params, wires=0)
+        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        def circuit(param):
+            qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        actual = circuit_entanglement_entropy(params)
+        if param == 0:
+            # we don't allow gradients to flow through the discontinuity at 0
+            expected = 0
+        else:
+            expected = (
+                np.sin(param)
+                / 2
+                * (np.log(np.cos(param / 2) ** 2) - np.log(np.sin(param / 2) ** 2))
+            )
 
-        # compare measurement results with transform results
-        expected = qml.qinfo.vn_entanglement_entropy(circuit_state, wires0=[0], wires1=[1])(params)
-
-        assert np.allclose(actual, expected)
+        actual = qml.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(param)
+        assert np.allclose(actual, expected, atol=1e-8)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
-    def test_qnode_state_jax_jit(self, params):
+    def test_qnode_entanglement_entropy_jax_jit(self, params):
         """Test that the entanglement entropy transform works for QNodes by comparing against
         analytic values, for the JAX-jit interface"""
 
@@ -1075,72 +1067,8 @@ class TestEntanglementEntropy:
         assert np.allclose(actual, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
-    def test_qnode_vn_entanglement_entropy_jax_jit(self, params):
-        """Test that the measurement process for entanglement entropy works for QNodes
-        by comparing against the entanglement entropy transform, for the JAX-jit interface"""
-        import jax
-        import jax.numpy as jnp
-
-        dev = qml.device("default.qubit", wires=2)
-
-        params = jnp.array(params)
-
-        @qml.qnode(dev, interface="jax-jit")
-        def circuit_entanglement_entropy(params):
-            qml.RY(params, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.vn_entanglement_entropy(wires0=[0], wires1=[1])
-
-        @qml.qnode(dev, interface="jax-jit")
-        def circuit_state(params):
-            qml.RY(params, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        actual = jax.jit(circuit_entanglement_entropy)(params)
-
-        # compare measurement results with transform results
-        expected = jax.jit(
-            qml.qinfo.vn_entanglement_entropy(circuit_state, wires0=[0], wires1=[1])
-        )(params)
-
-        assert np.allclose(actual, expected)
-
-    @pytest.mark.autograd
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_qnode_grad(self, param, diff_method):
-        """Test that the gradient of entanglement entropy works for QNodes
-        with the autograd interface"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
-        def circuit(param):
-            qml.RY(param, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.vn_entanglement_entropy(wires0=[0], wires1=[1])
-
-        if param == 0:
-            # we don't allow gradients to flow through the discontinuity at 0
-            expected = 0
-        else:
-            expected = (
-                np.sin(param)
-                / 2
-                * (np.log(np.cos(param / 2) ** 2) - np.log(np.sin(param / 2) ** 2))
-            )
-
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
-
-        actual = qml.grad(circuit)(param)
-        assert np.allclose(actual, expected, atol=tol)
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_qnode_grad_jax(self, param, diff_method):
+    def test_qnode_entanglement_entropy_grad_jax(self, param):
         """Test that the gradient of entanglement entropy works for QNodes
         with the JAX interface"""
         import jax
@@ -1150,11 +1078,11 @@ class TestEntanglementEntropy:
 
         param = jnp.array(param)
 
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.vn_entanglement_entropy(wires0=[0], wires1=[1])
+            return qml.state()
 
         if param == 0:
             # we don't allow gradients to flow through the discontinuity at 0
@@ -1166,16 +1094,12 @@ class TestEntanglementEntropy:
                 * (jnp.log(jnp.cos(param / 2) ** 2) - jnp.log(jnp.sin(param / 2) ** 2))
             )
 
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
-
-        actual = jax.grad(circuit)(param)
-        assert np.allclose(actual, expected, atol=tol)
+        actual = jax.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))(param)
+        assert np.allclose(actual, expected, atol=1e-8)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_qnode_grad_jax_jit(self, param, diff_method):
+    def test_qnode_entanglement_entropy_grad_jax_jit(self, param):
         """Test that the gradient of entanglement entropy works for QNodes
         with the JAX-jit interface"""
         import jax
@@ -1185,11 +1109,11 @@ class TestEntanglementEntropy:
 
         param = jnp.array(param)
 
-        @qml.qnode(dev, interface="jax-jit", diff_method=diff_method)
+        @qml.qnode(dev, interface="jax-jit", diff_method="backprop")
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.vn_entanglement_entropy(wires0=[0], wires1=[1])
+            return qml.state()
 
         if param == 0:
             # we don't allow gradients to flow through the discontinuity at 0
@@ -1201,16 +1125,14 @@ class TestEntanglementEntropy:
                 * (jnp.log(jnp.cos(param / 2) ** 2) - jnp.log(jnp.sin(param / 2) ** 2))
             )
 
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
-
-        actual = jax.jit(jax.grad(circuit))(param)
-        assert np.allclose(actual, expected, atol=tol)
+        actual = jax.jit(
+            jax.grad(qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1]))
+        )(param)
+        assert np.allclose(actual, expected, atol=1e-8)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_qnode_grad_tf(self, param, diff_method):
+    def test_qnode_entanglement_entropy_grad_tf(self, param):
         """Test that the gradient of entanglement entropy works for QNodes
         with the tensorflow interface"""
         import tensorflow as tf
@@ -1219,11 +1141,11 @@ class TestEntanglementEntropy:
 
         param = tf.Variable(param)
 
-        @qml.qnode(dev, interface="tensorflow", diff_method=diff_method)
+        @qml.qnode(dev, interface="tensorflow", diff_method="backprop")
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.vn_entanglement_entropy(wires0=[0], wires1=[1])
+            return qml.state()
 
         if param == 0:
             # we don't allow gradients to flow through the discontinuity at 0
@@ -1236,18 +1158,14 @@ class TestEntanglementEntropy:
             )
 
         with tf.GradientTape() as tape:
-            out = circuit(param)
-
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
+            out = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(param)
 
         actual = tape.gradient(out, param)
-        assert np.allclose(actual, expected, atol=tol)
+        assert np.allclose(actual, expected, atol=1e-8)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_qnode_grad_torch(self, param, diff_method):
+    def test_qnode_entanglement_entropy_grad_torch(self, param):
         """Test that the gradient of entanglement entropy works
         for QNodes with the torch interface"""
 
@@ -1255,11 +1173,11 @@ class TestEntanglementEntropy:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.vn_entanglement_entropy(wires0=[0], wires1=[1])
+            return qml.state()
 
         if param == 0:
             # we don't allow gradients to flow through the discontinuity at 0
@@ -1272,57 +1190,11 @@ class TestEntanglementEntropy:
             )
 
         param = torch.tensor(param, requires_grad=True)
-        out = circuit(param)
+        out = qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(param)
         out.backward()
 
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
-
         actual = param.grad
-        assert np.allclose(actual, expected, atol=tol)
-
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    @pytest.mark.parametrize("params", [np.array([0.3, 0.4]), np.array([0.6, 0.8])])
-    def test_subsystem_overlap_error(self, device, interface, params):
-        """Test that an error is raised when the subsystems overlap"""
-
-        dev = qml.device(device, wires=3)
-        params = qml.math.asarray(params, like=interface)
-
-        @qml.qnode(dev, interface=interface)
-        def circuit(params):
-            qml.RY(params[0], wires=0)
-            qml.RY(params[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[0, 2])
-            return qml.vn_entanglement_entropy(wires0=[0, 1], wires1=[1, 2])
-
-        msg = "Subsystems for computing entanglement entropy must not overlap"
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
-            circuit(params)
-
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    @pytest.mark.parametrize("params", [0.5])
-    def test_custom_wire_labels_error(self, device, interface, params):
-        """Tests that an error is raised when entanglement entropy is measured
-        with custom wire labels"""
-
-        dev = qml.device(device, wires=["a", "b"])
-        params = qml.math.asarray(params, like=interface)
-
-        @qml.qnode(dev, interface=interface)
-        def circuit(params):
-            qml.RY(params, wires="a")
-            qml.CNOT(wires=["a", "b"])
-            return qml.vn_entanglement_entropy(wires0=["a"], wires1=["b"])
-
-        msg = "Returning the entanglement entropy is not supported when using custom wire labels"
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
-            circuit(params)
+        assert np.allclose(actual, expected, atol=1e-8)
 
 
 class TestRelativeEntropy:

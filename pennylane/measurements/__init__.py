@@ -31,4 +31,3 @@ from .sample import Sample, sample
 from .state import State, density_matrix, state
 from .var import Variance, var
 from .vn_entropy import VnEntropy, vn_entropy
-from .vn_entanglement_entropy import EntanglementEntropy, vn_entanglement_entropy
