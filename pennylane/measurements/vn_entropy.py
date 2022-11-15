@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement, VnEntropy
+from .measurements import StateMeasurement
 
 
 def vn_entropy(wires, log_base=None):
@@ -64,10 +64,10 @@ def vn_entropy(wires, log_base=None):
     .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
     """
     wires = Wires(wires)
-    return _VnEntropy(VnEntropy, wires=wires, log_base=log_base)
+    return VnEntropy(wires=wires, log_base=log_base)
 
 
-class _VnEntropy(StateMeasurement):
+class VnEntropy(StateMeasurement):
     """Measurement process that returns the Von Neumann entropy."""
 
     @property

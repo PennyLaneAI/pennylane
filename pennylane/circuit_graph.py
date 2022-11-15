@@ -23,7 +23,6 @@ import retworkx as rx
 
 import pennylane as qml
 from pennylane.measurements import Sample, State
-from pennylane.measurements.state import _State
 from pennylane.wires import Wires
 
 
@@ -122,7 +121,7 @@ class CircuitGraph:
                     # State measurements contain no wires by default, but wires are
                     # required for the circuit drawer, so we recreate the state
                     # measurement with all wires
-                    op = _State(State, wires=wires)
+                    op = State(State, wires=wires)
 
                 elif op.return_type is Sample and op.wires == Wires([]):
                     # Sampling without specifying wires is treated as sampling all wires

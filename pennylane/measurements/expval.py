@@ -25,7 +25,7 @@ from pennylane.operation import Operator
 from pennylane.ops import Projector
 from pennylane.wires import Wires
 
-from .measurements import Expectation, SampleMeasurement, StateMeasurement
+from .measurements import SampleMeasurement, StateMeasurement
 
 
 def expval(op: Operator):
@@ -58,11 +58,11 @@ def expval(op: Operator):
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
 
-    return _Expectation(Expectation, obs=op)
+    return Expectation(obs=op)
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
-class _Expectation(SampleMeasurement, StateMeasurement):
+class Expectation(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
 
     @property

@@ -26,7 +26,7 @@ from pennylane.operation import Operator
 from pennylane.ops import Projector
 from pennylane.wires import Wires
 
-from .measurements import SampleMeasurement, StateMeasurement, Variance
+from .measurements import SampleMeasurement, StateMeasurement
 
 
 def var(op: Operator):
@@ -58,10 +58,10 @@ def var(op: Operator):
     """
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
-    return _Variance(Variance, obs=op)
+    return Variance(obs=op)
 
 
-class _Variance(SampleMeasurement, StateMeasurement):
+class Variance(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the variance of the supplied observable."""
 
     @property
