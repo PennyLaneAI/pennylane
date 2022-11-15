@@ -162,7 +162,7 @@ class QNode:
         :title: Parameter broadcasting
 
         QNodes can be executed simultaneously for multiple parameter settings, which is called
-        *parameter broadcasting* or *parameter batching*. 
+        *parameter broadcasting* or *parameter batching*.
         We start with a simple example, look at the scenarios in which broadcasting is
         possible and useful, and give more complex examples and possible catches.
 
@@ -216,7 +216,7 @@ class QNode:
 
         The broadcasted input has (exactly) one more axis than the operator(s) which receive(s)
         it would usually expect. For example, most operators expect a single scalar input and the
-        broadcasted input correspondingly is a 1D array:         
+        broadcasted input correspondingly is a 1D array:
 
         >>> x = np.array([1., 2., 3.])
         >>> op = qml.RX(x, wires=0) # Additional axis of size 3
@@ -245,7 +245,7 @@ class QNode:
 
         *Broadcasting multiple operators*
 
-        It is possible to broadcast multiple parameters simultaneously. In this case, the batch 
+        It is possible to broadcast multiple parameters simultaneously. In this case, the batch
         size of the broadcasting axes must match, and the parameters are combined as in Python's
         ``zip`` function. Non-broadcasted parameters do not need
         to be augmented manually but can simply be used as one would in individual QNode
@@ -271,7 +271,7 @@ class QNode:
         This circuit takes three arguments, and the first two are used twice each. ``x`` and
         ``U`` will lead to a batch size of ``3`` for the ``RX`` rotations and the multi-qubit
         unitary, and correspondingly there are three output values:
-        
+
         >>> circuit(x, y, U)
         tensor([-0.06939911,  0.26051235, -0.20361048], requires_grad=True)
 
@@ -310,7 +310,7 @@ class QNode:
                 return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
             x = np.array([[1, 2], [3, 4], [5, 6]])
-        
+
         The prepared parameter ``x`` has shape ``(3, 2)``, corresponding to the three operations
         and a batch size of ``2``:
 
