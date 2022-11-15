@@ -159,12 +159,18 @@ class QNode:
     >>> qnode = qml.QNode(circuit, dev)
 
     .. details::
+        :title: Test
+
+    .. details::
         :title: Parameter broadcasting
 
         QNodes can be executed simultaneously for multiple parameter settings, which is called
         *parameter broadcasting* or *parameter batching*.
-        We start with a simple example, look at the scenarios in which broadcasting is
-        possible and useful, and give more complex examples and possible catches.
+        We start with a simple example, then look at the scenarios in which broadcasting is
+        possible and useful, and finally give some rules and conventions together with more
+        complex examples.
+        Also see the :class:`~.pennylane.operation.Operator` documentation for implementation
+        details.
 
         **Example**
 
@@ -188,13 +194,14 @@ class QNode:
         importantly though, the simultaneous execution via broadcasting can be significantly
         faster than iterating over parameters manually. If we compare the execution time for the
         above QNode ``circuit`` between broadcasting and manual iteration for a batch size of
-        ``100``, we find a speedup factor of about :math:`30` for a ``batch_size=100``.
+        ``100``, we find a speedup factor of about :math:`30`.
 
-        This speedup is a feature of classical simulators, but for quantum hardware devices
-        broadcasting may reduce communication overhead as well.
+        This speedup is a feature of classical simulators, but broadcasting may reduce
+        the communication overhead for quantum hardware devices as well.
 
         A QNode supports broadcasting if all operators that receive broadcasted parameters do so.
-        A list of these operators is available in
+        (Operators that are used in the circuit but do not receive broadcasted inputs do not need
+        to support it.) A list of supporting operators is available in
         :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting`.
         Whether or not broadcasting delivers an increased performance will depend on whether the
         used device is a classical simulator and natively supports this. The latter can be checked
@@ -243,7 +250,7 @@ class QNode:
 
         Stacking multiple broadcasting axes is *not* supported.
 
-        *Broadcasting multiple operators*
+        *Multiple operators are broadcasted simultaneously*
 
         It is possible to broadcast multiple parameters simultaneously. In this case, the batch
         size of the broadcasting axes must match, and the parameters are combined as in Python's
