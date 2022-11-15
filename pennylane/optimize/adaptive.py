@@ -31,6 +31,7 @@ def append_gate(tape, params, gates):
         qml.apply(o)
 
     for i, g in enumerate(gates):
+        g = g.__copy__()
         g.data[0] = params[i]
         qml.apply(g)
 
@@ -204,9 +205,7 @@ class AdaptiveOptimizer:
         if params_zero:
             params = np.zeros(len(selected_gates))
         else:
-            params = np.array(
-                [gate.parameters[0]._value for gate in selected_gates], requires_grad=True
-            )
+            params = np.array([gate.parameters[0] for gate in selected_gates], requires_grad=True)
 
         for _ in range(self.param_steps):
             params, _ = optimizer.step_and_cost(
