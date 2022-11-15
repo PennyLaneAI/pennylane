@@ -87,7 +87,7 @@ class MeasurementValue(Generic[T]):
 
     Args:
         measurement_ids (list of str): The id of the measurement that this object depends on.
-        fn (Callable): a transformation applied to the measurements.
+        fn (callable): A transformation applied to the measurements.
     """
 
     def __init__(self, measurement_ids, fn):
