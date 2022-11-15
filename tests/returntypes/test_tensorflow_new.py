@@ -673,7 +673,7 @@ class TestTensorFlowExecuteIntegration:
                 qml.probs(wires=[1])
 
             res = execute([tape], dev, **execute_kwargs)[0]
-            res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+            res = tf.experimental.numpy.hstack(res)
 
         expected = np.array(
             [tf.cos(x), (1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2]

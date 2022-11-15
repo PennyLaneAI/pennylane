@@ -2660,7 +2660,11 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             return qml.expval(qml.Projector([0], wires=0)), qml.expval(qml.PauliZ(wires=1))
 
         x = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
-        res = qml.jacobian(circuit)(x)
+
+        def cost(a):
+            return qml.numpy.hstack(circuit(a))
+
+        res = qml.jacobian(cost)(x)
 
         assert isinstance(res, np.ndarray)
         assert res.shape == (2, 3)
@@ -2713,6 +2717,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         with tf.GradientTape() as tape:
             out = circuit(x)
+            out = tf.stack(out)
 
         res = tape.jacobian(out, x)
 
@@ -2742,6 +2747,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         with tf.GradientTape() as tape:
             out = circuit(x)
+            out = tf.stack(out)
 
         res = tape.jacobian(out, x)
 
@@ -2815,7 +2821,11 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             return qml.probs(op=qml.PauliZ(wires=0)), qml.probs(wires=[1])
 
         x = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
-        res = qml.jacobian(circuit)(x)
+
+        def cost(a):
+            return qml.numpy.stack(circuit(a))
+
+        res = qml.jacobian(cost)(x)
 
         assert isinstance(res, np.ndarray)
         assert res.shape == (2, 2, 3)
@@ -2868,6 +2878,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         with tf.GradientTape() as tape:
             out = circuit(x)
+            out = tf.stack(out)
 
         res = tape.jacobian(out, x)
 
@@ -2943,7 +2954,11 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1]), qml.vn_entropy(wires=1)
 
         x = qml.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
-        res = qml.jacobian(circuit)(x)
+
+        def cost(a):
+            return qml.numpy.hstack(circuit(a))
+
+        res = qml.jacobian(cost)(x)
 
         assert isinstance(res, np.ndarray)
         assert res.shape == (6, 3)
@@ -3005,6 +3020,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
         with tf.GradientTape() as tape:
             out = circuit(x)
+            out = tf.experimental.numpy.hstack(out)
 
         res = tape.jacobian(out, x)
 
