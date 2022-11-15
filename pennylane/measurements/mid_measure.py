@@ -19,9 +19,59 @@ import uuid
 from typing import Generic, TypeVar
 
 import pennylane as qml
+from pennylane.wires import Wires
 import pennylane.numpy as np
 
 from .measurements import MeasurementProcess, MidMeasure
+
+
+def measure(wires):  # TODO: Change name to mid_measure
+    """Perform a mid-circuit measurement in the computational basis on the
+    supplied qubit.
+
+    Measurement outcomes can be obtained and used to conditionally apply
+    operations.
+
+    If a device doesn't support mid-circuit measurements natively, then the
+    QNode will apply the :func:`defer_measurements` transform.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def func(x, y):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            m_0 = qml.measure(1)
+
+            qml.cond(m_0, qml.RY)(y, wires=0)
+            return qml.probs(wires=[0])
+
+    Executing this QNode:
+
+    >>> pars = np.array([0.643, 0.246], requires_grad=True)
+    >>> func(*pars)
+    tensor([0.90165331, 0.09834669], requires_grad=True)
+
+    Args:
+        wires (Wires): The wire of the qubit the measurement process applies to.
+
+    Raises:
+        QuantumFunctionError: if multiple wires were specified
+    """
+    wire = qml.wires.Wires(wires)
+    if len(wire) > 1:
+        raise qml.QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
+
+    # Create a UUID and a map between MP and MV to support serialization
+    measurement_id = str(uuid.uuid4())[:8]
+    MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
+    return MeasurementValue(measurement_id, fn=lambda v: v)
 
 
 T = TypeVar("T")
@@ -33,7 +83,9 @@ class MeasurementValueError(ValueError):
 
 class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
+
     Measurements on a single qubit in the computational basis are assumed.
+
     Args:
         measurement_ids (str): The id of the measurement that this object depends on.
         fn (Callable): a transformation applied to the measurements.
@@ -115,41 +167,3 @@ class MeasurementValue(Generic[T]):
                 + str(self.fn(*branch))
             )
         return "\n".join(lines)
-
-
-def measure(wires):
-    """Perform a mid-circuit measurement in the computational basis on the
-    supplied qubit.
-    Measurement outcomes can be obtained and used to conditionally apply
-    operations.
-    If a device doesn't support mid-circuit measurements natively, then the
-    QNode will apply the :func:`defer_measurements` transform.
-    **Example:**
-    .. code-block:: python3
-        dev = qml.device("default.qubit", wires=2)
-        @qml.qnode(dev)
-        def func(x, y):
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            m_0 = qml.measure(1)
-            qml.cond(m_0, qml.RY)(y, wires=0)
-            return qml.probs(wires=[0])
-    Executing this QNode:
-    >>> pars = np.array([0.643, 0.246], requires_grad=True)
-    >>> func(*pars)
-    tensor([0.90165331, 0.09834669], requires_grad=True)
-    Args:
-        wires (Wires): The wire of the qubit the measurement process applies to.
-    Raises:
-        QuantumFunctionError: if multiple wires were specified
-    """
-    wire = qml.wires.Wires(wires)
-    if len(wire) > 1:
-        raise qml.QuantumFunctionError(
-            "Only a single qubit can be measured in the middle of the circuit"
-        )
-
-    # Create a UUID and a map between MP and MV to support serialization
-    measurement_id = str(uuid.uuid4())[:8]
-    MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
-    return MeasurementValue(measurement_id, fn=lambda v: v)
