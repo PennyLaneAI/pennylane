@@ -46,7 +46,6 @@ class ObservableReturnTypes(Enum):
     State = "state"
     MidMeasure = "measure"
     VnEntropy = "vnentropy"
-    Purity = "purity"
     MutualInfo = "mutualinfo"
     Shadow = "shadow"
     ShadowExpval = "shadowexpval"
@@ -89,9 +88,6 @@ basis in the middle of the circuit."""
 
 VnEntropy = ObservableReturnTypes.VnEntropy
 """Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
-
-Purity = ObservableReturnTypes.Purity
-"""Enum: An enumeration which represents returning the purity before measurement"""
 
 MutualInfo = ObservableReturnTypes.MutualInfo
 """Enum: An enumeration which represents returning the mutual information before measurements."""
@@ -186,7 +182,7 @@ class MeasurementProcess:
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        if self.return_type in (Expectation, MutualInfo, Probability, Variance, Purity, VnEntropy):
+        if self.return_type in (Expectation, MutualInfo, Probability, Variance, VnEntropy):
             return float
 
         if self.return_type is State:
@@ -248,7 +244,7 @@ class MeasurementProcess:
 
         # First: prepare the shape for return types that do not require a
         # device
-        if self.return_type in (Expectation, MutualInfo, Variance, Purity, VnEntropy):
+        if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
             shape = (1,)
 
         if self.return_type == State and self.wires:
@@ -322,7 +318,7 @@ class MeasurementProcess:
 
         # First: prepare the shape for return types that do not require a
         # device
-        if self.return_type in (Expectation, MutualInfo, Variance, Purity, VnEntropy):
+        if self.return_type in (Expectation, MutualInfo, Variance, VnEntropy):
             shape = ()
 
         if self.return_type == State and self.wires:

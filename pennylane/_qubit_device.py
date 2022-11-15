@@ -687,7 +687,6 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
-    # pylint: disable=too-many-statements
     def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
         """Process measurement results from circuit execution and return statistics.
 
