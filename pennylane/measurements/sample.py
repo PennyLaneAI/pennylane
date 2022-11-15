@@ -153,15 +153,17 @@ class _Sample(SampleMeasurement):
     def _shape_new(self, device):
         if device.shot_vector is not None:
             if self.obs is None:
-                tuple(
+                return tuple(
                     (shot_val, len(device.wires)) if shot_val != 1 else (len(device.wires),)
                     for shot_val in device._raw_shot_sequence
                 )
             return tuple(
                 (shot_val,) if shot_val != 1 else tuple() for shot_val in device._raw_shot_sequence
             )
-        len_wires = len(device.wires)
-        return (device.shots) if self.obs is not None else (device.shots, len_wires)
+        if self.obs is None:
+            len_wires = len(device.wires)
+            return (device.shots, len_wires) if device.shots != 1 else (len_wires,)
+        return (device.shots,) if device.shots != 1 else ()
 
     def process(self, samples: np.ndarray, shot_range: Tuple[int] = None, bin_size: int = None):
         name = self.obs.name if self.obs is not None else None
