@@ -22,7 +22,7 @@ from typing import Generic, TypeVar
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, MidMeasure
+from .measurements import MeasurementProcess
 
 
 def measure(wires):  # TODO: Change name to mid_measure
@@ -70,11 +70,19 @@ def measure(wires):  # TODO: Change name to mid_measure
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
+    MidMeasure(wires=wire, id=measurement_id)
     return MeasurementValue(measurement_id)
 
 
 T = TypeVar("T")
+
+
+class MidMeasure(MeasurementProcess):
+    """Mid-circuit measurement"""
+
+    @property
+    def _queue_category(self):
+        return "_ops"
 
 
 class MeasurementValueError(ValueError):

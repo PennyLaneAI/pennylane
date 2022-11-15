@@ -22,7 +22,6 @@ import contextlib
 import copy
 import functools
 from abc import ABC, abstractmethod
-from enum import Enum
 from typing import Sequence, Tuple, Union
 
 import numpy as np
@@ -30,77 +29,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
-
-# =============================================================================
-# ObservableReturnTypes types
-# =============================================================================
-
-
-class ObservableReturnTypes(Enum):
-    """Enumeration class to represent the return types of an observable."""
-
-    Sample = "sample"
-    Counts = "counts"
-    AllCounts = "allcounts"
-    Variance = "var"
-    Expectation = "expval"
-    Probability = "probs"
-    State = "state"
-    MidMeasure = "measure"
-    VnEntropy = "vnentropy"
-    MutualInfo = "mutualinfo"
-    Shadow = "shadow"
-    ShadowExpval = "shadowexpval"
-
-    def __repr__(self):
-        """String representation of the return types."""
-        return str(self.value)
-
-
-Sample = ObservableReturnTypes.Sample
-"""Enum: An enumeration which represents sampling an observable."""
-
-Counts = ObservableReturnTypes.Counts
-"""Enum: An enumeration which represents returning the number of times
- each of the observed outcomes occurred in sampling."""
-
-AllCounts = ObservableReturnTypes.AllCounts
-"""Enum: An enumeration which represents returning the number of times
- each of the possible outcomes occurred in sampling, including 0 counts
- for unobserved outcomes."""
-
-Variance = ObservableReturnTypes.Variance
-"""Enum: An enumeration which represents returning the variance of
-an observable on specified wires."""
-
-Expectation = ObservableReturnTypes.Expectation
-"""Enum: An enumeration which represents returning the expectation
-value of an observable on specified wires."""
-
-Probability = ObservableReturnTypes.Probability
-"""Enum: An enumeration which represents returning probabilities
-of all computational basis states."""
-
-State = ObservableReturnTypes.State
-"""Enum: An enumeration which represents returning the state in the computational basis."""
-
-MidMeasure = ObservableReturnTypes.MidMeasure
-"""Enum: An enumeration which represents returning sampling the computational
-basis in the middle of the circuit."""
-
-VnEntropy = ObservableReturnTypes.VnEntropy
-"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
-
-MutualInfo = ObservableReturnTypes.MutualInfo
-"""Enum: An enumeration which represents returning the mutual information before measurements."""
-
-Shadow = ObservableReturnTypes.Shadow
-"""Enum: An enumeration which represents returning the bitstrings and recipes from
-the classical shadow protocol"""
-
-ShadowExpval = ObservableReturnTypes.ShadowExpval
-"""Enum: An enumeration which represents returning the estimated expectation value
-from a classical shadow measurement"""
 
 
 class MeasurementShapeError(ValueError):
@@ -113,8 +41,6 @@ class MeasurementProcess(ABC):
     quantum variational circuit.
 
     Args:
-        return_type (.ObservableReturnTypes): The type of measurement process.
-            This includes ``Expectation``, ``Variance``, ``Sample``, ``State``, or ``Probability``.
         obs (.Observable): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
@@ -132,14 +58,12 @@ class MeasurementProcess(ABC):
 
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
         id=None,
         log_base=None,
     ):
-        self.return_type = return_type
         self.obs = obs
         self.id = id
         self.log_base = log_base
@@ -184,32 +108,27 @@ class MeasurementProcess(ABC):
                 unrecognized and cannot deduce the numeric type
         """
         raise qml.QuantumFunctionError(
-            "Cannot deduce the numeric type of the measurement process with unrecognized "
-            + f"return_type {self.return_type}."
+            f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
     def shape(self, device):
         """The expected output shape of the MeasurementProcess.
 
-        Note that the output shape is dependent on the device when:
-
-        * The ``return_type`` is either ``Probability``, ``State`` (from :func:`.state`) or
-          ``Sample``;
-        * The shot vector was defined in the device.
+        Note that the output shape is dependent on the device when the shot vector is defined in
+        the device.
 
         For example, assuming a device with ``shots=None``, expectation values
         and variances define ``shape=(1,)``, whereas probabilities in the qubit
         model define ``shape=(1, 2**num_wires)`` where ``num_wires`` is the
         number of wires the measurement acts on.
 
-        Note that the shapes for vector-valued return types such as
+        Note that the shapes for vector-valued measurements such as
         ``Probability`` and ``State`` are adjusted to the output of
         ``qml.execute`` and may have an extra first element that is squeezed
         when using QNodes.
 
         Args:
-            device (.Device): a PennyLane device to use for determining the
-                shape
+            device (.Device): a PennyLane device to use for determining the shape
 
         Returns:
             tuple: the output shape
@@ -219,18 +138,14 @@ class MeasurementProcess(ABC):
                 unrecognized and cannot deduce the numeric type
         """
         raise qml.QuantumFunctionError(
-            "Cannot deduce the shape of the measurement process with unrecognized return_type "
-            + f"{self.return_type}."
+            f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
     def _shape_new(self, device):
         """The expected output shape of the MeasurementProcess.
 
-        Note that the output shape is dependent on the device when:
-
-        * The ``return_type`` is either ``Probability``, ``State`` (from :func:`.state`) or
-          ``Sample``;
-        * The shot vector was defined in the device.
+        Note that the output shape is dependent on the device when the shot vector is defined in
+        the device.
 
         For example, assuming a device with ``shots=None``, expectation values
         and variances define ``shape=(,)``, whereas probabilities in the qubit
@@ -238,8 +153,7 @@ class MeasurementProcess(ABC):
         number of wires the measurement acts on.
 
         Args:
-            device (.Device): a PennyLane device to use for determining the
-                shape
+            device (.Device): a PennyLane device to use for determining the shape
 
         Returns:
             tuple: the output shape
@@ -249,8 +163,7 @@ class MeasurementProcess(ABC):
                 unrecognized and cannot deduce the numeric type
         """
         raise qml.QuantumFunctionError(
-            "Cannot deduce the shape of the measurement process with unrecognized return_type "
-            + f"{self.return_type}."
+            f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
     @staticmethod
@@ -292,17 +205,12 @@ class MeasurementProcess(ABC):
     def __repr__(self):
         """Representation of this class."""
         if self.obs is None:
-            return f"{self.return_type.value}(wires={self.wires.tolist()})"
+            return f"{self.__class__.__name__}(wires={self.wires.tolist()})"
 
-        # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        if self.obs.return_type is None:
-            return f"{self.return_type.value}({self.obs})"
-
-        return f"{self.obs}"
+        return f"{self.__class__.__name__}(obs={self.obs})"
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             eigvals=self._eigvals,
             wires=self._wires,
@@ -412,7 +320,7 @@ class MeasurementProcess(ABC):
 
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
-            self.__class__(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
+            self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 
@@ -434,7 +342,7 @@ class MeasurementProcess(ABC):
         This property is a temporary solution that should not exist long-term and should not be
         used outside of ``QuantumTape._process_queue``.
         """
-        return "_ops" if self.return_type is MidMeasure else "_measurements"
+        return "_measurements"
 
     @property
     def hash(self):
@@ -445,14 +353,14 @@ class MeasurementProcess(ABC):
                 str(self.name),
                 tuple(self.wires.tolist()),
                 str(self.data),
-                self.return_type,
+                self.__class__.__name__,
             )
         else:
             fingerprint = (
                 str(self.obs.name),
                 tuple(self.wires.tolist()),
                 str(self.obs.data),
-                self.return_type,
+                self.__class__.__name__,
             )
 
         return hash(fingerprint)
@@ -463,10 +371,7 @@ class MeasurementProcess(ABC):
         Returns:
             .MeasurementProcess: A measurement process with a simplified observable.
         """
-        if self.obs is None:
-            return self
-
-        return self.__class__(return_type=self.return_type, obs=self.obs.simplify())
+        return self if self.obs is None else self.__class__(obs=self.obs.simplify())
 
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
