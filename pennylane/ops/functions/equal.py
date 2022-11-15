@@ -20,7 +20,7 @@ from typing import Union
 from functools import singledispatch
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
-from pennylane.operation import Operator, Observable
+from pennylane.operation import Operation, Operator, Observable
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
@@ -43,15 +43,17 @@ def equal(
         be calculated, which would drastically increase runtime.
 
         The kwargs `check_interface` and `check_trainability` can only be set when
-        comparing Operations. Comparisons of ``MeasurementProcesses`` or ``Observalbes``,
+        comparing Operations. Comparisons of ``MeasurementProcesses`` or ``Observables``,
         will use the defualt value of ``True`` for both, regardless of what the user
         specifies when calling the function.
 
     Args:
         op1 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): First object to compare
         op2 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): Second object to compare
-        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``
-        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``
+        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``. Can only be
+            set for comparison of Operations.
+        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
+            Can only be set for comparison of Operations.
         rtol (float, optional): Relative tolerance for parameters
         atol (float, optional): Absolute tolerance for parameters
 
@@ -121,15 +123,14 @@ def _equal(
 
 @_equal.register
 def _equal_operator(
-    op1: Operator,
+    op1: Operation,
     op2,
     check_interface: bool = True,
     check_trainability: bool = True,
     rtol: float = 1e-5,
     atol: float = 1e-9,
 ):
-    """Determine whether two Operator objects are equal. Defaulted to for all Operators
-    where _equal_observables is not applicable"""
+    """Determine whether two Operations objects are equal."""
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
