@@ -416,7 +416,7 @@ class MeasurementProcess(ABC):
 
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
-            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
+            self.__class__(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 
@@ -470,7 +470,7 @@ class MeasurementProcess(ABC):
         if self.obs is None:
             return self
 
-        return MeasurementProcess(return_type=self.return_type, obs=self.obs.simplify())
+        return self.__class__(return_type=self.return_type, obs=self.obs.simplify())
 
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
