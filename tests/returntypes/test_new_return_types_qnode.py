@@ -124,6 +124,22 @@ class TestIntegrationSingleReturn:
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
 
+    @pytest.mark.xfail(reason="qml.execute shot vec support required with new return types")
+    def test_vn_entropy_shot_vec_error(self):
+        """Test an error is raised when using shot vectors with vn_entropy."""
+        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        with pytest.raises(
+            NotImplementedError, match="mutual information is not supported with shot vectors"
+        ):
+            circuit(0.5)
+
     @pytest.mark.parametrize("device", devices)
     def test_mutual_info(self, device):
         """Return a single mutual information."""
@@ -139,6 +155,22 @@ class TestIntegrationSingleReturn:
 
         assert res.shape == ()
         assert isinstance(res, np.ndarray)
+
+    @pytest.mark.xfail(reason="qml.execute shot vec support required with new return types")
+    def test_mutual_info_shot_vec_error(self):
+        """Test an error is raised when using shot vectors with mutual_info."""
+        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        with pytest.raises(
+            NotImplementedError, match="mutual information is not supported with shot vectors"
+        ):
+            circuit(0.5)
 
     herm = np.diag([1, 2, 3, 4])
     probs_data = [
@@ -385,7 +417,7 @@ class TestIntegrationSingleReturnTensorFlow:
         """Test the sample measurement."""
         import tensorflow as tf
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for Tf.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -599,7 +631,7 @@ class TestIntegrationSingleReturnTorch:
         """Test the sample measurement."""
         import torch
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for Torch.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -1258,7 +1290,7 @@ class TestIntegrationMultipleReturnsTensorflow:
         """Test the expval and sample measurements together."""
         import tensorflow as tf
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample must be reworked with interfaces.")
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -1521,7 +1553,7 @@ class TestIntegrationMultipleReturnsTorch:
         """Test the expval and sample measurements together."""
         import torch
 
-        if device == "default.mixed" or "default.qubit":
+        if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for interfaces.")
 
         dev = qml.device(device, wires=2, shots=shots)

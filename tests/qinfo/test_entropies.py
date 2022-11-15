@@ -63,6 +63,21 @@ def expected_entropy_grad_ising_xx(param):
 class TestVonNeumannEntropy:
     """Tests Von Neumann entropy transform"""
 
+    def test_shot_vec_error(self):
+        """Test an error is raised when using shot vectors with vn_entropy."""
+        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=[0])
+
+        with pytest.raises(
+            NotImplementedError, match="Von Neumann entropy is not supported with shot vectors"
+        ):
+            circuit(0.5)
+
     single_wires_list = [
         [0],
         [1],
@@ -622,6 +637,21 @@ class TestVonNeumannEntropyQNode:
 
 class TestMutualInformation:
     """Tests for the mutual information functions"""
+
+    def test_shot_vec_error(self):
+        """Test an error is raised when using shot vectors with mutual_info."""
+        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+
+        @qml.qnode(device=dev)
+        def circuit(x):
+            qml.Hadamard(wires=[0])
+            qml.CRX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        with pytest.raises(
+            NotImplementedError, match="mutual information is not supported with shot vectors"
+        ):
+            circuit(0.5)
 
     diff_methods = ["backprop", "finite-diff"]
 
