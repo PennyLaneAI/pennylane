@@ -27,6 +27,9 @@
   * Add `_MutualInfo` class.
     [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
 
+  * Add `_Expectation` class.
+    [#3343](https://github.com/PennyLaneAI/pennylane/pull/3343)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
