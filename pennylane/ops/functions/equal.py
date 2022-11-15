@@ -20,7 +20,8 @@ from typing import Union
 from functools import singledispatch
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
-from pennylane.operation import Operator
+from pennylane.operation import Operator, Observable
+from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 def equal(
@@ -31,6 +32,20 @@ def equal(
     r"""equal(op1, op2, **kwargs)
 
     Function for determining operator or measurement equality.
+
+    .. Warning::
+
+        The compare method does **not** check if the matrix representation
+        of a :class:`~.Hermitian` observable is equal to an equivalent
+        observable expressed in terms of Pauli matrices, or as a
+        linear combination of Hermitians.
+        To do so would require the matrix form of Hamiltonians and Tensors
+        be calculated, which would drastically increase runtime.
+
+        The kwargs `check_interface` and `check_trainability` can only be set when
+        comparing Operations. Comparisons of ``MeasurementProcesses`` or ``Observalbes``,
+        will use the defualt value of ``True`` for both, regardless of what the user
+        specifies when calling the function.
 
     Args:
         op1 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): First object to compare
@@ -83,8 +98,13 @@ def equal(
         True
     """
 
-    if not isinstance(op2, type(op1)):
-        return False
+    # types don't have to match as strictly to compare Observables
+    if isinstance(op1, Observable) and isinstance(op2, Observable):
+        pass
+    # for everything else, types must match
+    else:
+        if not isinstance(op2, type(op1)):
+            return False
 
     return _equal(op1, op2, **kwargs)
 
@@ -95,7 +115,7 @@ def _equal(
     op2,
     **kwargs,
 ):
-
+    """Calls relevant comparison function using singledispatch."""
     raise NotImplementedError(f"Comparison between {type(op1)} and {type(op2)} not implemented.")
 
 
@@ -108,8 +128,8 @@ def _equal_operator(
     rtol: float = 1e-5,
     atol: float = 1e-9,
 ):
-
-    """Determine whether two Operator objects are equal"""
+    """Determine whether two Operator objects are equal. Defaulted to for all Operators
+    where _equal_observables is not applicable"""
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
@@ -139,6 +159,12 @@ def _equal_operator(
                 return False
 
     return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
+
+
+@_equal.register
+def _equal_observables(op1: Observable, op2):
+    """Determine whether two Observables objects are equal"""
+    return _obs_comparison_data(op1) == _obs_comparison_data(op2)
 
 
 @_equal.register
@@ -174,3 +200,12 @@ def _equal_shadow_measurements(op1: ShadowMeasurementProcess, op2):
     k_match = op1.k == op2.k
 
     return return_types_match and wires_match and H_match and k_match
+
+
+def _obs_comparison_data(obs):
+    if isinstance(obs, Hamiltonian):
+        obs.simplify()
+        obs = obs._obs_data()  # pylint: disable=protected-access
+    else:
+        obs = {(1, frozenset(obs._obs_data()))}  # pylint: disable=protected-access
+    return obs
