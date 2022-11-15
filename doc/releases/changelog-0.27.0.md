@@ -731,7 +731,7 @@
   >>> qml.math.get_interface(torch_scalar, torch_tensor, numpy_tensor)
   'torch'
   ```
- 
+
 * `Operator.compute_terms` is removed. On a specific instance of an operator, `op.terms()` can be used
   instead. There is no longer a static method for this.
   [(#3215)](https://github.com/PennyLaneAI/pennylane/pull/3215)
@@ -809,6 +809,9 @@
 
 * Fixed a bug where `qml.BasisStatePreparation` and `qml.BasisEmbedding` were not jit-compilable with JAX.
   [(#3239)](https://github.com/PennyLaneAI/pennylane/pull/3239)
+
+* Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
+  [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)
 
 * Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
   [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)
