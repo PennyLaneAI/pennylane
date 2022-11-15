@@ -190,7 +190,7 @@ class AdaptiveOptimizer:
                 gate
                 for gate in operator_pool
                 for operation in circuit.tape.operations
-                if qml.equal(gate, operation, rtol=float("inf"))
+                if (gate.name == operation.name and gate.wires == operation.wires)
             ]
             for gate in repeated_gates:
                 operator_pool.remove(gate)
