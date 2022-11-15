@@ -813,9 +813,6 @@
 * Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
   [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)
 
-* Fixed a bug where `qml.MottonenStatePreparation` was not jit-compilable with JAX.
-  [(#3260)](https://github.com/PennyLaneAI/pennylane/pull/3260)
-
 * Fixed a bug where `qml.expval(qml.Hamiltonian())` would not raise an error
   if the Hamiltonian involved some wires that are not present on the device.
   [(#3266)](https://github.com/PennyLaneAI/pennylane/pull/3266)
