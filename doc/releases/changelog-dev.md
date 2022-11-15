@@ -16,19 +16,6 @@
   >>> qml.math.vn_entanglement_entropy(y, indices0=[0], indices1=[1])
   0
   ```
-  The `qml.vn_entanglement_entropy` measurement process can be returned from a QNode:
-  ```python3
-  dev = qml.device("default.qubit", wires=2)
-  @qml.qnode(dev)
-  def circuit(params):
-    qml.RY(params, wires=0)
-    qml.CNOT(wires=[0, 1])
-    return qml.vn_entanglement_entropy(wires0=[0], wires1=[1])
-  ```
-  ```pycon
-  >>> circuit(np.pi / 2)
-  tensor(0.69314718, requires_grad=True)
-  ```
   The `qml.qinfo.vn_entanglement_entropy` can be used to transform a QNode returning
   a state to a function that returns the mutual information:
   ```python3
