@@ -42,7 +42,7 @@ class Molecule:
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Possible
             values of ``mult`` are :math:`1, 2, 3, \ldots`.
         basis_name (str): Atomic basis set used to represent the molecular orbitals. Currently, the
-            only supported basis sets are 'STO-3G' and '6-31G'.
+            only supported basis sets are 'STO-3G', '6-31G', '6-311G' and 'CC-PVDZ'.
         l (tuple[int]): angular momentum quantum numbers of the basis function
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
