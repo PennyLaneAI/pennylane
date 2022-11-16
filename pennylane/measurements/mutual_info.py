@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement
+from .measurements import MutualInfo, StateMeasurement
 
 
 def mutual_info(wires0, wires1, log_base=None):
@@ -79,10 +79,10 @@ def mutual_info(wires0, wires1, log_base=None):
 
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
-    return MutualInfo(wires=[wires0, wires1], log_base=log_base)
+    return _MutualInfo(MutualInfo, wires=[wires0, wires1], log_base=log_base)
 
 
-class MutualInfo(StateMeasurement):
+class _MutualInfo(StateMeasurement):
     """Measurement process that returns the mutual information."""
 
     @property

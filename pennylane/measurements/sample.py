@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, SampleMeasurement
+from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 
 
 def sample(op: Union[Observable, None] = None, wires=None):
@@ -112,11 +112,11 @@ def sample(op: Union[Observable, None] = None, wires=None):
             )
         wires = Wires(wires)
 
-    return Sample(obs=op, wires=wires)
+    return _Sample(Sample, obs=op, wires=wires)
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
-class Sample(SampleMeasurement):
+class _Sample(SampleMeasurement):
     """Measurement process that returns the samples of a given observable."""
 
     @property

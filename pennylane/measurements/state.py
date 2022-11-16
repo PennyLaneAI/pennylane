@@ -22,7 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement
+from .measurements import State, StateMeasurement
 
 
 def state():
@@ -79,7 +79,7 @@ def state():
         -0.07471906623679961
     """
     # pylint: disable=protected-access
-    return State(State)
+    return _State(State)
 
 
 def density_matrix(wires):
@@ -121,10 +121,10 @@ def density_matrix(wires):
     """
     # pylint: disable=protected-access
     wires = Wires(wires)
-    return State(wires=wires)
+    return _State(State, wires=wires)
 
 
-class State(StateMeasurement):
+class _State(StateMeasurement):
     """Measurement process that returns the quantum state."""
 
     @property

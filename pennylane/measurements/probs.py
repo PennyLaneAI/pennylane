@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import SampleMeasurement, StateMeasurement
+from .measurements import Probability, SampleMeasurement, StateMeasurement
 
 
 def probs(wires=None, op=None):
@@ -114,12 +114,12 @@ def probs(wires=None, op=None):
                 "Cannot specify the wires to probs if an observable is "
                 "provided. The wires for probs will be determined directly from the observable."
             )
-        return Probability(wires=qml.wires.Wires(wires))
-    return Probability(obs=op)
+        return _Probability(Probability, wires=qml.wires.Wires(wires))
+    return _Probability(Probability, obs=op)
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
-class Probability(SampleMeasurement, StateMeasurement):
+class _Probability(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
 
     @property

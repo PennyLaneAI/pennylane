@@ -14,12 +14,19 @@
 """
 This module contains measurements supported by PennyLane.
 """
-from .classical_shadow import ShadowMeasurementProcess, classical_shadow, shadow_expval
-from .counts import Counts, counts
+from .classical_shadow import (
+    Shadow,
+    ShadowExpval,
+    ShadowMeasurementProcess,
+    classical_shadow,
+    shadow_expval,
+)
+from .counts import AllCounts, Counts, counts
 from .expval import Expectation, expval
 from .measurements import (
     MeasurementProcess,
     MeasurementShapeError,
+    ObservableReturnTypes,
     SampleMeasurement,
     StateMeasurement,
 )

@@ -22,6 +22,7 @@ import contextlib
 import copy
 import functools
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Sequence, Tuple, Union
 
 import numpy as np
@@ -29,6 +30,77 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
+
+# =============================================================================
+# ObservableReturnTypes types
+# =============================================================================
+
+
+class ObservableReturnTypes(Enum):
+    """Enumeration class to represent the return types of an observable."""
+
+    Sample = "sample"
+    Counts = "counts"
+    AllCounts = "allcounts"
+    Variance = "var"
+    Expectation = "expval"
+    Probability = "probs"
+    State = "state"
+    MidMeasure = "measure"
+    VnEntropy = "vnentropy"
+    MutualInfo = "mutualinfo"
+    Shadow = "shadow"
+    ShadowExpval = "shadowexpval"
+
+    def __repr__(self):
+        """String representation of the return types."""
+        return str(self.value)
+
+
+Sample = ObservableReturnTypes.Sample
+"""Enum: An enumeration which represents sampling an observable."""
+
+Counts = ObservableReturnTypes.Counts
+"""Enum: An enumeration which represents returning the number of times
+ each of the observed outcomes occurred in sampling."""
+
+AllCounts = ObservableReturnTypes.AllCounts
+"""Enum: An enumeration which represents returning the number of times
+ each of the possible outcomes occurred in sampling, including 0 counts
+ for unobserved outcomes."""
+
+Variance = ObservableReturnTypes.Variance
+"""Enum: An enumeration which represents returning the variance of
+an observable on specified wires."""
+
+Expectation = ObservableReturnTypes.Expectation
+"""Enum: An enumeration which represents returning the expectation
+value of an observable on specified wires."""
+
+Probability = ObservableReturnTypes.Probability
+"""Enum: An enumeration which represents returning probabilities
+of all computational basis states."""
+
+State = ObservableReturnTypes.State
+"""Enum: An enumeration which represents returning the state in the computational basis."""
+
+MidMeasure = ObservableReturnTypes.MidMeasure
+"""Enum: An enumeration which represents returning sampling the computational
+basis in the middle of the circuit."""
+
+VnEntropy = ObservableReturnTypes.VnEntropy
+"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
+
+MutualInfo = ObservableReturnTypes.MutualInfo
+"""Enum: An enumeration which represents returning the mutual information before measurements."""
+
+Shadow = ObservableReturnTypes.Shadow
+"""Enum: An enumeration which represents returning the bitstrings and recipes from
+the classical shadow protocol"""
+
+ShadowExpval = ObservableReturnTypes.ShadowExpval
+"""Enum: An enumeration which represents returning the estimated expectation value
+from a classical shadow measurement"""
 
 
 class MeasurementShapeError(ValueError):
@@ -41,6 +113,8 @@ class MeasurementProcess(ABC):
     quantum variational circuit.
 
     Args:
+        return_type (.ObservableReturnTypes): The type of measurement process.
+            This includes ``Expectation``, ``Variance``, ``Sample``, ``State``, or ``Probability``.
         obs (.Observable): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
@@ -58,12 +132,14 @@ class MeasurementProcess(ABC):
 
     def __init__(
         self,
+        return_type: ObservableReturnTypes,
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
         id=None,
         log_base=None,
     ):
+        self.return_type = return_type
         self.obs = obs
         self.id = id
         self.log_base = log_base
@@ -211,6 +287,7 @@ class MeasurementProcess(ABC):
 
     def __copy__(self):
         return self.__class__(
+            self.return_type,
             obs=copy.copy(self.obs),
             eigvals=self._eigvals,
             wires=self._wires,
@@ -320,7 +397,7 @@ class MeasurementProcess(ABC):
 
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
-            self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
+            self.__class__(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 
@@ -371,7 +448,9 @@ class MeasurementProcess(ABC):
         Returns:
             .MeasurementProcess: A measurement process with a simplified observable.
         """
-        return self if self.obs is None else self.__class__(obs=self.obs.simplify())
+        return (
+            self if self.obs is None else self.__class__(self.return_type, obs=self.obs.simplify())
+        )
 
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
