@@ -106,6 +106,19 @@ def calculate_Xi_decomposition(hamiltonian):
     representing the hamiltonian, finding its spectrum and then construct projectors and
     eigenvalue spacings
 
+    Definition of the Xi decomposition of operator O:
+
+    .. math::
+
+        \frac{\lambda_0 +\lambda_J}{2} \mathbb{1} + \sum_{x=1}^{J-1} \frac{\delta \lambda_x}{2}\Xi_x
+
+    where the lambdas are the sorted eigenvalues of O and
+
+    ..math::
+
+       \Xi_x = \mathbb{1} - \sum_(j<x) 2 \Pi_j \,, \quad \delta \lambda_x = \lambda_x - \lambda_{x-1}
+
+
     Args:
       hamiltonian (qml.Hamiltonian): The pennylane hamiltonian to be decomposed
 
