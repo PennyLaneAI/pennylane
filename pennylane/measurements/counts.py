@@ -18,9 +18,7 @@ This module contains the qml.counts measurement.
 # pylint: disable=too-many-arguments, abstract-method
 import copy
 import warnings
-from typing import Tuple, Union
-
-import numpy as np
+from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Observable
@@ -174,8 +172,12 @@ class _Counts(SampleMeasurement):
     def samples_computational_basis(self):
         return self.obs is None
 
-    def process(self, samples: np.ndarray, shot_range: Tuple[int] = None, bin_size: int = None):
-        samples = qml.sample(op=self.obs, wires=self._wires).process(samples, shot_range, bin_size)
+    def process_samples(
+        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+    ):
+        samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
+            samples, shot_range, bin_size
+        )
 
         if bin_size is None:
             return self._samples_to_counts(samples)
@@ -250,8 +252,8 @@ class _Counts(SampleMeasurement):
             outcomes = qml.eigvals(self.obs)
 
         # generate empty outcome dict, populate values with state counts
-        outcome_dict = {k: np.int64(0) for k in outcomes}
-        states, _counts = np.unique(samples, return_counts=True)
+        outcome_dict = {k: qml.math.int64(0) for k in outcomes}
+        states, _counts = qml.math.unique(samples, return_counts=True)
         for s, c in zip(states, _counts):
             outcome_dict[s] = c
 

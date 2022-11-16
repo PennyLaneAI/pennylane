@@ -48,7 +48,9 @@ class TestCounts:
                 all_outcomes = meas.return_type is AllCounts
                 meas = qml.counts(op=meas, all_outcomes=all_outcomes)
             old_res = self.dev.sample(call_args.args[1], **call_args.kwargs)
-            new_res = meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size)
+            new_res = meas.process_samples(
+                samples=samples, shot_range=shot_range, bin_size=bin_size
+            )
             if isinstance(old_res, dict):
                 old_res = [old_res]
                 new_res = [new_res]
