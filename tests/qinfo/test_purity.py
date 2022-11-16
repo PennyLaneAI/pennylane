@@ -50,6 +50,19 @@ class TestPurity:
 
     wires_list = [([0], True), ([1], True), ([0, 1], False)]
 
+    def test_qnode_not_returning_state(self):
+        """Test that the QNode of reduced_dm function must return state."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RZ(0, wires=[0])
+            return qml.expval(qml.PauliX(wires=0))
+
+        with pytest.raises(ValueError, match="The qfunc return type needs to be a state"):
+            qml.qinfo.purity(circuit, wires=[0])()
+
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
