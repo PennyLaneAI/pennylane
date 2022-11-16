@@ -104,7 +104,7 @@ def _equal(
 @_equal.register
 def _equal_operator(
     op1: Operator,
-    op2,
+    op2: Operator,
     check_interface: bool = True,
     check_trainability: bool = True,
     rtol: float = 1e-5,
@@ -144,7 +144,7 @@ def _equal_operator(
 
 
 @_equal.register
-def _equal_measurements(op1: MeasurementProcess, op2):
+def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess):
     """Determine whether two MeasurementProcess objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
@@ -167,7 +167,7 @@ def _equal_measurements(op1: MeasurementProcess, op2):
 
 
 @_equal.register
-def _equal_shadow_measurements(op1: ShadowMeasurementProcess, op2):
+def _equal_shadow_measurements(op1: ShadowMeasurementProcess, op2: ShadowMeasurementProcess):
     """Determine whether two ShadowMeasurementProcess objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
