@@ -22,6 +22,7 @@ from pennylane.measurements.vn_entropy import _VnEntropy
 class TestVnEntropy:
     """Unit tests for the ``qml.vn_entropy`` function."""
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
         "state_vector,expected",
         [([1.0, 0.0, 0.0, 1.0] / qml.math.sqrt(2), qml.math.log(2)), ([1.0, 0.0, 0.0, 0.0], 0)],
