@@ -16,7 +16,6 @@ import sys
 
 import autograd
 import pytest
-import numpy as onp
 
 import pennylane as qml
 from pennylane import numpy as np
