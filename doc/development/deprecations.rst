@@ -86,7 +86,7 @@ Completed deprecation cycles
 * ``QueuingManager.safe_update_info`` and ``AnnotateQueue.safe_update_info`` are removed.
 
   - Still accessible in v0.27
-  -  Removed in v0.28
+  - Removed in v0.28
 
 * ``ObservableReturnTypes`` ``Sample``, ``Variance``, ``Expectation``, ``Probability``, ``State``, and ``MidMeasure``
   are moved to ``measurements`` from ``operation``.
