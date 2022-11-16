@@ -339,8 +339,7 @@ class Exp(SymbolicOp):
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
             try:
-                gen = self.generator()
-                # gen = qml.generator(self, format="observable")
+                gen = qml.generator(self, format="observable")
             except GeneratorUndefinedError as e:
                 raise ParameterFrequenciesUndefinedError(
                     f"Operation {self.name} does not have parameter frequencies defined."
