@@ -103,8 +103,8 @@ def evolve_under(ops, coeffs, time, controls):
 
 def calculate_Xi_decomposition(hamiltonian):
     """
-    Calculates the Xi-decomposition from the given hamiltonian by constructing the sparse matrix
-    representing the hamiltonian, finding its spectrum and then construct projectors and
+    Calculates the Xi-decomposition from the given Hamiltonian by constructing the sparse matrix
+    representing the Hamiltonian, finding its spectrum and then construct projectors and
     eigenvalue spacings
 
     Definition of the Xi decomposition of operator O:
@@ -121,7 +121,7 @@ def calculate_Xi_decomposition(hamiltonian):
 
 
     Args:
-      hamiltonian (qml.Hamiltonian): The pennylane hamiltonian to be decomposed
+      hamiltonian (qml.Hamiltonian): The pennylane Hamiltonian to be decomposed
 
     Returns:
       dEs (List[float]): The energy (E_1-E-2)/2 separating the two eigenvalues of the spectrum
