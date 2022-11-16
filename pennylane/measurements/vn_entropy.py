@@ -15,7 +15,7 @@
 """
 This module contains the qml.vn_entropy measurement.
 """
-import numpy as np
+from typing import Sequence
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -88,7 +88,7 @@ class _VnEntropy(StateMeasurement):
         num_shot_elements = sum(s.copies for s in device.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
-    def process_state(self, state: np.ndarray, device_wires: Wires):
+    def process_state(self, state: Sequence[complex], wires: Wires):
         return qml.math.vn_entropy(
-            state, indices=self.wires, c_dtype=np.complex128, base=self.log_base
+            state, indices=self.wires, c_dtype="complex128", base=self.log_base
         )
