@@ -210,6 +210,15 @@ class TestBatchTransformExecution:
         spy.assert_called()
         assert np.allclose(res[0], np.cos(y), atol=0.1)
 
+    def test_batch_transform_dynamic_shots(self):
+        """Tests that the batch transform considers the number of shots for the execution, not those
+        statically on the device."""
+        dev = qml.device("default.qubit", wires=1)
+        H = 2.0 * qml.PauliZ(0)
+        qscript = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        res = qml.execute([qscript], dev, interface=None, override_shots=10)
+        assert res == [2.0]
+
 
 class TestCaching:
     """Test for caching behaviour"""
