@@ -359,3 +359,74 @@ class Exp(SymbolicOp):
             f"Operation {self.name} does not have parameter frequencies defined, "
             "and parameter frequencies can not be computed as no generator is defined."
         )
+
+
+class Evolution(Exp):
+
+    r"""Create an exponential operator that defines a generator, of the form :math:`e^{ix\hat{G}}`
+
+    Args:
+        base (~.operation.Operator): The Operator to be used as a Generator, G.
+        param=1 (Number): The evolution parameter, x. This parameter is not expected to have
+            any complex component.
+
+    Returns:
+       :class:`Exp`: A :class`~.operation.Operator` representing an operator exponential, of the form exp(-ixG).
+
+    **Use Details**
+
+    For differentiation, this class ignores base parameters and considers only the coefficient in the
+    exponent to be trainable, allowing the operator
+
+    In contrast to the general Exp class, the Evolution operator is constrained to a single trainable
+    parameter, allowing it to be differentiated using the parameter shift.
+
+    The operator is, in constrast to the general Exp class, defined to have a single parameter. ......
+
+
+    **Example**
+    This symbolic operator can be used to make general rotation operators:
+    >>> theta = np.array(1.23)
+    >>> op = Evolution(qml.PauliX(0), -0.5 * theta)
+    >>> qml.math.allclose(op.matrix(), qml.RX(theta, wires=0).matrix())
+    True
+
+    Or to define a time evolution operator for a time-independent Hamiltonian:
+    >>> from scipy.constants import hbar
+    >>> H = qml.Hamiltonian([1, 1], [qml.PauliY(0), qml.PauliX(1)])
+    >>> t = 10e-6
+    >>> U = Evolution(H, -1/hbar * t)
+
+    Even for more complicated generators, this operator is defined to have a single parameter,
+    allowing it to be differentiated with respect to that parameter (base operator parameters are
+    treated as constants):
+    >>> base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
+    >>> op = Evolution(base_op, 1.23)
+    >>> op.num_params
+    1
+
+    If the base operator is Hermitian, then the gate can be used in a circuit,
+    though it may not be supported by the device and may not be differentiable.
+
+    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    ... def circuit(x):
+    ...     Evolution(qml.PauliX(0), -0.5 * x)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> print(qml.draw(circuit)(1.23))
+    0: ──Exp(0.00-0.61j X)─┤  <Z>
+
+    """
+
+    def __init__(self, generator, param, do_queue=True, id=None):
+        super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
+        self._name = "Evolution"
+        self.param = param
+
+    @property
+    def parameters(self):
+        """Parameter that the operator depends on."""
+        return [self.param]  # should this be the parameter or the coefficient?
+
+    @property
+    def num_params(self):
+        return 1
