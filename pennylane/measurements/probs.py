@@ -15,10 +15,7 @@
 """
 This module contains the qml.probs measurement.
 """
-from collections import OrderedDict
 from typing import Sequence, Tuple
-
-import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -122,7 +119,7 @@ def probs(wires=None, op=None):
 class _Probability(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
 
-    def process(
+    def process_samples(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
         if shot_range is not None:
@@ -133,16 +130,16 @@ class _Probability(SampleMeasurement, StateMeasurement):
 
         if len(self.wires) != 0:
             # if wires are provided, then we only return samples from those wires
-            samples = samples[..., np.array(self.wires)]
+            samples = samples[..., self.wires]
 
         num_wires = qml.math.shape(samples)[-1]
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        powers_of_two = 2 ** np.arange(num_wires)[::-1]
+        powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
         indices = samples @ powers_of_two
 
         # `samples` typically has two axes ((shots, wires)) but can also have three with
         # broadcasting ((batch_size, shots, wires)) so that we simply read out the batch_size.
-        batch_size = samples.shape[0] if np.ndim(samples) == 3 else None
+        batch_size = samples.shape[0] if qml.math.ndim(samples) == 3 else None
         dim = 2**num_wires
         # count the basis state occurrences, and construct the probability vector
         if bin_size is not None:
@@ -150,8 +147,8 @@ class _Probability(SampleMeasurement, StateMeasurement):
             return self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
         return self._count_unbinned_samples(indices, batch_size, dim)
 
-    def process_state(self, state: np.ndarray, device_wires: Wires):
-        num_wires = len(device_wires)
+    def process_state(self, state: Sequence[complex], wires: Wires):
+        num_wires = len(wires)
         dim = 2**num_wires
         # Compute batch_size
         expected_shape = [2] * num_wires
@@ -167,7 +164,7 @@ class _Probability(SampleMeasurement, StateMeasurement):
         )
         real_state = qml.math.real(flat_state)
         imag_state = qml.math.imag(flat_state)
-        return self.marginal_prob(real_state**2 + imag_state**2, device_wires, batch_size)
+        return self.marginal_prob(real_state**2 + imag_state**2, wires, batch_size)
 
     @staticmethod
     def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
@@ -175,23 +172,23 @@ class _Probability(SampleMeasurement, StateMeasurement):
         counts in order to estimate their occurence probability per bin."""
 
         if batch_size is None:
-            prob = np.zeros((dim, num_bins), dtype=np.float64)
+            prob = qml.math.zeros((dim, num_bins), dtype="float64")
             indices = indices.reshape((num_bins, bin_size))
             # count the basis state occurrences, and construct the probability vector for each bin
             for b, idx in enumerate(indices):
-                basis_states, counts = np.unique(idx, return_counts=True)
+                basis_states, counts = qml.math.unique(idx, return_counts=True)
                 prob[basis_states, b] = counts / bin_size
 
             return prob
 
-        prob = np.zeros((batch_size, dim, num_bins), dtype=np.float64)
+        prob = qml.math.zeros((batch_size, dim, num_bins), dtype="float64")
         indices = indices.reshape((batch_size, num_bins, bin_size))
 
         # count the basis state occurrences, and construct the probability vector
         # for each bin and broadcasting index
         for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
             for b, idx in enumerate(_indices):  # Then iterate over bins dimension
-                basis_states, counts = np.unique(idx, return_counts=True)
+                basis_states, counts = qml.math.unique(idx, return_counts=True)
                 prob[i, basis_states, b] = counts / bin_size
 
         return prob
@@ -201,21 +198,21 @@ class _Probability(SampleMeasurement, StateMeasurement):
         """Count the occurences of sampled indices and convert them to relative
         counts in order to estimate their occurence probability."""
         if batch_size is None:
-            prob = np.zeros(dim, dtype=np.float64)
-            basis_states, counts = np.unique(indices, return_counts=True)
+            prob = qml.math.zeros(dim, dtype="float64")
+            basis_states, counts = qml.math.unique(indices, return_counts=True)
             prob[basis_states] = counts / len(indices)
 
             return prob
 
-        prob = np.zeros((batch_size, dim), dtype=np.float64)
+        prob = qml.math.zeros((batch_size, dim), dtype="float64")
 
         for i, idx in enumerate(indices):  # iterate over the broadcasting dimension
-            basis_states, counts = np.unique(idx, return_counts=True)
+            basis_states, counts = qml.math.unique(idx, return_counts=True)
             prob[i, basis_states] = counts / len(idx)
 
         return prob
 
-    def marginal_prob(self, prob, device_wires, batch_size):
+    def marginal_prob(self, prob, wires, batch_size):
         r"""Return the marginal probability of the computational basis
         states by summing the probabiliites on the non-specified wires.
 
@@ -249,24 +246,22 @@ class _Probability(SampleMeasurement, StateMeasurement):
         Returns:
             array[float]: array of the resulting marginal probabilities.
         """
-        num_wires = len(device_wires)
-        consecutive_wires = Wires(range(num_wires))
-        wire_map = OrderedDict(zip(device_wires, consecutive_wires))
-
         # TODO: Add when ``qml.probs()`` is supported
         # if self.wires == Wires([]):
         #     # no need to marginalize
         #     return prob
 
         # determine which subsystems are to be summed over
-        inactive_wires = Wires.unique_wires([device_wires, self.wires])
+        inactive_wires = Wires.unique_wires([wires, self.wires])
 
         # translate to wire labels used by device
+        wire_map = dict(zip(range(len(wires)), wires))
         mapped_wires = [wire_map[w] for w in self.wires]
         inactive_wires = [wire_map[w] for w in inactive_wires]
 
         # reshape the probability so that each axis corresponds to a wire
-        shape = [2] * num_wires
+        num_device_wires = len(wires)
+        shape = [2] * num_device_wires
         if batch_size is not None:
             shape.insert(0, batch_size)
             inactive_wires = [idx + 1 for idx in inactive_wires]
@@ -282,8 +277,8 @@ class _Probability(SampleMeasurement, StateMeasurement):
         # it corresponds to the orders of the wires passed.
         num_wires = len(mapped_wires)
         basis_states = qml.QubitDevice.generate_basis_states(num_wires)
-        basis_states = basis_states[:, np.argsort(np.argsort(mapped_wires))]
+        basis_states = basis_states[:, qml.math.argsort(qml.math.argsort(mapped_wires))]
 
-        powers_of_two = 2 ** np.arange(num_wires)[::-1]
+        powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
         perm = basis_states @ powers_of_two
         return prob[:, perm] if batch_size is not None else prob[perm]

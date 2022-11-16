@@ -18,6 +18,9 @@
   * Add `_Var` class.
     [#3312](https://github.com/PennyLaneAI/pennylane/pull/3312)
 
+* New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
+  [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
