@@ -107,7 +107,7 @@ def calculate_Xi_decomposition(hamiltonian):
     eigenvalue spacings
 
     Args:
-      hamiltonian (qml.Hamiltonian): The pennylane hamiltonian to be decomposed
+      hamiltonian (qml.Hamiltonian): The pennylane Hamiltonian to be decomposed
 
     Returns:
       dEs (List[float]): The energy (E_1-E-2)/2 separating the two eigenvalues of the spectrum
