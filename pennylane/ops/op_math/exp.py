@@ -23,6 +23,7 @@ from pennylane.operation import (
     DecompositionUndefinedError,
     expand_matrix,
     OperatorPropertyUndefined,
+    Tensor,
 )
 
 from pennylane.wires import Wires
@@ -170,8 +171,14 @@ class Exp(SymbolicOp):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
-        from pennylane.pauli.utils import is_pauli_word  # pylint:disable=import-outside-toplevel
-
+        if isinstance(self.base, Tensor):
+            all_wires = [obs.wires for obs in self.base.obs]
+            if len(all_wires) != len(set(all_wires)):
+                raise NotImplementedError(
+                    "Unable to determine if the exponential has a decomposition "
+                    "when the base operator is a Tensor object with overlapping wires. "
+                    f"Received base {self.base}."
+                )
         return math.real(self.coeff) == 0 and is_pauli_word(self.base)
 
     def decomposition(self):
@@ -186,12 +193,7 @@ class Exp(SymbolicOp):
         Returns:
             list[PauliRot]: decomposition of the operator
         """
-        from pennylane.pauli.utils import (
-            is_pauli_word,
-            pauli_word_to_string,
-        )  # pylint:disable=import-outside-toplevel
-
-        if math.real(self.coeff) != 0 or not is_pauli_word(self.base):
+        if not self.has_decomposition:
             raise DecompositionUndefinedError
         new_coeff = math.real(2j * self.coeff)
         string_base = pauli_word_to_string(self.base)

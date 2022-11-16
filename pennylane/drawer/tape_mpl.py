@@ -18,8 +18,6 @@ Developer note: when making changes to this file, you can run
 `pennylane/doc/_static/tape_mpl/tape_mpl_examples.py` to generate docstring
 images.  If you change the docstring examples, please update this file.
 """
-import matplotlib as mpl
-
 # cant `import pennylane as qml` because of circular imports with circuit graph
 from pennylane import ops
 from pennylane.wires import Wires
@@ -28,6 +26,11 @@ from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
 from .style import use_style
 
+has_mpl = True
+try:
+    import matplotlib as mpl
+except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
+    has_mpl = False
 
 ############################ Special Gate Methods #########################
 # If an operation is drawn differently than the standard box/ ctrl+box style
@@ -183,7 +186,7 @@ def tape_mpl(
         style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
             'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
             'black_white' style will be used. Setting style does not modify matplotlib global plotting settings.
-            If None, the current matplotlib settings will be used.
+            If ``None``, the current matplotlib settings will be used.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -342,7 +345,7 @@ def tape_mpl(
     """
 
     restore_params = {}
-    if style:
+    if style and has_mpl:
         restore_params = mpl.rcParams.copy()
         use_style(style)
     try:
@@ -350,7 +353,7 @@ def tape_mpl(
             tape, wire_order=wire_order, show_all_wires=show_all_wires, decimals=decimals, **kwargs
         )
     finally:
-        if style:
+        if style and has_mpl:
             # we don't want to mess with how it modifies whether the interface is interactive
             # but we want to restore everything else
             restore_params["interactive"] = mpl.rcParams["interactive"]
