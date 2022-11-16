@@ -35,11 +35,7 @@ class TRX(Operation):
 
     .. math:: TRX^{jk}(\phi) = \exp(-i\phi\sigma_x^{jk}/2),\\
                 \text{where } \sigma_x^{jk} = |j\rangle\langle k| + |k\rangle\langle j|,\\
-                j, k \in \{0, 1, 2\}, j < k\\
-                \text{The qutrit basis states are defined as follows:}\\
-                \displaystyle \begin{align} |0\rangle &= \left(\begin{array}{ccc} 1 \\ 0\\ 0\end{array}\right) \;\;\;\;\;\;\;\;\;\;
-                |1\rangle = \left(\begin{array}{ccc} 0 \\ 1\\ 0\end{array}\right)\;\;\;\;\;\;\;\;\;\;
-                |2\rangle = \left(\begin{array}{ccc} 0 \\ 0\\ 1\end{array}\right) \\  \end{align}
+                j, k \in \{0, 1, 2\}, j < k
 
     .. seealso:: :class:`~.RX`
 
@@ -87,6 +83,7 @@ class TRX(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1)]
 
+    # Internal dictionary to map subpsaces to Gell-Mann observable for the generator
     _index_dict = {(0, 1): 1, (0, 2): 4, (1, 2): 6}
 
     def generator(self):
@@ -95,6 +92,12 @@ class TRX(Operation):
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
     ):  # pylint: disable=dangerous-default-value
+
+        if not hasattr(subspace, "__iter__"):
+            raise ValueError(
+                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
+            )
+
         self._subspace = subspace
         self._hyperparameters = {
             "subspace": self.subspace,
