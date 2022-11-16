@@ -36,7 +36,10 @@
 
 <h3>Deprecations</h3>
 
+Deprecations cycles are tracked at [(docs/developement/deprecations.rst)](https://docs.pennylane.ai/en/latest/development/deprecations.html).
+
 * The following deprecated methods are removed:
+  [(#3281)](https://github.com/PennyLaneAI/pennylane/pull/3281/)
 
   - `qml.tape.get_active_tape`: Use `qml.QueuingManager.active_context()`
   - `qml.transforms.qcut.remap_tape_wires`: Use `qml.map_wires`
