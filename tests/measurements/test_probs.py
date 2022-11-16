@@ -67,9 +67,11 @@ class TestProbs:
             meas = qml.probs(wires=wires)
             old_res = self.dev.probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
             if self.dev.shots is None:
-                new_res = meas.process_state(state=state, device_wires=self.dev.wires)
+                new_res = meas.process_state(state=state, wires=self.dev.wires)
             else:
-                new_res = meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size)
+                new_res = meas.process_samples(
+                    samples=samples, shot_range=shot_range, bin_size=bin_size
+                )
             assert qml.math.allequal(old_res, new_res)
 
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
@@ -570,6 +572,6 @@ class TestProbs:
             ]
         )
 
-        res = qml.probs(wires=wires).process(samples=samples, shot_range=None, bin_size=2)
+        res = qml.probs(wires=wires).process_samples(samples=samples, shot_range=None, bin_size=2)
 
         assert np.allclose(res, expected)
