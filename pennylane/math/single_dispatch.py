@@ -201,6 +201,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experiment
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"

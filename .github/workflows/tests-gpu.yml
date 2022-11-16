@@ -82,7 +82,7 @@ jobs:
           echo ${{ env.VENV_NAME }}/bin >> $GITHUB_PATH
 
           # Adding venv name as an output for subsequent steps to reference if needed
-          echo "::set-output name=venv_name::${{ env.VENV_NAME }}"
+          echo "venv_name=${{ env.VENV_NAME }}" >> $GITHUB_OUTPUT
 
       - name: Display Python-Path
         run: |

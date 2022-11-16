@@ -107,12 +107,11 @@ from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
+from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
-from pennylane.math import expand_matrix
 
 from .utils import pauli_eigs
-
 
 # =============================================================================
 # Errors
@@ -582,38 +581,18 @@ class Operator(abc.ABC):
                 return qml.math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
-    @staticmethod
-    def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument
-        r"""Representation of the operator as a linear combination of other operators (static method).
-
-        .. math:: O = \sum_i c_i O_i
-
-        .. seealso:: :meth:`~.Operator.terms`
-
-        Args:
-            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the
-                ``hyperparameters`` attribute
-
-        Returns:
-            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients and list of operations
-        """
-        raise TermsUndefinedError
-
-    def terms(self):
+    def terms(self):  # pylint: disable=no-self-use
         r"""Representation of the operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
 
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_terms`
-
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
-        return self.compute_terms(*self.parameters, **self.hyperparameters)
+        raise TermsUndefinedError
 
     @property
     @abc.abstractmethod
@@ -1115,15 +1094,14 @@ class Operator(abc.ABC):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decomposition()
+            if getattr(self, "inverse", False):
+                qml.adjoint(self.decomposition, lazy=False)()
+            else:
+                self.decomposition()
 
         if not self.data:
             # original operation has no trainable parameters
             tape.trainable_params = {}
-
-        # the inverse attribute can be defined by subclasses
-        if getattr(self, "inverse", False):
-            tape.inv()
 
         return tape
 
@@ -1131,6 +1109,20 @@ class Operator(abc.ABC):
     def arithmetic_depth(self) -> int:
         """Arithmetic depth of the operator."""
         return 0
+
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current operator with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Operator: new operator
+        """
+        new_op = copy.copy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        return new_op
 
     def simplify(self) -> "Operator":  # pylint: disable=unused-argument
         """Reduce the depth of nested operators to the minimum.
@@ -1142,26 +1134,23 @@ class Operator(abc.ABC):
 
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, numbers.Number):
-            if other == 0:
-                return self
-            id_op = (
-                qml.prod(*(qml.Identity(w) for w in self.wires))
-                if len(self.wires) > 1
-                else qml.Identity(self.wires[0])
-            )
-            return qml.op_sum(self, qml.s_prod(scalar=other, operator=id_op))
         if isinstance(other, Operator):
             return qml.op_sum(self, other)
-        raise ValueError(f"Cannot add Operator and {type(other)}")
+        if other == 0:
+            return self
+        try:
+            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
+        except ValueError as e:
+            raise ValueError(f"Cannot add Operator and {type(other)}") from e
 
     __radd__ = __add__
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
-        if isinstance(other, numbers.Number):
+        try:
             return qml.s_prod(scalar=other, operator=self)
-        raise ValueError(f"Cannot multiply Operator and {type(other)}.")
+        except ValueError as e:
+            raise ValueError(f"Cannot multiply Operator and {type(other)}.") from e
 
     __rmul__ = __mul__
 
@@ -2151,6 +2140,22 @@ class Tensor(Observable):
 
         obs.return_type = self.return_type
         return obs
+
+    def map_wires(self, wire_map: dict):
+        """Returns a copy of the current tensor with its wires changed according to the given
+        wire map.
+
+        Args:
+            wire_map (dict): dictionary containing the old wires as keys and the new wires as values
+
+        Returns:
+            .Tensor: new tensor
+        """
+        cls = self.__class__
+        new_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
+        new_op.obs = [obs.map_wires(wire_map) for obs in self.obs]
+        new_op._eigvals_cache = self._eigvals_cache
+        return new_op
 
 
 # =============================================================================

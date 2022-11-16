@@ -267,18 +267,6 @@ class TestProperties:
         base.data = [x_new2]
         assert op.data == [x_new2]
 
-    def test_private_wires_getter_setter(self, power_method):
-        """Test that we can get and set the private _wires."""
-        wires0 = qml.wires.Wires("a")
-        base = qml.PauliZ(wires0)
-        op: Pow = power_method(base=base, z=-2.1)
-
-        assert op._wires == base._wires == wires0
-
-        wires1 = qml.wires.Wires(1)
-        op._wires = wires1
-        assert op._wires == base._wires == wires1
-
     def test_has_matrix_true(self, power_method):
         """Test `has_matrix` property carries over when base op defines matrix."""
         base = qml.PauliX(0)
@@ -381,10 +369,10 @@ class TestSimplify:
     def test_simplify_nested_pow_ops(self):
         """Test the simplify method with nested pow operations."""
         pow_op = Pow(base=Pow(base=qml.adjoint(Pow(base=qml.CNOT([1, 0]), z=1.2)), z=2), z=5)
-        final_op = qml.prod(qml.Identity(1), qml.Identity(0))
+        final_op = qml.Identity([1, 0])
         simplified_op = pow_op.simplify()
 
-        assert isinstance(simplified_op, qml.ops.Prod)
+        assert isinstance(simplified_op, qml.Identity)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -397,12 +385,12 @@ class TestSimplify:
         """Test that simplifying a multi-wire operator raised to the power of 0 returns a product
         of Identity matrices."""
         pow_op = Pow(base=qml.CNOT([0, 1]), z=0)
-        final_op = qml.prod(qml.Identity(0), qml.Identity(1))
+        final_op = qml.Identity([0, 1])
         simplified_op = pow_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, qml.ops.Prod)
+        assert isinstance(simplified_op, qml.Identity)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
