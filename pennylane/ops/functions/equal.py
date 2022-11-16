@@ -14,7 +14,7 @@
 """
 This module contains the qml.equal function.
 """
-# pylint: disable=too-many-arguments,too-many-return-statements, too-many-branches
+# pylint: disable=too-many-arguments,too-many-return-statements
 from typing import Union
 
 from functools import singledispatch
@@ -24,8 +24,8 @@ from pennylane.operation import Operator
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
-    op2: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
+    op1: Union[Operator, MeasurementProcess],
+    op2: Union[Operator, MeasurementProcess],
     **kwargs,
 ):
     r"""equal(op1, op2, **kwargs)
@@ -33,8 +33,8 @@ def equal(
     Function for determining operator or measurement equality.
 
     Args:
-        op1 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): First object to compare
-        op2 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): Second object to compare
+        op1 (.Operator or .MeasurementProcess): First object to compare
+        op2 (.Operator or .MeasurementProcess): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``
         rtol (float, optional): Relative tolerance for parameters
