@@ -852,7 +852,7 @@ def molecular_hamiltonian(
         method (str): Quantum chemistry method used to solve the
             mean field electronic structure problem. Available options are ``method="dhf"``
             to specify the built-in differentiable Hartree-Fock solver, or ``method="pyscf"``
-            to use the OpenFermion-PySCF plugin (this requires that ``openfermionpyscf`` be installed).
+            to use the OpenFermion-PySCF plugin (this requires ``openfermionpyscf`` to be installed).
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals
