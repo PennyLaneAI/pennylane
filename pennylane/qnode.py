@@ -163,9 +163,9 @@ class QNode:
 
         QNodes can be executed simultaneously for multiple parameter settings, which is called
         *parameter broadcasting* or *parameter batching*.
-        We start with a simple example, then look at the scenarios in which broadcasting is
-        possible and useful, and finally give some rules and conventions together with more
-        complex examples.
+        We start with a simple example and briefly look at the scenarios in which broadcasting is
+        possible and useful. Finally we give rules and conventions regarding the usage of
+        broadcasting, together with some more complex examples.
         Also see the :class:`~.pennylane.operation.Operator` documentation for implementation
         details.
 
@@ -185,14 +185,17 @@ class QNode:
          tensor(-0.70710678, requires_grad=True),
          tensor(-0.8660254, requires_grad=True)]
 
+        In addition to the results being stacked into one ``tensor`` already, the broadcasted
+        execution actually is performed in one simulation of the quantum circuit, instead of
+        three sequential simulations.
+
         **Benefits & Supported QNodes**
 
         Parameter broadcasting can be useful to simplify the execution syntax with QNodes. More
         importantly though, the simultaneous execution via broadcasting can be significantly
         faster than iterating over parameters manually. If we compare the execution time for the
-        above QNode ``circuit`` between broadcasting and manual iteration for a batch size of
+        above QNode ``circuit`` between broadcasting and manual iteration for an input size of
         ``100``, we find a speedup factor of about :math:`30`.
-
         This speedup is a feature of classical simulators, but broadcasting may reduce
         the communication overhead for quantum hardware devices as well.
 
@@ -208,19 +211,20 @@ class QNode:
         True
 
         If a device does not natively support broadcasting, it will execute broadcasted QNode calls
-        by expanding the input arguments into separate executions.
+        by expanding the input arguments into separate executions. That is, every device can
+        execute QNodes with broadcasting, but only supporting devices will benefit from it.
 
         **Usage**
 
-        The above example is rather simple. Broadcasting is possible in more complex scenarios
-        as well, for which it is useful to understand the concept in more detail.
+        The first example above is rather simple. Broadcasting is possible in more complex
+        scenarios as well, for which it is useful to understand the concept in more detail.
         The following rules and conventions apply:
 
-        *There is exactly one broadcasting axis*
+        *There is at most one broadcasting axis*
 
         The broadcasted input has (exactly) one more axis than the operator(s) which receive(s)
         it would usually expect. For example, most operators expect a single scalar input and the
-        broadcasted input correspondingly is a 1D array:
+        *broadcasted* input correspondingly is a 1D array:
 
         >>> x = np.array([1., 2., 3.])
         >>> op = qml.RX(x, wires=0) # Additional axis of size 3
@@ -232,7 +236,7 @@ class QNode:
 
         >>> op.ndim_params # RX takes one scalar input.
         (0,)
-        >>> op.batch_size # The broadcasting axis had size 3.
+        >>> op.batch_size # The broadcasting axis has size 3.
         3
 
         The broadcasting axis is always the leading axis of an argument passed to an operator:
@@ -250,7 +254,7 @@ class QNode:
         *Multiple operators are broadcasted simultaneously*
 
         It is possible to broadcast multiple parameters simultaneously. In this case, the batch
-        size of the broadcasting axes must match, and the parameters are combined as in Python's
+        size of the broadcasting axes must match, and the parameters are combined like in Python's
         ``zip`` function. Non-broadcasted parameters do not need
         to be augmented manually but can simply be used as one would in individual QNode
         executions:
@@ -274,7 +278,8 @@ class QNode:
 
         This circuit takes three arguments, and the first two are used twice each. ``x`` and
         ``U`` will lead to a batch size of ``3`` for the ``RX`` rotations and the multi-qubit
-        unitary, and correspondingly there are three output values:
+        unitary, respectively. The input ``y`` is a ``float`` value and will be used together with
+        all three values in ``x`` and ``U``. We obtain three output values:
 
         >>> circuit(x, y, U)
         tensor([-0.06939911,  0.26051235, -0.20361048], requires_grad=True)
@@ -300,7 +305,7 @@ class QNode:
 
         *Broadcasting does not modify classical processing*
 
-        Note that classical processing in QNodes will happen before broadcasting is taken into
+        Note that classical processing in QNodes will happen *before* broadcasting is taken into
         account. This means, that while *operators* always interpret the first axis as the
         broadcasting axis, QNodes do not necessarily do so:
 
@@ -322,9 +327,10 @@ class QNode:
         tensor([0.02162852, 0.30239696], requires_grad=True)
 
         If we were to iterate manually over the parameter settings, we probably would put the
-        broadcasting axis first. This is not the behaviour with broadcasting because it does
-        not modify the unpacking step within the QNode, so that ``x`` is unpacked first and
-        the resulting elements should contain the broadcasted parameters for each operator;
+        batching axis in ``x`` first. This is not the behaviour with parameter broadcasting
+        because it does not modify the unpacking step within the QNode, so that ``x`` is
+        unpacked *first* and the unpacked elements are expected to contain the
+        broadcasted parameters for each operator individually;
         if we attempted to put the broadcasting axis of size ``2`` first, the
         indexing of ``x`` would fail in the ``RZ`` rotation within the QNode.
     """

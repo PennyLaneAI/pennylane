@@ -386,24 +386,27 @@ class Operator(abc.ABC):
     .. details::
         :title: Parameter broadcasting
 
-        Many quantum functions need to be executed repeatedly at different parameters, which
+        Many quantum functions are executed repeatedly at different parameters, which
         can be done with parameter broadcasting. For usage details and examples see the
         :class:`~.pennylane.QNode` documentation.
 
-        In order to support parameter broadcasting with an operator class ``Op``,
+        In order to support parameter broadcasting with an operator class,
         the following steps are necessary:
 
-        #. Define ``Op.ndim_params``, a tuple that indicates the expected number of dimensions
-           for each operator argument *without broadcasting*. For example, ``FlipAndRotate``
+        #. Define the class attribute ``ndim_params``, a tuple that indicates
+           the expected number of dimensions for each operator argument
+           *without broadcasting*. For example, ``FlipAndRotate``
            above has ``ndim_params = (0,)`` for a single scalar argument.
            An operator taking a matrix argument and a scalar would have ``ndim_params = (2, 0)``.
+           Note that ``ndim_params`` does *not require the size* of the axes.
         #. Make the representations of the operator broadcasting-compatible. Typically, one or
            multiple of the methods ``compute_matrix``, ``compute_eigvals`` and
            ``compute_decomposition`` are defined by an operator, and these need to work with
            the original input and output as well as with broadcasted inputs and outputs
            that have an additional, leading axis. See below for an example.
-        #. Make sure that validation within the representation methods and ``__init__`` allow
-           for arguments with an additional axis. For custom operators this usually is a minor
+        #. Make sure that validation within the above representation methods and
+           ``__init__``--if it is overwritten by the operator class--allow
+           for broadcasted inputs. For custom operators this usually is a minor
            step or not necessary at all.
         #. For proper registration, add the name of the operator to
            :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting` in the file
@@ -412,8 +415,8 @@ class Operator(abc.ABC):
         **Examples**
 
         Consider an operator with the same matrix as ``qml.RX``. A basic variant of
-        ``compute_matrix`` (that may not be compatible with all autodifferentiation
-        frameworks or backpropagation) could be
+        ``compute_matrix`` (which will not be compatible with all autodifferentiation
+        frameworks or backpropagation) is
 
         .. code-block:: python
 
@@ -428,8 +431,8 @@ class Operator(abc.ABC):
         which would have one instead of zero dimensions, ``cos`` and ``sin`` would correctly
         be applied elementwise.
         We would also obtain the correct matrix with shape ``(2, 2, batch_size)``.
-        However, the broadcasting axis needs to be the first axis by convention, so that we need
-        to move the broadcasting axis--if it exists--before returning the matrix:
+        However, the broadcasting axis needs to be the *first* axis by convention, so that we need
+        to move the broadcasting axis--if it exists--to the front before returning the matrix:
 
         .. code-block:: python
 
@@ -439,7 +442,9 @@ class Operator(abc.ABC):
                 c = qml.math.cos(theta / 2)
                 s = qml.math.sin(theta / 2)
                 mat = qml.math.array([[c, -1j * s], [-1j * s, c]])
+                # Check whether the input has a broadcasting axis
                 if qml.math.ndim(theta)==1:
+                    # Move the broadcasting axis to the first position
                     return qml.math.moveaxis(mat, 2, 0)
                 return mat
 
@@ -448,10 +453,10 @@ class Operator(abc.ABC):
         Usually no major changes are required for ``compute_decomposition``, but we need
         to take care of the correct mapping of input arguments to the operators in the
         decomposition. As an example, consider the operator that represents a layer of
-        ``RX`` rotations with individual angles. Without broadcasting, it takes one
-        onedimensional array, i.e. ``ndim_params=(1,)``.
-        Its decomposition is a convenient way
-        to support it on all devices that implement ``RX``, which might look like this:
+        ``RX`` rotations with individual angles for each rotation. Without broadcasting,
+        it takes one onedimensional array, i.e. ``ndim_params=(1,)``.
+        Its decomposition, which is a convenient way to support this custom operation
+        on all devices that implement ``RX``, might look like this:
 
         .. code-block:: python
 
@@ -461,11 +466,12 @@ class Operator(abc.ABC):
                 decomp_ops = [qml.RX(x, wires=w) for x, w in zip(theta, wires)]
                 return decomp_ops
 
-        If ``theta`` is a broadcasted argument, the first axis is the broadcasting
-        axis and we would like to iterate over the second axis within the ``for``
+        If ``theta`` is a broadcasted argument, its first axis is the broadcasting
+        axis and we would like to iterate over the *second* axis within the ``for``
         loop instead. This is easily achieved by adding a transposition of ``theta``
-        that switches the axes in this case, and does not have any effect in the
-        non-broadcasted case.
+        that switches the axes in this case. Conveniently this does not have any
+        effect in the non-broadcasted case, so that we do not need to handle two
+        cases separately.
 
         .. code-block:: python
 
