@@ -19,8 +19,8 @@ executed by a device.
 
 import contextlib
 import copy
-from typing import List, Union
 from collections import Counter, defaultdict
+from typing import List, Union
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -86,7 +86,6 @@ class QuantumScript:
 
     Keyword Args:
         name (str): a name given to the quantum script
-        do_queue=False (bool): Whether or not to queue. Defaults to ``False`` for ``QuantumScript``.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
 
@@ -146,7 +145,7 @@ class QuantumScript:
 
     >>> dev = qml.device('default.qubit', wires=(0,'a'))
     >>> qml.execute([qscript], dev, gradient_fn=None)
-    [array([0.77750694])]
+    [array([-0.77750694])]
 
     ``ops``, ``measurements``, and ``prep`` are converted to lists upon initialization,
     so those arguments accept any iterable object:
@@ -743,7 +742,8 @@ class QuantumScript:
 
             elif ret_type == qml.measurements.Sample:
 
-                shape = (len(mps), device.shots)
+                dim = mps[0].shape(device)
+                shape = (len(mps),) + dim[1:]
 
             # No other measurement type to check
 
@@ -803,24 +803,23 @@ class QuantumScript:
         return shape
 
     def shape(self, device):
-        """Produces the output shape of the tape by inspecting its measurements
+        """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
 
         .. note::
 
-            The computed shape is not stored because the output shape may be
-            dependent on the device used for execution.
+            The computed shape is not stored because the output shape may be dependent on the device
+                used for execution.
 
         Args:
-            device (.Device): the device that will be used for the tape execution
+            device (.Device): the device that will be used for the script execution
 
         Raises:
-            ValueError: raised for unsupported cases for
-                example when the tape contains heterogeneous measurements
+            ValueError: raised for unsupported cases for example when the script contains
+                heterogeneous measurements
 
         Returns:
-            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
-            tape result
+            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the quantum script result
 
         **Example:**
 
@@ -844,12 +843,18 @@ class QuantumScript:
                 output_shape = self._multi_homogenous_measurement_shape(self.measurements, device)
             else:
                 raise ValueError(
-                    "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
+                    "Getting the output shape of a quantum script that contains multiple types of "
+                    "measurements is unsupported."
                 )
+
+        if device._shot_vector is None and self.batch_size is not None:
+            # insert the batch dimension
+            output_shape = output_shape[0:1] + (self.batch_size,) + output_shape[1:]
+
         return output_shape
 
     def _shape_new(self, device):
-        """Produces the output shape of the tape by inspecting its measurements
+        """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
 
         .. note::
@@ -858,11 +863,10 @@ class QuantumScript:
             dependent on the device used for execution.
 
         Args:
-            device (.Device): the device that will be used for the tape execution
+            device (.Device): the device that will be used for the script execution
 
         Returns:
-            Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the
-            tape result
+            Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result
 
         **Examples**
 
@@ -878,7 +882,15 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
+        if device.shot_vector is not None and self.batch_size is not None:
+            raise NotImplementedError(
+                "Parameter broadcasting when using a shot vector is not supported yet."
+            )
+
         shapes = tuple(meas_process.shape(device) for meas_process in self.measurements)
+
+        if self.batch_size is not None:
+            shapes = tuple((self.batch_size,) + shape for shape in shapes)
 
         if len(shapes) == 1:
             return shapes[0]
@@ -925,12 +937,12 @@ class QuantumScript:
 
     @property
     def _numeric_type_new(self):
-        """Returns the expected numeric type of the tape result by inspecting
+        """Returns the expected numeric type of the quantum script result by inspecting
         its measurements.
 
         Returns:
             Union[type, Tuple[type]]: The numeric type corresponding to the result type of the
-            tape, or a tuple of such types if the tape contains multiple measurements
+            quantum script, or a tuple of such types if the script contains multiple measurements
 
         **Example:**
 
@@ -947,7 +959,7 @@ class QuantumScript:
         return types[0] if len(types) == 1 else types
 
     # ========================================================
-    # Transforms: Tape to Tape
+    # Transforms: QuantumScript to QuantumScript
     # ========================================================
 
     def copy(self, copy_operations=False):
@@ -964,15 +976,15 @@ class QuantumScript:
         """
         if copy_operations:
             # Perform a shallow copy of all operations in the state prep, operation, and measurement
-            # queues. The operations will continue to share data with the original tape operations
+            # queues. The operations will continue to share data with the original script operations
             # unless modified.
             _prep = [copy.copy(op) for op in self._prep]
             _ops = [copy.copy(op) for op in self._ops]
             _measurements = [copy.copy(op) for op in self.measurements]
         else:
             # Perform a shallow copy of the state prep, operation, and measurement queues. The
-            # operations within the queues will be references to the original tape operations;
-            # changing the original operations will always alter the operations on the copied tape.
+            # operations within the queues will be references to the original script operations;
+            # changing the original operations will always alter the operations on the copied script.
             _prep = self._prep.copy()
             _ops = self._ops.copy()
             _measurements = self.measurements.copy()
@@ -1090,7 +1102,7 @@ class QuantumScript:
         return qml.tape.UnwrapTape(self)
 
     # ========================================================
-    # Transforms: Tape to Information
+    # Transforms: QuantumScript to Information
     # ========================================================
 
     @property

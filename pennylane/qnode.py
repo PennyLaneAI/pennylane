@@ -591,7 +591,7 @@ class QNode:
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
 
-    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches
+    def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
         override_shots = False
         old_interface = self.interface
         if old_interface == "auto":
@@ -638,13 +638,6 @@ class QNode:
 
             res = res[0]
 
-            # Autograd or tensorflow: they do not support tuple return with backpropagation
-            backprop = False
-            if not isinstance(
-                self._qfunc_output, qml.measurements.MeasurementProcess
-            ) and self.interface in ("tf", "autograd"):
-                backprop = any(qml.math.in_backprop(x) for x in res)
-
             if old_interface == "auto":
                 self.interface = "auto"
 
@@ -652,14 +645,8 @@ class QNode:
             if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
                 return [res]
 
-            if self.gradient_fn == "backprop" and backprop:
-                res = self.device._asarray(res)
-
             # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-            if (
-                not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
-                and not backprop
-            ):
+            if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
                 if self.device._shot_vector:
                     res = [type(self.tape._qfunc_output)(r) for r in res]
                     res = tuple(res)
