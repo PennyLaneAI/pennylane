@@ -16,6 +16,7 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 import json
 from os import path
 import pennylane as qml
+from scipy.sparse.linalg import eigsh
 from pennylane import numpy as np
 from .batch_transform import batch_transform
 
@@ -131,7 +132,7 @@ def calculate_Xi_decomposition(hamiltonian):
     """
     mat = qml.utils.sparse_hamiltonian(hamiltonian).toarray()
     size = len(mat)
-    eigs, eigvecs = np.linalg.eigh(mat)
+    eigs, eigvecs = eigsh(mat)
     norm = eigs[-1]
     proj = np.identity(size, dtype="complex64")
 
