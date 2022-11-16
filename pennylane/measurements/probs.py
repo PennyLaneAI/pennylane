@@ -15,7 +15,6 @@
 """
 This module contains the qml.probs measurement.
 """
-from collections import OrderedDict
 from typing import Sequence, Tuple
 
 import numpy as np
@@ -122,7 +121,7 @@ def probs(wires=None, op=None):
 class _Probability(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
 
-    def process(
+    def process_samples(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
         if shot_range is not None:
@@ -150,8 +149,8 @@ class _Probability(SampleMeasurement, StateMeasurement):
             return self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
         return self._count_unbinned_samples(indices, batch_size, dim)
 
-    def process_state(self, state: np.ndarray, device_wires: Wires):
-        num_wires = len(device_wires)
+    def process_state(self, state: Sequence[complex], wires: Wires):
+        num_wires = len(wires)
         dim = 2**num_wires
         # Compute batch_size
         expected_shape = [2] * num_wires
@@ -167,7 +166,7 @@ class _Probability(SampleMeasurement, StateMeasurement):
         )
         real_state = qml.math.real(flat_state)
         imag_state = qml.math.imag(flat_state)
-        return self.marginal_prob(real_state**2 + imag_state**2, device_wires, batch_size)
+        return self.marginal_prob(real_state**2 + imag_state**2, wires, batch_size)
 
     @staticmethod
     def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
@@ -215,7 +214,7 @@ class _Probability(SampleMeasurement, StateMeasurement):
 
         return prob
 
-    def marginal_prob(self, prob, device_wires, batch_size):
+    def marginal_prob(self, prob, wires, batch_size):
         r"""Return the marginal probability of the computational basis
         states by summing the probabiliites on the non-specified wires.
 
@@ -249,24 +248,22 @@ class _Probability(SampleMeasurement, StateMeasurement):
         Returns:
             array[float]: array of the resulting marginal probabilities.
         """
-        num_wires = len(device_wires)
-        consecutive_wires = Wires(range(num_wires))
-        wire_map = OrderedDict(zip(device_wires, consecutive_wires))
-
         # TODO: Add when ``qml.probs()`` is supported
         # if self.wires == Wires([]):
         #     # no need to marginalize
         #     return prob
 
         # determine which subsystems are to be summed over
-        inactive_wires = Wires.unique_wires([device_wires, self.wires])
+        inactive_wires = Wires.unique_wires([wires, self.wires])
 
         # translate to wire labels used by device
+        wire_map = dict(zip(range(len(wires)), wires))
         mapped_wires = [wire_map[w] for w in self.wires]
         inactive_wires = [wire_map[w] for w in inactive_wires]
 
         # reshape the probability so that each axis corresponds to a wire
-        shape = [2] * num_wires
+        num_device_wires = len(wires)
+        shape = [2] * num_device_wires
         if batch_size is not None:
             shape.insert(0, batch_size)
             inactive_wires = [idx + 1 for idx in inactive_wires]
