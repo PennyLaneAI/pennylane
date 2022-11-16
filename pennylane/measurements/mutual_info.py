@@ -15,8 +15,6 @@
 """
 This module contains the qml.mutual_info measurement.
 """
-import numpy as np
-
 import pennylane as qml
 from pennylane.wires import Wires
 
@@ -85,11 +83,11 @@ def mutual_info(wires0, wires1, log_base=None):
 class _MutualInfo(StateMeasurement):
     """Measurement process that returns the mutual information."""
 
-    def process_state(self, state: np.ndarray, device_wires: Wires):
+    def process_state(self, state, wires: Wires):
         return qml.math.mutual_info(
             state,
             indices0=[self.wires[0]],
             indices1=[self.wires[1]],
-            c_dtype=np.complex128,
+            c_dtype="complex128",
             base=self.log_base,
         )
