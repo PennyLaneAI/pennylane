@@ -723,11 +723,11 @@ class StateMeasurement(MeasurementProcess, ABC):
     """State-based measurement process."""
 
     @abstractmethod
-    def process_state(self, state: np.ndarray, wires: Wires):
+    def process_state(self, state: Sequence[complex], wires: Wires):
         """Process the given quantum state.
 
         Args:
-            state (ndarray[complex]): quantum state
+            state (Sequence[complex]): quantum state
             wires (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
