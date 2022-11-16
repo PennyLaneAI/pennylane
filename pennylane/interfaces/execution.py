@@ -351,7 +351,8 @@ def _execute_new(
     gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
-        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+        dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
+        tapes, batch_fn = qml.transforms.map_batch_transform(dev_batch_transform, tapes)
     else:
         batch_fn = lambda res: res  # pragma: no cover
 
@@ -610,7 +611,8 @@ def execute(
     gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
-        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+        dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
+        tapes, batch_fn = qml.transforms.map_batch_transform(dev_batch_transform, tapes)
     else:
         batch_fn = lambda res: res
 

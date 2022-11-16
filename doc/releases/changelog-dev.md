@@ -21,6 +21,11 @@
   attributes were modified.
   [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
+* If the device originally has no shots but finite shots are dynamically specified, Hamiltonian
+  expansion now occurs.
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Christina Lee
