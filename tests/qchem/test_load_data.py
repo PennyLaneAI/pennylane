@@ -14,6 +14,8 @@
 """
 Unit tests for loading data from external libraries.
 """
+import sys
+
 # pylint: disable=no-self-use
 import pytest
 
@@ -263,3 +265,13 @@ class TestBasis:
         assert data["orbitals"] == l_ref
         assert data["exponents"] == alpha_ref
         assert data["coefficients"] == coeff_ref
+
+    def test_fail_import(self, monkeypatch):
+        """Test if an ImportError is raised when basis_set_exchange is requested but
+        not installed."""
+
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "basis_set_exchange", None)
+
+            with pytest.raises(ImportError, match="This feature requires basis_set_exchange"):
+                load_basisset("sto-3g", "H")
