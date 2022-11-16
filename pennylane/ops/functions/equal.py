@@ -50,13 +50,13 @@ def equal(
     >>> op1 = qml.RX(np.array(.12), wires=0)
     >>> op2 = qml.RY(np.array(1.23), wires=0)
     >>> qml.equal(op1, op1), qml.equal(op1, op2)
-    True False
+    (True, False)
 
-    >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)) )
+    >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)))
     >>> True
-    >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)) )
+    >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)))
     >>> False
-    >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]) )
+    >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]))
     >>> True
 
     .. details::
