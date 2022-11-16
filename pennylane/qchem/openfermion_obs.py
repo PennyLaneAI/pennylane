@@ -957,7 +957,7 @@ def molecular_hamiltonian(
 
     h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
 
-    h_pl = qml.qchem.convert.import_operator(h_of, wires=wires, convert_tol=convert_tol)
+    h_pl = qml.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)
 
     return (
         qml.Hamiltonian(h_pl.coeffs, h_pl.ops, grouping_type=grouping_type, method=grouping_method),
