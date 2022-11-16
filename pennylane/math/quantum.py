@@ -500,9 +500,19 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     # If the state is a state vector and the system in question is the entire system,
     # return 1 directly because a valid state vector always represents a pure state.
     if state.shape == (len_state,) and len(indices) == num_wires:
+
         if check_state:
             _check_state_vector(state)
-        return 1.0
+
+        # Returning 1 in this ugly way for torch grad compatibility. When taking the
+        # gradient with torch, it is required that the return type is of torch.tensor
+        # so that res.backward() can be called on the output. The state, created from
+        # the input parameters, has the type and properties (requires_grad and grad_fn)
+        # required to do the gradient on the platform. Therefore, we must include it
+        # in the return value, such that these properties are transferred to the result
+        # as well. Adding 2 instead of 1 because state[0] could be -1 in some cases, and
+        # converting to a real number for jax grad compatibility.
+        return np.real((state[0] + 2.0) / (state[0] + 2.0))
 
     # If the state is a state vector but the system in question is a sub-system of the
     # overall state, then the purity of the sub-system still needs to be computed.
