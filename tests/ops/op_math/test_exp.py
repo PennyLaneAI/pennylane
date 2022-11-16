@@ -17,8 +17,12 @@ from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math import Exp
+from pennylane.operation import (
+    DecompositionUndefinedError,
+    GeneratorUndefinedError,
+    ParameterFrequenciesUndefinedError,
+)
+from pennylane.ops.op_math import Exp, Evolution
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -565,3 +569,73 @@ class TestIntegration:
         qml.drawer.tape_text(tape)
 
         assert "0: ──Exp─┤  "
+
+
+class TestDifferentiation:
+    """Test generator and parameter_frequency for differentiation"""
+
+    def test_base_not_hermitian_generator_undefined(self):
+        """That that imaginary coefficient but non-Hermitian base operator raises GeneratorUndefinedError"""
+        op = Exp(qml.RX(1.23, 0), 1j)
+        with pytest.raises(GeneratorUndefinedError):
+            op.generator()
+
+    def test_real_component_coefficient_generator_undefined(self):
+        """Test that Hermitian base operator but real coefficient raises GeneratorUndefinedError"""
+        op = Exp(qml.PauliX(0), 1)
+        with pytest.raises(GeneratorUndefinedError):
+            op.generator()
+
+    def test_generator_is_base_operator(self):
+        """Test that generator is base operator"""
+        base_op = qml.PauliX(0)
+        op = Exp(base_op, 1j)
+        assert op.base == op.generator()
+
+    def test_parameter_frequencies(self):
+        """Test parameter_frequencies property"""
+        op = Exp(qml.PauliZ(1), 1j)
+        assert op.parameter_frequencies == [(2,)]
+
+    def test_parameter_frequencies_raises_error(self):
+        """Test that parameter_frequencies raises an error if the op.generator() is undefined"""
+        op = Exp(qml.PauliX(0), 1)
+        with pytest.raises(GeneratorUndefinedError):
+            op.generator()
+        with pytest.raises(ParameterFrequenciesUndefinedError):
+            op.parameter_frequencies
+
+    def test_parameter_frequency_with_parameters_in_base_operator(self):
+        """Test that parameter_frequency raises an error for the Exp class, but not the
+        Evolution class, if there are additional parameters in the base operator"""
+
+        base_op = 2 * qml.PauliX(0)
+        op1 = Exp(base_op, 1j)
+        op2 = Evolution(base_op, 1)
+
+        with pytest.raises(ParameterFrequenciesUndefinedError):
+            op1.parameter_frequencies()
+
+        assert op2.parameter_frequencies == [(4.0,)]
+
+
+class TestEvolution:
+    """Test subclass of Exp that takes a parameter x and a generator G and defines an evolution exp(ixG)"""
+
+    def test_initialization(self):
+        U = Evolution(qml.PauliX(0), 3)
+        assert U.name == "Evolution"
+        assert isinstance(U, Exp)
+        assert U.base == U.generator()
+
+    def test_evolution_matches_corresponding_exp(self):
+        base_op = 2 * qml.PauliX(0)
+        op1 = Exp(base_op, 1j)
+        op2 = Evolution(base_op, 1)
+
+        assert np.all(op1.matrix() == op2.matrix())
+
+    def test_num_params(self):
+        base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
+        op = Evolution(base_op, 1.23)
+        assert op.num_params == 1
