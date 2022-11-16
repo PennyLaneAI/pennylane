@@ -160,6 +160,7 @@ class QNode:
 
     .. details::
         :title: Parameter broadcasting
+        :href: #parameter-broadcasting
 
         QNodes can be executed simultaneously for multiple parameter settings, which is called
         *parameter broadcasting* or *parameter batching*.

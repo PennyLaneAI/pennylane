@@ -385,6 +385,7 @@ class Operator(abc.ABC):
 
     .. details::
         :title: Parameter broadcasting
+        :href: #parameter-broadcasting
 
         Many quantum functions are executed repeatedly at different parameters, which
         can be done with parameter broadcasting. For usage details and examples see the
