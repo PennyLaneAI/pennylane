@@ -138,7 +138,7 @@ def purity(qnode, wires):
             # Returning 1 in this weird way for torch grad compatibility. When taking the
             # gradient with torch, it is required that the return type is of torch.tensor
             # so that res.backward() can be called on the output.
-            return (args[0] + 1) / (args[0] + 1)
+            return (args[0] + 1.0) / (args[0] + 1.0) if args else 1.0
 
         state_built = qnode(*args, **kwargs)
         return qml.math.purity(state_built, wires, c_dtype=qnode.device.C_DTYPE)

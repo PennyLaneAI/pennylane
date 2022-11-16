@@ -80,6 +80,22 @@ class TestPurity:
         expected_purity = expected_purity_ising_xx(param) if is_partial else 1
         assert qml.math.allclose(purity, expected_purity)
 
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("wires,is_partial", wires_list)
+    def test_IsingXX_qnode_purity_no_params(self, device, wires, is_partial):
+        """Tests purity for a qnode without parameters"""
+
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev)
+        def circuit_state():
+            qml.IsingXX(0, wires=[0, 1])
+            return qml.state()
+
+        purity = qml.qinfo.purity(circuit_state, wires=wires)()
+        expected_purity = expected_purity_ising_xx(0) if is_partial else 1
+        assert qml.math.allclose(purity, expected_purity)
+
     @pytest.mark.parametrize("device", mix_supported_devices)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("param", probs)
