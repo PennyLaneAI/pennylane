@@ -7,6 +7,9 @@
 * Added 'qml.sign_expand' tape tranforms which implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from  arXiv:2207.09479
   [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
+* New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
+  [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
