@@ -2524,7 +2524,6 @@ class TestReturn:
     def test_1_1(self, shot_vec, meas, shape, op_wires):
         """Test one param one measurement case"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
-        print(dev._shot_vector, dev.shots)
         x = 0.543
 
         with qml.tape.QuantumTape() as tape:
