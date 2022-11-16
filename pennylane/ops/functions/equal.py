@@ -26,7 +26,10 @@ from pennylane.operation import Operator
 def equal(
     op1: Union[Operator, MeasurementProcess],
     op2: Union[Operator, MeasurementProcess],
-    **kwargs,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
 ):
     r"""equal(op1, op2, **kwargs)
 
@@ -88,7 +91,14 @@ def equal(
     if not isinstance(op2, type(op1)):
         return False
 
-    return _equal(op1, op2, **kwargs)
+    return _equal(
+        op1,
+        op2,
+        check_interface=check_interface,
+        check_trainability=check_trainability,
+        atol=atol,
+        rtol=rtol,
+    )
 
 
 @singledispatch
@@ -105,10 +115,10 @@ def _equal(
 def _equal_operator(
     op1: Operator,
     op2: Operator,
-    check_interface: bool = True,
-    check_trainability: bool = True,
-    rtol: float = 1e-5,
-    atol: float = 1e-9,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
 ):
 
     """Determine whether two Operator objects are equal"""
@@ -144,7 +154,8 @@ def _equal_operator(
 
 
 @_equal.register
-def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess):
+# pylint: disable=unused-argument
+def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
@@ -167,7 +178,10 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess):
 
 
 @_equal.register
-def _equal_shadow_measurements(op1: ShadowMeasurementProcess, op2: ShadowMeasurementProcess):
+# pylint: disable=unused-argument
+def _equal_shadow_measurements(
+    op1: ShadowMeasurementProcess, op2: ShadowMeasurementProcess, **kwargs
+):
     """Determine whether two ShadowMeasurementProcess objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
