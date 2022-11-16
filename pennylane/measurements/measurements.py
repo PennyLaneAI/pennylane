@@ -701,7 +701,7 @@ class SampleMeasurement(MeasurementProcess, ABC):
     """Sample-based measurement process."""
 
     @abstractmethod
-    def process(
+    def process_samples(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
         """Process the given samples.
@@ -714,21 +714,23 @@ class SampleMeasurement(MeasurementProcess, ABC):
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
         """
+        raise NotImplementedError(
+            "The process_samples method must be defined for a sample-based measurement."
+        )
 
 
 class StateMeasurement(MeasurementProcess, ABC):
     """State-based measurement process."""
 
     @abstractmethod
-    def process_state(self, state: np.ndarray, device_wires: Wires):
+    def process_state(self, state: np.ndarray, wires: Wires):
         """Process the given quantum state.
 
         Args:
             state (ndarray[complex]): quantum state
-            num_wires (int): total number of wires
-            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
-                to use. If not specified, all samples are used.
-            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
-                returns the measurement statistic separately over each bin. If not
-                provided, the entire shot range is treated as a single bin.
+            wires (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+                dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
+        raise NotImplementedError(
+            "The process_state method must be defined for a state-based measurement."
+        )
