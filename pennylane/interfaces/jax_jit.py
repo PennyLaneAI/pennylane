@@ -427,10 +427,10 @@ def _execute_bwd_new(
     def execute_wrapper_jvp(primals, tangents):
         params = primals[0]
 
+        new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
 
             def wrapper(params, dys):
-                new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
                 multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
                 with qml.tape.Unwrap(*new_tapes):
                     jvp_tapes, processing_fn = qml.gradients.batch_jvp(
@@ -442,21 +442,17 @@ def _execute_bwd_new(
                         gradient_kwargs=gradient_kwargs,
                     )
                     jacs = processing_fn(execute_fn(jvp_tapes)[0])
-                    jvps = _compute_jvps(jacs, tangents, multi_measurements)
-                print("In wrapper: ", jvps)
-                return jvps
+                return jacs
 
         total_params = np.sum([len(p) for p in params])
-        shape_dtype_structs = jax.ShapeDtypeStruct(
-            (1, 1, total_params), dtype
-        )  # _extract_shape_dtype_structs(tapes, device)
+        shape_dtype_structs = jax.ShapeDtypeStruct((1,), dtype)
         jvps = jax.pure_callback(wrapper, [shape_dtype_structs], params, tangents[0])
 
-        wrapper(params, tangents[0])
-        res2 = [jnp.squeeze(jvps[0][0])]
-        # res2 = _to_jax(res2)
+        res1 = execute_wrapper(params)
+        res2 = [jvps[0][0]]
+        print(res1, res2)
 
-        return execute_wrapper(params), res2
+        return res1, res2
 
     return execute_wrapper(params)
 

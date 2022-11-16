@@ -510,6 +510,7 @@ def _execute_bwd_new(
             multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
             jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
 
+        print(res, jvps)
         return res, jvps
 
     return execute_wrapper(params)
