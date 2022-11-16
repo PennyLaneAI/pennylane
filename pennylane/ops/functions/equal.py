@@ -31,9 +31,7 @@ def equal(
     rtol=1e-5,
     atol=1e-9,
 ):
-    r"""equal(op1, op2, **kwargs)
-
-    Function for determining operator or measurement equality.
+    r"""Function for determining operator or measurement equality.
 
     Args:
         op1 (.Operator or .MeasurementProcess): First object to compare
