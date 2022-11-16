@@ -987,6 +987,23 @@ class TestMutualInformation:
 class TestEntanglementEntropy:
     """Tests for the entanglement entropy functions"""
 
+    def test_qnode_entanglement_entropy_not_state(self):
+        """Test entanglement entropy needs a QNode returning state."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RY(params, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(wires=0))
+
+        with pytest.raises(
+            ValueError,
+            match="The qfunc return type needs to be a state.",
+        ):
+            qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(0)
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])

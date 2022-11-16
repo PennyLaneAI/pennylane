@@ -236,12 +236,18 @@ def vn_entanglement_entropy(qnode, wires0, wires1, base=None):
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.vn_entanglement_entropy`
     """
 
-    density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
-
     def wrapper(*args, **kwargs):
-        density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.vn_entanglement_entropy(density_matrix, wires0, wires1, base=base)
-        return entropy
+
+        # Construct tape
+        qnode.construct(args, kwargs)
+
+        # Check return type
+        return_type = qnode.tape.observables[0].return_type
+        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+            raise ValueError("The qfunc return type needs to be a state.")
+
+        state_built = qnode(*args, **kwargs)
+        return qml.math.vn_entanglement_entropy(state_built, wires0, wires1, base=base)
 
     return wrapper
 
