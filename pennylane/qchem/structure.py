@@ -418,10 +418,11 @@ def excitations_to_wires(singles, doubles, wires=None):
 def mol_data(identifier, identifier_type="name"):
     r"""Obtain symbols and geometry of a compound from the PubChem Database.
 
-    The `PubChem <https://pubchem.ncbi.nlm.nih.gov>`__ is one of the largest public repositories for
-    information on chemical substances from which symbols and geometry (in Bohr radius) can be
-    retrieved for a compound by its name, SMILES, InChI, InChIKey, and PubChem Compound ID (CID) to
-    build a molecule object for Hartree-Fock calculations.
+    The `PubChem <https://pubchem.ncbi.nlm.nih.gov>`__ database is one of the largest public
+    repositories for information on chemical substances from which symbols and geometry can be
+    retrieved for a compound by its name, SMILES, InChI, InChIKey, or PubChem Compound ID (CID) to
+    build a molecule object for Hartree-Fock calculations. The retrieved atomic coordinates will be
+    converted to atomic units <https://en.wikipedia.org/wiki/Bohr_radius>__ for consistency.
 
     Args:
         identifier (str or int): compound's identifier as required by the PubChem database
@@ -530,7 +531,7 @@ def mol_data(identifier, identifier_type="name"):
     except ValueError as exc:
         raise ValueError("Provided CID (or Identifier) is None.") from exc
 
-    data_mol = pcp_molecule.to_dict(properties=["atoms", "charge"])
+    data_mol = pcp_molecule.to_dict(properties=["atoms"])
     symbols = [atom["element"] for atom in data_mol["atoms"]]
     geometry = (
         np.array([[atom["x"], atom["y"], atom.get("z", 0.0)] for atom in data_mol["atoms"]])
