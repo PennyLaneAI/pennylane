@@ -14,11 +14,12 @@
 """
 This module contains the functions for converting an external operator to a Pennylane operator.
 """
+import warnings
+
 # pylint: disable=import-outside-toplevel
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.wires import Wires
-import warnings
 
 
 def _process_wires(wires, n_wires=None):
@@ -142,7 +143,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
     (array([0.1, 0.2]), [PauliX(wires=['w0']), PauliY(wires=['w0']) @ PauliZ(wires=['w2'])])
     """
     n_wires = (
-        1 + max([max([i for i, _ in t]) if t else 1 for t in qubit_operator.terms])
+        1 + max(max(i for i, _ in t) if t else 1 for t in qubit_operator.terms)
         if qubit_operator.terms
         else 1
     )
