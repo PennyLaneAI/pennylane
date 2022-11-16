@@ -135,12 +135,12 @@ class Molecule:
         """Returns the molecule representation in string format"""
 
         elements, counter, flags = set(self.symbols), collections.Counter(self.symbols), []
-        if counter["C"]:
+        if counter["C"]:  # Hill Notation
             flags = ["C", "H"] if counter["H"] else ["C"]
         ordered_elems = flags + list(sorted(elements.difference(set(flags))))
         formula = "".join([x + str(counter[x]) if counter[x] > 1 else x for x in ordered_elems])
 
-        return f"<Molecule = {formula} charge: {self.charge} basis: {self.basis_name.upper()} n_orbs: {self.n_orbitals} n_elecs: {self.n_electrons}>"
+        return f"<Molecule = {formula}, Charge: {self.charge}, Basis: {self.basis_name.upper()}, Orbitals: {self.n_orbitals}, Electrons: {self.n_electrons}>"
 
     def atomic_orbital(self, index):
         r"""Return a function that evaluates an atomic orbital at a given position.

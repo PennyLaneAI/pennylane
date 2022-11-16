@@ -262,15 +262,17 @@ class TestMolecule:
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]]),
         )
         mol = qchem.Molecule(symbols, geometry, 1)
-        assert repr(mol) == "<Molecule = H3 charge: 1 basis: STO-3G n_orbs: 3 n_elecs: 2>"
+        assert repr(mol) == "<Molecule = H3, Charge: 1, Basis: STO-3G, Orbitals: 3, Electrons: 2>"
 
         symbols, geometry = (
             ["H", "C", "O"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]]),
         )
         mol = qchem.Molecule(symbols, geometry, 0)
-        assert repr(mol) == "<Molecule = CHO charge: 0 basis: STO-3G n_orbs: 11 n_elecs: 15>"
+        assert (
+            repr(mol) == "<Molecule = CHO, Charge: 0, Basis: STO-3G, Orbitals: 11, Electrons: 15>"
+        )
 
         symbols, geometry = (["C", "O"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]))
         mol = qchem.Molecule(symbols, geometry, 0)
-        assert repr(mol) == "<Molecule = CO charge: 0 basis: STO-3G n_orbs: 10 n_elecs: 14>"
+        assert repr(mol) == "<Molecule = CO, Charge: 0, Basis: STO-3G, Orbitals: 10, Electrons: 14>"
