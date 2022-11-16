@@ -83,7 +83,7 @@ def shadow_expval(H, k=1, seed_recipes=True):
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
     seed = np.random.randint(2**30) if seed_recipes else None
-    return ShadowMeasurementProcess(ShadowExpval, H=H, seed=seed, k=k)
+    return ShadowMeasurementProcess(H=H, seed=seed, k=k)
 
 
 def classical_shadow(wires, seed_recipes=True):
@@ -205,7 +205,7 @@ def classical_shadow(wires, seed_recipes=True):
     wires = Wires(wires)
 
     seed = np.random.randint(2**30) if seed_recipes else None
-    return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
+    return ShadowMeasurementProcess(wires=wires, seed=seed)
 
 
 class ShadowMeasurementProcess(MeasurementProcess):
@@ -241,6 +241,10 @@ class ShadowMeasurementProcess(MeasurementProcess):
             and ``float`` when the return type is ``ShadowExpval``.
         """
         return int if self.return_type is Shadow else float
+
+    @property
+    def return_type(self):
+        return Shadow if self.H is None else ShadowExpval
 
     def shape(self, device):
         """The expected output shape of the ShadowMeasurementProcess.

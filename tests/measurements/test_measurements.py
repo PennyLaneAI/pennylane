@@ -31,13 +31,22 @@ from pennylane.measurements import (
     Variance,
     VnEntropy,
     _Counts,
+    _Expectation,
+    _Probability,
     _Sample,
+    _Variance,
     expval,
     sample,
     var,
 )
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
+
+
+class NotValidMeasurement(MeasurementProcess):
+    @property
+    def return_type(self):
+        return "NotValidReturnType"
 
 
 @pytest.mark.parametrize(
@@ -77,7 +86,8 @@ def test_no_measure():
 def test_numeric_type_unrecognized_error():
     """Test that querying the numeric type of a measurement process with an
     unrecognized return type raises an error."""
-    mp = MeasurementProcess("NotValidReturnType")
+
+    mp = NotValidMeasurement()
     with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the numeric type"):
         mp.numeric_type()
 
@@ -86,7 +96,7 @@ def test_shape_unrecognized_error():
     """Test that querying the shape of a measurement process with an
     unrecognized return type raises an error."""
     dev = qml.device("default.qubit", wires=2)
-    mp = MeasurementProcess("NotValidReturnType")
+    mp = NotValidMeasurement()
     with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the shape"):
         mp.shape(dev)
 
@@ -213,7 +223,7 @@ class TestProperties:
         """Test that the wires of the measurement process
         match an internal observable"""
         obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=["a", "b"])
-        m = MeasurementProcess(Expectation, obs=obs)
+        m = qml.expval(op=obs)
 
         assert np.all(m.wires == obs.wires)
 
@@ -221,7 +231,7 @@ class TestProperties:
         """Test that the eigenvalues of the measurement process
         match an internal observable"""
         obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
-        m = MeasurementProcess(Expectation, obs=obs)
+        m = qml.expval(op=obs)
 
         assert np.all(m.eigvals() == np.array([1, 2, 3, 4]))
 
@@ -235,7 +245,7 @@ class TestProperties:
         obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
 
         with pytest.raises(ValueError, match="Cannot set the eigenvalues"):
-            MeasurementProcess(Expectation, obs=obs, eigvals=[0, 1])
+            _Expectation(obs=obs, eigvals=[0, 1])
 
     def test_error_obs_and_wires(self):
         """Test that providing both wires and an observable
@@ -243,22 +253,22 @@ class TestProperties:
         obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
 
         with pytest.raises(ValueError, match="Cannot set the wires"):
-            MeasurementProcess(Expectation, obs=obs, wires=qml.wires.Wires([0, 1]))
+            _Expectation(obs=obs, wires=qml.wires.Wires([0, 1]))
 
     def test_observable_with_no_eigvals(self):
         """An observable with no eigenvalues defined should cause
         the eigvals method to return a NotImplementedError"""
         obs = qml.NumberOperator(wires=0)
-        m = MeasurementProcess(Expectation, obs=obs)
+        m = qml.expval(op=obs)
         assert m.eigvals() is None
 
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
-        m = MeasurementProcess(Expectation, obs=qml.PauliZ(wires="a") @ qml.PauliZ(wires="b"))
+        m = qml.expval(op=qml.PauliZ(wires="a") @ qml.PauliZ(wires="b"))
         expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
         assert str(m) == expected
 
-        m = MeasurementProcess(Probability, obs=qml.PauliZ(wires="a"))
+        m = qml.probs(op=qml.PauliZ(wires="a"))
         expected = "probs(PauliZ(wires=['a']))"
         assert str(m) == expected
 
@@ -269,7 +279,7 @@ class TestExpansion:
     def test_expand_pauli(self):
         """Test the expansion of a Pauli observable"""
         obs = qml.PauliX(0) @ qml.PauliY(1)
-        m = MeasurementProcess(Expectation, obs=obs)
+        m = qml.expval(op=obs)
         tape = m.expand()
 
         assert len(tape.operations) == 4
@@ -294,7 +304,7 @@ class TestExpansion:
         H = np.array([[1, 2], [2, 4]])
         obs = qml.Hermitian(H, wires=["a"])
 
-        m = MeasurementProcess(Expectation, obs=obs)
+        m = qml.expval(op=obs)
         tape = m.expand()
 
         assert len(tape.operations) == 1
@@ -317,13 +327,13 @@ class TestExpansion:
         """Check that an exception is raised if the measurement to
         be expanded has no observable"""
         with pytest.raises(DecompositionUndefinedError):
-            MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1])).expand()
+            _Probability(wires=qml.wires.Wires([0, 1])).expand()
 
     @pytest.mark.parametrize(
         "return_type, obs",
         [
-            (Expectation, qml.PauliX(0) @ qml.PauliY(1)),
-            (Variance, qml.PauliX(0) @ qml.PauliY(1)),
+            _Expectation(obs=qml.PauliX(0) @ qml.PauliY(1)),
+            _Variance(obs=qml.PauliX(0) @ qml.PauliY(1)),
             (Probability, qml.PauliX(0) @ qml.PauliY(1)),
             (Expectation, qml.PauliX(5)),
             (Variance, qml.PauliZ(0) @ qml.Identity(3)),
@@ -339,7 +349,7 @@ class TestExpansion:
         """Test that measurements of Hermitians report to have a decomposition."""
         H = np.array([[1, 2], [2, 4]])
         obs = qml.Hermitian(H, wires=["a"])
-        m = MeasurementProcess(Expectation, obs=obs)
+        m = qml.expval(op=obs)
         assert m.has_decomposition is True
 
     def test_has_decomposition_false_hermitian_wo_diaggates(self):
