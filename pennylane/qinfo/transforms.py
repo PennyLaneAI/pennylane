@@ -247,7 +247,9 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
         qml.probs(wires=wires)
 
     if post_processing_fn is None:
-        post_processing_fn = lambda x: qml.math.squeeze(qml.math.stack(x))
+
+        def post_processing_fn(x):
+            return qml.math.squeeze(qml.math.stack(x))
 
     return [new_tape], post_processing_fn
 
@@ -385,10 +387,10 @@ def classical_fisher(qnode, argnums=0):
 
         params = pnp.random.random(2)
 
-    >>> print(qml.qinfo.classical_fisher(circ)(params))
-    (tensor([[0.13340679, 0.03650311],
-             [0.03650311, 0.00998807]], requires_grad=True)
-    >>> print(qml.jacobian(qml.qinfo.classical_fisher(circ))(params))
+    >>> qml.qinfo.classical_fisher(circ)(params)
+    tensor([[0.28096197, 0.36228429],
+            [0.36228429, 0.46714473]], requires_grad=True)
+    >>> qml.jacobian(qml.qinfo.classical_fisher(circ))(params)
     array([[[9.98030491e-01, 3.46944695e-18],
             [1.36541817e-01, 5.15248592e-01]],
            [[1.36541817e-01, 5.15248592e-01],
@@ -786,7 +788,8 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
     >>> wrapper(x, y)
     0.017750012490703237
     >>> qml.grad(wrapper)(x, y)
-    (array(-0.16458856), array(0.16953273))
+    (tensor(-0.16458856, requires_grad=True),
+     tensor(0.16953273, requires_grad=True))
     """
 
     if len(wires0) != len(wires1):
