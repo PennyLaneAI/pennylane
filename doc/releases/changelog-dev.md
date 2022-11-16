@@ -12,8 +12,8 @@
 * Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
   ([#2845](https://github.com/PennyLaneAI/pennylane/pull/2845))
 
-* Updated `pennylane/utils.py:sparse_hamiltonian` to include a `level` keyword argument to create
-  work with Hamiltonians with arbitrary levels per wire (qutrits, etc).
+* Updated `pennylane/utils.py:sparse_hamiltonian` to include a `level` keyword argument to 
+  support Hamiltonians for systems with an arbitrary number of levels per wire (qutrits, etc).
   ([#2845](https://github.com/PennyLaneAI/pennylane/pull/2845))
 
 <h3>Breaking changes</h3>
