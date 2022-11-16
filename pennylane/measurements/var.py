@@ -19,8 +19,6 @@ import warnings
 from collections import OrderedDict
 from typing import Sequence, Tuple
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops import Projector
@@ -64,7 +62,7 @@ def var(op: Operator):
 class _Variance(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the variance of the supplied observable."""
 
-    def process(
+    def process_samples(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
         if isinstance(self.obs, Projector):
@@ -72,13 +70,13 @@ class _Variance(SampleMeasurement, StateMeasurement):
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             # we use ``self.wires`` instead of ``self.obs`` because the observable was
             # already applied before the sampling
-            probs = qml.probs(wires=self.wires).process(
+            probs = qml.probs(wires=self.wires).process_samples(
                 samples=samples, shot_range=shot_range, bin_size=bin_size
             )
             return probs[idx] - probs[idx] ** 2
 
         # estimate the variance
-        samples = qml.sample(op=self.obs).process(
+        samples = qml.sample(op=self.obs).process_samples(
             samples=samples, shot_range=shot_range, bin_size=bin_size
         )
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
@@ -87,15 +85,13 @@ class _Variance(SampleMeasurement, StateMeasurement):
         # TODO: do we need to squeeze here? Maybe remove with new return types
         return qml.math.squeeze(qml.math.var(samples, axis=axis))
 
-    def process_state(self, state: np.ndarray, device_wires: Wires):
+    def process_state(self, state: Sequence[complex], wires: Wires):
         if isinstance(self.obs, Projector):
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             # we use ``self.wires`` instead of ``self.obs`` because the observable was
             # already applied to the state
-            probs = qml.probs(wires=self.wires).process_state(
-                state=state, device_wires=device_wires
-            )
+            probs = qml.probs(wires=self.wires).process_state(state=state, wires=wires)
             return probs[idx] - probs[idx] ** 2
 
         eigvals = qml.math.asarray(self.obs.eigvals(), dtype=float)
@@ -106,19 +102,18 @@ class _Variance(SampleMeasurement, StateMeasurement):
         self.obs = qml.map_wires(self.obs, dict(zip(self.obs.wires, new_obs_wires)))
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
-        prob = qml.probs(wires=self.wires).process_state(state=state, device_wires=device_wires)
+        prob = qml.probs(wires=self.wires).process_state(state=state, wires=wires)
         self.obs = old_obs
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2
 
-    def _permute_wires(self, device_wires: Wires):
-        num_wires = len(device_wires)
-        consecutive_wires = Wires(range(num_wires))
-        wire_map = OrderedDict(zip(device_wires, consecutive_wires))
-        ordered_obs_wire_lst = sorted(self.obs.wires.tolist(), key=lambda label: wire_map[label])
+    def _permute_wires(self, wires: Wires):
+        wire_map = OrderedDict(zip(range(len(wires)), wires))
 
-        mapped_wires = list(self.obs.wires.map(device_wires))
+        ordered_obs_wire_lst = sorted(self.wires.tolist(), key=lambda label: wire_map[label])
 
-        permutation = np.argsort(mapped_wires)  # extract permutation via argsort
+        mapped_wires = [wire_map[w] for w in self.wires]
+
+        permutation = qml.math.argsort(mapped_wires)  # extract permutation via argsort
 
         return Wires([ordered_obs_wire_lst[index] for index in permutation])
