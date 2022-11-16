@@ -16,7 +16,7 @@ This module contains functions and classes to create a
 :class:`~pennylane.qchem.basis_set.BasisFunction` object from standard basis sets such as STO-3G.
 """
 # pylint: disable=too-few-public-methods
-from .basis_data import basis_sets
+from .basis_data import basis_sets, load_basisset
 
 
 class BasisFunction:
@@ -66,16 +66,18 @@ class BasisFunction:
         self.params = [self.alpha, self.coeff, self.r]
 
 
-def atom_basis_data(name, atom):
+def atom_basis_data(name, atom, load_data=False):
     r"""Generate default basis set parameters for an atom.
 
     This function extracts the angular momentum, exponents, and contraction coefficients of
-    Gaussian functions forming atomic orbitals for a given atom. These values are taken from the
-    basis set data provided in :mod:`~pennylane.qchem.basis_data`.
+    Gaussian functions forming atomic orbitals for a given atom. These values are taken, by default,
+    from the basis set data provided in :mod:`~pennylane.qchem.basis_data`. If `load_data = True`,
+    the basis set data is loaded from the basis-set-exchange library.
 
     Args:
         name (str): name of the basis set
         atom (str): atomic symbol of the chemical element
+        load_data (bool): flag to load data from the basis-set-exchange library
 
     Returns:
         list(tuple): tuple containing the angular momentum, the exponents and contraction
@@ -95,7 +97,11 @@ def atom_basis_data(name, atom):
     # for dxy, dxz, dyz, dxx, dyy, dzz, respectively:
     d = [(1, 1, 0), (1, 0, 1), (0, 1, 1), (2, 0, 0), (0, 2, 0), (0, 0, 2)]
 
-    basis = basis_sets[name][atom]
+    if load_data:
+        basis = load_basisset(name, atom)
+    else:
+        basis = basis_sets[name][atom]
+
     params = []
     sp_count = 0
     for i, j in enumerate(basis["orbitals"]):
