@@ -111,13 +111,17 @@ def probs(wires=None, op=None):
                 "Cannot specify the wires to probs if an observable is "
                 "provided. The wires for probs will be determined directly from the observable."
             )
-        return _Probability(Probability, wires=qml.wires.Wires(wires))
-    return _Probability(Probability, obs=op)
+        wires = qml.wires.Wires(wires)
+    return _Probability(obs=op, wires=wires)
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
 class _Probability(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
+
+    @property
+    def return_type(self):
+        return Probability
 
     @property
     def numeric_type(self):

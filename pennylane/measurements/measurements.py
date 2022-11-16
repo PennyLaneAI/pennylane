@@ -132,14 +132,12 @@ class MeasurementProcess(ABC):
 
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
         id=None,
         log_base=None,
     ):
-        self.return_type = return_type
         self.obs = obs
         self.id = id
         self.log_base = log_base
@@ -253,6 +251,11 @@ class MeasurementProcess(ABC):
             + f"{self.return_type}."
         )
 
+    @property
+    @abstractmethod
+    def return_type(self):
+        """Return type property."""
+
     @staticmethod
     @functools.lru_cache()
     def _get_num_basis_states(num_wires, device):
@@ -302,7 +305,6 @@ class MeasurementProcess(ABC):
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             eigvals=self._eigvals,
             wires=self._wires,
@@ -434,7 +436,7 @@ class MeasurementProcess(ABC):
         This property is a temporary solution that should not exist long-term and should not be
         used outside of ``QuantumTape._process_queue``.
         """
-        return "_ops" if self.return_type is MidMeasure else "_measurements"
+        return "_measurements"
 
     @property
     def hash(self):
@@ -463,10 +465,7 @@ class MeasurementProcess(ABC):
         Returns:
             .MeasurementProcess: A measurement process with a simplified observable.
         """
-        if self.obs is None:
-            return self
-
-        return self.__class__(return_type=self.return_type, obs=self.obs.simplify())
+        return self if self.obs is None else self.__class__(obs=self.obs.simplify())
 
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to

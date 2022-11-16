@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
 
-from .measurements import AllCounts, Counts, ObservableReturnTypes, SampleMeasurement
+from .measurements import AllCounts, Counts, SampleMeasurement
 
 
 def counts(op=None, wires=None, all_outcomes=False):
@@ -140,11 +140,7 @@ def counts(op=None, wires=None, all_outcomes=False):
             )
         wires = Wires(wires)
 
-    # TODO: Remove this conditional branch when using `Counts.process` in devices
-    if all_outcomes:
-        return _Counts(AllCounts, obs=op, wires=wires, all_outcomes=all_outcomes)
-
-    return _Counts(Counts, obs=op, wires=wires, all_outcomes=all_outcomes)
+    return _Counts(obs=op, wires=wires, all_outcomes=all_outcomes)
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
@@ -153,7 +149,6 @@ class _Counts(SampleMeasurement):
 
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
@@ -162,7 +157,7 @@ class _Counts(SampleMeasurement):
         all_outcomes=False,
     ):
         self.all_outcomes = all_outcomes
-        super().__init__(return_type, obs, wires, eigvals, id, log_base)
+        super().__init__(obs, wires, eigvals, id, log_base)
 
     @property
     def numeric_type(self):
@@ -171,6 +166,10 @@ class _Counts(SampleMeasurement):
     @property
     def samples_computational_basis(self):
         return self.obs is None
+
+    @property
+    def return_type(self):
+        return AllCounts if self.all_outcomes else Counts
 
     def process_samples(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
@@ -261,7 +260,6 @@ class _Counts(SampleMeasurement):
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             eigvals=self._eigvals,
             wires=self._wires,

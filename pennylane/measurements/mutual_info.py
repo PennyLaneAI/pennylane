@@ -79,7 +79,7 @@ def mutual_info(wires0, wires1, log_base=None):
 
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
-    return _MutualInfo(MutualInfo, wires=[wires0, wires1], log_base=log_base)
+    return _MutualInfo(wires=[wires0, wires1], log_base=log_base)
 
 
 class _MutualInfo(StateMeasurement):
@@ -88,6 +88,10 @@ class _MutualInfo(StateMeasurement):
     @property
     def numeric_type(self):
         return float
+
+    @property
+    def return_type(self):
+        return MutualInfo
 
     def shape(self, device):
         if qml.active_return():

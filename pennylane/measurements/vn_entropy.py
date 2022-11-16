@@ -64,11 +64,15 @@ def vn_entropy(wires, log_base=None):
     .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
     """
     wires = Wires(wires)
-    return _VnEntropy(VnEntropy, wires=wires, log_base=log_base)
+    return _VnEntropy(wires=wires, log_base=log_base)
 
 
 class _VnEntropy(StateMeasurement):
     """Measurement process that returns the Von Neumann entropy."""
+
+    @property
+    def return_type(self):
+        return VnEntropy
 
     @property
     def numeric_type(self):

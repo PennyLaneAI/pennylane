@@ -30,6 +30,8 @@ from pennylane.measurements import (
     State,
     Variance,
     VnEntropy,
+    _Counts,
+    _Sample,
     expval,
     sample,
     var,
@@ -362,19 +364,19 @@ class TestExpansion:
         assert m.has_decomposition is False
 
     @pytest.mark.parametrize(
-        "return_type, kwargs",
+        "meas_class, kwargs",
         [
-            (Sample, {}),
-            (Sample, {"wires": ["a", 1]}),
-            (AllCounts, {}),
-            (AllCounts, {"wires": ["a", 1]}),
-            (Counts, {}),
-            (Counts, {"wires": ["a", 1]}),
+            _Sample(),
+            _Sample(wires=["a", 1]),
+            _Counts(all_outcomes=True),
+            _Counts(wires=["a", 1], all_outcomes=True),
+            _Counts(),
+            _Counts(wires=["a", 1]),
         ],
     )
-    def test_samples_computational_basis_true(self, return_type, kwargs):
+    def test_samples_computational_basis_true(self, meas_class, kwargs):
         """Test that measurements of Paulis report to have a decomposition."""
-        m = MeasurementProcess(return_type, **kwargs)
+        m = meas_class(**kwargs)
         assert m.samples_computational_basis is True
 
     @pytest.mark.parametrize(

@@ -56,7 +56,7 @@ def expval(op: Operator):
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
 
-    return _Expectation(Expectation, obs=op)
+    return _Expectation(obs=op)
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
@@ -80,6 +80,10 @@ class _Expectation(SampleMeasurement, StateMeasurement):
             return ()
         num_shot_elements = sum(s.copies for s in device.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
+
+    @property
+    def return_type(self):
+        return Expectation
 
     def process_samples(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
