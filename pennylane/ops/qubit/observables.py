@@ -68,18 +68,18 @@ class Hermitian(Observable):
 
     def __init__(self, A, wires, do_queue=True, id=None):
         A = qml.math.asarray(A)
-        if not qml.math.is_abstract(A):
-            if isinstance(wires, Sequence) and not isinstance(wires, str):
-                if len(wires) == 0:
-                    raise ValueError(
-                        "Hermitian: wrong number of wires. At least one wire has to be given."
-                    )
-                expected_mx_shape = self._num_basis_states ** len(wires)
-            else:
-                # Assumably wires is an int; further validation checks are performed by calling super().__init__
-                expected_mx_shape = self._num_basis_states
+        # if not qml.math.is_abstract(A):
+        if isinstance(wires, Sequence) and not isinstance(wires, str):
+            if len(wires) == 0:
+                raise ValueError(
+                    "Hermitian: wrong number of wires. At least one wire has to be given."
+                )
+            expected_mx_shape = self._num_basis_states ** len(wires)
+        else:
+            # Assumably wires is an int; further validation checks are performed by calling super().__init__
+            expected_mx_shape = self._num_basis_states
 
-            Hermitian._validate_input(A, expected_mx_shape)
+        Hermitian._validate_input(A, expected_mx_shape)
 
         super().__init__(A, wires=wires, do_queue=do_queue, id=id)
 

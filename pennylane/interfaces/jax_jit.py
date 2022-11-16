@@ -127,9 +127,7 @@ def _extract_shape_dtype_structs(tapes, device):
     shape_dtypes = []
 
     for t in tapes:
-        print(list(t))
         shape = t.shape(device)
-        print("Extracted shape: ", shape)
 
         tape_dtype = _numeric_type_to_dtype(t.numeric_type)
         shape_and_dtype = jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
@@ -429,34 +427,36 @@ def _execute_bwd_new(
     def execute_wrapper_jvp(primals, tangents):
         params = primals[0]
 
-        def wrapper(params):
-            jacs = []
-            for t, a in zip(tapes, params):
-                new_tape = _copy_tape(t, a)
-                with qml.tape.Unwrap(new_tape):
-                    gradient_tapes, fn = gradient_fn(new_tape, **gradient_kwargs)
+        if isinstance(gradient_fn, qml.gradients.gradient_transform):
 
-                gradient_tapes, fn = gradient_fn(new_tape, **gradient_kwargs)
-                jvp = fn(execute_fn(gradient_tapes)[0])
-                jacs.append(jvp)
-            return [jax.numpy.array(jacs)]
-
-            # jax.ShapeDtypeStruct((total_params,), dtype),
+            def wrapper(params, dys):
+                new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
+                multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
+                with qml.tape.Unwrap(*new_tapes):
+                    jvp_tapes, processing_fn = qml.gradients.batch_jvp(
+                        new_tapes,
+                        dys,
+                        gradient_fn,
+                        device.shot_vector,
+                        reduction="append",
+                        gradient_kwargs=gradient_kwargs,
+                    )
+                    jacs = processing_fn(execute_fn(jvp_tapes)[0])
+                    jvps = _compute_jvps(jacs, tangents, multi_measurements)
+                print("In wrapper: ", jvps)
+                return jvps
 
         total_params = np.sum([len(p) for p in params])
         shape_dtype_structs = jax.ShapeDtypeStruct(
-            (1, total_params), dtype
+            (1, 1, total_params), dtype
         )  # _extract_shape_dtype_structs(tapes, device)
-        from jax.experimental.host_callback import call
+        jvps = jax.pure_callback(wrapper, [shape_dtype_structs], params, tangents[0])
 
-        jacs = jax.pure_callback(wrapper, [shape_dtype_structs], params)
-        # jacs = wrapper(params)
-        # print(jacs, (total_params,))
-        # jacs = call(wrapper, params, result_shape=[shape_dtype_structs])
+        wrapper(params, tangents[0])
+        res2 = [jnp.squeeze(jvps[0][0])]
+        # res2 = _to_jax(res2)
 
-        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-        jvps = _compute_jvps(jacs, tangents, multi_measurements)
-        return execute_wrapper(params), [jvps[0][0]]
+        return execute_wrapper(params), res2
 
     return execute_wrapper(params)
 

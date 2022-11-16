@@ -92,19 +92,6 @@ def compute_jvp_single(tangent, jac, jitting=False):
     if jac is None:
         return None
 
-    # def _nested_is_abstract(input_param):
-    #     if isinstance(input_param, Sequence):
-    #         if len(input_param) > 0 and any(isinstance(i_p, Sequence) for i_p in input_param):
-    #             print(list(type(t) for i_p in input_param for t in i_p), type(input_param[0][0]), "1")
-    #             return any(any(qml.math.is_abstract(t) for t in i_p) for i_p in input_param)
-
-    #         print(len(input_param), list(isinstance(i_p, Sequence) for i_p in input_param))
-    #         print(list(qml.math.is_abstract(t) for t in input_param), type(input_param), "2")
-    #         return any(qml.math.is_abstract(t) for t in input_param)
-
-    #     print(qml.math.is_abstract(input_param), type(input_param), "3")
-    #     return qml.math.is_abstract(input_param)
-
     if not jitting:
         tangent = qml.math.stack(tangent)
         jac = _convert(jac, tangent)
@@ -126,7 +113,11 @@ def compute_jvp_single(tangent, jac, jitting=False):
         # With dimension e.g. probs
         else:
             jac = qml.math.reshape(jac, (1, -1))
-        res = qml.math.tensordot(jac, tangent, [[0], [0]])
+
+        # TODO: clean
+        from jax import numpy as jnp
+
+        res = qml.math.tensordot(jac, jnp.array(tangent), 0)
     # Multiple params
     else:
         # No trainable parameters (adjoint)
