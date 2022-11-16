@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-<h4>Entanglement Entropy</h4>
+* New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
+  [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
 * Support for entanglement entropy computation is added. The `qml.math.vn_entanglement_entropy` function computes the von Neumann entanglement entropy from a state vector or a density matrix:
 
@@ -52,6 +53,6 @@
 
 <h3>Contributors</h3>
 
-Astral Cai
-
 This release contains contributions from (in alphabetical order):
+
+Astral Cai
