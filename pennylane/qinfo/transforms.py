@@ -14,12 +14,10 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
-import numpy as np
 import pennylane as qml
 
 from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
 from pennylane.devices import DefaultQubit
-from pennylane.ops.channel import Channel
 
 
 def reduced_dm(qnode, wires):
@@ -130,8 +128,8 @@ def purity(qnode, wires):
 
         # Check if the system in question is a sub-system or the full state.
         num_wires = qnode.tape.num_wires
-        # Check if the circuit contains noisy channels
-        noisy = np.any([isinstance(op, Channel) for op in qnode.tape.operations])
+        # Check if the circuit is built with a mixed device and thus potentially noisy
+        noisy = qnode.device.short_name.startswith("default.mixed")
 
         # The full state of a non-noisy circuit is always pure
         if num_wires == len(wires) and not noisy:

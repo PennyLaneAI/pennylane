@@ -495,11 +495,13 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     # Cast as a c_dtype array
     state = cast(state, dtype=c_dtype)
     len_state = state.shape[0]
-    num_wires = np.log2(len_state)
+    num_wires = int(np.log2(len_state))
 
     # If the state is a state vector and the system in question is the entire system,
     # return 1 directly because a valid state vector always represents a pure state.
     if state.shape == (len_state,) and len(indices) == num_wires:
+        if check_state:
+            _check_state_vector(state)
         return 1.0
 
     # If the state is a state vector but the system in question is a sub-system of the
