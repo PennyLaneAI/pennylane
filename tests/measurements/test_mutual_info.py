@@ -47,7 +47,6 @@ class TestMutualInfo:
         new_res = qml.mutual_info(wires0=[0], wires1=[1]).process_state(
             state=circuit.device.state, wires=circuit.device.wires
         )
-        # Assert results
         assert np.allclose(res, expected, atol=1e-6)
         assert np.allclose(new_res, expected, atol=1e-6)
         assert INTERFACE_MAP.get(qml.math.get_interface(new_res)) == interface
