@@ -6,6 +6,16 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The ``grouping`` module is deprecated. The functionality has been moved and
+  reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
+
+  - Still accessible in v0.27
+  - Will be removed in v0.28
+
+  The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
+  ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
+  have been consolidated in the ``pauli/grouping/`` directory.
+
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
   use ``qml.adjoint`` or ``qml.pow`` instead. 
 
