@@ -50,6 +50,7 @@ class TestMutualInfo:
         assert np.allclose(res, expected, atol=1e-6)
         assert np.allclose(new_res, expected, atol=1e-6)
         assert INTERFACE_MAP.get(qml.math.get_interface(new_res)) == interface
+        assert res.dtype == new_res.dtype
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
