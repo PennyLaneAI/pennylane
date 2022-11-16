@@ -9,6 +9,9 @@
 
 <h3>Improvements</h3>
 
+* A representation has been added to the `Molecule` class.
+  [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
