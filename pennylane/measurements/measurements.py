@@ -714,9 +714,6 @@ class SampleMeasurement(MeasurementProcess, ABC):
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
         """
-        raise NotImplementedError(
-            "The process_samples method must be defined for a sample-based measurement."
-        )
 
 
 class StateMeasurement(MeasurementProcess, ABC):
@@ -731,6 +728,3 @@ class StateMeasurement(MeasurementProcess, ABC):
             wires (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
-        raise NotImplementedError(
-            "The process_state method must be defined for a state-based measurement."
-        )
