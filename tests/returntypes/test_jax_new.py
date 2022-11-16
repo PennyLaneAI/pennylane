@@ -76,7 +76,7 @@ class TestJaxExecuteUnitTests:
                 interface=interface,
             )[0]
 
-        res = jax.grad(cost)(a, device=dev)
+        res = jax.jacrev(cost)(a, device=dev)
 
         for args in spy.call_args_list:
             assert args[1]["shifts"] == [(np.pi / 4,)] * 2
