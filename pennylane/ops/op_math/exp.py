@@ -374,13 +374,9 @@ class Evolution(Exp):
 
     **Use Details**
 
-    For differentiation, this class ignores base parameters and considers only the coefficient in the
-    exponent to be trainable, allowing the operator
-
     In contrast to the general Exp class, the Evolution operator is constrained to a single trainable
-    parameter, allowing it to be differentiated using the parameter shift.
-
-    The operator is, in constrast to the general Exp class, defined to have a single parameter. ......
+    parameter, allowing it to be differentiated with regard to the evolution parameter even if the base
+    operator contains additional parameters.
 
 
     **Example**
