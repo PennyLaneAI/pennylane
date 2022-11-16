@@ -168,7 +168,7 @@ class TestEqual:
         assert not qml.equal(ops[0], ops[1], check_trainability=False, check_interface=False)
 
     def test_equal_unsupported_op_type(self):
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(NotImplementedError, match="Comparison between "):
             qml.equal(3, 4)
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
