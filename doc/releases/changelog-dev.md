@@ -23,6 +23,7 @@
 
 * If the device originally has no shots but finite shots are dynamically specified, Hamiltonian
   expansion now occurs.
+  [(#3369)](https://github.com/PennyLaneAI/pennylane/pull/3369)
 
 <h3>Contributors</h3>
 
