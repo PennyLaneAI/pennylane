@@ -102,7 +102,7 @@ def evolve_under(ops, coeffs, time, controls):
 
 
 def calculate_Xi_decomposition(hamiltonian):
-    """
+    r"""
     Calculates the Xi-decomposition from the given Hamiltonian by constructing the sparse matrix
     representing the Hamiltonian, finding its spectrum and then construct projectors and
     eigenvalue spacings
@@ -110,13 +110,11 @@ def calculate_Xi_decomposition(hamiltonian):
     Definition of the Xi decomposition of operator O:
 
     .. math::
-
-        \frac{\lambda_0 +\lambda_J}{2} \mathbb{1} + \sum_{x=1}^{J-1} \frac{\delta \lambda_x}{2}\Xi_x
+        \frac{\lambda_0 +\lambda_J}{2} \mathbb{1} + \sum_{x=1}^{J-1} \frac{\delta \lambda_x}{2}\Xi_x ,
 
     where the lambdas are the sorted eigenvalues of O and
 
     ..math::
-
        \Xi_x = \mathbb{1} - \sum_(j<x) 2 \Pi_j \,, \quad \delta \lambda_x = \lambda_x - \lambda_{x-1}
 
 
