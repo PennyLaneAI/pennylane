@@ -15,9 +15,7 @@
 """
 This module contains the qml.state measurement.
 """
-from collections import OrderedDict
-
-import numpy as np
+from typing import Sequence
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -164,12 +162,11 @@ class _State(StateMeasurement):
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
     # pylint: disable=redefined-outer-name
-    def process_state(self, state: np.ndarray, device_wires: Wires):
+    def process_state(self, state: Sequence[complex], wires: Wires):
         if self.wires == Wires([]):
+            # qml.state
             return state
-
-        num_wires = len(device_wires)
-        consecutive_wires = Wires(range(num_wires))
-        wire_map = OrderedDict(zip(device_wires, consecutive_wires))
-        wires = [wire_map[w] for w in self.wires]
-        return qml.math.reduced_dm(state, indices=wires, c_dtype=np.complex128)
+        # qml.density_matrix
+        wire_map = dict(zip(range(len(wires)), wires))
+        mapped_wires = [wire_map[w] for w in self.wires]
+        return qml.math.reduced_dm(state, indices=mapped_wires, c_dtype="complex128")
