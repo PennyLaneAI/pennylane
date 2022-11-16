@@ -16,9 +16,7 @@
 This module contains the qml.sample measurement.
 """
 import warnings
-from typing import Tuple, Union
-
-import numpy as np
+from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Observable
@@ -118,7 +116,9 @@ def sample(op: Union[Observable, None] = None, wires=None):
 class _Sample(SampleMeasurement):
     """Measurement process that returns the samples of a given observable."""
 
-    def process(self, samples: np.ndarray, shot_range: Tuple[int] = None, bin_size: int = None):
+    def process_samples(
+        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+    ):
         name = self.obs.name if self.obs is not None else None
         # Select the samples from samples that correspond to ``shot_range`` if provided
         if shot_range is not None:
@@ -129,7 +129,7 @@ class _Sample(SampleMeasurement):
 
         if len(self.wires) != 0:
             # if wires are provided, then we only return samples from those wires
-            samples = samples[..., np.array(self.wires)]
+            samples = samples[..., self.wires]
 
         num_wires = samples.shape[-1]  # wires is the last dimension
 
@@ -143,9 +143,9 @@ class _Sample(SampleMeasurement):
         else:
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
-            powers_of_two = 2 ** np.arange(num_wires)[::-1]
+            powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
             indices = samples @ powers_of_two
-            indices = np.array(indices)  # Add np.array here for Jax support.
+            indices = qml.math.array(indices)  # Add np.array here for Jax support.
             try:
                 samples = self.obs.eigvals()[indices]
             except qml.operation.EigvalsUndefinedError as e:

@@ -15,6 +15,9 @@
   * Add `_Counts` class.
     [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
+* New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
+  [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
