@@ -488,12 +488,11 @@ class Hamiltonian(Observable):
 
         **Examples**
 
-        >>> A = np.array([[1, 0], [0, -1]])
         >>> H = qml.Hamiltonian(
         ...     [0.5, 0.5],
-        ...     [qml.Hermitian(A, 0) @ qml.PauliY(1), qml.PauliY(1) @ qml.Hermitian(A, 0) @ qml.Identity("a")]
+        ...     [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")]
         ... )
-        >>> obs = qml.Hermitian(A, 0) @ qml.PauliY(1)
+        >>> obs = qml.PauliZ(0) @ qml.PauliY(1)
         >>> print(H.compare(obs))
         True
 

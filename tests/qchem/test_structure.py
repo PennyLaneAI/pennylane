@@ -15,6 +15,7 @@
 Unit tests for the functions of the structure module.
 """
 import os
+import sys
 import pytest
 import pennylane as qml
 from pennylane import qchem
@@ -311,3 +312,68 @@ def test_inconsistent_active_spaces(
             active_electrons=act_electrons,
             active_orbitals=act_orbitals,
         )
+
+
+@pytest.mark.parametrize(
+    ("identifier", "identifier_type"),
+    [
+        ("CH4", "name"),
+        ("74-82-8", "CAS"),
+        ("[C]", "SMILES"),
+        ("InChI=1S/CH4/h1H4", "InChI"),
+        ("VNWKTOKETHGBQD-UHFFFAOYSA-N", "InChIKey"),
+        (297, "CID"),
+        ("H2", "name"),
+        ("InChI=1S/H2/h1H", "InChI"),
+        (783, "CID"),
+    ],
+)
+def test_consistent_pubchem_mol_data(identifier, identifier_type):
+    r"""Test that consistent molecular data from PubChem database is returned"""
+    pcp = pytest.importorskip("pubchempy")
+    ref_mol_data_3d = (
+        ["C", "H", "H", "H", "H"],
+        np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.04709725, 1.51102501, 0.93824902],
+                [1.29124986, -1.53710323, -0.47923455],
+                [-1.47058487, -0.70581271, 1.26460472],
+                [-0.86795121, 0.7320799, -1.7236192],
+            ]
+        ),
+    )
+    ref_mol_data_2d = (["H", "H"], np.array([[3.77945225, 0.0, 0.0], [5.66917837, 0.0, 0.0]]))
+
+    pub_mol_data = qchem.mol_data(identifier, identifier_type)
+    ref_mol_data = ref_mol_data_2d if pub_mol_data[0] == ["H", "H"] else ref_mol_data_3d
+
+    assert ref_mol_data[0] == pub_mol_data[0]
+    assert np.allclose(ref_mol_data[1], pub_mol_data[1])
+
+
+@pytest.mark.parametrize(
+    ("identifier", "identifier_type", "message_match"),
+    [
+        ("CH4", "IUPAC", "Specified identifier type is not supported"),
+        ("In=1S/H3N/h1H3/p+1", "InChI", "Specified identifier doesn't seem to match type"),
+        ("14798039", "CAS", "Specified identifier doesn't seem to match type"),
+        ("beh2+", "name", "Specified molecule does not exist in the PubChem Database"),
+        (0, "CID", "Provided CID \(or Identifier\) is None"),
+    ],
+)
+def test_inconsistent_pubchem_mol_data(identifier, identifier_type, message_match):
+    r"""Test that an error is raised if an inconsistent parameters are provided to `mol_data`"""
+    pcp = pytest.importorskip("pubchempy")
+    with pytest.raises(ValueError, match=message_match):
+        qchem.mol_data(identifier, identifier_type)
+
+
+def test_import_pubchem_mol_data(monkeypatch):
+    """Test that an exception is caught on import error for pubchempy"""
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "pubchempy", None)
+
+        with pytest.raises(ImportError, match="This feature requires pubchempy"):
+            qchem.mol_data(227, "CID")

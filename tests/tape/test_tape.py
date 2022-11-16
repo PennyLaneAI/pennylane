@@ -2229,6 +2229,60 @@ class TestOutputShape:
         for r, e in zip(res, execution_results):
             assert r == e.shape
 
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("measurement, expected_shape", measures)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_broadcasting_single(self, measurement, expected_shape, shots):
+        """Test that the output shape produced by the tape matches the expected
+        output shape for a single measurement and parameter broadcasting"""
+        if shots is None and measurement.return_type is qml.measurements.Sample:
+            pytest.skip("Sample doesn't support analytic computations.")
+
+        if measurement.return_type is qml.measurements.State and measurement.wires is not None:
+            pytest.skip("Density matrix does not support parameter broadcasting")
+
+        num_wires = 3
+        dev = qml.device("default.qubit", wires=num_wires, shots=shots)
+
+        a = np.array([0.1, 0.2, 0.3])
+        b = np.array([0.4, 0.5, 0.6])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.apply(measurement)
+
+        expected_shape = qml.execute([tape], dev, gradient_fn=None)[0].shape
+
+        assert tape.shape(dev) == expected_shape
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("measurement, expected", measures)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_broadcasting_multi(self, measurement, expected, shots):
+        """Test that the output shape produced by the tape matches the expected
+        output shape for multiple measurements and parameter broadcasting"""
+        if shots is None and measurement.return_type is qml.measurements.Sample:
+            pytest.skip("Sample doesn't support analytic computations.")
+
+        if measurement.return_type is qml.measurements.State:
+            pytest.skip("State does not support multiple measurements")
+
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array([0.1, 0.2, 0.3])
+        b = np.array([0.4, 0.5, 0.6])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for _ in range(2):
+                qml.apply(measurement)
+
+        expected = qml.execute([tape], dev, gradient_fn=None)[0].shape
+
+        assert tape.shape(dev) == expected
+
     def test_multi_measure_probs_shot_vector_errors(self):
         """Test that getting the output shape of a tape containing multiple
         probability measurements with different number of wires errors when
