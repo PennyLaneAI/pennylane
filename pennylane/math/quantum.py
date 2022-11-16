@@ -606,10 +606,10 @@ def vn_entanglement_entropy(
 
     .. math::
 
-        S(\rho_A) = -Tr[\rho_A log \rho_A] = -Tr[\rho_B log \rho_B] = S(\rho_B)
+        S(\rho_A) = -\text{Tr}[\rho_A log \rho_A] = -\text{Tr}[\rho_B log \rho_B] = S(\rho_B)
 
-    where :math:`S` is the von Neumann entropy, and :math:`\rho_A = Tr_B[\rho_{AB}]` and
-    :math:`\rho_B = Tr_A[\rho_{AB}]` are the reduced density matrices for each partition.
+    where :math:`S` is the von Neumann entropy, and :math:`\rho_A = \text{Tr_B}[\rho_{AB}]` and
+    :math:`\rho_B = \Text{Tr_A}[\rho_{AB}]` are the reduced density matrices for each partition.
 
     The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
     two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
@@ -646,7 +646,7 @@ def vn_entanglement_entropy(
     >>> qml.math.vn_entanglement_entropy(y, indices0=[0], indices1=[1])
     0
 
-    .. seealso:: :func:`~.math.vn_entropy`, :func:`pennylane.qinfo.transforms.vn_entanglement_entropy` and :func:`pennylane.vn_entanglement_entropy`
+    .. seealso:: :func:`~.math.vn_entropy`, :func:`pennylane.qinfo.transforms.vn_entanglement_entropy`
     """
 
     return _compute_bipartite_info(
