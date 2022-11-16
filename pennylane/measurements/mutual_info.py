@@ -15,6 +15,8 @@
 """
 This module contains the qml.mutual_info measurement.
 """
+from typing import Sequence
+
 import pennylane as qml
 from pennylane.wires import Wires
 
@@ -83,7 +85,7 @@ def mutual_info(wires0, wires1, log_base=None):
 class _MutualInfo(StateMeasurement):
     """Measurement process that returns the mutual information."""
 
-    def process_state(self, state, wires: Wires):
+    def process_state(self, state: Sequence[complex], wires: Wires):
         return qml.math.mutual_info(
             state,
             indices0=[self.wires[0]],
