@@ -19,8 +19,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from .batch_transform import batch_transform
 
-# TODO: This part up here (ControlledPauliEvolution and MultiCRZ) probably should live somewhere else, not sure if properly implementing these as gates inside pennylane is worthwhile
-
 
 def ControlledPauliEvolution(theta, wires, pauli_word, controls):
     r"""Controlled Evolution under generic Pauli words, adapted from the decomposition of
