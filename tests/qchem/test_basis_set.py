@@ -397,6 +397,33 @@ class TestBasis:
         assert alpha == alpha_ref
         assert coeff == coeff_ref
 
+    @pytest.mark.parametrize(
+        ("basis_name", "atom_name"),
+        [
+            (
+                "sto-3g",
+                "H",
+            ),
+            (
+                "6-311g",
+                "C",
+            ),
+            (
+                "cc-pvdz",
+                "O",
+            ),
+        ],
+    )
+    def test_data_basis_set_exchangey(self, basis_name, atom_name):
+        """Test that correct basis set parameters are loaded from basis_set_exchange library."""
+
+        pytest.importorskip("basis_set_exchange")
+
+        data_load = qchem.atom_basis_data(basis_name, atom_name, load_data=True)
+        data_read = qchem.atom_basis_data(basis_name, atom_name, load_data=False)
+
+        assert data_load == data_read
+
     basis_data_HF = [
         (
             "sto-3g",

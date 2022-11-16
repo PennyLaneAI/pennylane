@@ -24,7 +24,7 @@ from pennylane.qchem.basis_data import load_basisset
 bse = pytest.importorskip("basis_set_exchange")
 
 
-class TestBasis:
+class TestBasisData:
     """Tests for generating basis set default parameters"""
 
     @pytest.mark.parametrize(
