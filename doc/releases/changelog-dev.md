@@ -37,6 +37,11 @@
 
 <h3>Improvements</h3>
 
+
+* Improve performance of `Wires.all_wires`.
+  [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
+
+
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
@@ -61,6 +66,7 @@
 This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Utkarsh Azad
+Pieter Eendebak
 Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
