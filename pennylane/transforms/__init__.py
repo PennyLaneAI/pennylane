@@ -140,6 +140,10 @@ Transforms for error mitigation
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
 """
+import warnings
+
+import pennylane as qml
+
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
@@ -189,3 +193,16 @@ from .tape_expand import (
 )
 from .transpile import transpile
 from .broadcast_expand import broadcast_expand
+
+
+def __getattr__(name):
+    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
+    if name == "qcut":
+        obj = getattr(qml, name)
+        warning_string = "qml.transforms.qcut is deprecated. Please import from qml.qcut instead"
+        warnings.warn(warning_string, UserWarning)
+        return obj
+    try:
+        return globals()[name]
+    except KeyError as e:
+        raise AttributeError from e
