@@ -36,15 +36,15 @@ class TestMutualInfo:
     )
     def test_mutual_info_output(self, interface, state, expected):
         """Test the output of qml.mutual_info"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev, interface=interface)
         def circuit():
             qml.QubitStateVector(state, wires=[0, 1])
-            return qml.mutual_info(wires0=[0], wires1=[1])
+            return qml.mutual_info(wires0=[0, 2], wires1=[1, 3])
 
         res = circuit()
-        new_res = qml.mutual_info(wires0=[0], wires1=[1]).process_state(
+        new_res = qml.mutual_info(wires0=[0, 2], wires1=[1, 3]).process_state(
             state=circuit.device.state, wires=circuit.device.wires
         )
         assert np.allclose(res, expected, atol=1e-6)
@@ -60,6 +60,6 @@ class TestMutualInfo:
         def circuit():
             return qml.mutual_info(wires0=[0], wires1=[1])
 
-        _ = circuit()
+        circuit()
 
         assert isinstance(circuit.tape[0], _MutualInfo)

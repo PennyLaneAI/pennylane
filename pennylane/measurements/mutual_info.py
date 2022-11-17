@@ -110,8 +110,8 @@ class _MutualInfo(StateMeasurement):
     def process_state(self, state: Sequence[complex], wires: Wires):
         return qml.math.mutual_info(
             state,
-            indices0=[self.wires[0]],
-            indices1=[self.wires[1]],
-            c_dtype="complex128",
+            indices0=list(self._wires[0]),
+            indices1=list(self._wires[1]),
+            c_dtype=state.dtype,
             base=self.log_base,
         )
