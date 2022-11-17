@@ -36,7 +36,6 @@ from .qcut import (
     contract_tensors,
     qcut_processing_fn,
     qnode_execution_wrapper,
-    remap_tape_wires,
     kahypar_cut,
     place_wire_cuts,
     find_and_place_cuts,
