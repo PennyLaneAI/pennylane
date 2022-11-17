@@ -58,6 +58,11 @@
 
 <h3>Improvements</h3>
 
+
+* Improve performance of `Wires.all_wires`.
+  [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
+
+
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
@@ -73,15 +78,22 @@
   attributes were modified.
   [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
+* An issue with `drain=False` in the adaptive optimizer is fixed. Before the fix, the operator pool
+  needed to be re-constructed inside the optimization pool when `drain=False`. With the new fix, 
+  this reconstruction is not needed.
+  [#3361](https://github.com/PennyLaneAI/pennylane/pull/3361)
+
 * If the device originally has no shots but finite shots are dynamically specified, Hamiltonian
   expansion now occurs.
   [(#3369)](https://github.com/PennyLaneAI/pennylane/pull/3369)
+
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Utkarsh Azad
+Pieter Eendebak
 Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
