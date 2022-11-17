@@ -492,6 +492,6 @@ def test_insert_decorator_causes_custom_insert_error_non_qwc_obs():
     # This tape's expansion fails, but shouldn't cause a downstream IndexError. See issue #3103
     with pytest.raises(
         qml.QuantumFunctionError,
-        match="The insert transform cannot transform a circuit with non-commuting observables",
+        match="The insert transform cannot transform a circuit measuring non-commuting observables",
     ):
         noisy_circuit(0.4)
