@@ -49,7 +49,7 @@
   @qml.qnode(dev)
   def circuit(phi):
       qml.BasisState(np.array([0, 1]), wires=[0, 1])
-      qml.OrbitalRotation(phi, wires=[0, 1])
+      qml.FermionicSWAP(phi, wires=[0, 1])
       return qml.state()
   ```
 
