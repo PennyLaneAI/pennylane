@@ -90,6 +90,6 @@ class _MutualInfo(StateMeasurement):
             state,
             indices0=[self.wires[0]],
             indices1=[self.wires[1]],
-            c_dtype="complex128",
+            c_dtype=state.dtype,
             base=self.log_base,
         )
