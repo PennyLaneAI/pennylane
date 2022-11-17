@@ -3562,7 +3562,7 @@ class TestCutCircuitTransform:
         dev_2 = qml.device("default.qubit", wires=["Alice", 3.14, "Bob"])
 
         uncut_circuit = qml.QNode(circuit, dev_uncut)
-        cut_circuit_1 = qml.transforms.cut_circuit(
+        cut_circuit_1 = qml.qcut.cut_circuit(
             qml.QNode(circuit, dev_1), use_opt_einsum=use_opt_einsum
         )
         cut_circuit_2 = qml.transforms.cut_circuit(
@@ -3581,7 +3581,7 @@ class TestCutCircuitTransform:
         are disconnected from the final terminal measurements is executed correctly"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
+        @qml.qcut.cut_circuit(use_opt_einsum=use_opt_einsum)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -3600,7 +3600,7 @@ class TestCutCircuitTransform:
         fragments) is executed correctly"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
+        @qml.qcut.cut_circuit(use_opt_einsum=use_opt_einsum)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -4105,7 +4105,7 @@ class TestCutStrategy:
                 else {num_fragments_probed}
             )
         elif exhaustive:
-            num_tape_gates = sum(not isinstance(n, qcut.WireCut) for n in tape_dag.nodes)
+            num_tape_gates = sum(not isinstance(n, qml.WireCut) for n in tape_dag.nodes)
             assert {v["num_fragments"] for v in all_cut_kwargs} == set(range(2, num_tape_gates + 1))
 
     @pytest.mark.parametrize(
@@ -4620,7 +4620,7 @@ class TestAutoCutCircuit:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.transforms.cut_circuit(auto_cutter=True)
+        @qml.qcut.cut_circuit(auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -4640,7 +4640,7 @@ class TestAutoCutCircuit:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.transforms.cut_circuit(auto_cutter=True)
+        @qml.qcut.cut_circuit(auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
