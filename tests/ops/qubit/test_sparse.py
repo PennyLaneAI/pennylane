@@ -62,6 +62,14 @@ class TestSparse:
         H = qml.SparseHamiltonian(csr_matrix(np.array([[1, 0], [-1.5, 0]])), 1)
         assert H.label() == "𝓗"
 
+    def test_valueeror_shape(self):
+        """Test that iniatilization raises a ValueError if the shape is not correct for the number of wires."""
+        mat = csr_matrix([[1, 0], [0, 1]])
+        with pytest.raises(
+            ValueError, match=r"Sparse Matrix must be of shape \(4, 4\). Got \(2, 2\)."
+        ):
+            qml.SparseHamiltonian(mat, wires=(0, 1))
+
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
     def test_sparse_typeerror(self, sparse_hamiltonian):
         """Test that the SparseHamiltonian class raises a TypeError on incorrect inputs."""
@@ -69,12 +77,12 @@ class TestSparse:
         sparse_hamiltonian = coo_matrix(mat)
 
         with pytest.raises(TypeError, match="Observable must be a scipy sparse csr_matrix"):
-            qml.SparseHamiltonian(sparse_hamiltonian)
+            qml.SparseHamiltonian(sparse_hamiltonian, wires=0)
 
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
     def test_sparse_matrix(self, sparse_hamiltonian, tol):
         """Test that the matrix property of the SparseHamiltonian class returns the correct matrix."""
-        num_wires = len(sparse_hamiltonian[0])
+        num_wires = int(np.log2(len(sparse_hamiltonian[0])))
         sparse_hamiltonian_csr = csr_matrix(sparse_hamiltonian)
         res_dynamic = qml.SparseHamiltonian(
             sparse_hamiltonian_csr, range(num_wires)
@@ -88,7 +96,7 @@ class TestSparse:
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
     def test_matrix(self, sparse_hamiltonian, tol):
         """Test that the matrix property of the SparseHamiltonian class returns the correct matrix."""
-        num_wires = len(sparse_hamiltonian[0])
+        num_wires = int(np.log2(len(sparse_hamiltonian[0])))
         sparse_hamiltonian_csr = csr_matrix(sparse_hamiltonian)
         res_dynamic = qml.SparseHamiltonian(sparse_hamiltonian_csr, range(num_wires)).matrix()
         res_static = qml.SparseHamiltonian.compute_matrix(sparse_hamiltonian_csr)
