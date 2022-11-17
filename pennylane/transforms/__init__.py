@@ -125,7 +125,6 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.replace_wire_cut_nodes
     ~transforms.qcut.fragment_graph
     ~transforms.qcut.graph_to_tape
-    ~transforms.qcut.remap_tape_wires
     ~transforms.qcut.expand_fragment_tape
     ~transforms.qcut.expand_fragment_tapes_mc
     ~transforms.qcut.qcut_processing_fn

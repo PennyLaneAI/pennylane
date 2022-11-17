@@ -15,9 +15,14 @@
 """
 This module contains the qml.vn_entropy measurement.
 """
+import copy
+from typing import Sequence
+
+import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, VnEntropy
+from .measurements import ObservableReturnTypes, StateMeasurement, VnEntropy
 
 
 def vn_entropy(wires, log_base=None):
@@ -61,4 +66,35 @@ def vn_entropy(wires, log_base=None):
     .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
     """
     wires = Wires(wires)
-    return MeasurementProcess(VnEntropy, wires=wires, log_base=log_base)
+    return _VnEntropy(VnEntropy, wires=wires, log_base=log_base)
+
+
+class _VnEntropy(StateMeasurement):
+    """Measurement process that returns the Von Neumann entropy."""
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        return_type: ObservableReturnTypes,
+        obs: Operator = None,
+        wires=None,
+        eigvals=None,
+        id=None,
+        log_base=None,
+    ):
+        self.log_base = log_base
+        super().__init__(return_type=return_type, obs=obs, wires=wires, eigvals=eigvals, id=id)
+
+    def process_state(self, state: Sequence[complex], wires: Wires):
+        return qml.math.vn_entropy(
+            state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
+        )
+
+    def __copy__(self):
+        return self.__class__(
+            self.return_type,
+            obs=copy.copy(self.obs),
+            wires=self._wires,
+            eigvals=self._eigvals,
+            log_base=self.log_base,
+        )
