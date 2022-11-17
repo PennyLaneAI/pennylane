@@ -45,6 +45,10 @@ Pending deprecations
   - Still accessible in v0.27
   - Will be removed in v0.28
 
+* ``transforms.qcut`` is deprecated. The functionality has been moved to a seperate ``qcut`` module.
+
+  - Deprecated in v0.28
+
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24

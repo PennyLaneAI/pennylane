@@ -190,6 +190,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_transforms
    code/qml_qaoa
    code/qml_qchem
+   code/qml_qcut
    code/qml_qnn
 
 .. toctree::
