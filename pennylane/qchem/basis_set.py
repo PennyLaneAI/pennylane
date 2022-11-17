@@ -128,7 +128,7 @@ def atom_basis_data(name, atom, load_data=False):
     return params
 
 
-def mol_basis_data(name, symbols):
+def mol_basis_data(name, symbols, load_data):
     r"""Generates default basis set parameters for a molecule.
 
     This function generates the default basis set parameters for a list of atomic symbols and
@@ -137,6 +137,7 @@ def mol_basis_data(name, symbols):
     Args:
         name (str): name of the basis set
         symbols (list[str]): symbols of the atomic species in the molecule
+        load_data (bool): flag to load data from the basis-set-exchange library
 
     Returns:
         tuple(list, tuple): the number of atomic basis functions and the basis set parameters for
@@ -154,7 +155,7 @@ def mol_basis_data(name, symbols):
     n_basis = []
     basis_set = []
     for s in symbols:
-        basis = atom_basis_data(name, s)
+        basis = atom_basis_data(name, s, load_data=load_data)
         n_basis += [len(basis)]
         basis_set += basis
     return n_basis, tuple(basis_set)
