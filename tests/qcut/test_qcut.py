@@ -29,7 +29,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane import qcut
+from pennylane.qcut import qcut
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
@@ -3565,7 +3565,7 @@ class TestCutCircuitTransform:
         cut_circuit_1 = qml.qcut.cut_circuit(
             qml.QNode(circuit, dev_1), use_opt_einsum=use_opt_einsum
         )
-        cut_circuit_2 = qml.transforms.cut_circuit(
+        cut_circuit_2 = qml.qcut.cut_circuit(
             qml.QNode(circuit, dev_2), use_opt_einsum=use_opt_einsum
         )
 
