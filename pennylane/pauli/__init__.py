@@ -40,7 +40,6 @@ from .utils import (
 
 from .conversion import (
     decompose,
-    pauli_sentence,
 )
 
 from .grouping import (

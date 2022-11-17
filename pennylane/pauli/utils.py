@@ -66,8 +66,7 @@ def is_pauli_word(observable):
 
 
     Args:
-        observable (Union[~.Observable]): the operator to be
-            examined
+        observable (~.Observable): the operator to be examined
 
     Returns:
         bool: true if the input observable is a Pauli word, false otherwise.
@@ -81,7 +80,6 @@ def is_pauli_word(observable):
     >>> is_pauli_word(qml.PauliZ(0) @ qml.Hadamard(1))
     False
     """
-    print(observable)
     if isinstance(observable, (Identity, PauliX, PauliY, PauliZ)):
         return True
 
