@@ -23,7 +23,13 @@ from .classical_shadow import (
 )
 from .counts import AllCounts, Counts, counts
 from .expval import Expectation, expval
-from .measurements import MeasurementProcess, MeasurementShapeError, ObservableReturnTypes
+from .measurements import (
+    MeasurementProcess,
+    MeasurementShapeError,
+    ObservableReturnTypes,
+    SampleMeasurement,
+    StateMeasurement,
+)
 from .mid_measure import MeasurementValue, MeasurementValueError, MidMeasure, measure
 from .mutual_info import MutualInfo, mutual_info
 from .probs import Probability, probs
