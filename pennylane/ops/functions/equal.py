@@ -19,8 +19,6 @@ from typing import Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
-from pennylane.measurements.mutual_info import _MutualInfo
-from pennylane.measurements.vn_entropy import _VnEntropy
 from pennylane.operation import Operator
 
 
@@ -139,10 +137,7 @@ def equal_measurements(op1, op2):
         observables_match = op1.obs == op2.obs
     wires_match = op1.wires == op2.wires
     eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
-    if isinstance(op1, (_MutualInfo, _VnEntropy)) and isinstance(op2, (_MutualInfo, _VnEntropy)):
-        log_base_match = op1.log_base == op2.log_base
-    else:
-        log_base_match = True  # measurement doesn't have a ``log_base`` attribute
+    log_base_match = getattr(op1, "log_base", None) == getattr(op2, "log_base", None)
 
     return (
         return_types_match
