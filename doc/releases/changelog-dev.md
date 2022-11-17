@@ -47,7 +47,7 @@
     >>> qml.math.purity(x, [0, 1])
     0.5
     ```
-    The `qml.qinfo.purity` can be used to transform a QNode returning a state to a function that returns the mutual information:
+    The `qml.qinfo.purity` can be used to transform a QNode returning a state to a function that returns the purity:
     ```python3
     dev = qml.device("default.mixed", wires=2)
 

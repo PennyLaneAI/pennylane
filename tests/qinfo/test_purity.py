@@ -126,7 +126,7 @@ class TestPurity:
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_IsingXX_qnode_purity_grad(self, device, param, wires, is_partial, diff_method):
-        """Tests purity for a qnode"""
+        """Tests gradient of the purity for a qnode"""
 
         dev = qml.device(device, wires=2)
 
@@ -208,7 +208,7 @@ class TestPurity:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     def test_IsingXX_qnode_purity_jax_jit(self, device, param, wires, is_partial):
-        """Test purity for a QNode with jax interface."""
+        """Test purity for a QNode with jax-jit interface."""
 
         import jax
         import jax.numpy as jnp
@@ -230,7 +230,7 @@ class TestPurity:
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_IsingXX_qnode_purity_grad_jax_jit(self, device, param, wires, is_partial, diff_method):
-        """Test purity for a QNode gradient with Jax."""
+        """Test purity for a QNode gradient with jax-jit."""
 
         import jax
 
@@ -253,7 +253,7 @@ class TestPurity:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     def test_IsingXX_qnode_purity_torch(self, device, param, wires, is_partial):
-        """Tests purity for a qnode"""
+        """Tests purity for a qnode for the torch interface"""
 
         import torch
 
@@ -299,7 +299,7 @@ class TestPurity:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     def test_IsingXX_qnode_purity_tf(self, device, param, wires, is_partial):
-        """Tests purity for a qnode"""
+        """Tests purity for a qnode for the tf interface."""
 
         import tensorflow as tf
 
