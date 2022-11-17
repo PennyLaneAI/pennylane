@@ -72,5 +72,5 @@ class _VnEntropy(StateMeasurement):
 
     def process_state(self, state: Sequence[complex], wires: Wires):
         return qml.math.vn_entropy(
-            state, indices=self.wires, c_dtype="complex128", base=self.log_base
+            state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
         )
