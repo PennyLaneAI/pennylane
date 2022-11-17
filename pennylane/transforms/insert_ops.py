@@ -217,7 +217,7 @@ def insert(
         )
     except qml.QuantumFunctionError as e:
         raise qml.QuantumFunctionError(
-            "The insert transform cannot transform a circuit with non-commuting observables. "
+            "The insert transform cannot transform a circuit measuring non-commuting observables. "
             "Consider wrapping the gates in their own function and transforming only that function."
         ) from e
 
