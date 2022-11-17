@@ -16,6 +16,7 @@ build an active space and generate single and double excitations.
 """
 # pylint: disable=too-many-locals
 import os
+import re
 from shutil import copyfile
 
 from pennylane import numpy as np
@@ -412,3 +413,129 @@ def excitations_to_wires(singles, doubles, wires=None):
         doubles_wires.append([d1_wires, d2_wires])
 
     return singles_wires, doubles_wires
+
+
+def mol_data(identifier, identifier_type="name"):
+    r"""Obtain symbols and geometry of a compound from the PubChem Database.
+
+    The `PubChem <https://pubchem.ncbi.nlm.nih.gov>`__ database is one of the largest public
+    repositories for information on chemical substances from which symbols and geometry can be
+    retrieved for a compound by its name, SMILES, InChI, InChIKey, or PubChem Compound ID (CID) to
+    build a molecule object for Hartree-Fock calculations. The retrieved atomic coordinates will be
+    converted to atomic units <https://en.wikipedia.org/wiki/Bohr_radius>__ for consistency.
+
+    Args:
+        identifier (str or int): compound's identifier as required by the PubChem database
+        identifier_type (str): type of the provided identifier - name, CAS, CID, SMILES, InChI, InChIKey
+
+    Returns:
+        Tuple(list[str], array[float]): symbols and geometry (in Bohr radius) of the compound
+
+    **Example**
+
+    >>> mol_data("BeH2")
+    (['Be', 'H', 'H'],
+     array([[ 4.79405604,  0.29290815,  0.        ],
+            [ 3.77946   , -0.29290815,  0.        ],
+            [ 5.80884105, -0.29290815,  0.        ]]))
+
+    >>> mol_data(223, "CID")
+    (['N', 'H', 'H', 'H', 'H'],
+    array([[ 4.79404621,  0.        ,  0.        ],
+            [ 5.80882913,  0.5858151 ,  0.        ],
+            [ 3.77945225, -0.5858151 ,  0.        ],
+            [ 4.20823111,  1.01459396,  0.        ],
+            [ 5.3798613 , -1.01459396,  0.        ]]))
+
+    .. details::
+
+        ``mol_data`` can also be used with other chemical identifiers - CAS, SMILES, InChI, InChIKey:
+
+        >>> mol_data("74-82-8", "CAS")
+        (['C', 'H', 'H', 'H', 'H'],
+        array([[ 0.        ,  0.        ,  0.        ],
+                [ 1.04709725,  1.51102501,  0.93824902],
+                [ 1.29124986, -1.53710323, -0.47923455],
+                [-1.47058487, -0.70581271,  1.26460472],
+                [-0.86795121,  0.7320799 , -1.7236192 ]]))
+
+        >>> mol_data("[C]", "SMILES")
+        (['C', 'H', 'H', 'H', 'H'],
+        array([[ 0.        ,  0.        ,  0.        ],
+                [ 1.04709725,  1.51102501,  0.93824902],
+                [ 1.29124986, -1.53710323, -0.47923455],
+                [-1.47058487, -0.70581271,  1.26460472],
+                [-0.86795121,  0.7320799 , -1.7236192 ]]))
+
+        >>> mol_data("InChI=1S/CH4/h1H4", "InChI")
+        (['C', 'H', 'H', 'H', 'H'],
+        array([[ 0.        ,  0.        ,  0.        ],
+                [ 1.04709725,  1.51102501,  0.93824902],
+                [ 1.29124986, -1.53710323, -0.47923455],
+                [-1.47058487, -0.70581271,  1.26460472],
+                [-0.86795121,  0.7320799 , -1.7236192 ]]))
+
+        >>> mol_data("VNWKTOKETHGBQD-UHFFFAOYSA-N", "InChIKey")
+        (['C', 'H', 'H', 'H', 'H'],
+        array([[ 0.        ,  0.        ,  0.        ],
+                [ 1.04709725,  1.51102501,  0.93824902],
+                [ 1.29124986, -1.53710323, -0.47923455],
+                [-1.47058487, -0.70581271,  1.26460472],
+                [-0.86795121,  0.7320799 , -1.7236192 ]]))
+
+    """
+
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        import pubchempy as pcp
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires pubchempy.\nIt can be installed with: pip install pubchempy."
+        ) from Error
+
+    # https://gist.github.com/lsauer/1312860/264ae813c2bd2c27a769d261c8c6b38da34e22fb#file-smiles_inchi_annotated-js
+    identifier_patterns = {
+        "name": re.compile(r"^[a-zA-Z0-9_+-]+$"),
+        "cas": re.compile(r"^\d{1,7}\-\d{2}\-\d$"),
+        "smiles": re.compile(
+            r"^(?!InChI=)(?!\d{1,7}\-\d{2}\-\d)(?![A-Z]{14}\-[A-Z]{10}(\-[A-Z])?)[^J][a-zA-Z0-9@+\-\[\]\(\)\\\/%=#$]{1,}$"
+        ),
+        "inchi": re.compile(
+            r"^InChI\=1S?\/[A-Za-z0-9\.]+(\+[0-9]+)?(\/[cnpqbtmsih][A-Za-z0-9\-\+\(\)\,\/\?\;\.]+)*$"
+        ),
+        "inchikey": re.compile(r"^[A-Z]{14}\-[A-Z]{10}(\-[A-Z])?"),
+    }
+    if identifier_type.lower() == "cid":
+        cid = int(identifier)
+    else:
+        if identifier_type.lower() not in identifier_patterns.keys():
+            raise ValueError(
+                "Specified identifier type is not supported. Supported type are: name, CAS, SMILES, InChI, InChIKey."
+            )
+        try:
+            if identifier_patterns[identifier_type.lower()].search(identifier):
+                if identifier_type.lower() == "cas":
+                    identifier_type = "name"
+                cid = pcp.get_cids(identifier, namespace=identifier_type.lower())[0]
+            else:
+                raise ValueError(
+                    f"Specified identifier doesn't seem to match type: {identifier_type}."
+                )
+        except (IndexError, pcp.NotFoundError) as exc:
+            raise ValueError("Specified molecule does not exist in the PubChem Database.") from exc
+
+    try:
+        pcp_molecule = pcp.Compound.from_cid(cid, record_type="3d")
+    except pcp.NotFoundError:
+        pcp_molecule = pcp.Compound.from_cid(cid, record_type="2d")
+    except ValueError as exc:
+        raise ValueError("Provided CID (or Identifier) is None.") from exc
+
+    data_mol = pcp_molecule.to_dict(properties=["atoms"])
+    symbols = [atom["element"] for atom in data_mol["atoms"]]
+    geometry = (
+        np.array([[atom["x"], atom["y"], atom.get("z", 0.0)] for atom in data_mol["atoms"]])
+        / bohr_angs
+    )
+
+    return symbols, geometry
