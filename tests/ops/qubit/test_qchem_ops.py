@@ -1119,6 +1119,35 @@ class TestFermionicSWAP:
         mat_then_pow = fractional_matrix_power(mat, n)
         assert qml.math.allclose(pow_mat, mat_then_pow)
 
+    def test_adjoint(self):
+        """Test adjoint method for adjoint op decomposition."""
+
+        phi = 1.234
+        wires = (0, 1)
+        op = qml.FermionicSWAP(phi, wires=wires)
+        adj_op = qml.adjoint(op, lazy=False)
+        assert qml.equal(adj_op, qml.FermionicSWAP(-phi, wires=wires))
+
+    def test_adjoint_integration(self):
+        """Test that the adjoint correctly inverts the fermionic swap operation"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.PauliX(wires=0)
+            qml.FermionicSWAP(phi, wires=[0, 1])
+            qml.adjoint(qml.FermionicSWAP)(phi, wires=[0, 1])
+            qml.PauliX(wires=0)
+            return qml.state()
+
+        res = circuit(0.1)
+
+        expected = np.zeros(4)
+        expected[0] = 1.0
+
+        assert np.allclose(res, expected)
+
     @pytest.mark.autograd
     def test_autograd(self):
         """Tests that operations are computed correctly using the
