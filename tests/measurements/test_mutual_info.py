@@ -60,6 +60,6 @@ class TestMutualInfo:
         def circuit():
             return qml.mutual_info(wires0=[0], wires1=[1])
 
-        _ = circuit()
+        circuit()
 
         assert isinstance(circuit.tape[0], _MutualInfo)
