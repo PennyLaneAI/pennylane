@@ -15,7 +15,7 @@
 This module contains functions and classes to create a
 :class:`~pennylane.qchem.basis_set.BasisFunction` object from standard basis sets such as STO-3G.
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, too-many-branches
 from .basis_data import basis_sets, load_basisset
 
 
