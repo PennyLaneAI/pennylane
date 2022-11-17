@@ -210,9 +210,15 @@ def insert(
     """
     # decompose templates and their adjoints (which fixes a bug in the tutorial_error_mitigation demo)
     # TODO: change this to be cleaner and more robust
-    circuit = circuit.expand(
-        stop_at=lambda op: not hasattr(qml.templates, op.name) and not isinstance(op, Adjoint)
-    )
+    try:
+        circuit = circuit.expand(
+            stop_at=lambda op: not hasattr(qml.templates, op.name) and not isinstance(op, Adjoint)
+        )
+    except qml.QuantumFunctionError as e:
+        raise qml.QuantumFunctionError(
+            "The insert transform cannot transform a circuit with non-commuting observables. "
+            "Consider wrapping the gates in their own function and transforming only that function."
+        ) from e
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
