@@ -39,12 +39,6 @@ Pending deprecations
   >>> qml.PauliX(0) ** -1
   PauliX(wires=[0])**-1
 
-* ``QuantumTape.inv()`` is deprecated. Please use ``QuantumTape.adjoint()`` instead. This method
-  returns a new tape instead of modifying itself in-place.
-
-  - Still accessible in v0.27
-  - Will be removed in v0.28
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
@@ -60,33 +54,39 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* ``QueuingContext`` is renamed ``QueuingManager``. 
-
-  - Still accessible via ``QueuingContext`` in v0.27
-  - Will only be accessible via ``QueuingManager`` in v0.28
-
-* ``QueuingManager.safe_update_info`` and ``AnnotateQueue.safe_update_info`` are removed.
-
-  - Still accessible in v0.27
-  -  Will be removed in v0.28
-
-* ``qml.tape.stop_recording`` and ``QuantumTape.stop_recording`` are moved to ``qml.QueuingManager.stop_recording``
-
-  - Still accessible in v0.27
-  -  Will be removed in v0.28
+Completed deprecation cycles
+----------------------------
 
 * ``qml.tape.get_active_tape`` is deprecated. Please use ``qml.QueuingManager.active_context()`` instead.
 
-  - Still accessible in v0.27
-  -  Will be removed in v0.28
+  - Deprecated in v0.27
+  - Removed in v0.28
 
 * ``qml.transforms.qcut.remap_tape_wires`` is deprecated. Please use ``qml.map_wires`` instead.
 
-  - Still accessible in v0.27
-  - Will be removed in v0.28
+  - Deprecated in v0.27
+  - Removed in v0.28
 
-Completed deprecation cycles
-----------------------------
+* ``QuantumTape.inv()`` is deprecated. Please use ``QuantumTape.adjoint()`` instead. This method
+  returns a new tape instead of modifying itself in-place.
+
+  - Deprecated in v0.27
+  - Removed in v0.28
+
+* ``qml.tape.stop_recording`` and ``QuantumTape.stop_recording`` are moved to ``qml.QueuingManager.stop_recording``
+
+  - Deprecated in v0.27
+  - Removed in v0.28
+
+* ``QueuingContext`` is renamed ``QueuingManager``. 
+
+  - Deprecated name ``QueuingContext`` in v0.27
+  - Removed in v0.28
+
+* ``QueuingManager.safe_update_info`` and ``AnnotateQueue.safe_update_info`` are removed.
+
+  - Deprecated in v0.27
+  - Removed in v0.28
 
 * ``ObservableReturnTypes`` ``Sample``, ``Variance``, ``Expectation``, ``Probability``, ``State``, and ``MidMeasure``
   are moved to ``measurements`` from ``operation``.
