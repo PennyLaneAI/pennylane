@@ -4,8 +4,8 @@ on:
     types: [published]
 
 env:
-  TF_VERSION: 2.6.0
-  TORCH_VERSION: 1.10.0+cpu
+  TF_VERSION: 2.10.0
+  TORCH_VERSION: 1.11.0+cpu
 
 
 jobs:

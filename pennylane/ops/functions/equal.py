@@ -50,13 +50,13 @@ def equal(
     >>> op1 = qml.RX(np.array(.12), wires=0)
     >>> op2 = qml.RY(np.array(1.23), wires=0)
     >>> qml.equal(op1, op1), qml.equal(op1, op2)
-    True False
+    (True, False)
 
-    >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)) )
+    >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)))
     >>> True
-    >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)) )
+    >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)))
     >>> False
-    >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]) )
+    >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]))
     >>> True
 
     .. details::
@@ -137,7 +137,7 @@ def equal_measurements(op1, op2):
         observables_match = op1.obs == op2.obs
     wires_match = op1.wires == op2.wires
     eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
-    log_base_match = op1.log_base == op2.log_base
+    log_base_match = getattr(op1, "log_base", None) == getattr(op2, "log_base", None)
 
     return (
         return_types_match

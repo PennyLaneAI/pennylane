@@ -280,16 +280,28 @@ class TestDecomposition:
     @pytest.mark.parametrize("coeff", (1, 1 + 0.5j))
     def test_non_imag_no_decomposition(self, coeff):
         """Tests that the decomposition doesn't exist if the coefficient has a real component."""
-        op = Exp(coeff, qml.PauliX(0))
+        op = Exp(qml.PauliX(0), coeff)
         assert not op.has_decomposition
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
 
     def test_non_pauli_word_base_no_decomposition(self):
         """Tests that the decomposition doesn't exist if the base is not a pauli word."""
-        op = Exp(-0.5j, qml.S(0))
+        op = Exp(qml.S(0), -0.5j)
         assert not op.has_decomposition
         with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+    def test_nontensor_tensor_raises_error(self):
+        """Checks that accessing the decomposition throws an error if the base is a Tensor
+        object that is not a mathematical tensor"""
+        base_op = qml.PauliX(0) @ qml.PauliZ(0)
+        op = Exp(base_op, 1j)
+
+        with pytest.raises(NotImplementedError):
+            op.has_decomposition()
+
+        with pytest.raises(NotImplementedError):
             op.decomposition()
 
     @pytest.mark.parametrize(

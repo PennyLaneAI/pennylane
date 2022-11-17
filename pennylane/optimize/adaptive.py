@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Adaptive optimizer"""
+import copy
+
 # pylint: disable= no-value-for-parameter, protected-access
 import pennylane as qml
-
 from pennylane import numpy as np
 
 
@@ -31,6 +32,7 @@ def append_gate(tape, params, gates):
         qml.apply(o)
 
     for i, g in enumerate(gates):
+        g = copy.copy(g)
         g.data[0] = params[i]
         qml.apply(g)
 
@@ -189,7 +191,7 @@ class AdaptiveOptimizer:
                 gate
                 for gate in operator_pool
                 for operation in circuit.tape.operations
-                if qml.equal(gate, operation, rtol=float("inf"))
+                if (gate.name == operation.name and gate.wires == operation.wires)
             ]
             for gate in repeated_gates:
                 operator_pool.remove(gate)
@@ -204,9 +206,7 @@ class AdaptiveOptimizer:
         if params_zero:
             params = np.zeros(len(selected_gates))
         else:
-            params = np.array(
-                [gate.parameters[0]._value for gate in selected_gates], requires_grad=True
-            )
+            params = np.array([gate.parameters[0] for gate in selected_gates], requires_grad=True)
 
         for _ in range(self.param_steps):
             params, _ = optimizer.step_and_cost(
