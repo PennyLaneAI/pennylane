@@ -435,14 +435,14 @@ op_1 = (
     + openfermion.QubitOperator("Y0 X1", 2)
     + openfermion.QubitOperator("Z0 Y1", 2.3e-08j)
 )
-op_2 = openfermion.QubitOperator("Z0 Y1", 2.3e-4j)
+op_2 = openfermion.QubitOperator("Z0 Y1", 2.3e-6j)
 
 
 @pytest.mark.parametrize(
     ("qubit_op", "tol"),
     [
         (op_1, 1e08),
-        (op_2, 1e012),
+        (op_2, 1e010),
     ],
 )
 def test_exception_import_operator(qubit_op, tol):
