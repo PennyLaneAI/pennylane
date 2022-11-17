@@ -423,34 +423,67 @@ def _execute_bwd_new(
         res = jax.pure_callback(wrapper, shape_dtype_structs, params)
         return res
 
+    @jax.custom_jvp
+    def callback_fun(jvp_tapes, num_params):
+        def wrapper():
+            jacs = execute_fn(jvp_tapes)[0]
+            return jacs
+
+        shape_dtype_structs = jax.ShapeDtypeStruct((), dtype)
+        # TODO: no-hardcode
+        return jax.pure_callback(wrapper, [shape_dtype_structs] * 4)
+
+    @callback_fun.defjvp
+    def callback_fun_jvp(primals, tangents):
+        # TODO:
+        print('in callback_fun_jvp here')
+        return primals, tangents
+
+
+    def callback_fun_fwd(new_tapes, num_params):
+        # Backward: Gradient function is a device method.
+        def wrapper():
+            with qml.tape.Unwrap(*new_tapes):
+                return gradient_fn(new_tapes, **gradient_kwargs)
+
+        shape_dtype_structs = jax.ShapeDtypeStruct((), dtype)
+        return jax.pure_callback(wrapper, [shape_dtype_structs] * num_params)
+
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):
         params = primals[0]
 
         new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
+        num_params = np.sum([len(p) for p in params])
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
+            multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
+            with qml.tape.Unwrap(*new_tapes):
+                jvp_tapes, processing_fn = qml.gradients.batch_jvp(
+                    new_tapes,
+                    tangents[0],
+                    gradient_fn,
+                    device.shot_vector,
+                    reduction="append",
+                    gradient_kwargs=gradient_kwargs,
+                )
+                jvps = processing_fn(callback_fun(jvp_tapes, num_params))
+        else:
+            # Execution: execute the function first
+            res = execute_wrapper(primals[0])
+            # Backward: Gradient function is a device method.
+            jacs = callback_fun_fwd(new_tapes, num_params)
+            print('jacs: ', jacs, tangents[0])
 
-            def wrapper(params, dys):
-                multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-                with qml.tape.Unwrap(*new_tapes):
-                    jvp_tapes, processing_fn = qml.gradients.batch_jvp(
-                        new_tapes,
-                        dys,
-                        gradient_fn,
-                        device.shot_vector,
-                        reduction="append",
-                        gradient_kwargs=gradient_kwargs,
-                    )
-                    jacs = processing_fn(execute_fn(jvp_tapes)[0])
-                return jacs
+            multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
+            # TODO:
+            assert len(tangents[0]) == 1
+            jvps = _compute_jvps(jacs, tangents[0][0], multi_measurements)
+            jvps = [jnp.squeeze(j) for j in jvps]
 
-        total_params = np.sum([len(p) for p in params])
-        shape_dtype_structs = jax.ShapeDtypeStruct((1,), dtype)
-        jvps = jax.pure_callback(wrapper, [shape_dtype_structs], params, tangents[0])
-
+        print('some: ', isinstance(gradient_fn, qml.gradients.gradient_transform))
         res1 = execute_wrapper(params)
-        res2 = [jvps[0][0]]
-        print(res1, res2)
+        res2 = [jvps[0]]
+        print("res1, res2: ", res1, res2)
 
         return res1, res2
 
