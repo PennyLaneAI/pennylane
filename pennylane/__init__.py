@@ -79,8 +79,6 @@ from pennylane.transforms import (
     batch_input,
     batch_transform,
     batch_partial,
-    cut_circuit,
-    cut_circuit_mc,
     compile,
     cond,
     defer_measurements,
@@ -96,6 +94,7 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
 )
+from pennylane.qcut import cut_circuit, cut_circuit_mc
 from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost

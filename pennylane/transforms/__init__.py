@@ -230,6 +230,4 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from . import qcut
-from .qcut import cut_circuit, cut_circuit_mc
 from .broadcast_expand import broadcast_expand
