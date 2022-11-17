@@ -15,10 +15,8 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
-import contextlib
 import copy
 from threading import RLock
-from warnings import warn
 
 import pennylane as qml
 from pennylane.measurements import AllCounts, Counts, Probability, Sample
@@ -30,29 +28,6 @@ from .qscript import QuantumScript
 
 class TapeError(ValueError):
     """An error raised with a quantum tape."""
-
-
-def get_active_tape():
-    """Returns the currently recording tape.
-    If no tape is currently recording, ``None`` is returned.
-
-    **Example**
-
-    >>> with qml.tape.QuantumTape():
-    ...     qml.RX(0.2, wires="a")
-    ...     tape = qml.tape.get_active_tape()
-    ...     qml.RY(0.1, wires="b")
-    >>> print(tape)
-    <QuantumTape: wires=['a', 'b'], params=2>
-    >>> print(qml.tape.get_active_tape())
-    None
-    """
-    message = (
-        "qml.tape.get_active_tape is now deprecated."
-        " Please use qml.QueuingManager.active_context"
-    )
-    warn(message, UserWarning)
-    return QueuingManager.active_context()
 
 
 def _err_msg_for_some_meas_not_qwc(measurements):
@@ -399,31 +374,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         finally:
             QuantumTape._lock.release()
 
-    # pylint: disable=no-self-use
-    @contextlib.contextmanager
-    def stop_recording(self):
-        """Context manager to temporarily stop recording operations
-        onto the tape. This is useful is scratch space is needed.
-
-        **Deprecated Method:** Please use ``qml.QueuingManager.stop_recording`` instead.
-
-        **Example**
-
-        >>> with qml.tape.QuantumTape() as tape:
-        ...     qml.RX(0, wires=0)
-        ...     with tape.stop_recording():
-        ...         qml.RY(1.0, wires=1)
-        ...     qml.RZ(2, wires=1)
-        >>> tape.operations
-        [RX(0, wires=[0]), RZ(2, wires=[1])]
-        """
-        warn(
-            "QuantumTape.stop_recording has moved to qml.QueuingManager.stop_recording.",
-            UserWarning,
-        )
-        with QueuingManager.stop_recording():
-            yield
-
     # ========================================================
     # construction methods
     # ========================================================
@@ -462,100 +412,3 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
                 getattr(self, obj._queue_category).append(obj)
 
         self._update()
-
-    def inv(self):
-        """Inverts the processed operations.
-
-        Inversion is performed in-place.
-
-        **This method is deprecated:** See :meth:`QuantumTape.adjoint` instead.
-
-        .. note::
-
-            This method only inverts the quantum operations/unitary recorded
-            by the quantum tape; state preparations and measurements are left unchanged.
-
-        **Example**
-
-        .. code-block:: python
-
-            with QuantumTape() as tape:
-                qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
-                qml.RX(0.432, wires=0)
-                qml.Rot(0.543, 0.1, 0.4, wires=0).inv()
-                qml.CNOT(wires=[0, 'a'])
-                qml.probs(wires=0), qml.probs(wires='a')
-
-        This tape has the following properties:
-
-        >>> tape.operations
-        [BasisState(array([1, 1]), wires=[0, 'a']),
-         RX(0.432, wires=[0]),
-         Rot.inv(0.543, 0.1, 0.4, wires=[0]),
-         CNOT(wires=[0, 'a'])]
-        >>> tape.get_parameters()
-        [array([1, 1]), 0.432, 0.543, 0.1, 0.4]
-
-        Here, let's set some trainable parameters:
-
-        >>> tape.trainable_params = [1, 2]
-        >>> tape.get_parameters()
-        [0.432, 0.543]
-
-        Inverting the tape:
-
-        >>> tape.inv()
-        >>> tape.operations
-        [BasisState(array([1, 1]), wires=[0, 'a']),
-         CNOT.inv(wires=[0, 'a']),
-         Rot(0.543, 0.1, 0.4, wires=[0]),
-         RX.inv(0.432, wires=[0])]
-
-        Tape inversion also modifies the order of tape parameters:
-
-        >>> tape.get_parameters(trainable_only=False)
-        [array([1, 1]), 0.543, 0.1, 0.4, 0.432]
-        >>> tape.get_parameters(trainable_only=True)
-        [0.543, 0.432]
-        >>> tape.trainable_params
-        [1, 4]
-        """
-        message = "QuantumTape.inv is now deprecated. Please use QuantumTape.adjoint instead."
-        warn(message, UserWarning)
-        # we must remap the old parameter
-        # indices to the new ones after the operation order is reversed.
-        parameter_indices = []
-        param_count = 0
-
-        for queue in [self._prep, self._ops, self.observables]:
-            # iterate through all queues
-
-            obj_params = []
-
-            for obj in queue:
-                # index the number of parameters on each operation
-                num_obj_params = len(obj.data)
-                obj_params.append(list(range(param_count, param_count + num_obj_params)))
-
-                # keep track of the total number of parameters encountered so far
-                param_count += num_obj_params
-
-            if queue == self._ops:
-                # reverse the list representing operator parameters
-                obj_params = obj_params[::-1]
-
-            parameter_indices.extend(obj_params)
-
-        # flatten the list of parameter indices after the reversal
-        parameter_indices = [item for sublist in parameter_indices for item in sublist]
-        parameter_mapping = dict(zip(parameter_indices, range(len(parameter_indices))))
-
-        # map the params
-        self.trainable_params = [parameter_mapping[i] for i in self.trainable_params]
-        _par_info_dict = {parameter_mapping[k]: v for k, v in enumerate(self._par_info)}
-        self._par_info = [_par_info_dict[i] for i in range(len(_par_info_dict))]
-
-        for idx, op in enumerate(self._ops):
-            self._ops[idx] = qml.adjoint(op, lazy=False)
-
-        self._ops = list(reversed(self._ops))
