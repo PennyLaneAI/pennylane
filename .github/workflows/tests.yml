@@ -177,6 +177,9 @@ jobs:
       - name: Install KaHyPar
         run: pip3 install kahypar==1.1.7
 
+      - name: Install KaHyPar
+        run: pip3 install opt_einsum
+
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel
