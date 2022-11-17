@@ -228,7 +228,7 @@ class QNode:
         *broadcasted* input correspondingly is a 1D array:
 
         >>> x = np.array([1., 2., 3.])
-        >>> op = qml.RX(x, wires=0) # Additional axis of size 3
+        >>> op = qml.RX(x, wires=0) # Additional axis of size 3.
 
         An operator ``op`` that supports broadcasting indicates the expected number of
         axes--or dimensions--in its attribute ``op.ndim_params``. This attribute is a tuple with
