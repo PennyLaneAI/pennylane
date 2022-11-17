@@ -9,6 +9,9 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
+  * Add `_VnEntropy` class.
+    [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
+
   * Add `_MutualInfo` class.
     [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
 
