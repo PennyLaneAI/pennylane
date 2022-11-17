@@ -59,33 +59,33 @@ Completed deprecation cycles
 
 * ``qml.tape.get_active_tape`` is deprecated. Please use ``qml.QueuingManager.active_context()`` instead.
 
-  - Still accessible in v0.27
+  - Deprecated in v0.27
   - Removed in v0.28
 
 * ``qml.transforms.qcut.remap_tape_wires`` is deprecated. Please use ``qml.map_wires`` instead.
 
-  - Still accessible in v0.27
+  - Deprecated in v0.27
   - Removed in v0.28
 
 * ``QuantumTape.inv()`` is deprecated. Please use ``QuantumTape.adjoint()`` instead. This method
   returns a new tape instead of modifying itself in-place.
 
-  - Still accessible in v0.27
+  - Deprecated in v0.27
   - Removed in v0.28
 
 * ``qml.tape.stop_recording`` and ``QuantumTape.stop_recording`` are moved to ``qml.QueuingManager.stop_recording``
 
-  - Still accessible in v0.27
+  - Deprecated in v0.27
   - Removed in v0.28
 
 * ``QueuingContext`` is renamed ``QueuingManager``. 
 
-  - Still accessible via ``QueuingContext`` in v0.27
+  - Deprecated name ``QueuingContext`` in v0.27
   - Removed in v0.28
 
 * ``QueuingManager.safe_update_info`` and ``AnnotateQueue.safe_update_info`` are removed.
 
-  - Still accessible in v0.27
+  - Deprecated in v0.27
   - Removed in v0.28
 
 * ``ObservableReturnTypes`` ``Sample``, ``Variance``, ``Expectation``, ``Probability``, ``State``, and ``MidMeasure``
