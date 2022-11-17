@@ -40,13 +40,15 @@
 
 <h3>Improvements</h3>
 
-
 * Improve performance of `Wires.all_wires`.
   [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
 
-
 * A representation has been added to the `Molecule` class.
-  [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
+  [(#3364)](https://github.com/PennyLaneAI/pennylane/pull/3364)
+
+* Add detail to the error message when the insert transform
+  fails to diagonalize non-qubit-wise-commuting observables.
+  [(#3381)](https://github.com/PennyLaneAI/pennylane/pull/3381)
 
 <h3>Breaking changes</h3>
 
