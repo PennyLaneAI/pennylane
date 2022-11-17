@@ -318,7 +318,7 @@ def test_inconsistent_active_spaces(
 
 
 def mock_get_cids(identifier, namespcae, pcp=None):
-    """Return PubChem Compound ID for the provided identifer"""
+    """Return PubChem Compound ID for the provided identifier"""
     records = {
         297: [
             ("CH4", "name"),
