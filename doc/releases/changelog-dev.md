@@ -57,9 +57,15 @@
   attributes were modified.
   [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
+* An issue with `drain=False` in the adaptive optimizer is fixed. Before the fix, the operator pool
+  needed to be re-constructed inside the optimization pool when `drain=False`. With the new fix, 
+  this reconstruction is not needed.
+  [#3361](https://github.com/PennyLaneAI/pennylane/pull/3361)
+
 * If the device originally has no shots but finite shots are dynamically specified, Hamiltonian
   expansion now occurs.
   [(#3369)](https://github.com/PennyLaneAI/pennylane/pull/3369)
+
 
 <h3>Contributors</h3>
 
