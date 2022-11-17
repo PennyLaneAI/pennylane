@@ -121,6 +121,7 @@ class Sum(CompositeOp):
     """
 
     _op_symbol = "+"
+    _math_op = math.sum
 
     @property
     def is_hermitian(self):
@@ -134,30 +135,11 @@ class Sum(CompositeOp):
 
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_terms`
-
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
         return [1.0] * len(self), list(self)
-
-    def eigvals(self):
-        r"""Return the eigenvalues of the specified operator.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        Returns:
-            array: array containing the eigenvalues of the operator
-        """
-        if self.has_overlapping_wires:
-            return self.eigendecomposition["eigval"]
-        eigvals = [
-            qml.utils.expand_vector(summand.eigvals(), list(summand.wires), list(self.wires))
-            for summand in self
-        ]
-        return qml.math.sum(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -194,7 +176,6 @@ class Sum(CompositeOp):
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        """Compute the sparse matrix representation of the Sum op in csr representation."""
         mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 
         reduced_mat, sum_wires = math.reduce_matrices(
@@ -214,6 +195,11 @@ class Sum(CompositeOp):
         Returns: None
         """
         return None
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_adjoint(self):
+        return True
 
     def adjoint(self):
         return Sum(*(qml.adjoint(summand) for summand in self))
@@ -251,12 +237,7 @@ class Sum(CompositeOp):
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
-        return qml.s_prod(
-            0,
-            qml.prod(*(qml.Identity(w) for w in self.wires))
-            if len(self.wires) > 1
-            else qml.Identity(self.wires[0]),
-        )
+        return qml.s_prod(0, qml.Identity(self.wires))
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:

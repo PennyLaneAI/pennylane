@@ -69,7 +69,7 @@ One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/
 Basic usage
 -----------
 
-There are two ways of computing expectation values with classical shadows in PennyLane. The first is to return :func:`shadow_expval` directly from the qnode.
+The easiest way of computing expectation values with classical shadows in PennyLane is to return :func:`shadow_expval` directly from the qnode.
 
 .. code-block:: python3
 

@@ -14,22 +14,14 @@
 """
 Unit tests for the qubit matrix-based operations.
 """
-import pytest
 import numpy as np
+import pytest
+from gate_data import H, I, S, T, X, Z
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.operation import DecompositionUndefinedError
-
-from gate_data import (
-    I,
-    X,
-    Z,
-    H,
-    S,
-    T,
-)
+from pennylane.wires import Wires
 
 
 class TestQubitUnitary:
@@ -123,7 +115,7 @@ class TestQubitUnitary:
         U3 = U.copy()
         U3[0, 0] += 0.5
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
+            qml.QubitUnitary(U3, wires=range(num_wires), unitary_check=True).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
@@ -155,7 +147,7 @@ class TestQubitUnitary:
         U3 = U.detach().clone()
         U3[0, 0] += 0.5
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
+            qml.QubitUnitary(U3, wires=range(num_wires), unitary_check=True).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
@@ -186,7 +178,7 @@ class TestQubitUnitary:
         # test non-unitary matrix
         U3 = tf.Variable(U + 0.5)
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
+            qml.QubitUnitary(U3, wires=range(num_wires), unitary_check=True).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
@@ -217,7 +209,7 @@ class TestQubitUnitary:
         # test non-unitary matrix
         U3 = U + 0.5
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
+            qml.QubitUnitary(U3, wires=range(num_wires), unitary_check=True).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
@@ -825,13 +817,16 @@ class TestControlledQubitUnitary:
             ]
         )
 
-        op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
+        op = qml.ControlledQubitUnitary(
+            U1, control_wires=("b", "c"), wires="a", control_values="01"
+        )
 
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
         assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert pow_ops[0].control_wires == op.control_wires
+        assert pow_ops[0].control_values == op.control_values
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
@@ -897,9 +892,11 @@ class TestControlledQubitUnitary:
 
         U = qml.PauliX(0).compute_matrix()
 
-        original = qml.ControlledQubitUnitary(U, control_wires=(0, 1), wires=4)
+        original = qml.ControlledQubitUnitary(U, control_wires=(0, 1), wires=4, control_values="01")
         original.inverse = inverse
-        expected = qml.ControlledQubitUnitary(U, control_wires=(0, 1, "a"), wires=4)
+        expected = qml.ControlledQubitUnitary(
+            U, control_wires=(0, 1, "a"), wires=4, control_values="011"
+        )
         expected.inverse = inverse
 
         out = original._controlled("a")

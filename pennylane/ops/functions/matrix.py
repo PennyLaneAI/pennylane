@@ -131,7 +131,7 @@ def matrix(op, *, wire_order=None):
 def _matrix(tape, wire_order=None):
     """Defines how matrix works if applied to a tape containing multiple operations."""
     params = tape.get_parameters(trainable_only=False)
-    interface = qml.math._multi_dispatch(params)
+    interface = qml.math.get_interface(*params)
 
     wire_order = wire_order or tape.wires
 

@@ -106,6 +106,15 @@ scripts.
 If you would like to contribute your own demo, see our [demo submission
 guide](https://pennylane.ai/qml/demos_submission.html).
 
+## Videos
+
+Seeing is believing! Check out [our videos](https://pennylane.ai/qml/videos.html) to learn about
+PennyLane, quantum computing concepts, and more. 
+
+<a href="https://pennylane.ai/qml/videos.html)">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/videos.png" width="900px">
+</a>
+
 ## Contributing to PennyLane
 
 We welcome contributions—simply fork the PennyLane repository, and then make a [pull

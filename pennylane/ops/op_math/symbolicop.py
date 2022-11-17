@@ -17,7 +17,7 @@ This submodule defines a base class for symbolic operations representing operato
 from copy import copy
 
 from pennylane.operation import Operator
-from pennylane.queuing import QueuingContext
+from pennylane.queuing import QueuingManager
 
 
 class SymbolicOp(Operator):
@@ -56,8 +56,8 @@ class SymbolicOp(Operator):
             if attr not in {"_hyperparameters"}:
                 setattr(copied_op, attr, value)
 
-        copied_op._hyperparameters = copy(self._hyperparameters)
-        copied_op._hyperparameters["base"] = copy(self.base)
+        copied_op._hyperparameters = copy(self.hyperparameters)
+        copied_op.hyperparameters["base"] = copy(self.base)
 
         return copied_op
 
@@ -92,16 +92,6 @@ class SymbolicOp(Operator):
     def wires(self):
         return self.base.wires
 
-    # pylint: disable=protected-access
-    @property
-    def _wires(self):
-        return self.base._wires
-
-    # pylint: disable=protected-access
-    @_wires.setter
-    def _wires(self, new_wires):
-        self.base._wires = new_wires
-
     @property
     def num_wires(self):
         return len(self.wires)
@@ -119,8 +109,8 @@ class SymbolicOp(Operator):
     def _queue_category(self):
         return self.base._queue_category  # pylint: disable=protected-access
 
-    def queue(self, context=QueuingContext):
-        context.safe_update_info(self.base, owner=self)
+    def queue(self, context=QueuingManager):
+        context.update_info(self.base, owner=self)
         context.append(self, owns=self.base)
         return self
 
@@ -136,3 +126,8 @@ class SymbolicOp(Operator):
                 self.base.hash,
             )
         )
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy(self)
+        new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
+        return new_op

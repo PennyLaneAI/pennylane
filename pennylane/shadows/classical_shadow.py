@@ -67,22 +67,22 @@ class ClassicalShadow:
             qml.Hadamard(0)
             qml.CNOT((0,1))
             qml.RX(x, wires=0)
-            return classical_shadow(wires=range(2))
+            return qml.classical_shadow(wires=range(2))
 
         bits, recipes = qnode(0)
-        shadow = ClassicalShadow(bits, recipes)
+        shadow = qml.ClassicalShadow(bits, recipes)
 
     After recording these ``T=1000`` quantum measurements, we can post-process the results to arbitrary local expectation values of Pauli strings.
     For example, we can compute the expectation value of a Pauli string
 
     >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
-    (1.0079999999999998+0j)
+    array(0.972)
 
     or of a Hamiltonian:
 
     >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
     >>> shadow.expval(H, k=1)
-    (2.2319999999999998+0j)
+    array(1.917)
 
     The parameter ``k`` is used to estimate the expectation values via the `median of means` algorithm (see `2002.08953 <https://arxiv.org/abs/2002.08953>`_). The case ``k=1`` corresponds to simply taking the mean
     value over all local snapshots. ``k>1`` corresponds to splitting the ``T`` local snapshots into ``k`` equal parts, and taking the median of their individual means. For the case of measuring only in the Pauli basis,
@@ -289,21 +289,21 @@ class ClassicalShadow:
                 qml.Hadamard(0)
                 qml.CNOT((0,1))
                 qml.RX(x, wires=0)
-                return classical_shadow(wires=range(2))
+                return qml.classical_shadow(wires=range(2))
 
             bits, recipes = qnode(0)
-            shadow = ClassicalShadow(bits, recipes)
+            shadow = qml.ClassicalShadow(bits, recipes)
 
         Compute Pauli string observables
 
         >>> shadow.expval(qml.PauliX(0) @ qml.PauliX(1), k=1)
-        (1.0079999999999998+0j)
+        array(1.116)
 
         or of a Hamiltonian using `the same` measurement results
 
-        >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0)@qml.PauliZ(1), qml.PauliX(0)@qml.PauliX(1)])
+        >>> H = qml.Hamiltonian([1., 1.], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)])
         >>> shadow.expval(H, k=1)
-        (2.2319999999999998+0j)
+        array(1.9980000000000002)
         """
         if not isinstance(H, Iterable):
             H = [H]
@@ -367,7 +367,8 @@ class ClassicalShadow:
 
         .. code-block:: python3
 
-            wires=4
+            wires = 4
+            dev = qml.device("default.qubit", wires=range(wires), shots=1000)
 
             @qml.qnode(dev)
             def max_entangled_circuit():
@@ -377,7 +378,7 @@ class ClassicalShadow:
                 return qml.classical_shadow(wires=range(wires))
 
             bits, recipes = max_entangled_circuit()
-            shadow = ClassicalShadow(bits, recipes)
+            shadow = qml.ClassicalShadow(bits, recipes)
 
             entropies = [shadow.entropy(wires=[0], alpha=alpha, atol=1e-2) for alpha in [1., 2., 3.]]
 
@@ -390,21 +391,20 @@ class ClassicalShadow:
 
             @qml.qnode(dev)
             def qnode(x):
-                for i in range(n_wires):
+                for i in range(wires):
                     qml.RY(x[i], wires=i)
 
-                for i in range(n_wires-1):
-                    qml.CNOT((i,i+1))
+                for i in range(wires - 1):
+                    qml.CNOT((i, i + 1))
 
-                return classical_shadow(wires=dev.wires)
+                return qml.classical_shadow(wires=range(wires))
 
+            x = np.linspace(0.5, 1.5, num=wires)
             bitstrings, recipes = qnode(x)
-            shadow = ClassicalShadow(bitstrings, recipes)
+            shadow = qml.ClassicalShadow(bitstrings, recipes)
 
-            entropies = [shadow.entropy(wires=wires, alpha=alpha, atol=1e-10) for alpha in [1., 2., 3.]]
-
-        >>> print(entropies)
-        [0.6727522114759635, 0.6252047673044356, 0.5996592216299593]
+        >>> [shadow.entropy(wires=wires, alpha=alpha, atol=1e-10) for alpha in [1., 2., 3.]]
+        [1.5419292874423107, 1.1537924276625828, 0.9593638767763727]
 
         """
 
@@ -414,10 +414,12 @@ class ClassicalShadow:
         # Allow for different log base
         div = np.log(base) if base else 1
 
-        if alpha == 2:
-            # special case of purity
-            res = -qml.math.log(qml.math.trace(rdm @ rdm))
-            return res / div
+        # This was returning negative values in most cases, so commenting it out
+        # until we figure out the issue.
+        # if alpha == 2:
+        #     # special case of purity
+        #     res = -qml.math.log(qml.math.trace(rdm @ rdm))
+        #     return res / div
 
         # Else
         # Compute Eigenvalues and choose only those >>0

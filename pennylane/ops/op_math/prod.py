@@ -30,10 +30,11 @@ from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
+from pennylane.wires import Wires
 
 from .composite import CompositeOp
 
-MAX_NUM_WIRES_KRON_PRODUCT = 11
+MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
 computing the sparse matrix representation."""
 
@@ -159,6 +160,7 @@ class Prod(CompositeOp):
     """
 
     _op_symbol = "@"
+    _math_op = math.prod
 
     def terms(self):  # is this method necessary for this class?
         return [1.0], [self]
@@ -181,6 +183,41 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_hermitian for op in self)
 
+    @property
+    def overlapping_ops(self) -> List[Tuple[Wires, List[Operator]]]:
+        """Groups all operands of the composite operator that act on overlapping wires taking
+        into account operator commutivity.
+
+        Returns:
+            List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
+            inner lists commute with each other.
+        """
+        if self._overlapping_ops is None:
+            overlapping_ops = []  # [(wires, [ops])]
+            for op in self:
+                op_idx = False
+                ops = [op]
+                wires = op.wires
+                for idx, (old_wires, old_ops) in reversed(list(enumerate(overlapping_ops))):
+                    if any(wire in old_wires for wire in wires):
+                        ops = old_ops + ops
+                        wires = old_wires + wires
+                        op_idx = idx
+                        old_wires, old_ops = overlapping_ops.pop(idx)
+                if op_idx is not False:
+                    overlapping_ops.insert(op_idx, (wires, ops))
+                else:
+                    overlapping_ops += [(wires, ops)]
+
+            self._overlapping_ops = [overlapping_op[1] for overlapping_op in overlapping_ops]
+
+        return self._overlapping_ops
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        return True
+
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
@@ -188,51 +225,40 @@ class Prod(CompositeOp):
         to support the intuition that when we write $\hat{O} = \hat{A} \dot \hat{B}$ it is implied
         that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
         """
-        if qml.queuing.QueuingContext.recording():
+        if qml.queuing.QueuingManager.recording():
             return [qml.apply(op) for op in self[::-1]]
         return list(self[::-1])
 
-    def eigvals(self):
-        """Return the eigenvalues of the specified operator.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        Returns:
-            array: array containing the eigenvalues of the operator
-        """
-        if self.has_overlapping_wires:
-            return self.eigendecomposition["eigval"]
-        eigvals = [
-            qml.utils.expand_vector(factor.eigvals(), list(factor.wires), list(self.wires))
-            for factor in self
-        ]
-
-        return qml.math.prod(eigvals, axis=0)
-
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        if self.has_overlapping_wires:
-            mats_and_wires_gen = (
-                (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
-                for op in self
-            )
 
-            reduced_mat, prod_wires = math.reduce_matrices(
-                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
-            )
+        def mats_gen():
+            for ops in self.overlapping_ops:
+                if len(ops) == 1:
+                    yield (
+                        qml.matrix(ops[0])
+                        if isinstance(ops[0], qml.Hamiltonian)
+                        else ops[0].matrix()
+                    )
+                else:
+                    mats_and_wires_gen = (
+                        (
+                            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(),
+                            op.wires,
+                        )
+                        for op in ops
+                    )
 
-            wire_order = wire_order or self.wires
+                    reduced_mat, _ = math.reduce_matrices(
+                        mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+                    )
 
-            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
-        mats_gen = (
-            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix() for op in self
-        )
-        full_mat = reduce(math.kron, mats_gen)
+                    yield reduced_mat
+
+        full_mat = reduce(math.kron, mats_gen())
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        """Compute the sparse matrix representation of the Prod op in csr representation."""
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 
@@ -264,6 +290,11 @@ class Prod(CompositeOp):
         """
         return "_ops" if all(op._queue_category == "_ops" for op in self) else None
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_adjoint(self):
+        return True
+
     def adjoint(self):
         return Prod(*(qml.adjoint(factor) for factor in self[::-1]))
 
@@ -293,11 +324,7 @@ class Prod(CompositeOp):
         if len(factors) == 1:
             factor = factors[0]
             if len(factor) == 0:
-                op = (
-                    Prod(*(qml.Identity(w) for w in self.wires))
-                    if len(self.wires) > 1
-                    else qml.Identity(self.wires[0])
-                )
+                op = qml.Identity(self.wires)
             else:
                 op = factor[0] if len(factor) == 1 else Prod(*factor)
             return op if global_phase == 1 else qml.s_prod(global_phase, op)
@@ -485,11 +512,7 @@ class _ProductFactorsGrouping:
                         continue
                     if exponent != 1:
                         op = Pow(base=op, z=exponent).simplify()
-                    if isinstance(op, Prod):
-                        self._factors += tuple(
-                            (factor,) for factor in op if not isinstance(factor, qml.Identity)
-                        )
-                    elif not isinstance(op, qml.Identity):
+                    if not isinstance(op, qml.Identity):
                         self._factors += ((op,),)
 
     def _remove_pauli_factors(self, wires: List[int]):

@@ -1,58 +1,49 @@
 :orphan:
 
-# Release 0.27.0-dev (development release)
+# Release 0.28.0-dev (development release)
 
 <h3>New features since last release</h3>
 
-* `qml.qchem.taper_operation` tapers any gate operation according to the `Z2`
-  symmetries of the Hamiltonian. 
-  [(#3002)](https://github.com/PennyLaneAI/pennylane/pull/3002)
+* Support custom measurement processes:
+  * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
+    method to process samples/quantum state.
+    [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
+  * Add `_MutualInfo` class.
+    [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
+
+* Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
+  [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
+ 
   ```pycon
-    >>> symbols = ['He', 'H']
-    >>> geometry =  np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4589]])
-    >>> mol = qchem.Molecule(symbols, geometry, charge=1)
-    >>> H, n_qubits = qchem.molecular_hamiltonian(symbols, geometry)
-    >>> generators = qchem.symmetry_generators(H)
-    >>> paulixops = qchem.paulix_ops(generators, n_qubits)
-    >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
-    >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]),
-                                generators, paulixops, paulix_sector, wire_order=H.wires)
-    [PauliRot(-3.14159+0.j, 'RY', wires=[0])]
-    ```
+  >>> mol_data("BeH2")
+  (['Be', 'H', 'H'],
+  array([[ 4.79405604,  0.29290815,  0.        ],
+         [ 3.77946   , -0.29290815,  0.        ],
+         [ 5.80884105, -0.29290815,  0.        ]]))
 
-  When used within a QNode, this method applies the tapered operation directly:
-
-  ```pycon
-    >>> dev = qml.device('default.qubit', wires=[0, 1])
-    >>> @qml.qnode(dev)
-    ... def circuit(params):
-    ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
-    ...                             generators, paulixops, paulix_sector, H.wires)
-    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
-    >>> drawer = qml.draw(circuit, show_all_wires=True)
-    >>> print(drawer(params=[3.14159]))
-        0: ─╭RXY(1.570796+0.00j)─╭RYX(1.570796+0.00j)─┤ ╭<Z@Z>
-        1: ─╰RXY(1.570796+0.00j)─╰RYX(1.570796+0.00j)─┤ ╰<Z@Z>
+  >>> mol_data(223, "CID")
+  (['N', 'H', 'H', 'H', 'H'],
+  array([[ 4.79404621,  0.        ,  0.        ],
+         [ 5.80882913,  0.5858151 ,  0.        ],
+         [ 3.77945225, -0.5858151 ,  0.        ],
+         [ 4.20823111,  1.01459396,  0.        ],
+         [ 5.3798613 , -1.01459396,  0.        ]]))
   ```
+
+* New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
+  [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
+
 
 <h3>Improvements</h3>
 
-* Structural improvements are made to `QueuingContext` and `AnnotatedQueue`. None of these changes should 
-  influence PennyLane behaviour outside of the `queueing.py` module.
-  [(#2794)](https://github.com/PennyLaneAI/pennylane/pull/2794)
 
-   - `QueuingContext` should now be the global communication point for putting queuable objects into the active queue.
-   - `QueuingContext` is no longer an abstract base class.
-   - `AnnotatedQueue` and its children no longer inherit from `QueuingContext`.
-   - `QueuingContext` is no longer a context manager.
-   -  Recording queues should start and stop recording via the `QueuingContext.add_active_queue` and 
-     `QueueingContext.remove_active_queue` class methods instead of directly manipulating the `_active_contexts` property.
-   - `AnnotatedQueue` and its children no longer provide global information about actively recording queues. This information
-      is now only available through `QueuingContext`.
-   - `AnnotatedQueue` and its children no longer have the private `_append`, `_remove`, `_update_info`, `_safe_update_info`,
-      and `_get_info` methods. The public analogues should be used instead.
-   
+* Improve performance of `Wires.all_wires`.
+  [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
+
+
+* A representation has been added to the `Molecule` class.
+  [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
 <h3>Breaking changes</h3>
 
@@ -62,12 +53,21 @@
 
 <h3>Bug fixes</h3>
 
+* Small fix of `MeasurementProcess.map_wires`, where both the `self.obs` and `self._wires`
+  attributes were modified.
+  [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
+
+* If the device originally has no shots but finite shots are dynamically specified, Hamiltonian
+  expansion now occurs.
+  [(#3369)](https://github.com/PennyLaneAI/pennylane/pull/3369)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+Juan Miguel Arrazola
+Utkarsh Azad
+Pieter Eendebak
+Soran Jahangiri
+Christina Lee
+Albert Mitjans Coma
 
-Juan Miguel Arrazola,
-Utkarsh Azad,
-Soran Jahangiri,
-Christina Lee,
-Jay Soni,

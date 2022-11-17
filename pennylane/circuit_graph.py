@@ -18,11 +18,11 @@ representation of a quantum circuit from an Operator queue.
 # pylint: disable=too-many-branches,too-many-arguments,too-many-instance-attributes
 from collections import namedtuple
 
-import retworkx as rx
 import numpy as np
+import retworkx as rx
 
 import pennylane as qml
-
+from pennylane.measurements import MeasurementProcess, Sample, State
 from pennylane.wires import Wires
 
 
@@ -85,9 +85,8 @@ class CircuitGraph:
         ops (Iterable[.Operator]): quantum operators constituting the circuit, in temporal order
         obs (Iterable[.MeasurementProcess]): terminal measurements, in temporal order
         wires (.Wires): The addressable wire registers of the device that will be executing this graph
-        par_info (dict[int, dict[str, .Operation or int]]): Parameter information. Keys are
-            parameter indices (in the order they appear on the tape), and values are a
-            dictionary containing the corresponding operation and operation parameter index.
+        par_info (list[dict]): Parameter information. For each index, the entry is a dictionary containing an operation
+        and an index into that operation's parameters.
         trainable_params (set[int]): A set containing the indices of parameters that support
             differentiability. The indices provided match the order of appearence in the
             quantum circuit.
@@ -118,15 +117,15 @@ class CircuitGraph:
             op.queue_idx = k  # store the queue index in the Operator
 
             if hasattr(op, "return_type"):
-                if op.return_type is qml.measurements.State:
+                if op.return_type is State:
                     # State measurements contain no wires by default, but wires are
                     # required for the circuit drawer, so we recreate the state
                     # measurement with all wires
-                    op = qml.measurements.MeasurementProcess(qml.measurements.State, wires=wires)
+                    op = MeasurementProcess(State, wires=wires)
 
-                elif op.return_type is qml.measurements.Sample and op.wires == Wires([]):
+                elif op.return_type is Sample and op.wires == Wires([]):
                     # Sampling without specifying wires is treated as sampling all wires
-                    op = qml.measurements.MeasurementProcess(qml.measurements.Sample, wires=wires)
+                    op = qml.sample(wires=wires)
 
                 op.queue_idx = k
 
@@ -420,7 +419,7 @@ class CircuitGraph:
         current = Layer([], [])
         layers = [current]
 
-        for idx, info in self.par_info.items():
+        for idx, info in enumerate(self.par_info):
             if idx in self.trainable_params:
                 op = info["op"]
 

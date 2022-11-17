@@ -14,10 +14,10 @@
 
 from copy import copy
 
+import numpy as onp
 import pytest
 from gate_data import CNOT, CSWAP, CZ, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
-import numpy as onp
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -209,7 +209,7 @@ class TestProperties:
 
     @pytest.mark.parametrize("value", (True, False))
     def test_has_matrix(self, value):
-        """Test that controlled defers has_matrix to base operator."""
+        """Test that Controlled defers has_matrix to base operator."""
 
         class DummyOp(Operator):
             num_wires = 1
@@ -226,6 +226,75 @@ class TestProperties:
         op = Controlled(base, 1)
         assert op.has_matrix is False
 
+    @pytest.mark.parametrize("cwires, cvalues", [(0, [0]), ([3, 0, 2], [1, 1, 0])])
+    def test_has_decomposition_true_via_control_values(self, cwires, cvalues):
+        """Test that Controlled claims `has_decomposition` to be true if there are
+        any negated control values."""
+
+        op = Controlled(TempOperation(0.2, wires=1), cwires, cvalues)
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_base_has_ctrl_single_cwire(self):
+        """Test that Controlled claims `has_decomposition` to be true if
+        only one control wire is used and the base has a `_controlled` method."""
+
+        op = Controlled(qml.RX(0.2, wires=1), 4)
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_pauli_x(self):
+        """Test that Controlled claims `has_decomposition` to be true if
+        the base is a `PauliX` operator"""
+
+        op = Controlled(qml.PauliX(3), [0, 4])
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_true_via_base_has_decomp(self):
+        """Test that Controlled claims `has_decomposition` to be true if
+        the base has a decomposition and indicates this via `has_decomposition`."""
+
+        op = Controlled(qml.IsingXX(0.6, [1, 3]), [0, 4])
+        assert op.has_decomposition is True
+
+    def test_has_decomposition_false_single_cwire(self):
+        """Test that Controlled claims `has_decomposition` to be false if
+        no path of decomposition would work, here we use a single control wire."""
+
+        # all control values are 1, there is only one control wire but TempOperator does
+        # not have `_controlled`, is not `PauliX`, and reports `has_decomposition=False`
+        op = Controlled(TempOperator(0.5, 1), 0)
+        assert op.has_decomposition is False
+
+    def test_has_decomposition_false_multi_cwire(self):
+        """Test that Controlled claims `has_decomposition` to be false if
+        no path of decomposition would work, here we use multiple control wires."""
+
+        # all control values are 1, there are multiple control wires,
+        # `RX` is not `PauliX`, and reports `has_decomposition=False`
+        op = Controlled(qml.RX(0.5, 1), [0, 5])
+        assert op.has_decomposition is False
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_adjoint(self, value):
+        """Test that Controlled defers has_adjoint to base operator."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            has_adjoint = value
+
+        op = Controlled(DummyOp(1), 0)
+        assert op.has_adjoint is value
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value):
+        """Test that Controlled defers has_diagonalizing_gates to base operator."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        op = Controlled(DummyOp(1), 0)
+        assert op.has_diagonalizing_gates is value
+
     @pytest.mark.parametrize("value", ("_ops", "_prep", None))
     def test_queue_cateogry(self, value):
         """Test that Controlled defers `_queue_category` to base operator."""
@@ -239,7 +308,7 @@ class TestProperties:
 
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):
-        """Test that controlled defers `is_hermitian` to base operator."""
+        """Test that Controlled defers `is_hermitian` to base operator."""
 
         class DummyOp(Operator):
             num_wires = 1
@@ -248,37 +317,19 @@ class TestProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.is_hermitian is value
 
-    def test_private_wires_getter_setter(self):
+    def test_map_wires(self):
         """Test that we can get and set private wires."""
 
         base = qml.IsingXX(1.234, wires=(0, 1))
         op = Controlled(base, (3, 4), work_wires="aux")
 
-        assert op._wires == Wires((3, 4, 0, 1, "aux"))
+        assert op.wires == Wires((3, 4, 0, 1, "aux"))
 
-        op._wires = ("a", "b", "c", "d", "extra")
+        op = op.map_wires(wire_map={3: "a", 4: "b", 0: "c", 1: "d", "aux": "extra"})
 
-        assert base.wires == Wires(("c", "d"))
+        assert op.base.wires == Wires(("c", "d"))
         assert op.control_wires == Wires(("a", "b"))
         assert op.work_wires == Wires(("extra"))
-
-    def test_private_wires_setter_too_few_wires(self):
-        """Test that an assertionerror is raised if wires are set with fewer active wires
-        than the operation originally had."""
-        base = qml.IsingXX(1.234, wires=(0, 1))
-        op = Controlled(base, (3, 4), work_wires="aux")
-
-        with pytest.raises(AssertionError, match=r"C\(IsingXX\) needs at least 4 wires."):
-            op._wires = ("a", "b")
-
-    def test_private_wires_setter_no_work_wires(self):
-        """Test work wires made empty if no left over wires provided to private setter."""
-        base = TempOperator(1)
-        op = Controlled(base, 2, work_wires="aux")
-
-        op._wires = [3, 4]
-        assert len(op.work_wires) == 0
-        assert isinstance(op.work_wires, qml.wires.Wires)
 
 
 class TestMiscMethods:

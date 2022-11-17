@@ -90,8 +90,8 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     for obs in observables:
         for o in obs:
             # create a list of tapes for the plus and minus shifted circuits
-            tapes_plus = [qml.tape.QuantumTape(p + "_p") for p in lie_algebra_basis_names]
-            tapes_min = [qml.tape.QuantumTape(p + "_m") for p in lie_algebra_basis_names]
+            tapes_plus = [qml.tape.QuantumTape(name=f"{p}_p") for p in lie_algebra_basis_names]
+            tapes_min = [qml.tape.QuantumTape(name=f"{p}_m") for p in lie_algebra_basis_names]
 
             # loop through all operations on the input tape
             for op in tape.operations:
@@ -282,13 +282,15 @@ class LieAlgebraOptimizer:
 
         lie_gradient = qml.Hamiltonian(
             non_zero_omegas,
-            [qml.grouping.string_to_pauli_word(ps) for ps in non_zero_lie_algebra_elements],
+            [qml.pauli.string_to_pauli_word(ps) for ps in non_zero_lie_algebra_elements],
         )
         new_circuit = append_time_evolution(
             lie_gradient, self.stepsize, self.trottersteps, self.exact
         )(self.circuit.func)
 
-        self.circuit = qml.QNode(new_circuit, self.circuit.device)
+        # we can set diff_method=None because the gradient of the QNode is computed
+        # directly in this optimizer
+        self.circuit = qml.QNode(new_circuit, self.circuit.device, diff_method=None)
         return self.circuit, cost
 
     def get_su_n_operators(self, restriction):
@@ -306,13 +308,13 @@ class LieAlgebraOptimizer:
         # construct the corresponding pennylane observables
         wire_map = dict(zip(range(self.nqubits), range(self.nqubits)))
         if restriction is None:
-            for ps in qml.grouping.pauli_group(self.nqubits):
+            for ps in qml.pauli.pauli_group(self.nqubits):
                 operators.append(ps)
-                names.append(qml.grouping.pauli_word_to_string(ps, wire_map=wire_map))
+                names.append(qml.pauli.pauli_word_to_string(ps, wire_map=wire_map))
         else:
             for ps in set(restriction.ops):
                 operators.append(ps)
-                names.append(qml.grouping.pauli_word_to_string(ps, wire_map=wire_map))
+                names.append(qml.pauli.pauli_word_to_string(ps, wire_map=wire_map))
 
         return operators, names
 
@@ -341,7 +343,7 @@ class LieAlgebraOptimizer:
 
         """
 
-        obs_groupings, _ = qml.grouping.group_observables(self.observables, self.coeffs)
+        obs_groupings, _ = qml.pauli.group_observables(self.observables, self.coeffs)
         # get all circuits we need to calculate the coefficients
         circuits = algebra_commutator(
             self.circuit.qtape,

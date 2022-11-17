@@ -5,9 +5,7 @@ PyTorch interface
 
 In order to use PennyLane in combination with PyTorch, we have to generate PyTorch-compatible
 quantum nodes. Such a QNode can be created explicitly using the ``interface='torch'`` keyword in
-the QNode decorator or QNode class constructor. Alternatively, an existing, basic QNode can be
-translated into a quantum node that interfaces with PyTorch by calling the
-:meth:`QNode.to_torch() <pennylane.qnode.QNode.to_torch>` method.
+the QNode decorator or QNode class constructor.
 
 .. note::
 
@@ -78,22 +76,6 @@ QNode:
 >>> qnode2(phi, theta)
 tensor([0.8776, 0.6880], dtype=torch.float64)
 
-
-.. _torch_interf_convert:
-
-Construction from an existing QNode
------------------------------------
-
-Let's say we change our mind and now want ``qnode1()`` to interface with PyTorch. We can easily
-perform the conversion by using the :meth:`~.QNode.to_torch` method:
-
->>> qnode1.to_torch()
->>> qnode1
-<QNode: device='default.mixed', func=circuit1, wires=2, interface=PyTorch>
-
-``qnode1()`` is now a PyTorch-capable QNode, as well.
-
-
 .. _pytorch_qgrad:
 
 Quantum gradients using PyTorch
@@ -147,8 +129,8 @@ Here, ``data`` is non-trainable embedded data, so should be marked as non-differ
 >>> data = torch.tensor(np.random.random([4]), requires_grad=False)
 >>> result = circuit3(weights, data)
 >>> result.backward()
->>> data.grad
-None
+>>> data.grad is None
+True
 >>> weights.grad
 tensor([3.6317e-02, 0.0000e+00, 5.5511e-17])
 
@@ -204,7 +186,7 @@ The final weights and circuit value are:
 
 >>> phi_final, theta_final = opt.param_groups[0]['params']
 >>> phi_final
-tensor([0.7345, 0.0120], requires_grad=True)
+tensor([7.3449e-01, 3.1554e-04], requires_grad=True)
 >>> theta_final
 tensor(0.8316, requires_grad=True)
 >>> circuit4(phi_final, theta_final)

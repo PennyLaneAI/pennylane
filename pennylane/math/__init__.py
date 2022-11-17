@@ -34,7 +34,6 @@ The following frameworks are currently supported:
 import autoray as ar
 
 from .multi_dispatch import (
-    _multi_dispatch,
     multi_dispatch,
     array,
     block_diag,
@@ -55,6 +54,7 @@ from .multi_dispatch import (
     add,
     iscomplex,
     expm,
+    kron,
 )
 
 from .quantum import cov_matrix, marginal_prob
@@ -90,7 +90,6 @@ def __getattr__(name):
 
 
 __all__ = [
-    "_multi_dispatch",
     "multi_dispatch",
     "allclose",
     "allequal",

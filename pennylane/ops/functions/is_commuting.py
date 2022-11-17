@@ -17,7 +17,7 @@ Defines `is_commuting`, an function for determining if two functions commute.
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.grouping.utils import is_pauli_word, pauli_to_binary, _wire_map_from_pauli_pair
+from pennylane.pauli.utils import is_pauli_word, pauli_to_binary, _wire_map_from_pauli_pair
 
 
 def _pword_is_commuting(pauli_word_1, pauli_word_2, wire_map=None):
@@ -256,6 +256,8 @@ unsupported_operations = [
     "SqueezingEmbedding",
     "Prod",
     "Sum",
+    "Exp",
+    "SProd",
 ]
 non_commuting_operations = [
     # State Prep
@@ -319,7 +321,8 @@ def is_commuting(operation1, operation2, wire_map=None):
 
         :class:`~.PauliRot`, :class:`~.QubitDensityMatrix`, :class:`~.CVNeuralNetLayers`,
         :class:`~.ApproxTimeEvolution`, :class:`~.ArbitraryUnitary`, :class:`~.CommutingEvolution`,
-        :class:`~.DisplacementEmbedding` and :class:`~.SqueezingEmbedding`.
+        :class:`~.DisplacementEmbedding`, :class:`~.SqueezingEmbedding`, :class:`~.Prod`,
+        :class:`~.Sum`, :class:`~.Exp` and :class:`~.SProd`.
 
     Args:
         operation1 (.Operation): A first quantum operation.
@@ -361,7 +364,7 @@ def is_commuting(operation1, operation2, wire_map=None):
         return True
 
     # Simplify the rotations if possible
-    with qml.tape.stop_recording():
+    with qml.QueuingManager.stop_recording():
         operation1 = qml.simplify(operation1)
         operation2 = qml.simplify(operation2)
 
