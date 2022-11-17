@@ -21,7 +21,9 @@ and measurement samples using AnnotatedQueues.
 import contextlib
 import copy
 import functools
+from abc import ABC, abstractmethod
 from enum import Enum
+from typing import Sequence, Tuple
 
 import numpy as np
 
@@ -693,3 +695,36 @@ class MeasurementProcess:
         else:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
+
+
+class SampleMeasurement(MeasurementProcess, ABC):
+    """Sample-based measurement process."""
+
+    @abstractmethod
+    def process_samples(
+        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+    ):
+        """Process the given samples.
+
+        Args:
+            samples (Sequence[complex]): computational basis samples generated for all wires
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+        """
+
+
+class StateMeasurement(MeasurementProcess, ABC):
+    """State-based measurement process."""
+
+    @abstractmethod
+    def process_state(self, state: Sequence[complex], wires: Wires):
+        """Process the given quantum state.
+
+        Args:
+            state (Sequence[complex]): quantum state
+            wires (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+                dimension :math:`2^n` acts on a subspace of :math:`n` wires
+        """

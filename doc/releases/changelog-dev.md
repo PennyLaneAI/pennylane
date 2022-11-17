@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* Support custom measurement processes:
+  * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
+    method to process samples/quantum state.
+    [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
+
+  * Add `_MutualInfo` class.
+    [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
+
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
   [(#3378)](https://github.com/PennyLaneAI/pennylane/pull/3378)
@@ -30,6 +38,11 @@
 
 <h3>Improvements</h3>
 
+
+* Improve performance of `Wires.all_wires`.
+  [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
+
+
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
@@ -52,8 +65,10 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
-
 Juan Miguel Arrazola
 Utkarsh Azad
+Pieter Eendebak
 Soran Jahangiri
 Christina Lee
+Albert Mitjans Coma
+
