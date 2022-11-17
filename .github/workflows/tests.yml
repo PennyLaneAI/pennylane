@@ -178,11 +178,8 @@ jobs:
       - name: Install JAX
         run: pip3 install jax jaxlib
 
-      - name: Install KaHyPar
-        run: pip3 install kahypar==1.1.7
-
-      - name: Install KaHyPar
-        run: pip3 install opt_einsum
+      - name: Install KaHyPar and opt_einsum
+        run: pip3 install kahypar==1.1.7 opt_einsum
 
       - name: Install PennyLane
         run: |
