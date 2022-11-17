@@ -54,6 +54,6 @@ class TestVnEntropy:
         def circuit():
             return qml.vn_entropy(wires=0, log_base=2)
 
-        _ = circuit()
+        circuit()
 
         assert isinstance(circuit.tape[0], _VnEntropy)
