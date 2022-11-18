@@ -1079,7 +1079,6 @@ def cut_circuit_mc(
             ~transforms.qcut.replace_wire_cut_nodes
             ~transforms.qcut.fragment_graph
             ~transforms.qcut.graph_to_tape
-            ~transforms.qcut.remap_tape_wires
             ~transforms.qcut.expand_fragment_tapes_mc
             ~transforms.qcut.qcut_processing_fn_sample
             ~transforms.qcut.qcut_processing_fn_mc
@@ -1165,9 +1164,7 @@ def cut_circuit_mc(
         Additionally, we must remap the tape wires to match those available on our device.
 
         >>> dev = qml.device("default.qubit", wires=2, shots=1)
-        >>> fragment_tapes = [
-        ...     qml.transforms.qcut.remap_tape_wires(t, dev.wires) for t in fragment_tapes
-        ... ]
+        >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires))) for t in fragment_tapes]
 
         Note that the number of shots on the device is set to :math:`1` here since we
         will only require one execution per fragment configuration. In the
@@ -1853,7 +1850,6 @@ def cut_circuit(
             ~transforms.qcut.replace_wire_cut_nodes
             ~transforms.qcut.fragment_graph
             ~transforms.qcut.graph_to_tape
-            ~transforms.qcut.remap_tape_wires
             ~transforms.qcut.expand_fragment_tape
             ~transforms.qcut.qcut_processing_fn
             ~transforms.qcut.CutStrategy
@@ -1953,9 +1949,7 @@ def cut_circuit(
         Additionally, we must remap the tape wires to match those available on our device.
 
         >>> dev = qml.device("default.qubit", wires=2)
-        >>> fragment_tapes = [
-        ...     qml.transforms.qcut.remap_tape_wires(t, dev.wires) for t in fragment_tapes
-        ... ]
+        >>> fragment_tapes = [qml.map_wires(t, dict(zip(t.wires, dev.wires))) for t in fragment_tapes]
 
         Next, each circuit fragment is expanded over :class:`~.MeasureNode` and
         :class:`~.PrepareNode` configurations and a flat list of tapes is created:
@@ -2145,74 +2139,6 @@ def _cut_circuit_mc_expand(
 
 cut_circuit.expand_fn = _cut_circuit_expand
 cut_circuit_mc.expand_fn = _cut_circuit_mc_expand
-
-
-def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
-    """Map the wires of a tape to a new set of wires.
-
-    Given an :math:`n`-wire ``tape``, this function returns a new :class:`~.QuantumTape` with
-    operations and measurements acting on the first :math:`n` wires provided in the ``wires``
-    argument. The input ``tape`` is left unmodified.
-
-    .. note::
-
-        This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
-
-    Args:
-        tape (QuantumTape): the quantum tape whose wires should be remapped
-        wires (Sequence): the new set of wires to map to
-
-    Returns:
-        QuantumTape: A remapped copy of the input tape
-
-    Raises:
-        ValueError: if the number of wires in ``tape`` exceeds ``len(wires)``
-
-    **Example**
-
-    Consider the following circuit that operates on wires ``[2, 3]``:
-
-    .. code-block:: python
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.5, wires=2)
-            qml.RY(0.6, wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
-
-    We can map from wires ``[2, 3]`` to ``[0, 1]`` using:
-
-    >>> new_wires = [0, 1]
-    >>> new_tape = qml.transforms.qcut.remap_tape_wires(tape, new_wires)
-    >>> print(qml.drawer.tape_text(new_tape))
-     0: ──RX(0.5)──╭●──╭┤ ⟨Z ⊗ Z⟩
-     1: ──RY(0.6)──╰X──╰┤ ⟨Z ⊗ Z⟩
-    """
-    warnings.warn(
-        "The method remap_tape_wires is deprecated. Use "
-        "qml.map_wires(tape, dict(zip(tape.wires, wires))) instead.",
-        UserWarning,
-    )
-
-    if len(tape.wires) > len(wires):
-        raise ValueError(
-            f"Attempting to run a {len(tape.wires)}-wire circuit on a "
-            f"{len(wires)}-wire device. Consider increasing the number of wires in "
-            f"your device."
-        )
-
-    wire_map = dict(zip(tape.wires, wires))
-    copy_ops = [copy.copy(op) for op in tape.operations]
-    copy_meas = [copy.copy(op) for op in tape.measurements]
-
-    with QuantumTape() as new_tape:
-        for op in copy_ops:
-            qml.map_wires(op, wire_map=wire_map, queue=True)
-        for meas in copy_meas:
-            qml.map_wires(meas, wire_map=wire_map, queue=True)
-
-    return new_tape
 
 
 @dataclass()

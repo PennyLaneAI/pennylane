@@ -127,20 +127,16 @@ class MeasurementProcess(ABC):
         log_base (float): Base for the logarithm.
     """
 
-    # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-arguments
-
     def __init__(
         self,
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
         id=None,
-        log_base=None,
     ):
         self.obs = obs
         self.id = id
-        self.log_base = log_base
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
@@ -305,10 +301,10 @@ class MeasurementProcess(ABC):
 
     def __copy__(self):
         return self.__class__(
+            self.return_type,
             obs=copy.copy(self.obs),
-            eigvals=self._eigvals,
             wires=self._wires,
-            log_base=self.log_base,
+            eigvals=self._eigvals,
         )
 
     @property
@@ -320,9 +316,11 @@ class MeasurementProcess(ABC):
         if self.obs is not None:
             return self.obs.wires
 
-        wires = self._wires or Wires([])
-
-        return Wires.all_wires(wires) if isinstance(wires, list) else wires
+        return (
+            Wires.all_wires(self._wires)
+            if isinstance(self._wires, list)
+            else self._wires or Wires([])
+        )
 
     @property
     def raw_wires(self):
