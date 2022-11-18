@@ -1547,8 +1547,8 @@ class TestReturn:
             qml.RX(a[1], wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = torch.numpy.array([0.1, 0.2])
-        jac = jacobian(circuit)(a)
+        a = torch.tensor([0.1, 0.2], requires_grad=True)
+        jac = jacobian(circuit, a)
 
         assert isinstance(jac, torch.Tensor)
         assert jac.shape == (4, 2)
@@ -1559,18 +1559,20 @@ class TestReturn:
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        par_0 = torch.numpy.array(0.1)
-        par_1 = torch.numpy.array(0.2)
+        par_0 = torch.tensor(0.1, requires_grad=True)
+        par_1 = torch.tensor(0.2, requires_grad=True)
 
-        @qnode(dev, interface="torch", diff_method=diff_method, max_diff=2, mode=mode)
+        @qnode(dev, interface="torch", diff_method=diff_method, max_diff=1, mode=mode)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
-
+        jac = jacobian(circuit, (par_0, par_1))
+        print("_____________")
+        print("jac", jac)
+        print("_____________")
         assert isinstance(jac, tuple)
 
         assert isinstance(jac[0], tuple)
