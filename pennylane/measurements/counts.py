@@ -158,17 +158,20 @@ class _Counts(SampleMeasurement):
         wires=None,
         eigvals=None,
         id=None,
-        log_base=None,
         all_outcomes=False,
     ):
         self.all_outcomes = all_outcomes
-        super().__init__(return_type, obs, wires, eigvals, id, log_base)
+        super().__init__(return_type, obs, wires, eigvals, id)
 
     def process_samples(
-        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+        self,
+        samples: Sequence[complex],
+        wire_order: Wires,
+        shot_range: Tuple[int] = None,
+        bin_size: int = None,
     ):
         samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
-            samples, shot_range, bin_size
+            samples, wire_order, shot_range, bin_size
         )
 
         if bin_size is None:
@@ -257,6 +260,5 @@ class _Counts(SampleMeasurement):
             obs=copy.copy(self.obs),
             eigvals=self._eigvals,
             wires=self._wires,
-            log_base=self.log_base,
             all_outcomes=self.all_outcomes,
         )
