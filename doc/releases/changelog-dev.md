@@ -44,19 +44,23 @@
 
 <h3>Improvements</h3>
 
+* Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
+  [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
+
 * `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
    [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
 
-
 * Improve performance of `Wires.all_wires`.
   [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
-
 
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
 
 <h3>Breaking changes</h3>
+
+* Python 3.7 support is no longer maintained.
+  [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
 
 <h3>Deprecations</h3>
 
@@ -77,12 +81,15 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Bug fixes</h3>
 
+* Original tape `_obs_sharing_wires` attribute is updated during its expansion.
+  [#3293](https://github.com/PennyLaneAI/pennylane/pull/3293)
+  
 * Small fix of `MeasurementProcess.map_wires`, where both the `self.obs` and `self._wires`
   attributes were modified.
   [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
 * An issue with `drain=False` in the adaptive optimizer is fixed. Before the fix, the operator pool
-  needed to be re-constructed inside the optimization pool when `drain=False`. With the new fix, 
+  needed to be re-constructed inside the optimization pool when `drain=False`. With the new fix,
   this reconstruction is not needed.
   [#3361](https://github.com/PennyLaneAI/pennylane/pull/3361)
 
@@ -93,6 +100,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * `qml.matrix(op)` now fails if the operator truly has no matrix (eg. `Barrier`) to match `op.matrix()`
   [(#3386)](https://github.com/PennyLaneAI/pennylane/pull/3386)
 
+* The `pad_with` argument in the `AmplitudeEmbedding` template is now compatible
+  with all interfaces
+  [(#3392)](https://github.com/PennyLaneAI/pennylane/pull/3392)
+
 
 <h3>Contributors</h3>
 
@@ -102,5 +113,7 @@ Utkarsh Azad
 Pieter Eendebak
 Lillian M. A. Frederiksen
 Soran Jahangiri
+Edward Jiang
 Christina Lee
 Albert Mitjans Coma
+Romain Moyard
