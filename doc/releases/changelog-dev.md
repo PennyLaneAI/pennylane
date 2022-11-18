@@ -77,7 +77,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Bug fixes</h3>
 
-* Original tape `_obs_sharing_wires` is updated during its expansion.
+* Original tape `_obs_sharing_wires` attribute is updated during its expansion.
   [#3293](https://github.com/PennyLaneAI/pennylane/pull/3293)
   
 * Small fix of `MeasurementProcess.map_wires`, where both the `self.obs` and `self._wires`
