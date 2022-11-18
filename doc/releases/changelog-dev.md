@@ -20,7 +20,7 @@
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
- 
+
   ```pycon
   >>> mol_data("BeH2")
   (['Be', 'H', 'H'],
@@ -81,7 +81,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
 * An issue with `drain=False` in the adaptive optimizer is fixed. Before the fix, the operator pool
-  needed to be re-constructed inside the optimization pool when `drain=False`. With the new fix, 
+  needed to be re-constructed inside the optimization pool when `drain=False`. With the new fix,
   this reconstruction is not needed.
   [#3361](https://github.com/PennyLaneAI/pennylane/pull/3361)
 
@@ -91,6 +91,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 * `qml.matrix(op)` now fails if the operator truly has no matrix (eg. `Barrier`) to match `op.matrix()`
   [(#3386)](https://github.com/PennyLaneAI/pennylane/pull/3386)
+
+* The `pad_with` argument in the `AmplitudeEmbedding` template is now compatible
+  with all interfaces
+  [(#3392)](https://github.com/PennyLaneAI/pennylane/pull/3392)
 
 
 <h3>Contributors</h3>
