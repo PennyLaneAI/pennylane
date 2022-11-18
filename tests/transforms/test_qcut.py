@@ -4686,3 +4686,10 @@ class TestAutoCutCircuit:
 
         # each frag should have the device size constraint satisfied.
         assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
+
+
+class TestRedirect:
+    """Tests that redirect in qcut.__init__ works to maintain import pathways while reorganizing files"""
+
+    def test_qcut_redirects_to_qcut_qcut(self):
+        assert qml.transforms.qcut._prep_one_state == qml.transforms.qcut.qcut._prep_one_state
