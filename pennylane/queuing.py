@@ -347,3 +347,40 @@ def apply(op, context=QueuingManager):
         context.append(op)
 
     return op
+
+def process_queue(queue):
+    """Process the annotated queue, creating a list of quantum
+    operations and measurement processes.
+
+    Sets:
+        _prep (list[~.Operation]): Preparation operations
+        _ops (list[~.Operation]): Main tape operations
+        _measurements (list[~.MeasurementProcess]): Tape measurements
+
+    Args:
+        queue (.AnnotatedQueue): The queue to be processed into individual lists
+
+    Returns:
+        list(.Operation): The list of preparation operations
+        list(.Operation): The list of main tape operations
+        list(.MeasurementProcess): The list of tape measurements
+
+    Also calls `_update()` which sets many attributes.
+    """
+    lists = {"_prep": [], "_ops": [], "_measurements": []}
+    list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
+    current_list = "_prep"
+
+    for obj, info in queue.items():
+
+        if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
+            if list_order[obj._queue_category] > list_order[current_list]:
+                current_list = obj._queue_category
+            elif list_order[obj._queue_category] < list_order[current_list]:
+                raise ValueError(
+                    f"{obj._queue_category[1:]} operation {obj} must occur prior "
+                    f"to {current_list[1:]}. Please place earlier in the queue."
+                )
+            lists[obj._queue_category].append(obj)
+
+    return lists["_prep"], lists["_ops"], lists["_measurements"]

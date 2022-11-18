@@ -21,7 +21,7 @@ from threading import RLock
 import pennylane as qml
 from pennylane.measurements import AllCounts, Counts, Probability, Sample
 from pennylane.operation import DecompositionUndefinedError, Operator
-from pennylane.queuing import AnnotatedQueue, QueuingManager
+from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .qscript import QuantumScript
 
@@ -393,22 +393,5 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
         Also calls `_update()` which sets many attributes.
         """
-        self._prep = []
-        self._ops = []
-        self._measurements = []
-        list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
-        current_list = "_prep"
-
-        for obj, info in self._queue.items():
-
-            if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
-                if list_order[obj._queue_category] > list_order[current_list]:
-                    current_list = obj._queue_category
-                elif list_order[obj._queue_category] < list_order[current_list]:
-                    raise ValueError(
-                        f"{obj._queue_category[1:]} operation {obj} must occur prior "
-                        f"to {current_list[1:]}. Please place earlier in the queue."
-                    )
-                getattr(self, obj._queue_category).append(obj)
-
+        self._prep, self._ops, self._measurements = process_queue(self._queue)
         self._update()
