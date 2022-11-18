@@ -31,7 +31,7 @@ from pennylane.wires import Wires
 from pennylane.tape import OperationRecorder
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ
-from pennylane.operation import Tensor
+from pennylane.operation import Tensor, Observable
 
 # To make this quicker later on
 ID_MAT = np.eye(2)
@@ -66,8 +66,7 @@ def is_pauli_word(observable):
 
 
     Args:
-        observable (Union[~.Observable]): the operator to be
-            examined
+        observable (Union[~.Observable]): the operator to be examined
 
     Returns:
         bool: true if the input observable is a Pauli word, false otherwise.
@@ -81,8 +80,8 @@ def is_pauli_word(observable):
     >>> is_pauli_word(qml.PauliZ(0) @ qml.Hadamard(1))
     False
     """
-    if isinstance(observable, (Identity, PauliX, PauliY, PauliZ)):
-        return True
+    if not isinstance(observable, Observable):
+        return False
 
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
