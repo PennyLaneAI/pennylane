@@ -528,7 +528,7 @@ class Operator(abc.ABC):
     def compute_eigvals(*params, **hyperparams):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -551,7 +551,7 @@ class Operator(abc.ABC):
     def eigvals(self):
         r"""Eigenvalues of the operator in the computational basis.
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`, the operator
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`, the operator
         can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1860,7 +1860,7 @@ class Tensor(Observable):
         else:
             raise ValueError("Can only perform tensor products between observables.")
 
-        if QueuingManager.recording() and self not in QueuingManager.active_context()._queue:
+        if QueuingManager.recording() and self not in QueuingManager.active_context():
             QueuingManager.append(self)
 
         QueuingManager.update_info(self, owns=tuple(self.obs))

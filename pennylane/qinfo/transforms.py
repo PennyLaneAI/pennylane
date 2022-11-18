@@ -67,6 +67,71 @@ def reduced_dm(qnode, wires):
     return wrapper
 
 
+def purity(qnode, wires):
+    r"""Compute the purity of a :class:`~.QNode` returning :func:`~.state`.
+
+    .. math::
+        \gamma = \text{Tr}(\rho^2)
+
+    where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
+    :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
+    A pure state has a purity of 1.
+
+    It is possible to compute the purity of a sub-system from a given state. To find the purity of
+    the overall state, include all wires in the ``wires`` argument.
+
+    Args:
+        qnode (pennylane.QNode): A :class:`.QNode` objeect returning a :func:`~.state`.
+        wires (Sequence(int)): List of wires in the considered subsystem.
+
+    Returns:
+        A function that computes the purity of the wrapped circuit.
+
+    **Example**
+
+    .. code-block:: python
+
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev)
+        def noisy_circuit(p):
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.BitFlip(p, wires=0)
+            qml.BitFlip(p, wires=1)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+    >>> purity(noisy_circuit, wires=[0, 1])(0.2)
+    0.5648000000000398
+    >>> purity(circuit, wires=[0])(np.pi / 2)
+    0.5
+    >>> purity(circuit, wires=[0, 1])(np.pi / 2)
+    1.0
+
+    .. seealso:: :func:`pennylane.math.purity`
+    """
+
+    def wrapper(*args, **kwargs):
+
+        # Construct tape
+        qnode.construct(args, kwargs)
+
+        # Check return type
+        return_type = qnode.tape.observables[0].return_type
+        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+            raise ValueError("The qfunc return type needs to be a state.")
+
+        state_built = qnode(*args, **kwargs)
+        return qml.math.purity(state_built, wires, c_dtype=qnode.device.C_DTYPE)
+
+    return wrapper
+
+
 def vn_entropy(qnode, wires, base=None):
     r"""Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
 
@@ -247,7 +312,9 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
         qml.probs(wires=wires)
 
     if post_processing_fn is None:
-        post_processing_fn = lambda x: qml.math.squeeze(qml.math.stack(x))
+
+        def post_processing_fn(x):
+            return qml.math.squeeze(qml.math.stack(x))
 
     return [new_tape], post_processing_fn
 
@@ -385,10 +452,10 @@ def classical_fisher(qnode, argnums=0):
 
         params = pnp.random.random(2)
 
-    >>> print(qml.qinfo.classical_fisher(circ)(params))
-    (tensor([[0.13340679, 0.03650311],
-             [0.03650311, 0.00998807]], requires_grad=True)
-    >>> print(qml.jacobian(qml.qinfo.classical_fisher(circ))(params))
+    >>> qml.qinfo.classical_fisher(circ)(params)
+    tensor([[0.28096197, 0.36228429],
+            [0.36228429, 0.46714473]], requires_grad=True)
+    >>> qml.jacobian(qml.qinfo.classical_fisher(circ))(params)
     array([[[9.98030491e-01, 3.46944695e-18],
             [1.36541817e-01, 5.15248592e-01]],
            [[1.36541817e-01, 5.15248592e-01],
@@ -786,7 +853,8 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
     >>> wrapper(x, y)
     0.017750012490703237
     >>> qml.grad(wrapper)(x, y)
-    (array(-0.16458856), array(0.16953273))
+    (tensor(-0.16458856, requires_grad=True),
+     tensor(0.16953273, requires_grad=True))
     """
 
     if len(wires0) != len(wires1):

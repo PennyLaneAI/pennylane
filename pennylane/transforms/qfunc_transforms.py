@@ -83,7 +83,7 @@ class NonQueuingTape(qml.queuing.AnnotatedQueue):
         # accesses the parent of the target class that NonQueingTape is mixed into
         super()._process_queue()  # pylint:disable=no-member
 
-        for obj, info in self._queue.items():
+        for obj, info in self.items():
             qml.queuing.QueuingManager.append(obj, **info)
 
         qml.queuing.QueuingManager.remove(self)
