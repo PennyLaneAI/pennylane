@@ -167,6 +167,10 @@ class TestEqual:
         """Test different operators return False"""
         assert not qml.equal(ops[0], ops[1], check_trainability=False, check_interface=False)
 
+    def test_equal_unsupported_op_type(self):
+        with pytest.raises(NotImplementedError, match="Comparison between "):
+            qml.equal(3, 4)
+
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
     def test_equal_simple_same_op(self, op1):
         """Test same operators return True"""
