@@ -43,11 +43,15 @@
 * Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
 
+* `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
+   [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
+
 * Improve performance of `Wires.all_wires`.
   [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
 
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
+
 
 <h3>Breaking changes</h3>
 
@@ -93,6 +97,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Utkarsh Azad
 Pieter Eendebak
+Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
