@@ -447,7 +447,12 @@ class THadamard(Operation):
     when no subspace is specified. The operator definition of the `None` subspace case is shown
     below:
 
-    .. math:: THadamard =
+    .. math:: THadamard = \frac{-i}{\sqrt{3}}\begin{bmatrix}
+                    1 & 1 & 1 \\
+                    1 & \omega & \omega^2 \\
+                    1 & \omega^2 & \omega \\
+                \end{bmatrix}.\\
+                \text{where } \omega = \exp(2 \pi i / 3)
 
     **Details:**
 
