@@ -14,6 +14,7 @@
 """
 This subpackage contains quantum function transforms for cutting quantum circuits.
 """
+import pennylane as qml
 
 from .qcut import (
     MeasureNode,
@@ -47,3 +48,12 @@ from .qcut import (
     MC_STATES,
     MC_MEASUREMENTS,
 )
+
+
+def __getattr__(name):
+    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
+    try:
+        return globals()[name]
+    except KeyError:
+        obj = getattr(qml.transforms.qcut.qcut, name)
+        return obj
