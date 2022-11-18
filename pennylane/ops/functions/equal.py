@@ -18,13 +18,13 @@ This module contains the qml.equal function.
 from typing import Union
 
 import pennylane as qml
-from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
+from pennylane.measurements import ClassicalShadow, MeasurementProcess
 from pennylane.operation import Operator
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
-    op2: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
+    op1: Union[Operator, MeasurementProcess, ClassicalShadow],
+    op2: Union[Operator, MeasurementProcess, ClassicalShadow],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -86,7 +86,7 @@ def equal(
     if op1.__class__ is not op2.__class__:
         return False
 
-    if isinstance(op1, ShadowMeasurementProcess):
+    if isinstance(op1, ClassicalShadow):
         return equal_shadow_measurements(op1, op2)
 
     if isinstance(op1, MeasurementProcess):

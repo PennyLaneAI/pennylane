@@ -16,12 +16,15 @@
 This module contains the qml.classical_shadow measurement.
 """
 from collections.abc import Iterable
+from string import ascii_letters as ABC
+from typing import Sequence
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, MeasurementShapeError, Shadow, ShadowExpval
+from .measurements import MeasurementShapeError, Shadow, ShadowExpval, StateMeasurement
 
 
 def shadow_expval(H, k=1, seed_recipes=True):
@@ -83,7 +86,7 @@ def shadow_expval(H, k=1, seed_recipes=True):
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
     seed = np.random.randint(2**30) if seed_recipes else None
-    return ShadowMeasurementProcess(ShadowExpval, H=H, seed=seed, k=k)
+    return ClassicalShadow(ShadowExpval, H=H, seed=seed, k=k)
 
 
 def classical_shadow(wires, seed_recipes=True):
@@ -205,10 +208,10 @@ def classical_shadow(wires, seed_recipes=True):
     wires = Wires(wires)
 
     seed = np.random.randint(2**30) if seed_recipes else None
-    return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
+    return ClassicalShadow(Shadow, wires=wires, seed=seed)
 
 
-class ShadowMeasurementProcess(MeasurementProcess):
+class ClassicalShadow(StateMeasurement):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -231,6 +234,131 @@ class ShadowMeasurementProcess(MeasurementProcess):
         self.seed = seed
         self.H = H
         self.k = k
+
+    def process_state(self, state: Sequence[complex], wires: Wires):
+        """
+        Returns the measured bits and recipes in the classical shadow protocol.
+
+        The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
+        This measurement process returns the randomized Pauli measurements (the ``recipes``)
+        that are performed for each qubit and snapshot as an integer:
+
+        - 0 for Pauli X,
+        - 1 for Pauli Y, and
+        - 2 for Pauli Z.
+
+        It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
+        is sampled, and 1 if the -1 eigenvalue is sampled.
+
+        The device shots are used to specify the number of snapshots. If ``T`` is the number
+        of shots and ``n`` is the number of qubits, then both the measured bits and the
+        Pauli measurements have shape ``(T, n)``.
+
+        This implementation leverages vectorization and offers a significant speed-up over
+        the generic implementation.
+
+        .. Note::
+
+            This method internally calls ``np.einsum`` which supports at most 52 indices,
+            thus the classical shadow measurement for this device supports at most 52
+            qubits.
+
+        .. seealso:: :func:`~.classical_shadow`
+
+        Args:
+            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow measurement process
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+
+        Returns:
+            tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
+            the measured bits and the second represents the recipes used.
+        """
+        wires = self.wires
+        seed = self.seed
+
+        n_qubits = len(wires)
+        n_snapshots = None  # FIXME: Pass shots information to the meeasurement process!
+        device_qubits = len(self.wires)
+        mapped_wires = np.array(self.map_wires(wires))
+
+        if seed is not None:
+            # seed the random measurement generation so that recipes
+            # are the same for different executions with the same seed
+            rng = np.random.RandomState(seed)
+            recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
+        else:
+            recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+
+        obs_list = qml.math.stack(
+            [
+                qml.PauliX.compute_matrix(),
+                qml.PauliY.compute_matrix(),
+                qml.PauliZ.compute_matrix(),
+            ]
+        )
+        uni_list = qml.math.stack(
+            [
+                qml.Hadamard.compute_matrix(),
+                qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
+                qml.Identity.compute_matrix(),
+            ]
+        )
+        obs = obs_list[recipes]
+        uni = uni_list[recipes]
+
+        # There's a significant speedup if we use the following iterative
+        # process to perform the randomized Pauli measurements:
+        #   1. Randomly generate Pauli observables for all snapshots for
+        #      a single qubit (e.g. the first qubit).
+        #   2. Compute the expectation of each Pauli observable on the first
+        #      qubit by tracing out all other qubits.
+        #   3. Sample the first qubit based on each Pauli expectation.
+        #   4. For all snapshots, determine the collapsed state of the remaining
+        #      qubits based on the sample result.
+        #   4. Repeat iteratively until no qubits are remaining.
+        #
+        # Observe that after the first iteration, the second qubit will become the
+        # "first" qubit in the process. The advantage to this approach as opposed to
+        # simulataneously computing the Pauli expectations for each qubit is that
+        # the partial traces are computed over iteratively smaller subsystems, leading
+        # to a significant speed-up.
+
+        # transpose the state so that the measured wires appear first
+        unmeasured_wires = [i for i in range(len(self.wires)) if i not in mapped_wires]
+        transposed_state = np.transpose(state, axes=mapped_wires.tolist() + unmeasured_wires)
+
+        outcomes = np.zeros((n_snapshots, n_qubits))
+        stacked_state = qml.math.stack([transposed_state for _ in range(n_snapshots)])
+
+        for i in range(n_qubits):
+
+            # trace out every qubit except the first
+            first_qubit_state = qml.math.einsum(
+                f"{ABC[device_qubits - i + 1]}{ABC[:device_qubits - i]},{ABC[device_qubits - i + 1]}{ABC[device_qubits - i]}{ABC[1:device_qubits - i]}"
+                f"->{ABC[device_qubits - i + 1]}a{ABC[device_qubits - i]}",
+                stacked_state,
+                qml.math.conj(stacked_state),
+            )
+
+            # sample the observables on the first qubit
+            probs = (qml.math.einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
+            samples = np.random.uniform(0, 1, size=probs.shape) > probs
+            outcomes[:, i] = samples
+
+            # collapse the state of the remaining qubits; the next qubit in line
+            # becomes the first qubit for the next iteration
+            rotated_state = qml.math.einsum("ab...,acb->ac...", stacked_state, uni[:, i])
+            stacked_state = rotated_state[np.arange(n_snapshots), qml.math.cast(samples, np.int8)]
+
+            # re-normalize the collapsed state
+            norms = np.sqrt(
+                np.sum(
+                    np.abs(stacked_state) ** 2, tuple(range(1, device_qubits - i)), keepdims=True
+                )
+            )
+            stacked_state /= norms
+
+        return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
 
     @property
     def numeric_type(self):
