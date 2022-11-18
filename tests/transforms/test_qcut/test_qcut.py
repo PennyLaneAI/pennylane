@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the `pennylane.qcut` package.
+Unit tests for the `pennylane.transforms.qcut` package.
 """
 import copy
 import itertools
@@ -4173,7 +4173,7 @@ class TestKaHyPar:
         ),
     ]
     config_path = str(
-        Path(__file__).parent.parent.parent / "pennylane/qcut/_cut_kKaHyPar_sea20.ini"
+        Path(__file__).parent.parent.parent / "pennylane/transforms/qcut/_cut_kKaHyPar_sea20.ini"
     )
 
     def test_seed_in_ci(self):
