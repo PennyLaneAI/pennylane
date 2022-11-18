@@ -9,6 +9,9 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
+  * Add `_State` class.
+    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+
   * Add `_VnEntropy` class.
     [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
@@ -43,6 +46,9 @@
 
 <h3>Improvements</h3>
 
+* `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
+   [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
+
 
 * Improve performance of `Wires.all_wires`.
   [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
@@ -50,6 +56,7 @@
 
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
+
 
 <h3>Breaking changes</h3>
 
@@ -85,6 +92,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   expansion now occurs.
   [(#3369)](https://github.com/PennyLaneAI/pennylane/pull/3369)
 
+* `qml.matrix(op)` now fails if the operator truly has no matrix (eg. `Barrier`) to match `op.matrix()`
+  [(#3386)](https://github.com/PennyLaneAI/pennylane/pull/3386)
+
 
 <h3>Contributors</h3>
 
@@ -92,7 +102,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Utkarsh Azad
 Pieter Eendebak
+Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
-
