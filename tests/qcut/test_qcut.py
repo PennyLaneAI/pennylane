@@ -4659,7 +4659,7 @@ class TestAutoCutCircuit:
         template_weights = [[0.1, -0.3]] * n_blocks
 
         device_size = 2
-        cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=device_size)
+        cut_strategy = qml.qcut.CutStrategy(max_free_wires=device_size)
 
         with qml.tape.QuantumTape() as tape0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
