@@ -124,7 +124,7 @@ class _Sample(SampleMeasurement):
         bin_size: int = None,
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in range(self.wires)]
+        mapped_wires = [wire_map[w] for w in self.wires]
         name = self.obs.name if self.obs is not None else None
         # Select the samples from samples that correspond to ``shot_range`` if provided
         if shot_range is not None:
