@@ -17,24 +17,23 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import (
-    AllCounts,
     Counts,
     Expectation,
     MeasurementProcess,
     MidMeasure,
-    MutualInfo,
     Probability,
     Sample,
-    Shadow,
-    ShadowExpval,
+    ShadowMeasurementProcess,
     State,
     Variance,
-    VnEntropy,
     _Counts,
     _Expectation,
+    _MutualInfo,
     _Probability,
     _Sample,
+    _State,
     _Variance,
+    _VnEntropy,
     expval,
     sample,
     var,
@@ -361,15 +360,15 @@ class TestExpansion:
 
         H = np.array([[1, 2], [2, 4]])
         obs = HermitianNoDiagGates(H, wires=["a"])
-        m = MeasurementProcess(Expectation, obs=obs)
+        m = _Expectation(obs=obs)
         assert m.has_decomposition is False
 
     def test_has_decomposition_false_no_observable(self):
         """Check a MeasurementProcess without observable to report not having a decomposition"""
-        m = MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1]))
+        m = _Probability(wires=qml.wires.Wires([0, 1]))
         assert m.has_decomposition is False
 
-        m = MeasurementProcess(Expectation, wires=qml.wires.Wires([0, 1]), eigvals=np.ones(4))
+        m = _Expectation(wires=qml.wires.Wires([0, 1]), eigvals=np.ones(4))
         assert m.has_decomposition is False
 
     @pytest.mark.parametrize(
@@ -388,24 +387,23 @@ class TestExpansion:
         assert m.samples_computational_basis is True
 
     @pytest.mark.parametrize(
-        "return_type, arg",
+        "m",
         [
-            (Expectation, {"obs": qml.PauliX(2)}),
-            (Variance, {"obs": qml.PauliX("a")}),
-            (Probability, {"obs": qml.PauliX("b")}),
-            (Probability, {"wires": ["a", 1]}),
-            (Sample, {"obs": qml.PauliX("a")}),
-            (Counts, {"obs": qml.PauliX("a")}),
-            (State, {}),
-            (VnEntropy, {"wires": ["a", 1]}),
-            (MutualInfo, {"wires": [["a", 1], ["b", 2]]}),
-            (Shadow, {"wires": [["a", 1], ["b", 2]]}),
-            (ShadowExpval, {"obs": qml.PauliX("a")}),
+            _Expectation(obs=qml.PauliX(2)),
+            _Variance(obs=qml.PauliX("a")),
+            _Probability(obs=qml.PauliX("b")),
+            _Probability(wires=["a", 1]),
+            _Sample(obs=qml.PauliX("a")),
+            _Counts(obs=qml.PauliX("a")),
+            _State(),
+            _VnEntropy(wires=["a", 1]),
+            _MutualInfo(wires=[["a", 1], ["b", 2]]),
+            ShadowMeasurementProcess(wires=[["a", 1], ["b", 2]]),
+            ShadowMeasurementProcess(H=qml.PauliX("a")),
         ],
     )
-    def test_samples_computational_basis_false(self, return_type, arg):
+    def test_samples_computational_basis_false(self, m):
         """Test that measurements of Paulis report to have a decomposition."""
-        m = MeasurementProcess(return_type, **arg)
         assert m.samples_computational_basis is False
 
 
