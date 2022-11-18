@@ -16,12 +16,8 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 from importlib import reload
-import types
-import warnings
 import pkg_resources
 
-
-import numpy as _np
 from semantic_version import SimpleSpec, Version
 
 from pennylane.boolean_fn import BooleanFn
@@ -94,7 +90,7 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
 )
-from pennylane.qcut import cut_circuit, cut_circuit_mc
+from pennylane.transforms.qcut import cut_circuit, cut_circuit_mc
 from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
