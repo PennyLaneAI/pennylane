@@ -224,9 +224,7 @@ class Device(abc.ABC):
     @property
     def analytic(self):
         """Whether shots is None or not. Kept for backwards compatability."""
-        if self._shots is None:
-            return True
-        return False
+        return self._shots is None
 
     @property
     def wires(self):
@@ -499,7 +497,7 @@ class Device(abc.ABC):
             self._num_executions += 1
 
             if self.tracker.active:
-                self.tracker.update(executions=1, shots=self._shots)
+                self.tracker.update(executions=1, shots=self._shots, results=self._asarray(results))
                 self.tracker.record()
 
             # Ensures that a combination with sample does not put
@@ -605,7 +603,7 @@ class Device(abc.ABC):
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
         return qml.BooleanFn(
-            lambda obj: not isinstance(obj, qml.tape.QuantumTape)
+            lambda obj: not isinstance(obj, qml.tape.QuantumScript)
             and self.supports_operation(obj.name)
         )
 

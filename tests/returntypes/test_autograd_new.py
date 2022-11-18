@@ -202,8 +202,18 @@ class TestBatchTransformExecution:
         res = qml.execute([tape], dev, None, device_batch_transform=True)
         spy.assert_called()
 
-        assert isinstance(res[0], float)
+        assert isinstance(res[0], np.ndarray)
+        assert res[0].shape == ()
         assert np.allclose(res[0], np.cos(y), atol=0.1)
+
+    def test_batch_transform_dynamic_shots(self):
+        """Tests that the batch transform considers the number of shots for the execution, not those
+        statically on the device."""
+        dev = qml.device("default.qubit", wires=1)
+        H = 2.0 * qml.PauliZ(0)
+        qscript = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        res = qml.execute([qscript], dev, interface=None, override_shots=10)
+        assert res == [2.0]
 
 
 class TestCaching:
@@ -1029,15 +1039,14 @@ class TestOverridingShots:
 
         # execute with shots=100
         res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)
-        spy.assert_called()
+        spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
         assert dev.shots is None
-        spy = mocker.spy(dev, "sample")
         res = execute([tape], dev, gradient_fn=param_shift)
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
-        spy.assert_not_called()
+        spy.assert_called_once()  # same single call from above, no additional calls
 
     def test_overriding_shots_with_same_value(self, mocker):
         """Overriding shots with the same value as the device will have no effect"""
