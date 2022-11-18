@@ -9,6 +9,9 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
+  * Add `_State` class.
+    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+
   * Add `_VnEntropy` class.
     [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
@@ -86,6 +89,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   expansion now occurs.
   [(#3369)](https://github.com/PennyLaneAI/pennylane/pull/3369)
 
+* `qml.matrix(op)` now fails if the operator truly has no matrix (eg. `Barrier`) to match `op.matrix()`
+  [(#3386)](https://github.com/PennyLaneAI/pennylane/pull/3386)
+
 
 <h3>Contributors</h3>
 
@@ -97,4 +103,3 @@ Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
-
