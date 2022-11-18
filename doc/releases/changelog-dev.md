@@ -10,6 +10,10 @@
 
 <h3>Improvements</h3>
 
+* Added `validate_subspace` static method to `qml.Operator` to check the validity of the subspace of certain
+  qutrit operations.
+  [#3340](https://github.com/PennyLaneAI/pennylane/pull/3340)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
