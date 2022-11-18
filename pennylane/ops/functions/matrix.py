@@ -130,6 +130,8 @@ def matrix(op, *, wire_order=None):
 @matrix.tape_transform
 def _matrix(tape, wire_order=None):
     """Defines how matrix works if applied to a tape containing multiple operations."""
+    if not tape.wires:
+        raise qml.operation.MatrixUndefinedError
     params = tape.get_parameters(trainable_only=False)
     interface = qml.math.get_interface(*params)
 
