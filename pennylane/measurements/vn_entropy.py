@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import ObservableReturnTypes, StateMeasurement, VnEntropy
+from .measurements import StateMeasurement, VnEntropy
 
 
 def vn_entropy(wires, log_base=None):
@@ -75,7 +75,6 @@ class _VnEntropy(StateMeasurement):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Operator = None,
         wires=None,
         eigvals=None,
@@ -83,7 +82,7 @@ class _VnEntropy(StateMeasurement):
         log_base=None,
     ):
         self.log_base = log_base
-        super().__init__(return_type=return_type, obs=obs, wires=wires, eigvals=eigvals, id=id)
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
 
     @property
     def return_type(self):
@@ -109,17 +108,11 @@ class _VnEntropy(StateMeasurement):
 
     def process_state(self, state: Sequence[complex], wires: Wires):
         return qml.math.vn_entropy(
-            state, indices=self.wires, c_dtype="complex128", base=self.log_base
-        )
-
-    def process_state(self, state: Sequence[complex], wires: Wires):
-        return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
         )
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             wires=self._wires,
             eigvals=self._eigvals,
