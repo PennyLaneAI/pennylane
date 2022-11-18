@@ -348,24 +348,18 @@ def apply(op, context=QueuingManager):
 
     return op
 
+
+# pylint: disable=protected-access
 def process_queue(queue):
     """Process the annotated queue, creating a list of quantum
     operations and measurement processes.
-
-    Sets:
-        _prep (list[~.Operation]): Preparation operations
-        _ops (list[~.Operation]): Main tape operations
-        _measurements (list[~.MeasurementProcess]): Tape measurements
 
     Args:
         queue (.AnnotatedQueue): The queue to be processed into individual lists
 
     Returns:
-        list(.Operation): The list of preparation operations
-        list(.Operation): The list of main tape operations
-        list(.MeasurementProcess): The list of tape measurements
-
-    Also calls `_update()` which sets many attributes.
+        tuple[list(.Operation), list(.Operation), list(.MeasurementProcess)]:
+        The list of preparation operations, the list of main tape operations, and the list of tape measurements
     """
     lists = {"_prep": [], "_ops": [], "_measurements": []}
     list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
