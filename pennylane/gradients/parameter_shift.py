@@ -725,7 +725,7 @@ def _get_var_with_second_order(pdA2, f0, pdA):
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
     """
-    return qml.math.array(pdA2 - 2 * f0 * pdA)
+    return pdA2 - 2 * f0 * pdA
 
 
 def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
@@ -857,6 +857,7 @@ def _create_variance_proc_fn(
     """
 
     def processing_fn(results):
+
         f0 = results[0]
 
         shot_vector = isinstance(shots, Sequence)

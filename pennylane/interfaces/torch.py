@@ -405,7 +405,7 @@ class ExecuteTapesNew(torch.autograd.Function):
                     # This recursion, coupled with the fact that the gradient transforms
                     # are differentiable, allows for arbitrary order differentiation.
                     vjps = processing_fn(
-                        execute(
+                        *execute(
                             vjp_tapes,
                             ctx.device,
                             ctx.execute_fn,
@@ -415,6 +415,7 @@ class ExecuteTapesNew(torch.autograd.Function):
                             max_diff=ctx.max_diff,
                         )
                     )
+
                 else:
                     # The derivative order is at the maximum. Compute the VJP
                     # in a non-differentiable manner to reduce overhead.
@@ -427,7 +428,7 @@ class ExecuteTapesNew(torch.autograd.Function):
                             reduction="extend",
                             gradient_kwargs=ctx.gradient_kwargs,
                         )
-                        vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
+                    vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
 
             else:
                 # Gradient function is not a gradient transform

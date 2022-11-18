@@ -1794,6 +1794,8 @@ class TestReturn:
 
         hess = hessian(circuit, (par_0, par_1))
 
+        print(hess)
+
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 
@@ -1818,7 +1820,7 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        params = torch.numpy.array([0.1, 0.2])
+        params = torch.tensor([0.1, 0.2], requires_grad=True)
 
         @qnode(dev, interface="torch", diff_method=diff_method, max_diff=2, mode=mode)
         def circuit(x):
@@ -1827,7 +1829,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = torch.hessian(circuit)(params)
+        hess = hessian(circuit, params)
 
         assert isinstance(hess, torch.Tensor)
         assert hess.shape == (2, 2)
@@ -1840,8 +1842,8 @@ class TestReturn:
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        par_0 = torch.numpy.array(0.1)
-        par_1 = torch.numpy.array(0.2)
+        par_0 = torch.tensor(0.1, requires_grad=True)
+        par_1 = torch.tensor(0.2, requires_grad=True)
 
         @qnode(dev, interface="torch", diff_method=diff_method, max_diff=2, mode=mode)
         def circuit(x, y):
@@ -1850,7 +1852,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = torch.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        hess = hessian(circuit, (par_0, par_1))
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -1876,7 +1878,7 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        params = torch.numpy.array([0.1, 0.2])
+        params = torch.tensor([0.1, 0.2], requires_grad=True)
 
         @qnode(dev, interface="torch", diff_method=diff_method, max_diff=2, mode=mode)
         def circuit(x):
@@ -1885,7 +1887,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = torch.hessian(circuit)(params)
+        hess = hessian(circuit, params)
 
         assert isinstance(hess, torch.Tensor)
         assert hess.shape == (2, 2)
@@ -1899,8 +1901,8 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        par_0 = torch.numpy.array(0.1)
-        par_1 = torch.numpy.array(0.2)
+        par_0 = torch.tensor(0.1, requires_grad=True)
+        par_1 = torch.tensor(0.2, requires_grad=True)
 
         @qnode(dev, interface="torch", diff_method=diff_method, max_diff=2, mode=mode)
         def circuit(x, y):
@@ -1909,7 +1911,10 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        hess = torch.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        jac_fn = lambda x, y: jacobian(circuit, (x, y), create_graph=True)
+
+        hess = jacobian(jac_fn, (par_0, par_1))
+        print(hess)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
