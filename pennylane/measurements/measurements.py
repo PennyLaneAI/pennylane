@@ -301,7 +301,6 @@ class MeasurementProcess(ABC):
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             wires=self._wires,
             eigvals=self._eigvals,
@@ -412,7 +411,7 @@ class MeasurementProcess(ABC):
 
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
-            self.__class__(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
+            self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 
