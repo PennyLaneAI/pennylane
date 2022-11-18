@@ -39,7 +39,6 @@ from .utils import (
 )
 
 from .conversion import (
-    decompose,
     pauli_sentence,
 )
 

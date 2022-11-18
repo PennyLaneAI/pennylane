@@ -81,7 +81,6 @@ def is_pauli_word(observable):
     >>> is_pauli_word(qml.PauliZ(0) @ qml.Hadamard(1))
     False
     """
-    print(observable)
     if isinstance(observable, (Identity, PauliX, PauliY, PauliZ)):
         return True
 

@@ -25,7 +25,7 @@ from pennylane.operation import (
     OperatorPropertyUndefined,
     Tensor,
 )
-
+from pennylane.pauli import is_pauli_word, pauli_word_to_string
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp

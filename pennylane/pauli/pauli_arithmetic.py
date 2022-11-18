@@ -203,34 +203,6 @@ class PauliWord(dict):
 
         return reduce(kron, (matrix_map[self[w]] for w in wire_order))
 
-    def operation(self, wire_order=None):
-        """Returns a native PennyLane``~.Operator`` representing the PauliWord."""
-        if len(self) == 0:
-            if wire_order in (None, [], wires.Wires([])):
-                raise ValueError("Can't get the operation for an empty PauliWord.")
-            return Identity(wires=wire_order)
-
-        if len(self) == 1:
-            (wire,) = self
-            op = self[wire]
-            return op_map[op](wire)
-
-        return prod(*(op_map[op](wire) for wire, op in self.items()))
-
-    def hamiltonian(self, wire_order=None):
-        """Return ~.Hamiltonian representing the PauliWord"""
-        if len(self) == 0:
-            if wire_order in (None, [], wires.Wires([])):
-                raise ValueError("Can't get the hamiltonian for an empty PauliWord.")
-            return Hamiltonian([1], [Identity(wires=wire_order)])
-
-        if len(self) == 1:
-            (wire,) = self
-            op = self[wire]
-            return Hamiltonian([1], [op_map[op](wire)])
-
-        return Hamiltonian([1], [Tensor(*(op_map[op](wire) for wire, op in self.items()))])
-
 
 class PauliSentence(dict):
     """Dictionary representing a linear combination of Pauli words, with the keys
@@ -334,54 +306,6 @@ class PauliSentence(dict):
         )
 
         return math.expand_matrix(reduced_mat, result_wire_order, wire_order=wire_order)
-
-    def operation(self, wire_order=None):
-        """Returns a native PennyLane``~.Operator`` representing the PauliSentence."""
-        if len(self) == 0:
-            if wire_order in (None, [], wires.Wires([])):
-                raise ValueError("Can't get the operation for an empty PauliSentence.")
-            return Identity(wires=wire_order)
-
-        if len(self) == 1:
-            (pw,) = self
-            coeff = self[pw]
-            return (
-                s_prod(coeff, pw.operation())
-                if len(pw) > 0
-                else s_prod(coeff, pw.operation(wire_order=list(self.wires)))
-            )
-
-        return op_sum(
-            *(
-                s_prod(coeff, pw.operation())
-                if len(pw) > 0
-                else s_prod(coeff, pw.operation(wire_order=list(self.wires)))
-                for pw, coeff in self.items()
-            )
-        )
-
-    def hamiltonian(self, wire_order=None):
-        """Returns a native PennyLane ~.Hamiltonian representing the PauliSentence."""
-        if len(self) == 0:
-            if wire_order in (None, [], wires.Wires([])):
-                raise ValueError("Can't get the hamiltonian for an empty PauliSentence.")
-            return Hamiltonian([1], [Identity(wires=wire_order)])
-
-        if len(self) == 1:
-            (pw,) = self
-            coeff = self[pw]
-            return (
-                coeff * pw.hamiltonian()
-                if len(pw) > 0
-                else coeff * pw.hamiltonian(wire_order=list(self.wires))
-            )
-
-        return sum(
-            coeff * pw.hamiltonian()
-            if len(pw) > 0
-            else coeff * pw.hamiltonian(wire_order=list(self.wires))
-            for pw, coeff in self.items()
-        )
 
     def simplify(self, tol=1e-8):
         """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""
