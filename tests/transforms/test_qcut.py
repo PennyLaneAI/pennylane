@@ -29,7 +29,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms import qcut
+from pennylane.transforms.qcut import qcut
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
@@ -4041,7 +4041,7 @@ class TestCutStrategy:
                 else {num_fragments_probed}
             )
         elif exhaustive:
-            num_tape_gates = sum(not isinstance(n, qcut.WireCut) for n in tape_dag.nodes)
+            num_tape_gates = sum(not isinstance(n, qml.WireCut) for n in tape_dag.nodes)
             assert {v["num_fragments"] for v in all_cut_kwargs} == set(range(2, num_tape_gates + 1))
 
     @pytest.mark.parametrize(
