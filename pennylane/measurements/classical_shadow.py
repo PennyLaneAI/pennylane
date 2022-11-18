@@ -15,10 +15,12 @@
 """
 This module contains the qml.classical_shadow measurement.
 """
+from abc import ABC, abstractmethod
 from collections.abc import Iterable
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.wires import Wires
 
 from .measurements import MeasurementProcess, MeasurementShapeError, Shadow, ShadowExpval
@@ -208,7 +210,23 @@ def classical_shadow(wires, seed_recipes=True):
     return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
-class ShadowMeasurementProcess(MeasurementProcess):
+class InnerBlackBoxProcessing(ABC):
+    """Tape processing applied inside the gradient black box."""
+
+    @abstractmethod
+    def tape_transform(self, tape):
+        """Tape transform applied inside the black box."""
+
+    def __call__(self, tape):
+        tapes, processing_fn = self.tape_transform(tape)
+
+        def outer_processing_fn(results):
+            return qml.math.asarray([processing_fn(results)])
+
+        return tapes, outer_processing_fn
+
+
+class ShadowMeasurementProcess(MeasurementProcess, InnerBlackBoxProcessing):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -231,6 +249,7 @@ class ShadowMeasurementProcess(MeasurementProcess):
         self.seed = seed
         self.H = H
         self.k = k
+        self.shots = None
 
     @property
     def numeric_type(self):
@@ -292,4 +311,38 @@ class ShadowMeasurementProcess(MeasurementProcess):
         obj.seed = self.seed
         obj.H = self.H
         obj.k = self.k
+        obj.shots = self.shots
         return obj
+
+    def tape_transform(self, tape):
+        n_snapshots = self.shots
+
+        # slow implementation but works for all devices
+        n_qubits = len(self.wires)
+
+        recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+        obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+
+        tapes = []
+
+        for t in range(n_snapshots):
+            # compute rotations for the Pauli measurements
+            measurements = [
+                qml.sample(op=obs_list[recipes[t][wire_idx]](wire))
+                for wire_idx, wire in enumerate(self.wires)
+            ]
+
+            tapes.append(
+                qml.tape.QuantumScript(ops=tape._ops, measurements=measurements, prep=tape._prep)
+            )
+
+        def processing_fn(results):
+            outcomes = qml.math.array(results)[:, :, 0]
+            outcomes = (1 - outcomes) / 2
+            if self.return_type is Shadow:
+                return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
+
+            shadow = qml.shadows.ClassicalShadow(outcomes, recipes, wire_map=self.wires.tolist())
+            return shadow.expval(self.H, self.k)
+
+        return tapes, processing_fn

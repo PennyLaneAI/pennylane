@@ -14,6 +14,7 @@
 """Unit tests for the classical shadows measurement process"""
 # pylint:disable=no-self-use, import-outside-toplevel, redefined-outer-name, unpacking-non-sequence, too-few-public-methods, not-an-iterable, inconsistent-return-statements
 import copy
+
 import pytest
 
 import pennylane as qml
@@ -29,9 +30,6 @@ def get_circuit(wires, shots, seed_recipes, interface="autograd", device="defaul
         dev = qml.device(device, wires=wires, shots=shots)
     else:
         dev = qml.device("default.qubit", wires=wires, shots=shots)
-
-        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
-        dev.classical_shadow = super(type(dev), dev).classical_shadow
 
     @qml.qnode(dev, interface=interface)
     def circuit():
@@ -54,9 +52,6 @@ def get_x_basis_circuit(wires, shots, interface="autograd", device="default.qubi
     else:
         dev = qml.device("default.qubit", wires=wires, shots=shots)
 
-        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
-        dev.classical_shadow = super(type(dev), dev).classical_shadow
-
     @qml.qnode(dev, interface=interface)
     def circuit():
         for wire in range(wires):
@@ -74,9 +69,6 @@ def get_y_basis_circuit(wires, shots, interface="autograd", device="default.qubi
         dev = qml.device(device, wires=wires, shots=shots)
     else:
         dev = qml.device("default.qubit", wires=wires, shots=shots)
-
-        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
-        dev.classical_shadow = super(type(dev), dev).classical_shadow
 
     @qml.qnode(dev, interface=interface)
     def circuit():

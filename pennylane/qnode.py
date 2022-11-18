@@ -25,6 +25,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
+from pennylane.measurements.classical_shadow import InnerBlackBoxProcessing
 from pennylane.tape import QuantumTape
 
 
@@ -519,6 +520,7 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
+    # pylint: disable=too-many-branches
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
@@ -527,6 +529,12 @@ class QNode:
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
         self._tape._qfunc_output = self._qfunc_output
+
+        if isinstance(self._qfunc_output, InnerBlackBoxProcessing):
+            self._qfunc_output.shots = self.device.shots
+            if self.device.shots is not None:
+                self.device.shots = 1
+            self.tape.inner_transform = self._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)

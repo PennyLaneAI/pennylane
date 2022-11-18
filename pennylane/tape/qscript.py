@@ -31,6 +31,7 @@ from pennylane.measurements import (
     Shadow,
     ShadowExpval,
 )
+from pennylane.measurements.classical_shadow import InnerBlackBoxProcessing
 from pennylane.operation import Observable, Operator
 
 _empty_wires = qml.wires.Wires([])
@@ -176,6 +177,7 @@ class QuantumScript:
         self._output_dim = 0
         self._batch_size = None
         self._qfunc_output = None
+        self.inner_transform = None
 
         self.wires = _empty_wires
         self.num_wires = 0
@@ -190,6 +192,8 @@ class QuantumScript:
 
         if _update:
             self._update()
+
+        self._validate_measurements()
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -1293,3 +1297,13 @@ class QuantumScript:
                 qasm_str += f"measure q[{wire_indx}] -> c[{wire_indx}];\n"
 
         return qasm_str
+
+    def _validate_measurements(self):
+        """Make sure that if an InnerBlackBoxProcessing measurement is used, the qscript only
+        contains one measurement."""
+        if any(isinstance(m, InnerBlackBoxProcessing) for m in self.measurements):
+            if len(self.measurements) > 1:
+                raise qml.QuantumFunctionError(
+                    "An InnerBlackBoxProcessing measurement cannot be returned with other return types"
+                )
+            self.inner_transform = self.measurements[0]
