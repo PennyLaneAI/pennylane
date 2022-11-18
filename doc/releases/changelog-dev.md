@@ -4,6 +4,17 @@
 
 <h3>New features since last release</h3>
 
+* Support custom measurement processes:
+  * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
+    method to process samples/quantum state.
+    [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
+
+  * Add `_VnEntropy` class.
+    [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
+
+  * Add `_MutualInfo` class.
+    [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
+
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
  
@@ -60,12 +71,30 @@
 
 <h3>Improvements</h3>
 
+
+* Improve performance of `Wires.all_wires`.
+  [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
+
+
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
+
+Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://docs.pennylane.ai/en/latest/development/deprecations.html).
+
+* The following deprecated methods are removed:
+  [(#3281)](https://github.com/PennyLaneAI/pennylane/pull/3281/)
+
+  - `qml.tape.get_active_tape`: Use `qml.QueuingManager.active_context()`
+  - `qml.transforms.qcut.remap_tape_wires`: Use `qml.map_wires`
+  - `qml.tape.QuantumTape.inv()`: Use `qml.tape.QuantumTape.adjoint()`
+  - `qml.tape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
+  - `qml.tape.QuantumTape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
+  - `qml.QueuingContext` is now `qml.QueuingManager`
+  - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info`: Use plain `update_info`
 
 <h3>Documentation</h3>
 
@@ -75,16 +104,24 @@
   attributes were modified.
   [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
+* An issue with `drain=False` in the adaptive optimizer is fixed. Before the fix, the operator pool
+  needed to be re-constructed inside the optimization pool when `drain=False`. With the new fix, 
+  this reconstruction is not needed.
+  [#3361](https://github.com/PennyLaneAI/pennylane/pull/3361)
+
 * If the device originally has no shots but finite shots are dynamically specified, Hamiltonian
   expansion now occurs.
   [(#3369)](https://github.com/PennyLaneAI/pennylane/pull/3369)
 
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
-
 Juan Miguel Arrazola
 Utkarsh Azad
 Astral Cai
+Pieter Eendebak
 Soran Jahangiri
 Christina Lee
+Albert Mitjans Coma
+
