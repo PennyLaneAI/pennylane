@@ -127,9 +127,7 @@ class MeasurementProcess:
         log_base (float): Base for the logarithm.
     """
 
-    # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-arguments
-
     def __init__(
         self,
         return_type: ObservableReturnTypes,
@@ -137,17 +135,15 @@ class MeasurementProcess:
         wires=None,
         eigvals=None,
         id=None,
-        log_base=None,
     ):
         self.return_type = return_type
         self.obs = obs
         self.id = id
-        self.log_base = log_base
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
 
-        self._wires = wires or Wires([])
+        self._wires = wires
         self._eigvals = None
 
         if eigvals is not None:
@@ -508,15 +504,12 @@ class MeasurementProcess:
         return f"{self.obs}"
 
     def __copy__(self):
-        cls = self.__class__
-
-        if self.obs is not None:
-            return cls(self.return_type, obs=copy.copy(self.obs))
-
-        if self.log_base is not None:
-            return cls(self.return_type, wires=self._wires, log_base=self.log_base)
-
-        return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
+        return self.__class__(
+            self.return_type,
+            obs=copy.copy(self.obs),
+            wires=self._wires,
+            eigvals=self._eigvals,
+        )
 
     @property
     def wires(self):
@@ -527,7 +520,11 @@ class MeasurementProcess:
         if self.obs is not None:
             return self.obs.wires
 
-        return Wires.all_wires(self._wires) if isinstance(self._wires, list) else self._wires
+        return (
+            Wires.all_wires(self._wires)
+            if isinstance(self._wires, list)
+            else self._wires or Wires([])
+        )
 
     @property
     def raw_wires(self):
