@@ -436,7 +436,7 @@ class THadamard(Operation):
     r"""THadamard(wires, subspace)
     The ternary Hadamard operator
 
-    Performs the Hadamard operation on the specified 2D subspace if specified. The subspace is
+    Performs the Hadamard operation on a 2D subspace, if specified. The subspace is
     given as a keyword argument and determines which two of three single-qutrit basis states the
     operation applies to. When a subspace is not specified, the generalized Hadamard operation
     is used.
@@ -456,7 +456,7 @@ class THadamard(Operation):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        subspace (Sequence[int]): the 2D subspace on which to apply operation. This should be
+        subspace (Sequence[int]): the 2D subspace on which to apply the operation. This should be
             `None` for the generalized Hadamard.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
