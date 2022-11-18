@@ -330,19 +330,18 @@ class TestExpansion:
             _Probability(wires=qml.wires.Wires([0, 1])).expand()
 
     @pytest.mark.parametrize(
-        "return_type, obs",
+        "m",
         [
             _Expectation(obs=qml.PauliX(0) @ qml.PauliY(1)),
             _Variance(obs=qml.PauliX(0) @ qml.PauliY(1)),
-            (Probability, qml.PauliX(0) @ qml.PauliY(1)),
-            (Expectation, qml.PauliX(5)),
-            (Variance, qml.PauliZ(0) @ qml.Identity(3)),
-            (Probability, qml.PauliZ(0) @ qml.Identity(3)),
+            _Probability(obs=qml.PauliX(0) @ qml.PauliY(1)),
+            _Expectation(obs=qml.PauliX(5)),
+            _Variance(obs=qml.PauliZ(0) @ qml.Identity(3)),
+            _Probability(obs=qml.PauliZ(0) @ qml.Identity(3)),
         ],
     )
-    def test_has_decomposition_true_pauli(self, return_type, obs):
+    def test_has_decomposition_true_pauli(self, m):
         """Test that measurements of Paulis report to have a decomposition."""
-        m = MeasurementProcess(return_type, obs=obs)
         assert m.has_decomposition is True
 
     def test_has_decomposition_true_hermitian(self):
@@ -374,7 +373,7 @@ class TestExpansion:
         assert m.has_decomposition is False
 
     @pytest.mark.parametrize(
-        "meas_class, kwargs",
+        "m",
         [
             _Sample(),
             _Sample(wires=["a", 1]),
@@ -384,9 +383,8 @@ class TestExpansion:
             _Counts(wires=["a", 1]),
         ],
     )
-    def test_samples_computational_basis_true(self, meas_class, kwargs):
+    def test_samples_computational_basis_true(self, m):
         """Test that measurements of Paulis report to have a decomposition."""
-        m = meas_class(**kwargs)
         assert m.samples_computational_basis is True
 
     @pytest.mark.parametrize(
