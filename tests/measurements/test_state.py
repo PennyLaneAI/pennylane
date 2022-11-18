@@ -657,8 +657,13 @@ class TestDensityMatrix:
             return qml.density_matrix(wires=wires[1])
 
         density = func()
+        expected = np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]])
 
-        assert np.allclose(np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]]), density)
+        assert np.allclose(expected, density)
+        assert np.allclose(
+            expected,
+            qml.density_matrix(wires=wires[1]).process_state(state=dev.state, wires=dev.wires),
+        )
 
     @pytest.mark.parametrize("wires", [[3, 1], ["b", 1000]])
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
