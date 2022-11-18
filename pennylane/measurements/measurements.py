@@ -127,22 +127,16 @@ class MeasurementProcess(ABC):
         log_base (float): Base for the logarithm.
     """
 
-    # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-arguments
-
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
         id=None,
-        log_base=None,
     ):
-        self.return_type = return_type
         self.obs = obs
         self.id = id
-        self.log_base = log_base
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
@@ -242,6 +236,11 @@ class MeasurementProcess(ABC):
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
+    @property
+    @abstractmethod
+    def return_type(self):
+        """Return type property."""
+
     @staticmethod
     @functools.lru_cache()
     def _get_num_basis_states(num_wires, device):
@@ -287,11 +286,9 @@ class MeasurementProcess(ABC):
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
-            eigvals=self._eigvals,
             wires=self._wires,
-            log_base=self.log_base,
+            eigvals=self._eigvals,
         )
 
     @property
@@ -303,9 +300,11 @@ class MeasurementProcess(ABC):
         if self.obs is not None:
             return self.obs.wires
 
-        wires = self._wires or Wires([])
-
-        return Wires.all_wires(wires) if isinstance(wires, list) else wires
+        return (
+            Wires.all_wires(self._wires)
+            if isinstance(self._wires, list)
+            else self._wires or Wires([])
+        )
 
     @property
     def raw_wires(self):
@@ -397,7 +396,7 @@ class MeasurementProcess(ABC):
 
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
-            self.__class__(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
+            self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 
@@ -448,9 +447,7 @@ class MeasurementProcess(ABC):
         Returns:
             .MeasurementProcess: A measurement process with a simplified observable.
         """
-        return (
-            self if self.obs is None else self.__class__(self.return_type, obs=self.obs.simplify())
-        )
+        return self if self.obs is None else self.__class__(obs=self.obs.simplify())
 
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
@@ -474,7 +471,7 @@ class SampleMeasurement(MeasurementProcess):
     """Sample-based measurement process."""
 
     @abstractmethod
-    def process(
+    def process_samples(
         self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
     ):
         """Process the given samples.
@@ -493,15 +490,11 @@ class StateMeasurement(MeasurementProcess):
     """State-based measurement process."""
 
     @abstractmethod
-    def process_state(self, state: np.ndarray, device_wires: Wires):
+    def process_state(self, state: Sequence[complex], wires: Wires):
         """Process the given quantum state.
 
         Args:
-            state (ndarray[complex]): quantum state
-            num_wires (int): total number of wires
-            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
-                to use. If not specified, all samples are used.
-            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
-                returns the measurement statistic separately over each bin. If not
-                provided, the entire shot range is treated as a single bin.
+            state (Sequence[complex]): quantum state
+            wires (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+                dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """

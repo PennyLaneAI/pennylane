@@ -13,27 +13,53 @@
 # limitations under the License.
 """Unit tests for the mutual_info module"""
 import numpy as np
+import pytest
 
 import pennylane as qml
+from pennylane.interfaces import INTERFACE_MAP
+from pennylane.measurements.mutual_info import _MutualInfo
 
 
 class TestMutualInfo:
     """Tests for the mutual_info function"""
 
-    def test_mutual_info(self):
-        """Tests the output of qml.mutual_info"""
-        dev = qml.device("default.mixed", wires=2)
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize(
+        "state, expected",
+        [
+            ([1.0, 0.0, 0.0, 0.0], 0),
+            ([qml.math.sqrt(2) / 2, 0.0, qml.math.sqrt(2) / 2, 0.0], 0),
+            ([qml.math.sqrt(2) / 2, 0.0, 0.0, qml.math.sqrt(2) / 2], 2 * qml.math.log(2)),
+            (qml.math.ones(4) * 0.5, 0.0),
+        ],
+    )
+    def test_mutual_info_output(self, interface, state, expected):
+        """Test the output of qml.mutual_info"""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit():
+            qml.QubitStateVector(state, wires=[0, 1])
+            return qml.mutual_info(wires0=[0, 2], wires1=[1, 3])
+
+        res = circuit()
+        new_res = qml.mutual_info(wires0=[0, 2], wires1=[1, 3]).process_state(
+            state=circuit.device.state, wires=circuit.device.wires
+        )
+        assert np.allclose(res, expected, atol=1e-6)
+        assert np.allclose(new_res, expected, atol=1e-6)
+        assert INTERFACE_MAP.get(qml.math.get_interface(new_res)) == interface
+        assert res.dtype == new_res.dtype
+
+    def test_queue(self):
+        """Test that the right measurement class is queued."""
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
-            return qml.mutual_info(wires0=[0], wires1=[1], log_base=2)
+            return qml.mutual_info(wires0=[0], wires1=[1])
 
-        res = circuit()
-        expected = 0
-        assert np.allclose(res, expected)
-        assert np.allclose(
-            qml.mutual_info(wires0=[0], wires1=[1], log_base=2).process_state(
-                state=dev.state, device_wires=dev.wires
-            ),
-            expected,
-        )
+        circuit()
+
+        assert isinstance(circuit.tape[0], _MutualInfo)

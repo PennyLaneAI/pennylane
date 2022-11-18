@@ -45,7 +45,7 @@ class TestSample:
                 meas = qml.sample(op=meas)
             assert qml.math.allequal(
                 self.dev.sample(call_args.args[1], **call_args.kwargs),
-                meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size),
+                meas.process_samples(samples=samples, shot_range=shot_range, bin_size=bin_size),
             )
 
     def test_sample_dimension(self, mocker):
@@ -332,4 +332,4 @@ class TestSample:
             num_wires = 1
 
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
-            qml.sample(op=DummyOp(0)).process(samples=np.array([[1, 0]]))
+            qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]))

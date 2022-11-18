@@ -15,9 +15,11 @@
 """
 This module contains the qml.mutual_info measurement.
 """
-import numpy as np
+import copy
+from typing import Sequence
 
 import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import MutualInfo, StateMeasurement
@@ -79,15 +81,31 @@ def mutual_info(wires0, wires1, log_base=None):
 
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
-    return _MutualInfo(MutualInfo, wires=[wires0, wires1], log_base=log_base)
+    return _MutualInfo(wires=[wires0, wires1], log_base=log_base)
 
 
 class _MutualInfo(StateMeasurement):
     """Measurement process that returns the mutual information."""
 
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        obs: Operator = None,
+        wires=None,
+        eigvals=None,
+        id=None,
+        log_base=None,
+    ):
+        self.log_base = log_base
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+
     @property
     def numeric_type(self):
         return float
+
+    @property
+    def return_type(self):
+        return MutualInfo
 
     def shape(self, device):
         if qml.active_return():
@@ -103,11 +121,19 @@ class _MutualInfo(StateMeasurement):
         num_shot_elements = sum(s.copies for s in device.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
-    def process_state(self, state: np.ndarray, device_wires: Wires):
+    def process_state(self, state: Sequence[complex], wires: Wires):
         return qml.math.mutual_info(
             state,
-            indices0=[self.wires[0]],
-            indices1=[self.wires[1]],
-            c_dtype=np.complex128,
+            indices0=list(self._wires[0]),
+            indices1=list(self._wires[1]),
+            c_dtype=state.dtype,
             base=self.log_base,
+        )
+
+    def __copy__(self):
+        return self.__class__(
+            obs=copy.copy(self.obs),
+            wires=self._wires,
+            eigvals=self._eigvals,
+            log_base=self.log_base,
         )

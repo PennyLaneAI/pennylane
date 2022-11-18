@@ -18,15 +18,13 @@ This module contains the qml.counts measurement.
 # pylint: disable=too-many-arguments, abstract-method
 import copy
 import warnings
-from typing import Tuple, Union
-
-import numpy as np
+from typing import Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
 
-from .measurements import AllCounts, Counts, ObservableReturnTypes, SampleMeasurement
+from .measurements import AllCounts, Counts, SampleMeasurement
 
 
 def counts(op=None, wires=None, all_outcomes=False):
@@ -142,11 +140,7 @@ def counts(op=None, wires=None, all_outcomes=False):
             )
         wires = Wires(wires)
 
-    # TODO: Remove this conditional branch when using `Counts.process` in devices
-    if all_outcomes:
-        return _Counts(AllCounts, obs=op, wires=wires, all_outcomes=all_outcomes)
-
-    return _Counts(Counts, obs=op, wires=wires, all_outcomes=all_outcomes)
+    return _Counts(obs=op, wires=wires, all_outcomes=all_outcomes)
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
@@ -155,16 +149,14 @@ class _Counts(SampleMeasurement):
 
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
         id=None,
-        log_base=None,
         all_outcomes=False,
     ):
         self.all_outcomes = all_outcomes
-        super().__init__(return_type, obs, wires, eigvals, id, log_base)
+        super().__init__(obs, wires, eigvals, id)
 
     @property
     def numeric_type(self):
@@ -174,8 +166,16 @@ class _Counts(SampleMeasurement):
     def samples_computational_basis(self):
         return self.obs is None
 
-    def process(self, samples: np.ndarray, shot_range: Tuple[int] = None, bin_size: int = None):
-        samples = qml.sample(op=self.obs, wires=self._wires).process(samples, shot_range, bin_size)
+    @property
+    def return_type(self):
+        return AllCounts if self.all_outcomes else Counts
+
+    def process_samples(
+        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+    ):
+        samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
+            samples, shot_range, bin_size
+        )
 
         if bin_size is None:
             return self._samples_to_counts(samples)
@@ -250,8 +250,8 @@ class _Counts(SampleMeasurement):
             outcomes = qml.eigvals(self.obs)
 
         # generate empty outcome dict, populate values with state counts
-        outcome_dict = {k: np.int64(0) for k in outcomes}
-        states, _counts = np.unique(samples, return_counts=True)
+        outcome_dict = {k: qml.math.int64(0) for k in outcomes}
+        states, _counts = qml.math.unique(samples, return_counts=True)
         for s, c in zip(states, _counts):
             outcome_dict[s] = c
 
@@ -259,10 +259,8 @@ class _Counts(SampleMeasurement):
 
     def __copy__(self):
         return self.__class__(
-            self.__class__.__name__,
             obs=copy.copy(self.obs),
             eigvals=self._eigvals,
             wires=self._wires,
-            log_base=self.log_base,
             all_outcomes=self.all_outcomes,
         )

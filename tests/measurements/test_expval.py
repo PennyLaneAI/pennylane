@@ -47,9 +47,11 @@ class TestExpval:
             meas = qml.expval(op=obs)
             old_res = self.dev.expval(obs, shot_range=shot_range, bin_size=bin_size)
             if self.dev.shots is None:
-                new_res = meas.process_state(state=state, device_wires=self.dev.wires)
+                new_res = meas.process_state(state=state, wires=self.dev.wires)
             else:
-                new_res = meas.process(samples=samples, shot_range=shot_range, bin_size=bin_size)
+                new_res = meas.process_samples(
+                    samples=samples, shot_range=shot_range, bin_size=bin_size
+                )
             assert qml.math.allequal(old_res, new_res)
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
