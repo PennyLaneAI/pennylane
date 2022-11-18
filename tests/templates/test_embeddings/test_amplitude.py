@@ -547,7 +547,7 @@ class TestInterfaces:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("features", all_features)
-    def test_autograd_pad_with(self, tol, features):
+    def test_torch_pad_with(self, tol, features):
         """Tests torch tensors and pad_with."""
         import torch
 
