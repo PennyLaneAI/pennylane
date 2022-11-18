@@ -818,6 +818,19 @@ class Operator(abc.ABC):
             return f"{self.name}({params}, wires={self.wires.tolist()})"
         return f"{self.name}(wires={self.wires.tolist()})"
 
+    @staticmethod
+    def validate_subspace(subspace):
+        if not hasattr(subspace, "__iter__") or len(subspace) != 2:
+            raise ValueError(
+                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
+            )
+
+        if not all(s in {0, 1, 2} for s in subspace):
+            raise ValueError("Elements of the subspace must be 0, 1, or 2.")
+
+        if subspace[0] == subspace[1]:
+            raise ValueError("Elements of subspace list must be unique.")
+
     @property
     def num_params(self):
         """Number of trainable parameters that the operator depends on.

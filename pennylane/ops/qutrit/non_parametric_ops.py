@@ -444,7 +444,10 @@ class THadamard(Operation):
     The construction of this operator is based on section 2 of
     `Di et al. (2012) <https://arxiv.org/abs/1105.5485>`_ when the subspace is specified, and
     definition 4 and equation 5 from `Yeh et al. (2022) <https://arxiv.org/abs/2204.00552>`_
-    when no subspace is specified.
+    when no subspace is specified. The operator definition of the `None` subspace case is shown
+    below:
+
+    .. math:: THadamard =
 
     **Details:**
 
@@ -494,13 +497,9 @@ class THadamard(Operation):
 
         return label
 
-    def __init__(
-        self, wires, subspace=None, do_queue=True
-    ):  # pylint: disable=dangerous-default-value
-        if subspace is not None and not hasattr(subspace, "__iter__"):
-            raise ValueError(
-                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
-            )
+    def __init__(self, wires, subspace=None, do_queue=True):
+        if subspace is not None:
+            self.validate_subspace(subspace)
 
         self._subspace = subspace
         self._hyperparameters = {
@@ -512,12 +511,13 @@ class THadamard(Operation):
     def subspace(self):
         """The single-qutrit basis states which the operator acts on
 
-        This property returns the 2D subspace on which the operator acts. This subspace
-        determines which two single-qutrit basis states the operator acts on. The remaining
-        basis state is not affected by the operator.
+        This property returns the 2D subspace on which the operator acts if specified,
+        or None if no subspace is defined. This subspace determines which two single-qutrit
+        basis states the operator acts on. The remaining basis state is not affected by the
+        operator.
 
         Returns:
-            tuple[int]: subspace on which operator acts
+            tuple[int] or None: subspace on which operator acts, if specified, else None
         """
         return tuple(sorted(self._subspace)) if self._subspace is not None else None
 
@@ -539,7 +539,7 @@ class THadamard(Operation):
 
         **Example**
 
-        >>> print(qml.TH.compute_matrix(subspace=[0, 2]))
+        >>> print(qml.THadamard.compute_matrix(subspace=[0, 2]))
         array([[ 1.,  0.,  1.],
                [ 0.,  1.,  0.],
                [ 1.,  0., -1.]])
@@ -550,17 +550,7 @@ class THadamard(Operation):
                 [[1, 1, 1], [1, OMEGA, OMEGA**2], [1, OMEGA**2, OMEGA]]
             )
 
-        if not hasattr(subspace, "__iter__") or len(subspace) != 2:
-            raise ValueError(
-                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
-            )
-
-        if not all(s in {0, 1, 2} for s in subspace):
-            raise ValueError("Elements of the subspace must be 0, 1, or 2.")
-
-        if subspace[0] == subspace[1]:
-            raise ValueError("Elements of subspace list must be unique.")
-
+        THadamard.validate_subspace(subspace)
         subspace = tuple(sorted(subspace))
 
         mat = np.eye(3, dtype=np.complex128)
