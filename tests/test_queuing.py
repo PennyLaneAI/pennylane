@@ -136,15 +136,6 @@ class TestStopRecording:
         assert result == -1.0
 
 
-def test_name_change_warning():
-    """Test that a warning is raised when QueuingContext is requested from the queuing module."""
-    with pytest.warns(
-        UserWarning, match=r"QueuingContext has been renamed qml.queuing.QueuingManager"
-    ):
-        out = qml.queuing.QueuingContext
-    assert out is QueuingManager
-
-
 class TestQueuingManager:
     """Test the logic associated with the QueuingManager class."""
 
@@ -161,15 +152,6 @@ class TestQueuingManager:
     def test_no_active_context(self):
         """Test that if there are no active contexts, active_context() returns None"""
         assert QueuingManager.active_context() is None
-
-    def test_safe_update_info_deprecation(self):
-        """Test that safe_update_info raises a deprecation warning."""
-        with AnnotatedQueue() as q:
-            op = qml.PauliZ(0)
-            with pytest.warns(UserWarning, match=r"QueuingManager.safe_update_info is deprecated."):
-                QueuingManager.safe_update_info(op, owner=4)
-
-            assert QueuingManager.get_info(op) == {"owner": 4}
 
 
 class TestAnnotatedQueue:
@@ -309,15 +291,6 @@ class TestAnnotatedQueue:
         assert q.get_info(A) == {"owner": tensor_op}
         assert q.get_info(B) == {"owner": tensor_op}
         assert q.get_info(tensor_op) == {"owns": (A, B)}
-
-    def test_annotated_queue_safe_update_info_deprecation(self):
-        """Test that AnnotatedQueue.safe_update_info raises a deprecation warning."""
-        with AnnotatedQueue() as q:
-            op = qml.PauliZ(0)
-            with pytest.warns(UserWarning, match=r"AnnotatedQueue.safe_update_info is deprecated."):
-                q.safe_update_info(op, owner=4)
-
-            assert q.get_info(op) == {"owner": 4}
 
 
 test_observables = [
