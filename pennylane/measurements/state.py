@@ -167,10 +167,10 @@ class _State(StateMeasurement):
 
     # pylint: disable=redefined-outer-name
     def process_state(self, state: Sequence[complex], wires: Wires):
-        if self.wires == Wires([]):
-            # qml.state
-            return state
-        # qml.density_matrix
-        wire_map = dict(zip(range(len(wires)), wires))
-        mapped_wires = [wire_map[w] for w in self.wires]
-        return qml.math.reduced_dm(state, indices=mapped_wires, c_dtype="complex128")
+        if self.wires:
+            # qml.density_matrix
+            wire_map = dict(zip(wires, range(len(wires))))
+            mapped_wires = [wire_map[w] for w in self.wires]
+            return qml.math.reduced_dm(state, indices=mapped_wires, c_dtype="complex128")
+        # qml.state
+        return state
