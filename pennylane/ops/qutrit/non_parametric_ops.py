@@ -503,13 +503,11 @@ class THadamard(Operation):
         return label
 
     def __init__(self, wires, subspace=None, do_queue=True):
-        if subspace is not None:
-            self.validate_subspace(subspace)
-
-        self._subspace = subspace
+        self._subspace = self.validate_subspace(subspace) if subspace is not None else None
         self._hyperparameters = {
             "subspace": self.subspace,
         }
+
         super().__init__(wires=wires, do_queue=do_queue)
 
     @property
@@ -524,7 +522,7 @@ class THadamard(Operation):
         Returns:
             tuple[int] or None: subspace on which operator acts, if specified, else None
         """
-        return tuple(sorted(self._subspace)) if self._subspace is not None else None
+        return self._subspace
 
     @staticmethod
     def compute_matrix(subspace=None):  # pylint: disable=arguments-differ
@@ -555,8 +553,7 @@ class THadamard(Operation):
                 [[1, 1, 1], [1, OMEGA, OMEGA**2], [1, OMEGA**2, OMEGA]]
             )
 
-        THadamard.validate_subspace(subspace)
-        subspace = tuple(sorted(subspace))
+        subspace = THadamard.validate_subspace(subspace)
 
         mat = np.eye(3, dtype=np.complex128)
 

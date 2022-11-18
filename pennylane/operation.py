@@ -839,6 +839,8 @@ class Operator(abc.ABC):
         if subspace[0] == subspace[1]:
             raise ValueError("Elements of subspace list must be unique.")
 
+        return tuple(sorted(subspace))
+
     @property
     def num_params(self):
         """Number of trainable parameters that the operator depends on.
