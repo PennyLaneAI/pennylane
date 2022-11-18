@@ -108,7 +108,7 @@ class _Variance(SampleMeasurement, StateMeasurement):
         return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2
 
     def _permute_wires(self, wires: Wires):
-        wire_map = OrderedDict(zip(range(len(wires)), wires))
+        wire_map = OrderedDict(zip(wires, range(len(wires))))
 
         ordered_obs_wire_lst = sorted(self.wires.tolist(), key=lambda label: wire_map[label])
 
