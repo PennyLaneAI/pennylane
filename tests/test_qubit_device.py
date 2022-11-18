@@ -29,6 +29,12 @@ from pennylane.measurements import (
     Sample,
     State,
     Variance,
+    _Expectation,
+    _Probability,
+    _Sample,
+    _State,
+    _Variance,
+    state,
 )
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -321,25 +327,32 @@ class TestExtractStatistics:
             dev = mock_qubit_device_extract_stats()
             with pytest.warns(
                 UserWarning,
-                match="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. ",
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
             ):
                 dev.statistics([])
             with pytest.warns(
                 UserWarning,
-                match="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. ",
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
             ):
                 dev.statistics(observables=[])
+            qscript = QuantumScript()
+            with pytest.warns(
+                UserWarning,
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
+            ):
+                dev.statistics([], circuit=qscript)
+            with pytest.raises(
+                ValueError, match="Please provide a circuit into the statistics method"
+            ):
+                dev.statistics()
 
-    @pytest.mark.parametrize("returntype", [Expectation, Variance, Sample, Probability, State])
-    def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
+    @pytest.mark.parametrize(
+        "measurement", [_Expectation, _Variance, _Sample, _Probability, _State]
+    )
+    def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
-        class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return returntype
-
-        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
+        qscript = QuantumScript(measurements=[measurement(obs=qml.PauliX(0))])
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
