@@ -9,6 +9,9 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
+  * Add `_State` class.
+    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+
   * Add `_VnEntropy` class.
     [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
@@ -97,4 +100,3 @@ Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
-
