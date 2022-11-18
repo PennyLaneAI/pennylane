@@ -37,17 +37,12 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
-* We can now perform QPE on a quantum function:
+* We can now perform QPE on quantum operations.
 
   ```python3
   dev = qml.device("default.qubit", wires=2)
 
-  @qml.qnode(dev)
-  def unitary():
-      qml.RX(np.pi / 2, wires=[0])
-      qml.CNOT(wires=[0, 1])
-      return qml.state()
-
+  unitary = [qml.RX(np.pi / 2, wires=[0]), qml.CNOT(wires=[0, 1])]
   eigenvector = np.array([-1/2, -1/2, 1/2, 1/2])
 
   n_estimation_wires = 5
