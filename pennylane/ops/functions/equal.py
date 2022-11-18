@@ -32,9 +32,7 @@ def equal(
     rtol=1e-5,
     atol=1e-9,
 ):
-    r"""equal(op1, op2, **kwargs)
-
-    Function for determining operator or measurement equality.
+    r"""Function for determining operator or measurement equality.
 
     .. Warning::
 
@@ -45,31 +43,47 @@ def equal(
         To do so would require the matrix form of Hamiltonians and Tensors
         be calculated, which would drastically increase runtime.
 
-        The kwargs `check_interface` and `check_trainability` can only be set when
-        comparing Operations. Comparisons of ``MeasurementProcesses`` or ``Observables``,
-        will use the defualt value of ``True`` for both, regardless of what the user
+        The kwargs ``check_interface`` and ``check_trainability`` can only be set when
+        comparing ``Operation`` objects. Comparisons of ``MeasurementProcess`` or ``Observable``
+        objects will use the defualt value of ``True`` for both, regardless of what the user
         specifies when calling the function.
 
     Args:
         op1 (.Operator or .MeasurementProcess): First object to compare
         op2 (.Operator or .MeasurementProcess): Second object to compare
-        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``
-        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``
+        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``. Can only be set by user when comparing ``Operations``.
+        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``. Can only be set by user when comparing ``Operations``.
         rtol (float, optional): Relative tolerance for parameters
         atol (float, optional): Absolute tolerance for parameters
 
     Returns:
         bool: ``True`` if the operators or measurement processes are equal, else ``False``
 
-    **Example**
+    **Examples**
 
-    Given two operators or measurement processes, ``qml.equal`` determines their equality:
+    Given two operators or measurement processes, ``qml.equal`` determines their equality.
 
     >>> op1 = qml.RX(np.array(.12), wires=0)
     >>> op2 = qml.RY(np.array(1.23), wires=0)
     >>> qml.equal(op1, op1), qml.equal(op1, op2)
     (True, False)
 
+    >>> T1 = qml.PauliX(0) @ qml.PauliY(1)
+    >>> T2 = qml.PauliY(1) @ qml.PauliX(0)
+    >>> T3 = qml.PauliX(1) @ qml.PauliY(0)
+    >>> qml.equal(T1, T2), qml.equal(T1, T3)
+    (True, False)
+
+    >>> T = qml.PauliX(0) @ qml.PauliY(1)
+    >>> H = qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)])
+    >>> qml.equal(T, H)
+    True
+
+    >>> H1 = qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")])
+    >>> H2 = qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliY(1)])
+    >>> H3 = qml.Hamiltonian([2], [qml.PauliZ(0) @ qml.PauliY(1)])
+    >>> qml.equal(H1, H2), qml.equal(H1, H3)
+    (True, False)
 
     >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)) )
     True
@@ -79,10 +93,11 @@ def equal(
     True
 
 
+
     .. details::
         :title: Usage Details
 
-        You can use the optional arguments when comparing Operators to get more specific results.
+        You can use the optional arguments when comparing ``Operations`` to get more specific results.
 
         Consider the following comparisons:
 

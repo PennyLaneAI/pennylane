@@ -56,6 +56,9 @@
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
+* Extended the `qml.equal` function to Observables
+  [(#3390)](https://github.com/PennyLaneAI/pennylane/pull/3390)
+
 
 <h3>Breaking changes</h3>
 
