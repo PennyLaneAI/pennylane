@@ -413,7 +413,6 @@ def _finite_diff_new(
     def _single_shot_batch_result(results):
         """Auxiliary function for post-processing one batch of results corresponding to finite shots or a single
         component of a shot vector"""
-
         grads = []
         start = 1 if c0 is not None and f0 is None else 0
         r0 = f0 or results[0]

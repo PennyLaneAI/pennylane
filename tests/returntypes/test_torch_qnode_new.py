@@ -1570,9 +1570,7 @@ class TestReturn:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
         jac = jacobian(circuit, (par_0, par_1))
-        print("_____________")
-        print("jac", jac)
-        print("_____________")
+
         assert isinstance(jac, tuple)
 
         assert isinstance(jac[0], tuple)
@@ -1601,9 +1599,9 @@ class TestReturn:
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        a = torch.numpy.array([0.1, 0.2])
+        a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        jac = jacobian(circuit)(a)
+        jac = jacobian(circuit, a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -1623,17 +1621,17 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        par_0 = torch.numpy.array(0.1)
-        par_1 = torch.numpy.array(0.2)
+        par_0 = torch.tensor(0.1, requires_grad=True)
+        par_1 = torch.tensor(0.2, requires_grad=True)
 
-        @qnode(dev, interface="torch", diff_method=diff_method, max_diff=2, mode=mode)
+        @qnode(dev, interface="torch", diff_method=diff_method, max_diff=1, mode=mode)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
 
-        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
+        jac = jacobian(circuit, (par_0, par_1))
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -1667,9 +1665,9 @@ class TestReturn:
             qml.RX(a[1], wires=0)
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
 
-        a = torch.numpy.array([0.1, 0.2])
+        a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        jac = jacobian(circuit)(a)
+        jac = jacobian(circuit, a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -1695,9 +1693,9 @@ class TestReturn:
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = torch.numpy.array(0.1)
+        a = torch.tensor(0.1, requires_grad=True)
 
-        jac = jacobian(circuit)(a)
+        jac = jacobian(circuit, a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -1723,10 +1721,10 @@ class TestReturn:
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = torch.tensor(0.1, requires_grad=True)
+        b = torch.tensor(0.2, requires_grad=True)
 
-        jac = jacobian(circuit, argnums=[0, 1])(a, b)
+        jac = jacobian(circuit, (a, b))
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -1784,8 +1782,8 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
-        par_0 = torch.numpy.array(0.1)
-        par_1 = torch.numpy.array(0.2)
+        par_0 = torch.tensor(0.1, requires_grad=True)
+        par_1 = torch.tensor(0.2, requires_grad=True)
 
         @qnode(dev, interface="torch", diff_method=diff_method, max_diff=2, mode=mode)
         def circuit(x, y):
@@ -1794,7 +1792,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = torch.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        hess = hessian(circuit, (par_0, par_1))
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2

@@ -141,8 +141,6 @@ def compute_vjp_single_new(dy, jac, num=None):
             jac = qml.math.stack(jac)
             res = qml.math.tensordot(jac, dy_row, [[1], [0]])
 
-        # Torch integration
-        res = qml.math.split(res, len(jac))
     return res
 
 
