@@ -153,11 +153,10 @@ class _Counts(SampleMeasurement):
         wires=None,
         eigvals=None,
         id=None,
-        log_base=None,
         all_outcomes=False,
     ):
         self.all_outcomes = all_outcomes
-        super().__init__(obs, wires, eigvals, id, log_base)
+        super().__init__(obs, wires, eigvals, id)
 
     @property
     def numeric_type(self):
@@ -263,6 +262,5 @@ class _Counts(SampleMeasurement):
             obs=copy.copy(self.obs),
             eigvals=self._eigvals,
             wires=self._wires,
-            log_base=self.log_base,
             all_outcomes=self.all_outcomes,
         )
