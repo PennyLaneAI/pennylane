@@ -3562,10 +3562,10 @@ class TestCutCircuitTransform:
         dev_2 = qml.device("default.qubit", wires=["Alice", 3.14, "Bob"])
 
         uncut_circuit = qml.QNode(circuit, dev_uncut)
-        cut_circuit_1 = qml.qcut.cut_circuit(
+        cut_circuit_1 = qml.transforms.qcut.cut_circuit(
             qml.QNode(circuit, dev_1), use_opt_einsum=use_opt_einsum
         )
-        cut_circuit_2 = qml.qcut.cut_circuit(
+        cut_circuit_2 = qml.transforms.qcut.cut_circuit(
             qml.QNode(circuit, dev_2), use_opt_einsum=use_opt_einsum
         )
 
@@ -3581,7 +3581,7 @@ class TestCutCircuitTransform:
         are disconnected from the final terminal measurements is executed correctly"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qcut.cut_circuit(use_opt_einsum=use_opt_einsum)
+        @qml.transforms.qcut.cut_circuit(use_opt_einsum=use_opt_einsum)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -3600,7 +3600,7 @@ class TestCutCircuitTransform:
         fragments) is executed correctly"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qcut.cut_circuit(use_opt_einsum=use_opt_einsum)
+        @qml.transforms.qcut.cut_circuit(use_opt_einsum=use_opt_einsum)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -4556,7 +4556,7 @@ class TestAutoCutCircuit:
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qcut.cut_circuit(auto_cutter=True)
+        @qml.transforms.qcut.cut_circuit(auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -4576,7 +4576,7 @@ class TestAutoCutCircuit:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qcut.cut_circuit(auto_cutter=True)
+        @qml.transforms.qcut.cut_circuit(auto_cutter=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -4659,7 +4659,7 @@ class TestAutoCutCircuit:
         template_weights = [[0.1, -0.3]] * n_blocks
 
         device_size = 2
-        cut_strategy = qml.qcut.CutStrategy(max_free_wires=device_size)
+        cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=device_size)
 
         with qml.tape.QuantumTape() as tape0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
