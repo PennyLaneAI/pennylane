@@ -255,7 +255,7 @@ class _Probability(SampleMeasurement, StateMeasurement):
         inactive_wires = Wires.unique_wires([wires, self.wires])
 
         # translate to wire labels used by device
-        wire_map = dict(zip(range(len(wires)), wires))
+        wire_map = dict(zip(wires, range(len(wires))))
         mapped_wires = [wire_map[w] for w in self.wires]
         inactive_wires = [wire_map[w] for w in inactive_wires]
 
