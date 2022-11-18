@@ -451,7 +451,7 @@ class THadamard(Operation):
                     1 & \omega & \omega^2 \\
                     1 & \omega^2 & \omega \\
                 \end{bmatrix}
-                
+
     where :math:`\omega = \exp(2 \pi i / 3)`.
 
     **Details:**
