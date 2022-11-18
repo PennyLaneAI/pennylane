@@ -1002,9 +1002,12 @@ class TestParameterShiftHessianQNode:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=0), qml.probs(wires=1)
 
+        def cost(x):
+            return qml.math.stack(circuit(x))
+
         x = np.ones([2], requires_grad=True)
 
-        expected = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.jacobian(qml.jacobian(cost))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
         assert np.allclose(qml.math.transpose(expected, (0, 3, 2, 1)), hessian)
@@ -1024,9 +1027,12 @@ class TestParameterShiftHessianQNode:
             qml.RY(x[0, 0], wires=0)
             return qml.probs(wires=0), qml.probs(wires=1)
 
+        def cost(x):
+            return qml.math.stack(circuit(x))
+
         x = np.ones([1, 3], requires_grad=True)
 
-        expected = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.jacobian(qml.jacobian(cost))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
         assert np.allclose(qml.math.transpose(expected, (0, 2, 3, 4, 5, 1)), hessian)
@@ -1128,12 +1134,15 @@ class TestParameterShiftHessianQNode:
             qml.CRY(y[0, 1], wires=[0, 1])
             return qml.probs(wires=0), qml.probs(wires=1)
 
+        def cost(x, y, z):
+            return qml.math.stack(circuit(x, y, z))
+
         x = np.array(0.1, requires_grad=True)
         y = np.array([[0.5, 0.6], [0.2, 0.1]], requires_grad=True)
         z = np.array([0.3, 0.4], requires_grad=True)
 
         expected = tuple(
-            qml.jacobian(qml.jacobian(circuit, argnum=i), argnum=i)(x, y, z) for i in range(3)
+            qml.jacobian(qml.jacobian(cost, argnum=i), argnum=i)(x, y, z) for i in range(3)
         )
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
