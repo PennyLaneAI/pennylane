@@ -14,20 +14,25 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QutritDevice` class.
 """
-import pytest
-import numpy as np
 from random import random
+
+import numpy as np
+import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qml
+from pennylane import DeviceError, QuantumFunctionError, QubitDevice, QutritDevice
 from pennylane import numpy as pnp
-from pennylane import QutritDevice, DeviceError, QuantumFunctionError, QubitDevice
-from pennylane.devices import DefaultQubit
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State, Counts
-from pennylane.circuit_graph import CircuitGraph
+from pennylane.measurements import (
+    Counts,
+    Expectation,
+    MeasurementProcess,
+    Probability,
+    Sample,
+    State,
+    Variance,
+)
 from pennylane.wires import Wires
-from pennylane.tape import QuantumTape
-from pennylane.measurements import state
 
 
 @pytest.fixture(scope="function")
@@ -251,13 +256,17 @@ class TestObservables:
 
     def test_unsupported_observable_return_type_raise_error(self, mock_qutrit_device, monkeypatch):
         """Check that an error is raised if the return type of an observable is unsupported"""
+
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return "SomeUnsupportedReturnType"
+
         U = unitary_group.rvs(3, random_state=10)
 
         with qml.tape.QuantumTape() as tape:
             qml.QutritUnitary(U, wires=0)
-            qml.measurements.MeasurementProcess(
-                return_type="SomeUnsupportedReturnType", obs=qml.Identity(0)
-            )
+            UnsupportedMeasurement(obs=qml.Identity(0))
 
         with monkeypatch.context() as m:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: None)

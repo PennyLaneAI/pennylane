@@ -14,18 +14,18 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
-import pytest
-import numpy as np
 from random import random
 
+import numpy as np
+import pytest
+
 import pennylane as qml
+from pennylane import DeviceError, QuantumFunctionError, QubitDevice
 from pennylane import numpy as pnp
-from pennylane import QubitDevice, DeviceError, QuantumFunctionError
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.wires import Wires
+from pennylane.measurements import Expectation, Probability, Sample, State, Variance, state
 from pennylane.tape import QuantumTape
-from pennylane.measurements import state
+from pennylane.wires import Wires
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -274,11 +274,14 @@ class TestObservables:
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return "SomeUnsupportedReturnType"
+
         with qml.tape.QuantumTape() as tape:
             qml.PauliX(wires=0)
-            qml.measurements.MeasurementProcess(
-                return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0)
-            )
+            UnsupportedMeasurement(obs=qml.PauliZ(0))
 
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
