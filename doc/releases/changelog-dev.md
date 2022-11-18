@@ -9,6 +9,9 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
+  * Add `_State` class.
+    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+
   * Add `_VnEntropy` class.
     [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
@@ -66,6 +69,9 @@
 
 <h3>Improvements</h3>
 
+* `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
+   [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
+
 
 * Improve performance of `Wires.all_wires`.
   [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
@@ -73,6 +79,7 @@
 
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
+
 
 <h3>Breaking changes</h3>
 
@@ -116,7 +123,7 @@ Juan Miguel Arrazola
 Utkarsh Azad
 Astral Cai
 Pieter Eendebak
+Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
-
