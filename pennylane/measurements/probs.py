@@ -120,17 +120,23 @@ class _Probability(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
 
     def process_samples(
-        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+        self,
+        samples: Sequence[complex],
+        wire_order: Wires,
+        shot_range: Tuple[int] = None,
+        bin_size: int = None,
     ):
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
         if shot_range is not None:
             # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
             # colon (:) is required because shots is the second-to-last axis and the
             # Ellipsis (...) otherwise would take up broadcasting and shots axes.
             samples = samples[..., slice(*shot_range), :]
 
-        if len(self.wires) != 0:
+        if mapped_wires:
             # if wires are provided, then we only return samples from those wires
-            samples = samples[..., self.wires]
+            samples = samples[..., mapped_wires]
 
         num_wires = qml.math.shape(samples)[-1]
         # convert samples from a list of 0, 1 integers, to base 10 representation
@@ -147,8 +153,8 @@ class _Probability(SampleMeasurement, StateMeasurement):
             return self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
         return self._count_unbinned_samples(indices, batch_size, dim)
 
-    def process_state(self, state: Sequence[complex], wires: Wires):
-        num_wires = len(wires)
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
+        num_wires = len(wire_order)
         dim = 2**num_wires
         # Compute batch_size
         expected_shape = [2] * num_wires
@@ -164,7 +170,7 @@ class _Probability(SampleMeasurement, StateMeasurement):
         )
         real_state = qml.math.real(flat_state)
         imag_state = qml.math.imag(flat_state)
-        return self.marginal_prob(real_state**2 + imag_state**2, wires, batch_size)
+        return self.marginal_prob(real_state**2 + imag_state**2, wire_order, batch_size)
 
     @staticmethod
     def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
@@ -212,7 +218,7 @@ class _Probability(SampleMeasurement, StateMeasurement):
 
         return prob
 
-    def marginal_prob(self, prob, wires, batch_size):
+    def marginal_prob(self, prob, wire_order, batch_size):
         r"""Return the marginal probability of the computational basis
         states by summing the probabiliites on the non-specified wires.
 
@@ -239,7 +245,7 @@ class _Probability(SampleMeasurement, StateMeasurement):
         Args:
             prob: The probabilities to return the marginal probabilities
                 for
-            wires (Iterable[Number, str], Number, str, Wires): wires to return
+            wire_order (Iterable[Number, str], Number, str, Wires): wires to return
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
 
@@ -252,15 +258,15 @@ class _Probability(SampleMeasurement, StateMeasurement):
         #     return prob
 
         # determine which subsystems are to be summed over
-        inactive_wires = Wires.unique_wires([wires, self.wires])
+        inactive_wires = Wires.unique_wires([wire_order, self.wires])
 
         # translate to wire labels used by device
-        wire_map = dict(zip(wires, range(len(wires))))
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
         inactive_wires = [wire_map[w] for w in inactive_wires]
 
         # reshape the probability so that each axis corresponds to a wire
-        num_device_wires = len(wires)
+        num_device_wires = len(wire_order)
         shape = [2] * num_device_wires
         if batch_size is not None:
             shape.insert(0, batch_size)

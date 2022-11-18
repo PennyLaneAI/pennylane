@@ -67,10 +67,13 @@ class TestProbs:
             meas = qml.probs(wires=wires)
             old_res = self.dev.probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
             if self.dev.shots is None:
-                new_res = meas.process_state(state=state, wires=self.dev.wires)
+                new_res = meas.process_state(state=state, wire_order=self.dev.wires)
             else:
                 new_res = meas.process_samples(
-                    samples=samples, shot_range=shot_range, bin_size=bin_size
+                    samples=samples,
+                    wire_order=self.dev.wires,
+                    shot_range=shot_range,
+                    bin_size=bin_size,
                 )
             assert qml.math.allequal(old_res, new_res)
 
@@ -585,6 +588,8 @@ class TestProbs:
             ]
         )
 
-        res = qml.probs(wires=wires).process_samples(samples=samples, shot_range=None, bin_size=2)
+        res = qml.probs(wires=wires).process_samples(
+            samples=samples, wire_order=wires, shot_range=None, bin_size=2
+        )
 
         assert np.allclose(res, expected)
