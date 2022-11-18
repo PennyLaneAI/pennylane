@@ -16,14 +16,16 @@ This module contains the qml.equal function.
 """
 # pylint: disable=too-many-arguments,too-many-return-statements
 from typing import Union
+
+from functools import singledispatch
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
 from pennylane.operation import Operator
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
-    op2: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
+    op1: Union[Operator, MeasurementProcess],
+    op2: Union[Operator, MeasurementProcess],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -32,8 +34,8 @@ def equal(
     r"""Function for determining operator or measurement equality.
 
     Args:
-        op1 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): First object to compare
-        op2 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): Second object to compare
+        op1 (.Operator or .MeasurementProcess): First object to compare
+        op2 (.Operator or .MeasurementProcess): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``
         rtol (float, optional): Relative tolerance for parameters
@@ -49,14 +51,16 @@ def equal(
     >>> op1 = qml.RX(np.array(.12), wires=0)
     >>> op2 = qml.RY(np.array(1.23), wires=0)
     >>> qml.equal(op1, op1), qml.equal(op1, op2)
-    True False
+    (True, False)
+
 
     >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)) )
-    >>> True
+    True
     >>> qml.equal(qml.probs(wires=(0,1)), qml.probs(wires=(1,2)) )
-    >>> False
+    False
     >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]) )
-    >>> True
+    True
+
 
     .. details::
         :title: Usage Details
@@ -82,20 +86,41 @@ def equal(
         True
     """
 
-    if op1.__class__ is not op2.__class__:
+    if not isinstance(op2, type(op1)):
         return False
 
-    if op1.__class__ is MeasurementProcess:
-        return equal_measurements(op1, op2)
+    return _equal(
+        op1,
+        op2,
+        check_interface=check_interface,
+        check_trainability=check_trainability,
+        atol=atol,
+        rtol=rtol,
+    )
 
-    if op1.__class__ is ShadowMeasurementProcess:
-        return equal_shadow_measurements(op1, op2)
 
-    return equal_operator(op1, op2, check_interface, check_trainability, rtol, atol)
+@singledispatch
+def _equal(
+    op1,
+    op2,
+    **kwargs,
+):
+
+    raise NotImplementedError(f"Comparison between {type(op1)} and {type(op2)} not implemented.")
 
 
-def equal_operator(op1, op2, check_interface, check_trainability, rtol, atol):
+@_equal.register
+def _equal_operator(
+    op1: Operator,
+    op2: Operator,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+
     """Determine whether two Operator objects are equal"""
+
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
 
@@ -109,9 +134,9 @@ def equal_operator(op1, op2, check_interface, check_trainability, rtol, atol):
         return False
     if op1.wires != op2.wires:
         return False
-    for kwarg in op1.hyperparameters:
-        if op1.hyperparameters[kwarg] != op2.hyperparameters[kwarg]:
-            return False
+
+    if op1.hyperparameters != op2.hyperparameters:
+        return False
 
     if check_trainability:
         for params_1, params_2 in zip(op1.data, op2.data):
@@ -126,8 +151,11 @@ def equal_operator(op1, op2, check_interface, check_trainability, rtol, atol):
     return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
 
 
-def equal_measurements(op1, op2):
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
+
     return_types_match = op1.return_type == op2.return_type
     if op1.obs is not None and op2.obs is not None:
         observables_match = equal(op1.obs, op2.obs)
@@ -136,7 +164,7 @@ def equal_measurements(op1, op2):
         observables_match = op1.obs == op2.obs
     wires_match = op1.wires == op2.wires
     eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
-    log_base_match = op1.log_base == op2.log_base
+    log_base_match = getattr(op1, "log_base", None) == getattr(op2, "log_base", None)
 
     return (
         return_types_match
@@ -147,8 +175,13 @@ def equal_measurements(op1, op2):
     )
 
 
-def equal_shadow_measurements(op1, op2):
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_shadow_measurements(
+    op1: ShadowMeasurementProcess, op2: ShadowMeasurementProcess, **kwargs
+):
     """Determine whether two ShadowMeasurementProcess objects are equal"""
+
     return_types_match = op1.return_type == op2.return_type
     wires_match = op1.wires == op2.wires
     H_match = op1.H == op2.H
