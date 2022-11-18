@@ -20,11 +20,17 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import DeviceError, QuantumFunctionError, QubitDevice
+from pennylane import DeviceError, QubitDevice
 from pennylane import numpy as pnp
-from pennylane.circuit_graph import CircuitGraph
-from pennylane.measurements import Expectation, Probability, Sample, State, Variance, state
-from pennylane.tape import QuantumTape
+from pennylane.measurements import (
+    Expectation,
+    MeasurementProcess,
+    Probability,
+    Sample,
+    State,
+    Variance,
+    state,
+)
 from pennylane.wires import Wires
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
