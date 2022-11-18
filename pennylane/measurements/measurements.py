@@ -709,6 +709,7 @@ class SampleMeasurement(MeasurementProcess, ABC):
 
         Args:
             samples (Sequence[complex]): computational basis samples generated for all wires
+            wire_order (Wires): wires determining the subspace that ``samples`` acts on
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
@@ -726,6 +727,6 @@ class StateMeasurement(MeasurementProcess, ABC):
 
         Args:
             state (Sequence[complex]): quantum state
-            wires (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+            wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
