@@ -20,6 +20,7 @@
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
+  [(#3378)](https://github.com/PennyLaneAI/pennylane/pull/3378)
  
   ```pycon
   >>> mol_data("BeH2")
