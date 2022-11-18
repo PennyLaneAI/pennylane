@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import MutualInfo, ObservableReturnTypes, StateMeasurement
+from .measurements import MutualInfo, StateMeasurement
 
 
 def mutual_info(wires0, wires1, log_base=None):
@@ -90,7 +90,6 @@ class _MutualInfo(StateMeasurement):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Operator = None,
         wires=None,
         eigvals=None,
@@ -98,7 +97,7 @@ class _MutualInfo(StateMeasurement):
         log_base=None,
     ):
         self.log_base = log_base
-        super().__init__(return_type=return_type, obs=obs, wires=wires, eigvals=eigvals, id=id)
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
 
     @property
     def numeric_type(self):
@@ -133,7 +132,6 @@ class _MutualInfo(StateMeasurement):
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             wires=self._wires,
             eigvals=self._eigvals,
