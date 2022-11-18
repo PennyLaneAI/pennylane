@@ -25,9 +25,12 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
-    op2: Union[Operator, MeasurementProcess, ShadowMeasurementProcess],
-    **kwargs,
+    op1: Union[Operator, MeasurementProcess],
+    op2: Union[Operator, MeasurementProcess],
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
 ):
     r"""equal(op1, op2, **kwargs)
 
@@ -48,12 +51,10 @@ def equal(
         specifies when calling the function.
 
     Args:
-        op1 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): First object to compare
-        op2 (.Operator, .MeasurementProcess, or .ShadowMeasurementProcess): Second object to compare
-        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``. Can only be
-            set for comparison of Operations.
-        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
-            Can only be set for comparison of Operations.
+        op1 (.Operator or .MeasurementProcess): First object to compare
+        op2 (.Operator or .MeasurementProcess): Second object to compare
+        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``
+        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``
         rtol (float, optional): Relative tolerance for parameters
         atol (float, optional): Absolute tolerance for parameters
 
@@ -67,7 +68,8 @@ def equal(
     >>> op1 = qml.RX(np.array(.12), wires=0)
     >>> op2 = qml.RY(np.array(1.23), wires=0)
     >>> qml.equal(op1, op1), qml.equal(op1, op2)
-    True False
+    (True, False)
+
 
     >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)) )
     True
@@ -75,6 +77,7 @@ def equal(
     False
     >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]) )
     True
+
 
     .. details::
         :title: Usage Details
@@ -100,6 +103,7 @@ def equal(
         True
     """
 
+
     # types don't have to match as strictly to compare Observables
     if isinstance(op1, Observable) and isinstance(op2, Observable):
         pass
@@ -108,7 +112,14 @@ def equal(
         if not isinstance(op2, type(op1)):
             return False
 
-    return _equal(op1, op2, **kwargs)
+    return _equal(
+        op1,
+        op2,
+        check_interface=check_interface,
+        check_trainability=check_trainability,
+        atol=atol,
+        rtol=rtol,
+    )
 
 
 @singledispatch
@@ -131,6 +142,7 @@ def _equal_operator(
     atol: float = 1e-9,
 ):
     """Determine whether two Operations objects are equal."""
+
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
@@ -168,8 +180,9 @@ def _equal_observables(op1: Observable, op2):
     return _obs_comparison_data(op1) == _obs_comparison_data(op2)
 
 
-@_equal.register
-def _equal_measurements(op1: MeasurementProcess, op2):
+# pylint: disable=unused-argument
+def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwargs):
+
     """Determine whether two MeasurementProcess objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
@@ -180,7 +193,7 @@ def _equal_measurements(op1: MeasurementProcess, op2):
         observables_match = op1.obs == op2.obs
     wires_match = op1.wires == op2.wires
     eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
-    log_base_match = op1.log_base == op2.log_base
+    log_base_match = getattr(op1, "log_base", None) == getattr(op2, "log_base", None)
 
     return (
         return_types_match
@@ -192,7 +205,10 @@ def _equal_measurements(op1: MeasurementProcess, op2):
 
 
 @_equal.register
-def _equal_shadow_measurements(op1: ShadowMeasurementProcess, op2):
+# pylint: disable=unused-argument
+def _equal_shadow_measurements(
+    op1: ShadowMeasurementProcess, op2: ShadowMeasurementProcess, **kwargs
+):
     """Determine whether two ShadowMeasurementProcess objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
