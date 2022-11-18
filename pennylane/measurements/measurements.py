@@ -699,7 +699,11 @@ class SampleMeasurement(MeasurementProcess, ABC):
 
     @abstractmethod
     def process_samples(
-        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+        self,
+        samples: Sequence[complex],
+        wire_order: Wires,
+        shot_range: Tuple[int] = None,
+        bin_size: int = None,
     ):
         """Process the given samples.
 
@@ -717,7 +721,7 @@ class StateMeasurement(MeasurementProcess, ABC):
     """State-based measurement process."""
 
     @abstractmethod
-    def process_state(self, state: Sequence[complex], wires: Wires):
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
         """Process the given quantum state.
 
         Args:
