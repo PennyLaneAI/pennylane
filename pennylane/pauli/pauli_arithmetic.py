@@ -221,7 +221,7 @@ class PauliWord(dict):
         """Return ~.Hamiltonian representing the PauliWord"""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
-                raise ValueError("Can't get the hamiltonian for an empty PauliWord.")
+                raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
             return Hamiltonian([1], [Identity(wires=wire_order)])
 
         if len(self) == 1:
