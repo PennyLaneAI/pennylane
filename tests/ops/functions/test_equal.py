@@ -179,6 +179,16 @@ equal_hamiltonians = [
         qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(0)]),
         False,
     ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(1), qml.PauliZ(0)]),
+        False,
+    ),
+    (
+        qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        False,
+    ),
     (qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliX(1)]), qml.PauliZ(0) @ qml.PauliX(1), True),
     (qml.Hamiltonian([1], [qml.PauliZ(0)]), qml.PauliZ(0), True),
     (
@@ -207,6 +217,7 @@ equal_tensors = [
     (qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliX(0), True),
     (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliX(0) @ qml.PauliZ(2), True),
     (qml.PauliX(0) @ qml.Identity(2) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
+    (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
 ]
 
 equal_hamiltonians_and_tensors = [
