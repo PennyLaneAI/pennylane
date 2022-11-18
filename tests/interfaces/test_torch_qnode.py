@@ -462,15 +462,14 @@ class TestShotsIntegration:
 
         # execute with shots=100
         res = circuit(a, b, shots=100)
-        spy.assert_called()
+        spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
         assert dev.shots is None
-        spy = mocker.spy(dev, "sample")
         res = circuit(a, b)
         assert torch.allclose(res, -torch.cos(a) * torch.sin(b), atol=tol, rtol=0)
-        spy.assert_not_called()
+        spy.assert_called_once()  # only same call as above
 
     def test_gradient_integration(self, tol):
         """Test that temporarily setting the shots works
