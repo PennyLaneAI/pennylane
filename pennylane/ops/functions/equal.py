@@ -103,8 +103,7 @@ def equal(
         True
     """
 
-
-    # types don't have to match as strictly to compare Observables
+    # types don't have to be the same type, they just both have to be Observables
     if isinstance(op1, Observable) and isinstance(op2, Observable):
         pass
     # for everything else, types must match
@@ -133,16 +132,15 @@ def _equal(
 
 
 @_equal.register
-def _equal_operator(
+def _equal_operation(
     op1: Operation,
-    op2,
-    check_interface: bool = True,
-    check_trainability: bool = True,
-    rtol: float = 1e-5,
-    atol: float = 1e-9,
+    op2: Operation,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
 ):
     """Determine whether two Operations objects are equal."""
-
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
@@ -175,11 +173,13 @@ def _equal_operator(
 
 
 @_equal.register
-def _equal_observables(op1: Observable, op2):
+# pylint: disable=unused-argument
+def _equal_observables(op1: Observable, op2: Observable, **kwargs):
     """Determine whether two Observables objects are equal"""
     return _obs_comparison_data(op1) == _obs_comparison_data(op2)
 
 
+@_equal.register
 # pylint: disable=unused-argument
 def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwargs):
 
