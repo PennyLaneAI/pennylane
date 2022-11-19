@@ -15,9 +15,12 @@
 """
 This module contains the qml.state measurement.
 """
+from typing import Sequence
+
+import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, State
+from .measurements import State, StateMeasurement
 
 
 def state():
@@ -74,7 +77,7 @@ def state():
         -0.07471906623679961
     """
     # pylint: disable=protected-access
-    return MeasurementProcess(State)
+    return _State(State)
 
 
 def density_matrix(wires):
@@ -116,4 +119,18 @@ def density_matrix(wires):
     """
     # pylint: disable=protected-access
     wires = Wires(wires)
-    return MeasurementProcess(State, wires=wires)
+    return _State(State, wires=wires)
+
+
+class _State(StateMeasurement):
+    """Measurement process that returns the quantum state."""
+
+    # pylint: disable=redefined-outer-name
+    def process_state(self, state: Sequence[complex], wires: Wires):
+        if self.wires:
+            # qml.density_matrix
+            wire_map = dict(zip(wires, range(len(wires))))
+            mapped_wires = [wire_map[w] for w in self.wires]
+            return qml.math.reduced_dm(state, indices=mapped_wires, c_dtype=state.dtype)
+        # qml.state
+        return state
