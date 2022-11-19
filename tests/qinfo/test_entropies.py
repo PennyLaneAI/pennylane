@@ -19,10 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-from jax.config import config
-
-config.update("jax_enable_x64", True)
-
 
 def expected_entropy_ising_xx(param):
     """
