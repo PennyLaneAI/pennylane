@@ -171,10 +171,14 @@ class _Counts(SampleMeasurement):
         return AllCounts if self.all_outcomes else Counts
 
     def process_samples(
-        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+        self,
+        samples: Sequence[complex],
+        wire_order: Wires,
+        shot_range: Tuple[int] = None,
+        bin_size: int = None,
     ):
         samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
-            samples, shot_range, bin_size
+            samples, wire_order, shot_range, bin_size
         )
 
         if bin_size is None:
