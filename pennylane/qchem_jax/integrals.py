@@ -20,13 +20,22 @@ import itertools as it
 
 from jax import numpy as jnp
 from jax import scipy as jsp
+from jax._src.scipy.special import _double_factorial
+import jax
 
 import numpy as np
 
+# @jax.jit
+# def fac2(n):
+#     """The double factorial function hardcoded upto n = 6."""
+#     a, b = 0.44812175143479693, 0.7036531363262984
+#     true_func = lambda z: 1.
+#     false_func = lambda z: a*jnp.exp(b*z)
+#     return jax.lax.cond(n <= 1, true_func, false_func, n)
+
 
 def fac2(n):
-    """The double factorial function."""
-    return jnp.prod(jnp.arange(n, 1, -2))
+    return _double_factorial(n)
 
 
 def primitive_norm(l, alpha):
