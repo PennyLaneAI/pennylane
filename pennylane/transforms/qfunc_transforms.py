@@ -76,7 +76,7 @@ def make_tape(fn):
     return wrapper
 
 
-class NonQueuingTape(qml.queuing.AnnotatedQueue):
+class NonQueuingTape:
     """Mixin class that creates a tape that does not queue
     itself to the current queuing context."""
 
