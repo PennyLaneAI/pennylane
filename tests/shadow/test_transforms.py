@@ -15,6 +15,7 @@
 """Unit tests for the classical shadows transforms"""
 
 import builtins
+
 import pytest
 
 import pennylane as qml
@@ -295,7 +296,7 @@ class TestExpvalTransform:
 
         assert all(qml.equal(qml.Hadamard(i), tape.operations[i]) for i in range(3))
         assert len(tape.observables) == 1
-        assert isinstance(tape.observables[0], qml.measurements.ShadowMeasurementProcess)
+        assert isinstance(tape.observables[0], qml.measurements.ClassicalShadow)
         assert tape.observables[0].H == obs
 
     def test_hadamard_forward(self):

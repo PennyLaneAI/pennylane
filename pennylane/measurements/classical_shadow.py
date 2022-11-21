@@ -266,7 +266,7 @@ class ClassicalShadow(StateMeasurement):
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow measurement process
+            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
         Returns:
@@ -371,7 +371,7 @@ class ClassicalShadow(StateMeasurement):
         return int if self.return_type is Shadow else float
 
     def shape(self, device=None):
-        """The expected output shape of the ShadowMeasurementProcess.
+        """The expected output shape of the ClassicalShadow.
 
         Args:
             device (.Device): a PennyLane device to use for determining the shape

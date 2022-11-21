@@ -178,7 +178,7 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwar
 @_equal.register
 # pylint: disable=unused-argument
 def _equal_shadow_measurements(op1: ClassicalShadow, op2: ClassicalShadow, **kwargs):
-    """Determine whether two ShadowMeasurementProcess objects are equal"""
+    """Determine whether two ClassicalShadow objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
     wires_match = op1.wires == op2.wires
