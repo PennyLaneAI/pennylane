@@ -66,9 +66,22 @@ def decompose(
 
     >>> ps = decompose(A, pauli=True)
     >>> print(ps)
+    -1.0 * I
+    + -1.5 * X(1)
+    + -0.5 * Y(1)
+    + -1.0 * Z(1)
+    + -1.5 * X(0)
+    + -1.0 * X(0) @ X(1)
+    + -0.5 * X(0) @ Z(1)
+    + 1.0 * Y(0) @ Y(1)
+    + -0.5 * Z(0) @ X(1)
+    + -0.5 * Z(0) @ Y(1)
     """
     n = int(np.log2(len(H)))
     N = 2**n
+
+    if wire_order is not None and len(wire_order) != n:
+        raise ValueError(f"number of wires {len(wire_order)} is not compatible with number of qubits {n}")
 
     if wire_order is None:
         wire_order = range(n)
