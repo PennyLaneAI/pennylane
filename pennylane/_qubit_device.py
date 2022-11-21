@@ -518,9 +518,8 @@ class QubitDevice(Device):
 
             for idx2, r_ in enumerate(r):
                 measurement_proc = circuit.measurements[idx2]
-                if (
-                    isinstance(measurement_proc, (_Probability, _Sample))
-                    and measurement_proc.obs is not None
+                if isinstance(measurement_proc, _Probability) or (
+                    isinstance(measurement_proc, _Sample) and measurement_proc.obs
                 ):
                     # Here, the result has a shape of (num_basis_states, shot_tuple.copies)
                     # Extract a single row -> shape (num_basis_states,)
