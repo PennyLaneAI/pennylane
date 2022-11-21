@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.measurements import MeasurementProcess, MeasurementShapeError, Probability
+from pennylane.measurements import MeasurementProcess, Probability, _Probability
 from pennylane.queuing import AnnotatedQueue
 
 
@@ -70,19 +70,31 @@ def init_state():
 class TestProbs:
     """Tests for the probs function"""
 
-    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
-    def test_numeric_type(self, wires):
-        """Test that the numeric type is correct."""
-        res = qml.probs(wires=wires)
-        assert res.numeric_type is float
+    def test_counts_properties(self):
+        """Test that the properties are correct."""
+        meas1 = qml.probs(wires=0)
+        assert meas1.numeric_type == float
+        assert meas1.return_type == Probability
+
+    def test_queue(self):
+        """Test that the right measurement class is queued."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.probs(wires=0)
+
+        circuit()
+
+        assert isinstance(circuit.tape[0], _Probability)
 
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
-    @pytest.mark.parametrize("shots", [None, 10])
-    def test_shape(self, wires, shots):
+    @pytest.mark.parametrize("shots, num_shot_elements", [(None, 1), (10, 1), ((1, 10), 2)])
+    def test_shape(self, wires, shots, num_shot_elements):
         """Test that the shape is correct."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.probs(wires=wires)
-        assert res.shape(dev) == (1, 2 ** len(wires))
+        assert res.shape(dev) == (num_shot_elements, 2 ** len(wires))
 
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
     def test_shape_shot_vector(self, wires):
