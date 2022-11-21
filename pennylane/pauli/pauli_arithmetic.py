@@ -313,6 +313,7 @@ class PauliSentence(dict):
                 return wires.Wires(
                     list(ps_wires)[0]
                 )  # return any wire from the Pauli sentence's wires
+            return wires.Wires([])
 
         if len(self) == 0:
             if wire_order is None or wire_order == wires.Wires([]):
