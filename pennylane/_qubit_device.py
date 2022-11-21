@@ -664,6 +664,7 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
+    # pylint: disable=too-many-statements
     def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
@@ -715,8 +716,11 @@ class QubitDevice(Device):
         results = []
 
         for m in circuit.measurements:
-            obs = m.obs if m.obs is not None else m
-            obs.return_type = m.return_type
+            if m.obs is not None:
+                obs = m.obs
+                obs.return_type = m.return_type
+            else:
+                obs = m
             # Pass instances directly
             if isinstance(m, _Expectation):
                 # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
