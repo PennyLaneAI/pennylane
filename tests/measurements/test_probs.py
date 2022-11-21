@@ -70,12 +70,6 @@ def init_state():
 class TestProbs:
     """Tests for the probs function"""
 
-    def test_counts_properties(self):
-        """Test that the properties are correct."""
-        meas1 = qml.probs(wires=0)
-        assert meas1.numeric_type == float
-        assert meas1.return_type == Probability
-
     def test_queue(self):
         """Test that the right measurement class is queued."""
         dev = qml.device("default.qubit", wires=2)
@@ -88,13 +82,26 @@ class TestProbs:
 
         assert isinstance(circuit.tape[0], _Probability)
 
+    def test_numeric_type(self):
+        """Test that the numeric type is correct."""
+        res = qml.probs(wires=0)
+        assert res.numeric_type is float
+
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
-    @pytest.mark.parametrize("shots, num_shot_elements", [(None, 1), (10, 1), ((1, 10), 2)])
-    def test_shape(self, wires, shots, num_shot_elements):
+    @pytest.mark.parametrize("shots", [None, 10])
+    def test_shape(self, wires, shots):
         """Test that the shape is correct."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.probs(wires=wires)
-        assert res.shape(dev) == (num_shot_elements, 2 ** len(wires))
+        assert res.shape(dev) == (1, 2 ** len(wires))
+
+    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
+    def test_shape_shot_vector(self, wires):
+        """Test that the shape is correct with the shot vector too."""
+        res = qml.probs(wires=wires)
+        shot_vector = (1, 2, 3)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        assert res.shape(dev) == (len(shot_vector), 2 ** len(wires))
 
     @pytest.mark.parametrize("wires", [[0], [0, 1], [1, 0, 2]])
     def test_annotating_probs(self, wires):
