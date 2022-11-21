@@ -35,6 +35,7 @@
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
+  [(#3378)](https://github.com/PennyLaneAI/pennylane/pull/3378)
 
   ```pycon
   >>> mol_data("BeH2")
@@ -57,6 +58,9 @@
 
 <h3>Improvements</h3>
 
+* Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
+  [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
+
 * `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
    [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
 
@@ -66,8 +70,14 @@
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
-
 <h3>Breaking changes</h3>
+
+* The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
+  `_MutualInfo` classes, which inherit from `MeasurementProcess`.
+  [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
+
+* Python 3.7 support is no longer maintained.
+  [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
 
 <h3>Deprecations</h3>
 
@@ -88,6 +98,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Bug fixes</h3>
 
+* Original tape `_obs_sharing_wires` attribute is updated during its expansion.
+  [#3293](https://github.com/PennyLaneAI/pennylane/pull/3293)
+  
 * Small fix of `MeasurementProcess.map_wires`, where both the `self.obs` and `self._wires`
   attributes were modified.
   [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
@@ -101,6 +114,13 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   expansion now occurs.
   [(#3369)](https://github.com/PennyLaneAI/pennylane/pull/3369)
 
+* `qml.matrix(op)` now fails if the operator truly has no matrix (eg. `Barrier`) to match `op.matrix()`
+  [(#3386)](https://github.com/PennyLaneAI/pennylane/pull/3386)
+
+* The `pad_with` argument in the `AmplitudeEmbedding` template is now compatible
+  with all interfaces
+  [(#3392)](https://github.com/PennyLaneAI/pennylane/pull/3392)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -109,5 +129,7 @@ Utkarsh Azad
 Pieter Eendebak
 Lillian M. A. Frederiksen
 Soran Jahangiri
+Edward Jiang
 Christina Lee
 Albert Mitjans Coma
+Romain Moyard

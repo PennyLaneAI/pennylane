@@ -87,7 +87,7 @@ def mutual_info(wires0, wires1, log_base=None):
 class _MutualInfo(StateMeasurement):
     """Measurement process that returns the mutual information."""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,
         obs: Operator = None,
@@ -121,7 +121,7 @@ class _MutualInfo(StateMeasurement):
         num_shot_elements = sum(s.copies for s in device.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
-    def process_state(self, state: Sequence[complex], wires: Wires):
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
         return qml.math.mutual_info(
             state,
             indices0=list(self._wires[0]),
