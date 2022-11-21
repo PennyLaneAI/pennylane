@@ -26,7 +26,8 @@ def custom_measurement_process(device, spy):
 
     samples = device._samples  # pylint: disable=protected-access
     state = device._state  # pylint: disable=protected-access
-    for call_args in spy.call_args_list:
+    call_args_list = list(spy.call_args_list)
+    for call_args in call_args_list:
         obs = call_args.args[1]
         shot_range, bin_size = (
             call_args.kwargs["shot_range"],
