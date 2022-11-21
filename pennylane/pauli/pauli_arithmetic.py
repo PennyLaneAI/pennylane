@@ -18,7 +18,8 @@ from functools import reduce
 
 import numpy as np
 from scipy import sparse
-from pennylane import math, wires
+from pennylane import math
+from pennylane.wires import Wires
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ
 
 
@@ -190,7 +191,7 @@ class PauliWord(dict):
             ValueError: Can't get the matrix of an empty PauliWord.
         """
         if len(self) == 0:
-            if wire_order is None or wire_order == wires.Wires([]):
+            if wire_order is None or wire_order == Wires([]):
                 raise ValueError("Can't get the matrix of an empty PauliWord.")
             return (
                 np.eye(2 ** len(wire_order))
@@ -260,14 +261,14 @@ class PauliSentence(dict):
         """Track wires of the PauliSentence."""
         return set().union(*(pw.wires for pw in self.keys()))
 
-    def _pw_wires(self, w: Sequence) -> wires.Wires:
+    def _pw_wires(self, w: Sequence) -> Wires:
         """To account for empty pauli_words which represent identity operations."""
         if w:
-            return wires.Wires(w)
+            return Wires(w)
 
         ps_wires = self.wires
         if len(ps_wires) > 0:
-            return wires.Wires(list(ps_wires)[0])  # return any wire from the Pauli sentence's wires
+            return Wires(list(ps_wires)[0])  # return any wire from the Pauli sentence's wires
 
     def to_mat(self, wire_order, format="dense"):
         """Returns the matrix representation.
@@ -285,7 +286,7 @@ class PauliSentence(dict):
         """
 
         if len(self) == 0:
-            if wire_order is None or wire_order == wires.Wires([]):
+            if wire_order is None or wire_order == Wires([]):
                 raise ValueError("Can't get the matrix of an empty PauliSentence.")
             if format == "dense":
                 return np.eye(2 ** len(wire_order))
