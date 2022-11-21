@@ -159,10 +159,6 @@ class _Counts(SampleMeasurement):
         super().__init__(obs, wires, eigvals, id)
 
     @property
-    def numeric_type(self):
-        return int  # TODO: Might need to raise an error here?
-
-    @property
     def samples_computational_basis(self):
         return self.obs is None
 
