@@ -72,7 +72,7 @@ def vn_entropy(wires, log_base=None):
 class _VnEntropy(StateMeasurement):
     """Measurement process that returns the Von Neumann entropy."""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,
         return_type: ObservableReturnTypes,
@@ -85,7 +85,7 @@ class _VnEntropy(StateMeasurement):
         self.log_base = log_base
         super().__init__(return_type=return_type, obs=obs, wires=wires, eigvals=eigvals, id=id)
 
-    def process_state(self, state: Sequence[complex], wires: Wires):
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
         return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
         )
