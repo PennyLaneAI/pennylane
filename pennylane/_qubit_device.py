@@ -885,8 +885,11 @@ class QubitDevice(Device):
         results = []
 
         for m in measurements:
-            obs = m.obs if m.obs is not None else m
-            obs.return_type = m.return_type
+            if m.obs is not None:
+                obs = m.obs
+                obs.return_type = m.return_type
+            else:
+                obs = m
             # 1. Based on the measurement type, compute statistics
             # Pass instances directly
             if isinstance(m, _Expectation):
