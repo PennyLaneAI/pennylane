@@ -31,7 +31,14 @@ from pennylane.measurements import (
     Sample,
     State,
     Variance,
+    _Counts,
+    _Expectation,
+    _Probability,
+    _Sample,
+    _State,
+    _Variance,
 )
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 
@@ -295,47 +302,47 @@ class TestExtractStatistics:
     """Test the statistics method"""
 
     @pytest.mark.parametrize(
-        "returntype", [Expectation, Variance, Sample, Probability, State, Counts]
+        "measure", [_Expectation, _Variance, _Sample, _Probability, _State, _Counts]
     )
-    def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
+    def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, measure):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
         class SomeObservable(qml.operation.Observable):
             num_wires = 1
-            return_type = returntype
 
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[measure(obs=SomeObservable(wires=0))])
 
         with monkeypatch.context() as m:
             dev = mock_qutrit_device_extract_stats()
-            results = dev.statistics([obs])
+            results = dev.statistics(qscript)
 
         assert results == [0]
 
     def test_results_no_state(self, mock_qutrit_device, monkeypatch):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QutritDevice does not have a state attribute"""
+        qscript = QuantumScript(measurements=[qml.state()])
+
         with monkeypatch.context() as m:
             dev = mock_qutrit_device()
             m.delattr(QubitDevice, "state")
             with pytest.raises(
                 qml.QuantumFunctionError, match="The state is not available in the current"
             ):
-                dev.statistics([qml.state()])
+                dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method returns an empty list if the return type is None"""
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
+        class SomeMeasurement(MeasurementProcess):
             return_type = returntype
 
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[SomeMeasurement()])
 
         with monkeypatch.context() as m:
             dev = mock_qutrit_device_extract_stats()
-            results = dev.statistics([obs])
+            results = dev.statistics(qscript)
 
         assert results == []
 
@@ -347,15 +354,14 @@ class TestExtractStatistics:
 
         assert returntype not in [Expectation, Variance, Sample, Probability, State, Counts, None]
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
+        class SomeMeasurement(MeasurementProcess):
             return_type = returntype
 
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[SomeMeasurement()])
 
         dev = mock_qutrit_device_extract_stats()
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
-            dev.statistics([obs])
+            dev.statistics(qscript)
 
     def test_return_state_with_multiple_observables(self, mock_qutrit_device_extract_stats):
         """Checks that an error is raised if multiple observables are being returned
