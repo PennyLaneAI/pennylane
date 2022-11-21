@@ -170,6 +170,7 @@ class Exp(SymbolicOp):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
+        from pennylane.pauli import is_pauli_word
         if isinstance(self.base, Tensor):
             all_wires = [obs.wires for obs in self.base.obs]
             if len(all_wires) != len(set(all_wires)):
@@ -178,7 +179,7 @@ class Exp(SymbolicOp):
                     "when the base operator is a Tensor object with overlapping wires. "
                     f"Received base {self.base}."
                 )
-        return math.real(self.coeff) == 0 and qml.pauli.is_pauli_word(self.base)
+        return math.real(self.coeff) == 0 and is_pauli_word(self.base)
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators. Decomposes into
@@ -192,10 +193,11 @@ class Exp(SymbolicOp):
         Returns:
             list[PauliRot]: decomposition of the operator
         """
+        from pennylane.pauli import pauli_word_to_string
         if not self.has_decomposition:
             raise DecompositionUndefinedError
         new_coeff = math.real(2j * self.coeff)
-        string_base = qml.pauli.pauli_word_to_string(self.base)
+        string_base = pauli_word_to_string(self.base)
         return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
 
     def matrix(self, wire_order=None):
