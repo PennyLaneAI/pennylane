@@ -230,7 +230,7 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
 
 
 # pylint: disable=too-many-public-methods
-class QuantumTape(QuantumScript, AnnotatedQueue):
+class QuantumTape(QuantumScript):
     """A quantum tape recorder, that records and stores variational quantum programs.
 
     Args:
@@ -349,7 +349,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         self, ops=None, measurements=None, prep=None, name=None, do_queue=True, _update=True
     ):
         self.do_queue = do_queue
-        AnnotatedQueue.__init__(self)
+        self._queue = AnnotatedQueue()
         QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
 
     def __enter__(self):
@@ -357,14 +357,15 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         try:
             if self.do_queue:
                 QueuingManager.append(self)
-            return super().__enter__()
+            self._queue.__enter__()
+            return self
         except Exception as _:
             QuantumTape._lock.release()
             raise
 
     def __exit__(self, exception_type, exception_value, traceback):
         try:
-            AnnotatedQueue.__exit__(self, exception_type, exception_value, traceback)
+            self._queue.__exit__(exception_type, exception_value, traceback)
             # After other optimizations in #2963, #2986 and follow-up work, we should check whether
             # calling `_process_queue` only if there is no `exception_type` saves time. This would
             # be done via the following:
@@ -395,3 +396,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         """
         self._prep, self._ops, self._measurements = process_queue(self._queue)
         self._update()
+
+    @property
+    def queue(self):
+        """Returns a list of objects in the tape's AnnotatedQueue"""
+        return self._queue.queue

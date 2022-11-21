@@ -65,9 +65,10 @@ def make_tape(fn):
     """
 
     def wrapper(*args, **kwargs):
-        active_tape = qml.QueuingManager.active_context()
-        new_tape = qml.tape.QuantumTape() if active_tape is None else active_tape.__class__()
-        with qml.QueuingManager.stop_recording(), new_tape:
+        # active_tape = qml.QueuingManager.active_context()
+        # new_tape = qml.tape.QuantumTape() if active_tape is None else active_tape.__class__()
+        # with qml.QueuingManager.stop_recording(), new_tape:
+        with qml.QueuingManager.stop_recording(), qml.tape.QuantumTape() as new_tape:
             fn(*args, **kwargs)
 
         return new_tape
@@ -79,9 +80,10 @@ class NonQueuingTape(qml.queuing.AnnotatedQueue):
     """Mixin class that creates a tape that does not queue
     itself to the current queuing context."""
 
+    # pylint:disable=no-member
     def _process_queue(self):
         # accesses the parent of the target class that NonQueingTape is mixed into
-        super()._process_queue()  # pylint:disable=no-member
+        super()._process_queue()
 
         for obj, info in self._queue.items():
             qml.queuing.QueuingManager.append(obj, **info)
