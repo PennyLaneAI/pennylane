@@ -177,12 +177,8 @@ class _Counts(SampleMeasurement):
         if bin_size is None:
             return self._samples_to_counts(samples)
 
-        if self.obs is None:
-            num_wires = qml.math.shape(samples)[0]
-            shape = (-1, bin_size, num_wires)
-        else:
-            num_wires = qml.math.shape(samples)[-1]
-            shape = (-1, bin_size)
+        num_wires = len(self.wires) if self.wires else len(wire_order)
+        shape = (-1, bin_size, num_wires) if self.obs is None else (-1, bin_size)
 
         return [self._samples_to_counts(bin_sample) for bin_sample in samples.reshape(shape)]
 
