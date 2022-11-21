@@ -135,8 +135,13 @@ def _validate_tapes(tapes):
         InterfaceUnsupportedError: if tapes that produce ragged outputs were provided
     """
     for t in tapes:
+        probs_or_sample_measure = any(
+            isinstance(m, (_Probability, _Sample)) for m in t.measurements
+        )
         all_probs = all(isinstance(m, _Probability) for m in t.measurements)
-        if not (all_probs or all(isinstance(m, _Sample) for m in t.measurements)):
+        if probs_or_sample_measure and not (
+            all_probs or all(isinstance(m, _Sample) for m in t.measurements)
+        ):
             raise InterfaceUnsupportedError(
                 "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
             )
