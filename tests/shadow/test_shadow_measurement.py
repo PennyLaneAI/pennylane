@@ -14,6 +14,7 @@
 """Unit tests for the classical shadows measurement process"""
 # pylint:disable=no-self-use, import-outside-toplevel, redefined-outer-name, unpacking-non-sequence, too-few-public-methods, not-an-iterable, inconsistent-return-statements
 import copy
+
 import pytest
 
 import pennylane as qml

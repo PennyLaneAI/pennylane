@@ -22,7 +22,6 @@ from typing import Sequence
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices import DefaultQubit
 from pennylane.interfaces import set_shots
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -276,7 +275,7 @@ class ClassicalShadow(CustomMeasurement):
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
-        if isinstance(device, DefaultQubit):
+        if isinstance(device, qml.DefaultQubit):
             return self._process_state(state=device.state, shots=device.shots)
 
         return self._process_tape(tape, device)
