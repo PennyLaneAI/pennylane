@@ -18,8 +18,7 @@ from functools import reduce
 import numpy as np
 from scipy import sparse
 from pennylane import math, wires
-from pennylane.operation import Tensor
-from pennylane.ops import s_prod, op_sum, prod, Identity, PauliX, PauliY, PauliZ, Hamiltonian
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ
 
 
 I = "I"
