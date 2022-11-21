@@ -12,22 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the sample module"""
-
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.measurements import Sample
+from pennylane.operation import EigvalsUndefinedError, Operator
+
+
+# TODO: Remove this when new CustomMP are the default
+def custom_measurement_process(device, spy):
+    assert len(spy.call_args_list) > 0  # make sure method is mocked properly
+
+    samples = device._samples
+    call_args_list = list(spy.call_args_list)
+    for call_args in call_args_list:
+        meas = call_args.args[1]
+        shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
+        if isinstance(meas, Operator):
+            meas = qml.sample(op=meas)
+        assert qml.math.allequal(
+            device.sample(call_args.args[1], **call_args.kwargs),
+            meas.process_samples(
+                samples=samples,
+                wire_order=device.wires,
+                shot_range=shot_range,
+                bin_size=bin_size,
+            ),
+        )
 
 
 class TestSample:
     """Tests for the sample function"""
 
-    def test_sample_dimension(self):
+    def test_sample_dimension(self, mocker):
         """Test that the sample function outputs samples of the right size"""
         n_sample = 10
 
         dev = qml.device("default.qubit", wires=2, shots=n_sample)
+        spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
         def circuit():
@@ -38,12 +61,15 @@ class TestSample:
 
         assert np.array_equal(sample.shape, (2, n_sample))
 
+        custom_measurement_process(dev, spy)
+
     @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
-    def test_sample_combination(self):
+    def test_sample_combination(self, mocker):
         """Test the output of combining expval, var and sample"""
         n_sample = 10
 
         dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -58,11 +84,14 @@ class TestSample:
         assert isinstance(result[1], np.ndarray)
         assert isinstance(result[2], np.ndarray)
 
-    def test_single_wire_sample(self):
+        custom_measurement_process(dev, spy)
+
+    def test_single_wire_sample(self, mocker):
         """Test the return type and shape of sampling a single wire"""
         n_sample = 10
 
         dev = qml.device("default.qubit", wires=1, shots=n_sample)
+        spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
         def circuit():
@@ -75,12 +104,15 @@ class TestSample:
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (n_sample,))
 
-    def test_multi_wire_sample_regular_shape(self):
+        custom_measurement_process(dev, spy)
+
+    def test_multi_wire_sample_regular_shape(self, mocker):
         """Test the return type and shape of sampling multiple wires
         where a rectangular array is expected"""
         n_sample = 10
 
         dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
         def circuit():
@@ -93,13 +125,16 @@ class TestSample:
         assert np.array_equal(result.shape, (3, n_sample))
         assert result.dtype == np.dtype("int")
 
+        custom_measurement_process(dev, spy)
+
     @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
-    def test_sample_output_type_in_combination(self):
+    def test_sample_output_type_in_combination(self, mocker):
         """Test the return type and shape of sampling multiple works
         in combination with expvals and vars"""
         n_sample = 10
 
         dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -114,10 +149,13 @@ class TestSample:
         assert result[2].dtype == np.dtype("int")
         assert np.array_equal(result[2].shape, (n_sample,))
 
-    def test_not_an_observable(self):
+        custom_measurement_process(dev, spy)
+
+    def test_not_an_observable(self, mocker):
         """Test that a UserWarning is raised if the provided
         argument might not be hermitian."""
         dev = qml.device("default.qubit", wires=2, shots=10)
+        spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
         def circuit():
@@ -127,10 +165,13 @@ class TestSample:
         with pytest.warns(UserWarning, match="Prod might not be hermitian."):
             _ = circuit()
 
-    def test_observable_return_type_is_sample(self):
+        custom_measurement_process(dev, spy)
+
+    def test_observable_return_type_is_sample(self, mocker):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Sample`"""
         n_shots = 10
         dev = qml.device("default.qubit", wires=1, shots=n_shots)
+        spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
         def circuit():
@@ -139,6 +180,8 @@ class TestSample:
             return res
 
         circuit()
+
+        custom_measurement_process(dev, spy)
 
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are specified"""
@@ -156,9 +199,10 @@ class TestSample:
         ):
             _ = circuit()
 
-    def test_providing_no_observable_and_no_wires(self):
+    def test_providing_no_observable_and_no_wires(self, mocker):
         """Test that we can provide no observable and no wires to sample function"""
         dev = qml.device("default.qubit", wires=2, shots=1000)
+        spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
         def circuit():
@@ -170,7 +214,9 @@ class TestSample:
 
         circuit()
 
-    def test_providing_no_observable_and_no_wires_shot_vector(self):
+        custom_measurement_process(dev, spy)
+
+    def test_providing_no_observable_and_no_wires_shot_vector(self, mocker):
         """Test that we can provide no observable and no wires to sample
         function when using a shot vector"""
         num_wires = 2
@@ -179,6 +225,7 @@ class TestSample:
         shots2 = 10
         shots3 = 1000
         dev = qml.device("default.qubit", wires=num_wires, shots=[shots1, shots2, shots3])
+        spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
         def circuit():
@@ -193,11 +240,14 @@ class TestSample:
         assert len(res) == len(expected_shapes)
         assert (r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
 
-    def test_providing_no_observable_and_wires(self):
+        custom_measurement_process(dev, spy)
+
+    def test_providing_no_observable_and_wires(self, mocker):
         """Test that we can provide no observable but specify wires to the sample function"""
         wires = [0, 2]
         wires_obj = qml.wires.Wires(wires)
         dev = qml.device("default.qubit", wires=3, shots=1000)
+        spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
         def circuit():
@@ -209,6 +259,8 @@ class TestSample:
             return res
 
         circuit()
+
+        custom_measurement_process(dev, spy)
 
     @pytest.mark.parametrize(
         "obs,exp",
@@ -289,3 +341,12 @@ class TestSample:
         assert isinstance(binned_samples, tuple)
         assert len(binned_samples) == len(shot_vec)
         assert binned_samples[0].shape == (shot_vec[0],)
+
+    def test_new_sample_with_operator_with_no_eigvals(self):
+        """Test that calling process with an operator that has no eigvals defined raises an error."""
+
+        class DummyOp(Operator):
+            num_wires = 1
+
+        with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
+            qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])

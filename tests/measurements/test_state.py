@@ -71,7 +71,7 @@ class TestState:
         assert np.allclose(state_val[0], 1 / np.sqrt(2))
         assert np.allclose(state_val[-1], 1 / np.sqrt(2))
 
-        assert np.allclose(state().process_state(state=dev.state, wires=dev.wires), state_val)
+        assert np.allclose(state().process_state(state=dev.state, wire_order=dev.wires), state_val)
 
     def test_return_with_other_types(self):
         """Test that an exception is raised when a state is returned along with another return
@@ -397,7 +397,7 @@ class TestDensityMatrix:
 
         assert np.allclose(
             expected,
-            qml.density_matrix(wires=0).process_state(state=dev.state, wires=dev.wires),
+            qml.density_matrix(wires=0).process_state(state=dev.state, wire_order=dev.wires),
         )
 
     @pytest.mark.jax
@@ -419,7 +419,7 @@ class TestDensityMatrix:
 
         assert np.allclose(
             expected,
-            qml.density_matrix(wires=0).process_state(state=dev.state, wires=dev.wires),
+            qml.density_matrix(wires=0).process_state(state=dev.state, wire_order=dev.wires),
         )
 
     @pytest.mark.tf
@@ -441,7 +441,7 @@ class TestDensityMatrix:
 
         assert np.allclose(
             expected,
-            qml.density_matrix(wires=0).process_state(state=dev.state, wires=dev.wires),
+            qml.density_matrix(wires=0).process_state(state=dev.state, wire_order=dev.wires),
         )
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
@@ -464,7 +464,7 @@ class TestDensityMatrix:
 
         assert np.allclose(
             expected,
-            qml.density_matrix(wires=0).process_state(state=dev.state, wires=dev.wires),
+            qml.density_matrix(wires=0).process_state(state=dev.state, wire_order=dev.wires),
         )
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
@@ -486,7 +486,7 @@ class TestDensityMatrix:
 
         assert np.allclose(
             expected,
-            qml.density_matrix(wires=1).process_state(state=dev.state, wires=dev.wires),
+            qml.density_matrix(wires=1).process_state(state=dev.state, wire_order=dev.wires),
         )
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
@@ -513,7 +513,7 @@ class TestDensityMatrix:
         assert np.allclose(expected, density_full)
         assert np.allclose(
             expected,
-            qml.density_matrix(wires=[0, 1]).process_state(state=dev.state, wires=dev.wires),
+            qml.density_matrix(wires=[0, 1]).process_state(state=dev.state, wire_order=dev.wires),
         )
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
@@ -544,7 +544,7 @@ class TestDensityMatrix:
         assert np.allclose(expected, density)
         assert np.allclose(
             expected,
-            qml.density_matrix(wires=[1, 2]).process_state(state=dev.state, wires=dev.wires),
+            qml.density_matrix(wires=[1, 2]).process_state(state=dev.state, wire_order=dev.wires),
         )
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
@@ -588,7 +588,7 @@ class TestDensityMatrix:
         assert np.allclose(expected, density)
         assert np.allclose(
             expected,
-            qml.density_matrix(wires=[0, 1]).process_state(state=dev.state, wires=dev.wires),
+            qml.density_matrix(wires=[0, 1]).process_state(state=dev.state, wire_order=dev.wires),
         )
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
@@ -662,7 +662,7 @@ class TestDensityMatrix:
         assert np.allclose(expected, density)
         assert np.allclose(
             expected,
-            qml.density_matrix(wires=wires[1]).process_state(state=dev.state, wires=dev.wires),
+            qml.density_matrix(wires=wires[1]).process_state(state=dev.state, wire_order=dev.wires),
         )
 
     @pytest.mark.parametrize("wires", [[3, 1], ["b", 1000]])
