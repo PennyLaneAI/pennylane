@@ -73,14 +73,14 @@ def mutual_info(wires0, wires1, log_base=None):
 
     .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.math.mutual_info`
     """
+    wires0 = qml.wires.Wires(wires0)
+    wires1 = qml.wires.Wires(wires1)
+
     # the subsystems cannot overlap
     if [wire for wire in wires0 if wire in wires1]:
         raise qml.QuantumFunctionError(
             "Subsystems for computing mutual information must not overlap."
         )
-
-    wires0 = qml.wires.Wires(wires0)
-    wires1 = qml.wires.Wires(wires1)
     return _MutualInfo(wires=[wires0, wires1], log_base=log_base)
 
 
