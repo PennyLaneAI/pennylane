@@ -47,7 +47,7 @@ class TestExpval:
             meas = qml.expval(op=obs)
             old_res = self.dev.expval(obs, shot_range=shot_range, bin_size=bin_size)
             if self.dev.shots is None:
-                new_res = meas.process_state(state=state, wires=self.dev.wires)
+                new_res = meas.process_state(state=state, wire_order=self.dev.wires)
             else:
                 new_res = meas.process_samples(
                     samples=samples, shot_range=shot_range, bin_size=bin_size
