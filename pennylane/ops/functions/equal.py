@@ -119,11 +119,7 @@ def equal(
     """
 
     # types don't have to be the same type, they just both have to be Observables
-    if isinstance(op1, Observable) and isinstance(op2, Observable):
-        pass
-    # for everything else, types must match
-    else:
-        if not isinstance(op2, type(op1)):
+    if not isinstance(op2, type(op1)) and not isinstance(op1, Observable):
             return False
 
     return _equal(
