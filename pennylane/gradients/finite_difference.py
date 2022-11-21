@@ -25,14 +25,15 @@ from scipy.special import factorial
 
 import pennylane as qml
 from pennylane._device import _get_num_copies
+from pennylane.measurements import _Probability
 
-from .gradient_transform import (
-    gradient_transform,
-    grad_method_validation,
-    choose_grad_methods,
-    gradient_analysis,
-)
 from .general_shift_rules import generate_shifted_tapes
+from .gradient_transform import (
+    choose_grad_methods,
+    grad_method_validation,
+    gradient_analysis,
+    gradient_transform,
+)
 
 
 @functools.lru_cache(maxsize=None)
@@ -181,7 +182,7 @@ def _all_zero_grad_new(tape, shots=None):
 
     for m in tape.measurements:
         # TODO: Update shape for CV variables
-        if m.return_type is qml.measurements.Probability:
+        if isinstance(m, _Probability):
             shape = 2 ** len(m.wires)
         else:
             shape = ()
@@ -421,7 +422,7 @@ def _finite_diff_new(
         output_dims = []
         # TODO: Update shape for CV variables
         for m in tape.measurements:
-            if m.return_type is qml.measurements.Probability:
+            if isinstance(m, _Probability):
                 output_dims.append(2 ** len(m.wires))
             else:
                 output_dims.append(1)

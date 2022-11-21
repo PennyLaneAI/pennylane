@@ -25,6 +25,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
+from pennylane.measurements import _Counts, _MidMeasure
 from pennylane.tape import QuantumTape
 
 
@@ -547,7 +548,7 @@ class QNode:
             )
 
         terminal_measurements = [
-            m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
+            m for m in self.tape.measurements if not isinstance(m, _MidMeasure)
         ]
         if any(ret != m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
@@ -689,10 +690,7 @@ class QNode:
 
             res = res[0]
 
-        if not isinstance(self._qfunc_output, Sequence) and self._qfunc_output.return_type in (
-            qml.measurements.Counts,
-            qml.measurements.AllCounts,
-        ):
+        if not isinstance(self._qfunc_output, Sequence) and isinstance(self._qfunc_output, _Counts):
             if self.device._has_partitioned_shots():
                 return tuple(res)
 
@@ -700,8 +698,7 @@ class QNode:
             return res[0]
 
         if isinstance(self._qfunc_output, Sequence) and any(
-            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-            for m in self._qfunc_output
+            isinstance(m, _Counts) for m in self._qfunc_output
         ):
 
             # If Counts was returned with other measurements, then apply the
