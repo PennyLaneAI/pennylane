@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation
+from pennylane.measurements import Expectation, _Expectation
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -47,6 +47,32 @@ def custom_measurement_process(device, spy):
 
 class TestExpval:
     """Tests for the expval function"""
+
+    def test_counts_properties(self):
+        """Test that the properties are correct."""
+        meas = qml.counts(wires=0)
+        assert meas.numeric_type == float
+        assert meas.return_type == Expectation
+
+    @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ((1, 10), (2,))])
+    def test_shape(self, shots, shape):
+        """Test the ``shape`` method."""
+        meas = qml.counts(wires=0)
+        dev = qml.device("default.qubit", wires=0, shots=shots)
+
+        assert meas.shape(dev) == shape
+
+    def test_queue(self):
+        """Test that the right measurement class is queued."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.counts(wires=0)
+
+        circuit()
+
+        assert isinstance(circuit.tape[0], _Expectation)
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])

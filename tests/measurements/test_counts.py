@@ -55,15 +55,12 @@ class TestCounts:
 
     def test_counts_properties(self):
         """Test that the properties are correct."""
-        meas = qml.counts(wires=0)
-        assert meas.numeric_type == float
-        assert meas.return_type == Counts
-
-    def test_all_counts_return_type(self):
-        """Test that the ``return_type`` property is ``AllCounts``."""
-        meas = qml.counts(wires=0, all_outcomes=True)
-        assert meas.numeric_type == float
-        assert meas.return_type == AllCounts
+        meas1 = qml.counts(wires=0)
+        meas2 = qml.counts(obs=qml.PauliX(0), all_outcomes=True)
+        assert meas1.samples_computational_basis is True
+        assert meas1.return_type == Counts
+        assert meas2.samples_computational_basis is False
+        assert meas2.return_type == AllCounts
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
