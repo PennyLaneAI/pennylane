@@ -29,6 +29,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -725,3 +726,15 @@ class StateMeasurement(MeasurementProcess, ABC):
             wires (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
+
+
+class CustomMeasurement(MeasurementProcess, ABC):
+    """Custom measurement process.
+
+    Any class inheriting from this class should define its own ``process`` method, which takes a
+    device instance and a tape and returns the result of the measurement process.
+    """
+
+    @abstractmethod
+    def process(self, tape: QuantumScript, device):
+        """Process the given tape."""

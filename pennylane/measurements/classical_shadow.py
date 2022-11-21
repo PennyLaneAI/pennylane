@@ -22,9 +22,12 @@ from typing import Sequence
 import numpy as np
 
 import pennylane as qml
+from pennylane.devices import DefaultQubit
+from pennylane.interfaces import set_shots
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, Shadow, ShadowExpval, StateMeasurement
+from .measurements import CustomMeasurement, MeasurementShapeError, Shadow, ShadowExpval
 
 
 def shadow_expval(H, k=1, seed_recipes=True):
@@ -211,7 +214,7 @@ def classical_shadow(wires, seed_recipes=True):
     return ClassicalShadow(Shadow, wires=wires, seed=seed)
 
 
-class ClassicalShadow(StateMeasurement):
+class ClassicalShadow(CustomMeasurement):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -235,7 +238,7 @@ class ClassicalShadow(StateMeasurement):
         self.k = k
         super().__init__(*args, **kwargs)
 
-    def process_state(self, state: Sequence[complex], wires: Wires):
+    def process(self, tape: QuantumScript, device):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -273,11 +276,55 @@ class ClassicalShadow(StateMeasurement):
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
+        if isinstance(device, DefaultQubit):
+            return self._process_state(state=device.state, shots=device.shots)
+
+        return self._process_tape(tape, device)
+
+    def _process_tape(self, tape: QuantumScript, device):
+        wires = self.wires
+        n_snapshots = device.shots
+        seed = self.seed
+
+        with set_shots(self, shots=1):
+            # slow implementation but works for all devices
+            n_qubits = len(wires)
+            mapped_wires = np.array(self.map_wires(wires))
+
+            if seed is not None:
+                # seed the random measurement generation so that recipes
+                # are the same for different executions with the same seed
+                rng = np.random.RandomState(seed)
+                recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
+            else:
+                recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+            obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
+
+            outcomes = np.zeros((n_snapshots, n_qubits))
+
+            for t in range(n_snapshots):
+                # compute rotations for the Pauli measurements
+                rotations = [
+                    rot
+                    for wire_idx, wire in enumerate(wires)
+                    for rot in obs_list[recipes[t][wire_idx]].compute_diagonalizing_gates(
+                        wires=wire
+                    )
+                ]
+
+                device.reset()
+                device.apply(tape.operations, rotations=tape.diagonalizing_gates + rotations)
+
+                outcomes[t] = device.generate_samples()[0][mapped_wires]
+
+        return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
+
+    def _process_state(self, state: Sequence[complex], shots: int):
         wires = self.wires
         seed = self.seed
 
         n_qubits = len(wires)
-        n_snapshots = None  # FIXME: Pass shots information to the meeasurement process!
+        n_snapshots = shots
         device_qubits = len(self.wires)
         mapped_wires = np.array(self.map_wires(wires))
 
@@ -419,7 +466,7 @@ class ClassicalShadow(StateMeasurement):
         """Append the measurement process to an annotated queue, making sure
         the observable is not queued"""
         if self.H is not None:
-            Hs = [self.H] if not isinstance(self.H, Iterable) else self.H
+            Hs = self.H if isinstance(self.H, Iterable) else [self.H]
             for H in Hs:
                 context.update_info(H, owner=self)
             context.append(self, owns=Hs)
