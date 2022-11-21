@@ -46,7 +46,6 @@ def custom_measurement_process(device, spy):
             assert qml.math.allequal(list(old.values()), list(new.values()))
 
 
-# pylint: disable=attribute-defined-outside-init
 class TestCounts:
     """Tests for the counts function"""
 
