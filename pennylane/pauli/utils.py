@@ -96,7 +96,7 @@ def is_pauli_word(observable):
                 terms_pauli_word.append(ob.name in pauli_word_names)
         return all(terms_pauli_word)
 
-    return False
+    return observable.name in pauli_word_names
 
 
 def are_identical_pauli_words(pauli_1, pauli_2):
