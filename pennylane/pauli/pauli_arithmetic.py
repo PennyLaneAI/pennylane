@@ -13,6 +13,7 @@
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
 from copy import copy
+from typing import Sequence
 from functools import reduce
 
 import numpy as np
@@ -259,6 +260,15 @@ class PauliSentence(dict):
         """Track wires of the PauliSentence."""
         return set().union(*(pw.wires for pw in self.keys()))
 
+    def _pw_wires(self, w: Sequence) -> wires.Wires:
+        """To account for empty pauli_words which represent identity operations."""
+        if w:
+            return wires.Wires(w)
+
+        ps_wires = self.wires
+        if len(ps_wires) > 0:
+            return wires.Wires(list(ps_wires)[0])  # return any wire from the Pauli sentence's wires
+
     def to_mat(self, wire_order, format="dense"):
         """Returns the matrix representation.
 
@@ -274,17 +284,6 @@ class PauliSentence(dict):
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
 
-        def _pw_wires(w):
-            """To account for empty pauli_words which represent identity operations."""
-            if w:
-                return wires.Wires(w)
-
-            ps_wires = self.wires
-            if len(ps_wires) > 0:
-                return wires.Wires(
-                    list(ps_wires)[0]
-                )  # return any wire from the Pauli sentence's wires
-
         if len(self) == 0:
             if wire_order is None or wire_order == wires.Wires([]):
                 raise ValueError("Can't get the matrix of an empty PauliSentence.")
@@ -294,8 +293,8 @@ class PauliSentence(dict):
 
         mats_and_wires_gen = (
             (
-                coeff * pw.to_mat(wire_order=_pw_wires(list(pw.wires)), format=format),
-                _pw_wires(list(pw.wires)),
+                coeff * pw.to_mat(wire_order=self._pw_wires(list(pw.wires)), format=format),
+                self._pw_wires(list(pw.wires)),
             )
             for pw, coeff in self.items()
         )
