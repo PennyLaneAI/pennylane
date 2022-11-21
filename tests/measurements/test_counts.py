@@ -64,7 +64,7 @@ class TestCounts:
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():

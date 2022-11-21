@@ -48,16 +48,16 @@ def custom_measurement_process(device, spy):
 class TestExpval:
     """Tests for the expval function"""
 
-    def test_counts_properties(self):
+    def test_expval_properties(self):
         """Test that the properties are correct."""
-        meas = qml.counts(wires=0)
+        meas = qml.expval(wires=0)
         assert meas.numeric_type == float
         assert meas.return_type == Expectation
 
     @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ((1, 10), (2,))])
     def test_shape(self, shots, shape):
         """Test the ``shape`` method."""
-        meas = qml.counts(wires=0)
+        meas = qml.expval(wires=0)
         dev = qml.device("default.qubit", wires=0, shots=shots)
 
         assert meas.shape(dev) == shape
@@ -68,7 +68,7 @@ class TestExpval:
 
         @qml.qnode(dev)
         def circuit():
-            return qml.counts(wires=0)
+            return qml.expval(wires=0)
 
         circuit()
 
