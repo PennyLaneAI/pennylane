@@ -27,6 +27,7 @@ import sys
 def cvxpy_support():
     try:
         import cvxpy
+        import cvxopt
 
         cvxpy_support = True
     except:

@@ -159,10 +159,6 @@ class _Counts(SampleMeasurement):
         super().__init__(obs, wires, eigvals, id)
 
     @property
-    def numeric_type(self):
-        return int  # TODO: Might need to raise an error here?
-
-    @property
     def samples_computational_basis(self):
         return self.obs is None
 
@@ -171,10 +167,14 @@ class _Counts(SampleMeasurement):
         return AllCounts if self.all_outcomes else Counts
 
     def process_samples(
-        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+        self,
+        samples: Sequence[complex],
+        wire_order: Wires,
+        shot_range: Tuple[int] = None,
+        bin_size: int = None,
     ):
         samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
-            samples, shot_range, bin_size
+            samples, wire_order, shot_range, bin_size
         )
 
         if bin_size is None:

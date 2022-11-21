@@ -73,21 +73,21 @@ def mutual_info(wires0, wires1, log_base=None):
 
     .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.math.mutual_info`
     """
+    wires0 = qml.wires.Wires(wires0)
+    wires1 = qml.wires.Wires(wires1)
+
     # the subsystems cannot overlap
     if [wire for wire in wires0 if wire in wires1]:
         raise qml.QuantumFunctionError(
             "Subsystems for computing mutual information must not overlap."
         )
-
-    wires0 = qml.wires.Wires(wires0)
-    wires1 = qml.wires.Wires(wires1)
     return _MutualInfo(wires=[wires0, wires1], log_base=log_base)
 
 
 class _MutualInfo(StateMeasurement):
     """Measurement process that returns the mutual information."""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,
         obs: Operator = None,
@@ -121,7 +121,7 @@ class _MutualInfo(StateMeasurement):
         num_shot_elements = sum(s.copies for s in device.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
-    def process_state(self, state: Sequence[complex], wires: Wires):
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
         return qml.math.mutual_info(
             state,
             indices0=list(self._wires[0]),

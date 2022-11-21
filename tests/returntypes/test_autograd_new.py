@@ -1038,15 +1038,14 @@ class TestOverridingShots:
 
         # execute with shots=100
         res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)
-        spy.assert_called()
+        spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
         assert dev.shots is None
-        spy = mocker.spy(dev, "sample")
         res = execute([tape], dev, gradient_fn=param_shift)
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
-        spy.assert_not_called()
+        spy.assert_called_once()  # same single call from above, no additional calls
 
     def test_overriding_shots_with_same_value(self, mocker):
         """Overriding shots with the same value as the device will have no effect"""

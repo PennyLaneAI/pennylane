@@ -175,8 +175,14 @@ class _Sample(SampleMeasurement):
         return self.obs is None
 
     def process_samples(
-        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+        self,
+        samples: Sequence[complex],
+        wire_order: Wires,
+        shot_range: Tuple[int] = None,
+        bin_size: int = None,
     ):
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
         name = self.obs.name if self.obs is not None else None
         # Select the samples from samples that correspond to ``shot_range`` if provided
         if shot_range is not None:
@@ -185,9 +191,9 @@ class _Sample(SampleMeasurement):
             # Ellipsis (...) otherwise would take up broadcasting and shots axes.
             samples = samples[..., slice(*shot_range), :]
 
-        if len(self.wires) != 0:
+        if mapped_wires:
             # if wires are provided, then we only return samples from those wires
-            samples = samples[..., self.wires]
+            samples = samples[..., mapped_wires]
 
         num_wires = samples.shape[-1]  # wires is the last dimension
 

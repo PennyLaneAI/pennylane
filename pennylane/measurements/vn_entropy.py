@@ -72,7 +72,7 @@ def vn_entropy(wires, log_base=None):
 class _VnEntropy(StateMeasurement):
     """Measurement process that returns the Von Neumann entropy."""
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,
         obs: Operator = None,
@@ -106,7 +106,7 @@ class _VnEntropy(StateMeasurement):
         num_shot_elements = sum(s.copies for s in device.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
-    def process_state(self, state: Sequence[complex], wires: Wires):
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
         return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
         )

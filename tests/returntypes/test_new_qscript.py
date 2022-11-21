@@ -16,7 +16,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError
 from pennylane.tape import QuantumScript
 
 measures = [
@@ -31,6 +30,8 @@ measures = [
         None,
     ),  # Shape is None because the expected shape is in the test case
     (qml.sample(), None),  # Shape is None because the expected shape is in the test case
+    (qml.mutual_info(wires0=[0], wires1=[1]), ()),
+    (qml.vn_entropy(wires=[0, 1]), ()),
 ]
 
 multi_measurements = [
@@ -42,6 +43,8 @@ multi_measurements = [
         [qml.probs(wires=[0]), qml.probs(wires=[1, 2]), qml.probs(wires=[0, 1, 2])],
         ((2,), (4,), (8,)),
     ),
+    ([qml.mutual_info(wires0=[0], wires1=[1]), qml.mutual_info(wires0=[1], wires1=[2])], ((), ())),
+    ([qml.vn_entropy(wires=[0, 1]), qml.vn_entropy(wires=[1, 0])], ((), ())),
 ]
 
 
@@ -54,6 +57,8 @@ class TestMeasurementProcess:
         (qml.probs(wires=[0, 1]), (4,)),
         (qml.state(), (8,)),
         (qml.density_matrix(wires=[0, 1]), (4, 4)),
+        (qml.mutual_info(wires0=[0], wires1=[1]), ()),
+        (qml.vn_entropy(wires=[0, 1]), ()),
     ]
 
     measurements_finite_shots = [
@@ -64,6 +69,8 @@ class TestMeasurementProcess:
         (qml.density_matrix(wires=[0, 1]), (4, 4)),
         (qml.sample(qml.PauliZ(0)), (10,)),
         (qml.sample(), (10, 3)),
+        (qml.mutual_info(wires0=0, wires1=1), ()),
+        (qml.vn_entropy(wires=[0, 1]), ()),
     ]
 
     measurements_shot_vector = [
@@ -74,6 +81,8 @@ class TestMeasurementProcess:
         (qml.density_matrix(wires=[0, 1]), ((4, 4), (4, 4), (4, 4))),
         (qml.sample(qml.PauliZ(0)), ((10,), (20,), (30,))),
         (qml.sample(), ((10, 3), (20, 3), (30, 3))),
+        (qml.mutual_info(wires0=0, wires1=1), ((), (), ())),
+        (qml.vn_entropy(wires=[0, 1]), ((), (), ())),
     ]
 
     @pytest.mark.parametrize("measurement, expected_shape", measurements_no_shots)
@@ -427,7 +436,14 @@ class TestNumericType:
     """Tests for determining the numeric type of the tape output."""
 
     @pytest.mark.parametrize(
-        "ret", [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0)), qml.probs(wires=[0])]
+        "ret",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(0)),
+            qml.probs(wires=[0]),
+            qml.mutual_info(wires0=0, wires1=1),
+            qml.vn_entropy(wires=[0, 1]),
+        ],
     )
     @pytest.mark.parametrize("shots", [None, 1, (1, 2, 3)])
     def test_float_measures(self, ret, shots):
