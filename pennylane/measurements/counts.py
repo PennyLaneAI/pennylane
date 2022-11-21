@@ -199,8 +199,6 @@ class _Counts(SampleMeasurement):
 
         Args:
             samples: samples in an array of dimension ``(shots,len(wires))``
-            obs (Observable): the observable sampled
-            num_wires (int): number of wires the sampled observable was performed on
 
         Returns:
             dict: dictionary with format ``{'outcome': num_occurences}``, including all
