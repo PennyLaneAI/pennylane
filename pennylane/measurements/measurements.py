@@ -29,7 +29,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -736,5 +735,5 @@ class CustomMeasurement(MeasurementProcess, ABC):
     """
 
     @abstractmethod
-    def process(self, tape: QuantumScript, device):
+    def process(self, tape, device):
         """Process the given tape."""
