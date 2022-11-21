@@ -22,7 +22,6 @@ from typing import Sequence
 import numpy as np
 
 import pennylane as qml
-from pennylane.interfaces import set_shots
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
@@ -285,7 +284,7 @@ class ClassicalShadow(CustomMeasurement):
         n_snapshots = device.shots
         seed = self.seed
 
-        with set_shots(self, shots=1):
+        with qml.set_shots(self, shots=1):
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(self.map_wires(wires))
