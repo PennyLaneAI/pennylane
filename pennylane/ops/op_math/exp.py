@@ -170,7 +170,7 @@ class Exp(SymbolicOp):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
-        from pennylane.pauli import is_pauli_word
+        from pennylane.pauli import is_pauli_word  # pylint: disable=import-outside-toplevel
         if isinstance(self.base, Tensor):
             all_wires = [obs.wires for obs in self.base.obs]
             if len(all_wires) != len(set(all_wires)):
@@ -193,7 +193,7 @@ class Exp(SymbolicOp):
         Returns:
             list[PauliRot]: decomposition of the operator
         """
-        from pennylane.pauli import pauli_word_to_string
+        from pennylane.pauli import pauli_word_to_string  # pylint: disable=import-outside-toplevel
         if not self.has_decomposition:
             raise DecompositionUndefinedError
         new_coeff = math.real(2j * self.coeff)
