@@ -63,7 +63,11 @@ class _Variance(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the variance of the supplied observable."""
 
     def process_samples(
-        self, samples: Sequence[complex], shot_range: Tuple[int] = None, bin_size: int = None
+        self,
+        samples: Sequence[complex],
+        wire_order: Wires,
+        shot_range: Tuple[int] = None,
+        bin_size: int = None,
     ):
         if isinstance(self.obs, Projector):
             # branch specifically to handle the projector observable
@@ -71,13 +75,13 @@ class _Variance(SampleMeasurement, StateMeasurement):
             # we use ``self.wires`` instead of ``self.obs`` because the observable was
             # already applied before the sampling
             probs = qml.probs(wires=self.wires).process_samples(
-                samples=samples, shot_range=shot_range, bin_size=bin_size
+                samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
             return probs[idx] - probs[idx] ** 2
 
         # estimate the variance
         samples = qml.sample(op=self.obs).process_samples(
-            samples=samples, shot_range=shot_range, bin_size=bin_size
+            samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
         )
         # With broadcasting, we want to take the variance over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
@@ -85,13 +89,13 @@ class _Variance(SampleMeasurement, StateMeasurement):
         # TODO: do we need to squeeze here? Maybe remove with new return types
         return qml.math.squeeze(qml.math.var(samples, axis=axis))
 
-    def process_state(self, state: Sequence[complex], wires: Wires):
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
         if isinstance(self.obs, Projector):
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
             # we use ``self.wires`` instead of ``self.obs`` because the observable was
             # already applied to the state
-            probs = qml.probs(wires=self.wires).process_state(state=state, wires=wires)
+            probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
             return probs[idx] - probs[idx] ** 2
 
         eigvals = qml.math.asarray(self.obs.eigvals(), dtype=float)
@@ -102,7 +106,7 @@ class _Variance(SampleMeasurement, StateMeasurement):
         self.obs = qml.map_wires(self.obs, dict(zip(self.obs.wires, new_obs_wires)))
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
-        prob = qml.probs(wires=self.wires).process_state(state=state, wires=wires)
+        prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         self.obs = old_obs
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2

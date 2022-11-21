@@ -51,7 +51,7 @@ class TestVar:
                     samples=samples, shot_range=shot_range, bin_size=bin_size
                 )
             else:
-                new_res = meas.process_state(state=state, wires=self.dev.wires)
+                new_res = meas.process_state(state=state, wire_order=self.dev.wires)
             assert qml.math.allequal(old_res, new_res)
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
