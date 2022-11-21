@@ -87,7 +87,10 @@ def test_numeric_type_unrecognized_error():
     unrecognized return type raises an error."""
 
     mp = NotValidMeasurement()
-    with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the numeric type"):
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="The numeric type of the measurement NotValidMeasurement is not defined",
+    ):
         mp.numeric_type()
 
 
@@ -96,7 +99,10 @@ def test_shape_unrecognized_error():
     unrecognized return type raises an error."""
     dev = qml.device("default.qubit", wires=2)
     mp = NotValidMeasurement()
-    with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the shape"):
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="The shape of the measurement NotValidMeasurement is not defined",
+    ):
         mp.shape(dev)
 
 
