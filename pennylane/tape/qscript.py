@@ -32,6 +32,11 @@ from pennylane.measurements import (
     Shadow,
     ShadowExpval,
     StateMeasurement,
+    _Expectation,
+    _Probability,
+    _Sample,
+    _State,
+    _Variance,
 )
 from pennylane.operation import Observable, Operator
 
@@ -472,11 +477,11 @@ class QuantumScript:
         self._output_dim = 0
         for m in self.measurements:
             # attempt to infer the output dimension
-            if m.return_type is qml.measurements.Probability:
+            if isinstance(m, _Probability):
                 # TODO: what if we had a CV device here? Having the base as
                 # 2 would have to be swapped to the cutoff value
                 self._output_dim += 2 ** len(m.wires)
-            elif m.return_type is not qml.measurements.State:
+            elif not isinstance(m, _State):
                 self._output_dim += 1
         if self.batch_size:
             self._output_dim *= self.batch_size
@@ -711,21 +716,19 @@ class QuantumScript:
         """
         shape = tuple()
 
-        # We know that there's one type of return_type, gather it from the
-        # first one
-        ret_type = mps[0].return_type
-        if ret_type == qml.measurements.State:
+        # We know that there's one type of measurement, gather it from the first one
+        if isinstance(mps[0], _State):
             raise ValueError(
                 "Getting the output shape of a quantum script with multiple state measurements is not supported."
             )
 
         shot_vector = device._shot_vector
         if shot_vector is None:
-            if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
+            if isinstance(mps[0], (_Expectation, _Variance)):
 
                 shape = (len(mps),)
 
-            elif ret_type == qml.measurements.Probability:
+            elif isinstance(mps[0], _Probability):
 
                 wires_num_set = {len(meas.wires) for meas in mps}
                 same_num_wires = len(wires_num_set) == 1
@@ -742,7 +745,7 @@ class QuantumScript:
                     # measurement processes act on
                     shape = (sum(2 ** len(m.wires) for m in mps),)
 
-            elif ret_type == qml.measurements.Sample:
+            elif isinstance(mps[0], _Sample):
 
                 dim = mps[0].shape(device)
                 shape = (len(mps),) + dim[1:]
@@ -764,15 +767,14 @@ class QuantumScript:
         """
         shape = tuple()
 
-        ret_type = mps[0].return_type
         shot_vector = device._shot_vector
 
         # Shot vector was defined
-        if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
+        if isinstance(mps[0], (_Expectation, _Variance)):
             num = sum(shottup.copies for shottup in shot_vector)
             shape = (num, len(mps))
 
-        elif ret_type == qml.measurements.Probability:
+        elif isinstance(mps[0], _Probability):
 
             wires_num_set = {len(meas.wires) for meas in mps}
             same_num_wires = len(wires_num_set) == 1
@@ -794,7 +796,7 @@ class QuantumScript:
                     "along with a device that defines a shot vector is not supported."
                 )
 
-        elif ret_type == qml.measurements.Sample:
+        elif isinstance(mps[0], _Sample):
             shape = []
             for shot_val in device.shot_vector:
                 shots = shot_val.shots
@@ -840,7 +842,7 @@ class QuantumScript:
         if len(self.measurements) == 1:
             output_shape = self._single_measurement_shape(self.measurements[0], device)
         else:
-            num_measurements = len({meas.return_type for meas in self.measurements})
+            num_measurements = len({type(meas) for meas in self.measurements})
             if num_measurements == 1:
                 output_shape = self._multi_homogenous_measurement_shape(self.measurements, device)
             else:
@@ -924,15 +926,15 @@ class QuantumScript:
         """
         if qml.active_return():
             return self._numeric_type_new
-        measurement_types = {meas.return_type for meas in self.measurements}
-        if len(measurement_types) > 1:
+        measurement_types = {type(meas) for meas in self.measurements}
+        if len(self.measurements) > 1:
             raise ValueError(
                 "Getting the numeric type of a quantum script that contains multiple types of measurements is unsupported."
             )
 
         # Note: if one of the sample measurements contains outputs that
         # are real, then the entire result will be real
-        if list(measurement_types)[0] == qml.measurements.Sample:
+        if measurement_types.pop() is _Sample:
             return next((float for mp in self.measurements if mp.numeric_type is float), int)
 
         return self.measurements[0].numeric_type

@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
-from pennylane.wires import Wires
-
 import pennylane as qml
+from pennylane.measurements import _MidMeasure
 from pennylane.ops.op_math import ctrl
-from pennylane.transforms import qfunc_transform
 from pennylane.queuing import apply
+from pennylane.transforms import qfunc_transform
+from pennylane.wires import Wires
 
 
 @qfunc_transform
@@ -100,10 +100,7 @@ def defer_measurements(tape):
                 f"Cannot apply operations on {op.wires} as the following wires have been measured already: {op_wires_measured}."
             )
 
-        if (
-            isinstance(op, qml.measurements.MeasurementProcess)
-            and op.return_type == qml.measurements.MidMeasure
-        ):
+        if isinstance(op, _MidMeasure):
             measured_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
