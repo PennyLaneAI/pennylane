@@ -620,7 +620,7 @@ def taper_operation(
     r"""Transform a gate operation with a Clifford operator and then taper qubits.
 
     The qubit operator for the generator of the gate operation is computed either internally or can be provided
-    manually via `op_gen` argument. If this operator commutes with all the :math:`\mathbb{Z}_2` symmetries of
+    manually via the ``op_gen`` argument. If this operator commutes with all the :math:`\mathbb{Z}_2` symmetries of
     the molecular Hamiltonian, then this operator is transformed using the Clifford operators :math:`U` and
     tapered; otherwise it is discarded. Finally, the tapered generator is exponentiated using :class:`~.pennylane.Exp`
     for building the tapered unitary.
@@ -631,17 +631,17 @@ def taper_operation(
         paulixops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): eigenvalues of the Pauli-X operators
         wire_order (Sequence[Any]): order of the wires in the quantum circuit
-        op_wires (Sequence[Any]): wires for the operation in case any of the provided `operation` or `op_gen` are callables
+        op_wires (Sequence[Any]): wires for the operation in case any of the provided ``operation`` or ``op_gen`` are callables
         op_gen (Hamiltonian or Callable): generator of the operation, or a function that returns it in case it cannot be computed internally.
 
     Returns:
-        list(Operation): list of operations of type :class:`~.pennylane.Exp` implementing tapered unitary operation
+        list[Operation]: list of operations of type :class:`~.pennylane.Exp` implementing tapered unitary operation
 
     Raises:
-        ValueError: optional argument `op_wires` is not provided when the provided operation is a callable
-        TypeError: optional argument `op_gen` is a callable but does not have 'wires' as its only keyword argument
+        ValueError: optional argument ``op_wires`` is not provided when the provided operation is a callable
+        TypeError: optional argument ``op_gen`` is a callable but does not have ``wires`` as its only keyword argument
         NotImplementedError: generator of the operation cannot be constructed internally
-        ValueError: optional argument `op_gen` is either not a :class:`~.pennylane.Hamiltonian` or a valid generator of the operation
+        ValueError: optional argument ``op_gen`` is either not a :class:`~.pennylane.Hamiltonian` or a valid generator of the operation
 
     **Example**
 
@@ -652,9 +652,9 @@ def taper_operation(
     >>> paulixops = qchem.paulix_ops(generators, n_qubits)
     >>> paulix_sector = qchem.optimal_sector(H, generators, mol.n_electrons)
     >>> tap_op = qchem.taper_operation(qml.SingleExcitation, generators, paulixops,
-    ...                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
+    ...                                paulix_sector, wire_order=H.wires, op_wires=[0, 2])
     >>> tap_op(3.14159)
-    [Exp(1.570795j, 'PauliY', wires=[0])]
+    [Exp(1.570795j PauliY)]
 
     The obtained tapered operation function can then be used within a :class:`~.pennylane.QNode`:
 
@@ -665,18 +665,18 @@ def taper_operation(
     ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
     >>> drawer = qml.draw(circuit, show_all_wires=True)
     >>> print(drawer(params=[3.14159]))
-        0: ─Exp(1.570795j PauliY)─┤ ╭<Z@Z>
-        1: ───────────────────────┤ ╰<Z@Z>
+    0: ──Exp(0.00+1.57j Y)─┤ ╭<Z@Z>
+    1: ────────────────────┤ ╰<Z@Z>
 
     .. details::
 
         **Usage Details**
 
-        ``qml.taper_operation`` can also be used with the quantum operations, in which case one does not need to specify `op_wires` args:
+        ``qml.taper_operation`` can also be used with the quantum operations, in which case one does not need to specify ``op_wires`` args:
 
         >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]), generators,
-                                    paulixops, paulix_sector, wire_order=H.wires)
-        [Exp(1.570795j, 'PauliY', wires=[0])]
+        ...                       paulixops, paulix_sector, wire_order=H.wires)
+        [Exp(1.570795j PauliY)]
 
         Moreover, it can also be used within a :class:`~.pennylane.QNode` directly:
 
@@ -684,37 +684,36 @@ def taper_operation(
         >>> @qml.qnode(dev)
         ... def circuit(params):
         ...     qchem.taper_operation(qml.DoubleExcitation(params[0], wires=[0, 1, 2, 3]),
-        ...                             generators, paulixops, paulix_sector, H.wires)
+        ...                           generators, paulixops, paulix_sector, H.wires)
         ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
         >>> drawer = qml.draw(circuit, show_all_wires=True)
         >>> print(drawer(params=[3.14159]))
-            0: -╭Exp(0-0.7854j PauliX(0)@PauliY(1))─╭Exp(0-0.7854j PauliY(0)@PauliX(1))─┤ ╭<Z@Z>
-            1: ─╰Exp(0-0.7854j PauliX(0)@PauliY(1))─╰Exp(0-0.7854j PauliY(0)@PauliX(1))─┤ ╰<Z@Z>
+        0: ─╭Exp(-0.00-0.79j X@Y)─╭Exp(-0.00-0.79j Y@X)─┤ ╭<Z@Z>
+        1: ─╰Exp(-0.00-0.79j X@Y)─╰Exp(-0.00-0.79j Y@X)─┤ ╰<Z@Z>
 
         For more involved gates operations such as the ones constructed from matrices, users would need to provide their generators manually
-        via `op_gen` argument. The generator can be passed as a :class:`~.pennylane.Hamiltonian`:
+        via the ``op_gen`` argument. The generator can be passed as a :class:`~.pennylane.Hamiltonian`:
 
-        >>> op_fun = qml.QubitUnitary(
-        ...            np.array([[0.+0.j, 0.+0.j, 0.+0.j, 0.-1.j],
-        ...                      [0.+0.j, 0.+0.j, 0.-1.j, 0.+0.j],
-        ...                      [0.+0.j, 0.-1.j, 0.+0.j, 0.+0.j],
-        ...                      [0.-1.j, 0.+0.j, 0.+0.j, 0.+0.j]]), wires=[0, 2])
+        >>> op_fun = qml.QubitUnitary(np.array([[0.+0.j, 0.+0.j, 0.+0.j, 0.-1.j],
+        ...                                     [0.+0.j, 0.+0.j, 0.-1.j, 0.+0.j],
+        ...                                     [0.+0.j, 0.-1.j, 0.+0.j, 0.+0.j],
+        ...                                     [0.-1.j, 0.+0.j, 0.+0.j, 0.+0.j]]), wires=[0, 2])
         >>> op_gen = qml.Hamiltonian([-0.5 * np.pi],
-        ...                      [qml.PauliX(wires=[0]) @ qml.PauliX(wires=[2])])
+        ...                          [qml.PauliX(wires=[0]) @ qml.PauliX(wires=[2])])
         >>> qchem.taper_operation(op_fun, generators, paulixops, paulix_sector,
         ...                       wire_order=H.wires, op_gen=op_gen)
-        [Exp(1.570796j, 'PauliX', wires=[0])]
+        [Exp(1.5707963267948957j PauliX)]
 
-        Alternatively, generator can also be specified as a function which returns :class:`~.pennylane.Hamiltonian` and uses `wires` as
+        Alternatively, generators can also be specified as a function which returns :class:`~.pennylane.Hamiltonian` and uses ``wires`` as
         its only required keyword argument:
 
         >>> op_gen = lambda wires: qml.Hamiltonian(
-        ...        [0.25, -0.25],
-        ...        [qml.PauliX(wires=wires[0]) @ qml.PauliY(wires=wires[1]),
-        ...         qml.PauliY(wires=wires[0]) @ qml.PauliX(wires=wires[1])])
-        >>> qchem.taper_operation(SingleExcitation, generators, paulixops, paulix_sector,
-        ...         wire_order=H.wires, op_wires=[0, 2], op_gen=op_gen)(3.14159)
-        [Exp(1.570795j, 'PauliY', wires=[0])]
+        ...     [0.25, -0.25],
+        ...     [qml.PauliX(wires=wires[0]) @ qml.PauliY(wires=wires[1]),
+        ...      qml.PauliY(wires=wires[0]) @ qml.PauliX(wires=wires[1])])
+        >>> qchem.taper_operation(qml.SingleExcitation, generators, paulixops, paulix_sector,
+        ...                       wire_order=H.wires, op_wires=[0, 2], op_gen=op_gen)(3.14159)
+        [Exp(1.570795j PauliY)]
 
         **Theory**
 

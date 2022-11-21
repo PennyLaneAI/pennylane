@@ -662,12 +662,11 @@ class TestQubitIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
         with tf.GradientTape() as tape:
             res = circuit(x, y)
-            if diff_method != "backprop":
-                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+            res = tf.experimental.numpy.hstack(res)
 
         expected = np.array(
             [
@@ -872,8 +871,7 @@ class TestQubitIntegration:
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(x)
-                if diff_method != "backprop":
-                    res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+                res = tf.experimental.numpy.hstack(res)
             g = tape2.jacobian(res, x, experimental_use_pfor=False)
 
         hess = tape1.jacobian(g, x)
@@ -1520,11 +1518,11 @@ class TestAutograph:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
         with tf.GradientTape() as tape:
             res = circuit(x, y)
-            res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+            res = tf.experimental.numpy.hstack(res)
 
         expected = np.array(
             [
@@ -1786,8 +1784,7 @@ class TestReturn:
 
         with tf.GradientTape() as tape:
             res = circuit(a)
-            if diff_method != "backprop":
-                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+            res = tf.experimental.numpy.hstack(res)
 
         jac = tape.jacobian(res, a)
 
@@ -1813,8 +1810,7 @@ class TestReturn:
 
         with tf.GradientTape() as tape:
             res = circuit(a, b)
-            if diff_method != "backprop":
-                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+            res = tf.experimental.numpy.hstack(res)
 
         jac = tape.jacobian(res, (a, b))
 
@@ -1845,8 +1841,7 @@ class TestReturn:
 
         with tf.GradientTape() as tape:
             res = circuit(a)
-            if diff_method != "backprop":
-                res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+            res = tf.experimental.numpy.hstack(res)
 
         jac = tape.jacobian(res, a)
 
@@ -1998,8 +1993,7 @@ class TestReturn:
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(par_0, par_1)
-                if diff_method != "backprop":
-                    res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+                res = tf.experimental.numpy.hstack(res)
 
             grad = tape2.jacobian(res, (par_0, par_1), experimental_use_pfor=False)
             grad = tf.concat(grad, 0)
@@ -2035,8 +2029,7 @@ class TestReturn:
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(params)
-                if diff_method != "backprop":
-                    res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+                res = tf.experimental.numpy.hstack(res)
 
             grad = tape2.jacobian(res, params, experimental_use_pfor=False)
 
@@ -2065,8 +2058,7 @@ class TestReturn:
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(par_0, par_1)
-                if diff_method != "backprop":
-                    res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+                res = tf.experimental.numpy.hstack(res)
 
             grad = tape2.jacobian(res, (par_0, par_1), experimental_use_pfor=False)
             grad = tf.concat(grad, 0)
@@ -2101,8 +2093,7 @@ class TestReturn:
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(params)
-                if diff_method != "backprop":
-                    res = tf.concat([tf.expand_dims(res[0], 0), res[1]], 0)
+                res = tf.experimental.numpy.hstack(res)
 
             grad = tape2.jacobian(res, params, experimental_use_pfor=False)
 
