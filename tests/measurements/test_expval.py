@@ -40,7 +40,7 @@ def custom_measurement_process(device, spy):
             new_res = meas.process_state(state=state, wire_order=device.wires)
         else:
             new_res = meas.process_samples(
-                samples=samples, shot_range=shot_range, bin_size=bin_size
+                samples=samples, wire_order=device.wires, shot_range=shot_range, bin_size=bin_size
             )
         assert qml.math.allequal(old_res, new_res)
 
