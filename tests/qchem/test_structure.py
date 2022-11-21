@@ -17,6 +17,9 @@ Unit tests for the functions of the structure module.
 import os
 import sys
 import pytest
+import functools as ft
+from unittest.mock import patch
+
 import pennylane as qml
 from pennylane import qchem
 from pennylane import numpy as np
@@ -314,6 +317,61 @@ def test_inconsistent_active_spaces(
         )
 
 
+def mock_get_cids(identifier, namespcae, pcp=None):
+    """Return PubChem Compound ID for the provided identifier"""
+    records = {
+        297: [
+            ("CH4", "name"),
+            ("74-82-8", "CAS"),
+            ("[C]", "SMILES"),
+            ("InChI=1S/CH4/h1H4", "InChI"),
+            ("VNWKTOKETHGBQD-UHFFFAOYSA-N", "InChIKey"),
+            (297, "CID"),
+        ],
+        783: [
+            ("H2", "name"),
+            ("InChI=1S/H2/h1H", "InChI"),
+            (783, "CID"),
+        ],
+    }
+    for key, val in records.items():
+        if (identifier, namespcae) in val:
+            return key
+    raise pcp.NotFoundError
+
+
+def mock_from_cid(cid, record_type, pcp=None):
+    """Return pubchem.Compound for the requested cid"""
+    records = {
+        297: {
+            "atoms": {"aid": [1, 2, 3, 4, 5], "element": [6, 1, 1, 1, 1]},
+            "coords": [
+                {
+                    "aid": [1, 2, 3, 4, 5],
+                    "conformers": [
+                        {
+                            "x": [0, 0.5541, 0.6833, -0.7782, -0.4593],
+                            "y": [0, 0.7996, -0.8134, -0.3735, 0.3874],
+                            "z": [0, 0.4965, -0.2536, 0.6692, -0.9121],
+                        }
+                    ],
+                }
+            ],
+        },
+        783: {
+            "atoms": {"aid": [1, 2], "element": [1, 1]},
+            "coords": [{"aid": [1, 2], "conformers": [{"x": [2, 3], "y": [0, 0]}]}],
+        },
+    }
+
+    if [cid, record_type] in [[297, "3d"], [783, "2d"]]:
+        return pcp.Compound(records[cid])
+
+    raise pcp.NotFoundError if [cid, record_type] == [783, "3d"] else ValueError(
+        "Provided CID (or Identifier) is None."
+    )
+
+
 @pytest.mark.parametrize(
     ("identifier", "identifier_type"),
     [
@@ -331,6 +389,7 @@ def test_inconsistent_active_spaces(
 def test_consistent_pubchem_mol_data(identifier, identifier_type):
     r"""Test that consistent molecular data from PubChem database is returned"""
     pcp = pytest.importorskip("pubchempy")
+
     ref_mol_data_3d = (
         ["C", "H", "H", "H", "H"],
         np.array(
@@ -345,11 +404,15 @@ def test_consistent_pubchem_mol_data(identifier, identifier_type):
     )
     ref_mol_data_2d = (["H", "H"], np.array([[3.77945225, 0.0, 0.0], [5.66917837, 0.0, 0.0]]))
 
-    pub_mol_data = qchem.mol_data(identifier, identifier_type)
-    ref_mol_data = ref_mol_data_2d if pub_mol_data[0] == ["H", "H"] else ref_mol_data_3d
+    mock_gc, mock_fc = ft.partial(mock_get_cids, pcp=pcp), ft.partial(mock_from_cid, pcp=pcp)
+    with patch.object(pcp.Compound, "get_cids", mock_gc) and patch.object(
+        pcp.Compound, "from_cid", mock_fc
+    ):
+        pub_mol_data = qchem.mol_data(identifier, identifier_type)
+        ref_mol_data = ref_mol_data_2d if pub_mol_data[0] == ["H", "H"] else ref_mol_data_3d
 
-    assert ref_mol_data[0] == pub_mol_data[0]
-    assert np.allclose(ref_mol_data[1], pub_mol_data[1])
+        assert ref_mol_data[0] == pub_mol_data[0]
+        assert np.allclose(ref_mol_data[1], pub_mol_data[1])
 
 
 @pytest.mark.parametrize(
@@ -365,15 +428,18 @@ def test_consistent_pubchem_mol_data(identifier, identifier_type):
 def test_inconsistent_pubchem_mol_data(identifier, identifier_type, message_match):
     r"""Test that an error is raised if an inconsistent parameters are provided to `mol_data`"""
     pcp = pytest.importorskip("pubchempy")
-    with pytest.raises(ValueError, match=message_match):
-        qchem.mol_data(identifier, identifier_type)
+
+    mock_gc, mock_fc = ft.partial(mock_get_cids, pcp=pcp), ft.partial(mock_from_cid, pcp=pcp)
+    with patch.object(pcp.Compound, "get_cids", mock_gc) and patch.object(
+        pcp.Compound, "from_cid", mock_fc
+    ):
+        with pytest.raises(ValueError, match=message_match):
+            qchem.mol_data(identifier, identifier_type)
 
 
-def test_import_pubchem_mol_data(monkeypatch):
+@patch.dict(sys.modules, {"pubchempy": None})
+def test_import_pubchem_mol_data():
     """Test that an exception is caught on import error for pubchempy"""
 
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "pubchempy", None)
-
-        with pytest.raises(ImportError, match="This feature requires pubchempy"):
-            qchem.mol_data(227, "CID")
+    with pytest.raises(ImportError, match="This feature requires pubchempy"):
+        qchem.mol_data(227, "CID")
