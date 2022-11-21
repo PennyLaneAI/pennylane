@@ -21,7 +21,6 @@ from itertools import product
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import _Expectation, _Probability
 
 from .utils import get_spectrum, join_spectra
 
@@ -397,7 +396,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         # After construction, check whether invalid operations (for a spectrum)
         # are present in the QNode
         for m in qnode.qtape.measurements:
-            if isinstance(m, (_Expectation, _Probability)):
+            if m.return_type not in {qml.measurements._Expectation, qml.measurements._Probability}:
                 raise ValueError(
                     f"The return_type {m.return_type.value} is not supported as it likely does "
                     "not admit a Fourier spectrum."
