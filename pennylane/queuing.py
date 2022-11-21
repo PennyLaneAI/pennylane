@@ -330,6 +330,8 @@ def apply(op, context=QueuingManager):
     """
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
+    if hasattr(context, "_queue"):
+        context = context._queue  # pylint: disable=protected-access
 
     if op in getattr(context, "queue", QueuingManager.active_context().queue):
         # Queuing contexts can only contain unique objects.

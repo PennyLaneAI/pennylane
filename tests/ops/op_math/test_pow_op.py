@@ -85,8 +85,8 @@ class TestConstructor:
             original_op = qml.PauliX(0)
             new_op = qml.pow(original_op, 0.5, lazy=False)
 
-        assert q._queue[original_op]["owner"] is new_op
-        assert q._queue[new_op]["owns"] is original_op
+        assert q[original_op]["owner"] is new_op
+        assert q[new_op]["owns"] is original_op
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
