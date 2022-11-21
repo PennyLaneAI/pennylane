@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the mutual_info module"""
+import copy
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
+from pennylane.measurements import MutualInfo
 from pennylane.measurements.mutual_info import _MutualInfo
+from pennylane.wires import Wires
 
 
 class TestMutualInfo:
@@ -70,3 +74,16 @@ class TestMutualInfo:
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.mutual_info(wires0=[0], wires1=[1])
         assert res.shape(dev) == shape
+
+    def test_properties(self):
+        """Test that the properties are correct."""
+        meas = qml.mutual_info(wires0=[0], wires1=[1])
+        assert meas.numeric_type == float
+        assert meas.return_type == MutualInfo
+
+    def test_copy(self):
+        """Test that the ``__copy__`` method also copies the ``log_base`` information."""
+        meas = qml.mutual_info(wires0=[0], wires1=[1], log_base=2)
+        meas_copy = copy.copy(meas)
+        assert meas_copy.log_base == 2
+        assert meas_copy.wires == Wires([0, 1])

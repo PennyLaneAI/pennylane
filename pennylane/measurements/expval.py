@@ -67,6 +67,10 @@ class _Expectation(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
+    @property
+    def return_type(self):
+        return Expectation
+
     def shape(self, device):
         if qml.active_return():
             return self._shape_new(device)
@@ -80,10 +84,6 @@ class _Expectation(SampleMeasurement, StateMeasurement):
             return ()
         num_shot_elements = sum(s.copies for s in device.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
-
-    @property
-    def return_type(self):
-        return Expectation
 
     def process_samples(
         self,
