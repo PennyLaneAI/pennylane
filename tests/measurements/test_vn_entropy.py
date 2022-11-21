@@ -39,7 +39,7 @@ class TestVnEntropy:
 
         res = circuit()
         new_res = qml.vn_entropy(wires=0).process_state(
-            state=circuit.device.state, wires=circuit.device.wires
+            state=circuit.device.state, wire_order=circuit.device.wires
         )
         assert qml.math.allclose(res, expected)
         assert qml.math.allclose(new_res, expected)
