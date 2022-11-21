@@ -9,6 +9,9 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
+  * Add `_Sample` class.
+    [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
+
   * Add `_State` class.
     [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
@@ -41,7 +44,6 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
-
 <h3>Improvements</h3>
 
 * Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
@@ -56,8 +58,11 @@
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
-
 <h3>Breaking changes</h3>
+
+* The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
+  `_MutualInfo` classes, which inherit from `MeasurementProcess`.
+  [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
 * Python 3.7 support is no longer maintained.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
@@ -69,13 +74,13 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * The following deprecated methods are removed:
   [(#3281)](https://github.com/PennyLaneAI/pennylane/pull/3281/)
 
-  - `qml.tape.get_active_tape`: Use `qml.QueuingManager.active_context()`
-  - `qml.transforms.qcut.remap_tape_wires`: Use `qml.map_wires`
-  - `qml.tape.QuantumTape.inv()`: Use `qml.tape.QuantumTape.adjoint()`
-  - `qml.tape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
-  - `qml.tape.QuantumTape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
-  - `qml.QueuingContext` is now `qml.QueuingManager`
-  - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info`: Use plain `update_info`
+  * `qml.tape.get_active_tape`: Use `qml.QueuingManager.active_context()`
+  * `qml.transforms.qcut.remap_tape_wires`: Use `qml.map_wires`
+  * `qml.tape.QuantumTape.inv()`: Use `qml.tape.QuantumTape.adjoint()`
+  * `qml.tape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
+  * `qml.tape.QuantumTape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
+  * `qml.QueuingContext` is now `qml.QueuingManager`
+  * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info`: Use plain `update_info`
 
 <h3>Documentation</h3>
 
@@ -103,7 +108,6 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * The `pad_with` argument in the `AmplitudeEmbedding` template is now compatible
   with all interfaces
   [(#3392)](https://github.com/PennyLaneAI/pennylane/pull/3392)
-
 
 <h3>Contributors</h3>
 
