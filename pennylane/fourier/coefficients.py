@@ -224,7 +224,7 @@ def _coefficients_no_filter(f, degree, use_broadcasting):
     Args:
         f (callable): function that takes a 1D array of scalar inputs
         degree (int or tuple[int]): max frequency of Fourier coeffs to be computed. For degree
-            :math:`d`, the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d `
+            :math:`d`, the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d`
             will be computed.
         use_broadcasting (bool): Whether or not to broadcast the parameters to execute
             multiple function calls at once. Broadcasting is performed along the last axis
