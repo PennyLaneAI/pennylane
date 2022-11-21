@@ -1760,9 +1760,9 @@ class TestReturn:
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = torch.numpy.array([0.1, 0.2])
+        a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        jac = jacobian(circuit)(a)
+        jac = jacobian(circuit, a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -1911,54 +1911,40 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        jac_fn = lambda x, y: jacobian(circuit, (x, y), create_graph=True)
+        def circuit_stack(x, y):
+            return torch.hstack(circuit(x, y))
+
+        jac_fn = lambda x, y: jacobian(circuit_stack, (x, y), create_graph=True)
 
         hess = jacobian(jac_fn, (par_0, par_1))
-        print(hess)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 
         assert isinstance(hess[0], tuple)
         assert len(hess[0]) == 2
-        assert isinstance(hess[0][0], tuple)
-        assert len(hess[0][0]) == 2
-        assert isinstance(hess[0][0][0], torch.Tensor)
-        assert hess[0][0][0].shape == ()
-        assert isinstance(hess[0][0][1], torch.Tensor)
-        assert hess[0][0][1].shape == ()
-        assert isinstance(hess[0][1], tuple)
-        assert len(hess[0][1]) == 2
-        assert isinstance(hess[0][1][0], torch.Tensor)
-        assert hess[0][1][0].shape == ()
-        assert isinstance(hess[0][1][1], torch.Tensor)
-        assert hess[0][1][1].shape == ()
+        assert isinstance(hess[0][0], torch.Tensor)
+        assert tuple(hess[0][0].shape) == (5,)
+        assert isinstance(hess[0][1], torch.Tensor)
+        assert tuple(hess[0][1].shape) == (5,)
 
         assert isinstance(hess[1], tuple)
         assert len(hess[1]) == 2
-        assert isinstance(hess[1][0], tuple)
-        assert len(hess[1][0]) == 2
-        assert isinstance(hess[1][0][0], torch.Tensor)
-        assert hess[1][0][0].shape == (4,)
-        assert isinstance(hess[1][0][1], torch.Tensor)
-        assert hess[1][0][1].shape == (4,)
-        assert isinstance(hess[1][1], tuple)
-        assert len(hess[1][1]) == 2
-        assert isinstance(hess[1][1][0], torch.Tensor)
-        assert hess[1][1][0].shape == (4,)
-        assert isinstance(hess[1][1][1], torch.Tensor)
-        assert hess[1][1][1].shape == (4,)
+        assert isinstance(hess[1][0], torch.Tensor)
+        assert tuple(hess[1][0].shape) == (5,)
+        assert isinstance(hess[1][1], torch.Tensor)
+        assert tuple(hess[1][1].shape) == (5,)
 
     def test_hessian_expval_probs_multiple_param_array(self, dev_name, diff_method, mode, shots):
         """The hessian of multiple measurements with a multiple param array return a single array."""
+        dev = qml.device(dev_name, wires=2, shots=shots)
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
-
-        params = torch.numpy.array([0.1, 0.2])
+        par = torch.tensor([0.1, 0.2], requires_grad=True)
 
         @qnode(dev, interface="torch", diff_method=diff_method, max_diff=2, mode=mode)
         def circuit(x):
@@ -1967,28 +1953,27 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        hess = torch.hessian(circuit)(params)
+        def circuit_stack(x):
+            return torch.hstack(circuit(x))
 
-        assert isinstance(hess, tuple)
-        assert len(hess) == 2
+        jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
 
-        assert isinstance(hess[0], torch.Tensor)
-        assert hess[0].shape == (2, 2)
+        hess = jacobian(jac_fn, par)
 
-        assert isinstance(hess[1], torch.Tensor)
-        assert hess[1].shape == (4, 2, 2)
+        assert isinstance(hess, torch.Tensor)
+        assert tuple(hess.shape) == (5, 2, 2)
 
     def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, mode, shots):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+        dev = qml.device(dev_name, wires=2, shots=shots)
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
-
-        par_0 = qml.numpy.array(0.1)
-        par_1 = qml.numpy.array(0.2)
+        par_0 = torch.tensor(0.1, requires_grad=True)
+        par_1 = torch.tensor(0.2, requires_grad=True)
 
         @qnode(dev, interface="torch", diff_method=diff_method, max_diff=2, mode=mode)
         def circuit(x, y):
@@ -1997,51 +1982,40 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        hess = torch.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        def circuit_stack(x, y):
+            return torch.hstack(circuit(x, y))
+
+        jac_fn = lambda x, y: jacobian(circuit_stack, (x, y), create_graph=True)
+
+        hess = jacobian(jac_fn, (par_0, par_1))
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 
         assert isinstance(hess[0], tuple)
         assert len(hess[0]) == 2
-        assert isinstance(hess[0][0], tuple)
-        assert len(hess[0][0]) == 2
-        assert isinstance(hess[0][0][0], torch.Tensor)
-        assert hess[0][0][0].shape == ()
-        assert isinstance(hess[0][0][1], torch.Tensor)
-        assert hess[0][0][1].shape == ()
-        assert isinstance(hess[0][1], tuple)
-        assert len(hess[0][1]) == 2
-        assert isinstance(hess[0][1][0], torch.Tensor)
-        assert hess[0][1][0].shape == ()
-        assert isinstance(hess[0][1][1], torch.Tensor)
-        assert hess[0][1][1].shape == ()
+        assert isinstance(hess[0][0], torch.Tensor)
+        assert tuple(hess[0][0].shape) == (5,)
+        assert isinstance(hess[0][1], torch.Tensor)
+        assert tuple(hess[0][1].shape) == (5,)
 
         assert isinstance(hess[1], tuple)
         assert len(hess[1]) == 2
-        assert isinstance(hess[1][0], tuple)
-        assert len(hess[1][0]) == 2
-        assert isinstance(hess[1][0][0], torch.Tensor)
-        assert hess[1][0][0].shape == (4,)
-        assert isinstance(hess[1][0][1], torch.Tensor)
-        assert hess[1][0][1].shape == (4,)
-        assert isinstance(hess[1][1], tuple)
-        assert len(hess[1][1]) == 2
-        assert isinstance(hess[1][1][0], torch.Tensor)
-        assert hess[1][1][0].shape == (4,)
-        assert isinstance(hess[1][1][1], torch.Tensor)
-        assert hess[1][1][1].shape == (4,)
+        assert isinstance(hess[1][0], torch.Tensor)
+        assert tuple(hess[1][0].shape) == (5,)
+        assert isinstance(hess[1][1], torch.Tensor)
+        assert tuple(hess[1][1].shape) == (5,)
 
     def test_hessian_var_probs_multiple_param_array(self, dev_name, diff_method, mode, shots):
         """The hessian of multiple measurements with a multiple param array return a single array."""
+        dev = qml.device(dev_name, wires=2, shots=shots)
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
-
-        params = torch.numpy.array([0.1, 0.2])
+        par = torch.tensor([0.1, 0.2], requires_grad=True)
 
         @qnode(dev, interface="torch", diff_method=diff_method, max_diff=2, mode=mode)
         def circuit(x):
@@ -2050,13 +2024,12 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        hess = torch.hessian(circuit)(params)
+        def circuit_stack(x):
+            return torch.hstack(circuit(x))
 
-        assert isinstance(hess, tuple)
-        assert len(hess) == 2
+        jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
 
-        assert isinstance(hess[0], torch.Tensor)
-        assert hess[0].shape == (2, 2)
-
-        assert isinstance(hess[1], torch.Tensor)
-        assert hess[1].shape == (4, 2, 2)
+        hess = jacobian(jac_fn, par)
+        print(hess)
+        assert isinstance(hess, torch.Tensor)
+        assert tuple(hess.shape) == (5, 2, 2)

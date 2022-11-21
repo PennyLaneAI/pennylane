@@ -113,7 +113,6 @@ class ExecuteTapes(torch.autograd.Function):
 
             if ctx.jacs:
                 ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
-
         return tuple(res)
 
     @staticmethod
@@ -139,7 +138,6 @@ class ExecuteTapes(torch.autograd.Function):
                     # and calling ``execute`` to compute the results.
                     # This will allow higher-order derivatives to be computed
                     # if requested.
-
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                         ctx.tapes,
                         dy,
@@ -165,7 +163,6 @@ class ExecuteTapes(torch.autograd.Function):
                 else:
                     # The derivative order is at the maximum. Compute the VJP
                     # in a non-differentiable manner to reduce overhead.
-
                     with qml.tape.Unwrap(*ctx.tapes):
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             ctx.tapes,
@@ -197,7 +194,7 @@ class ExecuteTapes(torch.autograd.Function):
         return (None,) + tuple(vjps)
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
     """Execute a batch of tapes with Torch parameters on a device.
 
     This function may be called recursively, if ``gradient_fn`` is a differentiable
@@ -357,11 +354,19 @@ class ExecuteTapesNew(torch.autograd.Function):
                 else:
                     sub_jac = [torch.as_tensor(t, device=ctx.torch_device) for t in ctx.jacs[i]]
                     ctx.jacs[i] = tuple(sub_jac)
+        # Do better
         if not len(res) == 1:
-            res = tuple(res)
+            multi_m = len(ctx.tapes[0].measurements) > 1
+            if multi_m:
+                res_post = []
+                for r in res:
+                    res_post.extend(r)
+                res = tuple(res_post)
+            else:
+                res = tuple(res)
+                print(res)
         else:
             res = res[0]
-        print("res", res)
         return res
 
     @staticmethod
@@ -392,7 +397,6 @@ class ExecuteTapesNew(torch.autograd.Function):
                     # This will allow higher-order derivatives to be computed
                     # if requested.
 
-                    # reduction extend
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                         ctx.tapes,
                         dy,
@@ -400,25 +404,47 @@ class ExecuteTapesNew(torch.autograd.Function):
                         reduction="extend",
                         gradient_kwargs=ctx.gradient_kwargs,
                     )
-
                     # This is where the magic happens. Note that we call ``execute``.
                     # This recursion, coupled with the fact that the gradient transforms
                     # are differentiable, allows for arbitrary order differentiation.
-                    vjps = processing_fn(
-                        *execute(
-                            vjp_tapes,
-                            ctx.device,
-                            ctx.execute_fn,
-                            ctx.gradient_fn,
-                            ctx.gradient_kwargs,
-                            _n=ctx._n + 1,
-                            max_diff=ctx.max_diff,
-                        )
+                    res = execute(
+                        vjp_tapes,
+                        ctx.device,
+                        ctx.execute_fn,
+                        ctx.gradient_fn,
+                        ctx.gradient_kwargs,
+                        _n=ctx._n + 1,
+                        max_diff=ctx.max_diff,
                     )
+                    # Do better
+                    if multi_measurements[0] and ctx.max_diff != 1:
+                        tape_measurement_len = [len(tape.measurements) for tape in vjp_tapes]
+
+                        # Post process the results
+                        res_post = []
+                        sum = 0
+                        for i in tape_measurement_len:
+                            res_post.append(tuple(res[0][sum : sum + i]))
+                            sum = sum + i
+                        res = [res_post]
+                    vjps = processing_fn(*res)
 
                 else:
                     # The derivative order is at the maximum. Compute the VJP
                     # in a non-differentiable manner to reduce overhead.
+
+                    # Do better
+                    if multi_measurements[0] and ctx.max_diff != 1:
+                        dy = [dy]
+                        tape_measurement_len = [len(tape.measurements) for tape in ctx.tapes]
+
+                        # Post process the dys
+                        dys = []
+                        sum = 0
+                        for i in tape_measurement_len:
+                            dys.append(tuple(dy[0][sum : sum + i]))
+                            sum = sum + i
+                        dy = dys
 
                     with qml.tape.Unwrap(*ctx.tapes):
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
@@ -428,7 +454,8 @@ class ExecuteTapesNew(torch.autograd.Function):
                             reduction="extend",
                             gradient_kwargs=ctx.gradient_kwargs,
                         )
-                    vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
+
+                        vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
 
             else:
                 # Gradient function is not a gradient transform
@@ -446,11 +473,10 @@ class ExecuteTapesNew(torch.autograd.Function):
                 vjps = _compute_vjps_new(dy, jacs, multi_measurements, device=ctx.torch_device)
         # The output of backward must match the input of forward.
         # Therefore, we return `None` for the gradient of `kwargs`.
-        print("vjps", vjps)
         return (None,) + tuple(vjps)
 
 
-def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
     """Execute a batch of tapes with Torch parameters on a device.
 
     This function may be called recursively, if ``gradient_fn`` is a differentiable

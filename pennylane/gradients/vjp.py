@@ -132,7 +132,6 @@ def compute_vjp_single_new(dy, jac, num=None):
             return res
         # Single measurement with no dimension e.g. expval
         if num == 1:
-            print(dy_row, jac)
             jac = qml.math.reshape(qml.math.stack(jac), (1, -1))
             res = qml.math.tensordot(jac, dy_row, [[0], [0]])
 
