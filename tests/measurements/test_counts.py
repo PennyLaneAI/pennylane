@@ -56,7 +56,7 @@ class TestCounts:
     def test_counts_properties(self):
         """Test that the properties are correct."""
         meas1 = qml.counts(wires=0)
-        meas2 = qml.counts(obs=qml.PauliX(0), all_outcomes=True)
+        meas2 = qml.counts(op=qml.PauliX(0), all_outcomes=True)
         assert meas1.samples_computational_basis is True
         assert meas1.return_type == Counts
         assert meas2.samples_computational_basis is False
