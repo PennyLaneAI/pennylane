@@ -396,7 +396,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         # After construction, check whether invalid operations (for a spectrum)
         # are present in the QNode
         for m in qnode.qtape.measurements:
-            if m.return_type not in {qml.measurements._Expectation, qml.measurements._Probability}:
+            if not isinstance(m, (qml.measurements._Expectation, qml.measurements._Probability)):
                 raise ValueError(
                     f"The return_type {m.return_type.value} is not supported as it likely does "
                     "not admit a Fourier spectrum."
