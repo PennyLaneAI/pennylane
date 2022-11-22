@@ -16,6 +16,7 @@ Contains the QuantumPhaseEstimation template.
 """
 # pylint: disable=too-many-arguments,arguments-differ
 import pennylane as qml
+from pennylane.queuing import QueuingManager
 from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops import Hadamard, ControlledQubitUnitary
 
@@ -205,6 +206,14 @@ class QuantumPhaseEstimation(Operation):
         ]
 
         return new_op
+
+    def queue(self, context=QueuingManager):
+        if isinstance(self.data[0], Operator):
+            context.update_info(self.data[0], owner=self)
+            context.append(self, owns=self.data[0])
+        else:
+            context.append(self)
+        return self
 
     @staticmethod
     def _compute_decomposition_op(operator, estimation_wires):
