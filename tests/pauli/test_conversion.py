@@ -96,3 +96,25 @@ class TestDecomposition:
 
         assert isinstance(ps, qml.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
+
+    def test_wire_order(self):
+        wire_order1 = ['a', 0]
+        wire_order2 = ['auxiliary', 'working']
+        hamiltonian = np.array([[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]])
+
+        for wire_order in (wire_order1, wire_order2):
+            h = qml.pauli_decompose(hamiltonian, wire_order=wire_order)
+            ps = qml.pauli_decompose(hamiltonian, pauli=True, wire_order=wire_order)
+
+            assert ps.wires == set(wire_order)
+            assert h.wires.toset() == set(wire_order)
+
+    def test_wire_error(self):
+        wire_order = [0]
+        hamiltonian = np.array([[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]])
+
+        with pytest.raises(ValueError, match="number of wires 1 is not compatible with number of qubits 2"):
+            h = qml.pauli_decompose(hamiltonian, wire_order=wire_order)
+
+        with pytest.raises(ValueError, match="number of wires 1 is not compatible with number of qubits 2"):
+            ps = qml.pauli_decompose(hamiltonian, pauli=True, wire_order=wire_order)
