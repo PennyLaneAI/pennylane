@@ -154,6 +154,11 @@ def _equal_operation(
 ):
     """Determine whether two Operations objects are equal."""
 
+    if not isinstance(
+        op2, type(op1)
+    ):  # needed to clarify in cases involving PauliX/Y/Z (Observable/Operation)
+        return False
+
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
 
@@ -212,6 +217,27 @@ def _equal_hermitians(op1: Hermitian, op2: Hermitian, **kwargs):
     """Determine whether two Hermitian objects are equal. Comparison of Hermitian objects uses _equal_operation
     logic to compare matrix elements with qml.math.allclose"""
     return _equal_operation(op1, op2)
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_pauli(op1: Observable, op2: Union[Observable, Operation], **kwargs):
+    """Deal with the messy thing that happens because PauliX, PauliY and PauliZ are both Operations and Observables.
+    Assumes the function is accessed via singledispatch from _equals and therefore that op1 is not Hamiltonian,
+    Tensor or Hermitian"""
+
+    # if op1 also isn't a Pauli operator, then comparison has not been implemented for this type of Observable
+    if not isinstance(op1, (qml.PauliX, qml.PauliY, qml.PauliZ)):
+        raise NotImplementedError(
+            f"Comparison between {type(op1)} and {type(op2)} not implemented."
+        )
+
+    # if op2 is also PauliX/Y/Z, compare them as Operations
+    if isinstance(op2, (qml.PauliX, qml.PauliY, qml.PauliZ)):
+        return _equal_operation(op1, op2)
+
+    # otherwise compare based on the type of op2
+    return _equal(op2, op1)  # pylint: disable=arguments-out-of-order
 
 
 @_equal.register
