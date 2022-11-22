@@ -77,6 +77,17 @@ OUTPUTS = [-1.5, -6, -1.5, -8]
 class TestHamiltonianExpand:
     """Tests for the hamiltonian_expand transform"""
 
+    def test_ham_with_no_terms_raises(self):
+        """Tests that the hamiltonian_expand transform raises an error for a Hamiltonian with no terms."""
+        mps = [qml.expval(qml.Hamiltonian([], []))]
+        tape = qml.tape.QuantumTape([], mps)
+
+        with pytest.raises(
+            ValueError,
+            match="The Hamiltonian in the tape has no terms defined - cannot perform the Hamiltonian expansion.",
+        ):
+            qml.transforms.hamiltonian_expand(tape)
+
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians(self, tape, output):
         """Tests that the hamiltonian_expand transform returns the correct value"""

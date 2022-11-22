@@ -118,15 +118,18 @@ def hamiltonian_expand(tape, group=True):
     2
     """
 
-    hamiltonian = tape.measurements[0].obs
-
     if (
-        not isinstance(hamiltonian, qml.Hamiltonian)
-        or len(tape.measurements) > 1
+        len(tape.measurements) != 1
+        or not isinstance(hamiltonian := tape.measurements[0].obs, qml.Hamiltonian)
         or tape.measurements[0].return_type != qml.measurements.Expectation
     ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
+        )
+
+    if len(hamiltonian.coeffs) == 0 and len(hamiltonian.ops) == 0:
+        raise ValueError(
+            "The Hamiltonian in the tape has no terms defined - cannot perform the Hamiltonian expansion."
         )
 
     # note: for backward passes of some frameworks
