@@ -323,7 +323,7 @@ class TestReturnWithShotVectors:
 
         def cost(a):
             res = circuit(a)
-            return qml.math.stack([np.hstack(r) for r in res])
+            return qml.math.stack([qml.math.hstack(r) for r in res])
 
         jac = qml.jacobian(cost)(a)
 
@@ -350,7 +350,7 @@ class TestReturnWithShotVectors:
 
         def cost(a, b):
             res = circuit(a, b)
-            return qml.math.stack([np.hstack(r) for r in res])
+            return qml.math.stack([qml.math.hstack(r) for r in res])
 
         jac = qml.jacobian(cost, argnum=[0, 1])(a, b)
 
@@ -379,7 +379,7 @@ class TestReturnWithShotVectors:
 
         def cost(a):
             res = circuit(a)
-            return qml.math.stack([np.hstack(r) for r in res])
+            return qml.math.stack([qml.math.hstack(r) for r in res])
 
         jac = qml.jacobian(cost)(a)
 
@@ -534,7 +534,7 @@ class TestReturnWithShotVectors:
         def cost(x, y):
             def cost2(x, y):
                 res = circuit(x, y)
-                return qml.math.stack([np.hstack(r) for r in res])
+                return qml.math.stack([qml.math.hstack(r) for r in res])
 
             return qml.math.stack(qml.jacobian(cost2, argnum=[0, 1])(x, y))
 
@@ -571,7 +571,7 @@ class TestReturnWithShotVectors:
         def cost(x):
             def cost2(x):
                 res = circuit(x)
-                return qml.math.stack([np.hstack(r) for r in res])
+                return qml.math.stack([qml.math.hstack(r) for r in res])
 
             return qml.jacobian(cost2)(x)
 
@@ -650,7 +650,7 @@ class TestReturnShotVectorIntegration:
 
         def cost(x, y):
             res = circuit(x, y)
-            return qml.math.stack([np.hstack(r) for r in res])
+            return qml.math.stack([qml.math.hstack(r) for r in res])
 
         all_res = qml.jacobian(cost, argnum=[0, 1])(x, y)
 
