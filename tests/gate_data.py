@@ -54,6 +54,14 @@ ECR = math.array(
         [-1j * 1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
     ]
 )
+CH = math.array(
+    [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
+        [0, 0, 1 / math.sqrt(2), -1 / math.sqrt(2)],
+    ]
+)  # CH gate
 
 # Three qubit gates
 CSWAP = math.array(
