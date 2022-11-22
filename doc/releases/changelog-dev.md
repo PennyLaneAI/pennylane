@@ -43,38 +43,45 @@
 
 * Support for purity computation is added. The `qml.math.purity` function computes the purity from a state vector or a density matrix:
 
-    ```pycon
-    >>> x = [1, 0, 0, 1] / np.sqrt(2)
-    >>> qml.math.purity(x, [0, 1])
-    1.0
-    >>> qml.math.purity(x, [0])
-    0.5
-    
-    >>> x = [[1 / 2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1 / 2]]
-    >>> qml.math.purity(x, [0, 1])
-    0.5
-    ```
-    The `qml.qinfo.purity` can be used to transform a QNode returning a state to a function that returns the purity:
-    ```python3
-    dev = qml.device("default.mixed", wires=2)
+  [(#3290)](https://github.com/PennyLaneAI/pennylane/pull/3290)
 
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.IsingXX(x, wires=[0, 1])
-        return qml.state()
-    ```
-    ```pycon
-    >>> qml.qinfo.purity(circuit, wires=[0])(np.pi / 2)
-    0.5
-    >>> qml.qinfo.purity(circuit, wires=[0, 1])(np.pi / 2)
-    1.0
-    ```
-    Taking the gradient is also supported:
-    ```pycon
-    >>> param = np.array(np.pi / 4, requires_grad=True)
-    >>> qml.grad(qml.qinfo.purity(circuit, wires=[0]))(param)
-    -0.5
-    ```
+  ```pycon
+  >>> x = [1, 0, 0, 1] / np.sqrt(2)
+  >>> qml.math.purity(x, [0, 1])
+  1.0
+  >>> qml.math.purity(x, [0])
+  0.5
+    
+  >>> x = [[1 / 2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1 / 2]]
+  >>> qml.math.purity(x, [0, 1])
+  0.5
+  ```
+
+  The `qml.qinfo.purity` can be used to transform a QNode returning a state to a function that returns the purity:
+
+  ```python3
+  dev = qml.device("default.mixed", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+    qml.IsingXX(x, wires=[0, 1])
+    return qml.state()
+  ```
+
+  ```pycon
+  >>> qml.qinfo.purity(circuit, wires=[0])(np.pi / 2)
+  0.5
+  >>> qml.qinfo.purity(circuit, wires=[0, 1])(np.pi / 2)
+  1.0
+  ```
+
+  Taking the gradient is also supported:
+
+  ```pycon
+  >>> param = np.array(np.pi / 4, requires_grad=True)
+  >>> qml.grad(qml.qinfo.purity(circuit, wires=[0]))(param)
+  -0.5
+  ```
 
 <h3>Improvements</h3>
 

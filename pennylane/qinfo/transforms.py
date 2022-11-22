@@ -71,7 +71,7 @@ def purity(qnode, wires):
     r"""Compute the purity of a :class:`~.QNode` returning :func:`~.state`.
 
     .. math::
-        \gamma = \Text{Tr}(\rho^2)
+        \gamma = \text{Tr}(\rho^2)
 
     where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
     :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
@@ -81,7 +81,7 @@ def purity(qnode, wires):
     the overall state, include all wires in the ``wires`` argument.
 
     Args:
-        qnode (tensor_like): A :class:`.QNode` returning a :func:`~.state`.
+        qnode (pennylane.QNode): A :class:`.QNode` objeect returning a :func:`~.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:

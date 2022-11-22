@@ -459,7 +459,7 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     r"""Computes the purity from a state vector or density matrix.
 
     .. math::
-        \gamma = \Text{Tr}(\rho^2)
+        \gamma = \text{Tr}(\rho^2)
 
     where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
     :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
@@ -471,11 +471,11 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     Args:
         state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
         indices (list(int)): List of indices in the considered subsystem.
-        check_state (bool): If True, the function will check the state validity (shape and norm).
+        check_state (bool): If ``True``, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
     Returns:
-        float: purity of the considered subsystem.
+        float: Purity of the considered subsystem.
 
     **Example**
 
@@ -532,7 +532,7 @@ def _compute_purity(density_matrix):
         density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
 
     Returns:
-        float: purity of the density matrix.
+        float: Purity of the density matrix.
 
     **Example**
 
@@ -545,8 +545,8 @@ def _compute_purity(density_matrix):
     1
 
     """
-    evs = qml.math.eigvalsh(density_matrix)
-    return np.sum(evs**2)
+    matrix_pow = qml.math.dot(density_matrix, density_matrix)
+    return qml.math.real(qml.math.trace(matrix_pow))
 
 
 def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
