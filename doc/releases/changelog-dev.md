@@ -4,6 +4,17 @@
 
 <h3>New features since last release</h3>
 
+* Add the controlled Hadamard gate.
+  ```pycon
+  >>> ch = qml.CH(wires=[0, 1])
+  >>> matrix = ch.compute_matrix()
+  [[ 1.          0.          0.          0.        ]
+   [ 0.          1.          0.          0.        ]
+   [ 0.          0.          0.70710678  0.70710678]
+   [ 0.          0.          0.70710678 -0.70710678]]
+  ```
+  [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
+  
 * Support custom measurement processes:
   * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
     method to process samples/quantum state.
