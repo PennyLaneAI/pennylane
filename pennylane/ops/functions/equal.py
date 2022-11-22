@@ -36,12 +36,12 @@ def equal(
 
     .. Warning::
 
-        The compare method does **not** check if the matrix representation
+        The equal function does **not** check if the matrix representation
         of a :class:`~.Hermitian` observable is equal to an equivalent
         observable expressed in terms of Pauli matrices, or as a
         linear combination of Hermitians.
         To do so would require the matrix form of Hamiltonians and Tensors
-        be calculated, which would drastically increase runtime.
+        be calculated, which may drastically increase runtime.
 
         The kwargs ``check_interface`` and ``check_trainability`` can only be set when
         comparing ``Operation`` objects. Comparisons of ``MeasurementProcess`` or ``Observable``
@@ -59,7 +59,7 @@ def equal(
     Returns:
         bool: ``True`` if the operators or measurement processes are equal, else ``False``
 
-    **Examples**
+    **Example**
 
     Given two operators or measurement processes, ``qml.equal`` determines their equality.
 
@@ -186,7 +186,7 @@ def _equal_operation(
 @_equal.register
 # pylint: disable=unused-argument
 def _equal_observables(op1: Observable, op2: Observable, **kwargs):
-    """Determine whether two Observables objects are equal"""
+    """Determine whether two Observable objects are equal"""
     return _obs_comparison_data(op1) == _obs_comparison_data(op2)
 
 

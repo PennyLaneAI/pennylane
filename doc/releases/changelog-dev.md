@@ -59,9 +59,8 @@
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
 
-* Extended the `qml.equal` function to Observables
+* Extended the `qml.equal` function to `Observable` objects.
   [(#3390)](https://github.com/PennyLaneAI/pennylane/pull/3390)
-
 
 <h3>Breaking changes</h3>
 
