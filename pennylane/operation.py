@@ -1038,7 +1038,7 @@ class Operator(abc.ABC):
         if z == 0:
             return []
         if z == 1:
-            return [copy.copy(self)]
+            return [qml.apply(self)]
         raise PowUndefinedError
 
     def queue(self, context=QueuingManager):

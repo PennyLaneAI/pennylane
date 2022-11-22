@@ -182,9 +182,9 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 4))
     def test_phase_estimated_ops(self, param):
-        """Tests that the QPE works correctly for operators"""
+        """Tests that the QPE works correctly for compound operators"""
 
-        unitary = [qml.RX(param, wires=[0]), qml.CNOT(wires=[0, 1])]
+        unitary = qml.RX(param, wires=[0]) @ qml.CNOT(wires=[0, 1])
 
         # Analytical eigenvectors and phase of the unitary
         eig_vec = np.array([-1 / 2, -1 / 2, 1 / 2, 1 / 2])
@@ -198,8 +198,8 @@ class TestDecomposition:
             dev = qml.device("default.qubit", wires=wires)
 
             # Offset the index of target wires to test the wire map
-            estimation_wires = range(wires - 2)
-            target_wires = [wires - 2, wires - 1]
+            estimation_wires = range(2, wires)
+            target_wires = [0, 1]
 
             with qml.tape.QuantumTape() as tape:
 
@@ -207,9 +207,7 @@ class TestDecomposition:
                 qml.QubitStateVector(eig_vec, wires=target_wires)
 
                 # Perform QPE
-                qml.QuantumPhaseEstimation(
-                    unitary, target_wires=target_wires, estimation_wires=estimation_wires
-                )
+                qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
 
                 # Find probabilities
                 qml.probs(estimation_wires)
@@ -229,23 +227,8 @@ class TestDecomposition:
         # This is a large error, but we'd need to push the qubit number up more to get it lower
         assert np.allclose(estimates[-1], phase, rtol=1e-2)
 
-    def test_unitary_not_operators(self):
-        """Tests the case where the unitary provided is invalid"""
-
-        unitary = [qml.RX(np.pi / 2, wires=[0]), [[1, 0], [0, 1]]]
-        estimation_wires = [2, 3]
-        target_wires = [0, 1]
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="The unitary can only be a matrix or an array of operators.",
-        ):
-            qml.QuantumPhaseEstimation(
-                unitary, target_wires=target_wires, estimation_wires=estimation_wires
-            )
-
-    def test_target_wires_not_specified(self):
-        """Tests the case where target wires are not specified"""
+    def test_wires_specified(self):
+        """Tests errors with specifying target_wires and estimation_wires"""
 
         unitary = unitary_group.rvs(4, random_state=1967)
 
@@ -255,23 +238,39 @@ class TestDecomposition:
         ):
             qml.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
 
-    def test_ops_mismatch_wires(self):
-        """Tests that the QPE throws errors for mismatching number of wires"""
-
-        unitary = [qml.RX(0.5, wires=0), qml.CNOT(wires=[0, 1])]
-
-        estimation_wires = [1]
-        target_wires = [0]
-
-        # Perform QPE
+        unitary = qml.RX(3, wires=[0])
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="The number of target wires does not match the number of wires defined "
-            "in the unitary operators.",
+            match="The unitary is expressed as an operator, which already has target wires "
+            "defined, do not additionally specify target wires.",
         ):
-            qml.QuantumPhaseEstimation(
-                unitary, target_wires=target_wires, estimation_wires=estimation_wires
-            )
+            qml.QuantumPhaseEstimation(unitary, target_wires=[1], estimation_wires=[2, 3])
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="No estimation wires specified.",
+        ):
+            qml.QuantumPhaseEstimation(unitary)
+
+    def test_map_wires(self):
+        """Tests that QPE behaves correctly in a wire map"""
+
+        unitary = qml.RX(np.pi / 4, wires=[0]) @ qml.CNOT(wires=[0, 1])
+        qpe = qml.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
+        new_qpe = qml.map_wires(
+            qpe,
+            wire_map={
+                0: 2,
+                1: 3,
+                2: 4,
+                3: 5,
+            },
+        )
+
+        assert list(new_qpe.wires) == [2, 3, 4, 5]
+        assert list(new_qpe._hyperparameters["target_wires"]) == [2, 3]
+        assert list(new_qpe._hyperparameters["estimation_wires"]) == [4, 5]
+        assert list(new_qpe.data[0].wires) == [2, 3]
 
     def test_adjoint(self):
         """Test that the QPE adjoint works."""
