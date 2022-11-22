@@ -1073,9 +1073,6 @@ class QubitDevice(Device):
                 [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
             )
 
-        # normalize the probabilities due to floating point errors
-        state_probability = state_probability / np.sum(state_probability)
-
         return np.random.choice(basis_states, shots, p=state_probability)
 
     def generate_basis_states(self, num_wires, dtype=np.uint32):

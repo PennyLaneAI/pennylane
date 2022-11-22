@@ -49,10 +49,10 @@ class TestReturnWithShotVectors:
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
         def circuit(a):
             qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
+            qml.RX(0.7, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = tf.Variable(0.1, dtype=tf.float64)
+        a = tf.Variable(1.5, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = circuit(a)
@@ -79,8 +79,8 @@ class TestReturnWithShotVectors:
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = tf.Variable(0.1, dtype=tf.float64)
-        b = tf.Variable(0.2, dtype=tf.float64)
+        a = tf.Variable(1.5, dtype=tf.float64)
+        b = tf.Variable(0.7, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = circuit(a, b)
@@ -110,7 +110,7 @@ class TestReturnWithShotVectors:
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = tf.Variable([0.1, 0.2], dtype=tf.float64)
+        a = tf.Variable([1.5, 0.7], dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = circuit(a)
@@ -135,10 +135,10 @@ class TestReturnWithShotVectors:
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
         def circuit(a):
             qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
+            qml.RX(0.7, wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1, dtype=tf.float64)
+        a = tf.Variable(1.5, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = circuit(a)
@@ -166,8 +166,8 @@ class TestReturnWithShotVectors:
             qml.RX(b, wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1, dtype=tf.float64)
-        b = tf.Variable(0.2, dtype=tf.float64)
+        a = tf.Variable(1.5, dtype=tf.float64)
+        b = tf.Variable(0.7, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = circuit(a, b)
@@ -198,7 +198,7 @@ class TestReturnWithShotVectors:
             qml.RX(a[1], wires=0)
             return qml.probs(wires=[0, 1])
 
-        a = tf.Variable([0.1, 0.2], dtype=tf.float64)
+        a = tf.Variable([1.5, 0.7], dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = circuit(a)
@@ -218,8 +218,8 @@ class TestReturnWithShotVectors:
         """The gradient of multiple measurements with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        par_0 = tf.Variable(0.1, dtype=tf.float64)
-        par_1 = tf.Variable(0.2, dtype=tf.float64)
+        par_0 = tf.Variable(1.5, dtype=tf.float64)
+        par_1 = tf.Variable(0.7, dtype=tf.float64)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, max_diff=1, **gradient_kwargs)
@@ -258,7 +258,7 @@ class TestReturnWithShotVectors:
             qml.RY(a[2], wires=0)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        a = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
+        a = tf.Variable([0.7, 0.9, 1.1], dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = circuit(a)
@@ -282,10 +282,10 @@ class TestReturnWithShotVectors:
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
         def circuit(a):
             qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
+            qml.RX(0.7, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1, dtype=tf.float64)
+        a = tf.Variable(1.5, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = circuit(a)
@@ -312,8 +312,8 @@ class TestReturnWithShotVectors:
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = tf.Variable(0.1, dtype=tf.float64)
-        b = tf.Variable(0.2, dtype=tf.float64)
+        a = tf.Variable(1.5, dtype=tf.float64)
+        b = tf.Variable(0.7, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = circuit(a, b)
@@ -343,7 +343,7 @@ class TestReturnWithShotVectors:
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        a = tf.Variable([0.1, 0.2], dtype=tf.float64)
+        a = tf.Variable([1.5, 0.7], dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = circuit(a)
@@ -363,8 +363,8 @@ class TestReturnWithShotVectors:
         """The hessian of a single measurement with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        par_0 = tf.Variable(0.1, dtype=tf.float64)
-        par_1 = tf.Variable(0.2, dtype=tf.float64)
+        par_0 = tf.Variable(1.5, dtype=tf.float64)
+        par_1 = tf.Variable(0.7, dtype=tf.float64)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, max_diff=2, **gradient_kwargs)
