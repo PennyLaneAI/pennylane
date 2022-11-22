@@ -238,9 +238,11 @@ class TestDecompositions:
                 mats.append(np.kron(np.eye(2), i.matrix()))
             elif i.wires == Wires([0, 1]) and i.name == "CZ":
                 mats.append(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]))
+            else:
+                raise Exception("Unexpected gate in decomposition.")
 
         decomposed_matrix = np.linalg.multi_dot(mats)
-        print(decomposed_matrix, op.matrix())
+
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_ISWAP_decomposition(self, tol):
