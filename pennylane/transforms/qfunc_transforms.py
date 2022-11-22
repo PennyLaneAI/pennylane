@@ -65,9 +65,6 @@ def make_tape(fn):
     """
 
     def wrapper(*args, **kwargs):
-        # active_tape = qml.QueuingManager.active_context()
-        # new_tape = qml.tape.QuantumTape() if active_tape is None else active_tape.__class__()
-        # with qml.QueuingManager.stop_recording(), new_tape:
         with qml.QueuingManager.stop_recording(), qml.tape.QuantumTape() as new_tape:
             fn(*args, **kwargs)
 
