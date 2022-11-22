@@ -236,7 +236,7 @@ equal_tensors = [
 ]
 
 equal_hamiltonians_and_tensors = [
-    (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)]), qml.PauliY(1) @ qml.PauliX(0), True),
+    (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliY(1) @ qml.PauliX(0), True),
     (
         qml.Hamiltonian(
             [0.5, 0.5],
@@ -245,25 +245,26 @@ equal_hamiltonians_and_tensors = [
         qml.PauliZ(0) @ qml.PauliY(1),
         True,
     ),
-    (qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)]), qml.PauliX(0) @ qml.PauliY(1), False),
-    (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)]), qml.PauliX(4) @ qml.PauliY(1), False),
+    (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(0) @ qml.PauliY(1), True),
+    (qml.Hamiltonian([2], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(0) @ qml.PauliY(1), False),
+    (qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)]), qml.PauliX(4) @ qml.PauliY(1), False),
     (
-        qml.Hamiltonian([1, 1], [qml.PauliX("a"), qml.PauliZ("b")]),
+        qml.Hamiltonian([1], [qml.PauliX("a") @ qml.PauliZ("b")]),
         qml.PauliX("a") @ qml.PauliZ("b"),
         True,
     ),
     (
-        qml.Hamiltonian([1, 1], [qml.PauliX("a"), qml.PauliZ("b")]),
+        qml.Hamiltonian([1], [qml.PauliX("a") @ qml.PauliZ("b")]),
         qml.PauliX("b") @ qml.PauliZ("a"),
         False,
     ),
     (
-        qml.Hamiltonian([1, 1], [qml.PauliX(1.2), qml.PauliZ(0.2)]),
+        qml.Hamiltonian([1], [qml.PauliX(1.2) @ qml.PauliZ(0.2)]),
         qml.PauliX(1.2) @ qml.PauliZ(0.2),
         True,
     ),
     (
-        qml.Hamiltonian([1, 1], [qml.PauliX(1.2), qml.PauliZ(0.2)]),
+        qml.Hamiltonian([1], [qml.PauliX(1.2) @ qml.PauliZ(0.2)]),
         qml.PauliX(1.3) @ qml.PauliZ(2),
         False,
     ),
@@ -1101,7 +1102,9 @@ class TestEqual:
 
     def test_equal_with_different_arithmetic_depth(self):
         """Test equal method with two operators with different arithmetic depth."""
-        assert not qml.equal(qml.adjoint(qml.PauliX(0)), qml.adjoint(qml.adjoint(qml.PauliX(0))))
+        op1 = qml.RX(0.3, wires=0)
+        op2 = qml.prod(op1, qml.RY(0.25, wires=1))
+        assert not qml.equal(op1, op2)
 
     def test_equal_with_nested_operators_raises_error(self):
         """Test that the equal method with two operators with the same arithmetic depth (>0) raises
