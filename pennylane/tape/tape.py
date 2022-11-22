@@ -231,7 +231,7 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
 
 
 # pylint: disable=too-many-public-methods
-class QuantumTape(QuantumScript):
+class QuantumTape(QuantumScript, AnnotatedQueue):
     """A quantum tape recorder, that records and stores variational quantum programs.
 
     Args:
@@ -350,7 +350,7 @@ class QuantumTape(QuantumScript):
         self, ops=None, measurements=None, prep=None, name=None, do_queue=True, _update=True
     ):
         self.do_queue = do_queue
-        self._queue = AnnotatedQueue()
+        AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
 
     def __enter__(self):
@@ -358,15 +358,14 @@ class QuantumTape(QuantumScript):
         try:
             if self.do_queue:
                 QueuingManager.append(self)
-            self._queue.__enter__()
-            return self
+            return AnnotatedQueue.__enter__(self)
         except Exception as _:
             QuantumTape._lock.release()
             raise
 
     def __exit__(self, exception_type, exception_value, traceback):
         try:
-            self._queue.__exit__(exception_type, exception_value, traceback)
+            AnnotatedQueue.__exit__(self, exception_type, exception_value, traceback)
             # After other optimizations in #2963, #2986 and follow-up work, we should check whether
             # calling `_process_queue` only if there is no `exception_type` saves time. This would
             # be done via the following:
@@ -395,10 +394,17 @@ class QuantumTape(QuantumScript):
 
         Also calls `_update()` which sets many attributes.
         """
-        self._prep, self._ops, self._measurements = process_queue(self._queue)
+        self._prep, self._ops, self._measurements = process_queue(self)
         self._update()
 
-    @property
-    def queue(self):
-        """Returns a list of objects in the tape's AnnotatedQueue"""
-        return self._queue.queue
+    def __getitem__(self, key):
+        try:
+            return QuantumScript.__getitem__(self, key)
+        except:
+            return AnnotatedQueue.__getitem__(self, key)
+
+    def __setitem__(self, key, val):
+        AnnotatedQueue.__setitem__(self, key, val)
+
+    def __hash__(self):
+        return QuantumScript.__hash__(self)
