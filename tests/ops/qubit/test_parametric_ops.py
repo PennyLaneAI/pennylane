@@ -2905,7 +2905,7 @@ class TestPauliRot:
 
         val = np.cos(-theta / 2) + 1j * np.sin(-theta / 2)
         exp = torch.tensor(np.diag([val, val]), device=torch_device)
-        assert torch.allclose(mat, exp)
+        assert qml.math.allclose(mat, exp)
 
     def test_pauli_rot_generator(self):
         """Test that the generator of the PauliRot operation
