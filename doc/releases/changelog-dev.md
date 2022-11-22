@@ -61,6 +61,9 @@
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
+* Remove private `_wires` setter from the `Controlled.map_wires` method.
+  [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
+
 <h3>Breaking changes</h3>
 
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
