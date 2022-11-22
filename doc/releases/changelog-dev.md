@@ -47,6 +47,48 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
+* Support for purity computation is added. The `qml.math.purity` function computes the purity from a state vector or a density matrix:
+
+  [#3290](https://github.com/PennyLaneAI/pennylane/pull/3290)
+
+  ```pycon
+  >>> x = [1, 0, 0, 1] / np.sqrt(2)
+  >>> qml.math.purity(x, [0, 1])
+  1.0
+  >>> qml.math.purity(x, [0])
+  0.5
+    
+  >>> x = [[1 / 2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1 / 2]]
+  >>> qml.math.purity(x, [0, 1])
+  0.5
+  ```
+
+  The `qml.qinfo.purity` can be used to transform a QNode returning a state to a function that returns the purity:
+
+  ```python3
+  dev = qml.device("default.mixed", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+    qml.IsingXX(x, wires=[0, 1])
+    return qml.state()
+  ```
+
+  ```pycon
+  >>> qml.qinfo.purity(circuit, wires=[0])(np.pi / 2)
+  0.5
+  >>> qml.qinfo.purity(circuit, wires=[0, 1])(np.pi / 2)
+  1.0
+  ```
+
+  Taking the gradient is also supported:
+
+  ```pycon
+  >>> param = np.array(np.pi / 4, requires_grad=True)
+  >>> qml.grad(qml.qinfo.purity(circuit, wires=[0]))(param)
+  -0.5
+  ```
+
 <h3>Improvements</h3>
 
 * Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
@@ -120,6 +162,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Utkarsh Azad
+Astral Cai
 Pieter Eendebak
 Lillian M. A. Frederiksen
 Soran Jahangiri
