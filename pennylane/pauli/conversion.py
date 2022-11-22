@@ -25,7 +25,7 @@ from pennylane.ops import Hamiltonian
 from .pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z, mat_map, op_map
 
 
-def decompose(
+def pauli_decompose(
     H, hide_identity=False, wire_order=None, pauli=False
 ) -> Union[Hamiltonian, PauliSentence]:
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
@@ -49,7 +49,7 @@ def decompose(
 
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
-    >>> H = decompose(A)
+    >>> H = pauli_decompose(A)
     >>> print(H)
     (-1.0) [I0 I1]
     + (-1.5) [X1]
@@ -64,7 +64,7 @@ def decompose(
 
     We can return a ``~.PauliSentence`` instance by using the keyword argument ``pauli=True``:
 
-    >>> ps = decompose(A, pauli=True)
+    >>> ps = pauli_decompose(A, pauli=True)
     >>> print(ps)
     -1.0 * I
     + -1.5 * X(1)
@@ -81,7 +81,9 @@ def decompose(
     N = 2**n
 
     if wire_order is not None and len(wire_order) != n:
-        raise ValueError(f"number of wires {len(wire_order)} is not compatible with number of qubits {n}")
+        raise ValueError(
+            f"number of wires {len(wire_order)} is not compatible with number of qubits {n}"
+        )
 
     if wire_order is None:
         wire_order = range(n)

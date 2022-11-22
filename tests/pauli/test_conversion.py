@@ -19,7 +19,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ
-from pennylane.pauli import decompose
 
 
 test_hamiltonians = [
@@ -30,7 +29,7 @@ test_hamiltonians = [
 
 
 class TestDecomposition:
-    """Tests the decompose function"""
+    """Tests the pauli_decompose function"""
 
     @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((4, 2)), np.ones((2, 4))])
     def test_wrong_shape(self, hamiltonian):
@@ -40,19 +39,19 @@ class TestDecomposition:
             ValueError,
             match="The matrix should have shape",
         ):
-            decompose(hamiltonian)
+            qml.pauli_decompose(hamiltonian)
 
     def test_not_hermitian(self):
         """Tests that an exception is raised if the Hamiltonian is not Hermitian, i.e.
         equal to its own conjugate transpose"""
         with pytest.raises(ValueError, match="The matrix is not Hermitian"):
-            decompose(np.array([[1, 2], [3, 4]]))
+            qml.pauli_decompose(np.array([[1, 2], [3, 4]]))
 
     def test_hide_identity_true(self):
         """Tests that there are no Identity observables in the tensor products
         when hide_identity=True"""
         H = np.array(np.diag([0, 0, 0, 1]))
-        coeff, obs_list = decompose(H, hide_identity=True).terms()
+        coeff, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
         tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
 
         for tensor in tensors:
@@ -67,14 +66,14 @@ class TestDecomposition:
         the identity matrix, and Pauli matrices."""
         allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
 
-        decomposed_coeff, decomposed_obs = decompose(hamiltonian, hide_identity).terms()
+        decomposed_coeff, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
         assert all([isinstance(o, allowed_obs) for o in decomposed_obs])
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_result_length(self, hamiltonian):
         """Tests that tensors are composed of a number of terms equal to the number
         of qubits."""
-        decomposed_coeff, decomposed_obs = decompose(hamiltonian).terms()
+        decomposed_coeff, decomposed_obs = qml.pauli_decompose(hamiltonian).terms()
         n = int(np.log2(len(hamiltonian)))
 
         tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
@@ -84,7 +83,7 @@ class TestDecomposition:
     def test_decomposition(self, hamiltonian):
         """Tests that decompose_hamiltonian successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
-        decomposed_coeff, decomposed_obs = decompose(hamiltonian).terms()
+        decomposed_coeff, decomposed_obs = qml.pauli_decompose(hamiltonian).terms()
 
         linear_comb = sum([decomposed_coeff[i] * o.matrix() for i, o in enumerate(decomposed_obs)])
         assert np.allclose(hamiltonian, linear_comb)
@@ -92,7 +91,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_to_paulisentence(self, hamiltonian):
         """Test that a PauliSentence is returned if the kwarg paulis is set to True"""
-        ps = decompose(hamiltonian, pauli=True)
+        ps = qml.pauli_decompose(hamiltonian, pauli=True)
         num_qubits = int(np.log2(len(hamiltonian)))
 
         assert isinstance(ps, qml.pauli.PauliSentence)

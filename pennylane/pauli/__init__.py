@@ -39,7 +39,7 @@ from .utils import (
 )
 
 from .conversion import (
-    decompose,
+    pauli_decompose,
 )
 
 from .grouping import (

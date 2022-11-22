@@ -58,7 +58,7 @@ def _generator_hamiltonian(gen, op):
         elif isinstance(gen, qml.SparseHamiltonian):
             mat = gen.parameters[0].toarray()
 
-        H = qml.pauli.decompose(mat, wire_order=wires, hide_identity=True)
+        H = qml.pauli_decompose(mat, wire_order=wires, hide_identity=True)
 
     elif isinstance(gen, qml.operation.Observable):
         H = 1.0 * gen
