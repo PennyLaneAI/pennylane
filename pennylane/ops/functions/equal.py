@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
 from pennylane.operation import Operation, Operator, Observable
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.ops.qubit.observables import Hermitian
 
 
 def equal(
@@ -188,6 +189,14 @@ def _equal_operation(
 def _equal_observables(op1: Observable, op2: Observable, **kwargs):
     """Determine whether two Observable objects are equal"""
     return _obs_comparison_data(op1) == _obs_comparison_data(op2)
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_hermitians(op1: Hermitian, op2: Hermitian, **kwargs):
+    """Determine whether two Hermitian objects are equal. Comparison of Hermitian objects uses _equal_operation
+    logic to compare matrix elements with qml.math.allclose"""
+    return _equal_operation(op1, op2)
 
 
 @_equal.register
