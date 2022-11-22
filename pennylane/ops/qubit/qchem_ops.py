@@ -1104,13 +1104,14 @@ class FermionicSWAP(Operation):
 
     .. code-block::
 
-        dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev)
-        def circuit(phi):
-            qml.PauliX(wires=1)
-            qml.FermionicSWAP(phi, wires=[0, 1])
-            return qml.state()
-        circuit(0.1)
+        >>> dev = qml.device('default.qubit', wires=2)
+        >>> @qml.qnode(dev)
+        ... def circuit(phi):
+        ...     qml.PauliX(wires=1)
+        ...     qml.FermionicSWAP(phi, wires=[0, 1])
+        ...     return qml.state()
+        >>> circuit(0.1)
+        array([0.+0.j, 0.9975+0.04992j, 0.0025-0.04992j, 0.+0.j])
     """
 
     num_wires = 2
@@ -1220,7 +1221,7 @@ class FermionicSWAP(Operation):
          RX(-1.5707963267948966, wires=[1]),
          RZ(0.1, wires=[0]),
          RZ(0.1, wires=[1]),
-         PauliRot(-0.2, wires=[0, 1])]
+         Exp(0.1j Identity)]
         """
         decomp_ops = [
             qml.Hadamard(wires=wires[0]),
@@ -1236,7 +1237,7 @@ class FermionicSWAP(Operation):
             qml.RZ(phi / 2, wires=wires[0]),
             qml.RZ(phi / 2, wires=wires[1]),
             # for correcting global phase
-            qml.PauliRot(-phi, "II", wires=[wires[0], wires[1]]),
+            qml.exp(qml.Identity(wires=[wires[0], wires[1]]), 0.5j * phi),
         ]
         return decomp_ops
 
