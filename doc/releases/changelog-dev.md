@@ -9,6 +9,9 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
+  * Add `_State` class.
+    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+
   * Add `_VnEntropy` class.
     [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
@@ -17,6 +20,7 @@
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
+  [(#3378)](https://github.com/PennyLaneAI/pennylane/pull/3378)
  
   ```pycon
   >>> mol_data("BeH2")
@@ -63,17 +67,38 @@
 
 <h3>Improvements</h3>
 
+* Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
+  [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
+
+* `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
+   [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
 
 * Improve performance of `Wires.all_wires`.
   [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
 
-
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
+
 <h3>Breaking changes</h3>
 
+* Python 3.7 support is no longer maintained.
+  [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
+
 <h3>Deprecations</h3>
+
+Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://docs.pennylane.ai/en/latest/development/deprecations.html).
+
+* The following deprecated methods are removed:
+  [(#3281)](https://github.com/PennyLaneAI/pennylane/pull/3281/)
+
+  - `qml.tape.get_active_tape`: Use `qml.QueuingManager.active_context()`
+  - `qml.transforms.qcut.remap_tape_wires`: Use `qml.map_wires`
+  - `qml.tape.QuantumTape.inv()`: Use `qml.tape.QuantumTape.adjoint()`
+  - `qml.tape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
+  - `qml.tape.QuantumTape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
+  - `qml.QueuingContext` is now `qml.QueuingManager`
+  - `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info`: Use plain `update_info`
 
 <h3>Documentation</h3>
 
@@ -92,6 +117,9 @@
   expansion now occurs.
   [(#3369)](https://github.com/PennyLaneAI/pennylane/pull/3369)
 
+* `qml.matrix(op)` now fails if the operator truly has no matrix (eg. `Barrier`) to match `op.matrix()`
+  [(#3386)](https://github.com/PennyLaneAI/pennylane/pull/3386)
+
 
 <h3>Contributors</h3>
 
@@ -99,7 +127,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Utkarsh Azad
 Pieter Eendebak
+Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
-
