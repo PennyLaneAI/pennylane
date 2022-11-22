@@ -141,7 +141,7 @@ def _equal(
 ):
     """Calls relevant comparison function using singledispatch. Defaults to _equal_operation."""
     try:
-        return _equal_operation(op1, op2**kwargs)
+        return _equal_operation(op1, op2, **kwargs)
     except:  # pylint: disable=raise-missing-from
         raise NotImplementedError(
             f"Comparison between {type(op1)} and {type(op2)} not implemented."
@@ -226,23 +226,20 @@ def _equal_hermitians(op1: Hermitian, op2: Hermitian, **kwargs):
 
 @_equal.register
 # pylint: disable=unused-argument
-def _equal_pauli(op1: Observable, op2: Union[Observable, Operation], **kwargs):
-    """Deal with the messy thing that happens because PauliX, PauliY and PauliZ are both Operations and Observables.
-    Assumes the function is accessed via singledispatch from _equals and therefore that op1 is not Hamiltonian,
-    Tensor or Hermitian"""
+def _equal_other_observables(op1: Observable, op2: Union[Observable, Operation], **kwargs):
+    """Deals with the messy thing that happens because some Operators are both Operations and Observables.
+    Assumes the function is accessed via singledispatch from _equals and therefore that op1 is not one of
+    the explicitly supported Observables classes (Hamiltonian, Tensor or Hermitian)."""
 
-    # if op1 also isn't a Pauli operator, then comparison has not been implemented for this type of Observable
-    if not isinstance(op1, (qml.PauliX, qml.PauliY, qml.PauliZ)):
-        raise NotImplementedError(
-            f"Comparison between {type(op1)} and {type(op2)} not implemented."
-        )
+    # if they are both operations that just also register as observables, default to _equal_operations
+    if isinstance(op1, Operation) and isinstance(op2, Operation):
+        return _equal_operation(op1, op2, **kwargs)
 
-    # if op2 is also PauliX/Y/Z, compare them as Operations
-    if isinstance(op2, (qml.PauliX, qml.PauliY, qml.PauliZ)):
-        return _equal_operation(op1, op2)
+    # if op2 is one of the supported Observable classes, compare based on class of op2
+    if isinstance(op2, (Hamiltonian, Tensor, Hermitian)):
+        return _equal(op2, op1)  # pylint: disable=arguments-out-of-order
 
-    # otherwise compare based on the type of op2
-    return _equal(op2, op1)  # pylint: disable=arguments-out-of-order
+    raise NotImplementedError(f"Comparison between {type(op1)} and {type(op2)} not implemented.")
 
 
 @_equal.register
