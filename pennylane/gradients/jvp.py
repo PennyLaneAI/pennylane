@@ -114,10 +114,12 @@ def compute_jvp_single(tangent, jac, jitting=False):
         else:
             jac = qml.math.reshape(jac, (1, -1))
 
-        # TODO: clean
-        from jax import numpy as jnp
-
-        res = qml.math.tensordot(jac, jnp.array(tangent), 0)
+        if not jitting:
+            res = qml.math.tensordot(jac, tangent, [[0], [0]])
+        else:
+            # TODO: clean
+            from jax import numpy as jnp
+            res = qml.math.tensordot(jac, jnp.array(tangent), 0)
     # Multiple params
     else:
         # No trainable parameters (adjoint)
