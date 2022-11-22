@@ -120,7 +120,7 @@ def equal(
 
     # types don't have to be the same type, they just both have to be Observables
     if not isinstance(op2, type(op1)) and not isinstance(op1, Observable):
-            return False
+        return False
 
     return _equal(
         op1,
