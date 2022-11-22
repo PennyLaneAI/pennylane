@@ -28,17 +28,32 @@ class TestDecomposition:
         op = qml.QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
         tape = op.expand()
 
+        unitary = qml.QubitUnitary(m, wires=[0])
         with qml.tape.QuantumTape() as tape2:
-            qml.Hadamard(1),
-            qml.ControlledQubitUnitary(m @ m, control_wires=[1], wires=[0]),
-            qml.Hadamard(2),
-            qml.ControlledQubitUnitary(m, control_wires=[2], wires=[0]),
+            qml.Hadamard(1)
+            qml.Hadamard(2)
+            qml.ctrl(qml.pow(unitary, 2), control=[1])
+            qml.ctrl(qml.pow(unitary, 1), control=[2])
             qml.adjoint(qml.QFT(wires=[1, 2]))
 
         assert len(tape2.queue) == len(tape.queue)
-        # qml.equal doesn't work for Adjoint op yet, so we stop before we get to it.
-        for op1, op2 in zip(tape.queue[:-1], tape2.queue[:-1]):
+        # qml.equal doesn't work for Adjoint or Pow op yet, so we stop before we get to it.
+        for op1, op2 in zip(tape.queue[:2], tape2.queue[:2]):
             assert qml.equal(op1, op2)
+
+        assert qml.equal(tape.queue[2].base, tape2.queue[2].base)
+        assert tape.queue[2].z == tape2.queue[2].z
+
+        assert qml.equal(tape.queue[3].base.base, tape2.queue[3].base.base)
+        assert tape.queue[3].base.z, tape2.queue[3].base.z
+        assert tape.queue[3].control_wires == tape2.queue[3].control_wires
+
+        assert qml.equal(tape.queue[4].base, tape2.queue[4].base)
+        assert tape.queue[4].z == tape2.queue[4].z
+
+        assert qml.equal(tape.queue[5].base.base, tape2.queue[5].base.base)
+        assert tape.queue[5].base.z == tape2.queue[5].base.z
+        assert tape.queue[5].control_wires == tape2.queue[5].control_wires
 
         assert isinstance(tape[-1], qml.ops.op_math.Adjoint)
         assert qml.equal(tape[-1].base, qml.QFT(wires=(1, 2)))

@@ -18,7 +18,6 @@ Contains the QuantumPhaseEstimation template.
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 from pennylane.operation import AnyWires, Operation, Operator
-from pennylane.ops import Hadamard, ControlledQubitUnitary
 
 
 class QuantumPhaseEstimation(Operation):
@@ -110,7 +109,7 @@ class QuantumPhaseEstimation(Operation):
             phase_estimated = 4 * np.pi * (1 - phase_estimated)
 
         We can also perform phase estimation on an operator. Note that since operators are defined
-        with target wires, the target wires should not be provided for the PQE.
+        with target wires, the target wires should not be provided for the QPE.
 
         .. code-block:: python
 
@@ -157,6 +156,9 @@ class QuantumPhaseEstimation(Operation):
             raise qml.QuantumFunctionError(
                 "Target wires must be specified if the unitary is expressed as a matrix."
             )
+
+        else:
+            unitary = qml.QubitUnitary(unitary, wires=target_wires)
 
         # Estimation wires are required, but kept as an optional argument so that it can be
         # placed after target_wires for backwards compatibility.
@@ -208,32 +210,9 @@ class QuantumPhaseEstimation(Operation):
         return new_op
 
     def queue(self, context=QueuingManager):
-        if isinstance(self.data[0], Operator):
-            context.update_info(self.data[0], owner=self)
-            context.append(self, owns=self.data[0])
-        else:
-            context.append(self)
+        context.update_info(self.data[0], owner=self)
+        context.append(self, owns=self.data[0])
         return self
-
-    @staticmethod
-    def _compute_decomposition_op(operator, estimation_wires):
-        """Construct the decomposition of QPE for the unitary specified as an operator
-
-        Args:
-            operator (Operator): the operator unitary to do phase estimation with
-            estimation_wires (Any or Iterable[Any]): the wires to be used for phase estimation
-
-        Returns:
-            list[.Operator]: decomposition of the phase estimation subroutine
-
-        """
-
-        op_list = [qml.Hadamard(w) for w in estimation_wires]
-        pow_ops = (qml.pow(operator, 2**i) for i in range(len(estimation_wires) - 1, -1, -1))
-        op_list.extend(qml.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires))
-        op_list.append(qml.adjoint(qml.templates.QFT(wires=estimation_wires)))
-
-        return op_list
 
     @staticmethod
     def compute_decomposition(
@@ -244,12 +223,10 @@ class QuantumPhaseEstimation(Operation):
         .. math:: O = O_1 O_2 \dots O_n.
 
 
-
         .. seealso:: :meth:`~.QuantumPhaseEstimation.decomposition`.
 
         Args:
-            unitary (array or Operator): the phase estimation unitary, specified
-                as a matrix or an operator
+            unitary (Operator): the phase estimation unitary, specified as an operator
             wires (Any or Iterable[Any]): wires that the QPE circuit acts on
             target_wires (Any or Iterable[Any]): the target wires to apply the unitary
             estimation_wires (Any or Iterable[Any]): the wires to be used for phase estimation
@@ -258,25 +235,9 @@ class QuantumPhaseEstimation(Operation):
             list[.Operator]: decomposition of the operator
         """
 
-        # If the unitary is a single operator
-        if isinstance(unitary, Operator):
-            return QuantumPhaseEstimation._compute_decomposition_op(unitary, estimation_wires)
-
-        # If the unitary is expressed as a matrix
-        unitary_powers = [unitary]
-
-        for _ in range(len(estimation_wires) - 1):
-            new_power = unitary_powers[-1] @ unitary_powers[-1]
-            unitary_powers.append(new_power)
-
-        op_list = []
-
-        for wire in estimation_wires:
-            op_list.append(Hadamard(wire))
-            op_list.append(
-                ControlledQubitUnitary(unitary_powers.pop(), control_wires=wire, wires=target_wires)
-            )
-
+        op_list = [qml.Hadamard(w) for w in estimation_wires]
+        pow_ops = (qml.pow(unitary, 2**i) for i in range(len(estimation_wires) - 1, -1, -1))
+        op_list.extend(qml.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires))
         op_list.append(qml.adjoint(qml.templates.QFT(wires=estimation_wires)))
 
         return op_list
