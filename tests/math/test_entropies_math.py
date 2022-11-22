@@ -18,12 +18,94 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from tests.math.test_density_matrices import single_wires_list
 
 pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
+
+
+class TestPurity:
+    """Tests for computing the purity of a given state"""
+
+    state_vector = [([1, 0, 0, 1] / np.sqrt(2), 1 / 2, 1), ([1 / 2, 1 / 2, 1 / 2, 1 / 2], 1, 1)]
+
+    density_matrices = [
+        ([[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]], 1 / 2, 1),
+        ([[1 / 2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1 / 2]], 1 / 2, 1 / 2),
+        ([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], 1, 1),
+    ]
+
+    single_wires_list = [
+        [0],
+        [1],
+    ]
+
+    full_wires_list = [[0, 1]]
+
+    check_state = [True, False]
+
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("state_vector,subsystems_purity,full_purity", state_vector)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_state_vector_purity_single_wire(
+        self, state_vector, wires, check_state, subsystems_purity, full_purity, interface
+    ):
+        """Tests purity of sub-systems of different state vectors"""
+
+        if interface:
+            state_vector = qml.math.asarray(state_vector, like=interface)
+
+        purity = qml.math.purity(state_vector, wires, check_state=check_state)
+        assert qml.math.allclose(purity, subsystems_purity)
+
+    @pytest.mark.parametrize("wires", full_wires_list)
+    @pytest.mark.parametrize("state_vector,subsystems_purity,full_purity", state_vector)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_state_vector_purity_full_wire(
+        self, state_vector, wires, check_state, subsystems_purity, full_purity, interface
+    ):
+        """Tests purity of different state vectors"""
+
+        if interface:
+            state_vector = qml.math.asarray(state_vector, like=interface)
+
+        purity = qml.math.purity(state_vector, wires, check_state=check_state)
+        assert qml.math.allclose(purity, full_purity)
+
+    @pytest.mark.parametrize("density_matrix,subsystems_purity,full_purity", density_matrices)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_density_matrices_purity_single_wire(
+        self, density_matrix, wires, check_state, subsystems_purity, full_purity, interface
+    ):
+        """Test purity for different density matrices."""
+
+        if interface:
+            density_matrix = qml.math.asarray(density_matrix, like=interface)
+
+        purity = qml.math.purity(density_matrix, wires, check_state=check_state)
+        assert qml.math.allclose(purity, subsystems_purity)
+
+    @pytest.mark.parametrize("density_matrix,subsystems_purity,full_purity", density_matrices)
+    @pytest.mark.parametrize("wires", full_wires_list)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_density_matrices_purity_full_wire(
+        self, density_matrix, wires, check_state, subsystems_purity, full_purity, interface
+    ):
+        """Test purity for different density matrices."""
+
+        if interface:
+            density_matrix = qml.math.asarray(density_matrix, like=interface)
+
+        purity = qml.math.purity(density_matrix, wires, check_state=check_state)
+        assert qml.math.allclose(purity, full_purity)
 
 
 class TestVonNeumannEntropy:

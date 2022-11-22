@@ -78,10 +78,7 @@ class TestVonNeumannEntropy:
         ):
             circuit(0.5)
 
-    single_wires_list = [
-        [0],
-        [1],
-    ]
+    single_wires_list = [[0], [1]]
 
     base = [2, np.exp(1), 10]
 
