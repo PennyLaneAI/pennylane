@@ -165,6 +165,11 @@ class TestMultipleOperations:
         expected_matrix = I_CNOT @ X_S_H
         assert np.allclose(matrix, expected_matrix)
 
+        qs = qml.tape.QuantumScript(tape.operations)
+        qs_matrix = qml.matrix(tape, wire_order)
+
+        assert np.allclose(qs_matrix, expected_matrix)
+
     def test_multiple_operations_qfunc(self):
         """Check the total matrix for a qfunc containing multiple gates"""
         wire_order = ["a", "b", "c"]
@@ -212,6 +217,10 @@ class TestWithParameterBroadcasting:
         matrix = qml.matrix(tape, wire_order)
         expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ np.kron(RX(0.7), S_H)]
         assert np.allclose(matrix, expected_matrix)
+
+        qs = qml.tape.QuantumScript(tape.operations)
+        qs_matrix = qml.matrix(qs, wire_order)
+        assert np.allclose(qs_matrix, expected_matrix)
 
     def test_multiple_operations_tape_leading_broadcasted_op(self):
         """Check the total matrix for a tape containing multiple gates
@@ -680,3 +689,19 @@ class TestDifferentiation:
         assert isinstance(matrix, qml.numpy.tensor)
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))
+
+
+class TestMeasurements:
+    @pytest.mark.parametrize(
+        "measurements,N",
+        [
+            ([qml.expval(qml.PauliX(0))], 2),
+            ([qml.probs(qml.PauliX(0)), qml.probs(qml.PauliZ(1))], 4),
+            ([qml.probs(wires=[0, 1])], 4),
+            ([qml.counts(wires=[0, 1, 2])], 8),
+        ],
+    )
+    def test_all_measurement_matrices_are_identity(self, measurements, N):
+        """Test that the matrix of a script with only observables is Identity."""
+        qscript = qml.tape.QuantumScript(measurements=measurements)
+        assert np.array_equal(qml.matrix(qscript), np.eye(N))

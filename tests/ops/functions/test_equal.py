@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as npp
+from pennylane.measurements import MeasurementProcess, ObservableReturnTypes
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qml.RX,
@@ -107,11 +108,68 @@ PARAMETRIZED_OPERATIONS_COMBINATIONS = list(
 )
 
 
+PARAMETRIZED_MEASUREMENTS = [
+    qml.sample(qml.PauliY(0)),
+    qml.sample(wires=0),
+    qml.sample(),
+    qml.counts(qml.PauliZ(0)),
+    qml.counts(wires=[0, 1]),
+    qml.counts(wires=[1, 0]),
+    qml.counts(),
+    qml.density_matrix(wires=0),
+    qml.density_matrix(wires=1),
+    qml.var(qml.PauliY(1)),
+    qml.var(qml.PauliY(0)),
+    qml.expval(qml.PauliX(0)),
+    qml.expval(qml.PauliX(1)),
+    qml.probs(wires=1),
+    qml.probs(wires=0),
+    qml.probs(qml.PauliZ(0)),
+    qml.probs(qml.PauliZ(1)),
+    qml.state(),
+    qml.vn_entropy(wires=0),
+    qml.vn_entropy(wires=0, log_base=np.e),
+    qml.mutual_info(wires0=[0], wires1=[1]),
+    qml.mutual_info(wires0=[1], wires1=[0]),
+    qml.mutual_info(wires0=[1], wires1=[0], log_base=2),
+    qml.classical_shadow(wires=[0, 1]),
+    qml.classical_shadow(wires=[1, 0]),
+    qml.shadow_expval(
+        H=qml.Hamiltonian(
+            [1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+        ),
+        k=2,
+    ),
+    qml.shadow_expval(
+        H=qml.Hamiltonian(
+            [1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1)]
+        )
+    ),
+    qml.shadow_expval(
+        H=qml.Hamiltonian(
+            [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        )
+    ),
+    MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, -1]),
+    MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, 2]),
+]
+PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
+    itertools.combinations(
+        PARAMETRIZED_MEASUREMENTS,
+        2,
+    )
+)
+
+
 class TestEqual:
     @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
     def test_equal_simple_diff_op(self, ops):
         """Test different operators return False"""
         assert not qml.equal(ops[0], ops[1], check_trainability=False, check_interface=False)
+
+    def test_equal_unsupported_op_type(self):
+        with pytest.raises(NotImplementedError, match="Comparison between "):
+            qml.equal(3, 4)
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
     def test_equal_simple_same_op(self, op1):
@@ -939,4 +997,21 @@ class TestEqual:
         """Test operations are not equal if one is inverted and the other is not."""
         op1 = qml.PauliX(0)
         op2 = qml.PauliX(0).inv()
+        assert not qml.equal(op1, op2)
+
+    # Measurements test cases
+    @pytest.mark.parametrize("ops", PARAMETRIZED_MEASUREMENTS_COMBINATIONS)
+    def test_not_equal_diff_measurement(self, ops):
+        """Test different measurements return False"""
+        assert not qml.equal(ops[0], ops[1])
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_MEASUREMENTS)
+    def test_equal_same_measurement(self, op1):
+        """Test same measurements return True"""
+        assert qml.equal(op1, op1)
+
+    @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
+    @pytest.mark.parametrize("op2", PARAMETRIZED_MEASUREMENTS)
+    def test_not_equal_operator_measurement(self, op1, op2):
+        """Test operator not equal to measurement"""
         assert not qml.equal(op1, op2)

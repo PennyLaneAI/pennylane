@@ -623,6 +623,14 @@ class TestBarrier:
         op = qml.Barrier(wires=(0, 1, 2, 3), only_visual=False)
         assert op.simplify() is op
 
+    def test_qml_matrix_fails(self):
+        """Test that qml.matrix(op) and op.matrix() both fail."""
+        op = qml.Barrier(0)
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            qml.matrix(op)
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.matrix()
+
 
 class TestWireCut:
     """Tests for the WireCut operator"""
@@ -652,6 +660,14 @@ class TestWireCut:
             ValueError, match="WireCut: wrong number of wires. At least one wire has to be given."
         ):
             qml.WireCut(wires=[])
+
+    def test_qml_matrix_fails(self):
+        """Test that qml.matrix(op) and op.matrix() both fail."""
+        op = qml.WireCut(0)
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            qml.matrix(op)
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.matrix()
 
 
 class TestMultiControlledX:
@@ -1034,6 +1050,13 @@ class TestMultiControlledX:
         mat1 = qml.MultiControlledX.compute_matrix([0, 1])
         mat2 = qml.MultiControlledX.compute_matrix([0, 1], control_values="11")
         assert np.allclose(mat1, mat2)
+
+    def test_repr(self):
+        """Test ``__repr__`` method that shows ``control_values``"""
+        wires = [0, 1, 2]
+        control_values = "01"
+        op_repr = qml.MultiControlledX(wires=wires, control_values=control_values).__repr__()
+        assert op_repr == f'MultiControlledX(wires={wires}, control_values="{control_values}")'
 
 
 period_two_ops = (

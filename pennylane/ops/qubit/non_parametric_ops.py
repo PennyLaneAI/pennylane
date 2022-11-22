@@ -2044,8 +2044,12 @@ class MultiControlledX(Operation):
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["control_values"] = control_values
+        self.total_wires = total_wires
 
-        super().__init__(wires=total_wires, do_queue=do_queue)
+        super().__init__(wires=self.total_wires, do_queue=do_queue)
+
+    def __repr__(self):
+        return f'MultiControlledX(wires={list(self.total_wires._labels)}, control_values="{self.hyperparameters["control_values"]}")'
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
@@ -2163,7 +2167,6 @@ class MultiControlledX(Operation):
         if len(control_wires) == 1:
             decomp = [qml.CNOT(wires=[control_wires[0], target_wire])]
         elif len(control_wires) == 2:
-
             decomp = [qml.Toffoli(wires=[*control_wires, target_wire])]
         else:
             num_work_wires_needed = len(control_wires) - 2

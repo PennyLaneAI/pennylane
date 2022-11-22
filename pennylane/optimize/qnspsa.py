@@ -95,9 +95,9 @@ class QNSPSAOptimizer:
     >>> params = np.random.rand(2)
     >>> opt = QNSPSAOptimizer(stepsize=5e-2)
     >>> for i in range(51):
-    >>> params, loss = opt.step_and_cost(cost, params)
-    >>> if i % 10 == 0:
-    ...     print(f"Step {i}: cost = {loss:.4f}")
+    >>>     params, loss = opt.step_and_cost(cost, params)
+    >>>     if i % 10 == 0:
+    ...         print(f"Step {i}: cost = {loss:.4f}")
     Step 0: cost = 0.9987
     Step 10: cost = 0.9841
     Step 20: cost = 0.8921

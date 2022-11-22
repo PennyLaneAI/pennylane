@@ -2963,10 +2963,10 @@ class TestQCutProcessingFn:
         def f(state, measurement):
             qml.QubitStateVector(state, wires=range(n))
             qml.QubitUnitary(U, wires=range(n))
-            return [qml.expval(qml.grouping.string_to_pauli_word(m)) for m in measurement]
+            return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
 
         prod_inp = itertools.product(range(4), repeat=n)
-        prod_out = qml.grouping.partition_pauli_group(n)
+        prod_out = qml.pauli.partition_pauli_group(n)
 
         results = []
 
@@ -3731,59 +3731,6 @@ class TestCutCircuitTransform:
 
         atol = 1e-2 if shots else 1e-8
         assert np.isclose(res, res_expected, atol=atol)
-
-
-class TestRemapTapeWires:
-    """Tests for the remap_tape_wires function"""
-
-    def test_raises(self):
-        """Test if a ValueError is raised when too few wires are provided"""
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.5, wires=2)
-            qml.RY(0.6, wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
-
-        with pytest.raises(ValueError, match="a 2-wire circuit on a 1-wire device"):
-            qcut.remap_tape_wires(tape, [0])
-
-    def test_mapping(self):
-        """Test if the function returns the expected tape when an observable measurement is
-        used"""
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.5, wires=2)
-            qml.RY(0.6, wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.expval(qml.PauliZ(2))
-
-        with qml.tape.QuantumTape() as expected_tape:
-            qml.RX(0.5, wires=0)
-            qml.RY(0.6, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-
-        new_tape = qcut.remap_tape_wires(tape, [0, 1])
-
-        compare_tapes(expected_tape, new_tape)
-
-    def test_mapping_tensor(self):
-        """Test if the function returns the expected tape when a tensor product measurement is
-        used"""
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.5, wires=2)
-            qml.RY(0.6, wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
-
-        with qml.tape.QuantumTape() as expected_tape:
-            qml.RX(0.5, wires=0)
-            qml.RY(0.6, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        new_tape = qcut.remap_tape_wires(tape, [0, 1])
-
-        compare_tapes(expected_tape, new_tape)
 
 
 class TestCutCircuitTransformValidation:
@@ -4717,7 +4664,7 @@ class TestAutoCutCircuit:
         with qml.tape.QuantumTape() as tape0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             if measure_all_wires:
-                qml.expval(qml.grouping.string_to_pauli_word("Z" * n_wires))
+                qml.expval(qml.pauli.string_to_pauli_word("Z" * n_wires))
             else:
                 qml.expval(qml.PauliZ(wires=n_wires - 1))
 
