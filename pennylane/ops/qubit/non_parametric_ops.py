@@ -1232,8 +1232,8 @@ class CH(Operation):
     .. math:: CY = \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & 1 & 0 & 0 \\
-            0 & 0 & -\frac{1}{\sqrt{2}} & -\frac{1}{\sqrt{2}} \\
-            0 & 0 & -\frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}}
+            0 & 0 & \frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}} \\
+            0 & 0 & \frac{1}{\sqrt{2}} & -\frac{1}{\sqrt{2}}
         \end{bmatrix}.
 
     .. note:: The first wire provided corresponds to the **control qubit**.
