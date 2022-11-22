@@ -512,6 +512,6 @@ class TestPauliSentence:
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a Hamiltonian."""
         with pytest.raises(
-            ValueError, match="Can't get the hamiltonian for an empty PauliSentence."
+            ValueError, match="Can't get the Hamiltonian for an empty PauliSentence."
         ):
             ps5.hamiltonian()
