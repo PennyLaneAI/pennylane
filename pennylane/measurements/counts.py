@@ -15,11 +15,16 @@
 """
 This module contains the qml.counts measurement.
 """
+# pylint: disable=too-many-arguments, abstract-method
+import copy
 import warnings
+from typing import Sequence, Tuple, Union
 
+import pennylane as qml
+from pennylane.operation import Observable
 from pennylane.wires import Wires
 
-from .measurements import AllCounts, Counts, MeasurementProcess
+from .measurements import AllCounts, Counts, ObservableReturnTypes, SampleMeasurement
 
 
 def counts(op=None, wires=None, all_outcomes=False):
@@ -135,7 +140,119 @@ def counts(op=None, wires=None, all_outcomes=False):
             )
         wires = Wires(wires)
 
+    # TODO: Remove this conditional branch when using `Counts.process` in devices
     if all_outcomes:
-        return MeasurementProcess(AllCounts, obs=op, wires=wires)
+        return _Counts(AllCounts, obs=op, wires=wires, all_outcomes=all_outcomes)
 
-    return MeasurementProcess(Counts, obs=op, wires=wires)
+    return _Counts(Counts, obs=op, wires=wires, all_outcomes=all_outcomes)
+
+
+# TODO: Make public when removing the ObservableReturnTypes enum
+class _Counts(SampleMeasurement):
+    """Measurement process that returns the samples of a given observable."""
+
+    def __init__(
+        self,
+        return_type: ObservableReturnTypes,
+        obs: Union[Observable, None] = None,
+        wires=None,
+        eigvals=None,
+        id=None,
+        all_outcomes=False,
+    ):
+        self.all_outcomes = all_outcomes
+        super().__init__(return_type, obs, wires, eigvals, id)
+
+    def process_samples(
+        self,
+        samples: Sequence[complex],
+        wire_order: Wires,
+        shot_range: Tuple[int] = None,
+        bin_size: int = None,
+    ):
+        samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
+            samples, wire_order, shot_range, bin_size
+        )
+
+        if bin_size is None:
+            return self._samples_to_counts(samples)
+
+        num_wires = len(self.wires) if self.wires else len(wire_order)
+        shape = (-1, bin_size, num_wires) if self.obs is None else (-1, bin_size)
+
+        return [self._samples_to_counts(bin_sample) for bin_sample in samples.reshape(shape)]
+
+    def _samples_to_counts(self, samples):
+        """Groups the samples into a dictionary showing number of occurences for
+        each possible outcome.
+
+        The format of the dictionary depends on obs.return_type, which is set when
+        calling measurements.counts by setting the kwarg all_outcomes (bool). By default,
+        the dictionary will only contain the observed outcomes. Optionally (all_outcomes=True)
+        the dictionary will instead contain all possible outcomes, with a count of 0
+        for those not observed. See example.
+
+
+        Args:
+            samples: samples in an array of dimension ``(shots,len(wires))``
+
+        Returns:
+            dict: dictionary with format ``{'outcome': num_occurences}``, including all
+                outcomes for the sampled observable
+
+        **Example**
+
+            >>> samples
+            tensor([[0, 0],
+                    [0, 0],
+                    [1, 0]], requires_grad=True)
+
+            By default, this will return:
+            >>> self._samples_to_counts(samples, obs, num_wires)
+            {'00': 2, '10': 1}
+
+            However, if obs.return_type is AllCounts, this will return:
+            >>> self._samples_to_counts(samples, obs, num_wires)
+            {'00': 2, '01': 0, '10': 1, '11': 0}
+
+            The variable all_outcomes can be set when running measurements.counts, i.e.:
+
+             .. code-block:: python3
+
+                dev = qml.device("default.qubit", wires=2, shots=4)
+
+                @qml.qnode(dev)
+                def circuit(x):
+                    qml.RX(x, wires=0)
+                    return qml.counts(all_outcomes=True)
+
+        """
+
+        outcomes = []
+
+        if self.obs is None:
+            # convert samples and outcomes (if using) from arrays to str for dict keys
+            num_wires = len(self.wires) if len(self.wires) > 0 else qml.math.shape(samples)[-1]
+            samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+            if self.all_outcomes:
+                outcomes = qml.QubitDevice.generate_basis_states(num_wires)
+                outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
+        elif self.all_outcomes:
+            outcomes = qml.eigvals(self.obs)
+
+        # generate empty outcome dict, populate values with state counts
+        outcome_dict = {k: qml.math.int64(0) for k in outcomes}
+        states, _counts = qml.math.unique(samples, return_counts=True)
+        for s, c in zip(states, _counts):
+            outcome_dict[s] = c
+
+        return outcome_dict
+
+    def __copy__(self):
+        return self.__class__(
+            self.return_type,
+            obs=copy.copy(self.obs),
+            eigvals=self._eigvals,
+            wires=self._wires,
+            all_outcomes=self.all_outcomes,
+        )
