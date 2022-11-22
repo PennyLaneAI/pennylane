@@ -938,3 +938,75 @@ def _check_state_vector(state_vector):
     if not is_abstract(norm):
         if not allclose(norm, 1.0, atol=1e-10):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+
+def min_entropy(state, base=None, check_state=False, c_dtype="complex128"):
+    r"""
+    Compute the min-entropy of a state.
+
+    .. math::
+        `\Min Entropy` = \RE{\infty}{X} = - \log_2 \max_{x \in \mathcal{X}} p(x)
+
+    The min entropy of a state is the negative log of the largest eigenvalue of the corresponding density matrix.
+
+    Args:
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Min-Entropy of the input state.
+
+    **Examples**
+
+    Each state can be given as a state vector in the computational basis or as a density matrix.
+
+    >>> x = np.array([1, 0])
+    >>> qml.math.min_entropy(x)
+    0.0
+
+    >>> y = np.array([1/np.sqrt(3), np.sqrt(2/3)])
+    >>> qml.math.min_entropy(y)
+    4.262249472335989e-06
+
+    The quantum states can be provided as density matrices as show in the example below:
+
+    >>> rho = np.array([[0.3, 0], [0, 0.7]])
+    >>> qml.math.min_entropy(rho)
+    0.35667494393873245
+
+    It is also possible to change the log base:
+
+    >>> qml.math.relative_entropy(rho, base=2)
+    0.5145731728297583
+
+    """
+
+    # Cast as a c_dtype array
+    state = cast(state, dtype=c_dtype)
+    len_state = state.shape[0]
+
+    if check_state:
+        if state.shape == (len_state,):
+            _check_state_vector(state)
+        else:
+            _check_density_matrix(state)
+
+    if state.shape == (len_state,):
+        state = qml.math.outer(state, np.conj(state))
+
+    if base:
+        div_base = np.log(base)
+    else:
+        div_base = 1
+
+    # eigenvalues of the input state
+    evs_state = qml.math.linalg.eigh(state)[0]
+
+    # cast all eigenvalues to real
+    evs_state = np.real(evs_state)
+
+    min_ent = -np.log(np.max(evs_state)) / div_base
+
+    return min_ent

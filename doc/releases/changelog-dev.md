@@ -73,6 +73,9 @@
 * Python 3.7 support is no longer maintained.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
 
+* Added `min_entropy` function in `pennylane/math/quantum.py` that takes either a state vector or a density matrix and logarithm base as input, and outputs it's minimum entropy.
+  [(#3153)](https://github.com/PennyLaneAI/pennylane/pull/3153)
+
 <h3>Deprecations</h3>
 
 Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://docs.pennylane.ai/en/latest/development/deprecations.html).
