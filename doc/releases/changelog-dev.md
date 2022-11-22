@@ -50,7 +50,7 @@
 * New `pauli_sentence()` function which takes native `Operator` or `Hamiltonian`
   instances representing a linear combination of Pauli words and returns 
   the equivalent `PauliSentence`.
-  [(#3252)](https://github.com/PennyLaneAI/pennylane/pull/3389)
+  [(#3389)](https://github.com/PennyLaneAI/pennylane/pull/3389)
 
   ```pycon
   >>> op = 1.23 * qml.prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
