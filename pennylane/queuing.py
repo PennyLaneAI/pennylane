@@ -126,18 +126,6 @@ use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=Fal
 import copy
 from collections import OrderedDict
 from contextlib import contextmanager
-from warnings import warn
-
-
-def __getattr__(name):
-    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
-    if name == "QueuingContext":
-        warn("QueuingContext has been renamed qml.queuing.QueuingManager.", UserWarning)
-        return QueuingManager
-    try:
-        return globals()[name]
-    except KeyError as e:
-        raise AttributeError from e
 
 
 class QueuingError(Exception):
@@ -291,20 +279,6 @@ class QueuingManager:
             cls.active_context().update_info(obj, **kwargs)
 
     @classmethod
-    def safe_update_info(cls, obj, **kwargs):
-        """Updates information of an object in the active queue if it is already in the queue.
-
-        Args:
-            obj: the object with metadata to be updated
-        """
-        warn(
-            "QueuingManager.safe_update_info is deprecated."
-            "It's behavior has been moved to `update_info`.",
-            UserWarning,
-        )
-        cls.update_info(obj, **kwargs)
-
-    @classmethod
     def get_info(cls, obj):
         """Retrieves information of an object in the active queue.
 
@@ -350,15 +324,6 @@ class AnnotatedQueue:
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
         if obj in self._queue:
             self._queue[obj].update(kwargs)
-
-    def safe_update_info(self, obj, **kwargs):
-        """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
-        warn(
-            "AnnotatedQueue.safe_update_info is deprecated."
-            "It's behavior has been moved to `update_info`.",
-            UserWarning,
-        )
-        self.update_info(obj, **kwargs)
 
     def get_info(self, obj):
         """Retrieve the metadata for ``obj``.  Raises a ``QueuingError`` if obj is not in the queue."""
