@@ -189,6 +189,16 @@ equal_hamiltonians = [
         qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
         False,
     ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX("a"), qml.PauliZ("b")]),
+        qml.Hamiltonian([1, 1], [qml.PauliX("a"), qml.PauliZ("b")]),
+        True,
+    ),
+    (
+        qml.Hamiltonian([1, 2], [qml.PauliX("a"), qml.PauliZ("b")]),
+        qml.Hamiltonian([1, 1], [qml.PauliX("b"), qml.PauliZ("a")]),
+        False,
+    ),
     (qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliX(1)]), qml.PauliZ(0) @ qml.PauliX(1), True),
     (qml.Hamiltonian([1], [qml.PauliZ(0)]), qml.PauliZ(0), True),
     (
@@ -218,6 +228,11 @@ equal_tensors = [
     (qml.PauliX(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliX(0) @ qml.PauliZ(2), True),
     (qml.PauliX(0) @ qml.Identity(2) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
     (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(2), False),
+    (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("a") @ qml.PauliZ("b"), True),
+    (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("c") @ qml.PauliZ("d"), False),
+    (qml.PauliX("a") @ qml.PauliZ("b"), qml.PauliX("b") @ qml.PauliZ("a"), False),
+    (qml.PauliX(1.1) @ qml.PauliZ(1.2), qml.PauliX(1.1) @ qml.PauliZ(1.2), True),
+    (qml.PauliX(1.1) @ qml.PauliZ(1.2), qml.PauliX(1.2) @ qml.PauliZ(0.9), False),
 ]
 
 equal_hamiltonians_and_tensors = [
@@ -232,6 +247,43 @@ equal_hamiltonians_and_tensors = [
     ),
     (qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)]), qml.PauliX(0) @ qml.PauliY(1), False),
     (qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)]), qml.PauliX(4) @ qml.PauliY(1), False),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX("a"), qml.PauliZ("b")]),
+        qml.PauliX("a") @ qml.PauliZ("b"),
+        True,
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX("a"), qml.PauliZ("b")]),
+        qml.PauliX("b") @ qml.PauliZ("a"),
+        False,
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(1.2), qml.PauliZ(0.2)]),
+        qml.PauliX(1.2) @ qml.PauliZ(0.2),
+        True,
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(1.2), qml.PauliZ(0.2)]),
+        qml.PauliX(1.3) @ qml.PauliZ(2),
+        False,
+    ),
+]
+
+equal_pauli_operators = [
+    (qml.PauliX(0), qml.PauliX(0), True),
+    (qml.PauliY("a"), qml.PauliY("a"), True),
+    (qml.PauliY(0.3), qml.PauliY(0.3), True),
+    (qml.PauliX(0), qml.PauliX(1), False),
+    (qml.PauliY("a"), qml.PauliY("b"), False),
+    (qml.PauliY(0.3), qml.PauliY(0.7), False),
+    (qml.PauliY(0), qml.PauliX(0), False),
+    (qml.PauliY("a"), qml.PauliX("a"), False),
+    (qml.PauliZ(0.3), qml.PauliY(0.3), False),
+    (qml.PauliZ(0), qml.RX(1.23, 0), False),
+    (qml.Hamiltonian([1], [qml.PauliX("a")]), qml.PauliX("a"), True),
+    (qml.Hamiltonian([1], [qml.PauliX("a")]), qml.PauliX("b"), False),
+    (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.2), True),
+    (qml.Hamiltonian([1], [qml.PauliX(1.2)]), qml.PauliX(1.3), False),
 ]
 
 
@@ -1090,18 +1142,30 @@ class TestEqual:
         """Test operator not equal to measurement"""
         assert not qml.equal(op1, op2)
 
-    # Test with Observables
+
+class TestObservablesComparisons:
+    """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
+
     @pytest.mark.parametrize(("H1", "H2", "res"), equal_hamiltonians)
     def test_hamiltonian_equal(self, H1, H2, res):
         """Tests that equality can be checked between Hamiltonians"""
+        assert qml.equal(H1, H2) == qml.equal(H2, H1)
         assert qml.equal(H1, H2) == res
 
     @pytest.mark.parametrize(("T1", "T2", "res"), equal_tensors)
     def test_tensors_equal(self, T1, T2, res):
         """Tests that equality can be checked between Tensors"""
+        assert qml.equal(T1, T2) == qml.equal(T2, T1)
         assert qml.equal(T1, T2) == res
 
     @pytest.mark.parametrize(("H", "T", "res"), equal_hamiltonians_and_tensors)
     def test_hamiltonians_and_tensors_equal(self, H, T, res):
         """Tests that equality can be checked between a Hamiltonian and a Tensor"""
-        qml.equal(H, T) == res
+        assert qml.equal(H, T) == qml.equal(T, H)
+        assert qml.equal(H, T) == res
+
+    @pytest.mark.parametrize(("op1", "op2", "res"), equal_pauli_operators)
+    def test_pauli_operator_equals(self, op1, op2, res):
+        """Tests that equality can be checked between PauliX/Y/Z operators, and between Pauli operators and Hamiltonians"""
+        assert qml.equal(op1, op2) == qml.equal(op2, op1)
+        assert qml.equal(op1, op2) == res
