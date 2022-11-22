@@ -47,32 +47,8 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
-* We can now perform QPE on quantum operations.
-
-  ```python3
-  dev = qml.device("default.qubit", wires=2)
-
-  unitary = [qml.RX(np.pi / 2, wires=[0]), qml.CNOT(wires=[0, 1])]
-  eigenvector = np.array([-1/2, -1/2, 1/2, 1/2])
-
-  n_estimation_wires = 5
-  estimation_wires = range(2, n_estimation_wires + 2)
-  target_wires = [0, 1]
-
-  dev = qml.device("default.qubit", wires=n_estimation_wires + 2)
-
-  @qml.qnode(dev)
-  def circuit():
-      qml.QubitStateVector(eigenvector, wires=target_wires)
-      QuantumPhaseEstimation(
-          unitary,
-          target_wires=target_wires,
-          estimation_wires=estimation_wires,
-      )
-      return qml.probs(estimation_wires)
-
-  phase_estimated = np.argmax(circuit()) / 2 ** n_estimation_wires
-  ```
+* QPE can now accept a target operator instead of a matrix and target wires pair.
+  [#3373](https://github.com/PennyLaneAI/pennylane/pull/3373)
 
 <h3>Improvements</h3>
 
@@ -141,6 +117,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * The `pad_with` argument in the `AmplitudeEmbedding` template is now compatible
   with all interfaces
   [(#3392)](https://github.com/PennyLaneAI/pennylane/pull/3392)
+
+* `Operator.pow` now queues its constituents by default.
+  [(#3373)](https://github.com/PennyLaneAI/pennylane/pull/3373)
 
 <h3>Contributors</h3>
 
