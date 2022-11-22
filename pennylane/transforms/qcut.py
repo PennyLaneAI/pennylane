@@ -525,7 +525,7 @@ def _get_measurements(
 
     measurement = measurements[0]
 
-    if isinstance(measurement, _Expectation):
+    if not isinstance(measurement, _Expectation):
         raise ValueError(
             "The circuit cutting workflow only supports circuits with expectation "
             "value measurements"
