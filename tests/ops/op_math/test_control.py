@@ -215,7 +215,9 @@ def test_decomposition_defined():
     tape = tape.expand()
 
     assert len(tape.operations) == 2
-    assert tape.operations[0].name == "C(CY)"
+
+    assert tape.operations[0].name == "C(CRY)"
+    assert tape.operations[1].name == "C(S)"
 
 
 def test_controlled_template():
