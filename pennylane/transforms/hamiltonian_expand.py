@@ -176,11 +176,7 @@ def hamiltonian_expand(tape, group=True):
                     for c_group, r_group in zip(coeff_groupings, res_groupings)
                 ]
             summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-            return (
-                qml.math.convert_like(summed_dot_products, res_groupings[0])
-                if len(res_groupings) > 0
-                else summed_dot_products
-            )
+            return qml.math.convert_like(summed_dot_products, res_groupings[0])
 
         return tapes, processing_fn
 
@@ -197,10 +193,6 @@ def hamiltonian_expand(tape, group=True):
     def processing_fn(res):
         dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
         summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-        return (
-            qml.math.convert_like(summed_dot_products, res[0])
-            if len(res) > 0
-            else summed_dot_products
-        )
+        return qml.math.convert_like(summed_dot_products, res[0])
 
     return tapes, processing_fn
