@@ -132,6 +132,13 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Documentation</h3>
 
+* Corrects more mentions for diagonalizing gates for all relevant operations. The docstrings for `compute_eigvals` used
+  to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is
+  the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement
+  $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making
+  $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis.
+  [(#3409)](https://github.com/PennyLaneAI/pennylane/pull/3409)
+
 <h3>Bug fixes</h3>
 
 * Original tape `_obs_sharing_wires` attribute is updated during its expansion.
@@ -170,3 +177,4 @@ Edward Jiang
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Antal Száva
