@@ -18,6 +18,9 @@
   * Add `_Sample` class.
     [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
+  * Add `_Counts` class.
+    [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
+
   * Add `_State` class.
     [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
@@ -63,6 +66,9 @@
 
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
+
+* Remove private `_wires` setter from the `Controlled.map_wires` method.
+  [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
 
 <h3>Breaking changes</h3>
 
