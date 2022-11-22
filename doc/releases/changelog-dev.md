@@ -58,8 +58,7 @@
 * A representation has been added to the `Molecule` class.
   [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
 
-
-* Extended the `qml.equal` function to `Observable` objects.
+* Extended the `qml.equal` function to `Hamiltonian` and `Tensor` objects.
   [(#3390)](https://github.com/PennyLaneAI/pennylane/pull/3390)
 
 <h3>Breaking changes</h3>
