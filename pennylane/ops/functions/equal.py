@@ -14,10 +14,11 @@
 """
 This module contains the qml.equal function.
 """
+from functools import singledispatch
+
 # pylint: disable=too-many-arguments,too-many-return-statements
 from typing import Union
 
-from functools import singledispatch
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
 from pennylane.operation import Operator
@@ -156,7 +157,6 @@ def _equal_operator(
 def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
 
-    return_types_match = op1.return_type == op2.return_type
     if op1.obs is not None and op2.obs is not None:
         observables_match = equal(op1.obs, op2.obs)
     # check obs equality when either one is None (False) or both are None (True)
@@ -166,13 +166,7 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwar
     eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
     log_base_match = getattr(op1, "log_base", None) == getattr(op2, "log_base", None)
 
-    return (
-        return_types_match
-        and observables_match
-        and wires_match
-        and eigvals_match
-        and log_base_match
-    )
+    return observables_match and wires_match and eigvals_match and log_base_match
 
 
 @_equal.register
@@ -182,9 +176,8 @@ def _equal_shadow_measurements(
 ):
     """Determine whether two ShadowMeasurementProcess objects are equal"""
 
-    return_types_match = op1.return_type == op2.return_type
     wires_match = op1.wires == op2.wires
     H_match = op1.H == op2.H
     k_match = op1.k == op2.k
 
-    return return_types_match and wires_match and H_match and k_match
+    return wires_match and H_match and k_match

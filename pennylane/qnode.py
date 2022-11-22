@@ -578,10 +578,7 @@ class QNode:
         # operations
         # 2. Move this expansion to Device (e.g., default_expand_fn or
         # batch_transform method)
-        if any(
-            getattr(obs, "return_type", None) == qml.measurements.MidMeasure
-            for obs in self.tape.operations
-        ):
+        if any(isinstance(m, _MidMeasure) for m in self.tape.operations):
             self._tape = qml.defer_measurements(self._tape)
 
         if self.expansion_strategy == "device":

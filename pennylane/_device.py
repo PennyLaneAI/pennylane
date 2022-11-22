@@ -25,22 +25,20 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
-    Sample,
-    State,
-    Variance,
     Expectation,
     Probability,
-    MidMeasure,
+    Sample,
     ShadowExpval,
+    State,
+    Variance,
+    _Counts,
+    _MidMeasure,
+    _Probability,
+    _Sample,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -758,13 +756,7 @@ class Device(abc.ABC):
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs
             and all(
-                t not in return_types
-                for t in [
-                    qml.measurements.Sample,
-                    qml.measurements.Probability,
-                    qml.measurements.Counts,
-                    qml.measurements.AllCounts,
-                ]
+                not isinstance(m, (_Sample, _Probability, _Counts)) for m in circuit.measurements
             )
         ):
             # Check for case of non-commuting terms and that there are no Hamiltonians
@@ -966,7 +958,7 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
-            if getattr(o, "return_type", None) == MidMeasure and not self.capabilities().get(
+            if isinstance(o, _MidMeasure) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(
