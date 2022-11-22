@@ -13,6 +13,7 @@
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
 from copy import copy
+from typing import Iterable
 from functools import reduce
 
 import numpy as np
@@ -267,8 +268,12 @@ class PauliSentence(dict):
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
 
-        def _pw_wires(w):
-            """To account for empty pauli_words which represent identity operations."""
+        def _pw_wires(w: Iterable) -> wires.Wires:
+            """Return the native Wires instance for a list of wire labels.
+            w represents the wires of the PauliWord being processed. In case
+            the PauliWord is empty ({}), choose any arbitrary wire from the
+            PauliSentence it is composed in.
+            """
             if w:
                 return wires.Wires(w)
 
@@ -277,6 +282,7 @@ class PauliSentence(dict):
                 return wires.Wires(
                     list(ps_wires)[0]
                 )  # return any wire from the Pauli sentence's wires
+            return wires.Wires([])
 
         if len(self) == 0:
             if wire_order is None or wire_order == wires.Wires([]):
