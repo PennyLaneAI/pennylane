@@ -20,7 +20,7 @@ from typing import Union
 from functools import singledispatch
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
-from pennylane.operation import Operation, Operator, Observable
+from pennylane.operation import Operation, Operator, Observable, Tensor
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.ops.qubit.observables import Hermitian
 
@@ -186,9 +186,16 @@ def _equal_operation(
 
 @_equal.register
 # pylint: disable=unused-argument
-def _equal_observables(op1: Observable, op2: Observable, **kwargs):
-    """Determine whether two Observable objects are equal"""
+def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
+    """Determine whether a Tensor object is equal to a Hamiltonian/Tensor"""
     return _obs_comparison_data(op1) == _obs_comparison_data(op2)
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
+    """Determine whether a Hamiltonian object is equal to a Hamiltonian/Tensor objects"""
+    return op1.compare(op2)
 
 
 @_equal.register
