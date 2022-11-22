@@ -246,7 +246,10 @@ def _equal_shadow_measurements(
     return return_types_match and wires_match and H_match and k_match
 
 
-def _obs_comparison_data(obs):
+def _obs_comparison_data(obs: Union[Hamiltonian, Tensor]):
+    """Accesses the _obs_data attribute of observables, which extracts the data from an Observable
+    or Tensor and serializes it in an order-independent fashion. Returns it in a format that is consistent
+    between Tensor and Hamiltonian, so that objects of these types can be compared."""
     if isinstance(obs, Hamiltonian):
         obs.simplify()
         obs = obs._obs_data()  # pylint: disable=protected-access
