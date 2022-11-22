@@ -78,6 +78,7 @@ def pauli_decompose(
     + -0.5 * Z(0) @ Y(1)
 
     We can also set custom wires using the ``wire_order`` argument:
+
     >>> ps = pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
     >>> print(ps)
     -1.0 * I

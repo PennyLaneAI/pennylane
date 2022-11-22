@@ -53,11 +53,11 @@
 
   ```pycon
   >>> mat = np.array([[1, 1], [1, -1]])
-  >>> h = qml.pauli_decompose(h)
+  >>> h = qml.pauli_decompose(mat)
   >>> print(h)
     (1.0) [X0]
   + (1.0) [Z0]
-  >>> ps = qml.pauli_decompose(h, pauli=True, wire_order=["a"])
+  >>> ps = qml.pauli_decompose(mat, pauli=True, wire_order=["a"])
   >>> print(ps)
   1.0 * X(a)
   + 1.0 * Z(a)
