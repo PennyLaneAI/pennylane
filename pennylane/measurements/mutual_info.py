@@ -15,9 +15,14 @@
 """
 This module contains the qml.mutual_info measurement.
 """
-import pennylane as qml
+import copy
+from typing import Sequence
 
-from .measurements import MeasurementProcess, MutualInfo
+import pennylane as qml
+from pennylane.operation import Operator
+from pennylane.wires import Wires
+
+from .measurements import MutualInfo, ObservableReturnTypes, StateMeasurement
 
 
 def mutual_info(wires0, wires1, log_base=None):
@@ -76,4 +81,39 @@ def mutual_info(wires0, wires1, log_base=None):
 
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
-    return MeasurementProcess(MutualInfo, wires=[wires0, wires1], log_base=log_base)
+    return _MutualInfo(MutualInfo, wires=[wires0, wires1], log_base=log_base)
+
+
+class _MutualInfo(StateMeasurement):
+    """Measurement process that returns the mutual information."""
+
+    # pylint: disable=too-many-arguments, unused-argument
+    def __init__(
+        self,
+        return_type: ObservableReturnTypes,
+        obs: Operator = None,
+        wires=None,
+        eigvals=None,
+        id=None,
+        log_base=None,
+    ):
+        self.log_base = log_base
+        super().__init__(return_type=return_type, obs=obs, wires=wires, eigvals=eigvals, id=id)
+
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
+        return qml.math.mutual_info(
+            state,
+            indices0=list(self._wires[0]),
+            indices1=list(self._wires[1]),
+            c_dtype=state.dtype,
+            base=self.log_base,
+        )
+
+    def __copy__(self):
+        return self.__class__(
+            self.return_type,
+            obs=copy.copy(self.obs),
+            wires=self._wires,
+            eigvals=self._eigvals,
+            log_base=self.log_base,
+        )
