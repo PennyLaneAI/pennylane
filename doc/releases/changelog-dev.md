@@ -47,9 +47,6 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
-* QPE can now accept a target operator instead of a matrix and target wires pair.
-  [#3373](https://github.com/PennyLaneAI/pennylane/pull/3373)
-
 <h3>Improvements</h3>
 
 * Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
@@ -66,6 +63,9 @@
 
 * Remove private `_wires` setter from the `Controlled.map_wires` method.
   [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
+
+* QPE can now accept a target operator instead of a matrix and target wires pair.
+  [#3373](https://github.com/PennyLaneAI/pennylane/pull/3373)
 
 <h3>Breaking changes</h3>
 
