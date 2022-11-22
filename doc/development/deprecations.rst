@@ -6,6 +6,12 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The ``qml.utils.decompose_hamiltonian()`` method is deprecated. Please
+  use ``qml.pauli_decompose()``.
+
+  - Still accessible in v0.27
+  - Will be removed in v0.28
+
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
 

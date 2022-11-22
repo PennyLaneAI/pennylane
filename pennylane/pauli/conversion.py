@@ -76,6 +76,20 @@ def pauli_decompose(
     + 1.0 * Y(0) @ Y(1)
     + -0.5 * Z(0) @ X(1)
     + -0.5 * Z(0) @ Y(1)
+
+    We can also set custom wires using the ``wire_order`` argument:
+    >>> ps = pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
+    >>> print(ps)
+    -1.0 * I
+    + -1.5 * X(b)
+    + -0.5 * Y(b)
+    + -1.0 * Z(b)
+    + -1.5 * X(a)
+    + -1.0 * X(a) @ X(b)
+    + -0.5 * X(a) @ Z(b)
+    + 1.0 * Y(a) @ Y(b)
+    + -0.5 * Z(a) @ X(b)
+    + -0.5 * Z(a) @ Y(b)
     """
     n = int(np.log2(len(H)))
     N = 2**n
