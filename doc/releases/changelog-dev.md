@@ -47,9 +47,23 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
   
-* Added utility functions `operation()`, `hamiltonian()`, `pauli_sentence()` and `decompose()` to provide and 
-  an interface between well known PennyLane Operators and the new reduced representation.
-  [(#3252)](https://github.com/PennyLaneAI/pennylane/pull/3252)
+* New `pauli_sentence()` function which takes native `Operator` or `Hamiltonian`
+  instances representing a linear combination of Pauli words and returns 
+  the equivalent `PauliSentence`.
+  [(#3252)](https://github.com/PennyLaneAI/pennylane/pull/3389)
+
+  ```pycon
+  >>> op = 1.23 * qml.prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
+  >>> op
+  1.23*(PauliX(wires=[0]) @ PauliZ(wires=[1]))
+  >>> h = qml.Hamiltonian([1.23], [qml.PauliX(wires=0) @ qml.PauliZ(wires=1)])
+  >>> print(h)
+    (1.23) [X0 Z1]
+  >>> qml.pauli.pauli_sentence(op)
+  1.23 * Z(1) @ X(0)
+  >>> qml.pauli.pauli_sentence(h)
+  1.23 * X(0) @ Z(1)
+  ```
 
 <h3>Improvements</h3>
 
