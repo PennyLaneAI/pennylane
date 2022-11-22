@@ -139,8 +139,13 @@ def _equal(
     op2,
     **kwargs,
 ):
-    """Calls relevant comparison function using singledispatch."""
-    raise NotImplementedError(f"Comparison between {type(op1)} and {type(op2)} not implemented.")
+    """Calls relevant comparison function using singledispatch. Defaults to _equal_operation."""
+    try:
+        return _equal_operation(op1, op2**kwargs)
+    except:  # pylint: disable=raise-missing-from
+        raise NotImplementedError(
+            f"Comparison between {type(op1)} and {type(op2)} not implemented."
+        )
 
 
 @_equal.register
@@ -156,7 +161,7 @@ def _equal_operation(
 
     if not isinstance(
         op2, type(op1)
-    ):  # needed to clarify in cases involving PauliX/Y/Z (Observable/Operation)
+    ):  # clarifies cases involving PauliX/Y/Z (Observable/Operation)
         return False
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
