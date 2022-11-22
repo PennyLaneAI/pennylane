@@ -21,7 +21,7 @@ from pennylane import qnode
 
 pytestmark = pytest.mark.autograd
 
-shots = [(1, 20, 100), (1, (20, 1), 100), ((5, 4), 1, 100)]
+shots = [((5, 2), 1, 10)]
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 10e-2}],
@@ -515,6 +515,10 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+
+        # override shots to speed up the test
+        shots = (5, 10)
+
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = np.array(0.1)
@@ -549,8 +553,9 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        # override shots to speed up the test
+        shots = (5, 10)
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
@@ -562,68 +567,6 @@ class TestReturnWithShotVectors:
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
-
-        def cost(x):
-            def cost2(x):
-                res = circuit(x)
-                return qml.math.stack([np.hstack(r) for r in res])
-
-            return qml.jacobian(cost2)(x)
-
-        hess = qml.jacobian(cost)(params)
-
-        assert isinstance(hess, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
-        assert hess.shape == (num_copies, 5, 2, 2)
-
-    def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
-        """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-        dev = qml.device(dev_name, wires=2, shots=shots)
-
-        par_0 = np.array(0.1)
-        par_1 = np.array(0.2)
-
-        @qnode(dev, diff_method=diff_method, max_diff=2, **gradient_kwargs)
-        def circuit(x, y):
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
-
-        def cost(x, y):
-            def cost2(x, y):
-                res = circuit(x, y)
-                return qml.math.stack([np.hstack(r) for r in res])
-
-            return qml.math.stack(qml.jacobian(cost2, argnum=[0, 1])(x, y))
-
-        hess = qml.jacobian(cost, argnum=[0, 1])(par_0, par_1)
-
-        assert isinstance(hess, tuple)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
-        assert len(hess) == 2
-        for h in hess:
-            assert isinstance(h, np.ndarray)
-            assert h.shape == (2, num_copies, 5)
-
-    def test_hessian_var_probs_multiple_param_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
-    ):
-        """The hessian of multiple measurements with a multiple param array return a single array."""
-        dev = qml.device(dev_name, wires=2, shots=shots)
-
-        params = np.array([0.1, 0.2])
-
-        @qnode(dev, diff_method=diff_method, max_diff=2, **gradient_kwargs)
-        def circuit(x):
-            qml.RX(x[0], wires=[0])
-            qml.RY(x[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
         def cost(x):
             def cost2(x):
