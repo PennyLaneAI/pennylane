@@ -62,6 +62,15 @@ class TestPauliSentence:
         """Test that Tensors of Pauli ops are properly cast to a PauliSentence."""
         assert pauli_sentence(op) == ps
 
+    def test_tensor_raises_error(self):
+        """Test that Tensors of non-Pauli ops raise error when cast to a PauliSentence."""
+        h_mat = np.array([[1, 1], [1, -1]])
+        h_op = qml.Hermitian(h_mat, wires=1)
+        op = qml.PauliX(wires=0) @ h_op
+
+        with pytest.raises(ValueError, match="Op must be a linear combination of"):
+            pauli_sentence(op)
+
     hamiltonian_ps = (
         (
             qml.Hamiltonian([2], [qml.PauliZ(wires=0)]),
