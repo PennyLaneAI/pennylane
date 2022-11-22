@@ -211,7 +211,7 @@ class TestPauliWord:
     def test_hamiltonian_empty_error(self):
         """Test that a ValueError is raised if an empty PauliWord is
         cast to a Hamiltonian."""
-        with pytest.raises(ValueError, match="Can't get the hamiltonian for an empty PauliWord."):
+        with pytest.raises(ValueError, match="Can't get the Hamiltonian for an empty PauliWord."):
             pw4.hamiltonian()
 
 

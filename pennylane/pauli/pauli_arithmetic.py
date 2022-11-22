@@ -365,7 +365,7 @@ class PauliSentence(dict):
         """Returns a native PennyLane ~.Hamiltonian representing the PauliSentence."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
-                raise ValueError("Can't get the hamiltonian for an empty PauliSentence.")
+                raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
             return Hamiltonian([1], [Identity(wires=wire_order)])
 
         if len(self) == 1:
