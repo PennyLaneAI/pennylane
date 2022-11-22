@@ -188,6 +188,10 @@ def _equal_operation(
 # pylint: disable=unused-argument
 def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     """Determine whether a Tensor object is equal to a Hamiltonian/Tensor"""
+    if not isinstance(
+        op2, Observable
+    ):  # _obs_comparison_data will raise an error for anything else
+        return False
     return _obs_comparison_data(op1) == _obs_comparison_data(op2)
 
 
@@ -195,6 +199,10 @@ def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
 # pylint: disable=unused-argument
 def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
     """Determine whether a Hamiltonian object is equal to a Hamiltonian/Tensor objects"""
+    if not isinstance(
+        op2, Observable
+    ):  # _obs_comparison_data will raise an error for anything else
+        return False
     return op1.compare(op2)
 
 
