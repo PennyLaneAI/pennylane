@@ -23,7 +23,7 @@ pytestmark = pytest.mark.tf
 
 tf = pytest.importorskip("tensorflow")
 
-shots = [((5, 3), 1, 50)]
+shots = [((5, 2), 1, 20)]
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 10e-2}],
@@ -361,6 +361,10 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots, decorator, interface
     ):
         """The hessian of a single measurement with multiple params return a tuple of arrays."""
+
+        # override shots to speed up the test
+        shots = (5, 10)
+
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = tf.Variable(1.5, dtype=tf.float64)

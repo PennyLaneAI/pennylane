@@ -23,7 +23,7 @@ pytestmark = pytest.mark.tf
 
 tf = pytest.importorskip("tensorflow")
 
-shots = [((5, 3), 1, 50)]
+shots = [((5, 2), 1, 10)]
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 10e-2}],
@@ -408,6 +408,10 @@ class TestReturnWithShotVectors:
         self, dev_name, diff_method, gradient_kwargs, shots
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+
+        # override shots to speed up the test
+        shots = (5, 10)
+
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = tf.Variable(0.1, dtype=tf.float64)
@@ -418,7 +422,7 @@ class TestReturnWithShotVectors:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[1])
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
@@ -437,14 +441,15 @@ class TestReturnWithShotVectors:
         assert len(hess) == 2
         for h in hess:
             assert isinstance(h, tf.Tensor)
-            assert h.shape == (2, num_copies, 5)
+            assert h.shape == (2, num_copies, 3)
 
     def test_hessian_expval_probs_multiple_param_array(
         self, dev_name, diff_method, gradient_kwargs, shots
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
-        if diff_method == "adjoint":
-            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        # override shots to speed up the test
+        shots = (5, 10)
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
@@ -455,7 +460,7 @@ class TestReturnWithShotVectors:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[1])
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
@@ -470,7 +475,7 @@ class TestReturnWithShotVectors:
         num_copies = sum(
             [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
         )
-        assert hess.shape == (num_copies, 5, 2, 2)
+        assert hess.shape == (num_copies, 3, 2, 2)
 
 
 qubit_device_and_diff_method = [
