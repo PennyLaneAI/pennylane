@@ -53,6 +53,7 @@ ops = {
     "SX",
     "CNOT",
     "CZ",
+    "CCZ",
     "CY",
     "SWAP",
     "ISWAP",

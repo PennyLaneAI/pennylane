@@ -60,6 +60,7 @@ from gate_data import (
     SingleExcitationPlus,
     T,
     Toffoli,
+    CCZ,
     X,
     Y,
     Z,
@@ -122,7 +123,7 @@ two_qubit_param = [
     (qml.SingleExcitationPlus, SingleExcitationPlus),
     (qml.SingleExcitationMinus, SingleExcitationMinus),
 ]
-three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
+three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP), (qml.CCZ, CCZ)]
 four_qubit_param = [
     (qml.DoubleExcitation, DoubleExcitation),
     (qml.DoubleExcitationPlus, DoubleExcitationPlus),

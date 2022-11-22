@@ -88,6 +88,7 @@ class DefaultMixed(QubitDevice):
         "SWAP",
         "CSWAP",
         "Toffoli",
+        "CCZ",
         "CZ",
         "PhaseShift",
         "ControlledPhaseShift",

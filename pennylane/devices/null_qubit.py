@@ -71,6 +71,7 @@ class NullQubit(QubitDevice):
         "Toffoli",
         "CY",
         "CZ",
+        "CCZ",
         "PhaseShift",
         "ControlledPhaseShift",
         "CPhase",
