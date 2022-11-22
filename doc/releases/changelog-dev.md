@@ -49,7 +49,7 @@
 
 * Support for purity computation is added. The `qml.math.purity` function computes the purity from a state vector or a density matrix:
 
-  [(#3290)](https://github.com/PennyLaneAI/pennylane/pull/3290)
+  [#3290](https://github.com/PennyLaneAI/pennylane/pull/3290)
 
   ```pycon
   >>> x = [1, 0, 0, 1] / np.sqrt(2)
