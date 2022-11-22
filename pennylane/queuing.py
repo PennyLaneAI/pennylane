@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the :class:`QueuingManager`.
+This module contains :meth:`qml.apply`, the :class:`QueuingManager`, and internal code to handle queuing.
 """
 
 import copy

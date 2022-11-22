@@ -400,7 +400,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     def __getitem__(self, key):
         try:
             return QuantumScript.__getitem__(self, key)
-        except:
+        except TypeError:
             return AnnotatedQueue.__getitem__(self, key)
 
     def __setitem__(self, key, val):
