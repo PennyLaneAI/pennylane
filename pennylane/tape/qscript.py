@@ -927,7 +927,7 @@ class QuantumScript:
         if qml.active_return():
             return self._numeric_type_new
         measurement_types = {type(meas) for meas in self.measurements}
-        if len(self.measurements) > 1:
+        if len(measurement_types) > 1:
             raise ValueError(
                 "Getting the numeric type of a quantum script that contains multiple types of measurements is unsupported."
             )
