@@ -66,7 +66,7 @@ def init_state():
     return _init_state
 
 
-# pylint: disable=attribute-defined-outside-init, redefined-outer-name
+# pylint: disable=redefined-outer-name
 class TestProbs:
     """Tests for the probs function"""
 
