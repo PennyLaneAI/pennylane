@@ -813,6 +813,7 @@ def molecular_hamiltonian(
     args=None,
     grouping_type=None,
     grouping_method="rlf",
+    load_data=False,
 ):  # pylint:disable=too-many-arguments
     r"""Generate the qubit Hamiltonian of a molecule.
 
@@ -870,6 +871,7 @@ def molecular_hamiltonian(
         grouping_type (str): method to group commuting observables
         grouping_method (str): the graph coloring heuristic to use in solving minimum clique cover
             for grouping
+        load_data (bool): flag to load data from the basis-set-exchange library
 
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
@@ -922,6 +924,7 @@ def molecular_hamiltonian(
             charge=charge,
             mult=mult,
             basis_name=basis,
+            load_data=load_data,
             alpha=alpha,
             coeff=coeff,
         )
