@@ -26,7 +26,7 @@ devices with autodifferentiation support.
 import inspect
 import warnings
 from contextlib import _GeneratorContextManager
-from functools import wraps
+from functools import wraps, partial
 from typing import Callable, Sequence
 
 from cachetools import LRUCache
@@ -238,7 +238,7 @@ def _execute_new(
     cache=True,
     cachesize=10000,
     max_diff=1,
-    override_shots=False,
+    override_shots: int = False,
     expand_fn="device",
     max_expansion=10,
     device_batch_transform=True,
@@ -271,6 +271,8 @@ def _execute_new(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        override_shots (int): The number of shots to use for the execution. If ``False``, then the
+            number of shots on the device is used.
         expand_fn (function): Tape expansion function to be called prior to device execution.
             Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
             single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
@@ -342,7 +344,6 @@ def _execute_new(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
-
     if interface == "auto":
         params = []
         for tape in tapes:
@@ -352,7 +353,8 @@ def _execute_new(
     gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
-        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+        dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
+        tapes, batch_fn = qml.transforms.map_batch_transform(dev_batch_transform, tapes)
     else:
         batch_fn = lambda res: res  # pragma: no cover
 
@@ -361,7 +363,7 @@ def _execute_new(
         cache = LRUCache(maxsize=cachesize)
         setattr(cache, "_persistent_cache", False)
 
-    batch_execute = device.batch_execute
+    batch_execute = set_shots(device, override_shots)(device.batch_execute)
 
     if expand_fn == "device":
         expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
@@ -389,7 +391,7 @@ def _execute_new(
         )
 
     # the default execution function is batch_execute
-    execute_fn = batch_execute
+    execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
     _mode = "backward"
 
     if gradient_fn == "device":
@@ -408,7 +410,7 @@ def _execute_new(
         if mode in ("forward", "best"):
             # replace the forward execution function to return
             # both results and gradients
-            execute_fn = device.execute_and_gradients
+            execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
             gradient_fn = None
             _mode = "forward"
 
@@ -447,6 +449,8 @@ def _execute_new(
             if not tf.executing_eagerly() or "autograph" in interface:  # pragma: no cover
                 from .tensorflow_autograph import execute as _execute  # pragma: no cover
 
+                _execute = partial(_execute, mode=_mode)
+
             else:
                 from .tensorflow import execute as _execute  # pragma: no cover
 
@@ -480,7 +484,7 @@ def execute(
     cache=True,
     cachesize=10000,
     max_diff=1,
-    override_shots=False,
+    override_shots: int = False,
     expand_fn="device",
     max_expansion=10,
     device_batch_transform=True,
@@ -512,6 +516,8 @@ def execute(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        override_shots (int): The number of shots to use for the execution. If ``False``, then the
+            number of shots on the device is used.
         expand_fn (function): Tape expansion function to be called prior to device execution.
             Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
             single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
@@ -609,7 +615,8 @@ def execute(
     gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
-        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+        dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
+        tapes, batch_fn = qml.transforms.map_batch_transform(dev_batch_transform, tapes)
     else:
         batch_fn = lambda res: res
 

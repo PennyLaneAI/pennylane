@@ -23,7 +23,6 @@ class TestDevicePythonSim(AbstractDevice):
 
     def execute(self, qscript: Union[QuantumScript, List[QuantumScript]]):
         if isinstance(qscript, QuantumScript):
-            print(qscript.circuit)
             res = self._private_sim.execute(qscript)
             res = res[0] if len(res) == 1 else res
             return np.array(res)
