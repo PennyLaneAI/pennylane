@@ -1253,7 +1253,7 @@ class CH(Operation):
     basis = "Hadamard"
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "Hadamard"
+        return base_label or "H"
 
     @staticmethod
     @lru_cache()
