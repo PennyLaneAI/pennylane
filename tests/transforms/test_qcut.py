@@ -29,7 +29,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms import qcut
+from pennylane.transforms.qcut import qcut
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
@@ -4041,7 +4041,7 @@ class TestCutStrategy:
                 else {num_fragments_probed}
             )
         elif exhaustive:
-            num_tape_gates = sum(not isinstance(n, qcut.WireCut) for n in tape_dag.nodes)
+            num_tape_gates = sum(not isinstance(n, qml.WireCut) for n in tape_dag.nodes)
             assert {v["num_fragments"] for v in all_cut_kwargs} == set(range(2, num_tape_gates + 1))
 
     @pytest.mark.parametrize(
@@ -4173,7 +4173,7 @@ class TestKaHyPar:
         ),
     ]
     config_path = str(
-        Path(__file__).parent.parent.parent / "pennylane/transforms/_cut_kKaHyPar_sea20.ini"
+        Path(__file__).parent.parent.parent / "pennylane/transforms/qcut/_cut_kKaHyPar_sea20.ini"
     )
 
     def test_seed_in_ci(self):
@@ -4686,3 +4686,10 @@ class TestAutoCutCircuit:
 
         # each frag should have the device size constraint satisfied.
         assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
+
+
+class TestRedirect:
+    """Tests that redirect in qcut.__init__ works to maintain import pathways while reorganizing files"""
+
+    def test_qcut_redirects_to_qcut_qcut(self):
+        assert qml.transforms.qcut._prep_one_state == qml.transforms.qcut.qcut._prep_one_state
