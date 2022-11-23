@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Integration tests for using the jax interface with shot vectors and with a QNode"""
+"""Integration tests for using the Autograd interface with shot vectors and with a QNode"""
 
 import pytest
 
@@ -21,7 +21,7 @@ from pennylane import qnode
 
 pytestmark = pytest.mark.autograd
 
-shots = [((5, 2), 1, 10)]
+shots = [((5, 2), 1, 10), (1, 10, (5, 2))]
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 10e-2}],
