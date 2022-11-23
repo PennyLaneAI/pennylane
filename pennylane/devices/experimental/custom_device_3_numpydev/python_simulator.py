@@ -141,7 +141,7 @@ class PlainNumpySimulator(AbstractDeviceDriver):
 
         mat = measurementprocess.obs.matrix()
         new_state = cls.apply_matrix(state, mat, measurementprocess.obs.wires)
-        return np.vdot(state, new_state)
+        return np.real(np.vdot(state, new_state))
 
     @staticmethod
     def probability(state, measurementprocess):

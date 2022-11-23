@@ -43,6 +43,14 @@ class TestDevicePythonSim(AbstractDevice):
     ) -> Tuple[List[QuantumScript], Callable]:
         return simple_preprocessor(qscript)
 
+    def execute_and_gradients(self, qscripts, *args, **kwargs):
+        """Defined for temporary compatability."""
+        res = [np.array(x) for x in self.execute(qscripts)]
+        grads = self.gradient(qscripts[0])
+        grads = tuple(np.array(x) for x in grads)
+
+        return res, [grads]
+
     def gradient(self, qscript: QuantumScript, order: int = 1):
         if order != 1:
             raise NotImplementedError
@@ -66,4 +74,5 @@ class TestDevicePythonSim(AbstractDevice):
 
             bra = self._private_sim.apply_operation(bra, adj_op)
 
-        return grads[::-1]
+        grads = grads[::-1]
+        return grads

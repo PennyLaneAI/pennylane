@@ -342,6 +342,7 @@ def _execute_new(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+
     if interface == "auto":
         params = []
         for tape in tapes:
@@ -407,7 +408,7 @@ def _execute_new(
         if mode in ("forward", "best"):
             # replace the forward execution function to return
             # both results and gradients
-            execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
+            execute_fn = device.execute_and_gradients
             gradient_fn = None
             _mode = "forward"
 

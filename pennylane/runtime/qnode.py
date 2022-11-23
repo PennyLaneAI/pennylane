@@ -179,11 +179,6 @@ class QNode:
                 f"one of {SUPPORTED_INTERFACES}."
             )
 
-        if not isinstance(device, Device):
-            raise qml.QuantumFunctionError(
-                "Invalid device. Device must be a valid PennyLane device."
-            )
-
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(
                 "Detected 'shots' as an argument to the given quantum function. "
@@ -468,34 +463,12 @@ class QNode:
         # future, or alternatively summarize within a single device capability. Moreover, we also
         # need to inspect the circuit measurements to ensure only expectation values are taken. This
         # cannot be done here since we don't yet know the composition of the circuit.
-
-        required_attrs = ["_apply_operation", "_apply_unitary", "adjoint_jacobian"]
-        supported_device = all(hasattr(device, attr) for attr in required_attrs)
-        supported_device = supported_device and device.capabilities().get("returns_state")
-
-        if not supported_device:
-            raise ValueError(
-                f"The {device.short_name} device does not support adjoint differentiation."
-            )
-
-        if device.shots is not None:
-            warnings.warn(
-                "Requested adjoint differentiation to be computed with finite shots."
-                " Adjoint differentiation always calculated exactly.",
-                UserWarning,
-            )
         return "device", {"use_device_state": True, "method": "adjoint_jacobian"}, device
 
     @staticmethod
     def _validate_device_method(device):
         # determine if the device provides its own jacobian method
-        if device.capabilities().get("provides_jacobian", False):
-            return "device", {}, device
-
-        raise qml.QuantumFunctionError(
-            f"The {device.short_name} device does not provide a native "
-            "method for computing the jacobian."
-        )
+        return "device", {}, device
 
     @staticmethod
     def _validate_parameter_shift(device):
