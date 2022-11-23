@@ -117,22 +117,60 @@ def _spsa_gradient_new(
 
     **Example**
 
+    This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>`
+    objects:
+
+    >>> @qml.qnode(dev)
+    ... def circuit(params):
+    ...     qml.RX(params[0], wires=0)
+    ...     qml.RY(params[1], wires=0)
+    ...     qml.RX(params[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> qml.gradients.spsa_gradient(circuit)(params)
+    ((tensor(-0.19280803, requires_grad=True),
+      tensor(-0.19280803, requires_grad=True),
+      tensor(0.19280803, requires_grad=True)),
+     (tensor(0.34786926, requires_grad=True),
+      tensor(0.34786926, requires_grad=True),
+      tensor(-0.34786926, requires_grad=True)))
+
+    Note that the SPSA gradient is a statistical estimator that uses a given number of 
+    function evaluations that does not depend on the number of parameters. While this
+    bounds the cost of the estimation, it also implies that the returned values are not
+    exact (even for devices with ``shots=None``) and that they will fluctuate.
+    See the usage details below for more information.
 
     .. details::
         :title: Usage Details
 
-        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>`
-        objects:
+        The number of directions in which the derivative is computed to estimate the gradient
+        can be controlled with the keyword argument ``num_directions``. For the QNode above,
+        a more precise gradient estimation from ``num_directions=20`` directions yields
 
-        >>> @qml.qnode(dev)
-        ... def circuit(params):
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.spsa_gradient(circuit)(params)
-        #TODO
+        >>> qml.gradients.spsa_gradient(circuit, num_directions=20)(params)
+        ((tensor(-0.27362235, requires_grad=True),
+          tensor(-0.07219669, requires_grad=True),
+          tensor(-0.36369011, requires_grad=True)),
+         (tensor(0.49367656, requires_grad=True),
+          tensor(0.13025915, requires_grad=True),
+          tensor(0.65617915, requires_grad=True)))
+
+        We may compare this to the more precise values obtained from finite differences:
+        >>> qml.gradients.finite_diff(circuit)(params)
+        ((tensor(-0.38751724, requires_grad=True),
+          tensor(-0.18884792, requires_grad=True),
+          tensor(-0.38355708, requires_grad=True)),
+         (tensor(0.69916868, requires_grad=True),
+          tensor(0.34072432, requires_grad=True),
+          tensor(0.69202365, requires_grad=True)))
+
+        As we can see, the SPSA output is a rather coarse approximation to the true
+        gradient, and this although the parameter-shift rule for three parameters uses
+        just six circuit evaluations, much fewer than SPSA! Consequentially, SPSA is
+        not necessarily useful for small circuits with few parameters, but will pay off
+        for large circuits where other gradient estimators require unfeasibly many circuit
+        executions.
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -147,17 +185,20 @@ def _spsa_gradient_new(
         ...     qml.var(qml.PauliZ(0))
         >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
         >>> gradient_tapes
-        #TODO
+        [<QuantumTape: wires=[0], params=3>, <QuantumTape: wires=[0], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
-        computation need to be analyzed.
+        computation need to be analyzed. Here we see that for ``num_directions=1``,
+        the default, we obtain two tapes.
 
         The output tapes can then be evaluated and post-processed to retrieve
         the gradient:
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        #TODO
+        ((array(-0.58222637), array(0.58222637), array(-0.58222637)),
+         (array(1.05046797), array(-1.05046797), array(1.05046797)))
+
 
         Devices that have a shot vector defined can also be used for execution, provided
         the ``shots`` argument was passed to the transform:
@@ -172,9 +213,16 @@ def _spsa_gradient_new(
         ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.finite_diff(circuit, shots=shots, h=1e-2)(params)
-        #TODO
+        (((array(0.), array(0.), array(0.)), (array(0.), array(0.), array(0.))),
+         ((array(-1.4), array(-1.4), array(-1.4)),
+          (array(2.548), array(2.548), array(2.548))),
+         ((array(-1.06), array(-1.06), array(-1.06)),
+          (array(1.90588), array(1.90588), array(1.90588))))
 
-        The outermost tuple contains results corresponding to each element of the shot vector.
+        The outermost tuple contains results corresponding to each element of the shot vector,
+        as is also visible by the increasing precision.
+        Note that the stochastic approximation and the fluctuations from the shot noise
+        of the device accumulate, leading to a very coarse-grained estimate for the gradient.
     """
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
@@ -351,22 +399,48 @@ def spsa_gradient(
 
     **Example**
 
+    This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>`
+    objects:
+
+    >>> @qml.qnode(dev)
+    ... def circuit(params):
+    ...     qml.RX(params[0], wires=0)
+    ...     qml.RY(params[1], wires=0)
+    ...     qml.RX(params[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> qml.gradients.spsa_gradient(circuit)(params)
+    tensor([[-0.19280803, -0.19280803,  0.19280803],
+            [ 0.34786926,  0.34786926, -0.34786926]], requires_grad=True)
+
+    Note that the SPSA gradient is a statistical estimator that uses a given number of 
+    function evaluations that does not depend on the number of parameters. While this
+    bounds the cost of the estimation, it also implies that the returned values are not
+    exact (even for devices with ``shots=None``) and that they will fluctuate.
+    See the usage details below for more information.
 
     .. details::
         :title: Usage Details
 
-        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>`
-        objects:
+        The number of directions in which the derivative is computed to estimate the gradient
+        can be controlled with the keyword argument ``num_directions``. For the QNode above,
+        a more precise gradient estimation from ``num_directions=20`` directions yields
 
-        >>> @qml.qnode(dev)
-        ... def circuit(params):
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.spsa_gradient(circuit)(params)
-        #TODO
+        >>> qml.gradients.spsa_gradient(circuit, num_directions=20)(params)
+        tensor([[-0.32969058, -0.18924389, -0.28716881],
+                [ 0.59483632,  0.34143874,  0.51811744]], requires_grad=True)
+
+        We may compare this to the exact value obtained from parameter-shift rules:
+        >>> qml.gradients.param_shift(circuit)(params)
+        tensor([[-0.3875172 , -0.18884787, -0.38355704],
+                [ 0.69916862,  0.34072424,  0.69202359]], requires_grad=True)
+
+        As we can see, the SPSA output is a rather coarse approximation to the true
+        gradient, and this although the parameter-shift rule for three parameters uses
+        just six circuit evaluations, much fewer than SPSA! Consequentially, SPSA is
+        not necessarily useful for small circuits with few parameters, but will pay off
+        for large circuits where other gradient estimators require unfeasibly many circuit
+        executions.
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -381,34 +455,19 @@ def spsa_gradient(
         ...     qml.var(qml.PauliZ(0))
         >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
         >>> gradient_tapes
-        #TODO
+        [<QuantumTape: wires=[0], params=3>, <QuantumTape: wires=[0], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
-        computation need to be analyzed.
+        computation need to be analyzed. Here we see that for ``num_directions=1``,
+        the default, we obtain two tapes.
 
         The output tapes can then be evaluated and post-processed to retrieve
         the gradient:
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(gradient_tapes, dev, None))
-        #TODO
-
-        Devices that have a shot vector defined can also be used for execution, provided
-        the ``shots`` argument was passed to the transform:
-
-        >>> shots = (10, 100, 1000)
-        >>> dev = qml.device("default.qubit", wires=2, shots=shots)
-        >>> @qml.qnode(dev)
-        ... def circuit(params):
-        ...     qml.RX(params[0], wires=0)
-        ...     qml.RY(params[1], wires=0)
-        ...     qml.RX(params[2], wires=0)
-        ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.finite_diff(circuit, shots=shots, h=1e-2)(params)
-        #TODO
-
-        #TODO: The outermost tuple contains results corresponding to each element of the shot vector.
+        array([[-0.95992212, -0.95992212, -0.95992212],
+               [ 1.73191645,  1.73191645,  1.73191645]])
     """
     if qml.active_return():
         return _spsa_gradient_new(
