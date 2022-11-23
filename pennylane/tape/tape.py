@@ -397,7 +397,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
         Also calls `_update()` which sets many attributes.
         """
-        self._prep, self._ops, self._measurements = process_queue(self)
+        self._ops, self._measurements, self._prep = process_queue(self)
         self._update()
 
     def __getitem__(self, key):

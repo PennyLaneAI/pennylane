@@ -355,8 +355,8 @@ def process_queue(queue):
         queue (.AnnotatedQueue): The queue to be processed into individual lists
 
     Returns:
-        tuple[list(.Operation), list(.Operation), list(.MeasurementProcess)]:
-        The list of preparation operations, the list of main tape operations, and the list of tape measurements
+        tuple[list(.Operation), list(.MeasurementProcess)], list(.Operation):
+        The list of main tape operations, the list of tape measurements, and the list of preparation operations
     """
     lists = {"_prep": [], "_ops": [], "_measurements": []}
     list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
@@ -374,4 +374,4 @@ def process_queue(queue):
                 )
             lists[obj._queue_category].append(obj)
 
-    return lists["_prep"], lists["_ops"], lists["_measurements"]
+    return lists["_ops"], lists["_measurements"], lists["_prep"]
