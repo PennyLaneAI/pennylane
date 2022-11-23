@@ -135,7 +135,7 @@ def _spsa_gradient_new(
       tensor(0.34786926, requires_grad=True),
       tensor(-0.34786926, requires_grad=True)))
 
-    Note that the SPSA gradient is a statistical estimator that uses a given number of 
+    Note that the SPSA gradient is a statistical estimator that uses a given number of
     function evaluations that does not depend on the number of parameters. While this
     bounds the cost of the estimation, it also implies that the returned values are not
     exact (even for devices with ``shots=None``) and that they will fluctuate.
@@ -413,7 +413,7 @@ def spsa_gradient(
     tensor([[-0.19280803, -0.19280803,  0.19280803],
             [ 0.34786926,  0.34786926, -0.34786926]], requires_grad=True)
 
-    Note that the SPSA gradient is a statistical estimator that uses a given number of 
+    Note that the SPSA gradient is a statistical estimator that uses a given number of
     function evaluations that does not depend on the number of parameters. While this
     bounds the cost of the estimation, it also implies that the returned values are not
     exact (even for devices with ``shots=None``) and that they will fluctuate.
