@@ -878,7 +878,7 @@ class CPhaseShift00(Operation):
 
         >>> qml.CPhaseShift00.compute_decomposition(1.234, wires=(0,1))
         [PauliX(wires=[0]),
-         PauliX(wires=[1]),
+        PauliX(wires=[1]),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
         CNOT(wires=[0, 1]),
