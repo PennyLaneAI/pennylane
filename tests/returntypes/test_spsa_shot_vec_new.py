@@ -25,12 +25,22 @@ from pennylane.gradients import spsa_gradient
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
-
 h_val = 0.1
 spsa_shot_vec_tol = 0.3
 
 default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([1000000] * 3)
+
+
+def coordinate_sampler(indices, num_params, idx):
+    """Return a single canonical basis vector, corresponding
+    to the index ``indices[idx]``. This is a sequential coordinate sampler
+    that allows to exactly reproduce derivatives, instead of using SPSA in the
+    intended way."""
+    idx = idx % len(indices)
+    direction = np.zeros(num_params)
+    direction[indices[idx]] = 1.0
+    return direction
 
 
 class TestSpsaGradient:
@@ -85,7 +95,9 @@ class TestSpsaGradient:
             qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-        tapes, fn = spsa_gradient(tape, h=h_val, shots=default_shot_vector, num_directions=num_directions)
+        tapes, fn = spsa_gradient(
+            tape, h=h_val, shots=default_shot_vector, num_directions=num_directions
+        )
         all_res = fn(dev.batch_execute(tapes))
 
         assert isinstance(all_res, tuple)
@@ -120,9 +132,7 @@ class TestSpsaGradient:
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = spsa_gradient(
-                tape, h=h_val, shots=default_shot_vector
-            )
+            g_tapes, post_processing = spsa_gradient(tape, h=h_val, shots=default_shot_vector)
         all_res = post_processing(qml.execute(g_tapes, dev, None))
         assert len(all_res) == len(default_shot_vector)
 
@@ -145,9 +155,7 @@ class TestSpsaGradient:
 
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
-            g_tapes, post_processing = spsa_gradient(
-                tape, h=h_val, shots=default_shot_vector
-            )
+            g_tapes, post_processing = spsa_gradient(tape, h=h_val, shots=default_shot_vector)
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
@@ -156,8 +164,8 @@ class TestSpsaGradient:
         for _res in res:
             assert isinstance(_res, tuple)
             assert len(_res) == 2
-            assert _res[0].shape==(0,)
-            assert _res[1].shape==(0,)
+            assert _res[0].shape == (0,)
+            assert _res[1].shape == (0,)
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):
@@ -321,7 +329,7 @@ class TestSpsaGradient:
             assert tapes == []
 
     def test_y0(self, mocker):
-        """Test that if first order finite differences is used, then
+        """Test that if first order finite differences is underlying the SPSA, then
         the tape is executed only once using the current parameter
         values."""
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
@@ -332,7 +340,14 @@ class TestSpsaGradient:
             qml.expval(qml.PauliZ(0))
 
         n = 13
-        tapes, fn = spsa_gradient(tape, strategy="forward", approx_order=1, h=h_val, shots=default_shot_vector, num_directions=n)
+        tapes, fn = spsa_gradient(
+            tape,
+            strategy="forward",
+            approx_order=1,
+            h=h_val,
+            shots=default_shot_vector,
+            num_directions=n,
+        )
 
         # one tape per direction, plus one global call
         assert len(tapes) == n + 1
@@ -348,7 +363,15 @@ class TestSpsaGradient:
 
         f0 = dev.execute(tape)
         n = 9
-        tapes, fn = spsa_gradient(tape, strategy="forward", approx_order=1, f0=f0, h=h_val, shots=default_shot_vector, num_directions=n)
+        tapes, fn = spsa_gradient(
+            tape,
+            strategy="forward",
+            approx_order=1,
+            f0=f0,
+            h=h_val,
+            shots=default_shot_vector,
+            num_directions=n,
+        )
 
         assert len(tapes) == n
 
@@ -368,13 +391,27 @@ class TestSpsaGradient:
             qml.expval(qml.PauliZ(1))
 
         n1 = 5
-        tapes, fn = spsa_gradient(tape1, approx_order=1, strategy="forward", num_directions=n1, shots=many_shots_shot_vector, h=h_val)
+        tapes, fn = spsa_gradient(
+            tape1,
+            approx_order=1,
+            strategy="forward",
+            num_directions=n1,
+            shots=many_shots_shot_vector,
+            h=h_val,
+        )
         j1 = fn(dev.batch_execute(tapes))
 
         assert len(tapes) == dev.num_executions == n1 + 1
 
         n2 = 11
-        tapes, fn = spsa_gradient(tape2, approx_order=1, strategy="forward", h=h_val, shots=default_shot_vector, num_directions=n2)
+        tapes, fn = spsa_gradient(
+            tape2,
+            approx_order=1,
+            strategy="forward",
+            h=h_val,
+            shots=default_shot_vector,
+            num_directions=n2,
+        )
         j2 = fn(dev.batch_execute(tapes))
 
         assert len(tapes) == n2 + 1
@@ -527,7 +564,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             shots=many_shots_shot_vector,
-            num_directions=11, 
+            num_directions=10,
         )
         all_res = fn(dev.batch_execute(tapes))
         assert isinstance(all_res, tuple)
@@ -567,7 +604,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            num_directions=10, 
+            num_directions=10,
             sampler=coordinate_sampler,
             shots=default_shot_vector,
         )
@@ -613,7 +650,7 @@ class TestSpsaGradientIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            num_directions=11, 
+            num_directions=10,
             sampler=coordinate_sampler,
             h=h_val,
             shots=many_shots_shot_vector,
@@ -664,7 +701,7 @@ class TestSpsaGradientIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            num_directions=11, 
+            num_directions=10,
             sampler=coordinate_sampler,
             h=h_val,
             shots=many_shots_shot_vector,
@@ -718,7 +755,7 @@ class TestSpsaGradientIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            num_directions=11, 
+            num_directions=10,
             sampler=coordinate_sampler,
             h=h_val,
             shots=many_shots_shot_vector,
@@ -762,7 +799,7 @@ class TestSpsaGradientIntegration:
             validate_params=validate,
             sampler=coordinate_sampler,
             h=h_val,
-            num_directions=11, 
+            num_directions=10,
             shots=many_shots_shot_vector,
         )
         all_res = fn(dev.batch_execute(tapes))
@@ -777,22 +814,22 @@ class TestSpsaGradientIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-
-            # The coordinate_sampler produces the right evaluation points, but the tape execution
-            # results are averaged instead of added, so that we need to revert the prefactor
-            # 1 / num_params here.
-            res[0] = (2 * res[0][0], 2 * res[0][1])
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=spsa_shot_vec_tol, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-
-            res[1] = (2 * res[1][0], 2 * res[1][1])
-            assert np.allclose(res[1], [0, np.cos(y)], atol=spsa_shot_vec_tol, rtol=0)
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
+
+            # The coordinate_sampler produces the right evaluation points, but the tape execution
+            # results are averaged instead of added, so that we need to revert the prefactor
+            # 1 / num_params here.
+            res_0 = (2 * res[0][0], 2 * res[0][1])
+            assert np.allclose(res_0, [-np.sin(x), 0], atol=spsa_shot_vec_tol, rtol=0)
+
+            res_1 = (2 * res[1][0], 2 * res[1][1])
+            assert np.allclose(res_1, [0, np.cos(y)], atol=spsa_shot_vec_tol, rtol=0)
 
     def test_var_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
@@ -814,7 +851,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            num_directions=11, 
+            num_directions=10,
             sampler=coordinate_sampler,
             shots=many_shots_shot_vector,
         )
@@ -830,22 +867,23 @@ class TestSpsaGradientIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            # The coordinate_sampler produces the right evaluation points, but the tape execution
-            # results are averaged instead of added, so that we need to revert the prefactor
-            # 1 / num_params here.
-            res[0] = (2 * res[0][0], 2 * res[0][1])
-            assert np.allclose(res[0], [-np.sin(x), 0], atol=spsa_shot_vec_tol, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            res[1] = (2 * res[1][0], 2 * res[1][1])
-            assert np.allclose(
-                res[1], [0, -2 * np.cos(y) * np.sin(y)], atol=spsa_shot_vec_tol, rtol=0
-            )
             assert isinstance(res[1][0], numpy.ndarray)
             assert isinstance(res[1][1], numpy.ndarray)
+
+            # The coordinate_sampler produces the right evaluation points, but the tape execution
+            # results are averaged instead of added, so that we need to revert the prefactor
+            # 1 / num_params here.
+            res_0 = (2 * res[0][0], 2 * res[0][1])
+            assert np.allclose(res_0, [-np.sin(x), 0], atol=spsa_shot_vec_tol, rtol=0)
+            res_1 = (2 * res[1][0], 2 * res[1][1])
+            assert np.allclose(
+                res_1, [0, -2 * np.cos(y) * np.sin(y)], atol=spsa_shot_vec_tol, rtol=0
+            )
 
     def test_prob_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
@@ -867,6 +905,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             sampler=coordinate_sampler,
+            num_directions=6,
             h=h_val,
             shots=many_shots_shot_vector,
         )
@@ -882,20 +921,24 @@ class TestSpsaGradientIntegration:
 
             assert isinstance(res[0], tuple)
             assert len(res[0]) == 2
-            # The coordinate_sampler produces the right evaluation points, but the tape execution
-            # results are averaged instead of added, so that we need to revert the prefactor
-            # 1 / num_params here.
-            res[0] = (2 * res[0][0], 2 * res[0][1])
-            assert np.allclose(res[0][0], -np.sin(x), atol=spsa_shot_vec_tol, rtol=0)
             assert isinstance(res[0][0], numpy.ndarray)
-            assert np.allclose(res[0][1], 0, atol=spsa_shot_vec_tol, rtol=0)
             assert isinstance(res[0][1], numpy.ndarray)
 
             assert isinstance(res[1], tuple)
             assert len(res[1]) == 2
-            res[1] = (2 * res[1][0], 2 * res[1][1])
+            assert isinstance(res[1][0], numpy.ndarray)
+            assert isinstance(res[1][1], numpy.ndarray)
+
+            # The coordinate_sampler produces the right evaluation points, but the tape execution
+            # results are averaged instead of added, so that we need to revert the prefactor
+            # 1 / num_params here.
+            res_0 = (2 * res[0][0], 2 * res[0][1])
+            assert np.allclose(res_0[0], -np.sin(x), atol=spsa_shot_vec_tol, rtol=0)
+            assert np.allclose(res_0[1], 0, atol=spsa_shot_vec_tol, rtol=0)
+
+            res_1 = (2 * res[1][0], 2 * res[1][1])
             assert np.allclose(
-                res[1][0],
+                res_1[0],
                 [
                     -(np.cos(y / 2) ** 2 * np.sin(x)) / 2,
                     -(np.sin(x) * np.sin(y / 2) ** 2) / 2,
@@ -905,9 +948,8 @@ class TestSpsaGradientIntegration:
                 atol=spsa_shot_vec_tol,
                 rtol=0,
             )
-            assert isinstance(res[1][0], numpy.ndarray)
             assert np.allclose(
-                res[1][1],
+                res_1[1],
                 [
                     -(np.cos(x / 2) ** 2 * np.sin(y)) / 2,
                     (np.cos(x / 2) ** 2 * np.sin(y)) / 2,
@@ -917,18 +959,17 @@ class TestSpsaGradientIntegration:
                 atol=spsa_shot_vec_tol,
                 rtol=0,
             )
-            assert isinstance(res[1][1], numpy.ndarray)
 
 
 @pytest.mark.parametrize("approx_order", [2])
 @pytest.mark.parametrize("strategy", ["center"])
 @pytest.mark.xfail(reason="TODO: higher-order derivatives with finite shots")
-class TestFiniteDiffGradients:
+class TestSpsaGradientDifferentiation:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
     def test_autograd(self, approx_order, strategy, tol):
-        """Tests that the output of the finite-difference transform
+        """Tests that the output of the SPSA gradient transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2, shots=many_shots_shot_vector)
         params = np.array([0.543, -0.654], requires_grad=True)
@@ -970,7 +1011,7 @@ class TestFiniteDiffGradients:
 
     @pytest.mark.autograd
     def test_autograd_ragged(self, approx_order, strategy, tol):
-        """Tests that the output of the finite-difference transform
+        """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2, shots=many_shots_shot_vector)
         params = np.array([0.543, -0.654], requires_grad=True)
@@ -1008,7 +1049,7 @@ class TestFiniteDiffGradients:
     @pytest.mark.tf
     @pytest.mark.slow
     def test_tf(self, approx_order, strategy, tol):
-        """Tests that the output of the finite-difference transform
+        """Tests that the output of the SPSA gradient transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
@@ -1048,7 +1089,7 @@ class TestFiniteDiffGradients:
 
     @pytest.mark.tf
     def test_tf_ragged(self, approx_order, strategy, tol):
-        """Tests that the output of the finite-difference transform
+        """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
@@ -1085,7 +1126,7 @@ class TestFiniteDiffGradients:
 
     @pytest.mark.torch
     def test_torch(self, approx_order, strategy, tol):
-        """Tests that the output of the finite-difference transform
+        """Tests that the output of the SPSA gradient transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
@@ -1121,16 +1162,12 @@ class TestFiniteDiffGradients:
             ]
         )
 
-        assert np.allclose(
-            hess[0].detach().numpy(), expected[0], atol=spsa_shot_vec_tol, rtol=0
-        )
-        assert np.allclose(
-            hess[1].detach().numpy(), expected[1], atol=spsa_shot_vec_tol, rtol=0
-        )
+        assert np.allclose(hess[0].detach().numpy(), expected[0], atol=spsa_shot_vec_tol, rtol=0)
+        assert np.allclose(hess[1].detach().numpy(), expected[1], atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, approx_order, strategy, tol):
-        """Tests that the output of the finite-difference transform
+        """Tests that the output of the SPSA gradient transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp

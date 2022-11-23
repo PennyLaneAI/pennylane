@@ -24,6 +24,7 @@ from pennylane.gradients.spsa import _rademacher_sampler
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
+
 def coordinate_sampler(indices, num_params, idx):
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
@@ -31,12 +32,14 @@ def coordinate_sampler(indices, num_params, idx):
     intended way."""
     idx = idx % len(indices)
     direction = np.zeros(num_params)
-    direction[indices[idx]] = 1.
+    direction[indices[idx]] = 1.0
     return direction
 
-class TestRademacherSampler:
 
-    @pytest.mark.parametrize("ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)])
+class TestRademacherSampler:
+    @pytest.mark.parametrize(
+        "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
+    )
     def test_output_structure(self, ids, num):
         ids_mask = np.zeros(num, dtype=bool)
         ids_mask[ids] = True
@@ -425,7 +428,9 @@ class TestSpsaGradientIntegration:
             qml.probs(wires=0)
             qml.probs(wires=[1, 2])
 
-        tapes, fn = spsa_gradient(tape, approx_order=approx_order, strategy=strategy, num_directions=11)
+        tapes, fn = spsa_gradient(
+            tape, approx_order=approx_order, strategy=strategy, num_directions=11
+        )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (6, 3)
 
@@ -442,7 +447,14 @@ class TestSpsaGradientIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tapes, fn = spsa_gradient(tape, h=1e-6, approx_order=approx_order, strategy=strategy, num_directions=6, sampler=coordinate_sampler)
+        tapes, fn = spsa_gradient(
+            tape,
+            h=1e-6,
+            approx_order=approx_order,
+            strategy=strategy,
+            num_directions=6,
+            sampler=coordinate_sampler,
+        )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (1, 2)
 
@@ -469,7 +481,14 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         # we choose both trainable parameters
-        tapes, fn = spsa_gradient(tape, argnum=[0, 1], approx_order=approx_order, strategy=strategy, num_directions=8, sampler=coordinate_sampler)
+        tapes, fn = spsa_gradient(
+            tape,
+            argnum=[0, 1],
+            approx_order=approx_order,
+            strategy=strategy,
+            num_directions=8,
+            sampler=coordinate_sampler,
+        )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (1, 2)
 
@@ -501,7 +520,14 @@ class TestSpsaGradientIntegration:
 
         # we choose only 1 trainable parameter - do not need to account for the multiplicative
         # error of using the coordinate_sampler
-        tapes, fn = spsa_gradient(tape, argnum=1, approx_order=approx_order, strategy=strategy, num_directions=11, sampler=coordinate_sampler)
+        tapes, fn = spsa_gradient(
+            tape,
+            argnum=1,
+            approx_order=approx_order,
+            strategy=strategy,
+            num_directions=11,
+            sampler=coordinate_sampler,
+        )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (1, 2)
 
@@ -525,7 +551,13 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
 
-        tapes, fn = spsa_gradient(tape, approx_order=approx_order, strategy=strategy, num_directions=12, sampler=coordinate_sampler)
+        tapes, fn = spsa_gradient(
+            tape,
+            approx_order=approx_order,
+            strategy=strategy,
+            num_directions=12,
+            sampler=coordinate_sampler,
+        )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (2, 2)
 
@@ -551,7 +583,13 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliX(1))
 
-        tapes, fn = spsa_gradient(tape, approx_order=approx_order, strategy=strategy, num_directions=12, sampler=coordinate_sampler)
+        tapes, fn = spsa_gradient(
+            tape,
+            approx_order=approx_order,
+            strategy=strategy,
+            num_directions=12,
+            sampler=coordinate_sampler,
+        )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (2, 2)
 
@@ -577,7 +615,13 @@ class TestSpsaGradientIntegration:
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
 
-        tapes, fn = spsa_gradient(tape, approx_order=approx_order, strategy=strategy, num_directions=10, sampler=coordinate_sampler)
+        tapes, fn = spsa_gradient(
+            tape,
+            approx_order=approx_order,
+            strategy=strategy,
+            num_directions=10,
+            sampler=coordinate_sampler,
+        )
         res = fn(dev.batch_execute(tapes))
 
         assert res.shape == (5, 2)
@@ -614,7 +658,9 @@ class TestSpsaGradientIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("sampler, num_directions, atol",[(_rademacher_sampler, 6, 0.5), (coordinate_sampler, 2, 1e-3)])
+@pytest.mark.parametrize(
+    "sampler, num_directions, atol", [(_rademacher_sampler, 6, 0.5), (coordinate_sampler, 2, 1e-3)]
+)
 class TestSpsaGradientDifferentiation:
     """Test that the transform is differentiable"""
 
@@ -635,7 +681,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_gradient(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler==coordinate_sampler:
+            if sampler == coordinate_sampler:
                 jac *= 2
             return jac
 
@@ -667,7 +713,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_gradient(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler==coordinate_sampler:
+            if sampler == coordinate_sampler:
                 jac *= 2
             return jac[1, 0]
 
@@ -696,7 +742,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_gradient(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler==coordinate_sampler:
+            if sampler == coordinate_sampler:
                 jac *= 2
 
         x, y = 1.0 * params
@@ -733,7 +779,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_gradient(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))[1, 0]
-            if sampler==coordinate_sampler:
+            if sampler == coordinate_sampler:
                 jac *= 2
 
         x, y = 1.0 * params
@@ -758,7 +804,7 @@ class TestSpsaGradientDifferentiation:
 
         tapes, fn = spsa_gradient(tape, n=1, num_directions=num_directions, sampler=sampler)
         jac = fn(dev.batch_execute(tapes))
-        if sampler==coordinate_sampler:
+        if sampler == coordinate_sampler:
             jac *= 2
         cost = torch.sum(jac)
         cost.backward()
@@ -800,7 +846,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_gradient(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler==coordinate_sampler:
+            if sampler == coordinate_sampler:
                 jac *= 2
             return jac
 
