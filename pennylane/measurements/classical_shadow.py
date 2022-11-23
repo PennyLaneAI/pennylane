@@ -19,6 +19,7 @@ from collections.abc import Iterable
 
 import numpy as np
 
+import pennylane as qml
 from pennylane.wires import Wires
 
 from .measurements import MeasurementProcess, MeasurementShapeError, Shadow, ShadowExpval
@@ -227,10 +228,10 @@ class ShadowMeasurementProcess(MeasurementProcess):
     """
 
     def __init__(self, *args, seed=None, H=None, k=1, **kwargs):
-        super().__init__(*args, **kwargs)
         self.seed = seed
         self.H = H
         self.k = k
+        super().__init__(*args, **kwargs)
 
     @property
     def numeric_type(self):
@@ -286,6 +287,19 @@ class ShadowMeasurementProcess(MeasurementProcess):
             return Wires.all_wires([h.wires for h in self.H])
 
         return self.H.wires
+
+    def queue(self, context=qml.QueuingManager):
+        """Append the measurement process to an annotated queue, making sure
+        the observable is not queued"""
+        if self.H is not None:
+            Hs = [self.H] if not isinstance(self.H, Iterable) else self.H
+            for H in Hs:
+                context.update_info(H, owner=self)
+            context.append(self, owns=Hs)
+        else:
+            context.append(self)
+
+        return self
 
     def __copy__(self):
         obj = super().__copy__()
