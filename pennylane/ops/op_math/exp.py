@@ -427,9 +427,13 @@ class Evolution(Exp):
         self.param = param
 
     @property
-    def parameters(self):
-        """Parameter that the operator depends on."""
-        return [self.param]  # should this be the parameter or the coefficient?
+    def data(self):
+        return [self.param]
+
+    @data.setter
+    def data(self, new_data):
+        self.coeff = 1j * new_data
+        self.param = new_data
 
     @property
     def num_params(self):
