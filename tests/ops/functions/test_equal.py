@@ -1182,3 +1182,17 @@ class TestObservablesComparisons:
         op2 = qml.RX(1.2, 0)
         assert qml.equal(op1, op2) == False
         assert qml.equal(op2, op1) == False
+
+    def test_tensor_and_unsupported_observable_not_implemented(self):
+        """Tests that trying to compare a Tensor to something other than another Tensor or a Hamiltonian raises a NotImplmenetedError"""
+        op1 = qml.PauliX(0) @ qml.PauliY(1)
+        op2 = qml.Hermitian([[0, 1], [1, 0]], 0)
+
+        with pytest.raises(NotImplementedError, match="Comparison of"):
+            qml.equal(op1, op2)
+
+    def test_unsupported_object_type_not_implemented(self):
+        dev = qml.device("default.qubit", wires=1)
+
+        with pytest.raises(NotImplementedError, match="Comparison of"):
+            qml.equal(dev, dev)
