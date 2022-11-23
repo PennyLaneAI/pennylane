@@ -379,14 +379,16 @@ class Evolution(Exp):
             any complex component.
 
     Returns:
-       :class:`Exp`: A :class`~.operation.Operator` representing an operator exponential, of the form exp(-ixG).
+       :class:`Evolution`: A :class`~.operation.Operator` representing an operator exponential of the form exp(ixG),
+       where x is real.
 
     **Use Details**
 
     In contrast to the general Exp class, the Evolution operator is constrained to a single trainable
-    parameter, allowing it to be differentiated with regard to the evolution parameter even if the base
-    operator contains additional parameters.
-
+    parameter, x. Any parameters contained in the base operator are not trainable. This allows the operator
+    to be differentiated with regard to the evolution parameter. Defining a mathematically identical operator
+    using the Exp class will be incompatible with a variety of PennyLane functions that require only a single
+    trainable parameter.
 
     **Example**
     This symbolic operator can be used to make general rotation operators:
@@ -396,10 +398,9 @@ class Evolution(Exp):
     True
 
     Or to define a time evolution operator for a time-independent Hamiltonian:
-    >>> from scipy.constants import hbar
     >>> H = qml.Hamiltonian([1, 1], [qml.PauliY(0), qml.PauliX(1)])
     >>> t = 10e-6
-    >>> U = Evolution(H, -1/hbar * t)
+    >>> U = Evolution(H, -1 * t)
 
     Even for more complicated generators, this operator is defined to have a single parameter,
     allowing it to be differentiated with respect to that parameter (base operator parameters are
