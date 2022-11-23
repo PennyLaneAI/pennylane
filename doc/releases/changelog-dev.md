@@ -113,6 +113,9 @@
 * Remove private `_wires` setter from the `Controlled.map_wires` method.
   [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
 
+* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
+  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
+
 <h3>Breaking changes</h3>
 
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
