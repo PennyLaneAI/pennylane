@@ -50,7 +50,7 @@ class TestExpval:
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_value(self, r_dtype, mocker, shots):
+    def test_value(self, tol, r_dtype, mocker, shots):
         """Test that the expval interface works"""
         dev = qml.device("default.qubit", wires=2, shots=shots)
         dev.R_DTYPE = r_dtype
@@ -67,7 +67,10 @@ class TestExpval:
         res = circuit(x)
         expected = -np.sin(x)
 
-        assert np.allclose(res, expected, atol=0.05, rtol=0.05)
+        atol = tol if shots is None else 0.05
+        rtol = 0 if shots is None else 0.05
+
+        assert np.allclose(res, expected, atol=atol, rtol=rtol)
         assert res.dtype == r_dtype
 
         custom_measurement_process(new_dev, spy)
