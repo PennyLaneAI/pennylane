@@ -148,10 +148,15 @@ class _Probability(SampleMeasurement, StateMeasurement):
         batch_size = samples.shape[0] if qml.math.ndim(samples) == 3 else None
         dim = 2**num_wires
         # count the basis state occurrences, and construct the probability vector
-        if bin_size is not None:
-            num_bins = samples.shape[-2] // bin_size
-            return self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
-        return self._count_unbinned_samples(indices, batch_size, dim)
+        if bin_size is None:
+            # treat as 1 bin
+            num_bins = 1
+            bin_size = samples.shape[-2]
+            return qml.math.squeeze(
+                self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
+            )
+        num_bins = samples.shape[-2] // bin_size
+        return self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         num_wires = len(wire_order)
@@ -196,25 +201,6 @@ class _Probability(SampleMeasurement, StateMeasurement):
             for b, idx in enumerate(_indices):  # Then iterate over bins dimension
                 basis_states, counts = qml.math.unique(idx, return_counts=True)
                 prob[i, basis_states, b] = counts / bin_size
-
-        return prob
-
-    @staticmethod
-    def _count_unbinned_samples(indices, batch_size, dim):
-        """Count the occurences of sampled indices and convert them to relative
-        counts in order to estimate their occurence probability."""
-        if batch_size is None:
-            prob = qml.math.zeros(dim, dtype="float64")
-            basis_states, counts = qml.math.unique(indices, return_counts=True)
-            prob[basis_states] = counts / len(indices)
-
-            return prob
-
-        prob = qml.math.zeros((batch_size, dim), dtype="float64")
-
-        for i, idx in enumerate(indices):  # iterate over the broadcasting dimension
-            basis_states, counts = qml.math.unique(idx, return_counts=True)
-            prob[i, basis_states] = counts / len(idx)
 
         return prob
 
