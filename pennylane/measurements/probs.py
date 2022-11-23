@@ -148,10 +148,11 @@ class _Probability(SampleMeasurement, StateMeasurement):
         batch_size = samples.shape[0] if qml.math.ndim(samples) == 3 else None
         dim = 2**num_wires
         # count the basis state occurrences, and construct the probability vector
-        if bin_size is not None:
-            num_bins = samples.shape[-2] // bin_size
-            return self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
-        return self._count_unbinned_samples(indices, batch_size, dim)
+        new_bin_size = bin_size or samples.shape[-2]
+        new_shape = (-1, new_bin_size) if batch_size is None else (batch_size, -1, new_bin_size)
+        indices = indices.reshape(new_shape)
+        prob = self._count_samples(indices, batch_size, dim)
+        return qml.math.squeeze(prob) if bin_size is None else prob
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         num_wires = len(wire_order)
@@ -173,13 +174,12 @@ class _Probability(SampleMeasurement, StateMeasurement):
         return self.marginal_prob(real_state**2 + imag_state**2, wire_order, batch_size)
 
     @staticmethod
-    def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
-        """Count the occurences of bins of sampled indices and convert them to relative
-        counts in order to estimate their occurence probability per bin."""
-
+    def _count_samples(indices, batch_size, dim):
+        """Count the occurences of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability."""
+        num_bins, bin_size = indices.shape[-2:]
         if batch_size is None:
             prob = qml.math.zeros((dim, num_bins), dtype="float64")
-            indices = indices.reshape((num_bins, bin_size))
             # count the basis state occurrences, and construct the probability vector for each bin
             for b, idx in enumerate(indices):
                 basis_states, counts = qml.math.unique(idx, return_counts=True)
@@ -196,25 +196,6 @@ class _Probability(SampleMeasurement, StateMeasurement):
             for b, idx in enumerate(_indices):  # Then iterate over bins dimension
                 basis_states, counts = qml.math.unique(idx, return_counts=True)
                 prob[i, basis_states, b] = counts / bin_size
-
-        return prob
-
-    @staticmethod
-    def _count_unbinned_samples(indices, batch_size, dim):
-        """Count the occurences of sampled indices and convert them to relative
-        counts in order to estimate their occurence probability."""
-        if batch_size is None:
-            prob = qml.math.zeros(dim, dtype="float64")
-            basis_states, counts = qml.math.unique(indices, return_counts=True)
-            prob[basis_states] = counts / len(indices)
-
-            return prob
-
-        prob = qml.math.zeros((batch_size, dim), dtype="float64")
-
-        for i, idx in enumerate(indices):  # iterate over the broadcasting dimension
-            basis_states, counts = qml.math.unique(idx, return_counts=True)
-            prob[i, basis_states] = counts / len(idx)
 
         return prob
 
