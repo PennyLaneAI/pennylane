@@ -416,7 +416,7 @@ class TestBasis:
             ),
         ],
     )
-    def test_data_basis_set_exchangey(self, basis_name, atom_name):
+    def test_data_basis_set_exchange(self, basis_name, atom_name):
         """Test that correct basis set parameters are loaded from basis_set_exchange library."""
 
         pytest.importorskip("basis_set_exchange")
@@ -702,6 +702,67 @@ class TestLoadBasis:
                         "D",  # l
                         [1.185000e00],  # alpha
                         [1.0000000],  # coeff
+                    ),
+                ),
+            ),
+            (
+                "6-31+G*",
+                "B",
+                (
+                    (
+                        "S",  # l
+                        [
+                            0.2068882250e04,
+                            0.3106495700e03,
+                            0.7068303300e02,
+                            0.1986108030e02,
+                            0.6299304840e01,
+                            0.2127026970e01,
+                        ],  # alpha
+                        [
+                            0.1866274590e-02,
+                            0.1425148170e-01,
+                            0.6955161850e-01,
+                            0.2325729330e00,
+                            0.4670787120e00,
+                            0.3634314400e00,
+                        ],  # coeff
+                    ),
+                    (
+                        "S",  # l
+                        [0.4727971071e01, 0.1190337736e01, 0.3594116829e00],  # alpha
+                        [-0.1303937974e00, -0.1307889514e00, 0.1130944484e01],
+                        # coeff
+                    ),
+                    (
+                        "P",  # l
+                        [0.4727971071e01, 0.1190337736e01, 0.3594116829e00],  # alpha
+                        [0.7459757992e-01, 0.3078466771e00, 0.7434568342e00],  # coeff
+                    ),
+                    (
+                        "S",  # l
+                        [0.1267512469e00],  # alpha
+                        [0.1000000000e01],  # coeff
+                    ),
+                    (
+                        "P",  # l
+                        [0.1267512469e00],  # alpha
+                        [0.1000000000e01],  # coeff
+                    ),
+                    (
+                        "D",  # l
+                        [0.6000000000e00],  # alpha
+                        [1.0000000],  # coeff
+                    ),
+                    (
+                        "S",  # l
+                        [0.3150000000e-01],  # alpha
+                        [0.1000000000e01],  # coeff
+                    ),
+                    (
+                        "P",  # l
+                        [0.3150000000e-01],  # alpha
+                        [0.1000000000e01],  # coeff
                     ),
                 ),
             ),

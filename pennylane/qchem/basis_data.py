@@ -14,7 +14,7 @@
 """
 This module contains basis set parameters defining Gaussian-type orbitals for a selected number of
 atoms. The data are taken from the Basis Set Exchange `library <https://www.basissetexchange.org>`_.
-The current data include the STO-3G, 6-31G, 6-311G and CC-PVDZ, basis sets for atoms with atomic
+The current data includes the STO-3G, 6-31G, 6-311G and CC-PVDZ, basis sets for elements with atomic
 numbers 1-10.
 """
 
@@ -760,14 +760,14 @@ basis_sets = {
 
 
 def load_basisset(basis, element):
-    r"""Extracts basis set data from Basis Set Exchange library.
+    r"""Extracts basis set data from the Basis Set Exchange library.
 
     Args:
         basis (str): name of the basis set
         element (str): atomic symbol of the chemical element
 
     Returns:
-        dict[str, list]: dictionary containing orbital names and the exponents and contraction
+        dict[str, list]: dictionary containing orbital names, and the exponents and contraction
         coefficients of a basis function
 
     **Example**
