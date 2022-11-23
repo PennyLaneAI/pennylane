@@ -347,7 +347,7 @@ def apply(op, context=QueuingManager):
 
 
 # pylint: disable=protected-access
-def process_queue(queue):
+def process_queue(queue: AnnotatedQueue):
     """Process the annotated queue, creating a list of quantum
     operations and measurement processes.
 
