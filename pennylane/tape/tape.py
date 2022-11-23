@@ -94,6 +94,9 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     Returns:
         QuantumScript: The expanded version of ``qscript``.
 
+    Raises:
+        QuantumFunctionError: if some observables in the qscript are not qubit-wise commuting
+
     **Example**
 
     Consider the following nested tape:
@@ -153,6 +156,7 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
                 rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(
                     qscript._obs_sharing_wires
                 )
+                qscript._obs_sharing_wires = diag_obs
             except (TypeError, ValueError) as e:
                 if any(
                     m.return_type in (Probability, Sample, Counts, AllCounts)
