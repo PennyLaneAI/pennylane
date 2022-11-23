@@ -168,6 +168,13 @@ def split_non_commuting(tape):
 
         def reorder_fn(res):
             """re-order the output to the original shape and order"""
+            if qml.active_return():
+                for i, tape in enumerate(tapes):
+                    if len(tape.observables) == 1:
+                        res[i] = qml.math.expand_dims(res[i], 0)
+                    else:
+                        res[i] = qml.math.stack(res[i])
+
             new_res = qml.math.concatenate(res)
             reorder_indxs = qml.math.concatenate(group_coeffs)
 
