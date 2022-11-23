@@ -127,7 +127,7 @@ def hamiltonian_expand(tape, group=True):
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
         )
 
-    if hamiltonian.terms() == ([], []):
+    if len(hamiltonian.coeffs) == 0 and len(hamiltonian.ops) == 0:
         raise ValueError(
             "The Hamiltonian in the tape has no terms defined - cannot perform the Hamiltonian expansion."
         )
