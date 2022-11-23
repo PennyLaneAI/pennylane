@@ -401,10 +401,14 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         self._update()
 
     def __getitem__(self, key):
-        try:
+        """
+        Overrides the default because QuantumTape is both a QuantumScript and an AnnotatedQueue.
+        If key is an int, the caller is likely indexing the backing QuantumScript. Otherwise, the
+        caller is likely indexing the backing AnnotatedQueue.
+        """
+        if isinstance(key, int):
             return QuantumScript.__getitem__(self, key)
-        except TypeError:
-            return AnnotatedQueue.__getitem__(self, key)
+        return AnnotatedQueue.__getitem__(self, key)
 
     def __setitem__(self, key, val):
         AnnotatedQueue.__setitem__(self, key, val)
