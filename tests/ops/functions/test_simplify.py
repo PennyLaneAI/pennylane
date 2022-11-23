@@ -64,7 +64,7 @@ class TestSimplifyOperators:
             s_op = qml.simplify(op)
         assert len(tape.circuit) == 1
         assert tape.circuit[0] is s_op
-        assert tape._queue[op]["owner"] is s_op
+        assert tape.get_info(op)["owner"] is s_op
 
     def test_simplify_unsupported_object_raises_error(self):
         """Test that an error is raised when trying to simplify an unsupported object."""

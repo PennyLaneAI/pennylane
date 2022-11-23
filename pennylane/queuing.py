@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the :class:`QueuingManager`.
+This module contains :func:`qml.apply`, :class:`QueuingManager`, and internal code to handle queuing.
 """
 
 import copy
@@ -183,12 +183,9 @@ class QueuingManager:
         return cls.active_context().get_info(obj) if cls.recording() else None
 
 
-class AnnotatedQueue:
+class AnnotatedQueue(OrderedDict):
     """Lightweight class that maintains a basic queue of operations, in addition
     to metadata annotations."""
-
-    def __init__(self):
-        self._queue = OrderedDict()
 
     def __enter__(self):
         """Adds this instance to the global list of active contexts.
@@ -206,28 +203,28 @@ class AnnotatedQueue:
 
     def append(self, obj, **kwargs):
         """Append ``obj`` into the queue with ``kwargs`` metadata."""
-        self._queue[obj] = kwargs
+        self[obj] = kwargs
 
     def remove(self, obj):
         """Remove ``obj`` from the queue.  Raises ``KeyError`` if ``obj`` is not already in the queue."""
-        del self._queue[obj]
+        del self[obj]
 
     def update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
-        if obj in self._queue:
-            self._queue[obj].update(kwargs)
+        if obj in self:
+            self[obj].update(kwargs)
 
     def get_info(self, obj):
         """Retrieve the metadata for ``obj``.  Raises a ``QueuingError`` if obj is not in the queue."""
-        if obj not in self._queue:
+        if obj not in self:
             raise QueuingError(f"Object {obj} not in the queue.")
 
-        return self._queue[obj]
+        return self[obj]
 
     @property
     def queue(self):
         """Returns a list of objects in the annotated queue"""
-        return list(self._queue.keys())
+        return list(self.keys())
 
 
 def apply(op, context=QueuingManager):
@@ -347,3 +344,34 @@ def apply(op, context=QueuingManager):
         context.append(op)
 
     return op
+
+
+# pylint: disable=protected-access
+def process_queue(queue: AnnotatedQueue):
+    """Process the annotated queue, creating a list of quantum
+    operations and measurement processes.
+
+    Args:
+        queue (.AnnotatedQueue): The queue to be processed into individual lists
+
+    Returns:
+        tuple[list(.Operation), list(.MeasurementProcess)], list(.Operation):
+        The list of main tape operations, the list of tape measurements, and the list of preparation operations
+    """
+    lists = {"_prep": [], "_ops": [], "_measurements": []}
+    list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
+    current_list = "_prep"
+
+    for obj, info in queue.items():
+
+        if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
+            if list_order[obj._queue_category] > list_order[current_list]:
+                current_list = obj._queue_category
+            elif list_order[obj._queue_category] < list_order[current_list]:
+                raise ValueError(
+                    f"{obj._queue_category[1:]} operation {obj} must occur prior "
+                    f"to {current_list[1:]}. Please place earlier in the queue."
+                )
+            lists[obj._queue_category].append(obj)
+
+    return lists["_ops"], lists["_measurements"], lists["_prep"]
