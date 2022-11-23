@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
+
 Miscellaneous support for circuit cutting.
 """
 
@@ -19,6 +20,7 @@ Miscellaneous support for circuit cutting.
 import uuid
 import pennylane as qml
 from pennylane.operation import Operation
+
 
 
 class MeasureNode(Operation):
@@ -71,3 +73,4 @@ def _prep_iminus_state(wire):
     qml.PauliX(wire)
     qml.Hadamard(wire)
     qml.S(wires=wire)
+
