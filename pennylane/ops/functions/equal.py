@@ -185,20 +185,23 @@ def _equal(
 # pylint: disable=unused-argument
 def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     """Determine whether a Tensor object is equal to a Hamiltonian/Tensor"""
-    if not isinstance(
-        op2, Observable
-    ):  # _obs_comparison_data will raise an error for anything else
+    if not isinstance(op2, Observable):
         return False
-    return _obs_comparison_data(op1) == _obs_comparison_data(op2)
+
+    if isinstance(op2, Hamiltonian):
+        return op2.compare(op1)
+
+    if isinstance(op2, Tensor):
+        return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
+
+    raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
 
 
 @_equal.register
 # pylint: disable=unused-argument
 def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
     """Determine whether a Hamiltonian object is equal to a Hamiltonian/Tensor objects"""
-    if not isinstance(
-        op2, Observable
-    ):  # _obs_comparison_data will raise an error for anything else
+    if not isinstance(op2, Observable):
         return False
     return op1.compare(op2)
 
@@ -241,15 +244,3 @@ def _equal_shadow_measurements(
     k_match = op1.k == op2.k
 
     return return_types_match and wires_match and H_match and k_match
-
-
-def _obs_comparison_data(obs: Union[Hamiltonian, Tensor]):
-    """Accesses the _obs_data attribute of observables, which extracts the data from an Observable
-    or Tensor and serializes it in an order-independent fashion. Returns it in a format that is consistent
-    between Tensor and Hamiltonian, so that objects of these types can be compared."""
-    if isinstance(obs, Hamiltonian):
-        obs.simplify()
-        obs = obs._obs_data()  # pylint: disable=protected-access
-    else:
-        obs = {(1, frozenset(obs._obs_data()))}  # pylint: disable=protected-access
-    return obs
