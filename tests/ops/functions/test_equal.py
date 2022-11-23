@@ -1168,3 +1168,17 @@ class TestObservablesComparisons:
         """Tests that equality can be checked between PauliX/Y/Z operators, and between Pauli operators and Hamiltonians"""
         assert qml.equal(op1, op2) == qml.equal(op2, op1)
         assert qml.equal(op1, op2) == res
+
+    def test_hamiltonian_and_operation_not_equal(self):
+        """Tests that comparing a Hamiltonian with an Operator that is not an Observable returns False"""
+        op1 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)])
+        op2 = qml.RX(1.2, 0)
+        assert qml.equal(op1, op2) == False
+        assert qml.equal(op2, op1) == False
+
+    def test_tensor_and_operation_not_equal(self):
+        """Tests that comparing a Tensor with an Operator that is not an Observable returns False"""
+        op1 = qml.PauliX(0) @ qml.PauliY(1)
+        op2 = qml.RX(1.2, 0)
+        assert qml.equal(op1, op2) == False
+        assert qml.equal(op2, op1) == False
