@@ -4,6 +4,9 @@ from ..device_interface import *
 from .python_simulator import *
 from .preprocessor import simple_preprocessor
 from pennylane.gradients import param_shift
+from pennylane import adjoint
+from pennylane.operation import operation_derivative
+
 
 class TestDevicePythonSim(AbstractDevice):
     "Device containing a Python simulator favouring composition-like interface"
@@ -22,8 +25,8 @@ class TestDevicePythonSim(AbstractDevice):
         return self._private_sim.execute(qscript)
 
     def execute_and_gradients(self, qscript: Union[QuantumScript, List[QuantumScript]]):
-        #print("EXEC_GRAD")
-        #from IPython import embed; embed()
+        # print("EXEC_GRAD")
+        # from IPython import embed; embed()
         tmp_tapes, fn = param_shift(qscript[0])
         res = []
         for t in tmp_tapes:
@@ -39,3 +42,28 @@ class TestDevicePythonSim(AbstractDevice):
         self, qscript: Union[QuantumScript, List[QuantumScript]]
     ) -> Tuple[List[QuantumScript], Callable]:
         return simple_preprocessor(qscript)
+
+    def gradient(self, qscript: QuantumScript, order: int = 1):
+        if order != 1:
+            raise NotImplementedError
+
+        state = self._private_sim.create_zeroes_state(2)
+        for op in qscript.operations:
+            state = self._private_sim.apply_operation(state, op)
+        bra = self._private_sim.apply_operation(state, qscript.measurements[0].obs)
+        ket = state
+
+        grads = []
+        for op in reversed(qscript.operations):
+            adj_op = adjoint(op)
+            ket = self._private_sim.apply_operation(ket, adj_op)
+
+            if op.num_params != 0:
+                dU = operation_derivative(op)
+                ket_temp = self._private_sim.apply_matrix(ket, dU, op.wires)
+                dM = 2 * np.real(np.vdot(bra, ket_temp))
+                grads.append(dM)
+
+            bra = self._private_sim.apply_operation(bra, adj_op)
+
+        return grads[::-1]
