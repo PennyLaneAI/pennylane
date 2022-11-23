@@ -144,6 +144,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug that made `gradients.param_shift` raise an error when used with unshifted terms only
+  in a custom recipe, and when using any unshifted terms at all under the new return type system.
+  [(#3177)](https://github.com/PennyLaneAI/pennylane/pull/3177)
+
 * Original tape `_obs_sharing_wires` attribute is updated during its expansion.
   [#3293](https://github.com/PennyLaneAI/pennylane/pull/3293)
   
@@ -181,5 +185,6 @@ Edward Jiang
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+David Wierichs
 Moritz Willmann
 Antal Száva
