@@ -24,22 +24,22 @@ import numpy as np
 import pennylane as qml
 from pennylane._device import _get_num_copies
 
+from .finite_difference import (
+    _all_zero_grad_new,
+    _no_trainable_grad_new,
+    finite_diff_coeffs,
+)
 from .gradient_transform import (
     gradient_transform,
     grad_method_validation,
     choose_grad_methods,
     gradient_analysis,
 )
-from .finite_difference import (
-    _all_zero_grad_new,
-    _no_trainable_grad_new,
-    finite_diff_coeffs,
-)
 from .general_shift_rules import generate_multishifted_tapes
 
 
-def _rademacher_sampler(indices, num_params):
-    """Sample a random vector with (independent) entries from {+1, -1} with balanced probability.
+def _rademacher_sampler(indices, num_params, *args):
+    r"""Sample a random vector with (independent) entries from {+1, -1} with balanced probability.
     That is, each entry follows the
     `Rademacher distribution. <https://en.wikipedia.org/wiki/Rademacher_distribution>`_
     """
@@ -49,17 +49,17 @@ def _rademacher_sampler(indices, num_params):
 
 
 @gradient_transform
-def _spsa_new(
+def _spsa_gradient_new(
     tape,
     argnum=None,
-    h=1e-7,
-    approx_order=1,
+    h=1e-5,
+    approx_order=2,
     n=1,
-    strategy="forward",
+    strategy="center",
     f0=None,
     validate_params=True,
     shots=None,
-    num_samples=1,
+    num_directions=1,
     sampler=_rademacher_sampler,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
@@ -99,7 +99,7 @@ def _spsa_new(
             influence the shots used for tape execution, but provides information
             to the transform about the device shots and helps in determining if a shot
             sequence was used to define the device shots for the new return types output system.
-        num_samples (int): Number of sampled simultaneous perturbation vectors. An estimate for
+        num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.
 
@@ -130,7 +130,7 @@ def _spsa_new(
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.spsa(circuit)(params)
+        >>> qml.gradients.spsa_gradient(circuit)(params)
         #TODO
 
         This quantum gradient transform can also be applied to low-level
@@ -170,7 +170,7 @@ def _spsa_new(
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qml.gradients.finite_diff(circuit, shots=shots, h=10e-2)(params)
+        >>> qml.gradients.finite_diff(circuit, shots=shots, h=1e-2)(params)
         #TODO
 
         The outermost tuple contains results corresponding to each element of the shot vector.
@@ -180,7 +180,7 @@ def _spsa_new(
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
-            gradient_analysis(tape, grad_fn=_spsa_new)
+            gradient_analysis(tape, grad_fn=_spsa_gradient_new)
         diff_methods = grad_method_validation("numeric", tape)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
@@ -212,12 +212,13 @@ def _spsa_new(
 
     tapes_per_grad = len(shifts)
     all_coeffs = []
-    for rep in range(num_samples):
-        direction = sampler(indices, len(tape.trainable_params))
+    for idx_rep in range(num_directions):
+        direction = sampler(indices, len(tape.trainable_params), idx_rep)
         inv_direction = qml.math.divide(
             1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
         )
-        _shifts = qml.math.tensordot(h * shifts, direction, axes=0)
+        # Use only the non-zero part of `direction` for the shifts, to skip redundant zero shifts
+        _shifts = qml.math.tensordot(h * shifts, direction[indices], axes=0)
         all_coeffs.append(qml.math.tensordot(coeffs / h**n, inv_direction, axes=0))
         g_tapes = generate_multishifted_tapes(tape, indices, _shifts)
         gradient_tapes.extend(g_tapes)
@@ -241,30 +242,31 @@ def _spsa_new(
         """
 
         r0, results = (results[0], results[1:]) if extract_r0 else (f0, results)
-        grads = []
         if len(tape.measurements) == 1:
+            grads = 0
             for rep, _coeffs in enumerate(all_coeffs):
                 res = results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]
                 if r0 is not None:
                     res.insert(0, r0)
                 res = qml.math.stack(res)
-                grads = qml.math.tensordot(res, _coeffs, axes=[[0], [0]]) + grads
-            grads = grads / num_samples
+                grads = qml.math.tensordot(qml.math.convert_like(_coeffs, res), res, axes=[[0], [0]]) + grads
+            grads = grads / num_directions
             if len(tape.trainable_params) == 1:
                 return grads[0]
-            return tuple(grads)
-        else:
-            grads = []
-            for i, _ in enumerate(tape.measurements):
-                grad = 0
-                for rep, _coeffs in enumerate(all_coeffs):
-                    res = [r[i] for r in results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]]
-                    if r0 is not None:
-                        res.insert(0, r0)
-                    res = qml.math.stack(res)
-                    grad = qml.math.tensordot(res, _coeffs, axes=[[0], [0]]) + grad
-                grads.append(grad / num_samples)
-            grads = tuple(grads)
+            return tuple(qml.math.convert_like(g, res) for g in grads)
+
+        grads = []
+        for i, _ in enumerate(tape.measurements):
+            grad = 0
+            for rep, _coeffs in enumerate(all_coeffs):
+                res = [r[i] for r in results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]]
+                if r0 is not None:
+                    res.insert(0, r0[i])
+                res = qml.math.stack(res)
+                grad = qml.math.tensordot(qml.math.convert_like(_coeffs, res), res, axes=[[0], [0]]) + grad
+            grad = grad / num_directions
+            grads.append(tuple(qml.math.convert_like(g, grad) for g in grad))
+        grads = tuple(grads)
         return grads
 
         """
@@ -302,22 +304,22 @@ def _spsa_new(
 
 
 @gradient_transform
-def spsa(
+def spsa_gradient(
     tape,
     argnum=None,
-    h=1e-4,
+    h=1e-5,
     approx_order=2,
     n=1,
     strategy="center",
     f0=None,
     validate_params=True,
     shots=None,
-    num_samples=1,
+    num_directions=1,
     sampler=_rademacher_sampler,
 ):
     r""" """
     if qml.active_return():
-        return _spsa_new(
+        return _spsa_gradient_new(
             tape,
             argnum=argnum,
             h=h,
@@ -327,7 +329,7 @@ def spsa(
             f0=f0,
             validate_params=validate_params,
             shots=shots,
-            num_samples=num_samples,
+            num_directions=num_directions,
             sampler=sampler,
         )
 
@@ -342,7 +344,7 @@ def spsa(
     # TODO: Do we need a separate indicator for spsa differentiation or can we reuse "F"?
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
-            gradient_analysis(tape, grad_fn=spsa)
+            gradient_analysis(tape, grad_fn=spsa_gradient)
         diff_methods = grad_method_validation("numeric", tape)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
@@ -374,12 +376,13 @@ def spsa(
 
     tapes_per_grad = len(shifts)
     all_coeffs = []
-    for rep in range(num_samples):
-        direction = sampler(indices, len(tape.trainable_params))
+    for idx_rep in range(num_directions):
+        direction = sampler(indices, len(tape.trainable_params), idx_rep)
         inv_direction = qml.math.divide(
             1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
         )
-        _shifts = qml.math.tensordot(h * shifts, direction, axes=0)
+        # Use only the non-zero part of `direction` for the shifts, to skip redundant zero shifts
+        _shifts = qml.math.tensordot(h * shifts, direction[indices], axes=0)
         all_coeffs.append(qml.math.tensordot(coeffs / h**n, inv_direction, axes=0))
         g_tapes = generate_multishifted_tapes(tape, indices, _shifts)
         gradient_tapes.extend(g_tapes)
@@ -398,57 +401,18 @@ def spsa(
             if r0 is not None:
                 res.insert(0, r0)
             res = qml.math.stack(res)
-            grads = qml.math.tensordot(res, _coeffs, axes=[[0], [0]]) + grads
+            grads = qml.math.tensordot(res, qml.math.convert_like(_coeffs, res), axes=[[0], [0]]) + grads
 
-        grads = grads / num_samples
+        grads = grads / num_directions
 
-        # TODO: What about the following step?
+        # TODO: What about the following step? Is it okay to conclude from the first
+        # entry of grads whether we need to stack?
         # The following is for backwards compatibility; currently,
         # the device stacks multiple measurement arrays, even if not the same
-        # size, resulting in a ragged array.
-        # In the future, we might want to change this so that only tuples
-        # of arrays are returned.
-        for i, g in enumerate(grads):
-            if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
-                if qml.math.ndim(g) > 0:
-                    grads[i] = qml.math.hstack(g)
+        # size, resulting in a ragged array. (-> new return type system)
+        if hasattr(grads, "dtype") and grads.dtype is np.dtype("object"):
+            grads = qml.math.moveaxis(qml.math.array([qml.math.hstack(gs) for gs in zip(*grads)]), 0, -1)
 
         return grads
 
     return gradient_tapes, processing_fn
-
-
-"""
-    This transform can be registered directly as the quantum gradient transform
-    to use during autodifferentiation:
-
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.qnode(dev, interface="autograd", diff_method="finite-diff")
-    ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> qml.jacobian(circuit)(params)
-    array([-0.38751725, -0.18884792, -0.38355708])
-
-    When differentiating QNodes with multiple measurements using Autograd or TensorFlow, the outputs of the QNode first
-    need to be stacked. The reason is that those two frameworks only allow differentiating functions with array or
-    tensor outputs, instead of functions that output sequences. In contrast, Jax and Torch require no additional
-    post-processing.
-
-    >>> import jax
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.qnode(dev, interface="jax", diff_method="finite-diff")
-    ... def circuit(params):
-    ...     qml.RX(params[0], wires=0)
-    ...     qml.RY(params[1], wires=0)
-    ...     qml.RX(params[2], wires=0)
-    ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
-    >>> params = jax.numpy.array([0.1, 0.2, 0.3])
-    >>> jax.jacobian(circuit)(params)
-    (DeviceArray([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32),
-    DeviceArray([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
-
-"""

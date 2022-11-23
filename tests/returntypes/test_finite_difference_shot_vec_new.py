@@ -21,11 +21,7 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane._device import _process_shot_sequence, _get_num_copies
-from pennylane.gradients import (
-    finite_diff,
-    finite_diff_coeffs,
-    generate_shifted_tapes,
-)
+from pennylane.gradients import finite_diff
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
