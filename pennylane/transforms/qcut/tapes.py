@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Functions for performing quantum circuit cutting.
+Functions handling quantum tapes for circuit cutting, and their auxillary functions.
 """
 
 import copy

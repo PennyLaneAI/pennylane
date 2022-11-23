@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Functions for performing quantum circuit cutting.
-"""
+Function cut_circuit_mc for cutting a quantum circuit into smaller circuit fragments using a
+    Monte Carlo method, at its auxillary functions"""
 
 import inspect
 

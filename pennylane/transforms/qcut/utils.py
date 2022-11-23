@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Functions for performing quantum circuit cutting.
+Support functions for cut_circuit and cut_circuit_mc.
 """
 
 

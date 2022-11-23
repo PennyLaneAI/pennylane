@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Functions for performing quantum circuit cutting.
+Class CutStrategy, for executing (large) circuits on available (comparably smaller) devices.
 """
 
 import warnings
