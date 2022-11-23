@@ -19,7 +19,7 @@ Description
 
 A *queuable object* is anything that can be placed into a queue. These will be :class:`~.Operator`,
 :class:`~.MeasurementProcess`, and :class:`~.QuantumTape` objects. :class:`~.Operator` and
-:class:`~.MeasurementProcess` objects achieve queuing via a ``queue`` method called upon construction.
+:class:`~.MeasurementProcess` objects achieve queuing via a :meth:`~.Operator.queue` method called upon construction.
 Note that even though :class:`~.QuantumTape` is a queuable object, it does not have a ``queue`` method.
 
 When an object is queued, it sends itself to the :class:`~.QueuingManager`. The :class:`~.QueuingManager`
@@ -74,17 +74,8 @@ not do anything.
 >>> q.queue
 [PauliX(wires=[0])]
 
-Instead, we need to queue a copy of the operator:
-
->>> from copy import copy
->>> op = qml.PauliX(0)
->>> with qml.queuing.AnnotatedQueue() as q:
-...     op.queue()
-...     copy(op).queue()
->>> q.queue
-[PauliX(wires=[0]), PauliX(wires=[0])]
-
-This can instead be accomplished with the :func:`~.apply` function:
+The :func:`~.apply` method allows a single object to be queued multiple times in a circuit.
+The function essentially queues a copy of the original object.
 
 >>> op = qml.PauliX(0)
 >>> with qml.queuing.AnnotatedQueue() as q:
