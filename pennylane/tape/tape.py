@@ -21,7 +21,7 @@ from threading import RLock
 import pennylane as qml
 from pennylane.measurements import AllCounts, Counts, Probability, Sample
 from pennylane.operation import DecompositionUndefinedError, Operator
-from pennylane.queuing import AnnotatedQueue, QueuingManager
+from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .qscript import QuantumScript
 
@@ -361,7 +361,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         try:
             if self.do_queue:
                 QueuingManager.append(self)
-            return super().__enter__()
+            return AnnotatedQueue.__enter__(self)
         except Exception as _:
             QuantumTape._lock.release()
             raise
@@ -397,22 +397,21 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
         Also calls `_update()` which sets many attributes.
         """
-        self._prep = []
-        self._ops = []
-        self._measurements = []
-        list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
-        current_list = "_prep"
-
-        for obj, info in self._queue.items():
-
-            if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
-                if list_order[obj._queue_category] > list_order[current_list]:
-                    current_list = obj._queue_category
-                elif list_order[obj._queue_category] < list_order[current_list]:
-                    raise ValueError(
-                        f"{obj._queue_category[1:]} operation {obj} must occur prior "
-                        f"to {current_list[1:]}. Please place earlier in the queue."
-                    )
-                getattr(self, obj._queue_category).append(obj)
-
+        self._ops, self._measurements, self._prep = process_queue(self)
         self._update()
+
+    def __getitem__(self, key):
+        """
+        Overrides the default because QuantumTape is both a QuantumScript and an AnnotatedQueue.
+        If key is an int, the caller is likely indexing the backing QuantumScript. Otherwise, the
+        caller is likely indexing the backing AnnotatedQueue.
+        """
+        if isinstance(key, int):
+            return QuantumScript.__getitem__(self, key)
+        return AnnotatedQueue.__getitem__(self, key)
+
+    def __setitem__(self, key, val):
+        AnnotatedQueue.__setitem__(self, key, val)
+
+    def __hash__(self):
+        return QuantumScript.__hash__(self)
