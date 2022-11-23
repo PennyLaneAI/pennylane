@@ -1860,7 +1860,7 @@ class Tensor(Observable):
         else:
             raise ValueError("Can only perform tensor products between observables.")
 
-        if QueuingManager.recording() and self not in QueuingManager.active_context()._queue:
+        if QueuingManager.recording() and self not in QueuingManager.active_context():
             QueuingManager.append(self)
 
         QueuingManager.update_info(self, owns=tuple(self.obs))
