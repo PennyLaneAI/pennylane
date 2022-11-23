@@ -49,7 +49,10 @@
 
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
-
+  
+* New parametric qubit ops `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10` which perform a phaseshift, similar to `qml.ControlledPhaseShift` but on different positions of the state vector.
+  [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
+  
 * Support for purity computation is added. The `qml.math.purity` function computes the purity from a state vector or a density matrix:
 
   [#3290](https://github.com/PennyLaneAI/pennylane/pull/3290)
@@ -259,3 +262,4 @@ Romain Moyard
 Matthew Silverman
 Antal Száva
 David Wierichs
+Moritz Willmann
