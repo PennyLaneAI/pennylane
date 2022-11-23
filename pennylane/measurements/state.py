@@ -126,10 +126,10 @@ class _State(StateMeasurement):
     """Measurement process that returns the quantum state."""
 
     # pylint: disable=redefined-outer-name
-    def process_state(self, state: Sequence[complex], wires: Wires):
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
         if self.wires:
             # qml.density_matrix
-            wire_map = dict(zip(wires, range(len(wires))))
+            wire_map = dict(zip(wire_order, range(len(wire_order))))
             mapped_wires = [wire_map[w] for w in self.wires]
             return qml.math.reduced_dm(state, indices=mapped_wires, c_dtype=state.dtype)
         # qml.state
