@@ -373,17 +373,12 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
 
         if qml.active_return():
             multi = len(tape.measurements) > 1
+            comp_vjp_fn = compute_vjp_multi_new if multi else compute_vjp_single_new
 
             if not shot_vector:
-                if multi:
-                    return compute_vjp_multi_new(dy, jac, num=num)
-                return compute_vjp_single_new(dy, jac, num=num)
+                return comp_vjp_fn(dy, jac, num=num)
 
-            if multi:
-                vjp_ = [compute_vjp_multi_new(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
-            else:
-                vjp_ = [compute_vjp_single_new(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
-
+            vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
             return qml.math.sum(qml.math.stack(vjp_), 0)
 
         return compute_vjp(dy, jac, num=num)

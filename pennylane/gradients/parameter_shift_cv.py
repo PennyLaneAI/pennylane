@@ -483,6 +483,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
     return gradient_tapes, processing_fn
 
 
+# TODO: integration of CV devices with new return types
 # pylint: disable=unused-argument
 @gradient_transform
 def param_shift_cv(

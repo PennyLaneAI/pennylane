@@ -540,7 +540,7 @@ def _compute_vjps_autograd(jacs, dy, multi_measurements, shots):
             else:
                 shot_vjps.append(qml.gradients.compute_vjp_single_new(d, j))
 
-        vjps.append(qml.math.sum(qml.math.stack(shot_vjps), 0))
+        vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
 
     return vjps
 
