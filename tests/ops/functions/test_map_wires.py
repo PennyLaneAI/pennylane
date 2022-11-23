@@ -66,7 +66,7 @@ class TestMapWiresOperators:
             _ = qml.map_wires(op, wire_map=wire_map, queue=False)
         assert len(tape.circuit) == 1
         assert tape.circuit[0] is op
-        assert tape._queue[op].get("owner", None) is None
+        assert tape.get_info(op).get("owner", None) is None
 
     def test_map_wires_with_queuing_and_without_replacing(self):
         """Test the map_wires method while queuing with `queue=True` and `replace=False`."""
@@ -77,7 +77,7 @@ class TestMapWiresOperators:
         assert len(tape.circuit) == 2
         assert tape.circuit[0] is op
         assert tape.circuit[1] is m_op
-        assert tape._queue[op].get("owner", None) is None
+        assert tape.get_info(op).get("owner", None) is None
 
     def test_map_wires_with_queuing_and_with_replacing(self):
         """Test the map_wires method while queuing with `queue = True` and `replace=True`."""
@@ -87,7 +87,7 @@ class TestMapWiresOperators:
             m_op = qml.map_wires(op, wire_map=wire_map, queue=True, replace=True)
         assert len(tape.circuit) == 1
         assert tape.circuit[0] is m_op
-        assert tape._queue[op].get("owner", None) is m_op
+        assert tape.get_info(op).get("owner", None) is m_op
 
     def test_map_wires_unsupported_object_raises_error(self):
         """Test that an error is raised when trying to map the wires of an unsupported object."""
