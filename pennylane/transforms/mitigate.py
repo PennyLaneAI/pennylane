@@ -528,6 +528,11 @@ def mitigate_with_zne(
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
+        if qml.active_return():
+            for i, tape in enumerate(out_tapes):
+                # stack the results if there are multiple measurements
+                if len(tape.observables) > 1:
+                    results[i] = qml.math.stack(results[i])
 
         # Averaging over reps_per_factor repetitions
         results_flattened = []
