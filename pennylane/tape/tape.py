@@ -94,6 +94,9 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
     Returns:
         QuantumScript: The expanded version of ``qscript``.
 
+    Raises:
+        QuantumFunctionError: if some observables in the qscript are not qubit-wise commuting
+
     **Example**
 
     Consider the following nested tape:

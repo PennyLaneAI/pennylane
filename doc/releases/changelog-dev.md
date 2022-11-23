@@ -101,7 +101,11 @@
   [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
 
 * A representation has been added to the `Molecule` class.
-  [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
+  [(#3364)](https://github.com/PennyLaneAI/pennylane/pull/3364)
+
+* Add detail to the error message when the `insert` transform
+  fails to diagonalize non-qubit-wise-commuting observables.
+  [(#3381)](https://github.com/PennyLaneAI/pennylane/pull/3381)
 
 * Remove private `_wires` setter from the `Controlled.map_wires` method.
   [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
@@ -182,5 +186,6 @@ Edward Jiang
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
-David Wierichs
+Matthew Silverman
 Antal Száva
+David Wierichs
