@@ -137,8 +137,8 @@ class TestExpval:
         assert res.shape(dev) == (len(shot_vector),)
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
-    def test_projector_var(self, shots, mocker):
-        """Tests that the variance of a ``Projector`` object is computed correctly."""
+    def test_projector_expval(self, shots, mocker):
+        """Tests that the expectation of a ``Projector`` object is computed correctly."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
         basis_state = np.array([0, 0, 0])
