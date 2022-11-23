@@ -12,6 +12,9 @@
   * Add `_Sample` class.
     [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
+  * Add `_Probs` class.
+    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+
   * Add `_Counts` class.
     [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
@@ -101,7 +104,11 @@
   [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
 
 * A representation has been added to the `Molecule` class.
-  [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
+  [(#3364)](https://github.com/PennyLaneAI/pennylane/pull/3364)
+
+* Add detail to the error message when the `insert` transform
+  fails to diagonalize non-qubit-wise-commuting observables.
+  [(#3381)](https://github.com/PennyLaneAI/pennylane/pull/3381)
 
 * Remove private `_wires` setter from the `Controlled.map_wires` method.
   [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
@@ -141,6 +148,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug that made `gradients.param_shift` raise an error when used with unshifted terms only
+  in a custom recipe, and when using any unshifted terms at all under the new return type system.
+  [(#3177)](https://github.com/PennyLaneAI/pennylane/pull/3177)
+
 * Original tape `_obs_sharing_wires` attribute is updated during its expansion.
   [#3293](https://github.com/PennyLaneAI/pennylane/pull/3293)
   
@@ -167,6 +178,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
 Juan Miguel Arrazola
 Utkarsh Azad
 Astral Cai
@@ -177,4 +189,6 @@ Edward Jiang
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Matthew Silverman
 Antal Száva
+David Wierichs

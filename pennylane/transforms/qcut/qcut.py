@@ -39,7 +39,7 @@ from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
-from .batch_transform import batch_transform
+from pennylane.transforms.batch_transform import batch_transform
 
 
 class MeasureNode(Operation):
