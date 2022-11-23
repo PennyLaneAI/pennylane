@@ -60,7 +60,7 @@ class QNode_STD_22:
         self._interface = (
             self.exec_config.interface.name.lower()
         )  # In future, replace all string checks to enum checks
-        #self.diff_method = self.exec_config.diff_method.name.lower() if self.exec_config.diff_method else None # As above
+        # self.diff_method = self.exec_config.diff_method.name.lower() if self.exec_config.diff_method else None # As above
         self.expansion_strategy = (
             self.exec_config.expansion_strategy.name.lower()
         )  # Expansion should happen as a preproc step defined to run before execution pipeline
@@ -260,7 +260,7 @@ class QNode_STD_22:
             res = qml.execute(
                 [self.tape],
                 device=self.device,
-                gradient_fn="device",#self.gradient_fn,
+                gradient_fn="device",  # self.gradient_fn,
                 interface=self.interface,
                 gradient_kwargs=self.gradient_kwargs,
                 override_shots=override_shots,
@@ -308,7 +308,8 @@ class QNode_STD_22:
 
         print("QNODE22")
         from IPython import embed
-        #embed()
+
+        # embed()
 
         res = qml.execute(
             [self.tape],

@@ -361,7 +361,7 @@ def _execute_new(
         cache = LRUCache(maxsize=cachesize)
         setattr(cache, "_persistent_cache", False)
 
-    batch_execute = set_shots(device, override_shots)(device.batch_execute)
+    batch_execute = device.batch_execute
 
     if expand_fn == "device":
         expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
@@ -389,7 +389,7 @@ def _execute_new(
         )
 
     # the default execution function is batch_execute
-    execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
+    execute_fn = batch_execute
     _mode = "backward"
 
     if gradient_fn == "device":

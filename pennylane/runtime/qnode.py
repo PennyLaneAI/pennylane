@@ -473,17 +473,8 @@ class QNode:
     @staticmethod
     def _validate_parameter_shift(device):
         model = device.capabilities().get("model", None)
+        return qml.gradients.param_shift, {}, device
 
-        if model == "qubit":
-            return qml.gradients.param_shift, {}, device
-
-        if model == "cv":
-            return qml.gradients.param_shift_cv, {"dev": device}, device
-
-        raise qml.QuantumFunctionError(
-            f"Device {device.short_name} uses an unknown model ('{model}') "
-            "that does not support the parameter-shift rule."
-        )
 
     @property
     def tape(self) -> QuantumTape:

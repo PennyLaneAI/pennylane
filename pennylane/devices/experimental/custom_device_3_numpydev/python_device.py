@@ -22,21 +22,15 @@ class TestDevicePythonSim(AbstractDevice):
         self._private_sim = PlainNumpySimulator()
 
     def execute(self, qscript: Union[QuantumScript, List[QuantumScript]]):
-        return self._private_sim.execute(qscript)
-
-    def execute_and_gradients(self, qscript: Union[QuantumScript, List[QuantumScript]]):
-        # print("EXEC_GRAD")
-        # from IPython import embed; embed()
-        tmp_tapes, fn = param_shift(qscript[0])
-        res = []
-        for t in tmp_tapes:
-            res.append(self.execute(t))
-        return [self.execute(qscript[0]), fn(res)]
+        if isinstance(qscript, QuantumScript):
+            print(qscript.circuit)
+            res = self._private_sim.execute(qscript)
+            res = res[0] if len(res) == 1 else res
+            return np.array(res)
+        return [self.execute(qs) for qs in qscript]
 
     def capabilities(self) -> DeviceConfig:
-        if hasattr(self, "dev_config"):
-            return self.dev_config
-        return {}
+        return self.dev_config if hasattr(self, "dev_config") else {}
 
     def preprocess(
         self, qscript: Union[QuantumScript, List[QuantumScript]]
@@ -45,7 +39,7 @@ class TestDevicePythonSim(AbstractDevice):
 
     def execute_and_gradients(self, qscripts, *args, **kwargs):
         """Defined for temporary compatability."""
-        res = [np.array(x) for x in self.execute(qscripts)]
+        res = self.execute(qscripts)
         grads = self.gradient(qscripts[0])
         grads = tuple(np.array(x) for x in grads)
 
