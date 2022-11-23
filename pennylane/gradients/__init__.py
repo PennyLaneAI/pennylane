@@ -46,7 +46,6 @@ Gradient transforms
     param_shift
     param_shift_cv
     param_shift_hessian
-    spsa_grad
 
 Custom gradients
 ^^^^^^^^^^^^^^^^
