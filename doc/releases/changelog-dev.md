@@ -112,6 +112,10 @@
 
 * Remove private `_wires` setter from the `Controlled.map_wires` method.
   [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
+  
+* `QuantumTape._process_queue` has been moved to `qml.queuing.process_queue` to disentangle
+  its functionality from the `QuantumTape` class.
+  [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
 <h4>Return types project</h4>
 
@@ -179,6 +183,11 @@
 
 * Python 3.7 support is no longer maintained.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
+
+* Instead of having an `OrderedDict` attribute called `_queue`, `AnnotatedQueue` now inherits from
+  `OrderedDict` and encapsulates the queue. Consequentially, this also applies to the `QuantumTape`
+  class which inherits from `AnnotatedQueue`.
+  [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
 <h3>Deprecations</h3>
 
