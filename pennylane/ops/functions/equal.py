@@ -51,10 +51,10 @@ def equal(
     Args:
         op1 (.Operator or .MeasurementProcess): First object to compare
         op2 (.Operator or .MeasurementProcess): Second object to compare
-        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``. Can only be set by user when comparing ``Operations``.
-        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``. Can only be set by user when comparing ``Operations``.
-        rtol (float, optional): Relative tolerance for parameters
-        atol (float, optional): Absolute tolerance for parameters
+        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        rtol (float, optional): Relative tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        atol (float, optional): Absolute tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
 
     Returns:
         bool: ``True`` if the operators or measurement processes are equal, else ``False``
@@ -97,7 +97,8 @@ def equal(
     .. details::
         :title: Usage Details
 
-        You can use the optional arguments when comparing ``Operations`` to get more specific results.
+        You can use the optional arguments to get more specific results. These arguments are, however, not used
+        for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
 
         Consider the following comparisons:
 
@@ -144,7 +145,19 @@ def _equal(
     rtol=1e-5,
     atol=1e-9,
 ):
-    """Default function to determine whether two Operations objects are equal."""
+    raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
+
+
+@_equal.register
+def _equal_operators(
+    op1: Operator,
+    op2: Operator,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
+    """Default function to determine whether two Operator objects are equal."""
 
     if not isinstance(
         op2, type(op1)
