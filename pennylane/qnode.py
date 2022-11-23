@@ -172,8 +172,16 @@ class QNode:
 
         **Example**
 
-        Consider the ``circuit`` defined above. If we want to execute it at multiple values of
-        ``x``, we may pass those as a one-dimensional array to the QNode:
+        Again consider the following ``circuit``:
+
+        >>> dev = qml.device("default.qubit", wires=1)
+        >>> @qml.qnode(dev)
+        ... def circuit(x):
+        ...     qml.RX(x, wires=0)
+        ...     return qml.expval(qml.PauliZ(0))
+
+        If we want to execute it at multiple values ``x``,
+        we may pass those as a one-dimensional array to the QNode:
 
         >>> x = np.array([np.pi / 6, np.pi * 3 / 4, np.pi * 7 / 6])
         >>> circuit(x)
