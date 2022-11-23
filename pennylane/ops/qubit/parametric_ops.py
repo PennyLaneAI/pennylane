@@ -733,7 +733,7 @@ class CPhaseShift00(Operation):
     r"""
     A qubit controlled phase shift.
 
-    .. math:: \mathtt{CPhaseShift00}(\phi) = \begin{bmatrix}
+    .. math:: CR_{00}(\phi) = \begin{bmatrix}
                 e^{i\phi} & 0 & 0 & 0 \\
                 0 & 1 & 0 & 0 \\
                 0 & 0 & 1 & 0 \\
@@ -751,9 +751,9 @@ class CPhaseShift00(Operation):
     * Gradient recipe:
 
     .. math::
-        \frac{d}{d \phi} \mathtt{CPhaseShift00}(\phi)
-        = \frac{1}{2} \left[ \mathtt{CPhaseShift00}(\phi + \pi / 2)
-            - \mathtt{CPhaseShift00}(\phi - \pi / 2) \right]
+        \frac{d}{d \phi} CR_{00}(\phi)
+        = \frac{1}{2} \left[ CR_{00}(\phi + \pi / 2)
+            - CR_{00}(\phi - \pi / 2) \right]
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -827,7 +827,7 @@ class CPhaseShift00(Operation):
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -878,11 +878,13 @@ class CPhaseShift00(Operation):
 
         >>> qml.CPhaseShift00.compute_decomposition(1.234, wires=(0,1))
         [PauliX(wires=[0]),
+         PauliX(wires=[1]),
         PhaseShift(0.617, wires=[0]),
         PhaseShift(0.617, wires=[1]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.617, wires=[1]),
         CNOT(wires=[0, 1]),
+        PauliX(wires=[1]),
         PauliX(wires=[0])]
 
         """
@@ -919,7 +921,7 @@ class CPhaseShift01(Operation):
     r"""
     A qubit controlled phase shift.
 
-    .. math:: \mathtt{CPhaseShift01}(\phi) = \begin{bmatrix}
+    .. math:: CR_{01\phi}(\phi) = \begin{bmatrix}
                 1 & 0 & 0 & 0 \\
                 0 & e^{i\phi} & 0 & 0 \\
                 0 & 0 & 1 & 0 \\
@@ -937,9 +939,9 @@ class CPhaseShift01(Operation):
     * Gradient recipe:
 
     .. math::
-        \frac{d}{d \phi} \mathtt{CPhaseShift01}(\phi)
-        = \frac{1}{2} \left[ \mathtt{CPhaseShift01}(\phi + \pi / 2)
-            - \mathtt{CPhaseShift01}(\phi - \pi / 2) \right]
+        \frac{d}{d \phi} CR_{01}(\phi)
+        = \frac{1}{2} \left[ CR_{01}(\phi + \pi / 2)
+            - CR_{01}(\phi - \pi / 2) \right]
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1013,7 +1015,7 @@ class CPhaseShift01(Operation):
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1100,7 +1102,7 @@ class CPhaseShift10(Operation):
     r"""
     A qubit controlled phase shift.
 
-    .. math:: \mathtt{CPhaseShift10}(\phi) = \begin{bmatrix}
+    .. math:: CR_{10\phi}(\phi) = \begin{bmatrix}
                 1 & 0 & 0 & 0 \\
                 0 & 1 & 0 & 0 \\
                 0 & 0 & e^{i\phi} & 0 \\
@@ -1117,9 +1119,9 @@ class CPhaseShift10(Operation):
     * Gradient recipe:
 
     .. math::
-        \frac{d}{d \phi} \mathtt{CPhaseShift10}(\phi)
-        = \frac{1}{2} \left[ \mathtt{CPhaseShift10}(\phi + \pi / 2)
-            - \mathtt{CPhaseShift10}(\phi - \pi / 2) \right]
+        \frac{d}{d \phi} CR_{10}(\phi)
+        = \frac{1}{2} \left[ CR_{10}(\phi + \pi / 2)
+            - CR_{10}(\phi - \pi / 2) \right]
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -1193,7 +1195,7 @@ class CPhaseShift10(Operation):
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
