@@ -632,13 +632,25 @@ class TestDifferentiation:
 
 
 class TestEvolution:
-    """Test subclass of Exp that takes a parameter x and a generator G and defines an evolution exp(ixG)"""
+    """Test Evolution(Exp) class that takes a parameter x and a generator G and defines an evolution exp(ixG)"""
 
     def test_initialization(self):
-        U = Evolution(qml.PauliX(0), 3)
-        assert U.name == "Evolution"
-        assert isinstance(U, Exp)
-        assert U.base == U.generator()
+        """Test initialization with a provided coefficient and a Tensor base."""
+        base = qml.PauliZ("b") @ qml.PauliZ("c")
+        param = 1.23
+
+        op = Evolution(base, param)
+
+        assert op.base is base
+        assert op.coeff == 1j * param
+        assert op.name == "Evolution"
+        assert isinstance(op, Exp)
+
+        assert op.num_params == 1
+        assert op.parameters == [param]
+        assert op.data == [param]
+
+        assert op.wires == qml.wires.Wires(("b", "c"))
 
     def test_evolution_matches_corresponding_exp(self):
         base_op = 2 * qml.PauliX(0)
@@ -647,7 +659,45 @@ class TestEvolution:
 
         assert np.all(op1.matrix() == op2.matrix())
 
-    def test_num_params(self):
+    def test_generator(self):
+        U = Evolution(qml.PauliX(0), 3)
+        assert U.base == U.generator()
+
+    def test_num_params_for_parametric_base(self):
         base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
         op = Evolution(base_op, 1.23)
+
+        assert base_op.num_params == 2
         assert op.num_params == 1
+
+    def test_data(self):
+        """Test accessing and setting the data property."""
+
+        param = np.array(1.234)
+
+        base = qml.PauliX(0)
+        op = Evolution(base, param)
+
+        assert op.data == [param]
+
+        new_data = [2.345]
+        op.data = new_data
+
+        assert op.data == new_data
+        assert op.coeff == 1j * op.data[0]
+        assert op.param == op.data[0]
+
+    @pytest.mark.parametrize(
+        "op,decimals,expected",
+        [
+            (Evolution(qml.PauliZ(0), 2), None, "Exp(2j Z)"),
+            (Evolution(qml.PauliZ(0), 2), 2, "Exp(2.00j Z)"),
+            (Evolution(qml.prod(qml.PauliZ(0), qml.PauliY(1)), 2), None, "Exp(2j Z@Y)"),
+            (Evolution(qml.prod(qml.PauliZ(0), qml.PauliY(1)), 2), 2, "Exp(2.00j Z@Y)"),
+            (Evolution(qml.RZ(1.234, wires=[0]), 5.678), None, "Exp(5.678j RZ)"),
+            (Evolution(qml.RZ(1.234, wires=[0]), 5.678), 2, "Exp(5.68j RZ\n(1.23))"),
+        ],
+    )
+    def test_label(self, op, decimals, expected):
+        """Test that the label is informative and uses decimals."""
+        assert op.label(decimals=decimals) == expected
