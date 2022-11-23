@@ -143,7 +143,18 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Documentation</h3>
 
+* Corrects more mentions for diagonalizing gates for all relevant operations. The docstrings for `compute_eigvals` used
+  to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is
+  the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement
+  $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making
+  $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis.
+  [(#3409)](https://github.com/PennyLaneAI/pennylane/pull/3409)
+
 <h3>Bug fixes</h3>
+
+* Fixed a bug that made `gradients.param_shift` raise an error when used with unshifted terms only
+  in a custom recipe, and when using any unshifted terms at all under the new return type system.
+  [(#3177)](https://github.com/PennyLaneAI/pennylane/pull/3177)
 
 * Original tape `_obs_sharing_wires` attribute is updated during its expansion.
   [#3293](https://github.com/PennyLaneAI/pennylane/pull/3293)
@@ -171,6 +182,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
 Juan Miguel Arrazola
 Utkarsh Azad
 Astral Cai
@@ -181,3 +193,5 @@ Edward Jiang
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+David Wierichs
+Antal Száva

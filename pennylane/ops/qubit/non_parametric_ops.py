@@ -89,7 +89,7 @@ class Hadamard(Observable, Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -236,7 +236,7 @@ class PauliX(Observable, Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -386,7 +386,7 @@ class PauliY(Observable, Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -534,7 +534,7 @@ class PauliZ(Observable, Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -676,7 +676,7 @@ class S(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -785,7 +785,7 @@ class T(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -894,7 +894,7 @@ class SX(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1088,7 +1088,7 @@ class CZ(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1478,7 +1478,7 @@ class ECR(Operation):
     def compute_eigvals():
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1596,7 +1596,7 @@ class ISWAP(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1719,7 +1719,7 @@ class SISWAP(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
