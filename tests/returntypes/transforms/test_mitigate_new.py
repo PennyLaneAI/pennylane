@@ -45,6 +45,15 @@ with QuantumTape() as tape_base:
     qml.RY(0.5, wires=0)
     qml.RX(0.6, wires=1)
 
+with QuantumTape() as tape_multi:
+    qml.BasisState([1], wires=0)
+    qml.RX(0.9, wires=0)
+    qml.RY(0.4, wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.RY(0.5, wires=0)
+    qml.RX(0.6, wires=1)
+    qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
 
 def same_tape(tape1, tape2):
     """Raises an error if tapes are not identical"""
@@ -108,6 +117,37 @@ class TestMitigateWithZNE:
 
         for t in tapes:
             same_tape(t, tape)
+
+    def test_multi_returns(self):
+        """Tests if the expected shape is returned when mitigating a circuit with two returns"""
+        noise_strength = 0.05
+
+        dev_noise_free = qml.device("default.mixed", wires=2)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
+
+        n_wires = 2
+        n_layers = 2
+
+        shapes = qml.SimplifiedTwoDesign.shape(n_wires, n_layers)
+        np.random.seed(0)
+        w1, w2 = [np.random.random(s) for s in shapes]
+
+        @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, richardson_extrapolate)
+        @qml.qnode(dev)
+        def mitigated_circuit(w1, w2):
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+
+        @qml.qnode(dev_noise_free)
+        def ideal_circuit(w1, w2):
+            qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
+
+        res_mitigated = mitigated_circuit(w1, w2)
+        res_ideal = qml.math.stack(ideal_circuit(w1, w2))
+
+        assert res_mitigated.shape == res_ideal.shape
+        assert not np.allclose(res_mitigated, res_ideal)
 
     def test_reps_per_factor_not_1(self, mocker):
         """Tests if mitigation proceeds as expected when reps_per_factor is not 1 (default)"""
