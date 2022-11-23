@@ -1304,8 +1304,8 @@ class CH(Operation):
 
         **Example:**
 
-        >>> print(qml.CH.compute_decomposition(0))
-        [qml.RY(-0.78539816339, wires=1), CRY(3.141592653589793, wires=[0, 1]), qml.RY(0.78539816339, wires=1)]
+        >>> print(qml.CH.compute_decomposition([0, 1]))
+        [qml.RY(-0.78539816339, wires=[1]), CZ(wires=[0, 1]), qml.RY(0.78539816339, wires=[1])]
 
         """
         return [
