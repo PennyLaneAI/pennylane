@@ -3484,6 +3484,7 @@ class TestCutCircuitTransform:
 
         spy.assert_called_once()
 
+    @pytest.mark.jax
     def test_simple_cut_circuit_jax_jit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
@@ -3509,7 +3510,7 @@ class TestCutCircuitTransform:
         cut_circuit_jit = jax.jit(qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum))
 
         # Run once with original value
-        spy = mocker.spy(qcut.processing, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
 
         # Note we call the function twice but assert qcut_processing_fn is called once. We expect
         # qcut_processing_fn to be called once during JIT compilation, with subsequent calls to
@@ -4700,10 +4701,3 @@ class TestAutoCutCircuit:
 
         # each frag should have the device size constraint satisfied.
         assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
-
-
-class TestRedirect:
-    """Tests that redirect in qcut.__init__ works to maintain import pathways while reorganizing files"""
-
-    def test_qcut_redirects_to_qcut_qcut(self):
-        assert qml.transforms.qcut._prep_one_state == qml.transforms.qcut._prep_one_state
