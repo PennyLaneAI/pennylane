@@ -22,7 +22,7 @@ A *queuable object* is anything that can be placed into a queue. These will be :
 :class:`~.MeasurementProcess` objects achieve queuing via a ``queue`` method called upon construction.
 Note that even though :class:`~.QuantumTape` is a queuable object, it does not have a ``queue`` method.
 
-When an objects attempts to be queued, it sends itself to the :class:`~.QueuingManager`. The :class:`~.QueuingManager`
+When an object is queued, it sends itself to the :class:`~.QueuingManager`. The :class:`~.QueuingManager`
 is a global singleton class that facilitates placing objects in the queue. All of :class:`~.QueuingManager`'s methods
 and properties are class methods and properties, so all instances will access the same information.
 
