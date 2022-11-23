@@ -418,7 +418,7 @@ class Evolution(Exp):
     ...     Evolution(qml.PauliX(0), -0.5 * x)
     ...     return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(circuit)(1.23))
-    0: ──Exp(0.00-0.61j X)─┤  <Z>
+    0: ──Exp(-0.61j X)─┤  <Z>
 
     """
 
@@ -439,3 +439,11 @@ class Evolution(Exp):
     @property
     def num_params(self):
         return 1
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        param = (
+            self.data[0]
+            if decimals is None
+            else format(math.toarray(self.data[0]), f".{decimals}f")
+        )
+        return base_label or f"Exp({param}j {self.base.label(decimals=decimals, cache=cache)})"
