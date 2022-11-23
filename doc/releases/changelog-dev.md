@@ -93,7 +93,6 @@
 
 * The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
   now allow assigning different degrees for different parameters of the input function.
-  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
 
   The arguments `degree` and `filter_threshold` to `qml.fourier.coefficients` previously were
   expected to be integers, and now can be a sequences of integers with one integer per function
