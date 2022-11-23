@@ -406,7 +406,7 @@ class Operator(abc.ABC):
            the original input and output as well as with broadcasted inputs and outputs
            that have an additional, leading axis. See below for an example.
         #. Make sure that validation within the above representation methods and
-           ``__init__``--if it is overwritten by the operator class--allow
+           ``__init__``---if it is overwritten by the operator class---allow
            for broadcasted inputs. For custom operators this usually is a minor
            step or not necessary at all.
         #. For proper registration, add the name of the operator to

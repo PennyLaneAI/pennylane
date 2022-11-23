@@ -260,13 +260,17 @@ For example:
 Parameter Broadcasting in QNodes
 --------------------------------
 
-Some :class:`~.pennylane.QNode` circuits support the execution at multiple parameters
-simultaneously:
+Depending on the quantum operations used, a :class:`~.pennylane.QNode` may support execution at multiple parameters simultaneously:
 
 >>> x = np.array([0.543, 1.234])
 >>> result = circuit(x)
 >>> result
 tensor([0.85616242, 0.33046511], requires_grad=True)
+
+Note that we are passing in a 1-dimensional array of parameters to the `circuit()`
+QNode defined above, which takes a single parameter and returns a single expectation
+value. As the input is now an array, the output is also an array, with each
+element the expectation value of the corresponding input element.
 
 This is called *parameter broadcasting* (as for, say, NumPy functions executed along an axis)
 or *parameter batching* (as in the application of a function to a *batch* of parameters in
@@ -279,12 +283,12 @@ the case depends on quite a few details, but in particular for (at most) moderat
 on a classical simulator, one can expect to benefit from broadcasting.
 See the :class:`~.pennylane.QNode` documentation for usage details.
 
-Many standard quantum operators support broadcasting, see the corresponding attribute
+Many standard quantum operators support broadcasting; see the corresponding attribute
 :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting` for a list. The
 :class:`~.pennylane.operation.Operator` documentation contains implementation details
 and a guide to make custom operators compatible with broadcasting.
 Broadcasting can be used with any device, but will usually only yield performance upgrades for
-classical simulator devices like ``"default.qubit"`` that indicate that they support it:
+devices like ``"default.qubit"`` that indicate that they support it:
 
 >>> cap = dev.capabilities()
 >>> cap["supports_broadcasting"]
