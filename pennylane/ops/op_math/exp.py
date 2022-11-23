@@ -433,8 +433,8 @@ class Evolution(Exp):
 
     @data.setter
     def data(self, new_data):
-        self.coeff = 1j * new_data
-        self.param = new_data
+        self.coeff = 1j * new_data[0]
+        self.param = new_data[0]
 
     @property
     def num_params(self):
