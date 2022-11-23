@@ -24,23 +24,23 @@
   Note: The full SPSA optimization method already is available as `SPSAOptimizer`.
 
 * Support custom measurement processes:
-  * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
+  - `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
-  * Add `_Sample` class.
+  - Add `_Sample` class.
     [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
-  * Add `_Counts` class.
+  - Add `_Counts` class.
     [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
-  * Add `_State` class.
+  - Add `_State` class.
     [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
-  * Add `_VnEntropy` class.
+  - Add `_VnEntropy` class.
     [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
-  * Add `_MutualInfo` class.
+  - Add `_MutualInfo` class.
     [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
