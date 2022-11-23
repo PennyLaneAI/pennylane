@@ -43,6 +43,7 @@ def _rademacher_sampler(indices, num_params, *args):
     That is, each entry follows the
     `Rademacher distribution. <https://en.wikipedia.org/wiki/Rademacher_distribution>`_
     """
+    # pylint: disable=unused-argument
     direction = np.zeros(num_params)
     direction[indices] = np.random.choice([-1, 1], size=len(indices))
     return direction
