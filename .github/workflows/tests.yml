@@ -188,7 +188,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m qcut -n auto -vvv
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m qcut -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
