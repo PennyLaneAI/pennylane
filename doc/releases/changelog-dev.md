@@ -112,10 +112,68 @@
 
 * Remove private `_wires` setter from the `Controlled.map_wires` method.
   [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
-
+  
 * `QuantumTape._process_queue` has been moved to `qml.queuing.process_queue` to disentangle
   its functionality from the `QuantumTape` class.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
+
+<h4>Return types project</h4>
+
+* The autograd interface now supports devices with shot vectors.
+  [#3374](https://github.com/PennyLaneAI/pennylane/pull/3374)
+
+  Example with a single measurement:
+  ```python
+  dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(a):
+      qml.RY(a, wires=0)
+      qml.RX(0.2, wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  def cost(a):
+      return qml.math.stack(circuit(a))
+  ```
+  ```
+  >>> qml.enable_return()
+  >>> a = np.array(0.4)
+  >>> circuit(a)
+  (array(0.902), array(0.922), array(0.896))
+  >>> cost(a)
+  array([0.9       , 0.907     , 0.89733333])
+  >>> qml.jacobian(cost)(a)
+  array([-0.391     , -0.389     , -0.38433333])
+  ```
+  Example with multiple measurements:
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(a):
+      qml.RY(a, wires=0)
+      qml.RX(0.2, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+  def cost(a):
+      res = circuit(a)
+      return qml.math.stack([qml.math.hstack(r) for r in res])
+  ```
+  ```
+  >>> circuit(a)
+  ((array(0.904), array([0.952, 0.   , 0.   , 0.048])),
+   (array(0.915), array([0.9575, 0.    , 0.    , 0.0425])),
+   (array(0.902), array([0.951, 0.   , 0.   , 0.049])))
+  >>> cost(a)
+  array([[0.91      , 0.955     , 0.        , 0.        , 0.045     ],
+         [0.895     , 0.9475    , 0.        , 0.        , 0.0525    ],
+         [0.90666667, 0.95333333, 0.        , 0.        , 0.04666667]])
+  >>> qml.jacobian(cost)(a)
+  array([[-0.37      , -0.185     ,  0.        ,  0.        ,  0.185     ],
+         [-0.409     , -0.2045    ,  0.        ,  0.        ,  0.2045    ],
+         [-0.37133333, -0.18566667,  0.        ,  0.        ,  0.18566667]])
+  ```
 
 <h3>Breaking changes</h3>
 
@@ -163,7 +221,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 * Original tape `_obs_sharing_wires` attribute is updated during its expansion.
   [#3293](https://github.com/PennyLaneAI/pennylane/pull/3293)
-  
+
 * Small fix of `MeasurementProcess.map_wires`, where both the `self.obs` and `self._wires`
   attributes were modified.
   [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
