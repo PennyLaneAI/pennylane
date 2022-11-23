@@ -9,4 +9,5 @@ qml.queuing
 
 .. automodapi:: pennylane.queuing
     :include-all-objects:
+    :no-inheritance-diagram:
     :skip: OrderedDict, contextmanager

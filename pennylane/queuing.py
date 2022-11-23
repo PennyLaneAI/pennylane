@@ -37,8 +37,8 @@ Let's take a look at an example. If we query the :class:`~.QueuingManager` outsi
 
 >>> print("Are we recording? ", qml.QueuingManager.recording())
 Are we recording?  False
->>> print("What's the active context?", qml.QueuingManager.active_context())
-What's the active context? None
+>>> print("What's the active context? ", qml.QueuingManager.active_context())
+What's the active context?  None
 
 Inside of a context, we can see the active recording context:
 
