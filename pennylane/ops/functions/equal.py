@@ -20,9 +20,8 @@ from typing import Union
 from functools import singledispatch
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
-from pennylane.operation import Operation, Operator, Observable, Tensor
+from pennylane.operation import Operator, Observable, Tensor
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
-from pennylane.ops.qubit.observables import Hermitian
 
 
 def equal(
@@ -123,6 +122,9 @@ def equal(
     if not isinstance(op2, type(op1)) and not isinstance(op1, Observable):
         return False
 
+    if isinstance(op2, (Hamiltonian, Tensor)):
+        return _equal(op2, op1)
+
     return _equal(
         op1,
         op2,
@@ -137,27 +139,12 @@ def equal(
 def _equal(
     op1,
     op2,
-    **kwargs,
-):
-    """Calls relevant comparison function using singledispatch. Defaults to _equal_operation."""
-    try:
-        return _equal_operation(op1, op2, **kwargs)
-    except:  # pylint: disable=raise-missing-from
-        raise NotImplementedError(
-            f"Comparison between {type(op1)} and {type(op2)} not implemented."
-        )
-
-
-@_equal.register
-def _equal_operation(
-    op1: Operation,
-    op2: Operation,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
 ):
-    """Determine whether two Operations objects are equal."""
+    """Default function to determine whether two Operations objects are equal."""
 
     if not isinstance(
         op2, type(op1)
@@ -214,32 +201,6 @@ def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
     ):  # _obs_comparison_data will raise an error for anything else
         return False
     return op1.compare(op2)
-
-
-@_equal.register
-# pylint: disable=unused-argument
-def _equal_hermitians(op1: Hermitian, op2: Hermitian, **kwargs):
-    """Determine whether two Hermitian objects are equal. Comparison of Hermitian objects uses _equal_operation
-    logic to compare matrix elements with qml.math.allclose"""
-    return _equal_operation(op1, op2)
-
-
-@_equal.register
-# pylint: disable=unused-argument
-def _equal_other_observables(op1: Observable, op2: Union[Observable, Operation], **kwargs):
-    """Deals with the messy thing that happens because some Operators are both Operations and Observables.
-    Assumes the function is accessed via singledispatch from _equals and therefore that op1 is not one of
-    the explicitly supported Observables classes (Hamiltonian, Tensor or Hermitian)."""
-
-    # if they are both operations that just also register as observables, default to _equal_operations
-    if isinstance(op1, Operation) and isinstance(op2, Operation):
-        return _equal_operation(op1, op2, **kwargs)
-
-    # if op2 is one of the supported Observable classes, compare based on class of op2
-    if isinstance(op2, (Hamiltonian, Tensor, Hermitian)):
-        return _equal(op2, op1)  # pylint: disable=arguments-out-of-order
-
-    raise NotImplementedError(f"Comparison between {type(op1)} and {type(op2)} not implemented.")
 
 
 @_equal.register
