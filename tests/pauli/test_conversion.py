@@ -81,7 +81,7 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
-        """Tests that decompose_hamiltonian successfully decomposes Hamiltonians into a
+        """Tests that pauli_decompose successfully decomposes Hamiltonians into a
         linear combination of Pauli matrices"""
         decomposed_coeff, decomposed_obs = qml.pauli_decompose(hamiltonian).terms()
 
