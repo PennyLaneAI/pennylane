@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the probs module"""
-
 import numpy as np
 import pytest
 
@@ -21,12 +20,41 @@ from pennylane import numpy as pnp
 from pennylane.measurements import MeasurementProcess, MeasurementShapeError, Probability
 from pennylane.queuing import AnnotatedQueue
 
+
+# TODO: Remove this when new CustomMP are the default
+def custom_measurement_process(device, spy):
+    assert len(spy.call_args_list) > 0  # make sure method is mocked properly
+
+    samples = device._samples  # pylint: disable=protected-access
+    state = device._state  # pylint: disable=protected-access
+    call_args_list = list(spy.call_args_list)
+    for call_args in call_args_list:
+        wires, shot_range, bin_size = (
+            call_args.kwargs["wires"],
+            call_args.kwargs["shot_range"],
+            call_args.kwargs["bin_size"],
+        )
+        # no need to use op, because the observable has already been applied to ``dev._state``
+        meas = qml.probs(wires=wires)
+        old_res = device.probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
+        if device.shots is None:
+            new_res = meas.process_state(state=state, wire_order=device.wires)
+        else:
+            new_res = meas.process_samples(
+                samples=samples,
+                wire_order=device.wires,
+                shot_range=shot_range,
+                bin_size=bin_size,
+            )
+        assert qml.math.allequal(old_res, new_res)
+
+
 # make the test deterministic
 np.random.seed(42)
 
 
 @pytest.fixture
-def init_state(scope="session"):
+def init_state():
     """Fixture that creates an initial state"""
 
     def _init_state(n):
@@ -38,6 +66,7 @@ def init_state(scope="session"):
     return _init_state
 
 
+# pylint: disable=redefined-outer-name
 class TestProbs:
     """Tests for the probs function"""
 
@@ -88,9 +117,11 @@ class TestProbs:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == Probability
 
-    def test_full_prob(self, init_state, tol):
+    def test_full_prob(self, init_state, tol, mocker):
         """Test that the correct probability is returned."""
         dev = qml.device("default.qubit", wires=4)
+        spy = mocker.spy(qml.QubitDevice, "probability")
+
         state = init_state(4)
 
         @qml.qnode(dev)
@@ -102,9 +133,13 @@ class TestProbs:
         expected = np.abs(state) ** 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_marginal_prob(self, init_state, tol):
+        custom_measurement_process(dev, spy)
+
+    def test_marginal_prob(self, init_state, tol, mocker):
         """Test that the correct marginal probability is returned."""
         dev = qml.device("default.qubit", wires=4)
+        spy = mocker.spy(qml.QubitDevice, "probability")
+
         state = init_state(4)
 
         @qml.qnode(dev)
@@ -117,10 +152,13 @@ class TestProbs:
         expected = np.einsum("ijkl->jl", expected).flatten()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+        custom_measurement_process(dev, spy)
+
     def test_marginal_prob_more_wires(self, init_state, mocker, tol):
         """Test that the correct marginal probability is returned, when the
         states_to_binary method is used for probability computations."""
         dev = qml.device("default.qubit", wires=4)
+        spy_probs = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
 
         spy = mocker.spy(qml.QubitDevice, "states_to_binary")
@@ -138,9 +176,12 @@ class TestProbs:
 
         spy.assert_called_once()
 
-    def test_integration(self, tol):
+        custom_measurement_process(dev, spy_probs)
+
+    def test_integration(self, tol, mocker):
         """Test the probability is correct for a known state preparation."""
         dev = qml.device("default.qubit", wires=2)
+        spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
         def circuit():
@@ -155,27 +196,51 @@ class TestProbs:
         expected = np.array([0.5, 0.5, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_integration_analytic_false(self, tol):
+        custom_measurement_process(dev, spy)
+
+    @pytest.mark.parametrize("shots", [100, [1, 10, 100]])
+    def test_integration_analytic_false(self, tol, mocker, shots):
         """Test the probability is correct for a known state preparation when the
         analytic attribute is set to False."""
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(0)
-            return qml.probs(wires=[0])
+            return qml.probs(wires=dev.wires)
 
         res = circuit()
-        expected = np.array([0, 1])
+        expected = np.array([0, 0, 0, 0, 1, 0, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+        custom_measurement_process(dev, spy)
+
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_batch_size(self, mocker, shots):
+        """Test the probability is correct for a batched input."""
+        dev = qml.device("default.qubit", wires=1, shots=shots)
+        spy = mocker.spy(qml.QubitDevice, "probability")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.probs(wires=dev.wires)  # TODO: Use ``qml.probs()`` when supported
+
+        x = np.array([0, np.pi / 2])
+        res = circuit(x)
+        expected = [[1.0, 0.0], [0.5, 0.5]]
+        assert np.allclose(res, expected, atol=0.1, rtol=0.1)
+
+        custom_measurement_process(dev, spy)
+
     @pytest.mark.autograd
-    def test_numerical_analytic_diff_agree(self, init_state, tol):
+    def test_numerical_analytic_diff_agree(self, tol, mocker):
         """Test that the finite difference and parameter shift rule
         provide the same Jacobian."""
         w = 4
         dev = qml.device("default.qubit", wires=w)
-        state = init_state(w)
+        spy = mocker.spy(qml.QubitDevice, "probability")
 
         def circuit(x, y, z):
             for i in range(w):
@@ -205,10 +270,13 @@ class TestProbs:
         # Check that they agree up to numeric tolerance
         assert all(np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A))
 
+        custom_measurement_process(dev, spy)
+
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
-    def test_prob_generalize_param_one_qubit(self, hermitian, init_state, tol):
+    def test_prob_generalize_param_one_qubit(self, hermitian, tol, mocker):
         """Test that the correct probability is returned."""
         dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
         def circuit(x):
@@ -229,10 +297,13 @@ class TestProbs:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+        custom_measurement_process(dev, spy)
+
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
-    def test_prob_generalize_param(self, hermitian, init_state, tol):
+    def test_prob_generalize_param(self, hermitian, tol, mocker):
         """Test that the correct probability is returned."""
         dev = qml.device("default.qubit", wires=3)
+        spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -258,10 +329,13 @@ class TestProbs:
         expected = np.einsum("ijk->i", expected).flatten()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+        custom_measurement_process(dev, spy)
+
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
-    def test_prob_generalize_param_multiple(self, hermitian, init_state, tol):
+    def test_prob_generalize_param_multiple(self, hermitian, tol, mocker):
         """Test that the correct probability is returned."""
         dev = qml.device("default.qubit", wires=3)
+        spy = mocker.spy(qml.QubitDevice, "probability")
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -298,11 +372,14 @@ class TestProbs:
         assert np.allclose(res[1], expected_1, atol=tol, rtol=0)
         assert np.allclose(res[2], expected_2, atol=tol, rtol=0)
 
+        custom_measurement_process(dev, spy)
+
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
-    def test_prob_generalize_initial_state(self, hermitian, wire, init_state, tol):
+    def test_prob_generalize_initial_state(self, hermitian, wire, init_state, tol, mocker):
         """Test that the correct probability is returned."""
         dev = qml.device("default.qubit", wires=4)
+        spy = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
 
         @qml.qnode(dev)
@@ -338,11 +415,14 @@ class TestProbs:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+        custom_measurement_process(dev, spy)
+
     @pytest.mark.parametrize("operation", [qml.PauliX, qml.PauliY, qml.Hadamard])
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
-    def test_operation_prob(self, operation, wire, init_state, tol):
+    def test_operation_prob(self, operation, wire, init_state, tol, mocker):
         "Test the rotated probability with different wires and rotating operations."
         dev = qml.device("default.qubit", wires=4)
+        spy = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
 
         @qml.qnode(dev)
@@ -378,10 +458,13 @@ class TestProbs:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+        custom_measurement_process(dev, spy)
+
     @pytest.mark.parametrize("observable", [(qml.PauliX, qml.PauliY)])
-    def test_observable_tensor_prob(self, observable, init_state, tol):
+    def test_observable_tensor_prob(self, observable, init_state, tol, mocker):
         "Test the rotated probability with a tensor observable."
         dev = qml.device("default.qubit", wires=4)
+        spy = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
 
         @qml.qnode(dev)
@@ -411,8 +494,10 @@ class TestProbs:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+        custom_measurement_process(dev, spy)
+
     @pytest.mark.parametrize("coeffs, obs", [([1, 1], [qml.PauliX(wires=0), qml.PauliX(wires=1)])])
-    def test_hamiltonian_error(self, coeffs, obs, init_state, tol):
+    def test_hamiltonian_error(self, coeffs, obs, init_state):
         "Test that an error is returned for hamiltonians."
         H = qml.Hamiltonian(coeffs, obs)
 
@@ -490,3 +575,40 @@ class TestProbs:
             "provided. The wires for probs will be determined directly from the observable.",
         ):
             circuit()
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            (
+                [0],
+                [
+                    [[0, 0, 0.5], [1, 1, 0.5]],
+                    [[0.5, 0.5, 0], [0.5, 0.5, 1]],
+                    [[0, 0.5, 1], [1, 0.5, 0]],
+                ],
+            ),
+            (
+                [0, 1],
+                [
+                    [[0, 0, 0], [0, 0, 0.5], [0.5, 0, 0], [0.5, 1, 0.5]],
+                    [[0.5, 0.5, 0], [0, 0, 0], [0, 0, 0], [0.5, 0.5, 1]],
+                    [[0, 0.5, 0.5], [0, 0, 0.5], [0.5, 0, 0], [0.5, 0.5, 0]],
+                ],
+            ),
+        ],
+    )
+    def test_estimate_probability_with_binsize_with_broadcasting(self, wires, expected):
+        """Tests the estimate_probability method with a bin size and parameter broadcasting"""
+        samples = np.array(
+            [
+                [[1, 0], [1, 1], [1, 1], [1, 1], [1, 1], [0, 1]],
+                [[0, 0], [1, 1], [1, 1], [0, 0], [1, 1], [1, 1]],
+                [[1, 0], [1, 1], [1, 1], [0, 0], [0, 1], [0, 0]],
+            ]
+        )
+
+        res = qml.probs(wires=wires).process_samples(
+            samples=samples, wire_order=wires, shot_range=None, bin_size=2
+        )
+
+        assert np.allclose(res, expected)
