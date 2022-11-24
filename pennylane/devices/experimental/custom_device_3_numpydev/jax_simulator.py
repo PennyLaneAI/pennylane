@@ -2,7 +2,7 @@ from functools import reduce
 from string import ascii_letters as ABC
 from pennylane.tape import QuantumScript
 
-import numpy as np
+from jax import numpy as np
 
 from ..device_interface.abstract_device_driver import AbstractDeviceDriver
 
@@ -13,7 +13,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-class PlainNumpySimulator(AbstractDeviceDriver):
+class JaxSimulator(AbstractDeviceDriver):
     """
 
     Current Restrictions:
@@ -31,7 +31,7 @@ class PlainNumpySimulator(AbstractDeviceDriver):
 
     """
 
-    name = "PlainNumpy"
+    name = "Jax"
 
     def __init__(self):
         pass
