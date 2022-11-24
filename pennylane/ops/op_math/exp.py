@@ -375,7 +375,7 @@ class Evolution(Exp):
 
     Args:
         base (~.operation.Operator): The Operator to be used as a Generator, G.
-        param=1 (Number): The evolution parameter, x. This parameter is not expected to have
+        param (float): The evolution parameter, x. This parameter is not expected to have
             any complex component.
 
     Returns:
