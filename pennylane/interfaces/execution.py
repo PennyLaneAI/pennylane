@@ -26,7 +26,7 @@ devices with autodifferentiation support.
 import inspect
 import warnings
 from contextlib import _GeneratorContextManager
-from functools import partial, wraps
+from functools import wraps, partial
 from typing import Callable, Sequence
 
 from cachetools import LRUCache
@@ -128,13 +128,6 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
         def fn(tapes: Sequence[QuantumTape], **kwargs):  # pylint: disable=function-redefined
             tapes = [expand_fn(tape) for tape in tapes]
-            if tapes[0].inner_transform is not None:
-                results = []
-                for tape in tapes:
-                    inner_tapes, processing_fn = tape.inner_transform(tape)
-                    results.append(processing_fn(original_fn(inner_tapes, **kwargs)))
-                return results
-
             return original_fn(tapes, **kwargs)
 
     @wraps(fn)

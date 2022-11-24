@@ -21,6 +21,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 import abc
 import itertools
 import warnings
+from typing import Sequence
 
 import numpy as np
 
@@ -41,6 +42,7 @@ from pennylane.measurements import (
     VnEntropy,
 )
 from pennylane.operation import operation_derivative
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 
@@ -591,7 +593,7 @@ class QubitDevice(Device):
 
         return results
 
-    def batch_execute(self, circuits):
+    def batch_execute(self, circuits: Sequence[QuantumScript]):
         """Execute a batch of quantum circuits on the device.
 
         The circuits are represented by tapes, and they are executed one-by-one using the
@@ -617,8 +619,12 @@ class QubitDevice(Device):
             # not start the next computation in the zero state
             self.reset()
 
-            # TODO: Insert control on value here
-            res = self.execute(circuit)
+            if circuit.inner_transform is not None:
+                inner_tapes, processing_fn = circuit.inner_transform(circuit)
+                res = processing_fn(self.batch_execute(inner_tapes))
+            else:
+                # TODO: Insert control on value here
+                res = self.execute(circuit)
             results.append(res)
 
         if self.tracker.active:
