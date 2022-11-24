@@ -1,6 +1,10 @@
 qml.queuing
 ===========
 
+Overview
+--------
+
+.. currentmodule:: pennylane.queuing
 
 .. warning::
 
@@ -8,6 +12,8 @@ qml.queuing
     to use these classes directly.
 
 .. automodapi:: pennylane.queuing
+    :no-heading:
     :include-all-objects:
     :no-inheritance-diagram:
-    :skip: OrderedDict, contextmanager
+    :no-inherited-members:
+    :skip: contextmanager, OrderedDict
