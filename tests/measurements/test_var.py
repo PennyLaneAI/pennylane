@@ -43,7 +43,6 @@ def custom_measurement_process(device, spy):
         assert qml.math.allequal(old_res, new_res)
 
 
-# pylint: disable=attribute-defined-outside-init
 class TestVar:
     """Tests for the var function"""
 
