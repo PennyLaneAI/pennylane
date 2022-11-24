@@ -34,14 +34,14 @@ from .tensorflow import (
 )
 
 
-def _flatten(x):
+def _flatten_nested_list(x):
     """
     Recursively flatten the list
     """
     if not isinstance(x, (tuple, list)):
         return [x]
 
-    return reduce(lambda a, y: a + _flatten(y), x, [])
+    return reduce(lambda a, y: a + _flatten_nested_list(y), x, [])
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
@@ -305,7 +305,7 @@ def _execute_new(
     trainable = []
     output_types = []
 
-    num_copies = _get_num_copies(device.shot_vector) if device.shot_vector else 1
+    num_shot_copies = _get_num_copies(device.shot_vector) if device.shot_vector else 1
 
     for tape in tapes:
         # store the trainable parameters
@@ -327,14 +327,14 @@ def _execute_new(
             else:
                 o_types.append(tf.float64)
 
-        output_types.extend(o_types * num_copies)
+        output_types.extend(o_types * num_shot_copies)
 
     total_measurements = sum(len(tape.measurements) for tape in tapes)
 
     if mode == "forward":
         output_types += [tf.float64] * len(trainable)
 
-    output_types += [tf.int32] * (total_measurements * num_copies)
+    output_types += [tf.int32] * (total_measurements * num_shot_copies)
 
     def _nest_params(all_params):
         count = 0
@@ -355,7 +355,7 @@ def _execute_new(
             res, jacs = execute_fn(tapes, **gradient_kwargs)
 
         # flatten the results
-        res = _flatten(res)
+        res = _flatten_nested_list(res)
 
         for i, r in enumerate(res):
             # convert output to TensorFlow tensors
@@ -364,7 +364,7 @@ def _execute_new(
 
         # flatten the jacobians
         if jacs:
-            jacs = _flatten(jacs)
+            jacs = _flatten_nested_list(jacs)
             for i, jac in enumerate(jacs):
                 jacs[i] = tf.convert_to_tensor(jac)
 
@@ -374,12 +374,12 @@ def _execute_new(
     def _execute(*all_params):  # pylint:disable=unused-argument
 
         res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
-        output_sizes = res[-total_measurements:]
+        output_sizes = res[-total_measurements * num_shot_copies :]
 
         if mode == "forward":
-            jacs = res[total_measurements * num_copies : -total_measurements]
+            jacs = res[total_measurements * num_shot_copies : -total_measurements * num_shot_copies]
 
-        res = res[: total_measurements * num_copies]
+        res = res[: total_measurements * num_shot_copies]
 
         # reconstruct the nested structure of res
         res = _res_restructured(res, tapes, shots=device.shot_vector)
@@ -390,15 +390,15 @@ def _execute_new(
 
             # whether the tapes contain multiple measurements
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-            dy = list(dy[: total_measurements * num_copies])
+            dy = list(dy[: total_measurements * num_shot_copies])
 
             if mode == "forward":
                 # Jacobians were computed on the forward pass (mode="forward")
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
 
                 def _backward(*args):
-                    dy = args[: total_measurements * num_copies]
-                    jacs = args[total_measurements * num_copies : -len(tapes)]
+                    dy = args[: total_measurements * num_shot_copies]
+                    jacs = args[total_measurements * num_shot_copies : -len(tapes)]
                     multi_measurements = args[-len(tapes) :]
 
                     dy = _res_restructured(dy, tapes, shots=device.shot_vector)
