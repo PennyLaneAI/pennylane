@@ -16,6 +16,7 @@ This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
 # pylint: disable=no-member, too-many-branches
+from collections.abc import Sequence
 import numpy as np
 import autograd
 
@@ -242,7 +243,7 @@ def compute_vjp(dy, jac, num=None):
     return qml.math.tensordot(jac, dy_row, [[0], [0]])
 
 
-def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
+def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a tape.
 
@@ -345,7 +346,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
         return [], lambda _, num=None: None
 
     try:
-        if qml.math.allclose(dy, 0):
+        if not isinstance(dy, tuple) and qml.math.allclose(dy, 0):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero,
             # and we can avoid a quantum computation.
@@ -363,22 +364,30 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     except (AttributeError, TypeError, NotImplementedError):
         pass
 
-    gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
+    gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
 
     def processing_fn(results, num=None):
         # postprocess results to compute the Jacobian
         jac = fn(results)
+        shot_vector = isinstance(shots, Sequence)
+
         if qml.active_return():
             multi = len(tape.measurements) > 1
-            if multi:
-                return compute_vjp_multi_new(dy, jac, num=num)
-            return compute_vjp_single_new(dy, jac, num=num)
+            comp_vjp_fn = compute_vjp_multi_new if multi else compute_vjp_single_new
+
+            if not shot_vector:
+                return comp_vjp_fn(dy, jac, num=num)
+
+            vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac)]
+            return qml.math.sum(qml.math.stack(vjp_), 0)
+
         return compute_vjp(dy, jac, num=num)
 
     return gradient_tapes, processing_fn
 
 
-def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None):
+# pylint: disable=too-many-arguments
+def batch_vjp(tapes, dys, gradient_fn, shots=None, reduction="append", gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the vector-Jacobian products of a batch of tapes.
 
@@ -499,7 +508,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
 
     # Loop through the tapes and dys vector
     for tape, dy in zip(tapes, dys):
-        g_tapes, fn = vjp(tape, dy, gradient_fn, gradient_kwargs)
+        g_tapes, fn = vjp(tape, dy, gradient_fn, shots=shots, gradient_kwargs=gradient_kwargs)
         reshape_info.append(len(g_tapes))
         processing_fns.append(fn)
         gradient_tapes.extend(g_tapes)
