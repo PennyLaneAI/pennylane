@@ -41,6 +41,7 @@ from pennylane.measurements import (
     Variance,
     VnEntropy,
 )
+from pennylane.measurements.classical_shadow import InnerBlackBoxProcessing
 from pennylane.operation import operation_derivative
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -248,7 +249,7 @@ class QubitDevice(Device):
 
         for shot_tuple in self._shot_vector:
             s2 = s1 + np.prod(shot_tuple)
-            r = self.statistics(circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots)
+            r = self.statistics(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
                 r = r[0]
@@ -386,7 +387,7 @@ class QubitDevice(Device):
         if not self.analytic and self._shot_vector is not None:
             results = self._collect_shotvector_results(circuit, counts_exist)
         else:
-            results = self.statistics(circuit.observables)
+            results = self.statistics(circuit)
 
         if not circuit.is_sampled:
 
@@ -618,13 +619,8 @@ class QubitDevice(Device):
             # we need to reset the device here, else it will
             # not start the next computation in the zero state
             self.reset()
-
-            if circuit.inner_transform is not None:
-                inner_tapes, processing_fn = circuit.inner_transform(circuit)
-                res = processing_fn(self.batch_execute(inner_tapes))
-            else:
-                # TODO: Insert control on value here
-                res = self.execute(circuit)
+            # TODO: Insert control on value here
+            res = self.execute(circuit)
             results.append(res)
 
         if self.tracker.active:
@@ -690,7 +686,7 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
-    def statistics(self, observables, shot_range=None, bin_size=None):
+    def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -737,9 +733,16 @@ class QubitDevice(Device):
             * Finally, we repeat the measurement statistics for the final 100 shots,
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
+        measurements = circuit.measurements
         results = []
 
-        for obs in observables:
+        for m in measurements:
+            if m.obs is not None:
+                obs = m.obs
+                obs.return_type = m.return_type
+            else:
+                obs = m
+
             # Pass instances directly
             if obs.return_type is Expectation:
                 # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
@@ -768,7 +771,7 @@ class QubitDevice(Device):
                 )
 
             elif obs.return_type is State:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination"
                         " with other return types"
@@ -830,6 +833,10 @@ class QubitDevice(Device):
                 results.append(
                     self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
                 )
+
+            elif isinstance(m, InnerBlackBoxProcessing):
+                inner_tapes, processing_fn = circuit.inner_transform(circuit)
+                results.append(processing_fn(self.batch_execute(inner_tapes)))
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
