@@ -104,10 +104,3 @@ class _Expectation(SampleMeasurement, StateMeasurement):
         prob = qml.probs(wires=permuted_wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
         return qml.math.dot(prob, eigvals)
-
-    def _permute_wires(self, wires: Wires):
-        wire_map = dict(zip(wires, range(len(wires))))
-        ordered_obs_wire_lst = sorted(self.wires.tolist(), key=lambda label: wire_map[label])
-        mapped_wires = [wire_map[w] for w in self.wires]
-        permutation = qml.math.argsort(mapped_wires)  # extract permutation via argsort
-        return Wires([ordered_obs_wire_lst[index] for index in permutation])
