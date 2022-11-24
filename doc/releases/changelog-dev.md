@@ -9,10 +9,16 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
+  * Add `_Expectation` class.
+    [#3343](https://github.com/PennyLaneAI/pennylane/pull/3343)
+
   * Add `_Sample` class.
     [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
-  * Add `_Probs` class.
+  * Add `_Var` class.
+    [#3312](https://github.com/PennyLaneAI/pennylane/pull/3312)
+
+  * Add `_Probability` class.
     [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
   * Add `_Counts` class.
@@ -49,7 +55,10 @@
 
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
-
+  
+* New parametric qubit ops `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10` which perform a phaseshift, similar to `qml.ControlledPhaseShift` but on different positions of the state vector.
+  [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
+  
 * Support for purity computation is added. The `qml.math.purity` function computes the purity from a state vector or a density matrix:
 
   [#3290](https://github.com/PennyLaneAI/pennylane/pull/3290)
@@ -207,6 +216,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   * `qml.tape.QuantumTape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
   * `qml.QueuingContext` is now `qml.QueuingManager`
   * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info`: Use plain `update_info`
+  
+* `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
+  [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
 
 <h3>Documentation</h3>
 
@@ -263,3 +275,4 @@ Romain Moyard
 Matthew Silverman
 Antal Száva
 David Wierichs
+Moritz Willmann
