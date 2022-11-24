@@ -218,6 +218,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Documentation</h3>
 
+* Adds developer documentation for the queuing module.
+  [(#3268)](https://github.com/PennyLaneAI/pennylane/pull/3268)
+
 * Corrects more mentions for diagonalizing gates for all relevant operations. The docstrings for `compute_eigvals` used
   to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is
   the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement
