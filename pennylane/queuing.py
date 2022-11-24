@@ -153,7 +153,7 @@ measurements, and state prep present in the final circuit. This step eliminates 
 
 These three lists can be used to construct a :class:`~.QuantumScript`:
 
->>> qml.tape.QuantumScript(ops, m, prep)
+>>> qml.tape.QuantumScript(ops, measurements, prep)
 <QuantumScript: wires=[0, 1], params=1>
 
 In order to construct new operators within a recording, but without queuing them, either
