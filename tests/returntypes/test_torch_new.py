@@ -792,40 +792,57 @@ class TestTorchExecuteIntegration:
         x = torch.tensor(x_val, requires_grad=True, device=torch_device)
         y = torch.tensor(y_val, requires_grad=True, device=torch_device)
 
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=[1])
+        def circuit(x, y):
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.probs(wires=[1])
 
-        res = execute([tape], dev, **execute_kwargs)[0]
+            return execute([tape], dev, **execute_kwargs)[0]
 
-        expected = torch.tensor(
-            [
-                np.cos(x_val),
-                (1 + np.cos(x_val) * np.cos(y_val)) / 2,
-                (1 - np.cos(x_val) * np.cos(y_val)) / 2,
-            ],
-            dtype=res.dtype,
+        res = circuit(x, y)
+
+        res_0 = torch.tensor(np.cos(x_val))
+        res_1 = torch.tensor(
+            [(1 + np.cos(x_val) * np.cos(y_val)) / 2, (1 - np.cos(x_val) * np.cos(y_val)) / 2]
+        )
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert torch.allclose(res[0], res_0, atol=tol, rtol=0)
+        assert torch.allclose(res[1], res_1, atol=tol, rtol=0)
+
+        jac = jacobian(circuit, (x, y))
+        dtype_jac = jac[0][0].dtype
+
+        res_0 = torch.tensor(
+            -np.sin(x_val),
+            dtype=dtype_jac,
             device=torch_device,
         )
-        assert torch.allclose(res.detach(), expected, atol=tol, rtol=0)
-
-        loss = torch.sum(res)
-        loss.backward()
-        expected = torch.tensor(
-            [
-                -np.sin(x_val)
-                + -np.sin(x_val) * np.cos(y_val) / 2
-                + np.cos(y_val) * np.sin(x_val) / 2,
-                -np.cos(x_val) * np.sin(y_val) / 2 + np.cos(x_val) * np.sin(y_val) / 2,
-            ],
-            dtype=x.grad.dtype,
+        res_1 = torch.tensor(
+            0.0,
+            dtype=dtype_jac,
             device=torch_device,
         )
-        assert torch.allclose(x.grad, expected[0], atol=tol, rtol=0)
-        assert torch.allclose(y.grad, expected[1], atol=tol, rtol=0)
+        res_2 = torch.tensor(
+            [-np.sin(x_val) * np.cos(y_val) / 2, np.cos(y_val) * np.sin(x_val) / 2],
+            dtype=dtype_jac,
+            device=torch_device,
+        )
+        res_3 = torch.tensor(
+            [-np.cos(x_val) * np.sin(y_val) / 2, +np.cos(x_val) * np.sin(y_val) / 2],
+            dtype=dtype_jac,
+            device=torch_device,
+        )
+
+        assert torch.allclose(jac[0][0], res_0, atol=tol, rtol=0)
+        assert torch.allclose(jac[0][1], res_1, atol=tol, rtol=0)
+        assert torch.allclose(jac[1][0], res_2, atol=tol, rtol=0)
+        assert torch.allclose(jac[1][1], res_3, atol=tol, rtol=0)
 
     def test_sampling(self, torch_device, execute_kwargs):
         """Test sampling works as expected"""
