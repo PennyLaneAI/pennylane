@@ -9,6 +9,9 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
+  * Add `_Expectation` class.
+    [#3343](https://github.com/PennyLaneAI/pennylane/pull/3343)
+
   * Add `_Sample` class.
     [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
