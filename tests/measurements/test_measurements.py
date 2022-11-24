@@ -177,7 +177,7 @@ class TestStatisticsQueuing:
             tensor_op = A @ B
             stat_func(tensor_op)
 
-        assert len(q._queue) == 2  # pylint: disable=protected-access
+        assert len(q) == 2
 
         assert q.queue[0] is tensor_op
         meas_proc = q.queue[-1]
