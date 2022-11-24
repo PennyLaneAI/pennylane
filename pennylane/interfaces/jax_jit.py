@@ -117,7 +117,6 @@ def _numeric_type_to_dtype(numeric_type):
     return jnp.complex64 if single_precision else jnp.complex128
 
 
-
 def _extract_shape_dtype_structs(tapes, device):
     """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
     the tapes and the device.
@@ -135,6 +134,7 @@ def _extract_shape_dtype_structs(tapes, device):
         shape_dtypes.append(shape_and_dtype)
 
     return shape_dtypes
+
 
 def _extract_shape_dtype_structs_new(tapes, device):
     """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
@@ -452,23 +452,20 @@ def _execute_bwd_new(
 
     @jax.custom_jvp
     def callback_fun(jvp_tapes, num_tapes):
-
         def wrapper():
             jacs = execute_fn(jvp_tapes)[0]
             return jacs
 
         shape_dtype_structs = jax.ShapeDtypeStruct((), dtype)
-        num_outputs = np.sum(len(t.measurements) for t in jvp_tapes)
+        num_outputs = sum(len(t.measurements) for t in jvp_tapes)
+        abc = tuple([shape_dtype_structs] * len(t.measurements) for t in jvp_tapes)
 
         # TODO: match the output structure we'd have if there was no callback done
-        return jax.pure_callback(wrapper, [shape_dtype_structs] * num_outputs)
+        return jax.pure_callback(wrapper, abc)
 
     @callback_fun.defjvp
     def callback_fun_jvp(primals, tangents):
-        # TODO:
-        print('in callback_fun_jvp here')
         return primals, tangents
-
 
     def callback_fun_fwd(new_tapes, num_params):
         # Backward: Gradient function is a device method.
@@ -477,14 +474,17 @@ def _execute_bwd_new(
                 return gradient_fn(new_tapes, **gradient_kwargs)
 
         shape_dtype_structs = jax.ShapeDtypeStruct((), dtype)
-        return jax.pure_callback(wrapper, [shape_dtype_structs] * num_params)
+        abc = tuple(
+            [tuple([shape_dtype_structs] * len(t.trainable_params))] * len(t.measurements)
+            for t in new_tapes
+        )
+        return jax.pure_callback(wrapper, abc)
 
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):
         params = primals[0]
 
         new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
-        print(tangents)
         num_params = np.sum([len(p) for p in params])
 
         # Execution: execute the function first
@@ -511,7 +511,6 @@ def _execute_bwd_new(
                     jvps = processing_fn([])
                 else:
                     res_from_callback = callback_fun(jvp_tapes, num_params)
-                    print("res_from_callback: ", res_from_callback)
                     jvps = processing_fn(res_from_callback)
         else:
             # Gradient function is a device method
@@ -522,21 +521,16 @@ def _execute_bwd_new(
             #     jvps = processing_fn([])
             # else:
             #     jvps = processing_fn(callback_fun(jvp_tapes, num_params))
-            print("Tapes -------- ", new_tapes)
             jacs = callback_fun_fwd(new_tapes, num_params)
-            print('jacs: ', jacs, tangents[0])
 
             multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
-            # TODO:
             assert len(tangents[0]) == 1
-            jvps = _compute_jvps(jacs, tangents[0][0], multi_measurements)
-            jvps = [jnp.squeeze(j) for j in jvps]
 
-        print('some: ', isinstance(gradient_fn, qml.gradients.gradient_transform))
+            print("--------\n\n\n", tangents[0])
+            jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
+            jvps = [tuple([jnp.squeeze(j_comp) for j in jvps for j_comp in j])]
 
         res2 = jvps
-        print("res1, res2: ", res1, res2, jvps)
-
         return res1, res2
 
     return execute_wrapper(params)

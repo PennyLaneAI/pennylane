@@ -92,9 +92,8 @@ def compute_jvp_single(tangent, jac, jitting=False):
     if jac is None:
         return None
 
-    if not jitting:
-        tangent = qml.math.stack(tangent)
-        jac = _convert(jac, tangent)
+    tangent = qml.math.stack(tangent)
+    jac = _convert(jac, tangent)
 
     # Single param
     if not isinstance(jac, tuple):
@@ -119,6 +118,7 @@ def compute_jvp_single(tangent, jac, jitting=False):
         else:
             # TODO: clean
             from jax import numpy as jnp
+
             res = qml.math.tensordot(jac, jnp.array(tangent), 0)
     # Multiple params
     else:
@@ -173,7 +173,7 @@ def compute_jvp_multi(tangent, jac, jitting=False):
     """
     if jac is None:
         return None
-    res = tuple(compute_jvp_single(tangent, j, jitting=False) for j in jac)
+    res = tuple(compute_jvp_single(tangent, j, jitting=jitting) for j in jac)
     return res
 
 

@@ -148,9 +148,6 @@ def _single_meas_grad(result, coeffs, unshifted_coeff, r0):
 
     If an unshifted term exists, its contribution is added to the gradient.
     """
-    print(result)
-    raise ValueError("")
-
     result = qml.math.stack(result)
     coeffs = qml.math.convert_like(coeffs, result)
     g = qml.math.tensordot(result, coeffs, [[0], [0]])
@@ -170,8 +167,6 @@ def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
     for meas_idx in range(num_measurements):
 
         # Gather the measurement results
-        print("Here: ", res)
-        raise ValueError("")
         meas_result = [param_result[meas_idx] for param_result in res]
         g_component = _single_meas_grad(meas_result, coeffs, unshifted_coeff, r0[meas_idx])
         g.append(g_component)
