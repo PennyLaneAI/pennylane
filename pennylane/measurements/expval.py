@@ -16,10 +16,14 @@
 This module contains the qml.expval measurement.
 """
 import warnings
+from typing import Sequence, Tuple
 
+import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.ops import Projector
+from pennylane.wires import Wires
 
-from .measurements import Expectation, MeasurementProcess
+from .measurements import Expectation, SampleMeasurement, StateMeasurement
 
 
 def expval(op: Operator):
@@ -52,4 +56,58 @@ def expval(op: Operator):
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
 
-    return MeasurementProcess(Expectation, obs=op)
+    return _Expectation(Expectation, obs=op)
+
+
+# TODO: Make public when removing the ObservableReturnTypes enum
+class _Expectation(SampleMeasurement, StateMeasurement):
+    """Measurement process that computes the probability of each computational basis state."""
+
+    def process_samples(
+        self,
+        samples: Sequence[complex],
+        wire_order: Wires,
+        shot_range: Tuple[int] = None,
+        bin_size: int = None,
+    ):
+        if isinstance(self.obs, Projector):
+            # branch specifically to handle the projector observable
+            idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
+            probs = qml.probs(wires=self.wires).process_samples(
+                samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
+            )
+            return probs[idx]
+        # estimate the ev
+        samples = qml.sample(op=self.obs).process_samples(
+            samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
+        )
+        # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
+        # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
+        axis = -1 if bin_size is None else -2
+        # TODO: do we need to squeeze here? Maybe remove with new return types
+        return qml.math.squeeze(qml.math.mean(samples, axis=axis))
+
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
+        if isinstance(self.obs, Projector):
+            # branch specifically to handle the projector observable
+            idx = int("".join(str(i) for i in self.obs.parameters[0]), 2)
+            probs = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
+            return probs[idx]
+        eigvals = qml.math.asarray(self.obs.eigvals(), dtype="float64")
+
+        # the probability vector must be permuted to account for the permuted
+        # wire order of the observable
+        permuted_wires = self._permute_wires(self.obs.wires)
+
+        # we use ``self.wires`` instead of ``self.obs`` because the observable was
+        # already applied to the state
+        prob = qml.probs(wires=permuted_wires).process_state(state=state, wire_order=wire_order)
+        # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
+        return qml.math.dot(prob, eigvals)
+
+    def _permute_wires(self, wires: Wires):
+        wire_map = dict(zip(wires, range(len(wires))))
+        ordered_obs_wire_lst = sorted(self.wires.tolist(), key=lambda label: wire_map[label])
+        mapped_wires = [wire_map[w] for w in self.wires]
+        permutation = qml.math.argsort(mapped_wires)  # extract permutation via argsort
+        return Wires([ordered_obs_wire_lst[index] for index in permutation])
