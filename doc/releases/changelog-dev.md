@@ -212,6 +212,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   * `qml.tape.QuantumTape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
   * `qml.QueuingContext` is now `qml.QueuingManager`
   * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info`: Use plain `update_info`
+  
+* `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
+  [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
 
 <h3>Documentation</h3>
 
