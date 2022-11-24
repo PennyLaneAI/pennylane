@@ -17,6 +17,25 @@ This module contains the classes for placing objects into queues.
 Description
 -----------
 
+Users provide *quantum functions* which PennyLane needs to convert into a circuit representation capable
+of being executed by a device. A quantum function is any callable that:
+
+* accepts classical inputs
+* constructs any number of quantum :class:`~.Operator` objects
+* returns one or more :class:`~.MeasurementProcess` objects.
+
+For example:
+
+.. code-block:: python
+
+    def qfunc(x, scale_value=1):
+        qml.RX(x * scale_value, wires=0)
+        if (1 != 2):
+            qml.S(0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+To convert from a quantum function to a representation of a circuit, we use queuing.
+
 A *queuable object* is anything that can be placed into a queue. These will be :class:`~.Operator`,
 :class:`~.MeasurementProcess`, and :class:`~.QuantumTape` objects. :class:`~.Operator` and
 :class:`~.MeasurementProcess` objects achieve queuing via a :meth:`~.Operator.queue` method called upon construction.
@@ -48,6 +67,18 @@ Inside of a context, we can see the active recording context:
 Are we recording?  True
 Is q the active queue?  True
 
+If we have nested :class:`~.AnnotatedQueue` contexts, only the innermost one will be recording.
+Once the currently active queue exits, any outer queue will resume recording.
+
+>>> with qml.queuing.AnnotatedQueue() as q1:
+...     print("Is q1 recording? ", q1 is qml.QueuingManager.active_context())
+...     with qml.queuing.AnnotatedQueue() as q2:
+...         print("Is q1 recording? ", q1 is qml.QueuingManager.active_context())
+...     print("Is q1 recording? ", q1 is qml.QueuingManager.active_context())
+Is q1 recording?  True
+Is q1 recording?  False
+Is q1 recording?  True
+
 If we construct an operator inside the recording context, we can see it is added to the queue:
 
 >>> with qml.queuing.AnnotatedQueue() as q:
@@ -56,7 +87,8 @@ If we construct an operator inside the recording context, we can see it is added
 [PauliX(wires=[0])]
 
 If an operator is constructed outside of the context, we can manually add it to the queue by
-calling the :meth:`~.Operator.queue` method:
+calling the :meth:`~.Operator.queue` method. The :meth:`~.Operator.queue` method is automatically
+called upon initialization, but it can also be manually called at a later time.
 
 >>> op = qml.PauliX(0)
 >>> with qml.queuing.AnnotatedQueue() as q:
@@ -75,7 +107,7 @@ not do anything.
 [PauliX(wires=[0])]
 
 The :func:`~.apply` method allows a single object to be queued multiple times in a circuit.
-The function essentially queues a copy of the original object.
+The function queues a copy of the original object if it already in the queue.
 
 >>> op = qml.PauliX(0)
 >>> with qml.queuing.AnnotatedQueue() as q:
@@ -83,6 +115,8 @@ The function essentially queues a copy of the original object.
 ...     qml.apply(op)
 >>> q.queue
 [PauliX(wires=[0]), PauliX(wires=[0])]
+>>> q.queue[0] is q.queue[1]
+False
 
 In the case of operators composed of other operators, each operator in the composite will be queued.
 For example, both ``PauliX`` and ``PauliX`` raised to a power.
@@ -100,6 +134,27 @@ In this case, each object will have metadata associated with it. At later proces
 {'owner': PauliX(wires=[0])**1.5}
 >>> q.get_info(base)["owner"] is pow_op
 True
+
+Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations,
+measurements, and state prep present in the final circuit. This step eliminates any object that has an owner.
+
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     qml.QubitStateVector(np.array([1.0, 0]), wires=0)
+...     base = qml.PauliX(0)
+...     pow_op = base ** 1.5
+...     qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+>>> ops, measurements, prep = qml.queuing.process_queue(q)
+>>> ops
+[PauliX(wires=[0])**1.5]
+>>> measurements
+[expval(PauliZ(wires=[0]) @ PauliX(wires=[1]))]
+>>> prep
+[QubitStateVector(tensor([1., 0.], requires_grad=True), wires=[0])]
+
+These three lists can be used to construct a :class:`~.QuantumScript`:
+
+>>> qml.tape.QuantumScript(ops, m, prep)
+<QuantumScript: wires=[0, 1], params=1>
 
 In order to construct new operators within a recording, but without queuing them, either
 use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=False` upon construction:
