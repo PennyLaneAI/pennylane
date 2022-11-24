@@ -757,6 +757,8 @@ def _get_var_with_second_order(pdA2, f0, pdA):
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
     """
+    if any(isinstance(var, np.ndarray) for var in [pdA2, f0, pdA]):
+        return qml.math.array(pdA2 - 2 * f0 * pdA)
     return pdA2 - 2 * f0 * pdA
 
 
