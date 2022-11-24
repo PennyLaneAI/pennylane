@@ -210,7 +210,7 @@ def classical_shadow(wires, seed_recipes=True):
     return ShadowMeasurementProcess(Shadow, wires=wires, seed=seed)
 
 
-class InnerBlackBoxProcessing(ABC):
+class InnerBlackBoxProcessing(MeasurementProcess, ABC):
     """Tape processing applied inside the gradient black box."""
 
     @abstractmethod
@@ -226,7 +226,7 @@ class InnerBlackBoxProcessing(ABC):
         return tapes, outer_processing_fn
 
 
-class ShadowMeasurementProcess(MeasurementProcess, InnerBlackBoxProcessing):
+class ShadowMeasurementProcess(InnerBlackBoxProcessing):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -249,7 +249,6 @@ class ShadowMeasurementProcess(MeasurementProcess, InnerBlackBoxProcessing):
         self.seed = seed
         self.H = H
         self.k = k
-        self.shots = None
 
     @property
     def numeric_type(self):
@@ -311,7 +310,6 @@ class ShadowMeasurementProcess(MeasurementProcess, InnerBlackBoxProcessing):
         obj.seed = self.seed
         obj.H = self.H
         obj.k = self.k
-        obj.shots = self.shots
         return obj
 
     def tape_transform(self, tape, shots):  # pylint: disable=arguments-differ
