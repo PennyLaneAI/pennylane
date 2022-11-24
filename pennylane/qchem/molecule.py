@@ -83,7 +83,8 @@ class Molecule:
         ]:
             raise ValueError(
                 "Currently, the only supported basis sets are 'sto-3g', '6-31g', '6-311g' and"
-                " 'cc-pvdz'."
+                " 'cc-pvdz'. Please consider using `load_data=True` to download the basis set from"
+                " an external library that can be installed with: pip install basis-set-exchange."
             )
 
         if set(symbols) - set(atomic_numbers):
