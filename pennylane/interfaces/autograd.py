@@ -529,9 +529,9 @@ def _compute_vjps_autograd(jacs, dy, multi_measurements, shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     vjps = []
     for i, multi in enumerate(multi_measurements):
-        shot_vector = isinstance(shots, Sequence)
-        dy_ = dy[i] if shot_vector else (dy[i],)
-        jac_ = jacs[i] if shot_vector else (jacs[i],)
+        shot_vector_defined = isinstance(shots, Sequence)
+        dy_ = dy[i] if shot_vector_defined else (dy[i],)
+        jac_ = jacs[i] if shot_vector_defined else (jacs[i],)
 
         shot_vjps = []
         for d, j in zip(dy_, jac_):
@@ -540,7 +540,7 @@ def _compute_vjps_autograd(jacs, dy, multi_measurements, shots):
             else:
                 shot_vjps.append(qml.gradients.compute_vjp_single_new(d, j))
 
-        vjps.append(qml.math.sum(qml.math.stack(shot_vjps), 0))
+        vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
 
     return vjps
 
