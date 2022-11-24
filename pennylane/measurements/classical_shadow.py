@@ -214,11 +214,11 @@ class InnerBlackBoxProcessing(ABC):
     """Tape processing applied inside the gradient black box."""
 
     @abstractmethod
-    def tape_transform(self, tape):
+    def tape_transform(self, tape, *args, **kwargs):
         """Tape transform applied inside the black box."""
 
-    def __call__(self, tape):
-        tapes, processing_fn = self.tape_transform(tape)
+    def __call__(self, tape, *args, **kwargs):
+        tapes, processing_fn = self.tape_transform(tape, *args, **kwargs)
 
         def outer_processing_fn(results):
             return qml.math.asarray([processing_fn(results)])
@@ -314,8 +314,8 @@ class ShadowMeasurementProcess(MeasurementProcess, InnerBlackBoxProcessing):
         obj.shots = self.shots
         return obj
 
-    def tape_transform(self, tape):
-        n_snapshots = self.shots
+    def tape_transform(self, tape, shots):  # pylint: disable=arguments-differ
+        n_snapshots = shots
 
         # slow implementation but works for all devices
         n_qubits = len(self.wires)

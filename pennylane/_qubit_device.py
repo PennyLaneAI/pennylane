@@ -27,6 +27,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import Device, DeviceError
+from pennylane.interfaces import set_shots
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
@@ -835,8 +836,10 @@ class QubitDevice(Device):
                 )
 
             elif isinstance(m, InnerBlackBoxProcessing):
-                inner_tapes, processing_fn = circuit.inner_transform(circuit)
-                results.append(processing_fn(self.batch_execute(inner_tapes)))
+                shots = self.shots
+                with set_shots(self, 1):
+                    inner_tapes, processing_fn = m(circuit, shots=shots)
+                    results.append(processing_fn(self.batch_execute(inner_tapes)))
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
