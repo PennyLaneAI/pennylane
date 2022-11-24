@@ -170,7 +170,7 @@ def split_non_commuting(tape):
             """re-order the output to the original shape and order"""
             if qml.active_return():
                 for i, tape in enumerate(tapes):
-                    if len(tape.observables) == 1:
+                    if len(tape.measurements) == 1:
                         res[i] = qml.math.expand_dims(res[i], 0)
                     else:
                         res[i] = qml.math.stack(res[i])
