@@ -120,7 +120,7 @@ def sparse_hamiltonian(H, wires=None, level=2):
 
     Returns:
         csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
-        :math:`(d^n, d^n)`, where :math:`n` is the number of wires, and :math:`d` is the 
+        :math:`(d^n, d^n)`, where :math:`n` is the number of wires, and :math:`d` is the
         number of levels in the quantum system.
 
     **Example:**
