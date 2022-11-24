@@ -24,10 +24,11 @@ class TestDevicePythonSim(AbstractDevice):
     def __init__(self, dev_config: Union[DeviceConfig, None] = None, *args, **kwargs):
         super().__init__(dev_config, *args, **kwargs)
 
-    def execute(self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config):
+    def execute(self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config = None):
         if isinstance(qscript, QuantumScript):
             interface = qml.math.get_interface(*qscript.get_parameters(trainable_only=False))
             simulator = JaxSimulator() if interface == "jax" else PlainNumpySimulator()
+            self._private_sim = simulator
             return simulator.execute(qscript)
 
         return [self.execute(qs) for qs in qscript]
@@ -36,7 +37,7 @@ class TestDevicePythonSim(AbstractDevice):
         return self.dev_config if hasattr(self, "dev_config") else {}
 
     def preprocess(
-        self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config
+        self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config = None
     ) -> Tuple[List[QuantumScript], Callable]:
         return simple_preprocessor(qscript)
 

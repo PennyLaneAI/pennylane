@@ -2,6 +2,8 @@ import pennylane as qml
 from pennylane.devices.experimental import *
 from pennylane.runtime.runtime_config import *
 
+qml.enable_return()
+
 dev_dq = qml.device("default.qubit", wires=1)
 dev = custom_device_3_numpydev.TestDevicePythonSim()
 
@@ -26,14 +28,14 @@ params = qml.numpy.random.rand(1)
 
 #ec = ExecutionConfig(diff_method=None)
 
-@qml.qnode_std_22(dev)
+@qml.qnode(dev, diff_method=qml.gradients.param_shift)
 def circ(p):
    qml.RX(p[0], 0)
    return qml.expval(qml.PauliZ(0))
 
-@qml.qnode(dev_dq)
+@qml.qnode(dev_dq, diff_method=qml.gradients.param_shift)
 def circ_dq(p):
    qml.RX(p[0], 0)
    return qml.expval(qml.PauliZ(0))
 
-circ(params), circ_dq(params)
+print(qml.grad(circ)(params), qml.grad(circ_dq)(params))
