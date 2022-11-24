@@ -38,8 +38,8 @@ class JaxSimulator(AbstractDeviceDriver):
 
     @classmethod
     def execute(cls, quantumscript: QuantumScript, dtype=np.complex128):
-        #print("EXECUTE")
-        #from IPython import embed; embed()
+        # print("EXECUTE")
+        # from IPython import embed; embed()
         if isinstance(quantumscript, list):
             qs = quantumscript[0]
         else:
