@@ -62,6 +62,7 @@ Pending deprecations
   Don't use:
 
   .. code-block:: python
+
     with qml.tape.QuantumTape() as tape:
       qml.RX(0.1, wires=0)
       qml.RX(0.2, wires=1)
@@ -74,6 +75,7 @@ Pending deprecations
   Instead, use:
 
   .. code-block:: python
+
     obs = [qml.PauliZ(0), qml.PauliX(1)]
     coeffs = [2.0, 1.0]
     H = qml.Hamiltonian(coeffs, obs)
