@@ -474,11 +474,42 @@ def _execute_bwd_new(
                 return gradient_fn(new_tapes, **gradient_kwargs)
 
         shape_dtype_structs = jax.ShapeDtypeStruct((), dtype)
-        abc = tuple(
-            [tuple([shape_dtype_structs] * len(t.trainable_params))] * len(t.measurements)
-            for t in new_tapes
-        )
+        if num_params == 1:
+            abc = []
+            for t in new_tapes:
+                num_meas = len(t.measurements)
+                shape = (
+                    [shape_dtype_structs]
+                    if num_meas == 1
+                    else tuple([shape_dtype_structs] * num_meas)
+                )
+                abc.append(shape)
+        else:
+            abc = []
+            for t in new_tapes:
+                num_meas = len(t.measurements)
+                if num_meas == 1:
+                    shape = tuple([shape_dtype_structs] * num_params)
+                else:
+                    shape = tuple(
+                        [tuple([shape_dtype_structs] * num_params)] * num_meas for t in new_tapes
+                    )
+                abc.append(shape)
+
+            if len(abc) == 1:
+                abc = abc[0]
+
+        print(abc)
         return jax.pure_callback(wrapper, abc)
+
+    def post_proc_res(jvps, multi_measurements, multi_params):
+        res_jvps = []
+        for m, p, j in zip(multi_measurements, multi_params, jvps):
+            if m and p:
+                res_jvps.append(tuple(jnp.squeeze(j_comp) for j_comp in j))
+            else:
+                res_jvps.append(jnp.squeeze(j))
+        return res_jvps
 
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):
@@ -489,6 +520,8 @@ def _execute_bwd_new(
 
         # Execution: execute the function first
         evaluation_results = execute_wrapper(params)
+        multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
+        multi_params = [len(tape.trainable_params) > 1 for tape in new_tapes]
 
         # Backward: branch off based on the gradient function is a device method.
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
@@ -512,16 +545,20 @@ def _execute_bwd_new(
                 else:
                     res_from_callback = callback_fun(jvp_tapes, num_params)
                     jvps = processing_fn(res_from_callback)
+
+            jvps = post_proc_res(jvps, multi_measurements, multi_params)
         else:
             # Gradient function is a device method
             jacs = callback_fun_fwd(new_tapes, num_params)
 
-            multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
             assert len(tangents[0]) == 1
 
-            jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
-            jvps = [tuple([jnp.squeeze(j_comp) for j in jvps for j_comp in j])]
+            print("JACS: ", jacs, tangents[0])
+            jvps = _compute_jvps(jacs, tangents[0][0], multi_measurements)
+            jvps = post_proc_res(jvps, multi_measurements, multi_params)
+            # jvps = [tuple([jnp.squeeze(j_comp) for j in jvps for j_comp in j])]
 
+        print(evaluation_results, jvps)
         return evaluation_results, jvps
 
     return execute_wrapper(params)
