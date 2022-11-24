@@ -19,7 +19,6 @@ to a PennyLane Device class.
 import numpy as np
 import torch
 import torch.utils._pytree as pytree
-from torch.autograd import Function
 
 import pennylane as qml
 
@@ -230,6 +229,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[torch.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    # pylint: disable=unused-argument
     if qml.active_return():
         return _execute_new(
             tapes,
@@ -240,7 +240,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             _n=_n,
             max_diff=max_diff,
         )
-    # pylint: disable=unused-argument
+
     parameters = []
     for tape in tapes:
         # set the trainable parameters
@@ -261,8 +261,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
 
 def pytreeify(cls):
-    """Pytree class
-    """
+    """Pytree class"""
     orig_fw = cls.forward
     orig_bw = cls.backward
     orig_apply = cls.apply
@@ -271,7 +270,6 @@ def pytreeify(cls):
         # Inputs already flat
         out_struct_holder = []
         flat_out = orig_apply(out_struct_holder, *inp)
-        print(out_struct_holder)
         return pytree.tree_unflatten(flat_out, out_struct_holder[0])
 
     def new_forward(ctx, out_struct_holder, *inp):
@@ -283,10 +281,8 @@ def pytreeify(cls):
 
     def new_backward(ctx, *flat_grad_outputs):
         grad_outputs = pytree.tree_unflatten(flat_grad_outputs, ctx._out_struct)
-        if not isinstance(grad_outputs, tuple):
-            grad_outputs = (grad_outputs,)
         grad_inputs = orig_bw(ctx, *grad_outputs)
-        return (None) + tuple(grad_inputs)
+        return (None,) + tuple(grad_inputs)
 
     cls.apply = new_apply
     cls.forward = new_forward
@@ -296,6 +292,8 @@ def pytreeify(cls):
 
 def _compute_vjps_new(dys, jacs, multi_measurements, device=None):
     """Compute the vjps of multiple tapes, directly for a Jacobian and tangents."""
+    # pylint: disable=unused-argument
+    # TODO: add device
     vjps = []
 
     for i, multi in enumerate(multi_measurements):
@@ -304,6 +302,7 @@ def _compute_vjps_new(dys, jacs, multi_measurements, device=None):
         )
         vjps.extend(compute_func(dys[i], jacs[i]))
     return vjps
+
 
 @pytreeify
 class ExecuteTapesNew(torch.autograd.Function):
@@ -439,7 +438,6 @@ class ExecuteTapesNew(torch.autograd.Function):
                 else:
                     # The derivative order is at the maximum. Compute the VJP
                     # in a non-differentiable manner to reduce overhead.
-
                     with qml.tape.Unwrap(*ctx.tapes):
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             ctx.tapes,
@@ -514,5 +512,4 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
         max_diff=max_diff,
     )
 
-    res = ExecuteTapesNew.apply(kwargs, *parameters)
-    return res
+    return ExecuteTapesNew.apply(kwargs, *parameters)

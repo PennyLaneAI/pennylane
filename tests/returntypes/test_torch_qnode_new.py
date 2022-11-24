@@ -33,6 +33,7 @@ qubit_device_and_diff_method_and_mode = [
     ["default.qubit", "adjoint", "backward"],
 ]
 
+
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method_and_mode)
 @pytest.mark.parametrize("shots", [None, 10000])
 class TestReturn:
@@ -84,7 +85,7 @@ class TestReturn:
         res.backward()
         grad_a = a.grad
         grad_b = b.grad
-        print(grad_a, grad_b)
+
         assert grad_a.shape == ()
         assert grad_b.shape == ()
 
@@ -108,7 +109,7 @@ class TestReturn:
         # gradient
         res.backward()
         grad = a.grad
-        print(grad)
+
         assert isinstance(grad, torch.Tensor)
         assert grad.shape == (2,)
 
@@ -132,7 +133,7 @@ class TestReturn:
         a = torch.tensor(0.1, requires_grad=True)
 
         jac = jacobian(circuit, a)
-        print(jac)
+
         assert isinstance(jac, torch.Tensor)
         assert jac.shape == (4,)
 
@@ -158,7 +159,7 @@ class TestReturn:
         b = torch.tensor(0.2, requires_grad=True)
 
         jac = jacobian(circuit, (a, b))
-        print(jac)
+
         assert isinstance(jac, tuple)
 
         assert isinstance(jac[0], torch.Tensor)
@@ -187,7 +188,7 @@ class TestReturn:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
         jac = jacobian(circuit, a)
-        print(jac)
+
         assert isinstance(jac, torch.Tensor)
         assert jac.shape == (4, 2)
 
@@ -208,7 +209,7 @@ class TestReturn:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
         jac = jacobian(circuit, (par_0, par_1))
-        print(jac)
+
         assert isinstance(jac, tuple)
 
         assert isinstance(jac[0], tuple)
@@ -431,8 +432,6 @@ class TestReturn:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         hess = hessian(circuit, (par_0, par_1))
-
-        print(hess)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -668,6 +667,6 @@ class TestReturn:
         jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
 
         hess = jacobian(jac_fn, par)
-        print(hess)
+
         assert isinstance(hess, torch.Tensor)
         assert tuple(hess.shape) == (5, 2, 2)
