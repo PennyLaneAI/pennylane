@@ -3,8 +3,10 @@
 1. Get Abstract base class into master 
 
 2. Get JAX simulator that executes quantum scripts
+   - with core measurement processes
    - with no shots
    - with shots
+   - with all measurement processes
 
 3. Preprocessing for JAX simulator
 

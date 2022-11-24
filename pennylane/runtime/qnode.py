@@ -405,57 +405,7 @@ class QNode:
     def _validate_backprop_method(device, interface):
         if device.shots is not None:
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
-
-        mapped_interface = INTERFACE_MAP.get(interface, interface)
-
-        # determine if the device supports backpropagation
-        backprop_interface = device.capabilities().get("passthru_interface", None)
-
-        if backprop_interface is not None:
-            # device supports backpropagation natively
-
-            if mapped_interface == backprop_interface:
-                return "backprop", {}, device
-
-            raise qml.QuantumFunctionError(
-                f"Device {device.short_name} only supports diff_method='backprop' when using the "
-                f"{backprop_interface} interface."
-            )
-
-        # determine if the device has any child devices that support backpropagation
-        backprop_devices = device.capabilities().get("passthru_devices", None)
-
-        if backprop_devices is not None:
-            # device is analytic and has child devices that support backpropagation natively
-
-            if mapped_interface in backprop_devices:
-
-                # no need to create another device if the child device is the same (e.g., default.mixed)
-                if backprop_devices[mapped_interface] == device.short_name:
-                    return "backprop", {}, device
-
-                # TODO: need a better way of passing existing device init options
-                # to a new device?
-                expand_fn = device.expand_fn
-                batch_transform = device.batch_transform
-
-                device = qml.device(
-                    backprop_devices[mapped_interface], wires=device.wires, shots=device.shots
-                )
-                device.expand_fn = expand_fn
-                device.batch_transform = batch_transform
-
-                return "backprop", {}, device
-
-            raise qml.QuantumFunctionError(
-                f"Device {device.short_name} only supports diff_method='backprop' when using the "
-                f"{list(backprop_devices.keys())} interfaces."
-            )
-
-        raise qml.QuantumFunctionError(
-            f"The {device.short_name} device does not support native computations with "
-            "autodifferentiation frameworks."
-        )
+        return "backprop", {}, device
 
     @staticmethod
     def _validate_adjoint_method(device):
@@ -474,7 +424,6 @@ class QNode:
     def _validate_parameter_shift(device):
         model = device.capabilities().get("model", None)
         return qml.gradients.param_shift, {}, device
-
 
     @property
     def tape(self) -> QuantumTape:

@@ -1,11 +1,15 @@
 from typing import List, Tuple, Union
 
-from ..device_interface import *
-from .python_simulator import *
-from .preprocessor import simple_preprocessor
-from pennylane.gradients import param_shift
+import pennylane as qml
 from pennylane import adjoint
+from pennylane.gradients import param_shift
+
 from pennylane.operation import operation_derivative
+
+from ..device_interface import *
+from .python_simulator import PlainNumpySimulator
+from .jax_simulator import JaxSimulator
+from .preprocessor import simple_preprocessor
 
 
 class TestDevicePythonSim(AbstractDevice):
@@ -19,20 +23,20 @@ class TestDevicePythonSim(AbstractDevice):
 
     def __init__(self, dev_config: Union[DeviceConfig, None] = None, *args, **kwargs):
         super().__init__(dev_config, *args, **kwargs)
-        self._private_sim = PlainNumpySimulator()
 
-    def execute(self, qscript: Union[QuantumScript, List[QuantumScript]]):
+    def execute(self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config):
         if isinstance(qscript, QuantumScript):
-            res = self._private_sim.execute(qscript)
-            res = res[0] if len(res) == 1 else res
-            return np.array(res)
+            interface = qml.math.get_interface(*qscript.get_parameters(trainable_only=False))
+            simulator = JaxSimulator() if interface == "jax" else PlainNumpySimulator()
+            return simulator.execute(qscript)
+
         return [self.execute(qs) for qs in qscript]
 
     def capabilities(self) -> DeviceConfig:
         return self.dev_config if hasattr(self, "dev_config") else {}
 
     def preprocess(
-        self, qscript: Union[QuantumScript, List[QuantumScript]]
+        self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config
     ) -> Tuple[List[QuantumScript], Callable]:
         return simple_preprocessor(qscript)
 
@@ -48,7 +52,7 @@ class TestDevicePythonSim(AbstractDevice):
         if order != 1:
             raise NotImplementedError
 
-        state = self._private_sim.create_zeroes_state(2)
+        state = self._private_sim.create_zeroes_state(qscript.num_wires)
         for op in qscript.operations:
             state = self._private_sim.apply_operation(state, op)
         bra = self._private_sim.apply_operation(state, qscript.measurements[0].obs)
