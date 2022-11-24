@@ -378,7 +378,7 @@ class ExecuteTapesNew(torch.autograd.Function):
             jac_ = []
             if ctx.jacs:
                 multi_m = len(ctx.tapes[i].measurements) > 1
-                multi_p = len(parameters) > 1
+                multi_p = len(ctx.tapes[i].trainable_params) > 1
 
                 if multi_p and multi_m:
                     for jac in ctx.jacs[i]:
@@ -469,6 +469,9 @@ class ExecuteTapesNew(torch.autograd.Function):
                     jacs = ctx.gradient_fn(ctx.tapes, **ctx.gradient_kwargs)
 
                 vjps = _compute_vjps_new(dy, jacs, multi_measurements, device=ctx.torch_device)
+
+        # Remove empty vjps
+        vjps = [vjp for vjp in vjps if not isinstance(vjp, np.ndarray)]
         # The output of backward must match the input of forward.
         # Therefore, we return `None` for the gradient of `kwargs`.
         return (None,) + tuple(vjps)
