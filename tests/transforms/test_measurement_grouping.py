@@ -35,3 +35,19 @@ def test_measurement_grouping():
     dev = qml.device("default.qubit", wires=3)
     res = fn(dev.batch_execute(tapes))
     assert np.isclose(res, 2.0007186)
+
+
+def test_deprecation_warning_measurement_grouping():
+    """Tests that a deprecation warning is raised when using measurement_grouping."""
+
+    with qml.tape.QuantumTape() as tape:
+        qml.RX(0.1, wires=0)
+        qml.RX(0.2, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.CNOT(wires=[1, 2])
+
+    obs = [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(2)]
+    coeffs = [2.0, -0.54, 0.1]
+
+    with pytest.warns(UserWarning, match="is deprecated"):
+        _, _ = qml.transforms.measurement_grouping(tape, obs, coeffs)

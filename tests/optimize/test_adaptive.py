@@ -116,6 +116,18 @@ def test_step_and_cost_drain(circuit, energy_ref, pool):
     assert len(set(selected_excitations)) == len(selected_excitations)
 
 
+pool = [
+    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3]),
+    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 5]),
+    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 3, 4]),
+    qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 4, 5]),
+    qml.SingleExcitation(np.array(0.0), wires=[0, 2]),
+    qml.SingleExcitation(np.array(0.0), wires=[0, 4]),
+    qml.SingleExcitation(np.array(0.0), wires=[1, 3]),
+    qml.SingleExcitation(np.array(0.0), wires=[1, 5]),
+]
+
+
 @pytest.mark.parametrize(
     "circuit, energy_ref, pool",
     [
@@ -126,16 +138,7 @@ def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     """Test that step_and_cost function returns the correct results when drain_pool is False."""
     opt = qml.AdaptiveOptimizer()
     for i in range(4):
-        pool = [
-            qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3]),
-            qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 5]),
-            qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 3, 4]),
-            qml.DoubleExcitation(np.array(0.0), wires=[0, 1, 4, 5]),
-            qml.SingleExcitation(np.array(0.0), wires=[0, 2]),
-            qml.SingleExcitation(np.array(0.0), wires=[0, 4]),
-            qml.SingleExcitation(np.array(0.0), wires=[1, 3]),
-            qml.SingleExcitation(np.array(0.0), wires=[1, 5]),
-        ]
+
         circuit, energy, gradient = opt.step_and_cost(circuit, pool, drain_pool=False)
 
     _ = circuit()
