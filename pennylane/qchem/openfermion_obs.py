@@ -871,9 +871,9 @@ def molecular_hamiltonian(
         grouping_type (str): method to group commuting observables
         grouping_method (str): the graph coloring heuristic to use in solving minimum clique cover
             for grouping
-        convert_tol (float): Tolerance in machine epsilons for the imaginary part of the
-            Hamiltonian coefficients created by openfermion. Coefficients with imaginary part
-            less than 2.22e-16*tol are considered to be real.
+        convert_tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
+            for the imaginary part of the Hamiltonian coefficients created by openfermion.
+            Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
 
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
