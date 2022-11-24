@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ to a PennyLane Device class.
 # pylint: disable=too-many-arguments,protected-access,abstract-method
 import numpy as np
 import torch
+import torch.utils._pytree as pytree
+from torch.autograd import Function
 
 import pennylane as qml
 
@@ -228,6 +230,16 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[torch.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    if qml.active_return():
+        return _execute_new(
+            tapes,
+            device,
+            execute_fn,
+            gradient_fn,
+            gradient_kwargs,
+            _n=_n,
+            max_diff=max_diff,
+        )
     # pylint: disable=unused-argument
     parameters = []
     for tape in tapes:
@@ -246,3 +258,261 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         max_diff=max_diff,
     )
     return ExecuteTapes.apply(kwargs, *parameters)
+
+
+def pytreeify(cls):
+    """Pytree class
+    """
+    orig_fw = cls.forward
+    orig_bw = cls.backward
+    orig_apply = cls.apply
+
+    def new_apply(*inp):
+        # Inputs already flat
+        out_struct_holder = []
+        flat_out = orig_apply(out_struct_holder, *inp)
+        print(out_struct_holder)
+        return pytree.tree_unflatten(flat_out, out_struct_holder[0])
+
+    def new_forward(ctx, out_struct_holder, *inp):
+        out = orig_fw(ctx, *inp)
+        flat_out, out_struct = pytree.tree_flatten(out)
+        ctx._out_struct = out_struct
+        out_struct_holder.append(out_struct)
+        return tuple(flat_out)
+
+    def new_backward(ctx, *flat_grad_outputs):
+        grad_outputs = pytree.tree_unflatten(flat_grad_outputs, ctx._out_struct)
+        if not isinstance(grad_outputs, tuple):
+            grad_outputs = (grad_outputs,)
+        grad_inputs = orig_bw(ctx, *grad_outputs)
+        return (None) + tuple(grad_inputs)
+
+    cls.apply = new_apply
+    cls.forward = new_forward
+    cls.backward = new_backward
+    return cls
+
+
+def _compute_vjps_new(dys, jacs, multi_measurements, device=None):
+    """Compute the vjps of multiple tapes, directly for a Jacobian and tangents."""
+    vjps = []
+
+    for i, multi in enumerate(multi_measurements):
+        compute_func = (
+            qml.gradients.compute_vjp_multi_new if multi else qml.gradients.compute_vjp_single_new
+        )
+        vjps.extend(compute_func(dys[i], jacs[i]))
+    return vjps
+
+@pytreeify
+class ExecuteTapesNew(torch.autograd.Function):
+    """The signature of this ``torch.autograd.Function`` is designed to
+    work around Torch restrictions.
+    In particular, ``torch.autograd.Function``:
+    - Cannot accept keyword arguments. As a result, we pass a dictionary
+      as the first argument ``kwargs``. This dictionary **must** contain:
+      * ``"tapes"``: the quantum tapes to batch evaluate
+      * ``"device"``: the quantum device to use to evaluate the tapes
+      * ``"execute_fn"``: the execution function to use on forward passes
+      * ``"gradient_fn"``: the gradient transform function to use
+        for backward passes
+      * ``"gradient_kwargs"``: gradient keyword arguments to pass to the
+        gradient function
+      * ``"max_diff``: the maximum order of derivatives to support
+    Further, note that the ``parameters`` argument is dependent on the
+    ``tapes``; this function should always be called
+    with the parameters extracted directly from the tapes as follows:
+    >>> parameters = []
+    >>> [parameters.extend(t.get_parameters()) for t in tapes]
+    >>> kwargs = {"tapes": tapes, "device": device, "gradient_fn": gradient_fn, ...}
+    >>> ExecuteTapes.apply(kwargs, *parameters)
+    The private argument ``_n`` is used to track nesting of derivatives, for example
+    if the nth-order derivative is requested. Do not set this argument unless you
+    understand the consequences!
+    """
+
+    @staticmethod
+    def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
+        """Implements the forward pass batch tape evaluation."""
+        ctx.tapes = kwargs["tapes"]
+        ctx.device = kwargs["device"]
+
+        ctx.execute_fn = kwargs["execute_fn"]
+        ctx.gradient_fn = kwargs["gradient_fn"]
+
+        ctx.gradient_kwargs = kwargs["gradient_kwargs"]
+        ctx.max_diff = kwargs["max_diff"]
+        ctx._n = kwargs.get("_n", 1)
+
+        with qml.tape.Unwrap(*ctx.tapes):
+            res, ctx.jacs = ctx.execute_fn(ctx.tapes, **ctx.gradient_kwargs)
+
+        # if any input tensor uses the GPU, the output should as well
+        ctx.torch_device = None
+
+        for p in parameters:
+            if isinstance(p, torch.Tensor) and p.is_cuda:  # pragma: no cover
+                ctx.torch_device = p.get_device()
+                break
+
+        for i, r in enumerate(res):
+            if any(
+                m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+                for m in ctx.tapes[i].measurements
+            ):
+                continue
+
+            if isinstance(r, (list, tuple)):
+                res[i] = [torch.as_tensor(t, device=ctx.torch_device) for t in r]
+                if isinstance(r, tuple):
+                    res[i] = tuple(res[i])
+            else:
+                res[i] = torch.as_tensor(r, device=ctx.torch_device)
+
+            jac_ = []
+            if ctx.jacs:
+                multi_m = len(ctx.tapes[i].measurements) > 1
+                multi_p = len(parameters) > 1
+
+                if multi_p and multi_m:
+                    for jac in ctx.jacs[i]:
+                        sub_jac = [torch.as_tensor(j, device=ctx.torch_device) for j in jac]
+                        sub_jac = tuple(sub_jac)
+                        jac_.append(sub_jac)
+                    ctx.jacs[i] = tuple(jac_)
+
+                elif not multi_p and not multi_m:
+                    ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
+                else:
+                    sub_jac = [torch.as_tensor(t, device=ctx.torch_device) for t in ctx.jacs[i]]
+                    ctx.jacs[i] = tuple(sub_jac)
+
+        return res
+
+    @staticmethod
+    def backward(ctx, *dy):
+        """Returns the vector-Jacobian product with given
+        parameter values p and output gradient dy"""
+        multi_measurements = [len(tape.measurements) > 1 for tape in ctx.tapes]
+
+        if ctx.jacs:
+            # Jacobians were computed on the forward pass (mode="forward")
+            # No additional quantum evaluations needed; simply compute the VJPs directly.
+            vjps = _compute_vjps_new(dy, ctx.jacs, multi_measurements, device=ctx.torch_device)
+
+        else:
+            # Need to compute the Jacobians on the backward pass (accumulation="backward")
+
+            if isinstance(ctx.gradient_fn, qml.gradients.gradient_transform):
+                # Gradient function is a gradient transform.
+
+                # Generate and execute the required gradient tapes
+                if ctx._n < ctx.max_diff:
+                    # The derivative order is less than the max derivative order.
+                    # Compute the VJP recursively by using the gradient transform
+                    # and calling ``execute`` to compute the results.
+                    # This will allow higher-order derivatives to be computed
+                    # if requested.
+
+                    vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                        ctx.tapes,
+                        dy,
+                        ctx.gradient_fn,
+                        reduction="extend",
+                        gradient_kwargs=ctx.gradient_kwargs,
+                    )
+                    # This is where the magic happens. Note that we call ``execute``.
+                    # This recursion, coupled with the fact that the gradient transforms
+                    # are differentiable, allows for arbitrary order differentiation.
+                    res = execute(
+                        vjp_tapes,
+                        ctx.device,
+                        ctx.execute_fn,
+                        ctx.gradient_fn,
+                        ctx.gradient_kwargs,
+                        _n=ctx._n + 1,
+                        max_diff=ctx.max_diff,
+                    )
+                    vjps = processing_fn(res)
+
+                else:
+                    # The derivative order is at the maximum. Compute the VJP
+                    # in a non-differentiable manner to reduce overhead.
+
+                    with qml.tape.Unwrap(*ctx.tapes):
+                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                            ctx.tapes,
+                            dy,
+                            ctx.gradient_fn,
+                            reduction="extend",
+                            gradient_kwargs=ctx.gradient_kwargs,
+                        )
+
+                        vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
+
+            else:
+                # Gradient function is not a gradient transform
+                # (e.g., it might be a device method).
+                # Note that unlike the previous branch:
+                #
+                # - there is no recursion here
+                # - gradient_fn is not differentiable
+                #
+                # so we cannot support higher-order derivatives.
+
+                with qml.tape.Unwrap(*ctx.tapes):
+                    jacs = ctx.gradient_fn(ctx.tapes, **ctx.gradient_kwargs)
+
+                vjps = _compute_vjps_new(dy, jacs, multi_measurements, device=ctx.torch_device)
+        # The output of backward must match the input of forward.
+        # Therefore, we return `None` for the gradient of `kwargs`.
+        return (None,) + tuple(vjps)
+
+
+def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
+    """Execute a batch of tapes with Torch parameters on a device.
+    This function may be called recursively, if ``gradient_fn`` is a differentiable
+    transform, and ``_n < max_diff``.
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
+        execute_fn (callable): The execution function used to execute the tapes
+            during the forward pass. This function must return a tuple ``(results, jacobians)``.
+            If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
+            compute the gradients during the backwards pass.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
+        gradient_fn (callable): the gradient function to use to compute quantum gradients
+        _n (int): a positive integer used to track nesting of derivatives, for example
+            if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum order of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
+    Returns:
+        list[list[torch.Tensor]]: A nested list of tape results. Each element in
+        the returned list corresponds in order to the provided tapes.
+    """
+    # pylint: disable=unused-argument
+    parameters = []
+    for tape in tapes:
+        # set the trainable parameters
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+        parameters.extend(tape.get_parameters())
+
+    kwargs = dict(
+        tapes=tapes,
+        device=device,
+        execute_fn=execute_fn,
+        gradient_fn=gradient_fn,
+        gradient_kwargs=gradient_kwargs,
+        _n=_n,
+        max_diff=max_diff,
+    )
+
+    res = ExecuteTapesNew.apply(kwargs, *parameters)
+    return res
