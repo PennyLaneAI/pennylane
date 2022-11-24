@@ -62,8 +62,10 @@ class TestVar:
         x = 0.54
         res = circuit(x)
         expected = [np.sin(x) ** 2, np.sin(x) ** 2] if isinstance(shots, list) else np.sin(x) ** 2
+        atol = tol if shots is None else 0.05
+        rtol = 0 if shots is None else 0.05
 
-        assert np.allclose(res, expected, atol=0.05, rtol=0.05)
+        assert np.allclose(res, expected, atol=atol, rtol=rtol)
         assert res.dtype == r_dtype
 
         custom_measurement_process(dev, spy)
