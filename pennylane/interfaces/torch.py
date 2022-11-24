@@ -308,9 +308,12 @@ def _compute_vjps_new(dys, jacs, multi_measurements, device=None):
 class ExecuteTapesNew(torch.autograd.Function):
     """The signature of this ``torch.autograd.Function`` is designed to
     work around Torch restrictions.
+
     In particular, ``torch.autograd.Function``:
+
     - Cannot accept keyword arguments. As a result, we pass a dictionary
       as the first argument ``kwargs``. This dictionary **must** contain:
+
       * ``"tapes"``: the quantum tapes to batch evaluate
       * ``"device"``: the quantum device to use to evaluate the tapes
       * ``"execute_fn"``: the execution function to use on forward passes
@@ -319,13 +322,16 @@ class ExecuteTapesNew(torch.autograd.Function):
       * ``"gradient_kwargs"``: gradient keyword arguments to pass to the
         gradient function
       * ``"max_diff``: the maximum order of derivatives to support
+
     Further, note that the ``parameters`` argument is dependent on the
     ``tapes``; this function should always be called
     with the parameters extracted directly from the tapes as follows:
+
     >>> parameters = []
     >>> [parameters.extend(t.get_parameters()) for t in tapes]
     >>> kwargs = {"tapes": tapes, "device": device, "gradient_fn": gradient_fn, ...}
     >>> ExecuteTapes.apply(kwargs, *parameters)
+
     The private argument ``_n`` is used to track nesting of derivatives, for example
     if the nth-order derivative is requested. Do not set this argument unless you
     understand the consequences!
