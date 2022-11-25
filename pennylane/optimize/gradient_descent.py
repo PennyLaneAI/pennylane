@@ -34,7 +34,7 @@ class GradientDescentOptimizer:
 
     .. note::
 
-        When using ``torch``, ``tensorflow`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces.html>` for suitable optimizers.
+        When using ``torch``, ``tensorflow`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces>` for suitable optimizers.
 
     """
 
