@@ -478,11 +478,7 @@ def _execute_bwd_new(
             abc = []
             for t in new_tapes:
                 num_meas = len(t.measurements)
-                shape = (
-                    [shape_dtype_structs]
-                    if num_meas == 1
-                    else tuple([shape_dtype_structs] * num_meas)
-                )
+                shape = [shape_dtype_structs] if num_meas == 1 else tuple([shape_dtype_structs] * num_meas)
                 abc.append(shape)
         else:
             abc = []
@@ -491,15 +487,12 @@ def _execute_bwd_new(
                 if num_meas == 1:
                     shape = tuple([shape_dtype_structs] * num_params)
                 else:
-                    shape = tuple(
-                        [tuple([shape_dtype_structs] * num_params)] * num_meas for t in new_tapes
-                    )
+                    shape = tuple( [tuple([shape_dtype_structs] * num_params)] * num_meas for t in new_tapes)
                 abc.append(shape)
 
             if len(abc) == 1:
                 abc = abc[0]
 
-        print(abc)
         return jax.pure_callback(wrapper, abc)
 
     def post_proc_res(jvps, multi_measurements, multi_params):
@@ -553,12 +546,11 @@ def _execute_bwd_new(
 
             assert len(tangents[0]) == 1
 
-            print("JACS: ", jacs, tangents[0])
-            jvps = _compute_jvps(jacs, tangents[0][0], multi_measurements)
-            jvps = post_proc_res(jvps, multi_measurements, multi_params)
-            # jvps = [tuple([jnp.squeeze(j_comp) for j in jvps for j_comp in j])]
+            # TODO: does converting jacs to a list work in every case?
+            jvps = _compute_jvps([jacs], tangents[0], multi_measurements)
+            #jvps = post_proc_res(jvps, multi_measurements, multi_params)
+            #jvps = [tuple([jnp.squeeze(j_comp) for j in jvps for j_comp in j])]
 
-        print(evaluation_results, jvps)
         return evaluation_results, jvps
 
     return execute_wrapper(params)
