@@ -1072,6 +1072,7 @@ class QubitDevice(Device):
             return np.array(
                 [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
             )
+
         return np.random.choice(basis_states, shots, p=state_probability)
 
     @staticmethod

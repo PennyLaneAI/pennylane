@@ -29,7 +29,7 @@
    [ 0.          0.          0.70710678 -0.70710678]]
   ```
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
-  
+
 * Support custom measurement processes:
   * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
     method to process samples/quantum state.
@@ -81,10 +81,10 @@
 
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
-  
+
 * New parametric qubit ops `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10` which perform a phaseshift, similar to `qml.ControlledPhaseShift` but on different positions of the state vector.
   [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
-  
+
 * Support for purity computation is added. The `qml.math.purity` function computes the purity from a state vector or a density matrix:
 
   [#3290](https://github.com/PennyLaneAI/pennylane/pull/3290)
@@ -95,7 +95,7 @@
   1.0
   >>> qml.math.purity(x, [0])
   0.5
-    
+
   >>> x = [[1 / 2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1 / 2]]
   >>> qml.math.purity(x, [0, 1])
   0.5
@@ -153,14 +153,14 @@
 
 * Remove private `_wires` setter from the `Controlled.map_wires` method.
   [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
-  
+
 * `QuantumTape._process_queue` has been moved to `qml.queuing.process_queue` to disentangle
   its functionality from the `QuantumTape` class.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
 <h4>Return types project</h4>
 
-* The autograd interface now supports devices with shot vectors.
+* The autograd interface for the new return types now supports devices with shot vectors.
   [#3374](https://github.com/PennyLaneAI/pennylane/pull/3374)
 
   Example with a single measurement:
@@ -216,6 +216,59 @@
          [-0.37133333, -0.18566667,  0.        ,  0.        ,  0.18566667]])
   ```
 
+* The TensorFlow interface for the new return types now supports devices with shot vectors.
+  [#3400](https://github.com/PennyLaneAI/pennylane/pull/3400)
+
+  Example with a single measurement:
+  ```python
+  dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
+
+  @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+  def circuit(a):
+      qml.RY(a, wires=0)
+      qml.RX(0.2, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  ```
+  >>> qml.enable_return()
+  >>> a = tf.Variable(0.4)
+  >>> with tf.GradientTape() as tape:
+  ...     res = circuit(a)
+  ...     res = tf.stack(res)
+  ...
+  >>> res
+  <tf.Tensor: shape=(3,), dtype=float64, numpy=array([0.902     , 0.904     , 0.89533333])>
+  >>> tape.jacobian(res, a)
+  <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.365     , -0.3765    , -0.37533333])>
+  ```
+  Example with multiple measurements:
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
+
+  @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+  def circuit(a):
+      qml.RY(a, wires=0)
+      qml.RX(0.2, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+  ```
+  ```
+  >>> with tf.GradientTape() as tape:
+  ...     res = circuit(a)
+  ...     res = tf.stack([tf.experimental.numpy.hstack(r) for r in res])
+  ...
+  >>> res
+  <tf.Tensor: shape=(3, 5), dtype=float64, numpy=
+  array([[0.902, 0.951, 0.   , 0.   , 0.049],
+         [0.898, 0.949, 0.   , 0.   , 0.051],
+         [0.892, 0.946, 0.   , 0.   , 0.054]])>
+  >>> tape.jacobian(res, a)
+  <tf.Tensor: shape=(3, 5), dtype=float64, numpy=
+  array([[-0.345     , -0.1725    ,  0.        ,  0.        ,  0.1725    ],
+         [-0.383     , -0.1915    ,  0.        ,  0.        ,  0.1915    ],
+         [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
+  ```
+
 
 <h3>Breaking changes</h3>
 
@@ -245,7 +298,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   * `qml.tape.QuantumTape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
   * `qml.QueuingContext` is now `qml.QueuingManager`
   * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info`: Use plain `update_info`
-  
+
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
 
