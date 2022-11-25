@@ -804,9 +804,11 @@ class TestTorchExecuteIntegration:
 
         res = circuit(x, y)
 
-        res_0 = torch.tensor(np.cos(x_val))
+        res_0 = torch.tensor(np.cos(x_val), dtype=res[0].dtype, device=torch_device)
         res_1 = torch.tensor(
-            [(1 + np.cos(x_val) * np.cos(y_val)) / 2, (1 - np.cos(x_val) * np.cos(y_val)) / 2]
+            [(1 + np.cos(x_val) * np.cos(y_val)) / 2, (1 - np.cos(x_val) * np.cos(y_val)) / 2],
+            dtype=res[0].dtype,
+            device=torch_device,
         )
 
         assert isinstance(res, tuple)
@@ -861,8 +863,14 @@ class TestTorchExecuteIntegration:
 
         res = execute([tape], dev, **execute_kwargs)[0]
 
-        assert res.shape == (2, 10)
-        assert isinstance(res, torch.Tensor)
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert isinstance(res[0], torch.Tensor)
+        assert res[0].shape == (10,)
+
+        assert isinstance(res[1], torch.Tensor)
+        assert res[1].shape == (10,)
 
     def test_sampling_expval(self, torch_device, execute_kwargs):
         """Test sampling works as expected if combined with expectation values"""
@@ -884,6 +892,7 @@ class TestTorchExecuteIntegration:
         assert len(res) == 2
         assert isinstance(res, tuple)
         assert res[0].shape == (10,)
+        assert res[1].shape == ()
         assert isinstance(res[0], torch.Tensor)
         assert isinstance(res[1], torch.Tensor)
 
@@ -958,7 +967,7 @@ class TestHigherOrderDerivatives:
             result = execute(
                 [tape1, tape2], dev, gradient_fn=param_shift, interface="torch", max_diff=2
             )
-            return result[0] + result[1][0, 0]
+            return result[0] + result[1][0]
 
         res = cost_fn(params)
         x, y = params.detach()
@@ -1093,7 +1102,7 @@ class TestHigherOrderDerivatives:
             result = execute(
                 [tape1, tape2], dev, gradient_fn=param_shift, max_diff=1, interface="torch"
             )
-            return result[0] + result[1][0, 0]
+            return result[0] + result[1][0]
 
         res = cost_fn(params)
         x, y = params.detach()
@@ -1142,7 +1151,7 @@ class TestHamiltonianWorkflows:
                 qml.expval(H1)
                 qml.expval(H2)
 
-            return execute([tape], dev, **execute_kwargs)[0]
+            return torch.hstack(execute([tape], dev, **execute_kwargs)[0])
 
         return _cost_fn
 
@@ -1182,7 +1191,8 @@ class TestHamiltonianWorkflows:
 
         res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert np.allclose(res[0].detach(), expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1].detach(), expected[1], atol=tol, rtol=0)
 
         res = torch.hstack(
             torch.autograd.functional.jacobian(
@@ -1200,7 +1210,8 @@ class TestHamiltonianWorkflows:
 
         res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        assert np.allclose(res[0].detach(), expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1].detach(), expected[1], atol=tol, rtol=0)
 
         res = torch.hstack(
             torch.autograd.functional.jacobian(
