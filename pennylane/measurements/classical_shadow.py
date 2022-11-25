@@ -368,9 +368,8 @@ class _ShadowExpval(CustomMeasurement):
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
 
         Args:
-            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow expectation
-                value measurement process
-            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            tape (QuantumScript): the quantum script to process
+            device (Device): the device used to process the given tape
 
         Returns:
             float: expectation value estimate.
