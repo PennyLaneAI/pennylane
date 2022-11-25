@@ -4,7 +4,7 @@ from pennylane.tape import QuantumScript
 
 import numpy as np
 
-from ..device_interface.abstract_device_driver import AbstractDeviceDriver
+import pennylane as qml
 
 
 def _get_slice(index, axis, num_axes):
@@ -13,7 +13,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-class PlainNumpySimulator(AbstractDeviceDriver):
+class PlainNumpySimulator:
     """
 
     Current Restrictions:
@@ -123,39 +123,8 @@ class PlainNumpySimulator(AbstractDeviceDriver):
 
     @classmethod
     def measure(cls, state, measurementprocess):
-        mp_type = measurementprocess.return_type.value
-
-        mp_map = {"probs": cls.probability, "expval": cls.expval, "state": lambda state, mp: state}
-        if mp_type in mp_map:
-            return np.array(mp_map[mp_type](state, measurementprocess))
+        if isinstance(measurementprocess, qml.measurements.StateMeasurement):
+            total_indices = len(state.shape)
+            wires = qml.wires.Wires(range(total_indices))
+            return measurementprocess.process_state(state.flatten(), wires)
         return state
-
-    @classmethod
-    def expval(cls, state, measurementprocess):
-
-        mat = measurementprocess.obs.matrix()
-        new_state = cls.apply_matrix(state, mat, measurementprocess.obs.wires)
-        return np.real(np.vdot(state, new_state))
-
-    @staticmethod
-    def probability(state, measurementprocess):
-        """
-        Args:
-            state
-
-        """
-        indices = measurementprocess.wires
-        num_indices = len(indices)
-        total_indices = len(state.shape)
-        full_probs = np.absolute(state) ** 2
-
-        if indices is None or list(indices) == list(range(total_indices)):
-            return full_probs
-
-        inactive_indices = tuple(i for i in range(total_indices) if i not in indices)
-        marginal_probs = np.sum(full_probs, axis=inactive_indices)
-
-        shrinking_map = {idx: new_idx for new_idx, idx in enumerate(sorted(indices))}
-        new_indices = tuple(shrinking_map[i] for i in indices)
-        old_indices = tuple(range(num_indices))
-        return np.moveaxis(marginal_probs, source=old_indices, destination=new_indices)
