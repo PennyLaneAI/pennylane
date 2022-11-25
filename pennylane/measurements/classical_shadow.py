@@ -389,13 +389,10 @@ class _ShadowExpval(CustomMeasurement):
     def queue(self, context=qml.QueuingManager):
         """Append the measurement process to an annotated queue, making sure
         the observable is not queued"""
-        if self.H is not None:
-            Hs = self.H if isinstance(self.H, Iterable) else [self.H]
-            for H in Hs:
-                context.update_info(H, owner=self)
-            context.append(self, owns=Hs)
-        else:
-            context.append(self)
+        Hs = self.H if isinstance(self.H, Iterable) else [self.H]
+        for H in Hs:
+            context.update_info(H, owner=self)
+        context.append(self, owns=Hs)
 
         return self
 
