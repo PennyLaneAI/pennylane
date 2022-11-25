@@ -212,6 +212,10 @@
   class which inherits from `AnnotatedQueue`.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
+* The method `qml.Operation.get_parameter_shift` is removed. The `gradients` module should be used
+  for general parameter-shift rules instead.
+  [(#3419)](https://github.com/PennyLaneAI/pennylane/pull/3419)
+
 <h3>Deprecations</h3>
 
 Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://docs.pennylane.ai/en/latest/development/deprecations.html).
