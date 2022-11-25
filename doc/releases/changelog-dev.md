@@ -103,6 +103,9 @@
 
 <h3>Improvements</h3>
 
+* Added more input validation to `hamiltonian_expand` such that Hamiltonian objects with no terms raise an error.
+  [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
+
 * Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
 
@@ -222,6 +225,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Documentation</h3>
 
+* Adds developer documentation for the queuing module.
+  [(#3268)](https://github.com/PennyLaneAI/pennylane/pull/3268)
+
 * Corrects more mentions for diagonalizing gates for all relevant operations. The docstrings for `compute_eigvals` used
   to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is
   the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement
@@ -230,6 +236,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   [(#3409)](https://github.com/PennyLaneAI/pennylane/pull/3409)
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug where `hamiltonian_expand` didn't preserve the type of the inputted results in its output.
+  [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
 
 * Fixed a bug that made `gradients.param_shift` raise an error when used with unshifted terms only
   in a custom recipe, and when using any unshifted terms at all under the new return type system.

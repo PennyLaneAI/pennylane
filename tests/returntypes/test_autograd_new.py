@@ -202,7 +202,8 @@ class TestBatchTransformExecution:
         res = qml.execute([tape], dev, None, device_batch_transform=True)
         spy.assert_called()
 
-        assert isinstance(res[0], float)
+        assert isinstance(res[0], np.ndarray)
+        assert res[0].shape == ()
         assert np.allclose(res[0], np.cos(y), atol=0.1)
 
     def test_batch_transform_dynamic_shots(self):
