@@ -47,7 +47,7 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [(#3279)](https://github.com/PennyLaneAI/pennylane/pull/3279)
   
-* Added two new methods `operation()`, `hamiltonian()` for both to generate an equivalent PennyLane 
+* Added two new methods `operation()`, `hamiltonian()` for both `PauliSentence` and `PauliWord` classes to generate an equivalent PennyLane 
   `Operation` or `Hamiltonian` instance from a `PauliSentence` or `PauliWord` one.
   [(#3391)](https://github.com/PennyLaneAI/pennylane/pull/3391)
 
