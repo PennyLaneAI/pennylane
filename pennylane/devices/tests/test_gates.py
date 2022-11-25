@@ -47,6 +47,7 @@ ops = {
     "CRot": qml.CRot(0, 0, 0, wires=[0, 1]),
     "CSWAP": qml.CSWAP(wires=[0, 1, 2]),
     "CZ": qml.CZ(wires=[0, 1]),
+    "CCZ": qml.CCZ(wires=[0, 1, 2]),
     "CY": qml.CY(wires=[0, 1]),
     "CH": qml.CH(wires=[0, 1]),
     "DiagonalQubitUnitary": qml.DiagonalQubitUnitary(np.array([1, 1]), wires=[0]),
@@ -145,6 +146,7 @@ ECR = np.array(
 )
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 CZ = np.diag([1, 1, 1, -1])
+CCZ = np.diag([1, 1, 1, 1, 1, 1, 1, -1])
 CY = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
 CH = np.array(
     [
@@ -306,7 +308,7 @@ two_qubit_param = [
 ]
 two_qubit_multi_param = [(qml.CRot, crot)]
 # list of all three-qubit gates
-three_qubit = [(qml.Toffoli, toffoli), (qml.CSWAP, CSWAP)]
+three_qubit = [(qml.Toffoli, toffoli), (qml.CSWAP, CSWAP), (qml.CCZ, CCZ)]
 
 # single qubit unitary matrix
 theta = 0.8364
