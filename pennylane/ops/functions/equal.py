@@ -19,7 +19,10 @@ from functools import singledispatch
 from typing import Union
 
 import pennylane as qml
-from pennylane.measurements import ClassicalShadow, MeasurementProcess
+from pennylane.measurements import MeasurementProcess
+from pennylane.measurements.classical_shadow import _ShadowExpval
+from pennylane.measurements.mutual_info import _MutualInfo
+from pennylane.measurements.vn_entropy import _VnEntropy
 from pennylane.operation import Operator
 
 
@@ -152,8 +155,7 @@ def _equal_operator(
 
 
 @_equal.register
-# pylint: disable=unused-argument
-def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwargs):
+def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess):
     """Determine whether two MeasurementProcess objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
@@ -164,7 +166,23 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwar
         observables_match = op1.obs == op2.obs
     wires_match = op1.wires == op2.wires
     eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
-    log_base_match = getattr(op1, "log_base", None) == getattr(op2, "log_base", None)
+
+    return return_types_match and observables_match and wires_match and eigvals_match
+
+
+@_equal.register
+def _(op1: Union[_VnEntropy, _MutualInfo], op2: Union[_VnEntropy, _MutualInfo]):
+    """Determine whether two MeasurementProcess objects are equal"""
+
+    return_types_match = op1.return_type == op2.return_type
+    if op1.obs is not None and op2.obs is not None:
+        observables_match = equal(op1.obs, op2.obs)
+    # check obs equality when either one is None (False) or both are None (True)
+    else:
+        observables_match = op1.obs == op2.obs
+    wires_match = op1.wires == op2.wires
+    eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
+    log_base_match = op1.log_base == op2.log_base
 
     return (
         return_types_match
@@ -176,8 +194,7 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwar
 
 
 @_equal.register
-# pylint: disable=unused-argument
-def _equal_shadow_measurements(op1: ClassicalShadow, op2: ClassicalShadow, **kwargs):
+def _equal_shadow_measurements(op1: _ShadowExpval, op2: _ShadowExpval):
     """Determine whether two ClassicalShadow objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type

@@ -817,7 +817,7 @@ class QubitDevice(Device):
                         "Classical shadows cannot be returned in combination"
                         " with other return types"
                     )
-                results.append(self.classical_shadow(obs, circuit=circuit))
+                results.append(self.classical_shadow(obs, circuit))
 
             elif obs.return_type is ShadowExpval:
                 if len(observables) > 1:
