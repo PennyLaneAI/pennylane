@@ -202,10 +202,12 @@ class TestExpvalForward:
         superposition of qubits"""
         circuit = hadamard_circuit(3, shots=100000)
         actual = circuit(obs, k=k)
+        new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device)
 
         assert actual.shape == (len(obs_hadamard),)
         assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(new_actual, expected, atol=1e-1)
 
     def test_max_entangled_expval(
         self, k=1, obs=obs_max_entangled, expected=expected_max_entangled
@@ -214,10 +216,12 @@ class TestExpvalForward:
         entangled state"""
         circuit = max_entangled_circuit(3, shots=100000)
         actual = circuit(obs, k=k)
+        new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device)
 
         assert actual.shape == (len(obs_max_entangled),)
         assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(new_actual, expected, atol=1e-1)
 
     def test_non_pauli_error(self):
         """Test that an error is raised when a non-Pauli observable is passed"""
@@ -237,10 +241,12 @@ class TestExpvalForwardInterfaces:
 
         circuit = qft_circuit(3, shots=100000, interface=interface)
         actual = circuit(obs, k=k)
+        new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device)
 
         assert actual.shape == (len(obs_qft),)
         assert actual.dtype == torch.float64 if interface == "torch" else np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(new_actual, expected, atol=1e-1)
 
 
 obs_strongly_entangled = [
