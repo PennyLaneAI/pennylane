@@ -380,10 +380,8 @@ execute_kwargs = [
 ]
 
 
-# TODO: add jax-jit when it supports new return types.
-# "jax-jit"
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
-@pytest.mark.parametrize("interface", ["jax-python"])
+@pytest.mark.parametrize("interface", ["jax-python", "jax-jit"])
 class TestJaxExecuteIntegration:
     """Test the jax interface execute function
     integrates well for both forward and backward execution"""
