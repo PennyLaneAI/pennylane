@@ -189,6 +189,30 @@ class Exp(SymbolicOp, Operation):
         """Setting inverse not defined for Exp, so inverse is always False"""
         return False
 
+    @inverse.setter
+    def inverse(self, boolean):
+        raise NotImplementedError(
+            f"Setting the inverse of {type(self)} is not implemented. "
+            f"Use qml.adjoint or qml.pow instead."
+        )
+
+    def inv(self):
+        """Inverts the operator.
+
+        This method concatenates a string to the name of the operation,
+        to indicate that the inverse will be used for computations.
+
+        Any subsequent call of this method will toggle between the original
+        operation and the inverse of the operation.
+
+        Returns:
+            :class:`Operator`: operation to be inverted
+        """
+        raise NotImplementedError(
+            f"Setting the inverse of {type(self)} is not implemented. "
+            f"Use qml.adjoint or qml.pow instead."
+        )
+
     def decomposition(self):
         r"""Representation of the operator as a product of other operators. Decomposes into
         :class:`~.PauliRot` if the coefficient is imaginary and the base is a Pauli Word.
