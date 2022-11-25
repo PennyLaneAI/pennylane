@@ -487,7 +487,7 @@ def _execute_bwd_new(
                 if num_meas == 1:
                     shape = tuple([shape_dtype_structs] * num_params)
                 else:
-                    shape = tuple( [tuple([shape_dtype_structs] * num_params)] * num_meas for t in new_tapes)
+                    shape = [tuple([shape_dtype_structs] * num_params)] * num_meas
                 abc.append(shape)
 
             if len(abc) == 1:
