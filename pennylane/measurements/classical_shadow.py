@@ -220,11 +220,6 @@ class ClassicalShadow(CustomMeasurement):
     Args:
         args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
         seed (Union[int, None]): The seed used to generate the random measurements
-        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
-            to compute the expectation value over. Only used when ``return_type`` is ``ShadowExpval``.
-        k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
-            ``k=1`` corresponds to simply taking the mean over all measurements. Only used
-            when ``return_type`` is ``ShadowExpval``.
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
@@ -345,9 +340,13 @@ class ClassicalShadow(CustomMeasurement):
         return (1, 2, device.shots, len(self.wires))
 
     def __copy__(self):
-        obj = super().__copy__()
-        obj.seed = self.seed
-        return obj
+        return self.__class__(
+            self.return_type,
+            obs=copy.copy(self.obs),
+            seed=self.seed,
+            wires=self._wires,
+            eigvals=self._eigvals,
+        )
 
 
 class _ShadowExpval(CustomMeasurement):
@@ -360,10 +359,9 @@ class _ShadowExpval(CustomMeasurement):
         args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
         seed (Union[int, None]): The seed used to generate the random measurements
         H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
-            to compute the expectation value over. Only used when ``return_type`` is ``ShadowExpval``.
+            to compute the expectation value over.
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
-            ``k=1`` corresponds to simply taking the mean over all measurements. Only used
-            when ``return_type`` is ``ShadowExpval``.
+            ``k=1`` corresponds to simply taking the mean over all measurements.
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
