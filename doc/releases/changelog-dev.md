@@ -160,7 +160,7 @@
 
 <h4>Return types project</h4>
 
-* The autograd interface now supports devices with shot vectors.
+* The autograd interface for the new return types now supports devices with shot vectors.
   [#3374](https://github.com/PennyLaneAI/pennylane/pull/3374)
 
   Example with a single measurement:
@@ -216,7 +216,7 @@
          [-0.37133333, -0.18566667,  0.        ,  0.        ,  0.18566667]])
   ```
 
-* The TensorFlow interface now supports devices with shot vectors.
+* The TensorFlow interface for the new return types now supports devices with shot vectors.
   [#3400](https://github.com/PennyLaneAI/pennylane/pull/3400)
 
   Example with a single measurement:

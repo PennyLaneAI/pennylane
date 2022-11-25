@@ -356,6 +356,7 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 5, 2)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies_hess)
 @pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
 class TestReturnShotVectorHessian:
