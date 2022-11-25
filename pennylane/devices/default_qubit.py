@@ -121,6 +121,7 @@ class DefaultQubit(QubitDevice):
         "Toffoli",
         "CY",
         "CZ",
+        "CH",
         "PhaseShift",
         "ControlledPhaseShift",
         "CPhaseShift00",

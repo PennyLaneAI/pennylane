@@ -4,6 +4,17 @@
 
 <h3>New features since last release</h3>
 
+* Add the controlled Hadamard gate.
+  ```pycon
+  >>> ch = qml.CH(wires=[0, 1])
+  >>> matrix = ch.compute_matrix()
+  [[ 1.          0.          0.          0.        ]
+   [ 0.          1.          0.          0.        ]
+   [ 0.          0.          0.70710678  0.70710678]
+   [ 0.          0.          0.70710678 -0.70710678]]
+  ```
+  [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
+  
 * Support custom measurement processes:
   * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
     method to process samples/quantum state.
@@ -108,6 +119,9 @@
   ```
 
 <h3>Improvements</h3>
+
+* Added more input validation to `hamiltonian_expand` such that Hamiltonian objects with no terms raise an error.
+  [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
 
 * Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
@@ -244,6 +258,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   [(#3409)](https://github.com/PennyLaneAI/pennylane/pull/3409)
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug where `hamiltonian_expand` didn't preserve the type of the inputted results in its output.
+  [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
 
 * Fixed a bug that made `gradients.param_shift` raise an error when used with unshifted terms only
   in a custom recipe, and when using any unshifted terms at all under the new return type system.
