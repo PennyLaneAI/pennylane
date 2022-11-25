@@ -155,7 +155,8 @@ def _equal_operator(
 
 
 @_equal.register
-def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess):
+# pylint: disable=unused-argument
+def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
@@ -171,30 +172,26 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess):
 
 
 @_equal.register
-def _(op1: Union[_VnEntropy, _MutualInfo], op2: Union[_VnEntropy, _MutualInfo]):
+# pylint: disable=unused-argument
+def _(op1: _VnEntropy, op2: _VnEntropy, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
-
-    return_types_match = op1.return_type == op2.return_type
-    if op1.obs is not None and op2.obs is not None:
-        observables_match = equal(op1.obs, op2.obs)
-    # check obs equality when either one is None (False) or both are None (True)
-    else:
-        observables_match = op1.obs == op2.obs
-    wires_match = op1.wires == op2.wires
-    eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
+    eq_m = _equal_measurements(op1, op2)
     log_base_match = op1.log_base == op2.log_base
-
-    return (
-        return_types_match
-        and observables_match
-        and wires_match
-        and eigvals_match
-        and log_base_match
-    )
+    return eq_m and log_base_match
 
 
 @_equal.register
-def _equal_shadow_measurements(op1: _ShadowExpval, op2: _ShadowExpval):
+# pylint: disable=unused-argument
+def _(op1: _MutualInfo, op2: _MutualInfo, **kwargs):
+    """Determine whether two MeasurementProcess objects are equal"""
+    eq_m = _equal_measurements(op1, op2)
+    log_base_match = op1.log_base == op2.log_base
+    return eq_m and log_base_match
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_shadow_measurements(op1: _ShadowExpval, op2: _ShadowExpval, **kwargs):
     """Determine whether two ClassicalShadow objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
