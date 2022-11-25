@@ -54,6 +54,39 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
+* ``qml.transforms.measurement_grouping`` has been deprecated, and usage will now raise a warning.
+
+  - Deprecated in v0.28
+  - Will be removed in v0.29
+
+  Don't use:
+
+  .. code-block:: python
+
+    with qml.tape.QuantumTape() as tape:
+      qml.RX(0.1, wires=0)
+      qml.RX(0.2, wires=1)
+
+    obs = [qml.PauliZ(0), qml.PauliX(1)]
+    coeffs = [2.0, 1.0]
+
+    tapes, fn = qml.transforms.measurement_grouping(tape, obs, coeffs)
+
+  Instead, use:
+
+  .. code-block:: python
+
+    obs = [qml.PauliZ(0), qml.PauliX(1)]
+    coeffs = [2.0, 1.0]
+    H = qml.Hamiltonian(coeffs, obs)
+
+    with qml.tape.QuantumTape() as tape:
+      qml.RX(0.1, wires=0)
+      qml.RX(0.2, wires=1)
+      qml.expval(H)
+
+    tapes, fn = qml.transforms.hamiltonian_expand(tape)
+
 Completed deprecation cycles
 ----------------------------
 

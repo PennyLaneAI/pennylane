@@ -19,7 +19,7 @@ import itertools
 
 import numpy as np
 import pytest
-from gate_data import CNOT, CSWAP, CZ, ECR, ISWAP, SISWAP, SWAP, H, I, S, T, Toffoli, X, Y, Z
+from gate_data import CNOT, CSWAP, CZ, ECR, ISWAP, SISWAP, SWAP, H, I, S, T, Toffoli, X, Y, Z, CH
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
@@ -41,6 +41,7 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.CSWAP, CSWAP),
     (qml.Toffoli, Toffoli),
     (qml.ECR, ECR),
+    (qml.CH, CH),
 ]
 
 SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
@@ -224,6 +225,24 @@ class TestDecompositions:
                 mats.append(i.matrix())
 
         decomposed_matrix = np.linalg.multi_dot(mats)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+    def test_CH_decomposition(self, tol):
+        """Tests that the decomposition of the CH gate is correct"""
+        op = qml.CH(wires=[0, 1])
+        res = op.decomposition()
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), i.matrix()))
+            elif i.wires == Wires([0, 1]) and i.name == "CZ":
+                mats.append(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]))
+            else:
+                raise Exception("Unexpected gate in decomposition.")
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_ISWAP_decomposition(self, tol):
@@ -1067,6 +1086,7 @@ period_two_ops = (
     qml.CNOT(wires=(0, 1)),
     qml.CZ(wires=(0, 1)),
     qml.CY(wires=(0, 1)),
+    qml.CH(wires=(0, 1)),
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
     qml.ECR(wires=(0, 1)),
@@ -1234,6 +1254,11 @@ class TestControlledMethod:
         out = qml.PauliZ(0)._controlled("a")
         assert qml.equal(out, qml.CZ(("a", 0)))
 
+    def test_Hadamard(self):
+        """Test the PauliZ _controlled method."""
+        out = qml.Hadamard(0)._controlled("a")
+        assert qml.equal(out, qml.CH(("a", 0)))
+
     def test_CNOT(self):
         """Test the CNOT _controlled method"""
         out = qml.CNOT((0, 1))._controlled("a")
@@ -1274,6 +1299,7 @@ label_data = [
     (qml.CNOT(wires=(0, 1)), "X", "X"),
     (qml.CZ(wires=(0, 1)), "Z", "Z"),
     (qml.CY(wires=(0, 1)), "Y", "Y"),
+    (qml.CH(wires=(0, 1)), "H", "H"),
     (qml.SWAP(wires=(0, 1)), "SWAP", "SWAP⁻¹"),
     (qml.ISWAP(wires=(0, 1)), "ISWAP", "ISWAP⁻¹"),
     (qml.ECR(wires=(0, 1)), "ECR", "ECR⁻¹"),
@@ -1311,6 +1337,7 @@ control_data = [
     (qml.CNOT(wires=(0, 1)), Wires(0)),
     (qml.CZ(wires=(0, 1)), Wires(0)),
     (qml.CY(wires=(0, 1)), Wires(0)),
+    (qml.CH(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
     (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
     (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
@@ -1333,6 +1360,7 @@ involution_ops = [  # ops who are their own inverses
     qml.CNOT((0, 1)),
     qml.CZ((0, 1)),
     qml.CY((0, 1)),
+    qml.CH((0, 1)),
     qml.SWAP((0, 1)),
     qml.ECR((0, 1)),
     qml.CSWAP((0, 1, 2)),
