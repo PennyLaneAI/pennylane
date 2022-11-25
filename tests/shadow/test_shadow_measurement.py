@@ -151,11 +151,9 @@ class TestClassicalShadow:
 
         circuit = get_circuit(wires, shots, seed, interface, device)
         shadow = circuit()
-        new_shadow = circuit.tape.measurements[0].process(circuit.tape, circuit.device)
 
         # test shape is correct
         assert shadow.shape == (2, shots, wires)
-        assert new_shadow.shape == (2, shots, wires)
 
         # test dtype is correct
         expected_dtype = np.int8
@@ -165,18 +163,12 @@ class TestClassicalShadow:
             expected_dtype = torch.int8
 
         assert shadow.dtype == expected_dtype
-        assert new_shadow.dtype == expected_dtype
 
         bits, recipes = shadow
-        new_bits, new_recipes = new_shadow
 
         # test allowed values of bits and recipes
         assert qml.math.all(np.logical_or(bits == 0, bits == 1))
         assert qml.math.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
-        assert qml.math.all(np.logical_or(new_bits == 0, new_bits == 1))
-        assert qml.math.all(
-            np.logical_or(new_recipes == 0, np.logical_or(new_recipes == 1, new_recipes == 2))
-        )
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
