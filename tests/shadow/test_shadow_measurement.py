@@ -21,18 +21,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-# TODO: Remove this when new CustomMP are the default
-def custom_measurement_process(circuit, spy):
-    assert len(spy.call_args_list) > 0  # make sure method is mocked properly
-    device = circuit.device
-    call_args_list = list(spy.call_args_list)
-    for call_args in call_args_list:
-        obs, circuit = call_args.args[1:]
-        old_res = device.classical_shadow(obs, circuit)
-        new_res = obs.process(circuit, device=device)
-        assert qml.math.allequal(old_res, new_res)
-
-
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):
     """
     Return a QNode that prepares the state (|00...0> + |11...1>) / sqrt(2)
@@ -62,7 +50,7 @@ def get_x_basis_circuit(wires, shots, interface="autograd", device="default.qubi
     def circuit():
         for wire in range(wires):
             qml.Hadamard(wire)
-        return qml.classical_shadow(wires=range(wires))
+        return qml.classical_shadow(wires=range(wires), seed_recipes=False)
 
     return circuit
 
@@ -91,7 +79,7 @@ def get_z_basis_circuit(wires, shots, interface="autograd", device="default.qubi
 
     @qml.qnode(dev, interface=interface)
     def circuit():
-        return qml.classical_shadow(wires=range(wires))
+        return qml.classical_shadow(wires=range(wires), seed_recipes=False)
 
     return circuit
 
@@ -150,14 +138,13 @@ class TestClassicalShadow:
     @pytest.mark.parametrize("seed", seed_recipes_list)
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
-    def test_format(self, wires, shots, seed, interface, device, mocker):
+    def test_format(self, wires, shots, seed, interface, device):
         """Test that the format of the returned classical shadow
         measurement is correct"""
         import tensorflow as tf
         import torch
 
         circuit = get_circuit(wires, shots, seed, interface, device)
-        spy = mocker.spy(qml.QubitDevice, "classical_shadow")
         shadow = circuit()
 
         # test shape is correct
@@ -178,9 +165,6 @@ class TestClassicalShadow:
         assert qml.math.all(np.logical_or(bits == 0, bits == 1))
         assert qml.math.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
 
-        if device == "default.mixed":
-            custom_measurement_process(circuit, spy)
-
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
@@ -188,34 +172,41 @@ class TestClassicalShadow:
         "circuit_fn, basis_recipe",
         [(get_x_basis_circuit, 0), (get_y_basis_circuit, 1), (get_z_basis_circuit, 2)],
     )
-    def test_return_distribution(self, wires, interface, device, circuit_fn, basis_recipe, mocker):
+    def test_return_distribution(self, wires, interface, device, circuit_fn, basis_recipe):
         """Test that the distribution of the bits and recipes are correct for a circuit
         that prepares all qubits in a Pauli basis"""
         # high number of shots to prevent true negatives
         shots = 1000
 
         circuit = circuit_fn(wires, shots=shots, interface=interface, device=device)
-        spy = mocker.spy(qml.QubitDevice, "classical_shadow")
         bits, recipes = circuit()
+        new_bits, new_recipes = circuit.tape.measurements[0].process(circuit.tape, circuit.device)
 
         # test that the recipes follow a rough uniform distribution
         ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
         assert np.allclose(ratios, 1 / 3, atol=1e-1)
+        new_ratios = np.unique(new_recipes, return_counts=True)[1] / (wires * shots)
+        assert np.allclose(new_ratios, 1 / 3, atol=1e-1)
 
         # test that the bit is 0 for all X measurements
         assert qml.math.allequal(bits[recipes == basis_recipe], 0)
+        assert qml.math.allequal(new_bits[new_recipes == basis_recipe], 0)
 
         # test that the bits are uniformly distributed for all Y and Z measurements
         bits1 = bits[recipes == (basis_recipe + 1) % 3]
         ratios1 = np.unique(bits1, return_counts=True)[1] / bits1.shape[0]
         assert np.allclose(ratios1, 1 / 2, atol=1e-1)
+        new_bits1 = new_bits[new_recipes == (basis_recipe + 1) % 3]
+        new_ratios1 = np.unique(new_bits1, return_counts=True)[1] / new_bits1.shape[0]
+        assert np.allclose(new_ratios1, 1 / 2, atol=1e-1)
 
         bits2 = bits[recipes == (basis_recipe + 2) % 3]
         ratios2 = np.unique(bits2, return_counts=True)[1] / bits2.shape[0]
         assert np.allclose(ratios2, 1 / 2, atol=1e-1)
 
-        if device == "default.mixed":
-            custom_measurement_process(circuit, spy)
+        new_bits2 = new_bits[new_recipes == (basis_recipe + 2) % 3]
+        new_ratios2 = np.unique(new_bits2, return_counts=True)[1] / new_bits2.shape[0]
+        assert np.allclose(new_ratios2, 1 / 2, atol=1e-1)
 
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_shots_none_error(self, wires, seed):
