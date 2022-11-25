@@ -55,6 +55,7 @@ ops = {
     "CZ",
     "CCZ",
     "CY",
+    "CH",
     "SWAP",
     "ISWAP",
     "SISWAP",

@@ -71,6 +71,7 @@ def _get_target_name(op):
         "CZ": "PauliZ",
         "CCZ": "PauliZ",
         "CY": "PauliY",
+        "CH": "Hadamard",
         "CSWAP": "SWAP",
         "Toffoli": "PauliX",
         "ControlledPhaseShift": "PhaseShift",

@@ -154,7 +154,7 @@ approximation.
 """
 
 self_inverses = Attribute(
-    ["Hadamard", "PauliX", "PauliY", "PauliZ", "CNOT", "CZ", "CY", "SWAP", "Toffoli", "CCZ"]
+    ["Hadamard", "PauliX", "PauliY", "PauliZ", "CNOT", "CZ", "CY", "CH", "SWAP", "Toffoli", "CCZ"]
 )
 """Attribute: Operations that are their own inverses."""
 

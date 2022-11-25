@@ -121,6 +121,7 @@ class DefaultQubit(QubitDevice):
         "CCZ",
         "CY",
         "CZ",
+        "CH",
         "PhaseShift",
         "ControlledPhaseShift",
         "CPhaseShift00",
