@@ -15,16 +15,15 @@
 """
 This module contains the qml.classical_shadow measurement.
 """
+import copy
 from collections.abc import Iterable
-from string import ascii_letters as ABC
-from typing import Sequence
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import CustomMeasurement, Shadow, ShadowExpval
+from .measurements import CustomMeasurement, MeasurementShapeError, Shadow, ShadowExpval
 
 
 def shadow_expval(H, k=1, seed_recipes=True):
@@ -86,7 +85,7 @@ def shadow_expval(H, k=1, seed_recipes=True):
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
     seed = np.random.randint(2**30) if seed_recipes else None
-    return ClassicalShadow(H=H, seed=seed, k=k)
+    return _ShadowExpval(H=H, seed=seed, k=k)
 
 
 def classical_shadow(wires, seed_recipes=True):
@@ -229,10 +228,8 @@ class ClassicalShadow(CustomMeasurement):
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
-    def __init__(self, *args, seed=None, H=None, k=1, **kwargs):
+    def __init__(self, *args, seed=None, **kwargs):
         self.seed = seed
-        self.H = H
-        self.k = k
         super().__init__(*args, **kwargs)
 
     def process(self, tape, device):
@@ -273,12 +270,6 @@ class ClassicalShadow(CustomMeasurement):
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
             the measured bits and the second represents the recipes used.
         """
-        if isinstance(device, qml.DefaultQubit):
-            return self._process_state(state=device.state, shots=device.shots)
-
-        return self._process_tape(tape, device)
-
-    def _process_tape(self, tape, device):
         wires = self.wires
         n_snapshots = device.shots
         seed = self.seed
@@ -316,94 +307,6 @@ class ClassicalShadow(CustomMeasurement):
 
         return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
 
-    def _process_state(self, state: Sequence[complex], shots: int):
-        wires = self.wires
-        seed = self.seed
-
-        n_qubits = len(wires)
-        n_snapshots = shots
-        device_qubits = len(self.wires)
-        mapped_wires = np.array(self.map_wires(wires))
-
-        if seed is not None:
-            # seed the random measurement generation so that recipes
-            # are the same for different executions with the same seed
-            rng = np.random.RandomState(seed)
-            recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-        else:
-            recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
-
-        obs_list = qml.math.stack(
-            [
-                qml.PauliX.compute_matrix(),
-                qml.PauliY.compute_matrix(),
-                qml.PauliZ.compute_matrix(),
-            ]
-        )
-        uni_list = qml.math.stack(
-            [
-                qml.Hadamard.compute_matrix(),
-                qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
-                qml.Identity.compute_matrix(),
-            ]
-        )
-        obs = obs_list[recipes]
-        uni = uni_list[recipes]
-
-        # There's a significant speedup if we use the following iterative
-        # process to perform the randomized Pauli measurements:
-        #   1. Randomly generate Pauli observables for all snapshots for
-        #      a single qubit (e.g. the first qubit).
-        #   2. Compute the expectation of each Pauli observable on the first
-        #      qubit by tracing out all other qubits.
-        #   3. Sample the first qubit based on each Pauli expectation.
-        #   4. For all snapshots, determine the collapsed state of the remaining
-        #      qubits based on the sample result.
-        #   4. Repeat iteratively until no qubits are remaining.
-        #
-        # Observe that after the first iteration, the second qubit will become the
-        # "first" qubit in the process. The advantage to this approach as opposed to
-        # simultaneously computing the Pauli expectations for each qubit is that
-        # the partial traces are computed over iteratively smaller subsystems, leading
-        # to a significant speed-up.
-
-        # transpose the state so that the measured wires appear first
-        unmeasured_wires = [i for i in range(len(self.wires)) if i not in mapped_wires]
-        transposed_state = np.transpose(state, axes=mapped_wires.tolist() + unmeasured_wires)
-
-        outcomes = np.zeros((n_snapshots, n_qubits))
-        stacked_state = qml.math.stack([transposed_state for _ in range(n_snapshots)])
-
-        for i in range(n_qubits):
-
-            # trace out every qubit except the first
-            first_qubit_state = qml.math.einsum(
-                f"{ABC[device_qubits - i + 1]}{ABC[:device_qubits - i]},{ABC[device_qubits - i + 1]}{ABC[device_qubits - i]}{ABC[1:device_qubits - i]}"
-                f"->{ABC[device_qubits - i + 1]}a{ABC[device_qubits - i]}",
-                stacked_state,
-                qml.math.conj(stacked_state),
-            )
-
-            # sample the observables on the first qubit
-            probs = (qml.math.einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
-            samples = np.random.uniform(0, 1, size=probs.shape) > probs
-            outcomes[:, i] = samples
-
-            # collapse the state of the remaining qubits; the next qubit in line
-            # becomes the first qubit for the next iteration
-            rotated_state = qml.math.einsum("ab...,acb->ac...", stacked_state, uni[:, i])
-            stacked_state = rotated_state[np.arange(n_snapshots), qml.math.cast(samples, np.int8)]
-
-            # re-normalize the collapsed state
-            norms = np.sqrt(
-                np.sum(
-                    np.abs(stacked_state) ** 2, tuple(range(1, device_qubits - i)), keepdims=True
-                )
-            )
-            stacked_state /= norms
-
-        return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
-
     @property
     def numeric_type(self):
         """The Python numeric type of the measurement result.
@@ -412,11 +315,11 @@ class ClassicalShadow(CustomMeasurement):
             type: This is ``int`` when the return type is ``Shadow``,
             and ``float`` when the return type is ``ShadowExpval``.
         """
-        return int if self.return_type is Shadow else float
+        return int
 
     @property
     def return_type(self):
-        return Shadow if self.H is None else ShadowExpval
+        return Shadow
 
     def shape(self, device):
         """The expected output shape of the ClassicalShadow.
@@ -434,13 +337,96 @@ class ClassicalShadow(CustomMeasurement):
             MeasurementShapeError: when a device is not provided and the return
             type is ``Shadow``, since the output shape is dependent on the device.
         """
-        # the return value of expval is always a scalar
-        if self.return_type is ShadowExpval:
-            return (1,)
+        # otherwise, the return type requires a device
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of a classical "
+                "shadow measurement process."
+            )
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
         return (1, 2, device.shots, len(self.wires))
+
+    def __copy__(self):
+        obj = super().__copy__()
+        obj.seed = self.seed
+        return obj
+
+
+class _ShadowExpval(CustomMeasurement):
+    """Measures the expectation value of an operator using the classical shadow measurement process.
+
+    This has the same arguments as the base class MeasurementProcess, plus other additional
+    arguments specific to the classical shadow protocol.
+
+    Args:
+        args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
+        seed (Union[int, None]): The seed used to generate the random measurements
+        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
+            to compute the expectation value over. Only used when ``return_type`` is ``ShadowExpval``.
+        k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
+            ``k=1`` corresponds to simply taking the mean over all measurements. Only used
+            when ``return_type`` is ``ShadowExpval``.
+        kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
+    """
+
+    def __init__(self, *args, H, seed=None, k=1, **kwargs):
+        self.seed = seed
+        self.H = H
+        self.k = k
+        super().__init__(*args, **kwargs)
+
+    def process(self, tape, device):
+        """Compute expectation values using classical shadows in a differentiable manner.
+
+        Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
+
+        Args:
+            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow expectation
+                value measurement process
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+
+        Returns:
+            float: expectation value estimate.
+        """
+        bits, recipes = qml.classical_shadow(wires=self.wires, seed_recipes=self.seed).process(
+            tape, device
+        )
+        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
+        return shadow.expval(self.H, self.k)
+
+    @property
+    def numeric_type(self):
+        """The Python numeric type of the measurement result.
+
+        Returns:
+            type: This is ``int`` when the return type is ``Shadow``,
+            and ``float`` when the return type is ``ShadowExpval``.
+        """
+        return float
+
+    @property
+    def return_type(self):
+        return ShadowExpval
+
+    def shape(self, device=None):
+        """The expected output shape of the ClassicalShadow.
+
+        Args:
+            device (.Device): a PennyLane device to use for determining the shape
+
+        Returns:
+            tuple: the output shape; this is ``(2, T, n)`` when the return type
+            is ``Shadow``, where ``T`` is the number of device shots and ``n`` is
+            the number of measured wires, and is a scalar when the return type
+            is ``ShadowExpval``
+
+        Raises:
+            MeasurementShapeError: when a device is not provided and the return
+            type is ``Shadow``, since the output shape is dependent on the device.
+        """
+        return (1,)
 
     @property
     def wires(self):
@@ -448,9 +434,6 @@ class ClassicalShadow(CustomMeasurement):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.return_type is Shadow:
-            return self._wires
-
         if isinstance(self.H, Iterable):
             return Wires.all_wires([h.wires for h in self.H])
 
@@ -470,8 +453,12 @@ class ClassicalShadow(CustomMeasurement):
         return self
 
     def __copy__(self):
-        obj = super().__copy__()
-        obj.seed = self.seed
-        obj.H = self.H
-        obj.k = self.k
-        return obj
+        return self.__class__(
+            self.return_type,
+            H=self.H,
+            k=self.k,
+            seed=self.seed,
+            obs=copy.copy(self.obs),
+            wires=self._wires,
+            eigvals=self._eigvals,
+        )
