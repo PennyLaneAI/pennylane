@@ -329,11 +329,12 @@ class Exp(SymbolicOp, Operation):
         + (1.0) [Z0 X1]
 
         """
-        if np.real(self.coeff) != 0 or not self.base.is_hermitian:
-            raise GeneratorUndefinedError(
-                f"Exponential with coefficient {self.coeff} and base operator {self.base} does not have a generator."
-            )
-        return self.base
+        for op in [self, qml.simplify(self)]:
+            if op.base.is_hermitian and not np.real(op.coeff):
+                return op.base
+        raise GeneratorUndefinedError(
+            f"Exponential with coefficient {self.coeff} and base operator {self.base} does not have a generator."
+        )
 
 
 class Evolution(Exp):
