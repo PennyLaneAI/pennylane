@@ -738,7 +738,7 @@ class TestHamiltonian:
         # check that H is simplified
         assert H.ops == [a, b]
         # check that the simplified Hamiltonian is in the queue
-        assert H in tape._queue
+        assert tape.get_info(H) is not None
 
     def test_data(self):
         """Tests the obs_data method"""

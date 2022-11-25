@@ -277,6 +277,131 @@ def enable_return():
                        [[ 4.9707499e-01, -2.9999996e-04],
                         [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
 
+    .. details::
+        :title: Usage Details for Autograd
+
+        Autograd only allows differentiating functions that have array or tensor outputs. QNodes that have
+        multiple measurements may output tuples and cause errors with Autograd. Similarly, the outputs of
+        ``qml.grad`` or ``qml.jacobian`` may be tuples if there are multiple trainable arguments and
+        cause errors with higher-order derivatives.
+
+        These issues can be overcome by stacking the QNode results or gradients before computing derivatives.
+
+        **Examples for shot vectors**
+
+        Example for first-order derivatives with a single return:
+
+        .. code-block:: python
+
+            def func(a, b):
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+
+            dev = qml.device("default.qubit", wires=2, shots=[100, 200, 300])
+
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0))
+
+            def cost(a, b):
+                res = circuit(a, b)
+                return qml.math.stack(res)
+
+        >>> a = np.array(0.4, requires_grad=True)
+        >>> b = np.array(0.6, requires_grad=True)
+        >>> cost(a, b)
+        [0.94       0.93       0.89333333]
+        >>> qml.jacobian(cost)(a, b)
+        (array([-0.44, -0.38, -0.38]), array([-0.01      , -0.01      , -0.00666667]))
+
+        Example for first-order derivatives with multiple returns:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+            def cost(a, b):
+                res = circuit(a, b)
+                return qml.math.stack([qml.math.hstack(r) for r in res])
+
+        >>> cost(a, b)
+        [[0.92       0.91       0.05       0.03       0.01      ]
+         [0.95       0.9        0.075      0.         0.025     ]
+         [0.95333333 0.89666667 0.08       0.         0.02333333]]
+        >>> qml.jacobian(cost)(a, b)
+        (array([[-0.41  , -0.16  , -0.045 ,  0.01  ,  0.195 ],
+                [-0.325 , -0.1325, -0.03  ,  0.01  ,  0.1525],
+                [-0.39  , -0.175 , -0.02  ,  0.02  ,  0.175 ]]),
+         array([[-0.01      , -0.26      ,  0.255     ,  0.02      , -0.015     ],
+                [ 0.01      , -0.2525    ,  0.2575    ,  0.0075    , -0.0125    ],
+                [-0.02      , -0.26666667,  0.25666667,  0.01666667, -0.00666667]]))
+
+        Example for second-order derivatives with a single return:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+            def cost(a, b):
+                def cost2(a, b):
+                    res = circuit(a, b)
+                    return qml.math.stack(res)
+
+                return qml.math.stack(qml.jacobian(cost2)(a, b))
+
+        >>> cost(a, b)
+        [[ 0.05       -0.01        0.00666667]
+         [-0.51       -0.48       -0.62      ]]
+        >>> qml.jacobian(cost)(a, b)
+        (array([[-0.03      , -0.02      , -0.00333333],
+                [ 0.01      ,  0.025     , -0.02      ]]),
+         array([[ 0.005     ,  0.03      , -0.02166667],
+                [-0.85      , -0.83      , -0.81333333]]))
+
+        Example for second-order derivatives with multiple returns:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.probs([0, 1])
+
+            def cost(a, b):
+                def cost2(a, b):
+                    res = circuit(a, b)
+                    return qml.math.stack([qml.math.hstack(r) for r in res])
+
+                return qml.math.stack(qml.jacobian(cost2)(a, b))
+
+        >>> cost(a, b)
+        [[[-0.05       -0.2         0.          0.025       0.175     ]
+          [ 0.02       -0.17       -0.0275      0.0175      0.18      ]
+          [-0.00666667 -0.19166667 -0.01333333  0.01666667  0.18833333]]
+         [[-0.52       -0.25        0.265      -0.005      -0.01      ]
+          [-0.54       -0.25        0.2625      0.0075     -0.02      ]
+          [-0.57666667 -0.275       0.28166667  0.00666667 -0.01333333]]]
+        >>> qml.jacobian(cost)(a, b)
+        (array([[[ 0.02      , -0.38      , -0.055     ,  0.045     ,  0.39      ],
+                 [ 0.03      , -0.4275    , -0.04      ,  0.025     ,  0.4425    ],
+                 [-0.00666667, -0.42333333, -0.025     ,  0.02833333,  0.42      ]],
+                [[ 0.        ,  0.0625    , -0.065     ,  0.065     , -0.0625    ],
+                 [ 0.015     ,  0.06875   , -0.05      ,  0.0425    , -0.06125   ],
+                 [-0.03      ,  0.03833333, -0.04583333,  0.06083333, -0.05333333]]]),
+         array([[[-0.06      ,  0.0325    , -0.0525    ,  0.0825    , -0.0625    ],
+                 [ 0.02      ,  0.03      , -0.035     ,  0.025     , -0.02      ],
+                 [ 0.00833333,  0.06166667, -0.05666667,  0.0525    , -0.0575    ]],
+                [[-0.85      , -0.415     ,  0.425     ,  0.        , -0.01      ],
+                 [-0.78      , -0.3775    ,  0.375     ,  0.015     , -0.0125    ],
+                 [-0.80666667, -0.38      ,  0.38666667,  0.01666667, -0.02333333]]]))
     """
 
     global __activated
