@@ -36,6 +36,9 @@
   * Add `ClassicalShadow` class.
     [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
+  * Add `_ShadowExpval` class.
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
+
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
   [(#3378)](https://github.com/PennyLaneAI/pennylane/pull/3378)
