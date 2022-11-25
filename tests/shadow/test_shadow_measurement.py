@@ -28,9 +28,8 @@ def custom_measurement_process(circuit, spy):
     call_args_list = list(spy.call_args_list)
     for call_args in call_args_list:
         obs, circuit = call_args.args[1:]
-        meas = qml.classical_shadow(wires=obs.wires)
         old_res = device.classical_shadow(obs, circuit)
-        new_res = meas.process(circuit, device=device)
+        new_res = obs.process(circuit, device=device)
         assert qml.math.allequal(old_res, new_res)
 
 
