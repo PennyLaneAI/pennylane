@@ -133,6 +133,9 @@
   fails to diagonalize non-qubit-wise-commuting observables.
   [(#3381)](https://github.com/PennyLaneAI/pennylane/pull/3381)
 
+* Extended the `qml.equal` function to `Hamiltonian` and `Tensor` objects.
+  [(#3390)](https://github.com/PennyLaneAI/pennylane/pull/3390)
+
 * Remove private `_wires` setter from the `Controlled.map_wires` method.
   [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
   
@@ -197,6 +200,7 @@
          [-0.409     , -0.2045    ,  0.        ,  0.        ,  0.2045    ],
          [-0.37133333, -0.18566667,  0.        ,  0.        ,  0.18566667]])
   ```
+
 
 <h3>Breaking changes</h3>
 
