@@ -143,7 +143,7 @@ class TestClassicalShadow:
     @pytest.mark.parametrize("seed", seed_recipes_list)
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
-    def test_format(self, wires, shots, seed, interface, device, mocker):
+    def test_format(self, wires, shots, seed, interface, device):
         """Test that the format of the returned classical shadow
         measurement is correct"""
         import tensorflow as tf
@@ -185,7 +185,7 @@ class TestClassicalShadow:
         "circuit_fn, basis_recipe",
         [(get_x_basis_circuit, 0), (get_y_basis_circuit, 1), (get_z_basis_circuit, 2)],
     )
-    def test_return_distribution(self, wires, interface, device, circuit_fn, basis_recipe, mocker):
+    def test_return_distribution(self, wires, interface, device, circuit_fn, basis_recipe):
         """Test that the distribution of the bits and recipes are correct for a circuit
         that prepares all qubits in a Pauli basis"""
         # high number of shots to prevent true negatives
