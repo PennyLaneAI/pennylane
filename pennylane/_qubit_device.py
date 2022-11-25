@@ -33,14 +33,14 @@ from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
     AllCounts,
+    ClassicalShadow,
     MeasurementProcess,
-    Shadow,
-    ShadowExpval,
     _Counts,
     _Expectation,
     _MutualInfo,
     _Probability,
     _Sample,
+    _ShadowExpval,
     _State,
     _Variance,
     _VnEntropy,
@@ -811,7 +811,7 @@ class QubitDevice(Device):
                     self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
                 )
 
-            elif obs.return_type is Shadow:
+            elif isinstance(m, ClassicalShadow):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
@@ -819,7 +819,7 @@ class QubitDevice(Device):
                     )
                 results.append(self.classical_shadow(obs, circuit))
 
-            elif obs.return_type is ShadowExpval:
+            elif isinstance(m, _ShadowExpval):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
