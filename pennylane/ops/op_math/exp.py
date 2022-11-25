@@ -186,7 +186,7 @@ class Exp(SymbolicOp, Operation):
 
     @property
     def inverse(self):
-        """Setting inverse not defined for Exp, so inverse is always False"""
+        """Setting inverse is not defined for Exp, so the inverse is always False"""
         return False
 
     @inverse.setter
@@ -341,20 +341,20 @@ class Evolution(Exp):
     r"""Create an exponential operator that defines a generator, of the form :math:`e^{ix\hat{G}}`
 
     Args:
-        base (~.operation.Operator): The Operator to be used as a Generator, G.
+        base (~.operation.Operator): The operator to be used as a generator, G.
         param (float): The evolution parameter, x. This parameter is not expected to have
             any complex component.
 
     Returns:
-       :class:`Evolution`: A :class`~.operation.Operator` representing an operator exponential of the form exp(ixG),
+       :class:`Evolution`: A :class`~.operation.Operator` representing an operator exponential of the form :math:`e^{ix\hat{G}}`,
        where x is real.
 
-    **Use Details**
+    **Usage Details**
 
-    In contrast to the general Exp class, the Evolution operator is constrained to a single trainable
+    In contrast to the general :class:`~.Exp` class, the Evolution operator :math:`e^{ix\hat{G}}` is constrained to have a single trainable
     parameter, x. Any parameters contained in the base operator are not trainable. This allows the operator
     to be differentiated with regard to the evolution parameter. Defining a mathematically identical operator
-    using the Exp class will be incompatible with a variety of PennyLane functions that require only a single
+    using the :class:`~.Exp` class will be incompatible with a variety of PennyLane functions that require only a single
     trainable parameter.
 
     **Example**
