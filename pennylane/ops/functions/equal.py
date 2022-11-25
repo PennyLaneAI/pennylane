@@ -15,11 +15,11 @@
 This module contains the qml.equal function.
 """
 # pylint: disable=too-many-arguments,too-many-return-statements
+from functools import singledispatch
 from typing import Union
 
-from functools import singledispatch
 import pennylane as qml
-from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
+from pennylane.measurements import ClassicalShadow, MeasurementProcess
 from pennylane.operation import Operator
 
 
@@ -177,10 +177,8 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwar
 
 @_equal.register
 # pylint: disable=unused-argument
-def _equal_shadow_measurements(
-    op1: ShadowMeasurementProcess, op2: ShadowMeasurementProcess, **kwargs
-):
-    """Determine whether two ShadowMeasurementProcess objects are equal"""
+def _equal_shadow_measurements(op1: ClassicalShadow, op2: ClassicalShadow, **kwargs):
+    """Determine whether two ClassicalShadow objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
     wires_match = op1.wires == op2.wires

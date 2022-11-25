@@ -39,7 +39,7 @@ from pennylane.pauli import string_to_pauli_word
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
-from .batch_transform import batch_transform
+from pennylane.transforms.batch_transform import batch_transform
 
 
 class MeasureNode(Operation):

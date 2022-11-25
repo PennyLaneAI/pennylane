@@ -140,7 +140,7 @@ class TestExpvalMeasurement:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "PauliY"
         assert len(tape.measurements) == 1
-        assert isinstance(tape.measurements[0], qml.measurements.ShadowMeasurementProcess)
+        assert isinstance(tape.measurements[0], qml.measurements.ClassicalShadow)
 
 
 obs_hadamard = [

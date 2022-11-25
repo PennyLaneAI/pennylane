@@ -274,19 +274,16 @@ class Controlled(SymbolicOp):
         return self.control_wires + self.target_wires + self.work_wires
 
     def map_wires(self, wire_map: dict):
-        new_op = copy(self)
+        new_base = self.base.map_wires(wire_map=wire_map)
+        new_control_wires = Wires([wire_map.get(wire, wire) for wire in self.control_wires])
+        new_work_wires = Wires([wire_map.get(wire, wire) for wire in self.work_wires])
 
-        new_op.hyperparameters["control_wires"] = Wires(
-            [wire_map.get(wire, wire) for wire in self.control_wires]
+        return Controlled(
+            base=new_base,
+            control_wires=new_control_wires,
+            control_values=self.control_values,
+            work_wires=new_work_wires,
         )
-
-        new_op.base._wires = Wires([wire_map.get(wire, wire) for wire in self.base.wires])
-
-        new_op.hyperparameters["work_wires"] = Wires(
-            [wire_map.get(wire, wire) for wire in self.work_wires]
-        )
-
-        return new_op
 
     # Methods ##########################################
 
