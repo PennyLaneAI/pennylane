@@ -32,7 +32,9 @@ class GradientDescentOptimizer:
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
 
-    .. note:: When using ``torch``, ``tensorflow`` or ``jax`` interfaces, refer to :docs:`interfaces` for suitable optimizers.
+    .. note::
+
+        When using ``torch``, ``tensorflow`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces.html>` for suitable optimizers.
 
     """
 
