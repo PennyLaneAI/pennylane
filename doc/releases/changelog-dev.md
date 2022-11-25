@@ -9,36 +9,32 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
-* Add `_Expectation` class.
+  * Add `_Expectation` class.
     [#3343](https://github.com/PennyLaneAI/pennylane/pull/3343)
 
-* Add `_Sample` class.
+  * Add `_Sample` class.
     [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
-* Add `_Var` class.
+  * Add `_Var` class.
     [#3312](https://github.com/PennyLaneAI/pennylane/pull/3312)
 
-* Add `_Probability` class.
+  * Add `_Probability` class.
     [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
-* Add `_Counts` class.
+  * Add `_Counts` class.
     [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
-* Add `_State` class.
-
+  * Add `_State` class.
     [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
-* Add `_Var` class.
-    [#3312](https://github.com/PennyLaneAI/pennylane/pull/3312)
-
-* Add `_VnEntropy` class.
+  * Add `_VnEntropy` class.
     [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
-* Add `_MutualInfo` class.
+  * Add `_MutualInfo` class.
     [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
 
-* Add `ClassicalShadow` class.
-    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
+  * Add `ClassicalShadow` class.
+      [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
