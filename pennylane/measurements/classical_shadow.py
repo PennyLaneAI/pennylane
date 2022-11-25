@@ -317,7 +317,6 @@ class ClassicalShadow(CustomMeasurement):
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             seed=self.seed,
             wires=self._wires,
@@ -399,7 +398,6 @@ class _ShadowExpval(CustomMeasurement):
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             H=self.H,
             k=self.k,
             seed=self.seed,
