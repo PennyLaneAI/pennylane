@@ -443,6 +443,7 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
         "CNOT": "PauliX",
         "CZ": "PauliZ",
         "CY": "PauliY",
+        "CH": "Hadamard",
         "CSWAP": "SWAP",
         "Toffoli": "PauliX",
         "ControlledPhaseShift": "PhaseShift",
