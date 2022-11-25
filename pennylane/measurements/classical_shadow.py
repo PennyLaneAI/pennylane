@@ -269,7 +269,7 @@ class ClassicalShadow(CustomMeasurement):
         n_snapshots = device.shots
         seed = self.seed
 
-        with qml.interfaces.set_shots(self, shots=1):
+        with qml.interfaces.set_shots(device, shots=1):
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(self.map_wires(wires))
