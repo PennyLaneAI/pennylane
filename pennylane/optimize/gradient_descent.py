@@ -31,6 +31,9 @@ class GradientDescentOptimizer:
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
+
+    .. note:: When using ``torch``, ``tensorflow`` or ``jax`` interfaces, refer to :docs:`interfaces` for suitable optimizers.
+
     """
 
     def __init__(self, stepsize=0.01):
