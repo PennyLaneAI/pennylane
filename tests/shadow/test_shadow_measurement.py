@@ -21,18 +21,25 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+# TODO: Remove this when new CustomMP are the default
+def custom_measurement_process(circuit, spy):
+    assert len(spy.call_args_list) > 0  # make sure method is mocked properly
+    device = circuit.device
+    call_args_list = list(spy.call_args_list)
+    for call_args in call_args_list:
+        obs, circuit = call_args.args[1:]
+        meas = qml.classical_shadow(wires=obs.wires)
+        old_res = device.classical_shadow(obs, circuit)
+        new_res = meas.process(circuit, device=device)
+        assert qml.math.allequal(old_res, new_res)
+
+
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):
     """
     Return a QNode that prepares the state (|00...0> + |11...1>) / sqrt(2)
         and performs the classical shadow measurement
     """
-    if device is not None:
-        dev = qml.device(device, wires=wires, shots=shots)
-    else:
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
-
-        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
-        dev.classical_shadow = super(type(dev), dev).classical_shadow
+    dev = qml.device(device, wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
     def circuit():
@@ -50,13 +57,7 @@ def get_x_basis_circuit(wires, shots, interface="autograd", device="default.qubi
     """
     Return a QNode that prepares the |++..+> state and performs a classical shadow measurement
     """
-    if device is not None:
-        dev = qml.device(device, wires=wires, shots=shots)
-    else:
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
-
-        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
-        dev.classical_shadow = super(type(dev), dev).classical_shadow
+    dev = qml.device(device, wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
     def circuit():
@@ -71,13 +72,7 @@ def get_y_basis_circuit(wires, shots, interface="autograd", device="default.qubi
     """
     Return a QNode that prepares the |+i>|+i>...|+i> state and performs a classical shadow measurement
     """
-    if device is not None:
-        dev = qml.device(device, wires=wires, shots=shots)
-    else:
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
-
-        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
-        dev.classical_shadow = super(type(dev), dev).classical_shadow
+    dev = qml.device(device, wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
     def circuit():
@@ -93,13 +88,7 @@ def get_z_basis_circuit(wires, shots, interface="autograd", device="default.qubi
     """
     Return a QNode that prepares the |00..0> state and performs a classical shadow measurement
     """
-    if device is not None:
-        dev = qml.device(device, wires=wires, shots=shots)
-    else:
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
-
-        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
-        dev.classical_shadow = super(type(dev), dev).classical_shadow
+    dev = qml.device(device, wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
     def circuit():
@@ -112,7 +101,7 @@ wires_list = [1, 3]
 
 
 @pytest.mark.parametrize("wires", wires_list)
-class TestShadowMeasurement:
+class TestClassicalShadow:
     """Unit tests for classical_shadow measurement"""
 
     shots_list = [1, 100]
@@ -157,7 +146,7 @@ class TestShadowMeasurement:
         res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
 
         copied_res = copy.copy(res)
-        assert type(copied_res) == type(res)
+        assert isinstance(copied_res, type(res))
         assert copied_res.return_type == res.return_type
         assert copied_res.wires == res.wires
         assert copied_res.seed == res.seed
@@ -166,14 +155,15 @@ class TestShadowMeasurement:
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("seed", seed_recipes_list)
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", None])
-    def test_format(self, wires, shots, seed, interface, device):
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+    def test_format(self, wires, shots, seed, interface, device, mocker):
         """Test that the format of the returned classical shadow
         measurement is correct"""
         import tensorflow as tf
         import torch
 
         circuit = get_circuit(wires, shots, seed, interface, device)
+        spy = mocker.spy(qml.QubitDevice, "classical_shadow")
         shadow = circuit()
 
         # test shape is correct
@@ -194,20 +184,24 @@ class TestShadowMeasurement:
         assert qml.math.all(np.logical_or(bits == 0, bits == 1))
         assert qml.math.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
 
+        if device == "default.mixed":
+            custom_measurement_process(circuit, spy)
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize("device", ["default.qubit", None])
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize(
         "circuit_fn, basis_recipe",
         [(get_x_basis_circuit, 0), (get_y_basis_circuit, 1), (get_z_basis_circuit, 2)],
     )
-    def test_return_distribution(self, wires, interface, device, circuit_fn, basis_recipe):
+    def test_return_distribution(self, wires, interface, device, circuit_fn, basis_recipe, mocker):
         """Test that the distribution of the bits and recipes are correct for a circuit
         that prepares all qubits in a Pauli basis"""
         # high number of shots to prevent true negatives
         shots = 1000
 
         circuit = circuit_fn(wires, shots=shots, interface=interface, device=device)
+        spy = mocker.spy(qml.QubitDevice, "classical_shadow")
         bits, recipes = circuit()
 
         # test that the recipes follow a rough uniform distribution
@@ -226,6 +220,9 @@ class TestShadowMeasurement:
         ratios2 = np.unique(bits2, return_counts=True)[1] / bits2.shape[0]
         assert np.allclose(ratios2, 1 / 2, atol=1e-1)
 
+        if device == "default.mixed":
+            custom_measurement_process(circuit, spy)
+
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_shots_none_error(self, wires, seed):
         """Test that an error is raised when a device with shots=None is used
@@ -234,7 +231,7 @@ class TestShadowMeasurement:
 
         msg = "The number of shots has to be explicitly set on the device when using sample-based measurements"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            shadow = circuit()
+            circuit()
 
     @pytest.mark.parametrize("shots", shots_list)
     def test_multi_measurement_error(self, wires, shots):
@@ -253,4 +250,4 @@ class TestShadowMeasurement:
 
         msg = "Classical shadows cannot be returned in combination with other return types"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            shadow = circuit()
+            circuit()
