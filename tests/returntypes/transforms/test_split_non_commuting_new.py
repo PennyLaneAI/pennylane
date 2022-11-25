@@ -134,29 +134,60 @@ class TestUnittestSplitNonCommuting:
             split_non_commuting(tape)
 
 
-# Integration test
-def test_expval_non_commuting_observables():
-    """Test expval with multiple non-commuting operators"""
-    dev = qml.device("default.qubit", wires=6)
+class TestIntegration:
+    """Integration tests for ``qml.transforms.split_non_commuting()``"""
 
-    @qml.qnode(dev)
-    def circuit():
-        qml.Hadamard(1)
-        qml.Hadamard(0)
-        qml.PauliZ(0)
-        qml.Hadamard(3)
-        qml.Hadamard(5)
-        qml.T(5)
-        return [
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
-            qml.expval(qml.PauliX(0)),
-            qml.expval(qml.PauliZ(1)),
-            qml.expval(qml.PauliX(1) @ qml.PauliX(4)),
-            qml.expval(qml.PauliX(3)),
-            qml.expval(qml.PauliY(5)),
-        ]
+    def test_expval_non_commuting_observables(self):
+        """Test expval with multiple non-commuting operators"""
+        dev = qml.device("default.qubit", wires=6)
 
-    assert all(np.isclose(circuit(), np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(1)
+            qml.Hadamard(0)
+            qml.PauliZ(0)
+            qml.Hadamard(3)
+            qml.Hadamard(5)
+            qml.T(5)
+            return [
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+                qml.expval(qml.PauliX(0)),
+                qml.expval(qml.PauliZ(1)),
+                qml.expval(qml.PauliX(1) @ qml.PauliX(4)),
+                qml.expval(qml.PauliX(3)),
+                qml.expval(qml.PauliY(5)),
+            ]
+
+        assert all(np.isclose(circuit(), np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
+
+    def test_shot_vector_support(self):
+        """Test output is correct when using shot vectors"""
+
+        dev = qml.device("default.qubit", wires=6, shots=(10000, (20000, 2), 30000))
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(1)
+            qml.Hadamard(0)
+            qml.PauliZ(0)
+            qml.Hadamard(3)
+            qml.Hadamard(5)
+            qml.T(5)
+            return [
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+                qml.expval(qml.PauliX(0)),
+                qml.expval(qml.PauliZ(1)),
+                qml.expval(
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliZ(3) @ qml.PauliY(4) @ qml.PauliX(5)
+                ),
+                qml.expval(qml.PauliX(1) @ qml.PauliX(4)),
+                qml.expval(qml.PauliX(3)),
+                qml.expval(qml.PauliY(5)),
+            ]
+
+        assert np.allclose(
+            circuit(), np.array([0.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)]), atol=0.05
+        )
 
 
 # Autodiff tests

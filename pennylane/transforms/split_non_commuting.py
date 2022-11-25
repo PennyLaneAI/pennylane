@@ -171,18 +171,30 @@ def split_non_commuting(tape):
             if qml.active_return():
                 for i, tape in enumerate(tapes):
                     if len(tape.measurements) == 1:
-                        res[i] = qml.math.expand_dims(res[i], 0)
+                        if isinstance(res[i], tuple):
+                            # shot vector case
+                            res[i] = qml.math.stack(
+                                [qml.math.expand_dims(shot_res, 0) for shot_res in res[i]]
+                            )
+                        else:
+                            res[i] = qml.math.expand_dims(res[i], 0)
                     else:
-                        res[i] = qml.math.stack(res[i])
+                        if isinstance(res[i][0], tuple):
+                            # shot vector case
+                            res[i] = qml.math.stack(
+                                [qml.math.stack(shot_res) for shot_res in res[i]]
+                            )
+                        else:
+                            res[i] = qml.math.stack(res[i])
 
-            new_res = qml.math.concatenate(res)
+            new_res = qml.math.concatenate(res, -1)
             reorder_indxs = qml.math.concatenate(group_coeffs)
 
             # in order not to mess with the outputs I am just permuting them with a simple matrix multiplication
-            permutation_matrix = np.zeros((len(new_res), len(new_res)))
+            permutation_matrix = np.zeros((new_res.shape[-1], new_res.shape[-1]))
             for column, indx in enumerate(reorder_indxs):
-                permutation_matrix[indx, column] = 1
-            return qml.math.dot(permutation_matrix, new_res)
+                permutation_matrix[column, indx] = 1
+            return qml.math.dot(new_res, permutation_matrix)
 
         return tapes, reorder_fn
 
