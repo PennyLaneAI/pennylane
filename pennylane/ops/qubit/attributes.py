@@ -154,19 +154,19 @@ approximation.
 """
 
 self_inverses = Attribute(
-    ["Hadamard", "PauliX", "PauliY", "PauliZ", "CNOT", "CZ", "CH", "CY", "SWAP", "Toffoli"]
+    ["Hadamard", "PauliX", "PauliY", "PauliZ", "CNOT", "CZ", "CY", "CH", "SWAP", "Toffoli", "CCZ"]
 )
 """Attribute: Operations that are their own inverses."""
 
 
-symmetric_over_all_wires = Attribute(["CZ", "SWAP"])
+symmetric_over_all_wires = Attribute(["CZ", "CCZ", "SWAP"])
 """Attribute: Operations that are the same if you exchange the order of wires.
 
 For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,
 0])`` due to symmetry of the operation.
 """
 
-symmetric_over_control_wires = Attribute(["Toffoli"])
+symmetric_over_control_wires = Attribute(["CCZ", "Toffoli"])
 """Attribute: Controlled operations that are the same if you exchange the order of all but
 the last (target) wire.
 
@@ -181,6 +181,7 @@ diagonal_in_z_basis = Attribute(
         "S",
         "T",
         "CZ",
+        "CCZ",
         "DiagonalQubitUnitary",
         "RZ",
         "PhaseShift",

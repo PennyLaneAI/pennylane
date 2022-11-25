@@ -205,17 +205,19 @@ def test_no_control_defined():
         assert type(op) in {qml.ControlledPhaseShift, qml.Toffoli, qml.CRX, qml.CSWAP, qml.CH}
 
 
-def test_no_decomposition_defined():
+def test_decomposition_defined():
     """Test that a controlled gate that has no control transform defined,
-    as well as no decomposition transformed defined, still works correctly"""
+    and a decomposition transformed defined, still works correctly"""
 
     with QuantumTape() as tape:
-        ctrl(qml.CZ, 0)(wires=[1, 2])
+        ctrl(qml.CY, 0)(wires=[1, 2])
 
     tape = tape.expand()
 
-    assert len(tape.operations) == 1
-    assert tape.operations[0].name == "C(CZ)"
+    assert len(tape.operations) == 2
+
+    assert tape.operations[0].name == "C(CRY)"
+    assert tape.operations[1].name == "C(S)"
 
 
 def test_controlled_template():
