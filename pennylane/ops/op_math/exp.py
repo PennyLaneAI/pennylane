@@ -14,7 +14,7 @@
 """
 This submodule defines the symbolic operation that stands for an exponential of an operator.
 """
-from warnings import warn, catch_warnings, filterwarnings
+from warnings import warn
 from scipy.sparse.linalg import expm as sparse_expm
 import numpy as np
 
@@ -25,11 +25,11 @@ from pennylane.operation import (
     expand_matrix,
     OperatorPropertyUndefined,
     GeneratorUndefinedError,
-    ParameterFrequenciesUndefinedError,
     Tensor,
 )
 from pennylane.pauli import is_pauli_word, pauli_word_to_string
 from pennylane.wires import Wires
+from pennylane.operation import Operation
 
 from .symbolicop import SymbolicOp
 
@@ -85,7 +85,7 @@ def exp(op, coeff=1, id=None):
     return Exp(op, coeff, id=id)
 
 
-class Exp(SymbolicOp):
+class Exp(SymbolicOp, Operation):
     """A symbolic operator representating the exponential of a operator.
 
     Args:
@@ -310,63 +310,6 @@ class Exp(SymbolicOp):
                 f"Exponential with coefficient {self.coeff} and base operator {self.base} does not have a generator."
             )
         return self.base
-
-    @property
-    def parameter_frequencies(self):
-        r"""Returns the frequencies for each operator parameter with respect
-        to an expectation value of the form
-        :math:`\langle \psi | U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p})|\psi\rangle`.
-
-        These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
-        on the value of the expectation value as the parameters are modified.
-        For more details, please see the :mod:`.pennylane.fourier` module.
-
-        Returns:
-            list[tuple[int or float]]: Tuple of frequencies for each parameter.
-            Note that only non-negative frequency values are returned.
-
-        **Example**
-
-        >>> op = qml.PauliX(0)
-        >>> U = qml.exp(op, 1j)
-        >>> U.parameter_frequencies
-        [(2,)]
-
-        For operators that define a generator, the parameter frequencies are directly
-        related to the eigenvalues of the generator:
-
-        >>> gen = qml.generator(U, format="observable")
-        >>> gen
-        PauliX(wires=[0])
-        >>> gen_eigvals = qml.eigvals(gen)
-        >>> qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
-        (2,)
-
-        For more details on this relationship, see :func:`.eigvals_to_frequencies`.
-        """
-        if self.num_params == 1:
-            # if the operator has a single parameter, we can query the
-            # generator, and if defined, use its eigenvalues.
-            try:
-                gen = qml.generator(self, format="observable")
-            except GeneratorUndefinedError as e:
-                raise ParameterFrequenciesUndefinedError(
-                    f"Operation {self.name} does not have parameter frequencies defined."
-                ) from e
-
-            with catch_warnings():
-                filterwarnings(
-                    action="ignore", message=r".+ eigenvalues will be computed numerically\."
-                )
-                eigvals = qml.eigvals(gen)
-
-            eigvals = tuple(np.round(eigvals, 8))
-            return [qml.gradients.eigvals_to_frequencies(eigvals)]
-
-        raise ParameterFrequenciesUndefinedError(
-            f"Operation {self.name} does not have parameter frequencies defined, "
-            "and parameter frequencies can not be computed as no generator is defined."
-        )
 
 
 class Evolution(Exp):

@@ -607,7 +607,7 @@ class TestDifferentiation:
     def test_parameter_frequencies(self):
         """Test parameter_frequencies property"""
         op = Exp(qml.PauliZ(1), 1j)
-        assert op.parameter_frequencies == [(2,)]
+        assert op.parameter_frequencies == (2,)
 
     def test_parameter_frequencies_raises_error(self):
         """Test that parameter_frequencies raises an error if the op.generator() is undefined"""
@@ -628,7 +628,7 @@ class TestDifferentiation:
         with pytest.raises(ParameterFrequenciesUndefinedError):
             op1.parameter_frequencies()
 
-        assert op2.parameter_frequencies == [(4.0,)]
+        assert op2.parameter_frequencies == (4.0,)
 
 
 class TestEvolution:
