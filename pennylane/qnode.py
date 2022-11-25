@@ -693,12 +693,7 @@ class QNode:
             qml.measurements.Counts,
             qml.measurements.AllCounts,
         ):
-            if self.device._has_partitioned_shots():
-                return tuple(res)
-
-            # return a dictionary with counts not as a single-element array
-            return res[0]
-
+            return tuple(res) if self.device._has_partitioned_shots() else res[0]
         if isinstance(self._qfunc_output, Sequence) and any(
             m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
             for m in self._qfunc_output

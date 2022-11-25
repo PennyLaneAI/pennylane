@@ -32,12 +32,11 @@ class TapeError(ValueError):
 
 def _err_msg_for_some_meas_not_qwc(measurements):
     """Error message for the case when some operators measured on the same wire are not qubit-wise commuting."""
-    msg = (
+    return (
         "Only observables that are qubit-wise commuting "
         "Pauli words can be returned on the same wire, "
         f"some of the following measurements do not commute:\n{measurements}"
     )
-    return msg
 
 
 def _validate_computational_basis_sampling(measurements):
