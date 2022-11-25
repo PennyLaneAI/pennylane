@@ -16,33 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation, _Expectation
-
-
-# TODO: Remove this when new CustomMP are the default
-def custom_measurement_process(device, spy):
-
-    assert len(spy.call_args_list) > 0  # make sure method is mocked properly
-
-    samples = device._samples  # pylint: disable=protected-access
-    state = device._state  # pylint: disable=protected-access
-    call_args_list = list(spy.call_args_list)
-    for call_args in call_args_list:
-        obs = call_args.args[1]
-        shot_range, bin_size = (
-            call_args.kwargs["shot_range"],
-            call_args.kwargs["bin_size"],
-        )
-        # no need to use op, because the observable has already been applied to ``self.dev._state``
-        meas = qml.expval(op=obs)
-        old_res = device.expval(obs, shot_range=shot_range, bin_size=bin_size)
-        if device.shots is None:
-            new_res = meas.process_state(state=state, wire_order=device.wires)
-        else:
-            new_res = meas.process_samples(
-                samples=samples, wire_order=device.wires, shot_range=shot_range, bin_size=bin_size
-            )
-        assert qml.math.allequal(old_res, new_res)
+from pennylane.measurements import Expectation
 
 
 # TODO: Remove this when new CustomMP are the default
