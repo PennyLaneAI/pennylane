@@ -54,6 +54,14 @@ ECR = math.array(
         [-1j * 1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
     ]
 )
+CH = math.array(
+    [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
+        [0, 0, 1 / math.sqrt(2), -1 / math.sqrt(2)],
+    ]
+)  # CH gate
 
 # Three qubit gates
 CSWAP = math.array(
@@ -71,6 +79,8 @@ CSWAP = math.array(
 
 Toffoli = math.diag([1 for i in range(8)])
 Toffoli[6:8, 6:8] = math.array([[0, 1], [1, 0]])
+
+CCZ = math.diag([1] * 7 + [-1])
 
 w = math.exp(2 * np.pi * 1j / 8)
 QFT = math.array(
@@ -477,6 +487,42 @@ def ControlledPhaseShift(phi):
         array: the two-wire controlled-phase matrix
     """
     return math.diag([1, 1, 1, math.exp(1j * phi)])
+
+
+def CPhaseShift00(phi):
+    r"""Controlled phase shift 00.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        array: the two-wire controlled-phase matrix
+    """
+    return np.diag([np.exp(1j * phi), 1, 1, 1])
+
+
+def CPhaseShift01(phi):
+    r"""Controlled phase shift 01.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        array: the two-wire controlled-phase matrix
+    """
+    return np.diag([1, np.exp(1j * phi), 1, 1])
+
+
+def CPhaseShift10(phi):
+    r"""Controlled phase shift 10.
+
+    Args:
+        phi (float): rotation angle
+
+    Returns:
+        array: the two-wire controlled-phase matrix
+    """
+    return np.diag([1, 1, np.exp(1j * phi), 1])
 
 
 def SingleExcitation(phi):
