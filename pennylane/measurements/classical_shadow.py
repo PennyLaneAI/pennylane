@@ -307,21 +307,6 @@ class ClassicalShadow(CustomMeasurement):
         return int
 
     def shape(self, device=None):
-        """The expected output shape of the ClassicalShadow.
-
-        Args:
-            device (.Device): a PennyLane device to use for determining the shape
-
-        Returns:
-            tuple: the output shape; this is ``(2, T, n)`` when the return type
-            is ``Shadow``, where ``T`` is the number of device shots and ``n`` is
-            the number of measured wires, and is a scalar when the return type
-            is ``ShadowExpval``
-
-        Raises:
-            MeasurementShapeError: when a device is not provided and the return
-            type is ``Shadow``, since the output shape is dependent on the device.
-        """
         # otherwise, the return type requires a device
         if device is None:
             raise MeasurementShapeError(
@@ -389,21 +374,6 @@ class _ShadowExpval(CustomMeasurement):
         return float
 
     def shape(self, device=None):
-        """The expected output shape of the ClassicalShadow.
-
-        Args:
-            device (.Device): a PennyLane device to use for determining the shape
-
-        Returns:
-            tuple: the output shape; this is ``(2, T, n)`` when the return type
-            is ``Shadow``, where ``T`` is the number of device shots and ``n`` is
-            the number of measured wires, and is a scalar when the return type
-            is ``ShadowExpval``
-
-        Raises:
-            MeasurementShapeError: when a device is not provided and the return
-            type is ``Shadow``, since the output shape is dependent on the device.
-        """
         return (1,)
 
     @property
