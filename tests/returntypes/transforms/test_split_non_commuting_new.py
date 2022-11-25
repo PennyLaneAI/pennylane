@@ -221,7 +221,6 @@ class TestAutodiffSplitNonCommuting:
         assert all(np.isclose(res, exp_res))
         assert all(np.isclose(grad, exp_grad).flatten())
 
-    # TODO: Currently not possible to jit multiple expvals
     @pytest.mark.jax
     def test_split_with_jax(self):
         """Test that results after splitting are still differentiable with jax"""
@@ -232,6 +231,32 @@ class TestAutodiffSplitNonCommuting:
         dev = qml.device("default.qubit.jax", wires=3)
 
         @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            return (
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+                qml.expval(qml.PauliY(0)),
+                qml.expval(qml.PauliZ(0)),
+            )
+
+        params = jnp.array([0.5, 0.5])
+        res = circuit(params)
+        grad = jax.jacobian(circuit)(params)
+        assert all(np.isclose(res, exp_res))
+        assert all(np.isclose(grad, exp_grad, atol=1e-5).flatten())
+
+    @pytest.mark.jax
+    def test_split_with_jax_jit(self):
+        """Test that results after splitting are still differentiable with jax-jit"""
+
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax-jit")
         def circuit(params):
             qml.RX(params[0], wires=0)
             qml.RY(params[1], wires=1)
