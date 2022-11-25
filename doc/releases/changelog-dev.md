@@ -34,7 +34,7 @@
     [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
 
   * Add `ClassicalShadow` class.
-      [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
   * Add `_ShadowExpval` class.
     [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
