@@ -33,6 +33,9 @@
   * Add `_MutualInfo` class.
     [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
 
+  * Add `ClassicalShadow` class.
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
+
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
   [(#3378)](https://github.com/PennyLaneAI/pennylane/pull/3378)
@@ -132,6 +135,7 @@
   [#3374](https://github.com/PennyLaneAI/pennylane/pull/3374)
 
   Example with a single measurement:
+
   ```python
   dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
 
@@ -144,7 +148,8 @@
   def cost(a):
       return qml.math.stack(circuit(a))
   ```
-  ```
+
+  ```pycon
   >>> qml.enable_return()
   >>> a = np.array(0.4)
   >>> circuit(a)
@@ -154,7 +159,9 @@
   >>> qml.jacobian(cost)(a)
   array([-0.391     , -0.389     , -0.38433333])
   ```
+
   Example with multiple measurements:
+
   ```python
   dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
 
@@ -169,7 +176,8 @@
       res = circuit(a)
       return qml.math.stack([qml.math.hstack(r) for r in res])
   ```
-  ```
+
+  ```pycon
   >>> circuit(a)
   ((array(0.904), array([0.952, 0.   , 0.   , 0.048])),
    (array(0.915), array([0.9575, 0.    , 0.    , 0.0425])),
@@ -197,6 +205,10 @@
   `OrderedDict` and encapsulates the queue. Consequentially, this also applies to the `QuantumTape`
   class which inherits from `AnnotatedQueue`.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
+
+* Change class name `ShadowMeasurementProcess` to `ClassicalShadow`, to be consistent with the
+  `qml.classical_shadow` function name.
+  [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 <h3>Deprecations</h3>
 
