@@ -9,17 +9,23 @@
     method to process samples/quantum state.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
 
+  * Add `_Expectation` class.
+    [#3343](https://github.com/PennyLaneAI/pennylane/pull/3343)
+
   * Add `_Sample` class.
     [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
-  * Add `_Counts` class.
-    [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
+  * Add `_Var` class.
+    [#3312](https://github.com/PennyLaneAI/pennylane/pull/3312)
 
   * Add `_Probability` class.
     [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
-  * Add `_Var` class.
-    [#3312](https://github.com/PennyLaneAI/pennylane/pull/3312)
+  * Add `_Counts` class.
+    [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
+
+  * Add `_State` class.
+    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
   * Add `_VnEntropy` class.
     [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
@@ -27,11 +33,11 @@
   * Add `_MutualInfo` class.
     [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
 
-  * Add `_Expectation` class.
-    [#3343](https://github.com/PennyLaneAI/pennylane/pull/3343)
+  * Add `ClassicalShadow` class.
+      [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
-  * Add `_State` class.
-    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+  * Add `_ShadowExpval` class.
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
@@ -55,6 +61,51 @@
 
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
+  
+* New parametric qubit ops `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10` which perform a phaseshift, similar to `qml.ControlledPhaseShift` but on different positions of the state vector.
+  [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
+  
+* Support for purity computation is added. The `qml.math.purity` function computes the purity from a state vector or a density matrix:
+
+  [#3290](https://github.com/PennyLaneAI/pennylane/pull/3290)
+
+  ```pycon
+  >>> x = [1, 0, 0, 1] / np.sqrt(2)
+  >>> qml.math.purity(x, [0, 1])
+  1.0
+  >>> qml.math.purity(x, [0])
+  0.5
+    
+  >>> x = [[1 / 2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1 / 2]]
+  >>> qml.math.purity(x, [0, 1])
+  0.5
+  ```
+
+  The `qml.qinfo.purity` can be used to transform a QNode returning a state to a function that returns the purity:
+
+  ```python3
+  dev = qml.device("default.mixed", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+    qml.IsingXX(x, wires=[0, 1])
+    return qml.state()
+  ```
+
+  ```pycon
+  >>> qml.qinfo.purity(circuit, wires=[0])(np.pi / 2)
+  0.5
+  >>> qml.qinfo.purity(circuit, wires=[0, 1])(np.pi / 2)
+  1.0
+  ```
+
+  Taking the gradient is also supported:
+
+  ```pycon
+  >>> param = np.array(np.pi / 4, requires_grad=True)
+  >>> qml.grad(qml.qinfo.purity(circuit, wires=[0]))(param)
+  -0.5
+  ```
 
 <h3>Improvements</h3>
 
@@ -68,7 +119,81 @@
   [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
 
 * A representation has been added to the `Molecule` class.
-  [#3364](https://github.com/PennyLaneAI/pennylane/pull/3364)
+  [(#3364)](https://github.com/PennyLaneAI/pennylane/pull/3364)
+
+* Add detail to the error message when the `insert` transform
+  fails to diagonalize non-qubit-wise-commuting observables.
+  [(#3381)](https://github.com/PennyLaneAI/pennylane/pull/3381)
+
+* Remove private `_wires` setter from the `Controlled.map_wires` method.
+  [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
+  
+* `QuantumTape._process_queue` has been moved to `qml.queuing.process_queue` to disentangle
+  its functionality from the `QuantumTape` class.
+  [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
+
+<h4>Return types project</h4>
+
+* The autograd interface now supports devices with shot vectors.
+  [#3374](https://github.com/PennyLaneAI/pennylane/pull/3374)
+
+  Example with a single measurement:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(a):
+      qml.RY(a, wires=0)
+      qml.RX(0.2, wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  def cost(a):
+      return qml.math.stack(circuit(a))
+  ```
+
+  ```pycon
+  >>> qml.enable_return()
+  >>> a = np.array(0.4)
+  >>> circuit(a)
+  (array(0.902), array(0.922), array(0.896))
+  >>> cost(a)
+  array([0.9       , 0.907     , 0.89733333])
+  >>> qml.jacobian(cost)(a)
+  array([-0.391     , -0.389     , -0.38433333])
+  ```
+
+  Example with multiple measurements:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
+
+  @qml.qnode(dev, diff_method="parameter-shift")
+  def circuit(a):
+      qml.RY(a, wires=0)
+      qml.RX(0.2, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+  def cost(a):
+      res = circuit(a)
+      return qml.math.stack([qml.math.hstack(r) for r in res])
+  ```
+
+  ```pycon
+  >>> circuit(a)
+  ((array(0.904), array([0.952, 0.   , 0.   , 0.048])),
+   (array(0.915), array([0.9575, 0.    , 0.    , 0.0425])),
+   (array(0.902), array([0.951, 0.   , 0.   , 0.049])))
+  >>> cost(a)
+  array([[0.91      , 0.955     , 0.        , 0.        , 0.045     ],
+         [0.895     , 0.9475    , 0.        , 0.        , 0.0525    ],
+         [0.90666667, 0.95333333, 0.        , 0.        , 0.04666667]])
+  >>> qml.jacobian(cost)(a)
+  array([[-0.37      , -0.185     ,  0.        ,  0.        ,  0.185     ],
+         [-0.409     , -0.2045    ,  0.        ,  0.        ,  0.2045    ],
+         [-0.37133333, -0.18566667,  0.        ,  0.        ,  0.18566667]])
+  ```
 
 <h3>Breaking changes</h3>
 
@@ -78,6 +203,15 @@
 
 * Python 3.7 support is no longer maintained.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
+
+* Instead of having an `OrderedDict` attribute called `_queue`, `AnnotatedQueue` now inherits from
+  `OrderedDict` and encapsulates the queue. Consequentially, this also applies to the `QuantumTape`
+  class which inherits from `AnnotatedQueue`.
+  [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
+
+* Change class name `ShadowMeasurementProcess` to `ClassicalShadow`, to be consistent with the
+  `qml.classical_shadow` function name.
+  [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 <h3>Deprecations</h3>
 
@@ -93,14 +227,31 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   * `qml.tape.QuantumTape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
   * `qml.QueuingContext` is now `qml.QueuingManager`
   * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info`: Use plain `update_info`
+  
+* `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
+  [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
 
 <h3>Documentation</h3>
 
+* Adds developer documentation for the queuing module.
+  [(#3268)](https://github.com/PennyLaneAI/pennylane/pull/3268)
+
+* Corrects more mentions for diagonalizing gates for all relevant operations. The docstrings for `compute_eigvals` used
+  to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is
+  the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement
+  $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making
+  $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis.
+  [(#3409)](https://github.com/PennyLaneAI/pennylane/pull/3409)
+
 <h3>Bug fixes</h3>
+
+* Fixed a bug that made `gradients.param_shift` raise an error when used with unshifted terms only
+  in a custom recipe, and when using any unshifted terms at all under the new return type system.
+  [(#3177)](https://github.com/PennyLaneAI/pennylane/pull/3177)
 
 * Original tape `_obs_sharing_wires` attribute is updated during its expansion.
   [#3293](https://github.com/PennyLaneAI/pennylane/pull/3293)
-  
+
 * Small fix of `MeasurementProcess.map_wires`, where both the `self.obs` and `self._wires`
   attributes were modified.
   [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
@@ -124,8 +275,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
 Juan Miguel Arrazola
 Utkarsh Azad
+Astral Cai
 Pieter Eendebak
 Lillian M. A. Frederiksen
 Soran Jahangiri
@@ -133,3 +286,7 @@ Edward Jiang
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Matthew Silverman
+Antal Száva
+David Wierichs
+Moritz Willmann

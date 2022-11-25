@@ -171,8 +171,8 @@ class TestQueuing:
             base = TempOperator("a")
             op = SymbolicOp(base)
 
-        assert tape._queue[base]["owner"] is op
-        assert tape._queue[op]["owns"] is base
+        assert tape.get_info(base)["owner"] is op
+        assert tape.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_queuing_base_defined_outside(self):
@@ -182,8 +182,8 @@ class TestQueuing:
         with qml.tape.QuantumTape() as tape:
             op = SymbolicOp(base)
 
-        assert len(tape._queue) == 1
-        assert tape._queue[op]["owns"] is base
+        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
+        assert tape.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_false(self):

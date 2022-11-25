@@ -18,17 +18,18 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
-import itertools
 import functools
+import itertools
 from string import ascii_letters as ABC
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
+from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
+
 from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
@@ -122,6 +123,9 @@ class DefaultQubit(QubitDevice):
         "CZ",
         "PhaseShift",
         "ControlledPhaseShift",
+        "CPhaseShift00",
+        "CPhaseShift01",
+        "CPhaseShift10",
         "CPhase",
         "RX",
         "RY",
@@ -938,7 +942,7 @@ class DefaultQubit(QubitDevice):
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow measurement process
+            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
         Returns:

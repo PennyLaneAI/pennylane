@@ -45,30 +45,38 @@ def custom_measurement_process(device, spy):
         assert qml.math.allequal(old_res, new_res)
 
 
+# TODO: Remove this when new CustomMP are the default
+def custom_measurement_process(device, spy):
+
+    assert len(spy.call_args_list) > 0  # make sure method is mocked properly
+
+    samples = device._samples  # pylint: disable=protected-access
+    state = device._state  # pylint: disable=protected-access
+    call_args_list = list(spy.call_args_list)
+    for call_args in call_args_list:
+        obs = call_args.args[1]
+        shot_range, bin_size = (
+            call_args.kwargs["shot_range"],
+            call_args.kwargs["bin_size"],
+        )
+        # no need to use op, because the observable has already been applied to ``self.dev._state``
+        meas = qml.expval(op=obs)
+        old_res = device.expval(obs, shot_range=shot_range, bin_size=bin_size)
+        if device.shots is None:
+            new_res = meas.process_state(state=state, wire_order=device.wires)
+        else:
+            new_res = meas.process_samples(
+                samples=samples, wire_order=device.wires, shot_range=shot_range, bin_size=bin_size
+            )
+        assert qml.math.allequal(old_res, new_res)
+
+
 class TestExpval:
     """Tests for the expval function"""
 
-    def test_expval_properties(self):
-        """Test that the properties are correct."""
-        meas = qml.expval(op=qml.PauliX(0))
-        assert meas.numeric_type == float
-        assert meas.return_type == Expectation
-
-    def test_queue(self):
-        """Test that the right measurement class is queued."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.expval(op=qml.PauliX(0))
-
-        circuit()
-
-        assert isinstance(circuit.tape[0], _Expectation)
-
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_value(self, r_dtype, mocker, shots):
+    def test_value(self, tol, r_dtype, mocker, shots):
         """Test that the expval interface works"""
         dev = qml.device("default.qubit", wires=2, shots=shots)
         dev.R_DTYPE = r_dtype
@@ -85,7 +93,10 @@ class TestExpval:
         res = circuit(x)
         expected = -np.sin(x)
 
-        assert np.allclose(res, expected, atol=0.05, rtol=0.05)
+        atol = tol if shots is None else 0.05
+        rtol = 0 if shots is None else 0.05
+
+        assert np.allclose(res, expected, atol=atol, rtol=rtol)
         assert res.dtype == r_dtype
 
         custom_measurement_process(new_dev, spy)
@@ -156,8 +167,8 @@ class TestExpval:
         assert res.shape(dev) == (len(shot_vector),)
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
-    def test_projector_var(self, shots, mocker):
-        """Tests that the variance of a ``Projector`` object is computed correctly."""
+    def test_projector_expval(self, shots, mocker):
+        """Tests that the expectation of a ``Projector`` object is computed correctly."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
         basis_state = np.array([0, 0, 0])

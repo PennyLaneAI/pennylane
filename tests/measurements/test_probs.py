@@ -66,7 +66,6 @@ def init_state():
     return _init_state
 
 
-# pylint: disable=attribute-defined-outside-init, redefined-outer-name
 class TestProbs:
     """Tests for the probs function"""
 
@@ -206,10 +205,10 @@ class TestProbs:
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(0)
-            return qml.probs(wires=[0])
+            return qml.probs(wires=dev.wires)
 
         res = circuit()
-        expected = np.array([0, 1])
+        expected = np.array([0, 0, 0, 0, 1, 0, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         custom_measurement_process(dev, spy)

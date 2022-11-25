@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as npp
-from pennylane.measurements import MeasurementProcess, ObservableReturnTypes, _Expectation
+from pennylane.measurements import _Expectation
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qml.RX,
