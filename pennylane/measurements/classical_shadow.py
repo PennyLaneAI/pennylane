@@ -84,7 +84,7 @@ def shadow_expval(H, k=1, seed_recipes=True):
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
     seed = np.random.randint(2**30) if seed_recipes else None
-    return ClassicalShadow(ShadowExpval, H=H, seed=seed, k=k)
+    return _ShadowExpval(ShadowExpval, H=H, seed=seed, k=k)
 
 
 def classical_shadow(wires, seed_recipes=True):
@@ -227,10 +227,8 @@ class ClassicalShadow(CustomMeasurement):
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
-    def __init__(self, *args, seed=None, H=None, k=1, **kwargs):
+    def __init__(self, *args, seed=None, **kwargs):
         self.seed = seed
-        self.H = H
-        self.k = k
         super().__init__(*args, **kwargs)
 
     def process(self, tape, device):
@@ -316,7 +314,7 @@ class ClassicalShadow(CustomMeasurement):
             type: This is ``int`` when the return type is ``Shadow``,
             and ``float`` when the return type is ``ShadowExpval``.
         """
-        return int if self.return_type is Shadow else float
+        return int
 
     def shape(self, device=None):
         """The expected output shape of the ClassicalShadow.
@@ -334,10 +332,6 @@ class ClassicalShadow(CustomMeasurement):
             MeasurementShapeError: when a device is not provided and the return
             type is ``Shadow``, since the output shape is dependent on the device.
         """
-        # the return value of expval is always a scalar
-        if self.return_type is ShadowExpval:
-            return (1,)
-
         # otherwise, the return type requires a device
         if device is None:
             raise MeasurementShapeError(
@@ -349,15 +343,88 @@ class ClassicalShadow(CustomMeasurement):
         # and the second indicate the indices of the unitaries used
         return (1, 2, device.shots, len(self.wires))
 
+    def __copy__(self):
+        obj = super().__copy__()
+        obj.seed = self.seed
+        return obj
+
+
+class _ShadowExpval(CustomMeasurement):
+    """Measures the expectation value of an operator using the classical shadow measurement process.
+
+    This has the same arguments as the base class MeasurementProcess, plus other additional
+    arguments specific to the classical shadow protocol.
+
+    Args:
+        args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
+        seed (Union[int, None]): The seed used to generate the random measurements
+        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
+            to compute the expectation value over. Only used when ``return_type`` is ``ShadowExpval``.
+        k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
+            ``k=1`` corresponds to simply taking the mean over all measurements. Only used
+            when ``return_type`` is ``ShadowExpval``.
+        kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
+    """
+
+    def __init__(self, *args, H, seed=None, k=1, **kwargs):
+        self.seed = seed
+        self.H = H
+        self.k = k
+        super().__init__(*args, **kwargs)
+
+    def process(self, tape, device):
+        """Compute expectation values using classical shadows in a differentiable manner.
+
+        Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
+
+        Args:
+            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow expectation
+                value measurement process
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+
+        Returns:
+            float: expectation value estimate.
+        """
+        bits, recipes = qml.classical_shadow(wires=self.wires, seed_recipes=self.seed).process(
+            tape, device
+        )
+        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
+        return shadow.expval(self.H, self.k)
+
+    @property
+    def numeric_type(self):
+        """The Python numeric type of the measurement result.
+
+        Returns:
+            type: This is ``int`` when the return type is ``Shadow``,
+            and ``float`` when the return type is ``ShadowExpval``.
+        """
+        return float
+
+    def shape(self, device=None):
+        """The expected output shape of the ClassicalShadow.
+
+        Args:
+            device (.Device): a PennyLane device to use for determining the shape
+
+        Returns:
+            tuple: the output shape; this is ``(2, T, n)`` when the return type
+            is ``Shadow``, where ``T`` is the number of device shots and ``n`` is
+            the number of measured wires, and is a scalar when the return type
+            is ``ShadowExpval``
+
+        Raises:
+            MeasurementShapeError: when a device is not provided and the return
+            type is ``Shadow``, since the output shape is dependent on the device.
+        """
+        return (1,)
+
     @property
     def wires(self):
         r"""The wires the measurement process acts on.
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.return_type is Shadow:
-            return self._wires
-
         if isinstance(self.H, Iterable):
             return Wires.all_wires([h.wires for h in self.H])
 
