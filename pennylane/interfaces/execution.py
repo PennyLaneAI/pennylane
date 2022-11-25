@@ -237,7 +237,7 @@ def _execute_new(
     cache=True,
     cachesize=10000,
     max_diff=1,
-    override_shots=False,
+    override_shots: int = False,
     expand_fn="device",
     max_expansion=10,
     device_batch_transform=True,
@@ -269,6 +269,8 @@ def _execute_new(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        override_shots (int): The number of shots to use for the execution. If ``False``, then the
+            number of shots on the device is used.
         expand_fn (function): Tape expansion function to be called prior to device execution.
             Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
             single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
@@ -336,7 +338,8 @@ def _execute_new(
     gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
-        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+        dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
+        tapes, batch_fn = qml.transforms.map_batch_transform(dev_batch_transform, tapes)
     else:
         batch_fn = lambda res: res  # pragma: no cover
 
@@ -470,7 +473,7 @@ def execute(
     cache=True,
     cachesize=10000,
     max_diff=1,
-    override_shots=False,
+    override_shots: int = False,
     expand_fn="device",
     max_expansion=10,
     device_batch_transform=True,
@@ -502,6 +505,8 @@ def execute(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        override_shots (int): The number of shots to use for the execution. If ``False``, then the
+            number of shots on the device is used.
         expand_fn (function): Tape expansion function to be called prior to device execution.
             Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
             single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
@@ -599,7 +604,8 @@ def execute(
     gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
-        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+        dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
+        tapes, batch_fn = qml.transforms.map_batch_transform(dev_batch_transform, tapes)
     else:
         batch_fn = lambda res: res
 
