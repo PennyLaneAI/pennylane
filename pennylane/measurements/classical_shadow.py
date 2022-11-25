@@ -220,11 +220,6 @@ class ClassicalShadow(CustomMeasurement):
     Args:
         args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
         seed (Union[int, None]): The seed used to generate the random measurements
-        H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
-            to compute the expectation value over. Only used when ``return_type`` is ``ShadowExpval``.
-        k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
-            ``k=1`` corresponds to simply taking the mean over all measurements. Only used
-            when ``return_type`` is ``ShadowExpval``.
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
@@ -263,8 +258,8 @@ class ClassicalShadow(CustomMeasurement):
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow measurement process
-            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            tape (QuantumScript): the tape to be processed
+            device (Device): the device used to process the tape
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -309,35 +304,25 @@ class ClassicalShadow(CustomMeasurement):
 
     @property
     def numeric_type(self):
-        """The Python numeric type of the measurement result.
-
-        Returns:
-            type: ``int``.
-        """
         return int
 
     @property
     def return_type(self):
         return Shadow
 
-    def shape(self, device):
-        """The expected output shape of the ClassicalShadow.
-
-        Args:
-            device (.Device): a PennyLane device to use for determining the shape
-
-        Returns:
-            tuple: the output shape; this is ``(2, T, n)``, where ``T`` is the number of device
-            shots and ``n`` is the number of measured wires
-        """
+    def shape(self, device=None):
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
         return (1, 2, device.shots, len(self.wires))
 
     def __copy__(self):
-        obj = super().__copy__()
-        obj.seed = self.seed
-        return obj
+        return self.__class__(
+            self.return_type,
+            obs=copy.copy(self.obs),
+            seed=self.seed,
+            wires=self._wires,
+            eigvals=self._eigvals,
+        )
 
 
 class _ShadowExpval(CustomMeasurement):
@@ -368,8 +353,8 @@ class _ShadowExpval(CustomMeasurement):
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
 
         Args:
-            tape (QuantumScript): the quantum script to process
-            device (Device): the device used to process the given tape
+            tape (QuantumScript): the tape to be processed
+            device (Device): the device used to process the tape
 
         Returns:
             float: expectation value estimate.
@@ -382,11 +367,6 @@ class _ShadowExpval(CustomMeasurement):
 
     @property
     def numeric_type(self):
-        """The Python numeric type of the measurement result.
-
-        Returns:
-            type: ``float``
-        """
         return float
 
     @property
@@ -394,14 +374,6 @@ class _ShadowExpval(CustomMeasurement):
         return ShadowExpval
 
     def shape(self, device=None):
-        """The expected output shape of the ClassicalShadow.
-
-        Args:
-            device (.Device): a PennyLane device to use for determining the shape
-
-        Returns:
-            tuple: output shape
-        """
         return (1,)
 
     @property
@@ -418,13 +390,10 @@ class _ShadowExpval(CustomMeasurement):
     def queue(self, context=qml.QueuingManager):
         """Append the measurement process to an annotated queue, making sure
         the observable is not queued"""
-        if self.H is not None:
-            Hs = self.H if isinstance(self.H, Iterable) else [self.H]
-            for H in Hs:
-                context.update_info(H, owner=self)
-            context.append(self, owns=Hs)
-        else:
-            context.append(self)
+        Hs = self.H if isinstance(self.H, Iterable) else [self.H]
+        for H in Hs:
+            context.update_info(H, owner=self)
+        context.append(self, owns=Hs)
 
         return self
 
