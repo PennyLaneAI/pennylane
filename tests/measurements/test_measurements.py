@@ -17,13 +17,13 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import (
+    ClassicalShadow,
     Counts,
     Expectation,
     MeasurementProcess,
     MidMeasure,
     Probability,
     Sample,
-    ShadowMeasurementProcess,
     State,
     Variance,
     _Counts,
@@ -38,6 +38,7 @@ from pennylane.measurements import (
     sample,
     var,
 )
+from pennylane.measurements.classical_shadow import _ShadowExpval
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
 
@@ -398,8 +399,8 @@ class TestExpansion:
             _State(),
             _VnEntropy(wires=["a", 1]),
             _MutualInfo(wires=[["a", 1], ["b", 2]]),
-            ShadowMeasurementProcess(wires=[["a", 1], ["b", 2]]),
-            ShadowMeasurementProcess(H=qml.PauliX("a")),
+            ClassicalShadow(wires=[["a", 1], ["b", 2]]),
+            _ShadowExpval(H=qml.PauliX("a")),
         ],
     )
     def test_samples_computational_basis_false(self, m):
