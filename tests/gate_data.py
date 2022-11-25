@@ -80,6 +80,8 @@ CSWAP = math.array(
 Toffoli = math.diag([1 for i in range(8)])
 Toffoli[6:8, 6:8] = math.array([[0, 1], [1, 0]])
 
+CCZ = math.diag([1] * 7 + [-1])
+
 w = math.exp(2 * np.pi * 1j / 8)
 QFT = math.array(
     [
