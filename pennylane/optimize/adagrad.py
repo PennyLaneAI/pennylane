@@ -42,7 +42,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
         eps (float): offset :math:`\epsilon` added for numerical stability
-    
+
     .. note::
 
         When using ``torch``, ``tensorflow`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces>` for suitable optimizers.
