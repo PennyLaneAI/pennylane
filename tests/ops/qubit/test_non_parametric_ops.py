@@ -19,7 +19,26 @@ import itertools
 
 import numpy as np
 import pytest
-from gate_data import CNOT, CSWAP, CZ, ECR, ISWAP, SISWAP, SWAP, H, I, S, T, Toffoli, X, Y, Z, CH
+
+from gate_data import (
+    CNOT,
+    CSWAP,
+    CZ,
+    CCZ,
+    ECR,
+    ISWAP,
+    SISWAP,
+    SWAP,
+    H,
+    I,
+    S,
+    T,
+    Toffoli,
+    X,
+    Y,
+    Z,
+    CH,
+)
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
@@ -36,6 +55,7 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.ISWAP, ISWAP),
     (qml.SISWAP, SISWAP),
     (qml.CZ, CZ),
+    (qml.CCZ, CCZ),
     (qml.S, S),
     (qml.T, T),
     (qml.CSWAP, CSWAP),
@@ -400,6 +420,48 @@ class TestDecompositions:
                         ]
                     )
                 )
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+    def test_ccz_decomposition(self, tol):
+        """Tests that the decomposition of the CCZ gate is correct"""
+        op = qml.CCZ(wires=[0, 1, 2])
+        res = op.decomposition()
+
+        assert len(res) == 15
+
+        mats = []
+
+        for i in reversed(res):
+            if i.wires == Wires([2]):
+                mats.append(np.kron(np.eye(4), i.matrix()))
+            elif i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), np.kron(i.matrix(), np.eye(2))))
+            elif i.wires == Wires([0]):
+                mats.append(np.kron(i.matrix(), np.eye(4)))
+            elif i.wires == Wires([0, 1]) and i.name == "CNOT":
+                mats.append(np.kron(i.matrix(), np.eye(2)))
+            elif i.wires == Wires([1, 2]) and i.name == "CNOT":
+                mats.append(np.kron(np.eye(2), i.matrix()))
+            elif i.wires == Wires([0, 2]) and i.name == "CNOT":
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                        ]
+                    )
+                )
+            else:
+                raise Exception("Unexpected gate in decomposition.")
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
@@ -1090,6 +1152,7 @@ period_two_ops = (
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
     qml.ECR(wires=(0, 1)),
+    qml.CCZ(wires=(0, 1, 2)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
@@ -1275,6 +1338,11 @@ class TestControlledMethod:
         out = original._controlled("a")
         assert qml.equal(original, out)
 
+    def test_CZ(self):
+        """Test the PauliZ _controlled method."""
+        out = qml.CZ(wires=[0, 1])._controlled("a")
+        assert qml.equal(out, qml.CCZ(("a", 0, 1)))
+
 
 class TestSparseMatrix:
     @pytest.mark.parametrize("op, mat", SPARSE_MATRIX_SUPPORTED_OPERATIONS)
@@ -1305,6 +1373,7 @@ label_data = [
     (qml.ECR(wires=(0, 1)), "ECR", "ECR⁻¹"),
     (qml.SISWAP(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
+    (qml.CCZ(wires=(0, 1, 2)), "Z", "Z"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "X", "X"),
     (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X", "X"),
@@ -1339,6 +1408,7 @@ control_data = [
     (qml.CY(wires=(0, 1)), Wires(0)),
     (qml.CH(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
+    (qml.CCZ(wires=(0, 1, 2)), Wires([0, 1])),
     (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
     (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
 ]
@@ -1364,6 +1434,7 @@ involution_ops = [  # ops who are their own inverses
     qml.SWAP((0, 1)),
     qml.ECR((0, 1)),
     qml.CSWAP((0, 1, 2)),
+    qml.CCZ((0, 1, 2)),
     qml.Toffoli((0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
     qml.Barrier(0),
