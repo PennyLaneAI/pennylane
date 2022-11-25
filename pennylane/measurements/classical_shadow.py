@@ -272,7 +272,7 @@ class ClassicalShadow(CustomMeasurement):
         with qml.interfaces.set_shots(device, shots=1):
             # slow implementation but works for all devices
             n_qubits = len(wires)
-            mapped_wires = np.array(self.map_wires(wires))
+            mapped_wires = np.array(device.map_wires(wires))
 
             if seed is not None:
                 # seed the random measurement generation so that recipes
