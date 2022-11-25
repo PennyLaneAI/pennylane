@@ -304,12 +304,6 @@ class ClassicalShadow(CustomMeasurement):
 
     @property
     def numeric_type(self):
-        """The Python numeric type of the measurement result.
-
-        Returns:
-            type: This is ``int`` when the return type is ``Shadow``,
-            and ``float`` when the return type is ``ShadowExpval``.
-        """
         return int
 
     def shape(self, device=None):
@@ -392,12 +386,6 @@ class _ShadowExpval(CustomMeasurement):
 
     @property
     def numeric_type(self):
-        """The Python numeric type of the measurement result.
-
-        Returns:
-            type: This is ``int`` when the return type is ``Shadow``,
-            and ``float`` when the return type is ``ShadowExpval``.
-        """
         return float
 
     def shape(self, device=None):
