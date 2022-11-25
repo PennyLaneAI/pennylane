@@ -42,6 +42,7 @@ Symbolic Classes
     ~CompositeOp
     ~Controlled
     ~ControlledOp
+    ~Evolution
     ~Exp
     ~Pow
     ~Prod
