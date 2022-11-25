@@ -57,6 +57,24 @@ class TestGetOperationRecipe:
             assert qml.math.allclose(np.sort(s), exp_out_shifts)
             assert qml.math.allclose(np.sort(out_recipe[:, 2]), np.sort(exp_out_shifts))
 
+    def test_qnode_custom_recipe(self):
+        """Test a custom recipe using a QNode."""
+        dev = qml.device("default.qubit", wires=2)
+
+        x = np.array(0.4, requires_grad=True)
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, 0)
+            qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        # Incorrect gradient recipe, but this test only checks execution with an unshifted term.
+        recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],)
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=recipes)
+        assert len(tapes) == 2
+
+        res = fn(qml.execute(tapes, dev, None))
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+
     @pytest.mark.parametrize(
         "orig_op, frequencies, shifts",
         [
@@ -441,6 +459,76 @@ class TestParamShift:
         # Test that executing the tapes and the postprocessing function works
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad, -np.sin(x[0] + x[1]), atol=1e-5)
+
+    @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
+    @pytest.mark.parametrize("multi_measure", [False, True])
+    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe, multi_measure):
+        """Test that if the gradient recipe has a zero-shift component, then
+        the tape is executed only once using the current parameter
+        values."""
+        dev = qml.device("default.qubit", wires=2)
+        x = [0.543, -0.654]
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x[0], wires=[0])
+            qml.RX(x[1], wires=[0])
+            qml.expval(qml.PauliZ(0))
+            if multi_measure:
+                qml.expval(qml.PauliZ(1))
+
+        gradient_recipes = tuple(
+            [[-1e7, 1, 0], [1e7, 1, 0]] if i in ops_with_custom_recipe else None for i in range(2)
+        )
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+
+        # two tapes per parameter that doesn't use a custom recipe,
+        # plus one global (unshifted) call if at least one uses the custom recipe
+        num_ops_standard_recipe = tape.num_params - len(ops_with_custom_recipe)
+        assert len(tapes) == 2 * num_ops_standard_recipe + int(
+            tape.num_params != num_ops_standard_recipe
+        )
+        # Test that executing the tapes and the postprocessing function works
+        grad = fn(qml.execute(tapes, dev, None))
+        if multi_measure:
+            expected = np.array([[-np.sin(x[0] + x[1])] * 2, [0, 0]])
+            # The custom recipe estimates gradients to be 0
+            for i in ops_with_custom_recipe:
+                expected[0, i] = 0
+        else:
+            expected = [
+                -np.sin(x[0] + x[1]) if i not in ops_with_custom_recipe else 0 for i in range(2)
+            ]
+        assert qml.math.allclose(grad, expected, atol=1e-5)
+
+    @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
+    def test_custom_recipe_mixing_unshifted_shifted(self, ops_with_custom_recipe):
+        """Test that if the gradient recipe has a zero-shift component, then
+        the tape is executed only once using the current parameter
+        values."""
+        dev = qml.device("default.qubit", wires=2)
+        x = [0.543, -0.654]
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x[0], wires=[0])
+            qml.RX(x[1], wires=[0])
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(1))
+
+        gradient_recipes = tuple(
+            [[-1e-7, 1, 0], [1e-7, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]]
+            if i in ops_with_custom_recipe
+            else None
+            for i in range(2)
+        )
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+
+        # two tapes per parameter, independent of recipe
+        # plus one global (unshifted) call if at least one uses the custom recipe
+        assert len(tapes) == 2 * tape.num_params + int(len(ops_with_custom_recipe) > 0)
+        # Test that executing the tapes and the postprocessing function works
+        grad = fn(qml.execute(tapes, dev, None))
+        assert qml.math.allclose(grad[0], -np.sin(x[0] + x[1]), atol=1e-5)
+        assert qml.math.allclose(grad[1], 0, atol=1e-5)
 
     @pytest.mark.parametrize("y_wire", [0, 1])
     def test_f0_provided(self, y_wire):

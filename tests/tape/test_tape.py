@@ -895,28 +895,6 @@ class TestParameters:
 class TestInverseAdjoint:
     """Tests for tape inversion"""
 
-    def test_inverse(self):
-        """Test that inversion works as expected"""
-        init_state = np.array([1, 1])
-        p = [0.1, 0.2, 0.3, 0.4]
-
-        with QuantumTape() as tape:
-            prep = qml.BasisState(init_state, wires=[0, "a"])
-            ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
-            m1 = qml.probs(wires=0)
-            m2 = qml.probs(wires="a")
-
-        tape.inv()
-
-        # check that operation order is reversed
-        assert [o.name for o in tape.operations] == ["BasisState", "CNOT", "Rot", "RX"]
-
-        # check that operations are inverted
-        assert np.allclose(tape.operations[2].parameters, -np.array(p[-1:0:-1]))
-
-        # check that parameter order has reversed
-        assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
-
     def test_adjoint(self):
         """Test that tape.adjoint is a copy of in-place inversion."""
 
@@ -936,39 +914,6 @@ class TestInverseAdjoint:
 
         assert id(adjoint_tape) != id(tape)
         assert isinstance(adjoint_tape, QuantumTape)
-
-        tape.inv()
-
-        for op1, op2 in zip(adjoint_tape.circuit, tape.circuit):
-            assert op1.__class__ is op2.__class__
-            if hasattr(op1, "inverse"):
-                assert op1.inverse == op2.inverse
-            if hasattr(op1, "data"):
-                assert qml.math.allclose(op1.data, op2.data)
-
-    def test_parameter_transforms(self):
-        """Test that inversion correctly changes trainable parameters"""
-        init_state = np.array([1, 1])
-        p = [0.1, 0.2, 0.3, 0.4]
-
-        with QuantumTape() as tape:
-            prep = qml.BasisState(init_state, wires=[0, "a"])
-            ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
-            m1 = qml.probs(wires=0)
-            m2 = qml.probs(wires="a")
-
-        tape.trainable_params = [1, 2]
-        tape.inv()
-
-        # check that operation order is reversed
-        assert tape.trainable_params == [1, 4]
-        assert tape.get_parameters() == [p[1], p[0]]
-
-        # undo the inverse
-        tape.inv()
-        assert tape.trainable_params == [1, 2]
-        assert tape.get_parameters() == [p[0], p[1]]
-        assert [o.name for o in tape._ops] == ["RX", "Rot", "CNOT"]
 
 
 class TestExpand:
@@ -1226,6 +1171,26 @@ class TestExpand:
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error_msg):
             tape.expand(expand_measurements=True)
+
+    def test_multiple_expand_no_change_original_tape(self):
+        """Test that the original tape is not changed multiple time after maximal expansion."""
+        with QuantumTape() as tape:
+            qml.RX(0.1, wires=[0])
+            qml.RY(0.2, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.expval(qml.PauliZ(0))
+
+        expand_tape = tape.expand()
+        circuit_after_first_expand = tape.operations
+        twice_expand_tape = tape.expand()
+        circuit_after_second_expand = tape.operations
+        assert all(
+            [
+                qml.equal(op1, op2)
+                for op1, op2 in zip(circuit_after_first_expand, circuit_after_second_expand)
+            ]
+        )
 
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
         """Test that the is_sampled property is correctly set when tape
@@ -1609,120 +1574,6 @@ class TestTapeCopying:
         # however, the underlying operation *parameters* are still shared
         # to support PyTorch, which does not support deep copying of tensors
         assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
-
-
-class TestStopRecording:
-    """Test that the stop_recording function works as expected"""
-
-    deprecation_warning = (
-        "QuantumTape.stop_recording has moved to qml.QueuingManager.stop_recording"
-    )
-
-    def test_recording_stopped(self):
-        """Test that recording is stopped within a tape context"""
-
-        with QuantumTape() as tape:
-            op0 = qml.RX(0, wires=0)
-            assert qml.queuing.QueuingManager.active_context() is tape
-
-            with pytest.warns(UserWarning, match=self.deprecation_warning):
-                with tape.stop_recording():
-                    op1 = qml.RY(1.0, wires=1)
-                    assert qml.queuing.QueuingManager.active_context() is None
-
-                op2 = qml.RZ(2, wires=1)
-                assert qml.queuing.QueuingManager.active_context() is tape
-
-        assert len(tape.operations) == 2
-        assert tape.operations[0] == op0
-        assert tape.operations[1] == op2
-
-    def test_nested_recording_stopped(self):
-        """Test that recording is stopped within a nested tape context"""
-
-        with QuantumTape() as tape1:
-            op0 = qml.RX(0, wires=0)
-            assert qml.queuing.QueuingManager.active_context() is tape1
-
-            with QuantumTape() as tape2:
-                assert qml.queuing.QueuingManager.active_context() is tape2
-                op1 = qml.RY(1.0, wires=1)
-
-                with pytest.warns(UserWarning, match=self.deprecation_warning):
-                    with tape2.stop_recording():
-                        assert qml.queuing.QueuingManager.active_context() is None
-                        op2 = qml.RZ(0.6, wires=2)
-                        op3 = qml.CNOT(wires=[0, 2])
-
-                op4 = qml.Hadamard(wires=0)
-
-            op5 = qml.RZ(2, wires=1)
-            assert qml.queuing.QueuingManager.active_context() is tape1
-
-        assert len(tape1.operations) == 3
-        assert tape1.operations[0] == op0
-        assert tape1.operations[1] == tape2
-        assert tape1.operations[2] == op5
-
-        assert len(tape2.operations) == 2
-        assert tape2.operations[0] == op1
-        assert tape2.operations[1] == op4
-
-    def test_creating_scratch_tape(self):
-        """Test that a tape created inside the 'scratch'
-        space is properly created and accessible"""
-        with QuantumTape() as tape:
-            op0 = qml.RX(0, wires=0)
-            assert qml.queuing.QueuingManager.active_context() is tape
-
-            with pytest.warns(UserWarning, match=self.deprecation_warning):
-                with tape.stop_recording(), QuantumTape() as temp_tape:
-                    assert qml.queuing.QueuingManager.active_context() is temp_tape
-                    op1 = qml.RY(1.0, wires=1)
-
-            op2 = qml.RZ(2, wires=1)
-            assert qml.queuing.QueuingManager.active_context() is tape
-
-        assert len(tape.operations) == 2
-        assert tape.operations[0] == op0
-        assert tape.operations[1] == op2
-
-        assert len(temp_tape.operations) == 1
-        assert temp_tape.operations[0] == op1
-
-    def test_stop_recording_within_tape_cleans_up(self):
-        """Test if some error is raised within a stop_recording context, the previously
-        active contexts are still returned to avoid popping from an empty deque"""
-
-        with pytest.raises(ValueError):
-            with qml.queuing.AnnotatedQueue() as q:
-                with qml.QueuingManager.stop_recording():
-                    raise ValueError
-
-
-def test_get_active_tape():
-    """Test that the get_active_tape() function returns the currently
-    recording tape, or None if no tape is recording"""
-    message = (
-        "qml.tape.get_active_tape is now deprecated."
-        " Please use qml.QueuingManager.active_context"
-    )
-    with pytest.warns(UserWarning, match=message):
-        assert qml.tape.get_active_tape() is None
-
-    with QuantumTape() as tape1:
-        with pytest.warns(UserWarning, match=message):
-            assert qml.tape.get_active_tape() is tape1
-
-        with QuantumTape() as tape2:
-            with pytest.warns(UserWarning, match=message):
-                assert qml.tape.get_active_tape() is tape2
-
-        with pytest.warns(UserWarning, match=message):
-            assert qml.tape.get_active_tape() is tape1
-
-    with pytest.warns(UserWarning, match=message):
-        assert qml.tape.get_active_tape() is None
 
 
 class TestHashing:
@@ -2227,6 +2078,60 @@ class TestOutputShape:
         execution_results = cost(tape, dev)[0]
         for r, e in zip(res, execution_results):
             assert r == e.shape
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("measurement, expected_shape", measures)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_broadcasting_single(self, measurement, expected_shape, shots):
+        """Test that the output shape produced by the tape matches the expected
+        output shape for a single measurement and parameter broadcasting"""
+        if shots is None and measurement.return_type is qml.measurements.Sample:
+            pytest.skip("Sample doesn't support analytic computations.")
+
+        if measurement.return_type is qml.measurements.State and measurement.wires is not None:
+            pytest.skip("Density matrix does not support parameter broadcasting")
+
+        num_wires = 3
+        dev = qml.device("default.qubit", wires=num_wires, shots=shots)
+
+        a = np.array([0.1, 0.2, 0.3])
+        b = np.array([0.4, 0.5, 0.6])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.apply(measurement)
+
+        expected_shape = qml.execute([tape], dev, gradient_fn=None)[0].shape
+
+        assert tape.shape(dev) == expected_shape
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("measurement, expected", measures)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_broadcasting_multi(self, measurement, expected, shots):
+        """Test that the output shape produced by the tape matches the expected
+        output shape for multiple measurements and parameter broadcasting"""
+        if shots is None and measurement.return_type is qml.measurements.Sample:
+            pytest.skip("Sample doesn't support analytic computations.")
+
+        if measurement.return_type is qml.measurements.State:
+            pytest.skip("State does not support multiple measurements")
+
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array([0.1, 0.2, 0.3])
+        b = np.array([0.4, 0.5, 0.6])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for _ in range(2):
+                qml.apply(measurement)
+
+        expected = qml.execute([tape], dev, gradient_fn=None)[0].shape
+
+        assert tape.shape(dev) == expected
 
     def test_multi_measure_probs_shot_vector_errors(self):
         """Test that getting the output shape of a tape containing multiple

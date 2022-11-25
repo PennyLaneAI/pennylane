@@ -98,6 +98,15 @@ def _process_shot_sequence(shot_list):
     return total_shots, shot_vector
 
 
+def _get_num_copies(shot_vector):
+    """Helper function to determine the number of copies from a shot vector Sequence(int) or Sequence(ShotTuple)."""
+    if any(isinstance(shot_comp, ShotTuple) for shot_comp in shot_vector):
+        len_shot_vec = sum(shot_v.copies for shot_v in shot_vector)
+    else:
+        len_shot_vec = len(shot_vector)
+    return len_shot_vec
+
+
 class DeviceError(Exception):
     """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
     operation in the quantum circuit.
@@ -490,7 +499,7 @@ class Device(abc.ABC):
             self._num_executions += 1
 
             if self.tracker.active:
-                self.tracker.update(executions=1, shots=self._shots)
+                self.tracker.update(executions=1, shots=self._shots, results=self._asarray(results))
                 self.tracker.record()
 
             # Ensures that a combination with sample does not put
