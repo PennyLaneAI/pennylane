@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import CustomMeasurement, MeasurementShapeError, Shadow, ShadowExpval
+from .measurements import CustomMeasurement, Shadow, ShadowExpval
 
 
 def shadow_expval(H, k=1, seed_recipes=True):
@@ -312,8 +312,7 @@ class ClassicalShadow(CustomMeasurement):
         """The Python numeric type of the measurement result.
 
         Returns:
-            type: This is ``int`` when the return type is ``Shadow``,
-            and ``float`` when the return type is ``ShadowExpval``.
+            type: ``int``.
         """
         return int
 
@@ -328,22 +327,9 @@ class ClassicalShadow(CustomMeasurement):
             device (.Device): a PennyLane device to use for determining the shape
 
         Returns:
-            tuple: the output shape; this is ``(2, T, n)`` when the return type
-            is ``Shadow``, where ``T`` is the number of device shots and ``n`` is
-            the number of measured wires, and is a scalar when the return type
-            is ``ShadowExpval``
-
-        Raises:
-            MeasurementShapeError: when a device is not provided and the return
-            type is ``Shadow``, since the output shape is dependent on the device.
+            tuple: the output shape; this is ``(2, T, n)``, where ``T`` is the number of device
+            shots and ``n`` is the number of measured wires
         """
-        # otherwise, the return type requires a device
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of a classical "
-                "shadow measurement process."
-            )
-
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
         return (1, 2, device.shots, len(self.wires))
@@ -364,10 +350,9 @@ class _ShadowExpval(CustomMeasurement):
         args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
         seed (Union[int, None]): The seed used to generate the random measurements
         H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
-            to compute the expectation value over. Only used when ``return_type`` is ``ShadowExpval``.
+            to compute the expectation value over.
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
-            ``k=1`` corresponds to simply taking the mean over all measurements. Only used
-            when ``return_type`` is ``ShadowExpval``.
+            ``k=1`` corresponds to simply taking the mean over all measurements.
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
@@ -401,8 +386,7 @@ class _ShadowExpval(CustomMeasurement):
         """The Python numeric type of the measurement result.
 
         Returns:
-            type: This is ``int`` when the return type is ``Shadow``,
-            and ``float`` when the return type is ``ShadowExpval``.
+            type: ``float``
         """
         return float
 
@@ -417,14 +401,7 @@ class _ShadowExpval(CustomMeasurement):
             device (.Device): a PennyLane device to use for determining the shape
 
         Returns:
-            tuple: the output shape; this is ``(2, T, n)`` when the return type
-            is ``Shadow``, where ``T`` is the number of device shots and ``n`` is
-            the number of measured wires, and is a scalar when the return type
-            is ``ShadowExpval``
-
-        Raises:
-            MeasurementShapeError: when a device is not provided and the return
-            type is ``Shadow``, since the output shape is dependent on the device.
+            tuple: output shape
         """
         return (1,)
 
