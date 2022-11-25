@@ -30,6 +30,7 @@ hermitian_ops = (
     qml.CNOT([0, 1]),
     qml.CZ([0, 1]),
     qml.CY([0, 1]),
+    qml.CH([0, 1]),
     qml.SWAP([0, 1]),
     qml.CSWAP([0, 1, 2]),
     qml.Toffoli([0, 1, 2]),
