@@ -6,7 +6,7 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The ``qml.utils.decompose_hamiltonian()`` method is deprecated. Please
+* The ``qml.utils.decompose_hamiltonian()`` method is removed. Please
   use ``qml.pauli_decompose()``.
 
   - Still accessible in v0.27
