@@ -22,8 +22,7 @@ import numpy as np
 import retworkx as rx
 
 import pennylane as qml
-from pennylane.measurements import Sample, State
-from pennylane.measurements.state import _State
+from pennylane.measurements import _Sample, _State
 from pennylane.wires import Wires
 
 
@@ -115,20 +114,17 @@ class CircuitGraph:
         self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
         for k, op in enumerate(queue):
+            if isinstance(op, _State):
+                # State measurements contain no wires by default, but wires are
+                # required for the circuit drawer, so we recreate the state
+                # measurement with all wires
+                op = _State(wires=wires)
+
+            elif isinstance(op, _Sample) and op.wires == Wires([]):
+                # Sampling without specifying wires is treated as sampling all wires
+                op = qml.sample(wires=wires)
+
             op.queue_idx = k  # store the queue index in the Operator
-
-            if hasattr(op, "return_type"):
-                if op.return_type is State:
-                    # State measurements contain no wires by default, but wires are
-                    # required for the circuit drawer, so we recreate the state
-                    # measurement with all wires
-                    op = _State(wires=wires)
-
-                elif op.return_type is Sample and op.wires == Wires([]):
-                    # Sampling without specifying wires is treated as sampling all wires
-                    op = qml.sample(wires=wires)
-
-                op.queue_idx = k
 
             for w in op.wires:
                 # get the index of the wire on the device

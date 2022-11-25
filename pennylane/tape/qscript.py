@@ -24,17 +24,15 @@ from typing import List, Union
 
 import pennylane as qml
 from pennylane.measurements import (
-    AllCounts,
-    Counts,
+    ClassicalShadow,
     MeasurementProcess,
-    Sample,
     SampleMeasurement,
-    Shadow,
-    ShadowExpval,
     StateMeasurement,
+    _Counts,
     _Expectation,
     _Probability,
     _Sample,
+    _ShadowExpval,
     _State,
     _Variance,
 )
@@ -387,7 +385,7 @@ class QuantumScript:
         self.num_wires = len(self.wires)
 
         is_sample_type = [
-            m.return_type in (Sample, Counts, AllCounts, Shadow, ShadowExpval)
+            isinstance(m, (_Sample, _Counts, ClassicalShadow, _ShadowExpval))
             for m in self.measurements
         ]
         self.is_sampled = any(is_sample_type)

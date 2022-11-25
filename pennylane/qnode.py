@@ -25,7 +25,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.measurements import _Counts, _MidMeasure
+from pennylane.measurements import ClassicalShadow, _Counts, _MidMeasure
 from pennylane.tape import QuantumTape
 
 
@@ -714,7 +714,7 @@ class QNode:
         ):
             return res
 
-        if self._qfunc_output.return_type is qml.measurements.Shadow:
+        if isinstance(self._qfunc_output, ClassicalShadow):
             # if classical shadows is returned, then don't squeeze the
             # last axis corresponding to the number of qubits
             return qml.math.squeeze(res, axis=0)

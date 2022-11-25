@@ -55,7 +55,7 @@ def reduced_dm(qnode, wires):
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
         if len(qnode.tape.observables) != 1 or not isinstance(qnode.tape.measurements[0], _State):
-            raise ValueError("The qfunc return type needs to be a state.")
+            raise ValueError("The qfunc measurement needs to be State.")
 
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
@@ -121,9 +121,9 @@ def purity(qnode, wires):
         # Construct tape
         qnode.construct(args, kwargs)
 
-        # Check return type
-        return_type = qnode.tape.observables[0].return_type
-        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+        # Check measurement
+        measurements = qnode.tape.measurements
+        if len(measurements) != 1 or not isinstance(measurements[0], _State):
             raise ValueError("The qfunc return type needs to be a state.")
 
         state_built = qnode(*args, **kwargs)
