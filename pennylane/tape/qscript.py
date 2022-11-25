@@ -888,7 +888,6 @@ class QuantumScript:
             )
 
         shapes = tuple(meas_process.shape(device) for meas_process in self.measurements)
-        print("From shapes method: ", shapes)
 
         if self.batch_size is not None:
             shapes = tuple((self.batch_size,) + shape for shape in shapes)
@@ -955,7 +954,6 @@ class QuantumScript:
             >>> qs.numeric_type
             complex
         """
-        print(self.measurements)
         types = tuple(observable.numeric_type for observable in self.measurements)
 
         return types[0] if len(types) == 1 else types
