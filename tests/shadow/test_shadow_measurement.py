@@ -50,7 +50,7 @@ def get_x_basis_circuit(wires, shots, interface="autograd", device="default.qubi
     def circuit():
         for wire in range(wires):
             qml.Hadamard(wire)
-        return qml.classical_shadow(wires=range(wires))
+        return qml.classical_shadow(wires=range(wires), seed_recipes=False)
 
     return circuit
 
@@ -79,7 +79,7 @@ def get_z_basis_circuit(wires, shots, interface="autograd", device="default.qubi
 
     @qml.qnode(dev, interface=interface)
     def circuit():
-        return qml.classical_shadow(wires=range(wires))
+        return qml.classical_shadow(wires=range(wires), seed_recipes=False)
 
     return circuit
 
