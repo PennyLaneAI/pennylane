@@ -16,6 +16,8 @@ This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
+from collections.abc import Sequence
+
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
@@ -424,7 +426,7 @@ def _vjp_new(
 
         jacs = []
         for t in tapes:
-            g_tapes, fn = gradient_fn(t, **gradient_kwargs)
+            g_tapes, fn = gradient_fn(t, shots=device.shot_vector, **gradient_kwargs)
 
             with qml.tape.Unwrap(*g_tapes):
                 res, _ = execute_fn(g_tapes, **gradient_kwargs)
@@ -450,7 +452,7 @@ def _vjp_new(
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward") or the Jacobian was cached
             # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = _compute_vjps_autograd(jacs, dy, multi_measurements)
+            vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, device.shot_vector)
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -464,6 +466,7 @@ def _vjp_new(
                             tapes,
                             dy,
                             gradient_fn,
+                            shots=device.shot_vector,
                             reduction="append",
                             gradient_kwargs=gradient_kwargs,
                         )
@@ -472,7 +475,12 @@ def _vjp_new(
 
                 else:
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                        tapes, dy, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
+                        tapes,
+                        dy,
+                        gradient_fn,
+                        shots=device.shot_vector,
+                        reduction="append",
+                        gradient_kwargs=gradient_kwargs,
                     )
 
                     # This is where the magic happens. Note that we call ``execute``.
@@ -502,7 +510,7 @@ def _vjp_new(
                 with qml.tape.Unwrap(*tapes):
                     jacs = gradient_fn(tapes, **gradient_kwargs)
 
-                vjps = _compute_vjps_autograd(jacs, dy, multi_measurements)
+                vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, device.shot_vector)
 
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
@@ -511,19 +519,29 @@ def _vjp_new(
             # TODO: remove this exceptional case once the source of this issue
             # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
             return (return_vjps,)  # pragma: no cover
+
         return return_vjps
 
     return grad_fn
 
 
-def _compute_vjps_autograd(jacs, dy, multi_measurements):
+def _compute_vjps_autograd(jacs, dy, multi_measurements, shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
     vjps = []
     for i, multi in enumerate(multi_measurements):
-        if multi:
-            vjps.append(qml.gradients.compute_vjp_multi_new(dy[i], jacs[i]))
-        else:
-            vjps.append(qml.gradients.compute_vjp_single_new(dy[i], jacs[i]))
+        shot_vector_defined = isinstance(shots, Sequence)
+        dy_ = dy[i] if shot_vector_defined else (dy[i],)
+        jac_ = jacs[i] if shot_vector_defined else (jacs[i],)
+
+        shot_vjps = []
+        for d, j in zip(dy_, jac_):
+            if multi:
+                shot_vjps.append(qml.gradients.compute_vjp_multi_new(d, j))
+            else:
+                shot_vjps.append(qml.gradients.compute_vjp_single_new(d, j))
+
+        vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
+
     return vjps
 
 
