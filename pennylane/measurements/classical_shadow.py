@@ -258,8 +258,8 @@ class ClassicalShadow(CustomMeasurement):
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow measurement process
-            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            tape (QuantumScript): the tape to be processed
+            device (Device): the device used to process the tape
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -356,9 +356,8 @@ class _ShadowExpval(CustomMeasurement):
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
 
         Args:
-            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow expectation
-                value measurement process
-            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            tape (QuantumScript): the tape to be processed
+            device (Device): the device used to process the tape
 
         Returns:
             float: expectation value estimate.
