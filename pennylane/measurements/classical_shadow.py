@@ -15,6 +15,7 @@
 """
 This module contains the qml.classical_shadow measurement.
 """
+import copy
 from collections.abc import Iterable
 
 import numpy as np
@@ -444,8 +445,12 @@ class _ShadowExpval(CustomMeasurement):
         return self
 
     def __copy__(self):
-        obj = super().__copy__()
-        obj.seed = self.seed
-        obj.H = self.H
-        obj.k = self.k
-        return obj
+        return self.__class__(
+            self.return_type,
+            H=self.H,
+            k=self.k,
+            seed=self.seed,
+            obs=copy.copy(self.obs),
+            wires=self._wires,
+            eigvals=self._eigvals,
+        )
