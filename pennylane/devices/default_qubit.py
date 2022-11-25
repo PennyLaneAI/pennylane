@@ -118,6 +118,7 @@ class DefaultQubit(QubitDevice):
         "SQISW",
         "CSWAP",
         "Toffoli",
+        "CCZ",
         "CY",
         "CZ",
         "CH",

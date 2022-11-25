@@ -4,6 +4,21 @@
 
 <h3>New features since last release</h3>
 
+* Add the controlled CZ gate: CCZ.
+  ```pycon
+  >>> ccz = qml.CCZ(wires=[0, 1, 2])
+  >>> matrix = ccz.compute_matrix()
+  [[ 1  0  0  0  0  0  0  0]
+   [ 0  1  0  0  0  0  0  0]
+   [ 0  0  1  0  0  0  0  0]
+   [ 0  0  0  1  0  0  0  0]
+   [ 0  0  0  0  1  0  0  0]
+   [ 0  0  0  0  0  1  0  0]
+   [ 0  0  0  0  0  0  1  0]
+   [ 0  0  0  0  0  0  0 -1]]
+  ```
+  [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
+
 * Add the controlled Hadamard gate.
   ```pycon
   >>> ch = qml.CH(wires=[0, 1])
