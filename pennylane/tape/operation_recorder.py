@@ -55,7 +55,7 @@ class OperationRecorder(QuantumTape):
     def _process_queue(self):
         super()._process_queue()
 
-        for obj, info in self._queue.items():
+        for obj, info in self.items():
             QueuingManager.append(obj, **info)
 
         new_tape = self.expand(depth=5, stop_at=lambda obj: not isinstance(obj, QuantumTape))

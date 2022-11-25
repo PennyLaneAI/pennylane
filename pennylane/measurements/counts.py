@@ -180,33 +180,25 @@ class _Counts(SampleMeasurement):
         if bin_size is None:
             return self._samples_to_counts(samples)
 
-        if self.obs is None:
-            num_wires = qml.math.shape(samples)[0]
-            shape = (-1, bin_size, num_wires)
-        else:
-            num_wires = qml.math.shape(samples)[-1]
-            shape = (-1, bin_size)
+        num_wires = len(self.wires) if self.wires else len(wire_order)
+        shape = (-1, bin_size, num_wires) if self.obs is None else (-1, bin_size)
 
         return [self._samples_to_counts(bin_sample) for bin_sample in samples.reshape(shape)]
 
     def _samples_to_counts(self, samples):
-        """Groups the samples into a dictionary showing number of occurences for
+        """Groups the samples into a dictionary showing number of occurrences for
         each possible outcome.
 
-        The format of the dictionary depends on obs.return_type, which is set when
-        calling measurements.counts by setting the kwarg all_outcomes (bool). By default,
+        The format of the dictionary depends on the all_outcomes attribute. By default,
         the dictionary will only contain the observed outcomes. Optionally (all_outcomes=True)
         the dictionary will instead contain all possible outcomes, with a count of 0
         for those not observed. See example.
 
-
         Args:
             samples: samples in an array of dimension ``(shots,len(wires))``
-            obs (Observable): the observable sampled
-            num_wires (int): number of wires the sampled observable was performed on
 
         Returns:
-            dict: dictionary with format ``{'outcome': num_occurences}``, including all
+            dict: dictionary with format ``{'outcome': num_occurrences}``, including all
                 outcomes for the sampled observable
 
         **Example**
@@ -217,11 +209,11 @@ class _Counts(SampleMeasurement):
                     [1, 0]], requires_grad=True)
 
             By default, this will return:
-            >>> self._samples_to_counts(samples, obs, num_wires)
+            >>> self._samples_to_counts(samples)
             {'00': 2, '10': 1}
 
-            However, if obs.return_type is AllCounts, this will return:
-            >>> self._samples_to_counts(samples, obs, num_wires)
+            However, if ``all_outcomes=True``, this will return:
+            >>> self._samples_to_counts(samples)
             {'00': 2, '01': 0, '10': 1, '11': 0}
 
             The variable all_outcomes can be set when running measurements.counts, i.e.:

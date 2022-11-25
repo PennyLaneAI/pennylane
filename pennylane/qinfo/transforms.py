@@ -67,6 +67,71 @@ def reduced_dm(qnode, wires):
     return wrapper
 
 
+def purity(qnode, wires):
+    r"""Compute the purity of a :class:`~.QNode` returning :func:`~.state`.
+
+    .. math::
+        \gamma = \text{Tr}(\rho^2)
+
+    where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
+    :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
+    A pure state has a purity of 1.
+
+    It is possible to compute the purity of a sub-system from a given state. To find the purity of
+    the overall state, include all wires in the ``wires`` argument.
+
+    Args:
+        qnode (pennylane.QNode): A :class:`.QNode` objeect returning a :func:`~.state`.
+        wires (Sequence(int)): List of wires in the considered subsystem.
+
+    Returns:
+        A function that computes the purity of the wrapped circuit.
+
+    **Example**
+
+    .. code-block:: python
+
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev)
+        def noisy_circuit(p):
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.BitFlip(p, wires=0)
+            qml.BitFlip(p, wires=1)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+    >>> purity(noisy_circuit, wires=[0, 1])(0.2)
+    0.5648000000000398
+    >>> purity(circuit, wires=[0])(np.pi / 2)
+    0.5
+    >>> purity(circuit, wires=[0, 1])(np.pi / 2)
+    1.0
+
+    .. seealso:: :func:`pennylane.math.purity`
+    """
+
+    def wrapper(*args, **kwargs):
+
+        # Construct tape
+        qnode.construct(args, kwargs)
+
+        # Check return type
+        return_type = qnode.tape.observables[0].return_type
+        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+            raise ValueError("The qfunc return type needs to be a state.")
+
+        state_built = qnode(*args, **kwargs)
+        return qml.math.purity(state_built, wires, c_dtype=qnode.device.C_DTYPE)
+
+    return wrapper
+
+
 def vn_entropy(qnode, wires, base=None):
     r"""Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
 

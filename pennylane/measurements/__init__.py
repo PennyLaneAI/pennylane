@@ -14,7 +14,7 @@
 """
 This module contains measurements supported by PennyLane.
 """
-from .classical_shadow import ShadowMeasurementProcess, classical_shadow, shadow_expval
+from .classical_shadow import ClassicalShadow, _ShadowExpval, classical_shadow, shadow_expval
 from .counts import _Counts, counts
 from .expval import _Expectation, expval
 from .measurements import (

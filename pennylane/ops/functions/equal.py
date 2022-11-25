@@ -14,13 +14,15 @@
 """
 This module contains the qml.equal function.
 """
-from functools import singledispatch
-
 # pylint: disable=too-many-arguments,too-many-return-statements
+from functools import singledispatch
 from typing import Union
 
 import pennylane as qml
-from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
+from pennylane.measurements import MeasurementProcess
+from pennylane.measurements.classical_shadow import _ShadowExpval
+from pennylane.measurements.mutual_info import _MutualInfo
+from pennylane.measurements.vn_entropy import _VnEntropy
 from pennylane.operation import Operator
 
 
@@ -164,17 +166,32 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwar
         observables_match = op1.obs == op2.obs
     wires_match = op1.wires == op2.wires
     eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
-    log_base_match = getattr(op1, "log_base", None) == getattr(op2, "log_base", None)
 
-    return observables_match and wires_match and eigvals_match and log_base_match
+    return observables_match and wires_match and eigvals_match
 
 
 @_equal.register
 # pylint: disable=unused-argument
-def _equal_shadow_measurements(
-    op1: ShadowMeasurementProcess, op2: ShadowMeasurementProcess, **kwargs
-):
-    """Determine whether two ShadowMeasurementProcess objects are equal"""
+def _(op1: _VnEntropy, op2: _VnEntropy, **kwargs):
+    """Determine whether two MeasurementProcess objects are equal"""
+    eq_m = _equal_measurements(op1, op2)
+    log_base_match = op1.log_base == op2.log_base
+    return eq_m and log_base_match
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _(op1: _MutualInfo, op2: _MutualInfo, **kwargs):
+    """Determine whether two MeasurementProcess objects are equal"""
+    eq_m = _equal_measurements(op1, op2)
+    log_base_match = op1.log_base == op2.log_base
+    return eq_m and log_base_match
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_shadow_measurements(op1: _ShadowExpval, op2: _ShadowExpval, **kwargs):
+    """Determine whether two ClassicalShadow objects are equal"""
 
     wires_match = op1.wires == op2.wires
     H_match = op1.H == op2.H

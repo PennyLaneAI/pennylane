@@ -16,7 +16,6 @@
 This module contains the qml.var measurement.
 """
 import warnings
-from collections import OrderedDict
 from typing import Sequence, Tuple
 
 import pennylane as qml
@@ -123,23 +122,9 @@ class _Variance(SampleMeasurement, StateMeasurement):
         eigvals = qml.math.asarray(self.obs.eigvals(), dtype=float)
 
         # the probability vector must be permuted to account for the permuted wire order of the observable
-        old_obs = self.obs
         new_obs_wires = self._permute_wires(self.obs.wires)
-        self.obs = qml.map_wires(self.obs, dict(zip(self.obs.wires, new_obs_wires)))
-        # we use ``self.wires`` instead of ``self.obs`` because the observable was
+        # we use ``wires`` instead of ``op`` because the observable was
         # already applied to the state
-        prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
-        self.obs = old_obs
+        prob = qml.probs(wires=new_obs_wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2
-
-    def _permute_wires(self, wires: Wires):
-        wire_map = OrderedDict(zip(wires, range(len(wires))))
-
-        ordered_obs_wire_lst = sorted(self.wires.tolist(), key=lambda label: wire_map[label])
-
-        mapped_wires = [wire_map[w] for w in self.wires]
-
-        permutation = qml.math.argsort(mapped_wires)  # extract permutation via argsort
-
-        return Wires([ordered_obs_wire_lst[index] for index in permutation])
