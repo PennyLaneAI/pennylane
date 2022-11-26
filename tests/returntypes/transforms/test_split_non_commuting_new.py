@@ -158,7 +158,10 @@ class TestIntegration:
                 qml.expval(qml.PauliY(5)),
             ]
 
-        assert all(np.isclose(circuit(), np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
+        res = circuit()
+        res = qml.math.stack(res)
+
+        assert all(np.isclose(res, np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
 
     def test_shot_vector_support(self):
         """Test output is correct when using shot vectors"""
@@ -185,8 +188,11 @@ class TestIntegration:
                 qml.expval(qml.PauliY(5)),
             ]
 
+        res = circuit()
+        res = qml.math.stack([qml.math.stack(r) for r in res])
+
         assert np.allclose(
-            circuit(), np.array([0.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)]), atol=0.05
+            res, np.array([0.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)]), atol=0.05
         )
 
 
@@ -215,9 +221,13 @@ class TestAutodiffSplitNonCommuting:
                 qml.expval(qml.PauliZ(0)),
             )
 
+        def cost(params):
+            res = circuit(params)
+            return qml.math.stack(res)
+
         params = pnp.array([0.5, 0.5])
-        res = circuit(params)
-        grad = qml.jacobian(circuit)(params)
+        res = cost(params)
+        grad = qml.jacobian(cost)(params)
         assert all(np.isclose(res, exp_res))
         assert all(np.isclose(grad, exp_grad).flatten())
 
@@ -291,9 +301,13 @@ class TestAutodiffSplitNonCommuting:
                 qml.expval(qml.PauliZ(0)),
             )
 
+        def cost(params):
+            res = circuit(params)
+            return qml.math.stack(res)
+
         params = torch.tensor([0.5, 0.5], requires_grad=True)
-        res = circuit(params)
-        grad = jacobian(circuit, (params))
+        res = cost(params)
+        grad = jacobian(cost, (params))
         assert all(np.isclose(res.detach().numpy(), exp_res))
         assert all(np.isclose(grad.detach().numpy(), exp_grad, atol=1e-5).flatten())
 
@@ -319,6 +333,7 @@ class TestAutodiffSplitNonCommuting:
         res = circuit(params)
         with tf.GradientTape() as tape:
             loss = circuit(params)
+            loss = tf.stack(loss)
 
         grad = tape.jacobian(loss, params)
         assert all(np.isclose(res, exp_res))
