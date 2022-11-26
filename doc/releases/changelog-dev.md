@@ -160,7 +160,7 @@
 
 <h4>Return types project</h4>
 
-* The autograd interface now supports devices with shot vectors.
+* The autograd interface for the new return types now supports devices with shot vectors.
   [#3374](https://github.com/PennyLaneAI/pennylane/pull/3374)
 
   Example with a single measurement:
@@ -216,6 +216,59 @@
          [-0.37133333, -0.18566667,  0.        ,  0.        ,  0.18566667]])
   ```
 
+* The TensorFlow interface for the new return types now supports devices with shot vectors.
+  [#3400](https://github.com/PennyLaneAI/pennylane/pull/3400)
+
+  Example with a single measurement:
+  ```python
+  dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
+
+  @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+  def circuit(a):
+      qml.RY(a, wires=0)
+      qml.RX(0.2, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  ```
+  >>> qml.enable_return()
+  >>> a = tf.Variable(0.4)
+  >>> with tf.GradientTape() as tape:
+  ...     res = circuit(a)
+  ...     res = tf.stack(res)
+  ...
+  >>> res
+  <tf.Tensor: shape=(3,), dtype=float64, numpy=array([0.902     , 0.904     , 0.89533333])>
+  >>> tape.jacobian(res, a)
+  <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.365     , -0.3765    , -0.37533333])>
+  ```
+  Example with multiple measurements:
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
+
+  @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+  def circuit(a):
+      qml.RY(a, wires=0)
+      qml.RX(0.2, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+  ```
+  ```
+  >>> with tf.GradientTape() as tape:
+  ...     res = circuit(a)
+  ...     res = tf.stack([tf.experimental.numpy.hstack(r) for r in res])
+  ...
+  >>> res
+  <tf.Tensor: shape=(3, 5), dtype=float64, numpy=
+  array([[0.902, 0.951, 0.   , 0.   , 0.049],
+         [0.898, 0.949, 0.   , 0.   , 0.051],
+         [0.892, 0.946, 0.   , 0.   , 0.054]])>
+  >>> tape.jacobian(res, a)
+  <tf.Tensor: shape=(3, 5), dtype=float64, numpy=
+  array([[-0.345     , -0.1725    ,  0.        ,  0.        ,  0.1725    ],
+         [-0.383     , -0.1915    ,  0.        ,  0.        ,  0.1915    ],
+         [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
+  ```
+
 * Updated `qml.transforms.mitigate_with_zne` to support the new return types
   [#3415](https://github.com/PennyLaneAI/pennylane/pull/3415)
 
@@ -248,7 +301,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   * `qml.tape.QuantumTape.stop_recording()`: Use `qml.QueuingManager.stop_recording()`
   * `qml.QueuingContext` is now `qml.QueuingManager`
   * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info`: Use plain `update_info`
-  
+
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
 
