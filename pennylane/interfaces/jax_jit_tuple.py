@@ -232,7 +232,8 @@ def _execute_bwd_new(
             else:
                 # Note: we have to split up the tape Unwrapping and the JVP computation because:
                 # 1. Tape unwrapping has to happen in the callback: otherwise jitting is broken and Tracer objects are
-                # converted to NumPy, something that raises an error
+                # converted to NumPy, something that raises an error (as of jax and jaxlib 0.3.25)
+                #
                 # 2. Passing in the tangents as an argument to the function called by the callback seems to raise a 
                 # ValueError: Pure callbacks do not support transpose. Please use jax.custom_vjp to use callbacks while taking gradients.
                 #
