@@ -92,8 +92,11 @@ def compute_jvp_single(tangent, jac, jitting=False):
     if jac is None:
         return None
 
+    # TODO: jitting
     tangent = qml.math.stack(tangent)
+    print("jac before conversion: ", jac)
     jac = _convert(jac, tangent)
+    print("jac after conversion: ", jac)
 
     # Single param
     if not isinstance(jac, tuple):
