@@ -23,7 +23,7 @@ from pennylane.operation import Operator
 from pennylane.ops import Projector
 from pennylane.wires import Wires
 
-from .measurements import Expectation_, SampleMeasurement, StateMeasurement
+from .measurements import SampleMeasurement, StateMeasurement, _Expectation
 
 
 def expval(op: Operator):
@@ -68,7 +68,7 @@ class Expectation(SampleMeasurement, StateMeasurement):
 
     @property
     def return_type(self):
-        return Expectation_
+        return _Expectation
 
     def shape(self, device):
         if qml.active_return():

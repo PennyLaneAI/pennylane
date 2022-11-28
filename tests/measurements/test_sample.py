@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Sample_
+from pennylane.measurements import _Sample
 from pennylane.operation import EigvalsUndefinedError, Operator
 
 
@@ -176,7 +176,7 @@ class TestSample:
         @qml.qnode(dev)
         def circuit():
             res = qml.sample(qml.PauliZ(0))
-            assert res.return_type is Sample_
+            assert res.return_type is _Sample
             return res
 
         circuit()

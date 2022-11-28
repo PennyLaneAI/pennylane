@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
-from pennylane.measurements import VnEntropy_
+from pennylane.measurements import _VnEntropy
 from pennylane.measurements.vn_entropy import VnEntropy
 from pennylane.wires import Wires
 
@@ -73,7 +73,7 @@ class TestVnEntropy:
         """Test that the properties are correct."""
         meas = qml.vn_entropy(wires=0)
         assert meas.numeric_type == float
-        assert meas.return_type == VnEntropy_
+        assert meas.return_type == _VnEntropy
 
     @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ((1, 10), (2,))])
     def test_shape(self, shots, shape):

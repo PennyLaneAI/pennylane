@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.measurements import MeasurementProcess, Probability, Probability_
+from pennylane.measurements import MeasurementProcess, Probability, _Probability
 from pennylane.queuing import AnnotatedQueue
 
 
@@ -112,7 +112,7 @@ class TestProbs:
 
         meas_proc = q.queue[0]
         assert isinstance(meas_proc, MeasurementProcess)
-        assert meas_proc.return_type == Probability_
+        assert meas_proc.return_type == _Probability
 
     def test_full_prob(self, init_state, tol, mocker):
         """Test that the correct probability is returned."""

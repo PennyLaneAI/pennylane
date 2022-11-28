@@ -19,21 +19,21 @@ import pennylane as qml
 from pennylane.measurements import (
     ClassicalShadow,
     Counts,
-    Counts_,
     Expectation,
-    Expectation_,
     MeasurementProcess,
-    MidMeasure_,
     MutualInfo,
     Probability,
-    Probability_,
     Sample,
-    Sample_,
     State,
-    State_,
     Variance,
-    Variance_,
     VnEntropy,
+    _Counts,
+    _Expectation,
+    _MidMeasure,
+    _Probability,
+    _Sample,
+    _State,
+    _Variance,
     expval,
     sample,
     var,
@@ -52,13 +52,13 @@ class NotValidMeasurement(MeasurementProcess):
 @pytest.mark.parametrize(
     "return_type, value",
     [
-        (Expectation_, "expval"),
-        (Sample_, "sample"),
-        (Counts_, "counts"),
-        (Variance_, "var"),
-        (Probability_, "probs"),
-        (State_, "state"),
-        (MidMeasure_, "measure"),
+        (_Expectation, "expval"),
+        (_Sample, "sample"),
+        (_Counts, "counts"),
+        (_Variance, "var"),
+        (_Probability, "probs"),
+        (_State, "state"),
+        (_MidMeasure, "measure"),
     ],
 )
 def test_ObservableReturnTypes(return_type, value):
@@ -108,7 +108,7 @@ def test_shape_unrecognized_error():
 
 
 @pytest.mark.parametrize(
-    "stat_func,return_type", [(expval, Expectation_), (var, Variance_), (sample, Sample_)]
+    "stat_func,return_type", [(expval, _Expectation), (var, _Variance), (sample, _Sample)]
 )
 class TestStatisticsQueuing:
     """Tests for annotating the return types of the statistics functions"""
@@ -301,7 +301,7 @@ class TestExpansion:
         assert tape.operations[3].wires.tolist() == [1]
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0].return_type is Expectation_
+        assert tape.measurements[0].return_type is _Expectation
         assert tape.measurements[0].wires.tolist() == [0, 1]
         assert np.all(tape.measurements[0].eigvals() == np.array([1, -1, -1, 1]))
 
@@ -325,7 +325,7 @@ class TestExpansion:
         )
 
         assert len(tape.measurements) == 1
-        assert tape.measurements[0].return_type is Expectation_
+        assert tape.measurements[0].return_type is _Expectation
         assert tape.measurements[0].wires.tolist() == ["a"]
         assert np.all(tape.measurements[0].eigvals() == np.array([0, 5]))
 

@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
 
-from .measurements import AllCounts_, Counts_, SampleMeasurement
+from .measurements import SampleMeasurement, _AllCounts, _Counts
 
 
 def counts(op=None, wires=None, all_outcomes=False):
@@ -163,7 +163,7 @@ class Counts(SampleMeasurement):
 
     @property
     def return_type(self):
-        return AllCounts_ if self.all_outcomes else Counts_
+        return _AllCounts if self.all_outcomes else _Counts
 
     def process_samples(
         self,

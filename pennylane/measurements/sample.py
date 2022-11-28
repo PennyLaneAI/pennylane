@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, Sample_, SampleMeasurement
+from .measurements import MeasurementShapeError, SampleMeasurement, _Sample
 
 
 def sample(op: Union[Observable, None] = None, wires=None):
@@ -118,7 +118,7 @@ class Sample(SampleMeasurement):
 
     @property
     def return_type(self):
-        return Sample_
+        return _Sample
 
     @property
     @functools.lru_cache()

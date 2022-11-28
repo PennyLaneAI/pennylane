@@ -18,23 +18,23 @@ from .classical_shadow import ClassicalShadow, ShadowExpval, classical_shadow, s
 from .counts import Counts, counts
 from .expval import Expectation, expval
 from .measurements import (
-    AllCounts_,
-    Counts_,
-    Expectation_,
     MeasurementProcess,
     MeasurementShapeError,
-    MidMeasure_,
-    MutualInfo_,
     ObservableReturnTypes,
-    Probability_,
-    Sample_,
     SampleMeasurement,
-    Shadow_,
-    ShadowExpval_,
-    State_,
     StateMeasurement,
-    Variance_,
-    VnEntropy_,
+    _AllCounts,
+    _Counts,
+    _Expectation,
+    _MidMeasure,
+    _MutualInfo,
+    _Probability,
+    _Sample,
+    _Shadow,
+    _ShadowExpval,
+    _State,
+    _Variance,
+    _VnEntropy,
 )
 from .mid_measure import MeasurementValue, MeasurementValueError, MidMeasure, measure
 from .mutual_info import MutualInfo, mutual_info

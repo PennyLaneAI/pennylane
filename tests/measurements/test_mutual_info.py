@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
-from pennylane.measurements import MutualInfo_
+from pennylane.measurements import _MutualInfo
 from pennylane.measurements.mutual_info import MutualInfo
 from pennylane.wires import Wires
 
@@ -79,7 +79,7 @@ class TestMutualInfo:
         """Test that the properties are correct."""
         meas = qml.mutual_info(wires0=[0], wires1=[1])
         assert meas.numeric_type == float
-        assert meas.return_type == MutualInfo_
+        assert meas.return_type == _MutualInfo
 
     def test_copy(self):
         """Test that the ``__copy__`` method also copies the ``log_base`` information."""

@@ -22,7 +22,7 @@ from typing import Generic, TypeVar
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, MidMeasure_
+from .measurements import MeasurementProcess, _MidMeasure
 
 
 def measure(wires):  # TODO: Change name to mid_measure
@@ -82,7 +82,7 @@ class MidMeasure(MeasurementProcess):
 
     @property
     def return_type(self):
-        return MidMeasure_
+        return _MidMeasure
 
     @property
     def _queue_category(self):

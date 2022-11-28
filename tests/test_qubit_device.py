@@ -24,16 +24,16 @@ from pennylane import DeviceError, QubitDevice
 from pennylane import numpy as pnp
 from pennylane.measurements import (
     Expectation,
-    Expectation_,
     MeasurementProcess,
     Probability,
-    Probability_,
     Sample,
-    Sample_,
     State,
-    State_,
     Variance,
-    Variance_,
+    _Expectation,
+    _Probability,
+    _Sample,
+    _State,
+    _Variance,
     state,
 )
 from pennylane.tape import QuantumScript
@@ -368,7 +368,7 @@ class TestExtractStatistics:
     def test_error_return_type_none(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
-        assert returntype not in [Expectation_, Variance_, Sample_, Probability_, State_, None]
+        assert returntype not in [_Expectation, _Variance, _Sample, _Probability, _State, None]
 
         class SomeMeasurement(MeasurementProcess):
             return_type = returntype

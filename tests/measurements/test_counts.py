@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import AllCounts_, Counts, Counts_
+from pennylane.measurements import Counts, _AllCounts, _Counts
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -35,7 +35,7 @@ def custom_measurement_process(device, spy):
         meas = call_args.args[1]
         shot_range, bin_size = (call_args.kwargs["shot_range"], call_args.kwargs["bin_size"])
         if isinstance(meas, Operator):
-            all_outcomes = meas.return_type is AllCounts_
+            all_outcomes = meas.return_type is _AllCounts
             meas = qml.counts(op=meas, all_outcomes=all_outcomes)
         old_res = device.sample(call_args.args[1], **call_args.kwargs)
         new_res = meas.process_samples(
@@ -58,9 +58,9 @@ class TestCounts:
         meas1 = qml.counts(wires=0)
         meas2 = qml.counts(op=qml.PauliX(0), all_outcomes=True)
         assert meas1.samples_computational_basis is True
-        assert meas1.return_type == Counts_
+        assert meas1.return_type == _Counts
         assert meas2.samples_computational_basis is False
-        assert meas2.return_type == AllCounts_
+        assert meas2.return_type == _AllCounts
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
@@ -215,7 +215,7 @@ class TestCounts:
             return res
 
         circuit()
-        assert circuit._qfunc_output.return_type is Counts_  # pylint: disable=protected-access
+        assert circuit._qfunc_output.return_type is _Counts  # pylint: disable=protected-access
 
     def test_providing_no_observable_and_no_wires_counts(self, mocker):
         """Test that we can provide no observable and no wires to sample function"""

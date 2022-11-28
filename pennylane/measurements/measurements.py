@@ -57,48 +57,48 @@ class ObservableReturnTypes(Enum):
         return str(self.value)
 
 
-Sample_ = ObservableReturnTypes.Sample
+_Sample = ObservableReturnTypes.Sample
 """Enum: An enumeration which represents sampling an observable."""
 
-Counts_ = ObservableReturnTypes.Counts
+_Counts = ObservableReturnTypes.Counts
 """Enum: An enumeration which represents returning the number of times
  each of the observed outcomes occurred in sampling."""
 
-AllCounts_ = ObservableReturnTypes.AllCounts
+_AllCounts = ObservableReturnTypes.AllCounts
 """Enum: An enumeration which represents returning the number of times
  each of the possible outcomes occurred in sampling, including 0 counts
  for unobserved outcomes."""
 
-Variance_ = ObservableReturnTypes.Variance
+_Variance = ObservableReturnTypes.Variance
 """Enum: An enumeration which represents returning the variance of
 an observable on specified wires."""
 
-Expectation_ = ObservableReturnTypes.Expectation
+_Expectation = ObservableReturnTypes.Expectation
 """Enum: An enumeration which represents returning the expectation
 value of an observable on specified wires."""
 
-Probability_ = ObservableReturnTypes.Probability
+_Probability = ObservableReturnTypes.Probability
 """Enum: An enumeration which represents returning probabilities
 of all computational basis states."""
 
-State_ = ObservableReturnTypes.State
+_State = ObservableReturnTypes.State
 """Enum: An enumeration which represents returning the state in the computational basis."""
 
-MidMeasure_ = ObservableReturnTypes.MidMeasure
+_MidMeasure = ObservableReturnTypes.MidMeasure
 """Enum: An enumeration which represents returning sampling the computational
 basis in the middle of the circuit."""
 
-VnEntropy_ = ObservableReturnTypes.VnEntropy
+_VnEntropy = ObservableReturnTypes.VnEntropy
 """Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
 
-MutualInfo_ = ObservableReturnTypes.MutualInfo
+_MutualInfo = ObservableReturnTypes.MutualInfo
 """Enum: An enumeration which represents returning the mutual information before measurements."""
 
-Shadow_ = ObservableReturnTypes.Shadow
+_Shadow = ObservableReturnTypes.Shadow
 """Enum: An enumeration which represents returning the bitstrings and recipes from
 the classical shadow protocol"""
 
-ShadowExpval_ = ObservableReturnTypes.ShadowExpval
+_ShadowExpval = ObservableReturnTypes.ShadowExpval
 """Enum: An enumeration which represents returning the estimated expectation value
 from a classical shadow measurement"""
 

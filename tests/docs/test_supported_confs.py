@@ -31,13 +31,13 @@ import pennylane as qml
 from pennylane import QuantumFunctionError
 from pennylane import numpy as np
 from pennylane.measurements import (
-    Expectation_,
-    MutualInfo_,
-    Probability_,
-    Sample_,
-    State_,
-    Variance_,
-    VnEntropy_,
+    _Expectation,
+    _MutualInfo,
+    _Probability,
+    _Sample,
+    _State,
+    _Variance,
+    _VnEntropy,
 )
 
 pytestmark = pytest.mark.all_interfaces
@@ -70,25 +70,25 @@ return_types = [
     "StateCost",  # scalar cost function of the state
     "StateVector",  # the state directly
     "DensityMatrix",
-    Probability_,
-    Sample_,
-    Expectation_,
+    _Probability,
+    _Sample,
+    _Expectation,
     "Hermitian",  # non-standard variant of expectation values
     "Projector",  # non-standard variant of expectation values
-    Variance_,
-    VnEntropy_,
-    MutualInfo_,
+    _Variance,
+    _VnEntropy,
+    _MutualInfo,
 ]
 
 grad_return_cases = [
     "StateCost",
     "DensityMatrix",
-    Expectation_,
+    _Expectation,
     "Hermitian",
     "Projector",
-    Variance_,
-    VnEntropy_,
-    MutualInfo_,
+    _Variance,
+    _VnEntropy,
+    _MutualInfo,
 ]
 
 
@@ -120,11 +120,11 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
             return qml.state()
         elif return_type == "DensityMatrix":
             return qml.density_matrix(wires=single_meas_wire)
-        elif return_type == Probability_:
+        elif return_type == _Probability:
             return qml.probs(wires=multi_meas_wire)
-        elif return_type == Sample_:
+        elif return_type == _Sample:
             return qml.sample(wires=multi_meas_wire)
-        elif return_type == Expectation_:
+        elif return_type == _Expectation:
             return qml.expval(qml.PauliZ(wires=single_meas_wire))
         elif return_type == "Hermitian":
             return qml.expval(
@@ -134,11 +134,11 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
             )
         elif return_type == "Projector":
             return qml.expval(qml.Projector(np.array([1]), wires=single_meas_wire))
-        elif return_type == Variance_:
+        elif return_type == _Variance:
             return qml.var(qml.PauliZ(wires=single_meas_wire))
-        elif return_type == VnEntropy_:
+        elif return_type == _VnEntropy:
             return qml.vn_entropy(wires=single_meas_wire)
-        elif return_type == MutualInfo_:
+        elif return_type == _MutualInfo:
             wires1 = [w for w in wire_labels if w != single_meas_wire]
             return qml.mutual_info(wires0=[single_meas_wire], wires1=wires1)
 
@@ -303,13 +303,13 @@ class TestSupportedConfs:
         [
             "StateCost",
             "DensityMatrix",
-            Probability_,
-            Expectation_,
+            _Probability,
+            _Expectation,
             "Hermitian",
             "Projector",
-            Variance_,
-            VnEntropy_,
-            MutualInfo_,
+            _Variance,
+            _VnEntropy,
+            _MutualInfo,
         ],
     )
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
@@ -332,7 +332,7 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
         "return_type",
-        ["StateCost", "DensityMatrix", Probability_, Variance_, VnEntropy_, MutualInfo_],
+        ["StateCost", "DensityMatrix", _Probability, _Variance, _VnEntropy, _MutualInfo],
     )
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
@@ -353,7 +353,7 @@ class TestSupportedConfs:
                 grad = compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
-    @pytest.mark.parametrize("return_type", [Expectation_, "Hermitian", "Projector"])
+    @pytest.mark.parametrize("return_type", [_Expectation, "Hermitian", "Projector"])
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_adjoint_exp(self, interface, return_type, shots, wire_specs):
@@ -379,7 +379,7 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
         "return_type",
-        [Probability_, Expectation_, "Hermitian", "Projector", Variance_],
+        [_Probability, _Expectation, "Hermitian", "Projector", _Variance],
     )
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
@@ -394,7 +394,7 @@ class TestSupportedConfs:
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
-        "return_type", ["StateCost", "StateVector", "DensityMatrix", VnEntropy_, MutualInfo_]
+        "return_type", ["StateCost", "StateVector", "DensityMatrix", _VnEntropy, _MutualInfo]
     )
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
@@ -418,7 +418,7 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
         "return_type",
-        [Probability_, Expectation_, "Hermitian", "Projector", Variance_, VnEntropy_, MutualInfo_],
+        [_Probability, _Expectation, "Hermitian", "Projector", _Variance, _VnEntropy, _MutualInfo],
     )
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
@@ -429,7 +429,7 @@ class TestSupportedConfs:
         # correctness is already tested in other test files
         circuit = get_qnode(interface, "finite-diff", return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
-        if shots is not None and return_type in (VnEntropy_, MutualInfo_):
+        if shots is not None and return_type in (_VnEntropy, _MutualInfo):
 
             with pytest.warns(UserWarning, match="unaffected by sampling"):
                 grad = compute_gradient(x, interface, circuit, return_type)
@@ -475,7 +475,7 @@ class TestSupportedConfs:
         )
 
         with pytest.raises(QuantumFunctionError, match=msg):
-            circuit = get_qnode(interface, diff_method, Sample_, None, wire_specs)
+            circuit = get_qnode(interface, diff_method, _Sample, None, wire_specs)
             x = get_variable(interface, wire_specs)
             circuit(x)
 
@@ -491,17 +491,17 @@ class TestSupportedConfs:
             msg = "jacrev requires real-valued outputs .*"
 
             with pytest.raises(TypeError, match=msg):
-                circuit = get_qnode(interface, diff_method, Sample_, 100, wire_specs)
+                circuit = get_qnode(interface, diff_method, _Sample, 100, wire_specs)
                 x = get_variable(interface, wire_specs)
-                grad = compute_gradient(x, interface, circuit, Sample_)
+                grad = compute_gradient(x, interface, circuit, _Sample)
         else:
             # should not raise an exception
-            circuit = get_qnode(interface, diff_method, Sample_, 100, wire_specs)
+            circuit = get_qnode(interface, diff_method, _Sample, 100, wire_specs)
             x = get_variable(interface, wire_specs)
-            grad = compute_gradient(x, interface, circuit, Sample_)
+            grad = compute_gradient(x, interface, circuit, _Sample)
 
         # test that forward pass still works
-        circuit = get_qnode(interface, diff_method, Sample_, 100, wire_specs)
+        circuit = get_qnode(interface, diff_method, _Sample, 100, wire_specs)
         x = get_variable(interface, wire_specs)
         circuit(x)
 

@@ -27,15 +27,15 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import (
     Counts,
-    Expectation_,
     MidMeasure,
     Probability,
-    Probability_,
     Sample,
-    Sample_,
-    ShadowExpval_,
-    State_,
-    Variance_,
+    _Expectation,
+    _Probability,
+    _Sample,
+    _ShadowExpval,
+    _State,
+    _Variance,
 )
 from pennylane.operation import Observable, Operation, Tensor
 from pennylane.wires import WireError, Wires
@@ -467,19 +467,19 @@ class Device(abc.ABC):
                 else:
                     wires = obs.wires
 
-                if obs.return_type is Expectation_:
+                if obs.return_type is _Expectation:
                     results.append(self.expval(obs.name, wires, obs.parameters))
 
-                elif obs.return_type is Variance_:
+                elif obs.return_type is _Variance:
                     results.append(self.var(obs.name, wires, obs.parameters))
 
-                elif obs.return_type is Sample_:
+                elif obs.return_type is _Sample:
                     results.append(np.array(self.sample(obs.name, wires, obs.parameters)))
 
-                elif obs.return_type is Probability_:
+                elif obs.return_type is _Probability:
                     results.append(list(self.probability(wires=wires).values()))
 
-                elif obs.return_type is State_:
+                elif obs.return_type is _State:
                     raise qml.QuantumFunctionError("Returning the state is not supported")
 
                 elif obs.return_type is not None:
@@ -502,9 +502,9 @@ class Device(abc.ABC):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(obs.return_type is Sample_ for obs in observables):
+            if all(obs.return_type is _Sample for obs in observables):
                 return self._asarray(results)
-            if any(obs.return_type is Sample_ for obs in observables):
+            if any(obs.return_type is _Sample for obs in observables):
                 return self._asarray(results, dtype="object")
 
             return self._asarray(results)
@@ -736,7 +736,7 @@ class Device(abc.ABC):
 
         return_types = [m.return_type for m in circuit.observables]
 
-        is_shadow = ShadowExpval_ in return_types
+        is_shadow = _ShadowExpval in return_types
 
         if hamiltonian_in_obs and (
             (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known

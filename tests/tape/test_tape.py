@@ -23,9 +23,9 @@ from pennylane import CircuitGraph
 from pennylane.measurements import (
     MeasurementProcess,
     MeasurementShapeError,
-    MutualInfo_,
-    State_,
-    VnEntropy_,
+    _MutualInfo,
+    _State,
+    _VnEntropy,
     counts,
     expval,
     probs,
