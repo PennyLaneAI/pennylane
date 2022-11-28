@@ -31,7 +31,9 @@ qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-    ["default.qubit", "adjoint", "forward", "jax-jit"],
+
+    # TODO:
+    # ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
@@ -57,7 +59,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface=interface, diff_method=diff_method)
+        @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -251,7 +253,9 @@ vv_qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-    ["default.qubit", "adjoint", "forward", "jax-jit"],
+
+    # TODO:
+    #["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
@@ -811,14 +815,18 @@ class TestQubitIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliX(1))
 
-        res = circuit()
+        if interface == "jax-jit":
+            with pytest.raises(NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."):
+                circuit()
+        else:
+            res = circuit()
 
-        assert isinstance(res, tuple)
+            assert isinstance(res, tuple)
 
-        assert isinstance(res[0], dict)
-        assert len(res[0]) == 2
-        assert isinstance(res[1], dict)
-        assert len(res[1]) == 2
+            assert isinstance(res[0], dict)
+            assert len(res[0]) == 2
+            assert isinstance(res[1], dict)
+            assert len(res[1]) == 2
 
     def test_chained_qnodes(self, dev_name, diff_method, mode, interface):
         """Test that the gradient of chained QNodes works without error"""
@@ -830,12 +838,12 @@ class TestQubitIntegration:
                     qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)
                 return tape
 
-        @qnode(dev, interface=interface, diff_method=diff_method)
+        @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit1(weights):
             Template(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        @qnode(dev, interface=interface, diff_method=diff_method)
+        @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit2(data, weights):
             qml.templates.AngleEmbedding(jnp.stack([data, 0.7]), wires=[0, 1])
             Template(weights, wires=[0, 1])
@@ -860,11 +868,35 @@ class TestQubitIntegration:
 
         assert len(res) == 2
 
+hessian_qubit_device_and_diff_method = [
+    ["default.qubit", "backprop", "forward", "jax"],
+    # Python
+    ["default.qubit", "finite-diff", "backward", "jax-python"],
+    ["default.qubit", "parameter-shift", "backward", "jax-python"],
+    ["default.qubit", "adjoint", "forward", "jax-python"],
+    ["default.qubit", "adjoint", "backward", "jax-python"],
+
+    # TODO:
+    # Jit
+    # ["default.qubit", "finite-diff", "backward", "jax-jit"],
+    # ["default.qubit", "parameter-shift", "backward", "jax-jit"],
+
+    # ["default.qubit", "adjoint", "forward", "jax-jit"],
+    # ["default.qubit", "adjoint", "backward", "jax-jit"],
+]
+
+@pytest.mark.parametrize("dev_name,diff_method,mode,interface", hessian_qubit_device_and_diff_method)
+class TestQubitIntegrationHigherOrder:
+    """Tests that ensure various qubit circuits integrate correctly when computing higher-order derivatives"""
+
     def test_second_derivative(self, dev_name, diff_method, mode, interface, tol):
         """Test second derivative calculation of a scalar-valued QNode"""
 
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not second derivative.")
+
+        if interface == "jax-jit":
+            pytest.skip("JAX-JIT doesn't yet support Hessians.")
 
         dev = qml.device(dev_name, wires=1)
 
@@ -900,6 +932,9 @@ class TestQubitIntegration:
         """Test hessian calculation of a scalar-valued QNode"""
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
+
+        if interface == "jax-jit":
+            pytest.skip("JAX-JIT doesn't yet support Hessians.")
 
         dev = qml.device(dev_name, wires=1)
 
