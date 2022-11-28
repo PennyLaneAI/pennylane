@@ -730,7 +730,7 @@ def finite_diff(
                 # add on the unshifted term
                 g = g + r0 * c0
 
-            grads.append(g * (h**(-n)))
+            grads.append(g * (h ** (-n)))
 
         # The following is for backwards compatibility; currently,
         # the device stacks multiple measurement arrays, even if not the same
