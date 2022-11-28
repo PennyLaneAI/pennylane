@@ -152,7 +152,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
         raise InterfaceUnsupportedError("The JAX interface only supports first order derivatives.")
 
     if any(m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts) for t in tapes for m in t.measurements):
-        raise InterfaceUnsupportedError("The JAX-JIT interface doesn't support qml.counts.")
+        raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
 
     for tape in tapes:
         # set the trainable parameters

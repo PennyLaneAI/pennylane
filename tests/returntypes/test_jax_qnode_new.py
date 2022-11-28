@@ -1250,7 +1250,8 @@ class TestCV:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("interface", ["jax-python", "jax-jit"])
+# TODO: add support for fwd mode to JAX-JIT
+@pytest.mark.parametrize("interface", ["jax-python"])
 def test_adjoint_reuse_device_state(mocker, interface):
     """Tests that the jax interface reuses the device state for adjoint differentiation"""
     dev = qml.device("default.qubit", wires=1)
@@ -1281,6 +1282,9 @@ class TestTapeExpansion:
         expanded for parameter-shift and finite-differences when it is trainable."""
         if diff_method not in ("parameter-shift", "finite-diff"):
             pytest.skip("Only supports gradient transforms")
+
+        if max_diff == 2 and interface == "jax-jit":
+            pytest.skip("TODO: add Hessian support to JAX-JIT.")
 
         dev = qml.device(dev_name, wires=1)
 
@@ -1323,6 +1327,9 @@ class TestTapeExpansion:
         and the first and second order gradients are correctly evaluated"""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
+
+        if max_diff == 2 and interface == "jax-jit":
+            pytest.skip("TODO: add Hessian support to JAX-JIT.")
 
         dev = qml.device(dev_name, wires=3, shots=None)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
@@ -1378,6 +1385,9 @@ class TestTapeExpansion:
         and the first and second order gradients are correctly evaluated"""
         if diff_method in ("adjoint", "backprop", "finite-diff"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
+
+        if max_diff == 2 and interface == "jax-jit":
+            pytest.skip("TODO: add Hessian support to JAX-JIT.")
 
         dev = qml.device(dev_name, wires=3, shots=50000)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
