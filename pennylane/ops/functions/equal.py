@@ -14,13 +14,14 @@
 """
 This module contains the qml.equal function.
 """
-# pylint: disable=too-many-arguments,too-many-return-statements
+# pylint: disable=too-many-arguments,too-many-return-statements, too-many-branches
 from typing import Union
 
 from functools import singledispatch
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ShadowMeasurementProcess
-from pennylane.operation import Operator
+from pennylane.operation import Operator, Observable, Tensor
+from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 def equal(
@@ -33,26 +34,56 @@ def equal(
 ):
     r"""Function for determining operator or measurement equality.
 
+    .. Warning::
+
+        The equal function does **not** check if the matrix representation
+        of a :class:`~.Hermitian` observable is equal to an equivalent
+        observable expressed in terms of Pauli matrices, or as a
+        linear combination of Hermitians.
+        To do so would require the matrix form of Hamiltonians and Tensors
+        be calculated, which may drastically increase runtime.
+
+        The kwargs ``check_interface`` and ``check_trainability`` can only be set when
+        comparing ``Operation`` objects. Comparisons of ``MeasurementProcess`` or ``Observable``
+        objects will use the defualt value of ``True`` for both, regardless of what the user
+        specifies when calling the function.
+
     Args:
         op1 (.Operator or .MeasurementProcess): First object to compare
         op2 (.Operator or .MeasurementProcess): Second object to compare
-        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``
-        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``
-        rtol (float, optional): Relative tolerance for parameters
-        atol (float, optional): Absolute tolerance for parameters
+        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        rtol (float, optional): Relative tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        atol (float, optional): Absolute tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
 
     Returns:
         bool: ``True`` if the operators or measurement processes are equal, else ``False``
 
     **Example**
 
-    Given two operators or measurement processes, ``qml.equal`` determines their equality:
+    Given two operators or measurement processes, ``qml.equal`` determines their equality.
 
     >>> op1 = qml.RX(np.array(.12), wires=0)
     >>> op2 = qml.RY(np.array(1.23), wires=0)
     >>> qml.equal(op1, op1), qml.equal(op1, op2)
     (True, False)
 
+    >>> T1 = qml.PauliX(0) @ qml.PauliY(1)
+    >>> T2 = qml.PauliY(1) @ qml.PauliX(0)
+    >>> T3 = qml.PauliX(1) @ qml.PauliY(0)
+    >>> qml.equal(T1, T2), qml.equal(T1, T3)
+    (True, False)
+
+    >>> T = qml.PauliX(0) @ qml.PauliY(1)
+    >>> H = qml.Hamiltonian([1], [qml.PauliX(0) @ qml.PauliY(1)])
+    >>> qml.equal(T, H)
+    True
+
+    >>> H1 = qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")])
+    >>> H2 = qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliY(1)])
+    >>> H3 = qml.Hamiltonian([2], [qml.PauliZ(0) @ qml.PauliY(1)])
+    >>> qml.equal(H1, H2), qml.equal(H1, H3)
+    (True, False)
 
     >>> qml.equal(qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0)) )
     True
@@ -62,10 +93,12 @@ def equal(
     True
 
 
+
     .. details::
         :title: Usage Details
 
-        You can use the optional arguments when comparing Operators to get more specific results.
+        You can use the optional arguments to get more specific results. These arguments are, however, not used
+        for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
 
         Consider the following comparisons:
 
@@ -86,8 +119,12 @@ def equal(
         True
     """
 
-    if not isinstance(op2, type(op1)):
+    # types don't have to be the same type, they just both have to be Observables
+    if not isinstance(op2, type(op1)) and not isinstance(op1, Observable):
         return False
+
+    if isinstance(op2, (Hamiltonian, Tensor)):
+        return _equal(op2, op1)
 
     return _equal(
         op1,
@@ -103,14 +140,16 @@ def equal(
 def _equal(
     op1,
     op2,
-    **kwargs,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
 ):
-
-    raise NotImplementedError(f"Comparison between {type(op1)} and {type(op2)} not implemented.")
+    raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
 
 
 @_equal.register
-def _equal_operator(
+def _equal_operators(
     op1: Operator,
     op2: Operator,
     check_interface=True,
@@ -118,8 +157,12 @@ def _equal_operator(
     rtol=1e-5,
     atol=1e-9,
 ):
+    """Default function to determine whether two Operator objects are equal."""
 
-    """Determine whether two Operator objects are equal"""
+    if not isinstance(
+        op2, type(op1)
+    ):  # clarifies cases involving PauliX/Y/Z (Observable/Operation)
+        return False
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return False
@@ -153,7 +196,33 @@ def _equal_operator(
 
 @_equal.register
 # pylint: disable=unused-argument
+def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
+    """Determine whether a Tensor object is equal to a Hamiltonian/Tensor"""
+    if not isinstance(op2, Observable):
+        return False
+
+    if isinstance(op2, Hamiltonian):
+        return op2.compare(op1)
+
+    if isinstance(op2, Tensor):
+        return op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
+
+    raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
+    """Determine whether a Hamiltonian object is equal to a Hamiltonian/Tensor objects"""
+    if not isinstance(op2, Observable):
+        return False
+    return op1.compare(op2)
+
+
+@_equal.register
+# pylint: disable=unused-argument
 def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwargs):
+
     """Determine whether two MeasurementProcess objects are equal"""
 
     return_types_match = op1.return_type == op2.return_type
