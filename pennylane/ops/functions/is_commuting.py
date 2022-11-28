@@ -69,7 +69,9 @@ def _get_target_name(op):
     _control_base_map = {
         "CNOT": "PauliX",
         "CZ": "PauliZ",
+        "CCZ": "PauliZ",
         "CY": "PauliY",
+        "CH": "Hadamard",
         "CSWAP": "SWAP",
         "Toffoli": "PauliX",
         "ControlledPhaseShift": "PhaseShift",

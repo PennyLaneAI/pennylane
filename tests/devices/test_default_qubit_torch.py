@@ -33,6 +33,7 @@ from gate_data import (
     CNOT,
     CSWAP,
     CZ,
+    CH,
     SWAP,
     ControlledPhaseShift,
     CRot3,
@@ -60,6 +61,7 @@ from gate_data import (
     SingleExcitationPlus,
     T,
     Toffoli,
+    CCZ,
     X,
     Y,
     Z,
@@ -108,7 +110,7 @@ single_qubit_param = [
     (qml.RZ, Rotz),
     (qml.MultiRZ, MultiRZ1),
 ]
-two_qubit = [(qml.CZ, CZ), (qml.CNOT, CNOT), (qml.SWAP, SWAP)]
+two_qubit = [(qml.CZ, CZ), (qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.CH, CH)]
 two_qubit_param = [
     (qml.CRX, CRotx),
     (qml.CRY, CRoty),
@@ -122,7 +124,7 @@ two_qubit_param = [
     (qml.SingleExcitationPlus, SingleExcitationPlus),
     (qml.SingleExcitationMinus, SingleExcitationMinus),
 ]
-three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
+three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP), (qml.CCZ, CCZ)]
 four_qubit_param = [
     (qml.DoubleExcitation, DoubleExcitation),
     (qml.DoubleExcitationPlus, DoubleExcitationPlus),
