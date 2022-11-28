@@ -37,11 +37,10 @@ def shadow_expval(H, k=1, seed=None):
         H (Union[Iterable, :class:`~.pennylane.Hamiltonian`, :class:`~.pennylane.operation.Tensor`]): Observable or
             iterable of observables to compute the expectation value over.
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
-        seed_recipes (bool): If True, a seed will be generated that
-            is used for the randomly sampled Pauli measurements. This is to
-            ensure that the same recipes are used when a tape containing this
-            measurement is copied. Different seeds are still generated for
-            different constructed tapes.
+        seed (Union[None, int]):  Seed used to randomly sample Pauli measurements during the
+            classical shadows protocol. If None, a random seed will be generated. If a tape with
+            a ``shadow_expval`` measurement is copied, the seed will also be copied.
+            Different seeds are still generated for different constructed tapes.
 
     Returns:
         float: expectation value estimate.
@@ -109,11 +108,10 @@ def classical_shadow(wires, seed=None):
 
     Args:
         wires (Sequence[int]): the wires to perform Pauli measurements on
-        seed_recipes (bool): If True, a seed will be generated that
-            is used for the randomly sampled Pauli measurements. This is to
-            ensure that the same recipes are used when a tape containing this
-            measurement is copied. Different seeds are still generated for
-            different constructed tapes.
+        seed (Union[None, int]):  Seed used to randomly sample Pauli measurements during the
+            classical shadows protocol. If None, a random seed will be generated. If a tape with
+            a ``classical_shadow`` measurement is copied, the seed will also be copied.
+            Different seeds are still generated for different constructed tapes.
 
     **Example**
 
