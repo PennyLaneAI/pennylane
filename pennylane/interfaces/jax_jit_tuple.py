@@ -83,8 +83,12 @@ def _extract_jac_shape(tapes, device):
         if len(t.trainable_params) == 1:
             shape_dtypes.append(shape_and_dtype)
         else:
-            s = [shape_and_dtype] * len(t.trainable_params)
-            shape_dtypes.append(tuple(s))
+            if num_measurements == 1:
+                s = [shape_and_dtype for _  in range(len(t.trainable_params))]
+                shape_dtypes.append(tuple(s))
+            else:
+                s = [tuple(_s for _  in range(len(t.trainable_params))) for _s in shape_and_dtype]
+                shape_dtypes.append(tuple(s))
 
     if len(tapes) == 1:
         return shape_dtypes[0]
@@ -242,10 +246,9 @@ def _execute_bwd_new(
 
             return all_jacs
 
-        # TODO: This works for test_gradient:
-        #abc = tuple([shape_dtype_structs] for _ in range(2))
         expected_shapes = _extract_jac_shape(tapes, device)
-        return jax.pure_callback(wrapper, expected_shapes, params)
+        res = jax.pure_callback(wrapper, expected_shapes, params)
+        return res 
 
     @callback_fun.defjvp
     def callback_fun_jvp(primals, tangents):
@@ -289,7 +292,7 @@ def _execute_bwd_new(
 
                 #jvps = post_proc_res(res_from_callback, multi_measurements, multi_params)
                 jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
-                jvps = [jnp.squeeze(j) for j in jvps]
+                #jvps = [jnp.squeeze(j) for j in jvps]
 
             # TODO: need?
         else:

@@ -511,7 +511,6 @@ def _execute_bwd_new(
             multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
             jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
 
-        print("JAX Python: ", primals, jvps)
         return res, jvps
 
     return execute_wrapper(params)
