@@ -642,6 +642,36 @@ class TestConditionalOperations:
         assert np.allclose(qml.matrix(normal_circuit)(x, y), qml.matrix(cond_qnode)(x, y))
 
 
+class TestComplicatedConditionals:
+    @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
+    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
+    @pytest.mark.parametrize("op", [qml.RX, qml.RY, qml.RZ])
+    def test_conditional_rotations(self, device, r, op):
+        """Test that the quantum conditional operations match the output of
+        controlled rotations."""
+        dev = qml.device(device, wires=3)
+
+        @qml.qnode(dev)
+        def normal_circuit(rads):
+            qml.Hadamard(0)
+            qml.ctrl(op, control=(0, 1), control_values=[True, True])(rads, wires=2)
+            return qml.probs(wires=2)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def quantum_control_circuit(rads):
+            qml.Hadamard(0)
+            m_0 = qml.measure(0)
+            m_1 = qml.measure(1)
+            qml.cond(m_0 + m_1 == 2, op)(rads, wires=2)
+            return qml.probs(wires=2)
+
+        normal_probs = normal_circuit(r)
+        cond_probs = quantum_control_circuit(r)
+
+        assert np.allclose(normal_probs, cond_probs)
+
+
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
 
@@ -798,15 +828,15 @@ class TestDrawing:
 class TestMeasurementValueManipulation:
     def test_apply_function_to_measurement(self):
 
-        m = MeasurementValue("m", fn=lambda v: v)
+        m = MeasurementValue(["m"], fn=lambda v: v)
 
-        sin_of_m = m.apply(np.sin)
+        sin_of_m = m._apply(np.sin)
         assert sin_of_m[0] == 0.0
         assert sin_of_m[1] == np.sin(1)
 
     def test_add_to_measurements(self):
-        m0 = MeasurementValue("m0", fn=lambda v: v)
-        m1 = MeasurementValue("m1", fn=lambda v: v)
+        m0 = MeasurementValue(["m0"], fn=lambda v: v)
+        m1 = MeasurementValue(["m1"], fn=lambda v: v)
         sum_of_measurements = m0 + m1
         assert sum_of_measurements[0] == 0
         assert sum_of_measurements[1] == 1
@@ -814,26 +844,26 @@ class TestMeasurementValueManipulation:
         assert sum_of_measurements[3] == 2
 
     def test_equality_with_scalar(self):
-        m = MeasurementValue("m", fn=lambda v: v)
+        m = MeasurementValue(["m"], fn=lambda v: v)
         m_eq = m == 0
         assert m_eq[0] == True  # confirming value is actually eq to True, not just truthy
         assert m_eq[1] == False
 
     def test_inversion(self):
-        m = MeasurementValue("m", fn=lambda v: v)
+        m = MeasurementValue(["m"], fn=lambda v: v)
         m_inversion = ~m
         assert m_inversion[0] == True
         assert m_inversion[1] == False
 
     def test_lt(self):
-        m = MeasurementValue("m", fn=lambda v: v)
+        m = MeasurementValue(["m"], fn=lambda v: v)
         m_inversion = m < 0.5
         assert m_inversion[0] == True
         assert m_inversion[1] == False
 
     def test_lt_with_other_measurement_value(self):
-        m1 = MeasurementValue("m1", fn=lambda v: v)
-        m2 = MeasurementValue("m2", fn=lambda v: v)
+        m1 = MeasurementValue(["m1"], fn=lambda v: v)
+        m2 = MeasurementValue(["m2"], fn=lambda v: v)
         compared = m1 < m2
         assert compared[0] == False
         assert compared[1] == True
@@ -841,14 +871,14 @@ class TestMeasurementValueManipulation:
         assert compared[3] == False
 
     def test_gt(self):
-        m = MeasurementValue("m", fn=lambda v: v)
+        m = MeasurementValue(["m"], fn=lambda v: v)
         m_inversion = m > 0.5
         assert m_inversion[0] == False
         assert m_inversion[1] == True
 
     def test_gt_with_other_measurement_value(self):
-        m1 = MeasurementValue("m1", fn=lambda v: v)
-        m2 = MeasurementValue("m2", fn=lambda v: v)
+        m1 = MeasurementValue(["m1"], fn=lambda v: v)
+        m2 = MeasurementValue(["m2"], fn=lambda v: v)
         compared = m1 > m2
         assert compared[0] == False
         assert compared[1] == False
@@ -856,14 +886,14 @@ class TestMeasurementValueManipulation:
         assert compared[3] == False
 
     def test_eq(self):
-        m = MeasurementValue("m", fn=lambda v: v)
+        m = MeasurementValue(["m"], fn=lambda v: v)
         m_eq = m == 1
         assert m_eq[0] == False
         assert m_eq[1] == True
 
     def test_eq_with_other_measurement_value(self):
-        m1 = MeasurementValue("m1", fn=lambda v: v)
-        m2 = MeasurementValue("m2", fn=lambda v: v)
+        m1 = MeasurementValue(["m1"], fn=lambda v: v)
+        m2 = MeasurementValue(["m2"], fn=lambda v: v)
         compared = m1 == m2
         assert compared[0] == True
         assert compared[1] == False
@@ -871,22 +901,22 @@ class TestMeasurementValueManipulation:
         assert compared[3] == True
 
     def test_merge_measurements_values_dependant_on_same_measurement(self):
-        m0 = MeasurementValue("m", fn=lambda v: v)
-        m1 = MeasurementValue("m", fn=lambda v: v)
+        m0 = MeasurementValue(["m"], fn=lambda v: v)
+        m1 = MeasurementValue(["m"], fn=lambda v: v)
         combined = m0 + m1
         assert combined[0] == 0
         assert combined[1] == 2
 
     def test_combine_measurement_value_with_non_measurement(self):
-        m0 = MeasurementValue("m", fn=lambda v: v)
+        m0 = MeasurementValue(["m"], fn=lambda v: v)
         out = m0 + 10
         assert out[0] == 10
         assert out[1] == 11
 
     def test_str(self):
-        m = MeasurementValue("m", fn=lambda v: v)
+        m = MeasurementValue(["m"], fn=lambda v: v)
         assert str(m) == "if m=0 => 0\nif m=1 => 1"
 
     def test_complex_str(self):
-        a = MeasurementValue("a", fn=lambda v: v)
-        b = MeasurementValue("b", fn=lambda v: v)
+        a = MeasurementValue(["a"], fn=lambda v: v)
+        b = MeasurementValue(["b"], fn=lambda v: v)
