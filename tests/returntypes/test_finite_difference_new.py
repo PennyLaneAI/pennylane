@@ -462,8 +462,11 @@ class TestFiniteDiff:
     #             return SpecialObject(self.val * other)
     #
     #         def __add__(self, other):
-    #             = self.val + other.val if isinstance(other, self.__class__) else other
-    #             return SpecialObject)
+    #             new = self.val + (other.val if isinstance(other, self.__class__) else other)
+    #             return SpecialObject(new)
+    #
+    #         def __radd__(self, other):
+    #             return self + other
     #
     #     class SpecialObservable(Observable):
     #         """SpecialObservable"""
