@@ -132,3 +132,9 @@ Completed deprecation cycles
 
   - Deprecated in v0.24
   - Removed in v0.27
+
+* The ``qml.Operation.get_parameter_shift`` method is removed. Use the methods of the ``gradients`` module
+  for general parameter-shift rules instead.
+
+  - Deprecated in v0.22
+  - Removed in v0.28
