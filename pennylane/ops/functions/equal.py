@@ -23,7 +23,8 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import _ShadowExpval
 from pennylane.measurements.mutual_info import _MutualInfo
 from pennylane.measurements.vn_entropy import _VnEntropy
-from pennylane.operation import Operator
+from pennylane.operation import Observable, Operator, Tensor
+from pennylane.ops import Hamiltonian
 
 
 def equal(
