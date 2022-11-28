@@ -24,6 +24,7 @@ from pennylane.operation import (
     expand_matrix,
     OperatorPropertyUndefined,
     Tensor,
+    Operator,
 )
 from pennylane.pauli import is_pauli_word, pauli_word_to_string
 from pennylane.wires import Wires
@@ -134,6 +135,10 @@ class Exp(SymbolicOp):
     control_wires = Wires([])
 
     def __init__(self, base=None, coeff=1, do_queue=True, id=None):
+        if base and not isinstance(base, Operator):
+            raise TypeError(
+                f"base is expected to be type None or Operator, but recieved {type(base)}"
+            )
         self.coeff = coeff
         super().__init__(base, do_queue=do_queue, id=id)
         self._name = "Exp"
