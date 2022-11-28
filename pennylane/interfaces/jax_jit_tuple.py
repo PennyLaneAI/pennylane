@@ -57,6 +57,35 @@ def _extract_shape_dtype_structs_new(tapes, device):
 
     return shape_dtypes
 
+# TODO: refactor!
+def _extract_jac_shape(tapes, device):
+    """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
+    the tapes and the device.
+
+    The jax.pure_callback function expects jax.ShapeDtypeStruct objects to
+    describe the output of the function call.
+    """
+    shape_dtypes = []
+
+    def process_single_shape(shape, tape_dtype):
+        return jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
+
+    for t in tapes:
+        num_measurements = len(t.measurements)
+
+        shape = t.shape(device)
+        if num_measurements == 1:
+            tape_dtype = _numeric_type_to_dtype(t.numeric_type)
+            shape_and_dtype = process_single_shape(shape, tape_dtype)
+        else:
+            tape_dtype = tuple(_numeric_type_to_dtype(elem) for elem in t.numeric_type)
+            shape_and_dtype = tuple(process_single_shape(s, d) for s, d in zip(shape, tape_dtype))
+
+        for _ in range(len(t.trainable_params)):
+            shape_dtypes.append([shape_and_dtype])
+
+    return tuple(shape_dtypes)
+
 
 def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
     """Execute a batch of tapes with JAX parameters on a device.
@@ -187,24 +216,37 @@ def _execute_bwd_new(
         def wrapper(params):
             new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
 
-            print(new_tapes[0].trainable_params, gradient_kwargs)
             with qml.tape.Unwrap(*new_tapes):
-                # TODO: generalize for many tapes:
-                jvp_tapes, fn = gradient_fn(new_tapes[0], shots=device.shots, **gradient_kwargs)
-                jacs = execute_fn(jvp_tapes)[0]
-                jacs = fn(jacs)
+                all_jacs = []
+                for new_t in new_tapes:
+                    jvp_tapes, fn = gradient_fn(new_t, shots=device.shots, **gradient_kwargs)
 
-            return jacs
+                    jacs = execute_fn(jvp_tapes)[0]
+                    jacs = fn(jacs)
+                    all_jacs.append(jacs)
 
+            if len(all_jacs) == 1:
+                return all_jacs[0]
+
+            return all_jacs
+
+        # What is the expected output shape of the jacobian?
+        # For each tape: number of shifted tapes
+        # For each shifted tape: number of parameters
+
+        # How do you get the number of JVP tapes for a general operation??
+
+        # TODO: need to update for each measurement:
         shape_dtype_structs = jax.ShapeDtypeStruct((), dtype)
-        num_outputs = 3 # sum(len(t.measurements) for t in jvp_tapes)
-        abc = tuple([shape_dtype_structs] * 1 for _ in range(2)) #len(t.measurements) for t in jvp_tapes)
+
+        # TODO: This works for test_gradient:
+        #abc = tuple([shape_dtype_structs] for _ in range(2))
+        abc = _extract_jac_shape(tapes, device)
 
         return jax.pure_callback(wrapper, abc, params)
 
     @callback_fun.defjvp
     def callback_fun_jvp(primals, tangents):
-        print('in callback_fun_jvp')
         return primals, tangents
 
     @execute_wrapper.defjvp
@@ -243,9 +285,8 @@ def _execute_bwd_new(
                 jvps = _compute_jvps([res_from_callback], tangents[0], multi_measurements)
                 jvps = [jnp.squeeze(j) for j in jvps]
 
-            print(jvps)
+            # TODO: need?
             #jvps = post_proc_res(jvps, multi_measurements, multi_params)
-            print(jvps)
         else:
             # Gradient function is a device method
             jacs = callback_fun_fwd(new_tapes, num_params)
