@@ -154,7 +154,6 @@ class MeasurementValue(Generic[T]):
         return MeasurementValue(merged_measurement_ids, merged_fn)
 
     def __getitem__(self, i):
-        # branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)).split())
         branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
         return self.fn(*branch)
 
