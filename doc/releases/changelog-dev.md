@@ -162,6 +162,36 @@
 
 <h4>Return types project</h4>
 
+* The JAX-JIT interface now supports gradient transforms and device gradient execution in `backward` mode with the new
+  return types system.
+  [#3235](https://github.com/PennyLaneAI/pennylane/pull/3235)
+
+  ```python
+  import pennylane as qml
+  import jax
+  from jax import numpy as jnp
+
+  jax.config.update("jax_enable_x64", True)
+
+  qml.enable_return()
+
+  dev = qml.device("lightning.qubit", wires=1)
+
+  @jax.jit
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax-jit")
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  a, b = jnp.array(1.0), jnp.array(2.0)
+  ```
+  ```pycon
+  >>> jax.grad(circuit, argnums=[0,1])(a, b)
+  (DeviceArray(0.35017549, dtype=float64, weak_type=True),
+   DeviceArray(-0.4912955, dtype=float64, weak_type=True))
+  ```
+
 * The autograd interface for the new return types now supports devices with shot vectors.
   [#3374](https://github.com/PennyLaneAI/pennylane/pull/3374)
 
