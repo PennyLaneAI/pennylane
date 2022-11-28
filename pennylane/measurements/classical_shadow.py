@@ -397,9 +397,12 @@ class _ShadowExpval(CustomMeasurement):
         return self
 
     def __copy__(self):
+        H_copy = (
+            [copy.copy(H) for H in self.H] if isinstance(self.H, Iterable) else copy.copy(self.H)
+        )
         return self.__class__(
             self.return_type,
-            H=self.H,
+            H=H_copy,
             k=self.k,
             seed=self.seed,
             obs=copy.copy(self.obs),
