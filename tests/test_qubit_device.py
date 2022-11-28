@@ -325,10 +325,12 @@ class TestExtractStatistics:
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
 
-        qscript = QuantumScript(measurements=[measurement(obs=SomeObservable(wires=0))])
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
@@ -353,10 +355,12 @@ class TestExtractStatistics:
     def test_results_created_empty(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method returns an empty list if the return type is None"""
 
-        class SomeMeasurement(MeasurementProcess):
-            return_type = returntype
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
 
-        qscript = QuantumScript(measurements=[SomeMeasurement()])
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
@@ -370,10 +374,12 @@ class TestExtractStatistics:
 
         assert returntype not in [_Expectation, _Variance, _Sample, _Probability, _State, None]
 
-        class SomeMeasurement(MeasurementProcess):
-            return_type = returntype
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
 
-        qscript = QuantumScript(measurements=[SomeMeasurement()])
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev = mock_qubit_device_extract_stats()
