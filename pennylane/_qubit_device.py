@@ -251,7 +251,7 @@ class QubitDevice(Device):
 
         for shot_tuple in self._shot_vector:
             s2 = s1 + np.prod(shot_tuple)
-            r = self.statistics(circuit=circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
+            r = self.statistics(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
                 r = r[0]
@@ -384,7 +384,7 @@ class QubitDevice(Device):
         if not self.analytic and self._shot_vector is not None:
             results = self._collect_shotvector_results(circuit, counts_exist)
         else:
-            results = self.statistics(circuit=circuit)
+            results = self.statistics(circuit)
 
         if not circuit.is_sampled:
 
@@ -447,9 +447,7 @@ class QubitDevice(Device):
 
         for shot_tuple in self._shot_vector:
             s2 = s1 + np.prod(shot_tuple)
-            r = self._statistics_new(
-                circuit=circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots
-            )
+            r = self._statistics_new(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             # This will likely be required:
             # if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
@@ -1075,6 +1073,7 @@ class QubitDevice(Device):
             return np.array(
                 [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
             )
+
         return np.random.choice(basis_states, shots, p=state_probability)
 
     @staticmethod
