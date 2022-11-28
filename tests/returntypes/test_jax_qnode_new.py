@@ -31,7 +31,6 @@ qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-
     # TODO:
     # ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
@@ -253,12 +252,10 @@ vv_qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-
     # TODO:
-    #["default.qubit", "adjoint", "forward", "jax-jit"],
+    # ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
-
 
 
 @pytest.mark.parametrize("dev_name,diff_method,mode,interface", vv_qubit_device_and_diff_method)
@@ -816,7 +813,9 @@ class TestQubitIntegration:
             return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliX(1))
 
         if interface == "jax-jit":
-            with pytest.raises(NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."):
+            with pytest.raises(
+                NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
+            ):
                 circuit()
         else:
             res = circuit()
@@ -868,6 +867,7 @@ class TestQubitIntegration:
 
         assert len(res) == 2
 
+
 hessian_qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],
     # Python
@@ -875,17 +875,18 @@ hessian_qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", "backward", "jax-python"],
     ["default.qubit", "adjoint", "forward", "jax-python"],
     ["default.qubit", "adjoint", "backward", "jax-python"],
-
     # TODO:
     # Jit
     # ["default.qubit", "finite-diff", "backward", "jax-jit"],
     # ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-
     # ["default.qubit", "adjoint", "forward", "jax-jit"],
     # ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
-@pytest.mark.parametrize("dev_name,diff_method,mode,interface", hessian_qubit_device_and_diff_method)
+
+@pytest.mark.parametrize(
+    "dev_name,diff_method,mode,interface", hessian_qubit_device_and_diff_method
+)
 class TestQubitIntegrationHigherOrder:
     """Tests that ensure various qubit circuits integrate correctly when computing higher-order derivatives"""
 

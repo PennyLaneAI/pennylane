@@ -367,7 +367,6 @@ class TestCaching:
 
 execute_kwargs = [
     {"gradient_fn": param_shift},
-
     # TODO: add forward implementation
     # {
     #     "gradient_fn": "device",
@@ -1040,7 +1039,7 @@ class TestVectorValuedJIT:
             return res
 
         res = cost(params, cache=None)
-        assert res.shape == (dev.shots,) 
+        assert res.shape == (dev.shots,)
 
     def test_multiple_expvals_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""

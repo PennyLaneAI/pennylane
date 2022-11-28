@@ -25,7 +25,7 @@ import semantic_version
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
-from pennylane.interfaces.jax_jit import _numeric_type_to_dtype 
+from pennylane.interfaces.jax_jit import _numeric_type_to_dtype
 
 dtype = jnp.float64
 
@@ -56,6 +56,7 @@ def _extract_shape_dtype_structs_new(tapes, device):
         shape_dtypes.append(shape_and_dtype)
     return shape_dtypes
 
+
 # TODO: refactor!
 def _extract_jac_shape(tapes, device):
     """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
@@ -84,16 +85,17 @@ def _extract_jac_shape(tapes, device):
             shape_dtypes.append(shape_and_dtype)
         else:
             if num_measurements == 1:
-                s = [shape_and_dtype for _  in range(len(t.trainable_params))]
+                s = [shape_and_dtype for _ in range(len(t.trainable_params))]
                 shape_dtypes.append(tuple(s))
             else:
-                s = [tuple(_s for _  in range(len(t.trainable_params))) for _s in shape_and_dtype]
+                s = [tuple(_s for _ in range(len(t.trainable_params))) for _s in shape_and_dtype]
                 shape_dtypes.append(tuple(s))
 
     if len(tapes) == 1:
         return shape_dtypes[0]
 
     return tuple(shape_dtypes)
+
 
 def jac_device_shape(tapes, dtype, num_params):
 
@@ -103,7 +105,9 @@ def jac_device_shape(tapes, dtype, num_params):
         abc = []
         for t in tapes:
             num_meas = len(t.measurements)
-            shape = [shape_dtype_structs] if num_meas == 1 else tuple([shape_dtype_structs] * num_meas)
+            shape = (
+                [shape_dtype_structs] if num_meas == 1 else tuple([shape_dtype_structs] * num_meas)
+            )
             abc.append(shape)
     else:
         abc = []
@@ -151,7 +155,11 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
     if max_diff > 1:
         raise InterfaceUnsupportedError("The JAX interface only supports first order derivatives.")
 
-    if any(m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts) for t in tapes for m in t.measurements):
+    if any(
+        m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+        for t in tapes
+        for m in t.measurements
+    ):
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
 
     for tape in tapes:
@@ -251,7 +259,7 @@ def _execute_bwd_new(
 
         expected_shapes = _extract_jac_shape(tapes, device)
         res = jax.pure_callback(wrapper, expected_shapes, params)
-        return res 
+        return res
 
     @callback_fun.defjvp
     def callback_fun_jvp(primals, tangents):
@@ -284,7 +292,7 @@ def _execute_bwd_new(
                 # 1. Tape unwrapping has to happen in the callback: otherwise jitting is broken and Tracer objects are
                 # converted to NumPy, something that raises an error (as of jax and jaxlib 0.3.25)
                 #
-                # 2. Passing in the tangents as an argument to the function called by the callback seems to raise a 
+                # 2. Passing in the tangents as an argument to the function called by the callback seems to raise a
                 # ValueError: Pure callbacks do not support transpose. Please use jax.custom_vjp to use callbacks while taking gradients.
                 #
                 # Solution: Use the callback to compute the jacobian and then separately compute the JVP using the
@@ -293,9 +301,9 @@ def _execute_bwd_new(
                 if len(tapes) == 1:
                     res_from_callback = [res_from_callback]
 
-                #jvps = post_proc_res(res_from_callback, multi_measurements, multi_params)
+                # jvps = post_proc_res(res_from_callback, multi_measurements, multi_params)
                 jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
-                #jvps = [jnp.squeeze(j) for j in jvps]
+                # jvps = [jnp.squeeze(j) for j in jvps]
 
             # TODO: need?
         else:
@@ -306,7 +314,7 @@ def _execute_bwd_new(
 
             jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
             jvps = post_proc_res(jvps, multi_measurements, multi_params)
-            #jvps = [tuple([jnp.squeeze(j_comp) for j in jvps for j_comp in j])]
+            # jvps = [tuple([jnp.squeeze(j_comp) for j in jvps for j_comp in j])]
 
         return evaluation_results, jvps
 
