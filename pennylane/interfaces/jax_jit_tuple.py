@@ -23,7 +23,7 @@ import jax.numpy as jnp
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _compute_jvps
-from pennylane.interfaces.jax_jit import _numeric_type_to_dtype
+from pennylane.interfaces.jax_jit import _validate_jax_version, _numeric_type_to_dtype
 
 dtype = jnp.float64
 
@@ -132,7 +132,9 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
     """
     # pylint: disable=unused-argument
     if max_diff > 1:
-        raise InterfaceUnsupportedError("The JAX interface only supports first order derivatives.")
+        raise InterfaceUnsupportedError(
+            "The JAX-JIT interface only supports first order derivatives."
+        )
 
     if any(
         m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
@@ -140,6 +142,8 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
         for m in t.measurements
     ):
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
+
+    _validate_jax_version()
 
     for tape in tapes:
         # set the trainable parameters

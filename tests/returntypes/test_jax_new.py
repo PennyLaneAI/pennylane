@@ -32,6 +32,37 @@ from pennylane.interfaces import execute, InterfaceUnsupportedError
 from pennylane.interfaces.jax_jit import _execute_with_fwd
 
 
+@pytest.mark.parametrize(
+    "version, package, should_raise",
+    [
+        ("0.3.16", jax, True),
+        ("0.3.17", jax, False),
+        ("0.3.18", jax, False),
+        ("0.3.14", jax.lib, True),
+        ("0.3.15", jax.lib, False),
+        ("0.3.16", jax.lib, False),
+    ],
+)
+def test_raise_version_error(package, version, should_raise, monkeypatch):
+    """Test JAX version error"""
+    a = jnp.array([0.1, 0.2])
+
+    dev = qml.device("default.qubit", wires=1)
+
+    with qml.tape.QuantumTape() as tape:
+        qml.expval(qml.PauliZ(0))
+
+    with monkeypatch.context() as m:
+        m.setattr(package, "__version__", version)
+
+        if should_raise:
+            msg = "requires version 0.3.17 or higher for JAX and 0.3.15 or higher JAX lib"
+            with pytest.raises(InterfaceUnsupportedError, match=msg):
+                execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
+        else:
+            execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
+
+
 @pytest.mark.parametrize("interface", ["jax-python", "jax-jit"])
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""
@@ -190,6 +221,31 @@ class TestJaxExecuteUnitTests:
 
         jax.grad(cost)(a)
         spy_gradients.assert_called()
+
+    def test_max_diff_error(self, interface):
+        """Test that an error is being raised if max_diff > 1 for the JAX
+        interface."""
+        a = jnp.array([0.1, 0.2])
+
+        dev = qml.device("default.qubit", wires=1)
+
+        with pytest.raises(
+            InterfaceUnsupportedError,
+            match="The JAX-JIT interface only supports first order derivatives.",
+        ):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            execute(
+                [tape],
+                dev,
+                interface="jax-jit",
+                gradient_fn=param_shift,
+                gradient_kwargs={"shift": np.pi / 4},
+                max_diff=2,
+            )
 
 
 @pytest.mark.parametrize("interface", ["jax-python", "jax-jit"])
