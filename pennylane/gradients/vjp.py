@@ -38,6 +38,19 @@ def _convert(jac, dy_row):
     return jac
 
 
+def _all_close_to_zero(dy):
+    """
+    Check if all entries of dy are close to 0. dy can also be a nested tuple
+    structure of tensors, in which case this returns True iff all tensors are
+    close to 0
+    """
+    if not isinstance(dy, (list, tuple)):
+        return qml.math.allclose(dy, 0)
+
+    # call this method recursively
+    return qml.math.all(qml.math.stack([_all_close_to_zero(dy_) for dy_ in dy]))
+
+
 def compute_vjp_single_new(dy, jac, num=None):
     """Convenience function to compute the vector-Jacobian product for a given
     vector of gradient outputs and a Jacobian for a single measurement tape.
@@ -104,7 +117,7 @@ def compute_vjp_single_new(dy, jac, num=None):
         jac = _convert(jac, dy_row)
 
     try:
-        if qml.math.allclose(dy, 0):
+        if _all_close_to_zero(dy):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero.
             num_params = len(jac) if isinstance(jac, tuple) else 1
@@ -232,7 +245,7 @@ def compute_vjp(dy, jac, num=None):
     jac = qml.math.reshape(jac, [num, -1])
 
     try:
-        if qml.math.allclose(dy, 0):
+        if _all_close_to_zero(dy):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero.
             num_params = jac.shape[1]
@@ -346,7 +359,7 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
         return [], lambda _, num=None: None
 
     try:
-        if not isinstance(dy, tuple) and qml.math.allclose(dy, 0):
+        if _all_close_to_zero(dy):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero,
             # and we can avoid a quantum computation.
