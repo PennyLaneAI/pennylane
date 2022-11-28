@@ -94,7 +94,8 @@ def _spsa_grad_new(
             the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
             to determine if the trainable parameters support the finite-difference method,
             inferring that they support SPSA as well.
-            If ``False``, the finite-difference method will be applied to all parameters.
+            If ``False``, the SPSA gradient method will be applied to all parameters without
+            checking.
         shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to
             execute the tapes outputted by this transform. Note that this argument doesn't
             influence the shots used for tape execution, but provides information
@@ -376,7 +377,8 @@ def spsa_grad(
             the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
             to determine if the trainable parameters support the finite-difference method,
             inferring that they support SPSA as well.
-            If ``False``, the finite-difference method will be applied to all parameters.
+            If ``False``, the SPSA gradient method will be applied to all parameters without
+            checking.
         shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to
             execute the tapes outputted by this transform. Note that this argument doesn't
             influence the shots used for tape execution, but provides information

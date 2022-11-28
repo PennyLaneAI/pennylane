@@ -412,10 +412,11 @@ class TestSpsaGradient:
 
 @pytest.mark.parametrize("approx_order", [2, 4])
 @pytest.mark.parametrize("strategy", ["forward", "backward", "center"])
+@pytest.mark.parametrize("validate", [True, False])
 class TestSpsaGradientIntegration:
     """Tests for the SPSA gradient transform"""
 
-    def test_ragged_output(self, approx_order, strategy):
+    def test_ragged_output(self, approx_order, strategy, validate):
         """Test that the Jacobian is correctly returned for a tape with ragged output"""
         dev = qml.device("default.qubit", wires=3)
         params = [1.0, 1.0, 1.0]
@@ -428,11 +429,17 @@ class TestSpsaGradientIntegration:
             qml.probs(wires=0)
             qml.probs(wires=[1, 2])
 
-        tapes, fn = spsa_grad(tape, approx_order=approx_order, strategy=strategy, num_directions=11)
+        tapes, fn = spsa_grad(
+            tape,
+            approx_order=approx_order,
+            strategy=strategy,
+            num_directions=11,
+            validate_params=validate,
+        )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (6, 3)
 
-    def test_single_expectation_value(self, approx_order, strategy, tol):
+    def test_single_expectation_value(self, approx_order, strategy, tol, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         dev = qml.device("default.qubit", wires=2)
@@ -452,6 +459,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             num_directions=6,
             sampler=coordinate_sampler,
+            validate_params=validate,
         )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (1, 2)
@@ -464,7 +472,7 @@ class TestSpsaGradientIntegration:
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, tol):
+    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, tol, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
@@ -486,6 +494,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             num_directions=8,
             sampler=coordinate_sampler,
+            validate_params=validate,
         )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (1, 2)
@@ -498,7 +507,7 @@ class TestSpsaGradientIntegration:
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, tol):
+    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, tol, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to
         estimate the jacobian.
@@ -525,6 +534,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             num_directions=11,
             sampler=coordinate_sampler,
+            validate_params=validate,
         )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (1, 2)
@@ -535,7 +545,7 @@ class TestSpsaGradientIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_multiple_expectation_values(self, approx_order, strategy, tol):
+    def test_multiple_expectation_values(self, approx_order, strategy, tol, validate):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
         dev = qml.device("default.qubit", wires=2)
@@ -555,6 +565,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             num_directions=12,
             sampler=coordinate_sampler,
+            validate_params=validate,
         )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (2, 2)
@@ -567,7 +578,7 @@ class TestSpsaGradientIntegration:
         expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_var_expectation_values(self, approx_order, strategy, tol):
+    def test_var_expectation_values(self, approx_order, strategy, tol, validate):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2)
@@ -587,6 +598,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             num_directions=12,
             sampler=coordinate_sampler,
+            validate_params=validate,
         )
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (2, 2)
@@ -599,7 +611,7 @@ class TestSpsaGradientIntegration:
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_prob_expectation_values(self, approx_order, strategy, tol):
+    def test_prob_expectation_values(self, approx_order, strategy, tol, validate):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device("default.qubit", wires=2)
@@ -619,6 +631,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             num_directions=10,
             sampler=coordinate_sampler,
+            validate_params=validate,
         )
         res = fn(dev.batch_execute(tapes))
 
