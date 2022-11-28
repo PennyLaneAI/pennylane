@@ -38,7 +38,7 @@ class TestMeasurementValueManipulation:
 
         m = MeasurementValue(["m"], lambda v: v)
 
-        sin_of_m = m.apply(np.sin)
+        sin_of_m = m._apply(np.sin)
         assert sin_of_m[0] == 0.0
         assert sin_of_m[1] == np.sin(1)
 

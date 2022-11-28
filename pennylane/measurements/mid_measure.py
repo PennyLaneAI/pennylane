@@ -94,7 +94,7 @@ class MeasurementValue(Generic[T]):
         self.measurement_ids = measurement_ids
         self.fn = fn
 
-    def items(self):
+    def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
         for i in range(2 ** len(self.measurement_ids)):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
@@ -103,33 +103,33 @@ class MeasurementValue(Generic[T]):
     def __invert__(self):
         """Return a copy of the measurement value with an inverted control
         value."""
-        return self.apply(lambda v: not v)
+        return self._apply(lambda v: not v)
 
     def __eq__(self, other):
         if isinstance(other, MeasurementValue):
-            return self.merge(other).apply(lambda v: v[0] == v[1])
-        return self.apply(lambda v: v == other)
+            return self._merge(other)._apply(lambda v: v[0] == v[1])
+        return self._apply(lambda v: v == other)
 
     def __add__(self, other):
         if isinstance(other, MeasurementValue):
-            return self.merge(other).apply(sum)
-        return self.apply(lambda v: v + other)
+            return self._merge(other)._apply(sum)
+        return self._apply(lambda v: v + other)
 
     def __lt__(self, other):
         if isinstance(other, MeasurementValue):
-            return self.merge(other).apply(lambda v: v[0] < v[1])
-        return self.apply(lambda v: v < other)
+            return self._merge(other)._apply(lambda v: v[0] < v[1])
+        return self._apply(lambda v: v < other)
 
     def __gt__(self, other):
         if isinstance(other, MeasurementValue):
-            return self.merge(other).apply(lambda v: v[0] > v[1])
-        return self.apply(lambda v: v > other)
+            return self._merge(other)._apply(lambda v: v[0] > v[1])
+        return self._apply(lambda v: v > other)
 
-    def apply(self, fn):
+    def _apply(self, fn):
         """Apply a post computation to this measurement"""
         return MeasurementValue(self.measurement_ids, lambda *x: fn(self.fn(*x)))
 
-    def merge(self, other: "MeasurementValue"):
+    def _merge(self, other: "MeasurementValue"):
         """merge two measurement values"""
 
         # create a new merged list with no duplicates and in lexical ordering

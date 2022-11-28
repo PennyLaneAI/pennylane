@@ -116,7 +116,7 @@ def _add_control_gate(op, measured_wires):
     """helper function to add control gates"""
     control = [measured_wires[m_id] for m_id in op.meas_val.measurement_ids]
     flipped = [False] * len(control)
-    for branch, value in op.meas_val.items():
+    for branch, value in op.meas_val._items():  # pylint: disable=protected-access
         if value:
             for i, wire_val in enumerate(branch):
                 if wire_val and flipped[i] or not wire_val and not flipped[i]:
