@@ -1269,13 +1269,10 @@ class QubitDevice(Device):
             n_qubits = len(wires)
             mapped_wires = np.array(self.map_wires(wires))
 
-            if seed is not None:
-                # seed the random measurement generation so that recipes
-                # are the same for different executions with the same seed
-                rng = np.random.RandomState(seed)
-                recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-            else:
-                recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+            # seed the random measurement generation so that recipes
+            # are the same for different executions with the same seed
+            rng = np.random.RandomState(seed)
+            recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
             obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
 
             outcomes = np.zeros((n_snapshots, n_qubits))
