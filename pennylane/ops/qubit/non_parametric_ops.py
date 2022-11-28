@@ -164,6 +164,9 @@ class Hadamard(Observable, Operation):
         ]
         return decomp_ops
 
+    def _controlled(self, wire):
+        return CH(wires=Wires(wire) + self.wires)
+
     def adjoint(self):
         return Hadamard(wires=self.wires)
 
@@ -1209,6 +1212,110 @@ class CY(Operation):
 
     def adjoint(self):
         return CY(wires=self.wires)
+
+    def pow(self, z):
+        return super().pow(z % 2)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+    @property
+    def is_hermitian(self):
+        return True
+
+
+class CH(Operation):
+    r"""CH(wires)
+    The controlled-Hadamard operator
+
+    .. math:: CY = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 \\
+            0 & 0 & \frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}} \\
+            0 & 0 & \frac{1}{\sqrt{2}} & -\frac{1}{\sqrt{2}}
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+    num_wires = 2
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    basis = "Hadamard"
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "H"
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CH.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CH.compute_matrix())
+        [[ 1.          0.          0.          0.        ]
+         [ 0.          1.          0.          0.        ]
+         [ 0.          0.          0.70710678  0.70710678]
+         [ 0.          0.          0.70710678 -0.70710678]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, INV_SQRT2, INV_SQRT2],
+                [0, 0, INV_SQRT2, -INV_SQRT2],
+            ]
+        )
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.CH.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.CH.compute_decomposition([0, 1]))
+        [qml.RY(-0.78539816339, wires=[1]), CZ(wires=[0, 1]), qml.RY(0.78539816339, wires=[1])]
+
+        """
+        return [
+            qml.RY(-np.pi / 4, wires=wires[1]),
+            qml.CZ(wires=wires),
+            qml.RY(+np.pi / 4, wires=wires[1]),
+        ]
+
+    def adjoint(self):
+        return CH(wires=self.wires)
 
     def pow(self, z):
         return super().pow(z % 2)
