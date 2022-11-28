@@ -160,6 +160,9 @@
   its functionality from the `QuantumTape` class.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
+* Replace `qml.transforms.make_tape` wit the new `qml.tape.make_qscript` across the codebase.
+  [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
