@@ -17,7 +17,7 @@ import functools
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
-from pennylane.measurements import _State
+from pennylane.measurements import State
 from pennylane.transforms import adjoint_metric_tensor, batch_transform, metric_tensor
 
 
@@ -54,7 +54,7 @@ def reduced_dm(qnode, wires):
 
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
-        if len(qnode.tape.observables) != 1 or not isinstance(qnode.tape.measurements[0], _State):
+        if len(qnode.tape.observables) != 1 or not isinstance(qnode.tape.measurements[0], State):
             raise ValueError("The qfunc measurement needs to be State.")
 
         # TODO: optimize given the wires by creating a tape with relevant operations
@@ -123,7 +123,7 @@ def purity(qnode, wires):
 
         # Check measurement
         measurements = qnode.tape.measurements
-        if len(measurements) != 1 or not isinstance(measurements[0], _State):
+        if len(measurements) != 1 or not isinstance(measurements[0], State):
             raise ValueError("The qfunc return type needs to be a state.")
 
         state_built = qnode(*args, **kwargs)
@@ -177,7 +177,7 @@ def vn_entropy(qnode, wires, base=None):
         if len(wires) == len(qnode.device.wires):
             qnode.construct(args, kwargs)
             if len(qnode.tape.observables) != 1 or not isinstance(
-                qnode.tape.measurements[0], _State
+                qnode.tape.measurements[0], State
             ):
                 raise ValueError("The qfunc return type needs to be a state.")
             density_matrix = qnode(*args, **kwargs)

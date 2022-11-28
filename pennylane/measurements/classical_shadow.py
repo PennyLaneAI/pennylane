@@ -85,7 +85,7 @@ def shadow_expval(H, k=1, seed_recipes=True):
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
     seed = np.random.randint(2**30) if seed_recipes else None
-    return _ShadowExpval(H=H, seed=seed, k=k)
+    return ShadowExpval(H=H, seed=seed, k=k)
 
 
 def classical_shadow(wires, seed_recipes=True):
@@ -324,7 +324,7 @@ class ClassicalShadow(CustomMeasurement):
         )
 
 
-class _ShadowExpval(CustomMeasurement):
+class ShadowExpval(CustomMeasurement):
     """Measures the expectation value of an operator using the classical shadow measurement process.
 
     This has the same arguments as the base class MeasurementProcess, plus other additional

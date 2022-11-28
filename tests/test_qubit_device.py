@@ -23,17 +23,17 @@ import pennylane as qml
 from pennylane import DeviceError, QubitDevice
 from pennylane import numpy as pnp
 from pennylane.measurements import (
+    Expectation,
     Expectation_,
     MeasurementProcess,
+    Probability,
     Probability_,
+    Sample,
     Sample_,
+    State,
     State_,
+    Variance,
     Variance_,
-    _Expectation,
-    _Probability,
-    _Sample,
-    _State,
-    _Variance,
     state,
 )
 from pennylane.tape import QuantumScript
@@ -321,9 +321,7 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
-    @pytest.mark.parametrize(
-        "measurement", [_Expectation, _Variance, _Sample, _Probability, _State]
-    )
+    @pytest.mark.parametrize("measurement", [Expectation, Variance, Sample, Probability, State])
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 

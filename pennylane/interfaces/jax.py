@@ -22,7 +22,7 @@ import jax.numpy as jnp
 
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
-from pennylane.measurements import _Counts, _Probability, _Sample
+from pennylane.measurements import Counts, Probability, Sample
 
 dtype = jnp.float64
 
@@ -135,12 +135,10 @@ def _validate_tapes(tapes):
         InterfaceUnsupportedError: if tapes that produce ragged outputs were provided
     """
     for t in tapes:
-        probs_or_sample_measure = any(
-            isinstance(m, (_Probability, _Sample)) for m in t.measurements
-        )
-        all_probs = all(isinstance(m, _Probability) for m in t.measurements)
+        probs_or_sample_measure = any(isinstance(m, (Probability, Sample)) for m in t.measurements)
+        all_probs = all(isinstance(m, Probability) for m in t.measurements)
         if probs_or_sample_measure and not (
-            all_probs or all(isinstance(m, _Sample) for m in t.measurements)
+            all_probs or all(isinstance(m, Sample) for m in t.measurements)
         ):
             raise InterfaceUnsupportedError(
                 "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
@@ -176,7 +174,7 @@ def _execute(
         """Auxiliary function to convert the result of a tape to an array,
         unless the tape had Counts measurements that are represented with
         dictionaries. JAX NumPy arrays don't support dictionaries."""
-        return jnp.array(r) if not any(isinstance(m, _Counts) for m in tape.measurements) else r
+        return jnp.array(r) if not any(isinstance(m, Counts) for m in tape.measurements) else r
 
     @jax.custom_vjp
     def wrapped_exec(params):
@@ -216,7 +214,7 @@ def _execute(
 
             for t in tapes:
                 multi_probs = (
-                    any(isinstance(m, _Probability) for m in t.measurements)
+                    any(isinstance(m, Probability) for m in t.measurements)
                     and len(t.measurements) > 1
                 )
 

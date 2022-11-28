@@ -81,10 +81,10 @@ def mutual_info(wires0, wires1, log_base=None):
         raise qml.QuantumFunctionError(
             "Subsystems for computing mutual information must not overlap."
         )
-    return _MutualInfo(wires=[wires0, wires1], log_base=log_base)
+    return MutualInfo(wires=[wires0, wires1], log_base=log_base)
 
 
-class _MutualInfo(StateMeasurement):
+class MutualInfo(StateMeasurement):
     """Measurement process that returns the mutual information."""
 
     # pylint: disable=too-many-arguments, unused-argument

@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.measurements import MeasurementProcess, Probability_, _Probability
+from pennylane.measurements import MeasurementProcess, Probability, Probability_
 from pennylane.queuing import AnnotatedQueue
 
 
@@ -79,7 +79,7 @@ class TestProbs:
 
         circuit()
 
-        assert isinstance(circuit.tape[0], _Probability)
+        assert isinstance(circuit.tape[0], Probability)
 
     def test_numeric_type(self):
         """Test that the numeric type is correct."""

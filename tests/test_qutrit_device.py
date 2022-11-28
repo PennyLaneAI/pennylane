@@ -24,19 +24,19 @@ import pennylane as qml
 from pennylane import DeviceError, QuantumFunctionError, QubitDevice, QutritDevice
 from pennylane import numpy as pnp
 from pennylane.measurements import (
+    Counts,
     Counts_,
+    Expectation,
     Expectation_,
     MeasurementProcess,
+    Probability,
     Probability_,
+    Sample,
     Sample_,
+    State,
     State_,
+    Variance,
     Variance_,
-    _Counts,
-    _Expectation,
-    _Probability,
-    _Sample,
-    _State,
-    _Variance,
 )
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -301,9 +301,7 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
-    @pytest.mark.parametrize(
-        "measure", [_Expectation, _Variance, _Sample, _Probability, _State, _Counts]
-    )
+    @pytest.mark.parametrize("measure", [Expectation, Variance, Sample, Probability, State, Counts])
     def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, measure):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 

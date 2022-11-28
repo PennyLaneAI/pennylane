@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.measurements.classical_shadow import _ShadowExpval
+from pennylane.measurements.classical_shadow import ShadowExpval
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
@@ -141,7 +141,7 @@ class TestExpvalMeasurement:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "PauliY"
         assert len(tape.measurements) == 1
-        assert isinstance(tape.measurements[0], _ShadowExpval)
+        assert isinstance(tape.measurements[0], ShadowExpval)
 
 
 obs_hadamard = [

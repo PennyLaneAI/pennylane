@@ -20,9 +20,9 @@ from typing import Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
-from pennylane.measurements.classical_shadow import _ShadowExpval
-from pennylane.measurements.mutual_info import _MutualInfo
-from pennylane.measurements.vn_entropy import _VnEntropy
+from pennylane.measurements.classical_shadow import ShadowExpval
+from pennylane.measurements.mutual_info import MutualInfo
+from pennylane.measurements.vn_entropy import VnEntropy
 from pennylane.operation import Operator
 
 
@@ -172,7 +172,7 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwar
 
 @_equal.register
 # pylint: disable=unused-argument
-def _(op1: _VnEntropy, op2: _VnEntropy, **kwargs):
+def _(op1: VnEntropy, op2: VnEntropy, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
     eq_m = _equal_measurements(op1, op2)
     log_base_match = op1.log_base == op2.log_base
@@ -181,7 +181,7 @@ def _(op1: _VnEntropy, op2: _VnEntropy, **kwargs):
 
 @_equal.register
 # pylint: disable=unused-argument
-def _(op1: _MutualInfo, op2: _MutualInfo, **kwargs):
+def _(op1: MutualInfo, op2: MutualInfo, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
     eq_m = _equal_measurements(op1, op2)
     log_base_match = op1.log_base == op2.log_base
@@ -190,7 +190,7 @@ def _(op1: _MutualInfo, op2: _MutualInfo, **kwargs):
 
 @_equal.register
 # pylint: disable=unused-argument
-def _equal_shadow_measurements(op1: _ShadowExpval, op2: _ShadowExpval, **kwargs):
+def _equal_shadow_measurements(op1: ShadowExpval, op2: ShadowExpval, **kwargs):
     """Determine whether two ClassicalShadow objects are equal"""
 
     wires_match = op1.wires == op2.wires

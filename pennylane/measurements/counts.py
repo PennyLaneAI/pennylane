@@ -140,11 +140,10 @@ def counts(op=None, wires=None, all_outcomes=False):
             )
         wires = Wires(wires)
 
-    return _Counts(obs=op, wires=wires, all_outcomes=all_outcomes)
+    return Counts(obs=op, wires=wires, all_outcomes=all_outcomes)
 
 
-# TODO: Make public when removing the ObservableReturnTypes enum
-class _Counts(SampleMeasurement):
+class Counts(SampleMeasurement):
     """Measurement process that returns the samples of a given observable."""
 
     def __init__(

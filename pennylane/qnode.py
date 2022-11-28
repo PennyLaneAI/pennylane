@@ -25,7 +25,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.measurements import ClassicalShadow, _Counts, _MidMeasure
+from pennylane.measurements import ClassicalShadow, Counts, MidMeasure
 from pennylane.tape import QuantumTape
 
 
@@ -547,9 +547,7 @@ class QNode:
                 "or a nonempty sequence of measurements."
             )
 
-        terminal_measurements = [
-            m for m in self.tape.measurements if not isinstance(m, _MidMeasure)
-        ]
+        terminal_measurements = [m for m in self.tape.measurements if not isinstance(m, MidMeasure)]
         if any(ret != m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
@@ -578,7 +576,7 @@ class QNode:
         # operations
         # 2. Move this expansion to Device (e.g., default_expand_fn or
         # batch_transform method)
-        if any(isinstance(m, _MidMeasure) for m in self.tape.operations):
+        if any(isinstance(m, MidMeasure) for m in self.tape.operations):
             self._tape = qml.defer_measurements(self._tape)
 
         if self.expansion_strategy == "device":
@@ -687,7 +685,7 @@ class QNode:
 
             res = res[0]
 
-        if not isinstance(self._qfunc_output, Sequence) and isinstance(self._qfunc_output, _Counts):
+        if not isinstance(self._qfunc_output, Sequence) and isinstance(self._qfunc_output, Counts):
             if self.device._has_partitioned_shots():
                 return tuple(res)
 
@@ -695,7 +693,7 @@ class QNode:
             return res[0]
 
         if isinstance(self._qfunc_output, Sequence) and any(
-            isinstance(m, _Counts) for m in self._qfunc_output
+            isinstance(m, Counts) for m in self._qfunc_output
         ):
 
             # If Counts was returned with other measurements, then apply the

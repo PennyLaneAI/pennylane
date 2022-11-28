@@ -34,16 +34,16 @@ from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
     AllCounts_,
     ClassicalShadow,
+    Counts,
+    Expectation,
     MeasurementProcess,
-    _Counts,
-    _Expectation,
-    _MutualInfo,
-    _Probability,
-    _Sample,
-    _ShadowExpval,
-    _State,
-    _Variance,
-    _VnEntropy,
+    MutualInfo,
+    Probability,
+    Sample,
+    ShadowExpval,
+    State,
+    Variance,
+    VnEntropy,
 )
 from pennylane.operation import operation_derivative
 from pennylane.tape import QuantumScript
@@ -378,7 +378,7 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         measurements = circuit.measurements
-        counts_exist = any(isinstance(m, _Counts) for m in measurements)
+        counts_exist = any(isinstance(m, Counts) for m in measurements)
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
@@ -389,7 +389,7 @@ class QubitDevice(Device):
         if not circuit.is_sampled:
 
             if len(measurements) == 1:
-                if isinstance(measurements[0], _State):
+                if isinstance(measurements[0], State):
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
                 else:
@@ -397,7 +397,7 @@ class QubitDevice(Device):
                     with contextlib.suppress(TypeError):
                         # Feature for returning custom objects: if the type cannot be cast to float then we can still allow it as an output
                         results = self._asarray(results, dtype=self.R_DTYPE)
-            elif all(isinstance(m, (_Expectation, _Variance)) for m in measurements):
+            elif all(isinstance(m, (Expectation, Variance)) for m in measurements):
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
             elif not counts_exist:
@@ -442,7 +442,7 @@ class QubitDevice(Device):
         s1 = 0
 
         measurements = circuit.measurements
-        counts_exist = any(isinstance(m, _Counts) for m in measurements)
+        counts_exist = any(isinstance(m, Counts) for m in measurements)
         single_measurement = len(measurements) == 1
 
         for shot_tuple in self._shot_vector:
@@ -518,8 +518,8 @@ class QubitDevice(Device):
 
             for idx2, r_ in enumerate(r):
                 measurement_proc = circuit.measurements[idx2]
-                if isinstance(measurement_proc, _Probability) or (
-                    isinstance(measurement_proc, _Sample) and measurement_proc.obs
+                if isinstance(measurement_proc, Probability) or (
+                    isinstance(measurement_proc, Sample) and measurement_proc.obs
                 ):
                     # Here, the result has a shape of (num_basis_states, shot_tuple.copies)
                     # Extract a single row -> shape (num_basis_states,)
@@ -527,7 +527,7 @@ class QubitDevice(Device):
                 else:
                     result = r_[idx]
 
-                if not isinstance(measurement_proc, _Counts):
+                if not isinstance(measurement_proc, Counts):
                     result = self._asarray(result.T)
 
                 result_group.append(result)
@@ -721,33 +721,33 @@ class QubitDevice(Device):
             else:
                 obs = m
             # Pass instances directly
-            if isinstance(m, _Expectation):
+            if isinstance(m, Expectation):
                 # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
                 results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
 
-            elif isinstance(m, _Variance):
+            elif isinstance(m, Variance):
                 # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
                 results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
 
-            elif isinstance(m, _Sample):
+            elif isinstance(m, Sample):
                 # Appends a result of shape (shots, num_bins,) if bin_size is not None else (shots,)
                 results.append(
                     self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
                 )
 
-            elif isinstance(m, _Counts):
+            elif isinstance(m, Counts):
                 results.append(
                     self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
                 )
 
-            elif isinstance(m, _Probability):
+            elif isinstance(m, Probability):
                 # Appends a result of shape (2**len(obs.wires), num_bins,)
                 # if bin_size is not None else (2**len(obs.wires),)
                 results.append(
                     self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
                 )
 
-            elif isinstance(m, _State):
+            elif isinstance(m, State):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination"
@@ -766,7 +766,7 @@ class QubitDevice(Device):
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
 
-            elif isinstance(m, _VnEntropy):
+            elif isinstance(m, VnEntropy):
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
@@ -787,7 +787,7 @@ class QubitDevice(Device):
 
                 results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
 
-            elif isinstance(m, _MutualInfo):
+            elif isinstance(m, MutualInfo):
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
@@ -819,7 +819,7 @@ class QubitDevice(Device):
                     )
                 results.append(self.classical_shadow(obs, circuit))
 
-            elif isinstance(m, _ShadowExpval):
+            elif isinstance(m, ShadowExpval):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
@@ -891,23 +891,23 @@ class QubitDevice(Device):
                 obs = m
             # 1. Based on the measurement type, compute statistics
             # Pass instances directly
-            if isinstance(m, _Expectation):
+            if isinstance(m, Expectation):
                 result = self.expval(obs, shot_range=shot_range, bin_size=bin_size)
 
-            elif isinstance(m, _Variance):
+            elif isinstance(m, Variance):
                 result = self.var(obs, shot_range=shot_range, bin_size=bin_size)
 
-            elif isinstance(m, _Sample):
+            elif isinstance(m, Sample):
                 samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
                 result = self._asarray(qml.math.squeeze(samples))
 
-            elif isinstance(m, _Counts):
+            elif isinstance(m, Counts):
                 result = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
 
-            elif isinstance(m, _Probability):
+            elif isinstance(m, Probability):
                 result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
 
-            elif isinstance(m, _State):
+            elif isinstance(m, State):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination"
@@ -927,7 +927,7 @@ class QubitDevice(Device):
                 state = self.access_state(wires=obs.wires)
                 result = self._asarray(state, dtype=self.C_DTYPE)
 
-            elif isinstance(m, _VnEntropy):
+            elif isinstance(m, VnEntropy):
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
@@ -948,7 +948,7 @@ class QubitDevice(Device):
                     )
                 result = self.vn_entropy(wires=obs.wires, log_base=obs.log_base)
 
-            elif isinstance(m, _MutualInfo):
+            elif isinstance(m, MutualInfo):
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
@@ -976,7 +976,7 @@ class QubitDevice(Device):
                 )
 
             # 2. Post-process statistics results (if need be)
-            if isinstance(m, (_Expectation, _Variance, _Probability, _VnEntropy, _MutualInfo)):
+            if isinstance(m, (Expectation, Variance, Probability, VnEntropy, MutualInfo)):
                 result = self._asarray(result, dtype=self.R_DTYPE)
 
             if self._shot_vector is not None and isinstance(result, np.ndarray):
@@ -1662,7 +1662,7 @@ class QubitDevice(Device):
 
         outcomes = []
 
-        if isinstance(obs, _Counts):
+        if isinstance(obs, Counts):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
 
@@ -1807,7 +1807,7 @@ class QubitDevice(Device):
         dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
-            if not isinstance(m, _Expectation):
+            if not isinstance(m, Expectation):
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support"
                     f" measurement {m.__class__.__name__}"
