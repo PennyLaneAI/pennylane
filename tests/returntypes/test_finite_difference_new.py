@@ -481,7 +481,7 @@ class TestFiniteDiff:
     #
     #         @staticmethod
     #         def _asarray(arr, dtype=None):
-    #             return arr
+    #             return np.asarray(arr)
     #
     #         def __init__(self, *args, **kwargs):
     #             super().__init__(*args, **kwargs)
@@ -496,12 +496,12 @@ class TestFiniteDiff:
     #
     #     dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
     #
-    #     @qml.qnode(dev, diff_method="parameter-shift")
+    #     @qml.qnode(dev, diff_method="finite-diff")
     #     def qnode(x):
     #         qml.RY(x, wires=0)
     #         return qml.expval(SpecialObservable(wires=0))
     #
-    #     @qml.qnode(dev, diff_method="parameter-shift")
+    #     @qml.qnode(dev, diff_method="finite-diff")
     #     def reference_qnode(x):
     #         qml.RY(x, wires=0)
     #         return qml.expval(qml.PauliZ(wires=0))
