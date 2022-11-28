@@ -47,9 +47,9 @@ class TestPreconstructedOp:
         assert isinstance(out, Adjoint)
         assert out.base is base
         assert len(tape) == 1
-        assert len(tape._queue) == 2
-        assert tape._queue[base] == {"owner": out}
-        assert tape._queue[out] == {"owns": base}
+        assert qml.queuing.AnnotatedQueue.__len__(tape) == 2
+        assert tape.get_info(base) == {"owner": out}
+        assert tape.get_info(out) == {"owns": base}
 
     def test_single_op_defined_outside_queue_eager(self):
         """Test if base is defined outside context and the function eagerly simplifies
@@ -63,8 +63,8 @@ class TestPreconstructedOp:
         assert len(tape) == 1
         assert tape[0] is out
 
-        assert len(tape._queue) == 1
-        assert tape._queue[out] == {"owns": base}
+        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
+        assert tape.get_info(out) == {"owns": base}
 
     def test_single_observable(self):
         """Test passing a single preconstructed observable in a queuing context."""
@@ -161,8 +161,8 @@ class TestNonLazyExecution:
 
         assert len(tape) == 1
         assert out is tape[0]
-        assert tape._queue[base] == {"owner": out}
-        assert tape._queue[out] == {"owns": base}
+        assert tape.get_info(base) == {"owner": out}
+        assert tape.get_info(out) == {"owns": base}
 
         assert isinstance(out, qml.RX)
         assert out.data == [-1.23]
@@ -175,9 +175,9 @@ class TestNonLazyExecution:
 
         assert len(tape) == 1
         assert out is tape[0]
-        assert len(tape._queue) == 2
-        assert tape._queue[base] == {"owner": out}
-        assert tape._queue[out] == {"owns": base}
+        assert qml.queuing.AnnotatedQueue.__len__(tape) == 2
+        assert tape.get_info(base) == {"owner": out}
+        assert tape.get_info(out) == {"owns": base}
 
         assert isinstance(out, Adjoint)
         assert isinstance(out.base, qml.S)

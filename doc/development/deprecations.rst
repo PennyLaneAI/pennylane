@@ -39,12 +39,6 @@ Pending deprecations
   >>> qml.PauliX(0) ** -1
   PauliX(wires=[0])**-1
 
-* ``QuantumTape.inv()`` is deprecated. Please use ``QuantumTape.adjoint()`` instead. This method
-  returns a new tape instead of modifying itself in-place.
-
-  - Still accessible in v0.27
-  - Will be removed in v0.28
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
@@ -60,33 +54,72 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* ``QueuingContext`` is renamed ``QueuingManager``. 
+* ``qml.transforms.measurement_grouping`` has been deprecated, and usage will now raise a warning.
 
-  - Still accessible via ``QueuingContext`` in v0.27
-  - Will only be accessible via ``QueuingManager`` in v0.28
+  - Deprecated in v0.28
+  - Will be removed in v0.29
 
-* ``QueuingManager.safe_update_info`` and ``AnnotateQueue.safe_update_info`` are removed.
+  Don't use:
 
-  - Still accessible in v0.27
-  -  Will be removed in v0.28
+  .. code-block:: python
 
-* ``qml.tape.stop_recording`` and ``QuantumTape.stop_recording`` are moved to ``qml.QueuingManager.stop_recording``
+    with qml.tape.QuantumTape() as tape:
+      qml.RX(0.1, wires=0)
+      qml.RX(0.2, wires=1)
 
-  - Still accessible in v0.27
-  -  Will be removed in v0.28
+    obs = [qml.PauliZ(0), qml.PauliX(1)]
+    coeffs = [2.0, 1.0]
 
-* ``qml.tape.get_active_tape`` is deprecated. Please use ``qml.QueuingManager.active_context()`` instead.
+    tapes, fn = qml.transforms.measurement_grouping(tape, obs, coeffs)
 
-  - Still accessible in v0.27
-  -  Will be removed in v0.28
+  Instead, use:
 
-* ``qml.transforms.qcut.remap_tape_wires`` is deprecated. Please use ``qml.map_wires`` instead.
+  .. code-block:: python
 
-  - Still accessible in v0.27
-  - Will be removed in v0.28
+    obs = [qml.PauliZ(0), qml.PauliX(1)]
+    coeffs = [2.0, 1.0]
+    H = qml.Hamiltonian(coeffs, obs)
+
+    with qml.tape.QuantumTape() as tape:
+      qml.RX(0.1, wires=0)
+      qml.RX(0.2, wires=1)
+      qml.expval(H)
+
+    tapes, fn = qml.transforms.hamiltonian_expand(tape)
 
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.tape.get_active_tape`` is deprecated. Please use ``qml.QueuingManager.active_context()`` instead.
+
+  - Deprecated in v0.27
+  - Removed in v0.28
+
+* ``qml.transforms.qcut.remap_tape_wires`` is deprecated. Please use ``qml.map_wires`` instead.
+
+  - Deprecated in v0.27
+  - Removed in v0.28
+
+* ``QuantumTape.inv()`` is deprecated. Please use ``QuantumTape.adjoint()`` instead. This method
+  returns a new tape instead of modifying itself in-place.
+
+  - Deprecated in v0.27
+  - Removed in v0.28
+
+* ``qml.tape.stop_recording`` and ``QuantumTape.stop_recording`` are moved to ``qml.QueuingManager.stop_recording``
+
+  - Deprecated in v0.27
+  - Removed in v0.28
+
+* ``QueuingContext`` is renamed ``QueuingManager``. 
+
+  - Deprecated name ``QueuingContext`` in v0.27
+  - Removed in v0.28
+
+* ``QueuingManager.safe_update_info`` and ``AnnotateQueue.safe_update_info`` are removed.
+
+  - Deprecated in v0.27
+  - Removed in v0.28
 
 * ``ObservableReturnTypes`` ``Sample``, ``Variance``, ``Expectation``, ``Probability``, ``State``, and ``MidMeasure``
   are moved to ``measurements`` from ``operation``.
@@ -99,3 +132,9 @@ Completed deprecation cycles
 
   - Deprecated in v0.24
   - Removed in v0.27
+
+* The ``qml.Operation.get_parameter_shift`` method is removed. Use the methods of the ``gradients`` module
+  for general parameter-shift rules instead.
+
+  - Deprecated in v0.22
+  - Removed in v0.28
