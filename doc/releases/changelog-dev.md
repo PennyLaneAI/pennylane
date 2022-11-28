@@ -20,6 +20,7 @@
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Add the controlled Hadamard gate.
+
   ```pycon
   >>> ch = qml.CH(wires=[0, 1])
   >>> matrix = ch.compute_matrix()
@@ -28,6 +29,7 @@
    [ 0.          0.          0.70710678  0.70710678]
    [ 0.          0.          0.70710678 -0.70710678]]
   ```
+
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Support custom measurement processes:
@@ -164,6 +166,7 @@
   [#3374](https://github.com/PennyLaneAI/pennylane/pull/3374)
 
   Example with a single measurement:
+
   ```python
   dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
 
@@ -176,7 +179,8 @@
   def cost(a):
       return qml.math.stack(circuit(a))
   ```
-  ```
+
+  ```pycon
   >>> qml.enable_return()
   >>> a = np.array(0.4)
   >>> circuit(a)
@@ -186,7 +190,9 @@
   >>> qml.jacobian(cost)(a)
   array([-0.391     , -0.389     , -0.38433333])
   ```
+
   Example with multiple measurements:
+
   ```python
   dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
 
@@ -201,7 +207,8 @@
       res = circuit(a)
       return qml.math.stack([qml.math.hstack(r) for r in res])
   ```
-  ```
+
+  ```pycon
   >>> circuit(a)
   ((array(0.904), array([0.952, 0.   , 0.   , 0.048])),
    (array(0.915), array([0.9575, 0.    , 0.    , 0.0425])),
@@ -283,6 +290,20 @@
   `OrderedDict` and encapsulates the queue. Consequentially, this also applies to the `QuantumTape`
   class which inherits from `AnnotatedQueue`.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
+
+* Changed the signature of the `QubitDevice.statistics` method from
+
+  ```python
+  def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
+  ```
+
+  to
+
+  ```python
+  def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
+  ```
+
+  [#3421](https://github.com/PennyLaneAI/pennylane/pull/3421)
 
 <h3>Deprecations</h3>
 
