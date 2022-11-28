@@ -653,14 +653,16 @@ class TestComplicatedConditionals:
 
         @qml.qnode(dev)
         def normal_circuit(rads):
-            qml.Hadamard(0)
+            qml.RX(2.4, wires=0)
+            qml.RY(1.3, wires=1)
             qml.ctrl(op, control=(0, 1), control_values=[True, True])(rads, wires=2)
             return qml.probs(wires=2)
 
         @qml.qnode(dev)
         @qml.defer_measurements
         def quantum_control_circuit(rads):
-            qml.Hadamard(0)
+            qml.RX(2.4, wires=0)
+            qml.RY(1.3, wires=1)
             m_0 = qml.measure(0)
             m_1 = qml.measure(1)
             qml.cond(m_0 + m_1 == 2, op)(rads, wires=2)
@@ -668,6 +670,8 @@ class TestComplicatedConditionals:
 
         normal_probs = normal_circuit(r)
         cond_probs = quantum_control_circuit(r)
+        print(normal_probs)
+        print(cond_probs)
 
         assert np.allclose(normal_probs, cond_probs)
 
