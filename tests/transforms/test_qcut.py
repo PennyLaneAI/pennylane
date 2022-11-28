@@ -466,7 +466,7 @@ class TestTapeToGraph:
             assert node.wires == expected_node.wires
 
             if getattr(node, "obs", None) is not None:
-                assert node.return_type is qml.measurements.Sample
+                assert node.return_type is qml.measurements._Sample
                 assert node.obs.name == expected_node.obs.name
 
     def test_sample_tensor_obs(self):
@@ -520,7 +520,7 @@ class TestTapeToGraph:
             assert node.wires == expected_node.wires
 
             if getattr(node, "obs", None) is not None:
-                assert node.return_type is qml.measurements.Sample
+                assert node.return_type is qml.measurements._Sample
                 assert node.obs.name == expected_node.obs.name
 
 
@@ -1343,7 +1343,7 @@ class TestGraphToTape:
         # For tapes with multiple measurements, the ordering varies
         # so we check the set of wires rather that the order
         for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
-            assert meas.return_type is qml.measurements.Sample
+            assert meas.return_type is qml.measurements._Sample
             assert isinstance(meas.obs, qml.Projector)
             assert meas.obs.wires in {Wires(1), Wires(2)}
 
@@ -1384,7 +1384,7 @@ class TestGraphToTape:
         frag1_expected_meas = [qml.sample(qml.Projector([1], wires=[2]))]
 
         for meas, expected_meas in zip(tapes[0].measurements, frag1_expected_meas):
-            assert meas.return_type is qml.measurements.Sample
+            assert meas.return_type is qml.measurements._Sample
             assert isinstance(meas.obs, qml.Projector)
             assert meas.obs.wires in {Wires(0), Wires(3)}
 
@@ -1482,7 +1482,7 @@ class TestGetMeasurements:
         out = qcut._get_measurements(group, meas)
 
         assert len(out) == len(group)
-        assert out[0].return_type is qml.measurements.Expectation
+        assert out[0].return_type is qml.measurements._Expectation
         assert out[0].obs.name == "Identity"
         assert out[0].obs.wires[0] == 0
 
@@ -1495,8 +1495,8 @@ class TestGetMeasurements:
 
         assert len(out) == 2
         assert [o.return_type for o in out] == [
-            qml.measurements.Expectation,
-            qml.measurements.Expectation,
+            qml.measurements._Expectation,
+            qml.measurements._Expectation,
         ]
 
         obs = [o.obs for o in out]
@@ -3810,7 +3810,7 @@ class TestCutCircuitExpansion:
 
         spy = mocker.spy(qcut, "_qcut_expand_fn")
 
-        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+        kwargs = {"shots": 10} if measurement.return_type is qml.measurements._Sample else {}
         cut_transform(tape, device_wires=[0], **kwargs)
 
         spy.assert_called_once()
@@ -3827,7 +3827,7 @@ class TestCutCircuitExpansion:
 
         spy = mocker.spy(qcut, "_qcut_expand_fn")
 
-        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+        kwargs = {"shots": 10} if measurement.return_type is qml.measurements._Sample else {}
         cut_transform(tape, device_wires=[0], **kwargs)
 
         assert spy.call_count == 2
@@ -3844,7 +3844,7 @@ class TestCutCircuitExpansion:
             qml.apply(measurement)
 
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
-            kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+            kwargs = {"shots": 10} if measurement.return_type is qml.measurements._Sample else {}
             cut_transform(tape, device_wires=[0], **kwargs)
 
     def test_expansion_ttn(self, mocker):
