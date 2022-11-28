@@ -24,7 +24,7 @@ from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript
-from pennylane.tape.qscript import make_qscript
+from pennylane.tape import make_qscript
 
 
 def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable]):
