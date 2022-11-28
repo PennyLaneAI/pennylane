@@ -131,6 +131,9 @@
 
 <h3>Improvements</h3>
 
+* Made `gradients.finite_diff` more convenient to use with custom data type observables/devices.
+  [(#3426)](https://github.com/PennyLaneAI/pennylane/pull/3426)
+
 * Added more input validation to `hamiltonian_expand` such that Hamiltonian objects with no terms raise an error.
   [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
 
