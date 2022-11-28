@@ -131,7 +131,7 @@ class TestOutputShape:
     def test_output_shapes_single(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape."""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and measurement.return_type is qml.measurements._Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
         num_wires = 3
@@ -147,7 +147,7 @@ class TestOutputShape:
         if expected_shape is None:
             expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
 
-        if measurement.return_type is qml.measurements.Sample:
+        if measurement.return_type is qml.measurements._Sample:
             if measurement.obs is None:
                 expected_shape = (num_wires,) if shots == 1 else (shots, num_wires)
 
@@ -160,7 +160,7 @@ class TestOutputShape:
     def test_output_shapes_single_qnode_check(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the output
         shape of a QNode for a single measurement."""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and measurement.return_type is qml.measurements._Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
@@ -171,7 +171,7 @@ class TestOutputShape:
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
         qs = QuantumScript(ops, [measurement])
 
-        if shots is not None and measurement.return_type is qml.measurements.State:
+        if shots is not None and measurement.return_type is qml.measurements._State:
             # this is allowed by the tape but raises a warning
             with pytest.warns(
                 UserWarning, match="Requested state or density matrix with finite shots"
@@ -243,7 +243,7 @@ class TestOutputShape:
 
         qs = QuantumScript(measurements=measurements)
 
-        if measurements[0].return_type is qml.measurements.Sample:
+        if measurements[0].return_type is qml.measurements._Sample:
             expected[1] = shots
             expected = tuple(expected)
 
@@ -262,7 +262,7 @@ class TestOutputShape:
         """Test that the expected output shape is obtained when using multiple
         expectation value, variance and probability measurements with a shot
         vector."""
-        if measurements[0].return_type is qml.measurements.Probability:
+        if measurements[0].return_type is qml.measurements._Probability:
             num_wires = set(len(m.wires) for m in measurements)
             if len(num_wires) > 1:
                 pytest.skip(
@@ -318,7 +318,7 @@ class TestOutputShape:
     def test_broadcasting_single(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape for a single measurement and parameter broadcasting"""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and measurement.return_type is qml.measurements._Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
         if (
@@ -348,7 +348,7 @@ class TestOutputShape:
     def test_broadcasting_multi(self, measurement, expected, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape for multiple measurements and parameter broadcasting"""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and measurement.return_type is qml.measurements._Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
         if measurement.return_type in {_State, _MutualInfo, _VnEntropy}:

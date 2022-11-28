@@ -25,9 +25,8 @@ files.
 
 import pytest
 
-from pennylane import numpy as np
-
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.transforms.condition import ConditionalTransformError
 
 terminal_meas = [
@@ -63,7 +62,7 @@ class TestCond:
         target_wire = qml.wires.Wires(1)
 
         assert len(ops) == 4
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert ops[0].return_type == qml.measurements._MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
         assert isinstance(ops[1].then_op, qml.PauliX)
@@ -123,7 +122,7 @@ class TestCond:
 
         assert len(ops) == 5
 
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert ops[0].return_type == qml.measurements._MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
         assert isinstance(ops[1].then_op, qml.PauliX)
@@ -219,7 +218,7 @@ class TestOtherTransforms:
         target_wire = qml.wires.Wires(1)
 
         assert len(ops) == 3
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert ops[0].return_type == qml.measurements._MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
         assert isinstance(ops[1].then_op, qml.ops.op_math.Adjoint)
@@ -248,7 +247,7 @@ class TestOtherTransforms:
         target_wire = qml.wires.Wires(2)
 
         assert len(ops) == 3
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert ops[0].return_type == qml.measurements._MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
         assert isinstance(ops[1].then_op, qml.ops.op_math.Controlled)
@@ -275,7 +274,7 @@ class TestOtherTransforms:
         target_wire = qml.wires.Wires(2)
 
         assert len(ops) == 3
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert ops[0].return_type == qml.measurements._MidMeasure
 
         assert isinstance(ops[1], qml.ops.op_math.Controlled)
         assert isinstance(ops[1].base, qml.transforms.condition.Conditional)

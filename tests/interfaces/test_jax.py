@@ -975,7 +975,7 @@ class TestVectorValuedJIT:
         )
         if "adjoint" in grad_meth and any(
             r.return_type
-            in (qml.measurements.Probability, qml.measurements.State, qml.measurements.Variance)
+            in (qml.measurements._Probability, qml.measurements._State, qml.measurements._Variance)
             for r in ret
         ):
             pytest.skip("Adjoint does not support probs")

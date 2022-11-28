@@ -566,12 +566,12 @@ class TestQubitIntegration:
         if diff_method == "backprop":
             pytest.skip("Backprop does not apply to this test")
 
-        if ret.return_type is qml.measurements.Sample:
+        if ret.return_type is qml.measurements._Sample:
             dev = qml.device(dev_name, wires=3, shots=10)
             if diff_method == "adjoint":
                 pytest.skip("Adjoint does not support finite shots")
 
-        if ret.return_type is qml.measurements.Probability:
+        if ret.return_type is qml.measurements._Probability:
             if diff_method == "adjoint":
                 pytest.skip("Adjoint does not support probs")
 

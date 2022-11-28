@@ -14,16 +14,15 @@
 """
 Tests for the classical fisher information matrix in the pennylane.qinfo
 """
+import numpy as np
+
 # pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error, too-few-public-methods, bad-continuation
 import pytest
 
 import pennylane as qml
 import pennylane.numpy as pnp
-import numpy as np
-
-
 from pennylane.qinfo import classical_fisher, quantum_fisher
-from pennylane.qinfo.transforms import _make_probs, _compute_cfim
+from pennylane.qinfo.transforms import _compute_cfim, _make_probs
 
 
 class TestMakeProbs:
@@ -44,7 +43,7 @@ class TestMakeProbs:
         x = pnp.array([0.5])
         new_qnode = _make_probs(qnode)
         tape, _ = new_qnode.construct(x, {})
-        assert tape[0].observables[0].return_type == qml.measurements.Probability
+        assert tape[0].observables[0].return_type == qml.measurements._Probability
 
     def test_make_probs(
         self,
@@ -453,8 +452,8 @@ class TestDiffCFIM:
         self,
     ):
         """Testing diffability with an analytic example for jax. The CFIM of this single qubit is constant, so the gradient should be zero."""
-        import jax.numpy as jnp
         import jax
+        import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -530,10 +529,10 @@ class TestDiffCFIM:
     def test_consistency(self):
         """Testing that the derivative of the cfim is giving consistently the same results for all interfaces.
         Currently failing as (jax and autograd) and (torch and tf) are giving two different results."""
+        import jax
+        import jax.numpy as jnp
         import tensorflow as tf
         import torch
-        import jax.numpy as jnp
-        import jax
 
         dev = qml.device("default.qubit", wires=3)
 

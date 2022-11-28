@@ -411,8 +411,8 @@ class TestCounts:
         shot"""
 
         if interface == "jax" and meas2.return_type in (
-            qml.measurements.Probability,
-            qml.measurements.Sample,
+            qml.measurements._Probability,
+            qml.measurements._Sample,
         ):
             reason = "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
             pytest.skip(reason)

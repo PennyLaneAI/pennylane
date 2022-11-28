@@ -20,8 +20,9 @@ Things left to unittest:
 * parameter stuff
 * qasm
 """
-from collections import defaultdict
 import copy
+from collections import defaultdict
+
 import pytest
 
 import pennylane as qml
@@ -88,7 +89,7 @@ class TestInitialization:
         qs = QuantumScript(measurements=m)
         assert len(qs._measurements) == 1
         assert isinstance(qs._measurements, list)
-        assert qs._measurements[0].return_type is qml.measurements.State
+        assert qs._measurements[0].return_type is qml.measurements._State
 
     @pytest.mark.parametrize(
         "prep",
@@ -145,8 +146,8 @@ class TestUpdate:
         assert qs.all_sampled is False
 
         shadow_mp = sample_ms.return_type not in (
-            qml.measurements.Shadow,
-            qml.measurements.ShadowExpval,
+            qml.measurements._Shadow,
+            qml.measurements._ShadowExpval,
         )
         assert qs.samples_computational_basis is (True if shadow_mp else False)
 

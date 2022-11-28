@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the jax interface"""
 import sys
+
 import pytest
 
 pytestmark = pytest.mark.jax
@@ -28,7 +29,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute, InterfaceUnsupportedError
+from pennylane.interfaces import InterfaceUnsupportedError, execute
 from pennylane.interfaces.jax_jit import _execute_with_fwd
 
 
@@ -971,7 +972,7 @@ class TestVectorValuedJIT:
         )
         if "adjoint" in grad_meth and any(
             r.return_type
-            in (qml.measurements.Probability, qml.measurements.State, qml.measurements.Variance)
+            in (qml.measurements._Probability, qml.measurements._State, qml.measurements._Variance)
             for r in ret
         ):
             pytest.skip("Adjoint does not support probs")

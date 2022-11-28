@@ -14,8 +14,8 @@
 """
 Unit tests for the :mod:`pennylane.collection` submodule.
 """
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
 
@@ -151,13 +151,13 @@ class TestMap:
         assert len(queue) == 2
         assert queue[0].name == "RX"
         assert queue[1].name == "PauliX"
-        assert queue[1].return_type == qml.measurements.Expectation
+        assert queue[1].return_type == qml.measurements._Expectation
 
         queue = qc[1].qtape.operations + qc[1].qtape.observables
         assert len(queue) == 2
         assert queue[0].name == "RX"
         assert queue[1].name == "PauliY"
-        assert queue[1].return_type == qml.measurements.Variance
+        assert queue[1].return_type == qml.measurements._Variance
 
     def test_invalid_observable(self):
         """Test that an invalid observable raises an exception"""

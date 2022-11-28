@@ -498,7 +498,7 @@ def _expval_param_shift_tuple(
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
-            if op.return_type is not qml.measurements.Expectation:
+            if op.return_type is not qml.measurements._Expectation:
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
                     f"coefficients for expectations, not {op.return_type.value}"
@@ -651,7 +651,7 @@ def expval_param_shift(
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
-            if op.return_type is not qml.measurements.Expectation:
+            if op.return_type is not qml.measurements._Expectation:
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
                     f"coefficients for expectations, not {op.return_type.value}"

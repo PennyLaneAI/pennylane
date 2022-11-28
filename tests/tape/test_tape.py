@@ -100,22 +100,22 @@ class TestConstruction:
 
         # test that the internal tape._measurements list is created properly
         assert isinstance(tape._measurements[0], MeasurementProcess)
-        assert tape._measurements[0].return_type == qml.measurements.Expectation
+        assert tape._measurements[0].return_type == qml.measurements._Expectation
         assert tape._measurements[0].obs == obs[0]
 
         assert isinstance(tape._measurements[1], MeasurementProcess)
-        assert tape._measurements[1].return_type == qml.measurements.Probability
+        assert tape._measurements[1].return_type == qml.measurements._Probability
 
         # test the public observables property
         assert len(tape.observables) == 2
         assert tape.observables[0].name == "PauliX"
-        assert tape.observables[1].return_type == qml.measurements.Probability
+        assert tape.observables[1].return_type == qml.measurements._Probability
 
         # test the public measurements property
         assert len(tape.measurements) == 2
         assert all(isinstance(m, MeasurementProcess) for m in tape.measurements)
-        assert tape.observables[0].return_type == qml.measurements.Expectation
-        assert tape.observables[1].return_type == qml.measurements.Probability
+        assert tape.observables[0].return_type == qml.measurements._Expectation
+        assert tape.observables[1].return_type == qml.measurements._Probability
 
     def test_tensor_observables_matmul(self):
         """Test that tensor observables are correctly processed from the annotated
@@ -129,7 +129,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.measurements.Expectation
+        assert tape.measurements[0].return_type is qml.measurements._Expectation
         assert tape.measurements[0].obs is t_obs2
 
     def test_tensor_observables_rmatmul(self):
@@ -145,7 +145,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.measurements.Expectation
+        assert tape.measurements[0].return_type is qml.measurements._Expectation
         assert tape.measurements[0].obs is t_obs2
 
     def test_tensor_observables_tensor_init(self):
@@ -161,7 +161,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.measurements.Expectation
+        assert tape.measurements[0].return_type is qml.measurements._Expectation
         assert tape.measurements[0].obs is t_obs2
 
     def test_tensor_observables_tensor_matmul(self):
@@ -178,7 +178,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs]
-        assert tape.measurements[0].return_type is qml.measurements.Variance
+        assert tape.measurements[0].return_type is qml.measurements._Variance
         assert tape.measurements[0].obs is t_obs
 
     def test_qubit_diagonalization(self, make_tape):
@@ -306,7 +306,7 @@ class TestConstruction:
         target_wire = qml.wires.Wires(1)
 
         assert len(tape.circuit) == 5
-        assert tape.circuit[0].return_type == qml.measurements.MidMeasure
+        assert tape.circuit[0].return_type == qml.measurements._MidMeasure
 
         assert isinstance(tape.circuit[1], qml.transforms.condition.Conditional)
         assert isinstance(tape.circuit[1].then_op, qml.PauliX)
@@ -1076,9 +1076,9 @@ class TestExpand:
         assert len(new_tape.operations) == 5
 
         expected = [
-            qml.measurements.Probability,
-            qml.measurements.Expectation,
-            qml.measurements.Variance,
+            qml.measurements._Probability,
+            qml.measurements._Expectation,
+            qml.measurements._Variance,
         ]
         assert [m.return_type is r for m, r in zip(new_tape.measurements, expected)]
 
@@ -1838,7 +1838,7 @@ class TestOutputShape:
     def test_output_shapes_single(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape."""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and measurement.return_type is qml.measurements._Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
         num_wires = 3
@@ -1856,7 +1856,7 @@ class TestOutputShape:
         if expected_shape is None:
             expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
 
-        if measurement.return_type is qml.measurements.Sample:
+        if measurement.return_type is qml.measurements._Sample:
             if measurement.obs is not None:
                 expected_shape = (1, shots)
 
@@ -1870,17 +1870,17 @@ class TestOutputShape:
     def test_output_shapes_single_qnode_check(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the output
         shape of a QNode for a single measurement."""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and measurement.return_type is qml.measurements._Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
-        if shots is not None and measurement.return_type is qml.measurements.State:
+        if shots is not None and measurement.return_type is qml.measurements._State:
             pytest.skip("State and density matrix don't support finite shots and raise a warning.")
 
         # TODO: revisit when qml.sample without an observable has been updated
         # with shot vectors
         if (
             isinstance(shots, tuple)
-            and measurement.return_type is qml.measurements.Sample
+            and measurement.return_type is qml.measurements._Sample
             and not measurement.obs
         ):
             pytest.skip("qml.sample with no observable is to be updated for shot vectors.")
@@ -1975,7 +1975,7 @@ class TestOutputShape:
             for m in measurements:
                 qml.apply(m)
 
-        if measurements[0].return_type is qml.measurements.Sample:
+        if measurements[0].return_type is qml.measurements._Sample:
             expected[1] = shots
             expected = tuple(expected)
 
@@ -1992,7 +1992,7 @@ class TestOutputShape:
         """Test that the expected output shape is obtained when using multiple
         expectation value, variance and probability measurements with a shot
         vector."""
-        if measurements[0].return_type is qml.measurements.Probability:
+        if measurements[0].return_type is qml.measurements._Probability:
             num_wires = set(len(m.wires) for m in measurements)
             if len(num_wires) > 1:
                 pytest.skip(
@@ -2011,7 +2011,7 @@ class TestOutputShape:
             for m in measurements:
                 qml.apply(m)
 
-        if measurements[0].return_type is qml.measurements.Sample:
+        if measurements[0].return_type is qml.measurements._Sample:
             expected[1] = shots
             expected = tuple(expected)
 
@@ -2086,10 +2086,10 @@ class TestOutputShape:
     def test_broadcasting_single(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape for a single measurement and parameter broadcasting"""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and measurement.return_type is qml.measurements._Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
-        if measurement.return_type is qml.measurements.State and measurement.wires is not None:
+        if measurement.return_type is qml.measurements._State and measurement.wires is not None:
             pytest.skip("Density matrix does not support parameter broadcasting")
 
         num_wires = 3
@@ -2113,10 +2113,10 @@ class TestOutputShape:
     def test_broadcasting_multi(self, measurement, expected, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape for multiple measurements and parameter broadcasting"""
-        if shots is None and measurement.return_type is qml.measurements.Sample:
+        if shots is None and measurement.return_type is qml.measurements._Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
-        if measurement.return_type is qml.measurements.State:
+        if measurement.return_type is qml.measurements._State:
             pytest.skip("State does not support multiple measurements")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
