@@ -21,6 +21,20 @@ import pennylane as qml
 from .batch_transform import batch_transform
 
 
+def _nested_stack(res):
+    """
+    Given a list of identical nested tuple structures, stack the arrays at the leaves
+    """
+    if not isinstance(res[0], tuple):
+        return qml.math.stack(res)
+
+    stacked_results = []
+    for i in range(len(res[0])):
+        stacked_results.append(_nested_stack([r[i] for r in res]))
+
+    return stacked_results[0] if len(stacked_results) == 0 else tuple(stacked_results)
+
+
 @batch_transform
 def batch_params(tape, all_operations=False):
     """Transform a QNode to support an initial batch dimension
@@ -139,4 +153,10 @@ def batch_params(tape, all_operations=False):
         new_tape.set_parameters(p, trainable_only=not all_operations)
         output_tapes.append(new_tape)
 
-    return output_tapes, lambda x: qml.math.squeeze(qml.math.stack(x))
+    def processing_fn(res):
+        if qml.active_return():
+            return _nested_stack(res)
+
+        return qml.math.squeeze(qml.math.stack(res))
+
+    return output_tapes, processing_fn
