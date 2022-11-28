@@ -55,7 +55,7 @@ def _tapes_shape_dtype_tuple(tapes, device):
     return shape_dtypes
 
 
-def _grad_transform_jac_shape_dtype(tapes, device):
+def _jac_shape_dtype_tuple(tapes, device):
     """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
     the tapes and the device.
 
@@ -64,19 +64,18 @@ def _grad_transform_jac_shape_dtype(tapes, device):
     """
     shape_dtypes = []
 
-    def process_single_shape(shape, tape_dtype):
-        return jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
-
     for t in tapes:
         num_measurements = len(t.measurements)
 
         shape = t.shape(device)
         if num_measurements == 1:
             tape_dtype = _numeric_type_to_dtype(t.numeric_type)
-            shape_and_dtype = process_single_shape(shape, tape_dtype)
+            shape_and_dtype = jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
         else:
             tape_dtype = tuple(_numeric_type_to_dtype(elem) for elem in t.numeric_type)
-            shape_and_dtype = tuple(process_single_shape(s, d) for s, d in zip(shape, tape_dtype))
+            shape_and_dtype = tuple(
+                jax.ShapeDtypeStruct(tuple(s), d) for s, d in zip(shape, tape_dtype)
+            )
 
         if len(t.trainable_params) == 1:
             shape_dtypes.append(shape_and_dtype)
@@ -92,36 +91,6 @@ def _grad_transform_jac_shape_dtype(tapes, device):
         return shape_dtypes[0]
 
     return tuple(shape_dtypes)
-
-
-def _device_grad_jac_shape_dtype(tapes, device):
-    """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
-    the tapes and the device.
-
-    The jax.pure_callback function expects jax.ShapeDtypeStruct objects to
-    describe the output of the function call.
-    """
-    shapes_for_tapes = []
-    for t in tapes:
-        shape_dtype_structs = t.shape(device)
-        num_params = len(t.trainable_params)
-        num_meas = len(t.measurements)
-        if num_params == 1:
-            if num_meas == 1:
-                shape = [shape_dtype_structs]
-            else:
-                shape = tuple([shape_dtype_structs] * num_meas)
-        else:
-            if num_meas == 1:
-                shape = tuple([shape_dtype_structs] * num_params)
-            else:
-                shape = [tuple([shape_dtype_structs] * num_params)] * num_meas
-
-        shapes_for_tapes.append(shape)
-
-    if len(shapes_for_tapes) == 1:
-        shapes_for_tapes = shapes_for_tapes[0]
-    return shapes_for_tapes
 
 
 def _squeeze_nested(jvps, multi_measurements, multi_params):
@@ -264,7 +233,7 @@ def _execute_bwd_tuple(
 
             return all_jacs
 
-        expected_shapes = _grad_transform_jac_shape_dtype(tapes, device)
+        expected_shapes = _jac_shape_dtype_tuple(tapes, device)
         res = jax.pure_callback(wrapper, expected_shapes, params)
         return res
 
@@ -276,7 +245,7 @@ def _execute_bwd_tuple(
             with qml.tape.Unwrap(*new_tapes):
                 return gradient_fn(new_tapes, **gradient_kwargs)
 
-        shape_dtype_structs = _device_grad_jac_shape_dtype(tapes, device)
+        shape_dtype_structs = _jac_shape_dtype_tuple(tapes, device)
         return jax.pure_callback(wrapper, shape_dtype_structs, params)
 
     @execute_wrapper.defjvp
