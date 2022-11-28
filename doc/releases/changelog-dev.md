@@ -175,21 +175,24 @@
 
   qml.enable_return()
 
-  dev = qml.device("lightning.qubit", wires=1)
+  dev = qml.device("lightning.qubit", wires=2)
+
 
   @jax.jit
   @qml.qnode(dev, diff_method="parameter-shift", interface="jax-jit")
   def circuit(a, b):
       qml.RY(a, wires=0)
       qml.RX(b, wires=0)
-      return qml.expval(qml.PauliZ(0))
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
   a, b = jnp.array(1.0), jnp.array(2.0)
   ```
   ```pycon
-  >>> jax.grad(circuit, argnums=[0,1])(a, b)
-  (DeviceArray(0.35017549, dtype=float64, weak_type=True),
-   DeviceArray(-0.4912955, dtype=float64, weak_type=True))
+  >>> jax.jacobian(circuit, argnums=[0, 1])(a, b)
+  ((DeviceArray(0.35017549, dtype=float64, weak_type=True),
+    DeviceArray(-0.4912955, dtype=float64, weak_type=True)),
+   (DeviceArray(5.55111512e-17, dtype=float64, weak_type=True),
+    DeviceArray(0., dtype=float64, weak_type=True)))
   ```
 
 * The autograd interface for the new return types now supports devices with shot vectors.
