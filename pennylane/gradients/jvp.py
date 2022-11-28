@@ -92,7 +92,8 @@ def compute_jvp_single(tangent, jac, jitting=False):
     if jac is None:
         return None
 
-    # TODO: jitting
+    # TODO: jitting: enable/disable?
+    jitting = False
     tangent = qml.math.stack(tangent)
     jac = _convert(jac, tangent)
 
