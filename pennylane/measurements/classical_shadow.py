@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 from .measurements import CustomMeasurement, Shadow, ShadowExpval
 
 
-def shadow_expval(H, k=1, seed_recipes=True):
+def shadow_expval(H, k=1, seed=None):
     r"""Compute expectation values using classical shadows in a differentiable manner.
 
     The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
@@ -37,11 +37,10 @@ def shadow_expval(H, k=1, seed_recipes=True):
         H (Union[Iterable, :class:`~.pennylane.Hamiltonian`, :class:`~.pennylane.operation.Tensor`]): Observable or
             iterable of observables to compute the expectation value over.
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means. ``k=1`` (default) corresponds to simply taking the mean over all measurements.
-        seed_recipes (bool): If True, a seed will be generated that
-            is used for the randomly sampled Pauli measurements. This is to
-            ensure that the same recipes are used when a tape containing this
-            measurement is copied. Different seeds are still generated for
-            different constructed tapes.
+        seed (Union[None, int]):  Seed used to randomly sample Pauli measurements during the
+            classical shadows protocol. If None, a random seed will be generated. If a tape with
+            a ``shadow_expval`` measurement is copied, the seed will also be copied.
+            Different seeds are still generated for different constructed tapes.
 
     Returns:
         float: expectation value estimate.
@@ -84,11 +83,11 @@ def shadow_expval(H, k=1, seed_recipes=True):
     >>> qml.jacobian(qnode)(x, Hs)
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
-    seed = np.random.randint(2**30) if seed_recipes else None
-    return _ShadowExpval(H=H, seed=seed, k=k)
+    seed = seed or np.random.randint(2**30)
+    return _ShadowExpval(ShadowExpval, H=H, seed=seed, k=k)
 
 
-def classical_shadow(wires, seed_recipes=True):
+def classical_shadow(wires, seed=None):
     """
     The classical shadow measurement protocol.
 
@@ -109,11 +108,10 @@ def classical_shadow(wires, seed_recipes=True):
 
     Args:
         wires (Sequence[int]): the wires to perform Pauli measurements on
-        seed_recipes (bool): If True, a seed will be generated that
-            is used for the randomly sampled Pauli measurements. This is to
-            ensure that the same recipes are used when a tape containing this
-            measurement is copied. Different seeds are still generated for
-            different constructed tapes.
+        seed (Union[None, int]):  Seed used to randomly sample Pauli measurements during the
+            classical shadows protocol. If None, a random seed will be generated. If a tape with
+            a ``classical_shadow`` measurement is copied, the seed will also be copied.
+            Different seeds are still generated for different constructed tapes.
 
     **Example**
 
@@ -206,8 +204,8 @@ def classical_shadow(wires, seed_recipes=True):
     """
     wires = Wires(wires)
 
-    seed = np.random.randint(2**30) if seed_recipes else None
-    return ClassicalShadow(wires=wires, seed=seed)
+    seed = seed or np.random.randint(2**30)
+    return ClassicalShadow(Shadow, wires=wires, seed=seed)
 
 
 class ClassicalShadow(CustomMeasurement):
@@ -358,9 +356,7 @@ class _ShadowExpval(CustomMeasurement):
         Returns:
             float: expectation value estimate.
         """
-        bits, recipes = qml.classical_shadow(wires=self.wires, seed_recipes=self.seed).process(
-            tape, device
-        )
+        bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 
@@ -397,8 +393,12 @@ class _ShadowExpval(CustomMeasurement):
         return self
 
     def __copy__(self):
+        H_copy = (
+            [copy.copy(H) for H in self.H] if isinstance(self.H, Iterable) else copy.copy(self.H)
+        )
         return self.__class__(
-            H=self.H,
+            self.return_type,
+            H=H_copy,
             k=self.k,
             seed=self.seed,
             obs=copy.copy(self.obs),

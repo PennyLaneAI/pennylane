@@ -402,6 +402,144 @@ def enable_return():
                 [[-0.85      , -0.415     ,  0.425     ,  0.        , -0.01      ],
                  [-0.78      , -0.3775    ,  0.375     ,  0.015     , -0.0125    ],
                  [-0.80666667, -0.38      ,  0.38666667,  0.01666667, -0.02333333]]]))
+
+    .. details::
+        :title: Usage Details for TensorFlow
+
+        TensorFlow only allows differentiating functions that have array or tensor outputs. QNodes that have
+        multiple measurements may output tuples and cause errors with TensorFlow. Similarly, the outputs of
+        ``tape.gradient`` or ``tape.jacobian`` may be tuples if there are multiple trainable arguments and
+        cause errors with higher-order derivatives.
+
+        These issues can be overcome by stacking the QNode results or gradients before computing derivatives.
+
+        **Examples for shot vectors**
+
+        Example for first-order derivatives with a single return:
+
+        .. code-block:: python
+
+            def func(a, b):
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+
+            dev = qml.device("default.qubit", wires=2, shots=[100, 200, 300])
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0))
+
+        >>> a = tf.Variable(0.4, dtype=tf.float64, trainable=True)
+        >>> b = tf.Variable(0.6, dtype=tf.float64, trainable=True)
+        >>> with tf.GradientTape() as tape:
+        ...     res = circuit(a, b)
+        ...     res = tf.stack(res)
+        ...
+        >>> res
+        tf.Tensor([0.92 0.92 0.94], shape=(3,), dtype=float64)
+        >>> tape.jacobian(res, (a, b))
+        (<tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.31      , -0.385     , -0.32666667])>,
+         <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.02      ,  0.02      , -0.00333333])>)
+
+        Example for first-order derivatives with multiple returns:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+        >>> with tf.GradientTape() as tape:
+        ...     res = circuit(a, b)
+        ...     res = tf.stack([tf.experimental.numpy.hstack(r) for r in res])
+        ...
+        >>> res
+        tf.Tensor(
+        [[0.96       0.93       0.05       0.         0.02      ]
+         [0.9        0.87       0.08       0.01       0.04      ]
+         [0.96       0.86666667 0.11333333 0.         0.02      ]], shape=(3, 5), dtype=float64)
+        >>> tape.jacobian(res, (a, b))
+        (<tf.Tensor: shape=(3, 5), dtype=float64, numpy=
+         array([[-0.3       , -0.145     , -0.005     ,  0.03      ,  0.12      ],
+                [-0.395     , -0.19      , -0.0075    ,  0.01      ,  0.1875    ],
+                [-0.39333333, -0.17833333, -0.01833333,  0.00666667,  0.19      ]])>,
+         <tf.Tensor: shape=(3, 5), dtype=float64, numpy=
+         array([[-0.03      , -0.21      ,  0.195     ,  0.025     , -0.01      ],
+                [ 0.005     , -0.285     ,  0.2875    ,  0.0075    , -0.01      ],
+                [-0.01333333, -0.27      ,  0.26333333,  0.015     , -0.00833333]])>)
+
+        Example for second-order derivatives with a single return:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", max_diff=2, interface="tf")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        >>> with tf.GradientTape() as tape1:
+        ...     with tf.GradientTape(persistent=True) as tape2:
+        ...         res = circuit(a, b)
+        ...         res = tf.stack(res)
+        ...
+        ...    jac = tape2.jacobian(res, (a, b), experimental_use_pfor=False)
+        ...    jac = tf.stack(jac)
+        ...
+        >>> jac
+        tf.Tensor(
+        [[-0.02       -0.005       0.00333333]
+         [-0.47       -0.64       -0.58      ]], shape=(2, 3), dtype=float64)
+        >>> tape1.jacobian(jac, (a, b))
+        (<tf.Tensor: shape=(2, 3), dtype=float64, numpy=
+         array([[ 0.00000000e+00,  2.50000000e-02, -1.66666667e-02],
+                [-1.50000000e-02, -4.00000000e-02,  2.77555756e-17]])>,
+         <tf.Tensor: shape=(2, 3), dtype=float64, numpy=
+         array([[-0.015, -0.04 ,  0.   ],
+                [-0.84 , -0.825, -0.84 ]])>)
+
+        Example for second-order derivatives with multiple returns:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", max_diff=2, interface="tf")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.probs([0, 1])
+
+        >>> with tf.GradientTape() as tape1:
+        ...     with tf.GradientTape(persistent=True) as tape2:
+        ...         res = circuit(a, b)
+        ...         res = tf.stack([tf.experimental.numpy.hstack(r) for r in res])
+        ...
+        ...     jac = tape2.jacobian(res, (a, b), experimental_use_pfor=False)
+        ...     jac = tf.stack(jac)
+        ...
+        >>> jac
+        tf.Tensor(
+        [[[ 0.01       -0.13       -0.03        0.025       0.135     ]
+          [-0.045      -0.195      -0.0075      0.03        0.1725    ]
+          [-0.00666667 -0.17       -0.01833333  0.02166667  0.16666667]]
+         [[-0.61       -0.29        0.315      -0.01       -0.015     ]
+          [-0.55       -0.255       0.265       0.01       -0.02      ]
+          [-0.65       -0.305       0.31166667  0.01333333 -0.02      ]]], shape=(2, 3, 5), dtype=float64)
+        >>> tape1.jacobian(jac, (a, b))
+        (<tf.Tensor: shape=(2, 3, 5), dtype=float64, numpy=
+         array([[[ 0.07      , -0.415     , -0.055     ,  0.02      ,  0.45      ],
+                 [ 0.05      , -0.4       , -0.06      ,  0.035     ,  0.425     ],
+                 [ 0.01666667, -0.42166667, -0.04      ,  0.03166667,  0.43      ]],
+                [[-0.03      ,  0.0375    , -0.075     ,  0.09      , -0.0525    ],
+                 [-0.005     ,  0.0375    , -0.06625   ,  0.06875   , -0.04      ],
+                 [-0.04      ,  0.0375    , -0.05166667,  0.07166667, -0.0575    ]]])>,
+         <tf.Tensor: shape=(2, 3, 5), dtype=float64, numpy=
+         array([[[-0.03      ,  0.0375    , -0.075     ,  0.09      , -0.0525    ],
+                 [-0.005     ,  0.0375    , -0.06625   ,  0.06875   , -0.04      ],
+                 [-0.04      ,  0.0375    , -0.05166667,  0.07166667, -0.0575    ]],
+                [[-0.81      , -0.39      ,  0.385     ,  0.02      , -0.015     ],
+                 [-0.77      , -0.375     ,  0.355     ,  0.03      , -0.01      ],
+                 [-0.82666667, -0.40166667,  0.4       ,  0.01333333, -0.01166667]]])>)
     """
 
     global __activated
