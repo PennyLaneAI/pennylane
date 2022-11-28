@@ -120,7 +120,8 @@ def _numeric_type_to_dtype(numeric_type):
 def _extract_shape_dtype_structs(tapes, device):
     """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
     the tapes and the device.
-    The jax.pure_callback function expects jax.ShapeDtypeStruct objects to
+
+    The host_callback.call function expects jax.ShapeDtypeStruct objects to
     describe the output of the function call.
     """
     shape_dtypes = []
