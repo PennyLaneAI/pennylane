@@ -362,36 +362,10 @@ class ExecuteTapesNew(torch.autograd.Function):
                 break
 
         for i, r in enumerate(res):
-            if any(
-                m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-                for m in ctx.tapes[i].measurements
-            ):
-                continue
 
-            if isinstance(r, (list, tuple)):
-                res[i] = [torch.as_tensor(t, device=ctx.torch_device) for t in r]
-                if isinstance(r, tuple):
-                    res[i] = tuple(res[i])
-            else:
-                res[i] = torch.as_tensor(r, device=ctx.torch_device)
+            res[i] = _res_to_torch(r, i, ctx)
 
-            jac_ = []
-            if ctx.jacs:
-                multi_m = len(ctx.tapes[i].measurements) > 1
-                multi_p = len(ctx.tapes[i].trainable_params) > 1
-
-                if multi_p and multi_m:
-                    for jac in ctx.jacs[i]:
-                        sub_jac = [torch.as_tensor(j, device=ctx.torch_device) for j in jac]
-                        sub_jac = tuple(sub_jac)
-                        jac_.append(sub_jac)
-                    ctx.jacs[i] = tuple(jac_)
-
-                elif not multi_p and not multi_m:
-                    ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
-                else:
-                    sub_jac = [torch.as_tensor(t, device=ctx.torch_device) for t in ctx.jacs[i]]
-                    ctx.jacs[i] = tuple(sub_jac)
+            _jac_to_torch(i, ctx)
 
         return res
 
@@ -522,3 +496,51 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
     )
 
     return ExecuteTapesNew.apply(kwargs, *parameters)
+
+
+def _res_to_torch(r, i, ctx):
+    """Convert results from unwrapped execution to torch."""
+    counts = False
+    if any(
+        m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+        for m in ctx.tapes[i].measurements
+    ):
+        counts = True
+
+    if isinstance(r, (list, tuple)):
+        if counts:
+            res = []
+            for t in r:
+                if isinstance(t, dict):
+                    res.append(t)
+                else:
+                    res.append(torch.as_tensor(t, device=ctx.torch_device))
+        else:
+            res = [torch.as_tensor(t, device=ctx.torch_device) for t in r]
+        if isinstance(r, tuple):
+            res = tuple(res)
+    else:
+        res = torch.as_tensor(r, device=ctx.torch_device)
+
+    return res
+
+
+def _jac_to_torch(i, ctx):
+    """Convert Jacobian from unwrapped execution to torch in the given ctx."""
+    jac_ = []
+    if ctx.jacs:
+        multi_m = len(ctx.tapes[i].measurements) > 1
+        multi_p = len(ctx.tapes[i].trainable_params) > 1
+
+        if multi_p and multi_m:
+            for jac in ctx.jacs[i]:
+                sub_jac = [torch.as_tensor(j, device=ctx.torch_device) for j in jac]
+                sub_jac = tuple(sub_jac)
+                jac_.append(sub_jac)
+            ctx.jacs[i] = tuple(jac_)
+
+        elif not multi_p and not multi_m:
+            ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
+        else:
+            sub_jac = [torch.as_tensor(t, device=ctx.torch_device) for t in ctx.jacs[i]]
+            ctx.jacs[i] = tuple(sub_jac)

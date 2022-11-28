@@ -1408,6 +1408,26 @@ class TestSample:
         assert isinstance(res[1], torch.Tensor)
         assert res[1].shape == ()
 
+    def test_counts_expval(self):
+        """Test counts works as expected if combined with expectation values"""
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qnode(dev, diff_method="parameter-shift", interface="torch")
+        def circuit():
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.counts(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        res = circuit()
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+
+        assert isinstance(res[0], dict)
+        assert isinstance(res[1], torch.Tensor)
+        assert res[1].shape == ()
+
     def test_sample_combination(self, tol):
         """Test the output of combining expval, var and sample"""
         n_sample = 10
