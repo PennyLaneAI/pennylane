@@ -775,16 +775,7 @@ class QuantumScript:
 
             wires_num_set = {len(meas.wires) for meas in mps}
             same_num_wires = len(wires_num_set) == 1
-            if same_num_wires:
-                # All probability measurements have the same number of
-                # wires, gather the length from the first one
-
-                len_wires = len(mps[0].wires)
-                dim = mps[0]._get_num_basis_states(len_wires, device)
-                shot_copies_sum = sum(s.copies for s in shot_vector)
-                shape = (shot_copies_sum, len(mps), dim)
-
-            else:
+            if not same_num_wires:
                 # There is a varying number of wires that the probability
                 # measurement processes act on
                 # TODO: revisit when issues with this case are resolved
@@ -792,6 +783,13 @@ class QuantumScript:
                     "Getting the output shape of a quantum script with multiple probability measurements "
                     "along with a device that defines a shot vector is not supported."
                 )
+
+            # All probability measurements have the same number of
+            # wires, gather the length from the first one
+
+            len_wires = len(mps[0].wires)
+            dim = mps[0]._get_num_basis_states(len_wires, device)
+            shape = sum(s.copies for s in shot_vector), len(mps), dim
 
         elif ret_type == qml.measurements.Sample:
             shape = []
@@ -850,7 +848,7 @@ class QuantumScript:
 
         if device._shot_vector is None and self.batch_size is not None:
             # insert the batch dimension
-            output_shape = output_shape[0:1] + (self.batch_size,) + output_shape[1:]
+            output_shape = output_shape[:1] + (self.batch_size,) + output_shape[1:]
 
         return output_shape
 
