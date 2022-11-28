@@ -442,7 +442,9 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
     control_base = {
         "CNOT": "PauliX",
         "CZ": "PauliZ",
+        "CCZ": "PauliZ",
         "CY": "PauliY",
+        "CH": "Hadamard",
         "CSWAP": "SWAP",
         "Toffoli": "PauliX",
         "ControlledPhaseShift": "PhaseShift",
