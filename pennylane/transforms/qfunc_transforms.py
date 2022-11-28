@@ -165,7 +165,7 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
 
         return new_dev
 
-    if isinstance(fn, qml.tape.QuantumTape):
+    if isinstance(fn, qml.tape.QuantumScript):
         return tape_transform(fn, *transform_args, **transform_kwargs)
 
     if not callable(fn):
