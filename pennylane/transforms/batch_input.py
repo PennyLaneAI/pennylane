@@ -19,6 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumTape
 from pennylane.transforms.batch_transform import batch_transform
+from pennylane.transforms.batch_params import _nested_stack
 
 
 @batch_transform
@@ -107,4 +108,10 @@ def batch_input(
         new_tape.set_parameters(params, trainable_only=False)
         output_tapes.append(new_tape)
 
-    return output_tapes, lambda x: qml.math.squeeze(qml.math.stack(x))
+    def processing_fn(res):
+        if qml.active_return():
+            return _nested_stack(res)
+
+        return qml.math.squeeze(qml.math.stack(res))
+
+    return output_tapes, processing_fn

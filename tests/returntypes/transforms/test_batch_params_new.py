@@ -156,7 +156,7 @@ def test_basis_state_preparation(mocker):
     assert np.allclose(res, indiv_res)
 
 
-def test_multi_returns(mocker):
+def test_multi_returns():
     """Test that batching works for a simple circuit with multiple returns"""
     dev = qml.device("default.qubit", wires=3)
 
@@ -174,7 +174,6 @@ def test_multi_returns(mocker):
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, x, weights)
 
     assert isinstance(res, tuple)
@@ -184,7 +183,7 @@ def test_multi_returns(mocker):
     assert res[1].shape == (batch_size, 4)
 
 
-def test_shot_vector(mocker):
+def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
     dev = qml.device("default.qubit", wires=3, shots=(100, (200, 3), 300))
 
@@ -202,7 +201,6 @@ def test_shot_vector(mocker):
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, x, weights)
 
     assert isinstance(res, tuple)
@@ -210,7 +208,7 @@ def test_shot_vector(mocker):
     assert all(shot_res.shape == (batch_size, 4) for shot_res in res)
 
 
-def test_multi_returns_shot_vector(mocker):
+def test_multi_returns_shot_vector():
     """Test that batching works for a simple circuit with multiple returns
     and with a shot vector"""
     dev = qml.device("default.qubit", wires=3, shots=(100, (200, 3), 300))
@@ -229,7 +227,6 @@ def test_multi_returns_shot_vector(mocker):
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
 
-    spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, x, weights)
 
     assert isinstance(res, tuple)
