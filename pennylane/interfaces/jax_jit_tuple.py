@@ -369,13 +369,14 @@ def _compute_jvps(jacs, tangents, multi_measurements):
     jvps = []
     for i, multi in enumerate(multi_measurements):
         if multi:
-            jvps.append(qml.gradients.compute_jvp_multi(tangents[i], jacs[i], jitting=True))
+            jvps.append(qml.gradients.compute_jvp_multi(tangents[i], jacs[i]))
         else:
-            jvps.append(qml.gradients.compute_jvp_single(tangents[i], jacs[i], jitting=True))
+            jvps.append(qml.gradients.compute_jvp_single(tangents[i], jacs[i]))
     return jvps
 
 
 def _to_jax(res):
+    """Auxiliary function for converting nested results to JAX typed arrays."""
     res_ = []
     for r in res:
         if not isinstance(r, tuple):

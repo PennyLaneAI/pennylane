@@ -33,19 +33,17 @@ def _convert(jac, tangent):
         jac = tuple(jac_new)
     else:
         jac = qml.math.convert_like(jac, tangent)
-
         jac = qml.math.cast(jac, tangent.dtype)
     return jac
 
 
-def compute_jvp_single(tangent, jac, jitting=False):
+def compute_jvp_single(tangent, jac):
     """Convenience function to compute the Jacobian vector product for a given
     tangent vector and a Jacobian for a single measurement tape.
 
     Args:
         tangent (list, tensor_like): tangent vector
         jac (tensor_like, tuple): Jacobian matrix
-        jitting (boolean): if we're using the JAX JIT interface
 
     Returns:
         tensor_like: the Jacobian vector product
@@ -92,8 +90,6 @@ def compute_jvp_single(tangent, jac, jitting=False):
     if jac is None:
         return None
 
-    # TODO: jitting: enable/disable?
-    jitting = False
     tangent = qml.math.stack(tangent)
     jac = _convert(jac, tangent)
 
@@ -104,8 +100,7 @@ def compute_jvp_single(tangent, jac, jitting=False):
             res = qml.math.zeros((1, 0))
             return res
 
-        if not jitting:
-            tangent = qml.math.reshape(tangent, (1,))
+        tangent = qml.math.reshape(tangent, (1,))
 
         # No dimension e.g. expval
         if jac.shape == ():
@@ -114,14 +109,7 @@ def compute_jvp_single(tangent, jac, jitting=False):
         # With dimension e.g. probs
         else:
             jac = qml.math.reshape(jac, (1, -1))
-
-        if not jitting:
-            res = qml.math.tensordot(jac, tangent, [[0], [0]])
-        else:
-            # TODO: clean
-            from jax import numpy as jnp
-
-            res = qml.math.tensordot(jac, jnp.array(tangent), 0)
+        res = qml.math.tensordot(jac, tangent, [[0], [0]])
     # Multiple params
     else:
         # No trainable parameters (adjoint)
@@ -141,7 +129,7 @@ def compute_jvp_single(tangent, jac, jitting=False):
     return res
 
 
-def compute_jvp_multi(tangent, jac, jitting=False):
+def compute_jvp_multi(tangent, jac):
     """Convenience function to compute the Jacobian-vector product for a given
     vector of gradient outputs and a Jacobian for a tape with multiple measurements.
 
@@ -175,7 +163,7 @@ def compute_jvp_multi(tangent, jac, jitting=False):
     """
     if jac is None:
         return None
-    res = tuple(compute_jvp_single(tangent, j, jitting=jitting) for j in jac)
+    res = tuple(compute_jvp_single(tangent, j) for j in jac)
     return res
 
 
@@ -247,7 +235,6 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
         return [], lambda _, num=None: None
 
     multi_m = num_measurements > 1
-    multi_p = num_params > 1
 
     try:
         if qml.math.allclose(qml.math.stack(tangent), 0):
@@ -257,13 +244,12 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
 
             def func(_):  # pylint: disable=unused-argument
                 if not multi_m:
+                    # TODO: Update shape for CV variables and for qutrit simulations
                     res = _single_measurement_zero(tape.measurements[0], tangent)
-                    if multi_p:
-                        res = tuple(res)
                 else:
+                    # TODO: Update shape for CV variables and for qutrit simulations
                     res = [_single_measurement_zero(m, tangent) for m in tape.measurements]
                     res = tuple(res)
-
                 return res
 
             return [], func
@@ -406,10 +392,6 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
                 continue
 
             if isinstance(reduction, str):
-                # TODO: is the following required?
-                # if reduction == "extend":
-                #     if not isinstance(jvp_, tuple) and jvp_.shape == ():
-                #         jvp_ = math.reshape(jvp_, (1,))
                 getattr(jvps, reduction)(jvp_)
             elif callable(reduction):
                 reduction(jvps, jvp_)
@@ -421,7 +403,6 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
 
 def _single_measurement_zero(m, tangent):
     """Aux function to create a zero tensor from a measurement."""
-    # TODO: Update shape for CV variables and for qutrit simulations
     if m.return_type is qml.measurements.Probability:
         dim = 2 ** len(m.wires)
     else:
