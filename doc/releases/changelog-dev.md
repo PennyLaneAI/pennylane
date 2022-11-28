@@ -291,6 +291,10 @@
   class which inherits from `AnnotatedQueue`.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
+* The method `qml.Operation.get_parameter_shift` is removed. The `gradients` module should be used
+  for general parameter-shift rules instead.
+  [(#3419)](https://github.com/PennyLaneAI/pennylane/pull/3419)
+
 * Changed the signature of the `QubitDevice.statistics` method from
 
   ```python
