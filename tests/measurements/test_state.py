@@ -18,7 +18,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
-from pennylane.measurements import State, density_matrix, expval, state
+from pennylane.measurements import State_, density_matrix, expval, state
 
 
 class TestState:
@@ -51,7 +51,7 @@ class TestState:
         func()
         obs = func.qtape.observables
         assert len(obs) == 1
-        assert obs[0].return_type is State
+        assert obs[0].return_type is State_
 
     @pytest.mark.parametrize("wires", range(2, 5))
     def test_state_correct_ghz(self, wires):
@@ -375,7 +375,7 @@ class TestDensityMatrix:
         func()
         obs = func.qtape.observables
         assert len(obs) == 1
-        assert obs[0].return_type is State
+        assert obs[0].return_type is State_
 
     @pytest.mark.torch
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])

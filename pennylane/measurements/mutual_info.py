@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import MutualInfo, StateMeasurement
+from .measurements import MutualInfo_, StateMeasurement
 
 
 def mutual_info(wires0, wires1, log_base=None):
@@ -105,7 +105,7 @@ class _MutualInfo(StateMeasurement):
 
     @property
     def return_type(self):
-        return MutualInfo
+        return MutualInfo_
 
     def shape(self, device):
         if qml.active_return():

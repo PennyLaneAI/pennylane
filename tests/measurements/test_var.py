@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Variance
+from pennylane.measurements import Variance_
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -94,7 +94,7 @@ class TestVar:
         @qml.qnode(dev)
         def circuit():
             res = qml.var(qml.PauliZ(0))
-            assert res.return_type is Variance
+            assert res.return_type is Variance_
             return res
 
         circuit()

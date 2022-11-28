@@ -20,7 +20,7 @@ from typing import Sequence
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import State, StateMeasurement
+from .measurements import State_, StateMeasurement
 
 
 def state():
@@ -127,7 +127,7 @@ class _State(StateMeasurement):
 
     @property
     def return_type(self):
-        return State
+        return State_
 
     @property
     def numeric_type(self):

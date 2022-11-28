@@ -23,7 +23,7 @@ from pennylane.operation import Operator
 from pennylane.ops import Projector
 from pennylane.wires import Wires
 
-from .measurements import SampleMeasurement, StateMeasurement, Variance
+from .measurements import SampleMeasurement, StateMeasurement, Variance_
 
 
 def var(op: Operator):
@@ -63,7 +63,7 @@ class _Variance(SampleMeasurement, StateMeasurement):
 
     @property
     def return_type(self):
-        return Variance
+        return Variance_
 
     @property
     def numeric_type(self):

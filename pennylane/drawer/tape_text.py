@@ -16,7 +16,7 @@ This module contains logic for the text based circuit drawer through the ``tape_
 """
 
 import pennylane as qml
-from pennylane.measurements import Expectation, Probability, Sample, Variance, State
+from pennylane.measurements import Expectation_, Probability_, Sample_, State_, Variance_
 
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
@@ -67,11 +67,11 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
 
 
 measurement_label_map = {
-    Expectation: lambda label: f"<{label}>",
-    Probability: lambda label: f"Probs[{label}]" if label else "Probs",
-    Sample: lambda label: f"Sample[{label}]" if label else "Sample",
-    Variance: lambda label: f"Var[{label}]",
-    State: lambda label: "State",
+    Expectation_: lambda label: f"<{label}>",
+    Probability_: lambda label: f"Probs[{label}]" if label else "Probs",
+    Sample_: lambda label: f"Sample[{label}]" if label else "Sample",
+    Variance_: lambda label: f"Var[{label}]",
+    State_: lambda label: "State",
 }
 
 

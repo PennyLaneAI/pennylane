@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation
+from pennylane.measurements import Expectation_
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -100,7 +100,7 @@ class TestExpval:
         @qml.qnode(dev)
         def circuit():
             res = qml.expval(qml.PauliZ(0))
-            assert res.return_type is Expectation
+            assert res.return_type is Expectation_
             return res
 
         new_dev = circuit.device

@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import CustomMeasurement, Shadow, ShadowExpval
+from .measurements import CustomMeasurement, Shadow_, ShadowExpval_
 
 
 def shadow_expval(H, k=1, seed_recipes=True):
@@ -308,7 +308,7 @@ class ClassicalShadow(CustomMeasurement):
 
     @property
     def return_type(self):
-        return Shadow
+        return Shadow_
 
     def shape(self, device=None):
         # the first entry of the tensor represents the measured bits,
@@ -370,7 +370,7 @@ class _ShadowExpval(CustomMeasurement):
 
     @property
     def return_type(self):
-        return ShadowExpval
+        return ShadowExpval_
 
     def shape(self, device=None):
         return (1,)

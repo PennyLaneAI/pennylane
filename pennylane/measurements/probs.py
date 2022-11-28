@@ -20,7 +20,7 @@ from typing import Sequence, Tuple
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import Probability, SampleMeasurement, StateMeasurement
+from .measurements import Probability_, SampleMeasurement, StateMeasurement
 
 
 def probs(wires=None, op=None):
@@ -121,7 +121,7 @@ class _Probability(SampleMeasurement, StateMeasurement):
 
     @property
     def return_type(self):
-        return Probability
+        return Probability_
 
     @property
     def numeric_type(self):

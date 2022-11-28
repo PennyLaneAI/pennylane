@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement, VnEntropy
+from .measurements import StateMeasurement, VnEntropy_
 
 
 def vn_entropy(wires, log_base=None):
@@ -86,7 +86,7 @@ class _VnEntropy(StateMeasurement):
 
     @property
     def return_type(self):
-        return VnEntropy
+        return VnEntropy_
 
     @property
     def numeric_type(self):

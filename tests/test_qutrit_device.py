@@ -24,13 +24,13 @@ import pennylane as qml
 from pennylane import DeviceError, QuantumFunctionError, QubitDevice, QutritDevice
 from pennylane import numpy as pnp
 from pennylane.measurements import (
-    Counts,
-    Expectation,
+    Counts_,
+    Expectation_,
     MeasurementProcess,
-    Probability,
-    Sample,
-    State,
-    Variance,
+    Probability_,
+    Sample_,
+    State_,
+    Variance_,
     _Counts,
     _Expectation,
     _Probability,
@@ -352,7 +352,15 @@ class TestExtractStatistics:
     ):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
-        assert returntype not in [Expectation, Variance, Sample, Probability, State, Counts, None]
+        assert returntype not in [
+            Expectation_,
+            Variance_,
+            Sample_,
+            Probability_,
+            State_,
+            Counts_,
+            None,
+        ]
 
         class SomeMeasurement(MeasurementProcess):
             return_type = returntype
@@ -426,7 +434,7 @@ class TestSample:
 
         class SomeObservable(qml.operation.Observable):
             num_wires = 1
-            return_type = Sample
+            return_type = Sample_
 
         obs = SomeObservable(wires=0)
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):

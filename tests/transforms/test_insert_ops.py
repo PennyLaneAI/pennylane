@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.transforms.insert_ops
-from pennylane.measurements import Expectation
+from pennylane.measurements import Expectation_
 from pennylane.tape import QuantumTape
 from pennylane.transforms.insert_ops import insert
 
@@ -89,7 +89,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert tape.measurements[0].return_type is Expectation_
 
     def test_all(self):
         """Test if the expected tape is returned when the all position is requested"""
@@ -118,7 +118,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert tape.measurements[0].return_type is Expectation_
 
     def test_before(self):
         """Test if the expected tape is returned when the before argument is True"""
@@ -147,7 +147,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert tape.measurements[0].return_type is Expectation_
 
     op_lst = [qml.RX, qml.PauliZ, qml.Identity]
 
@@ -184,7 +184,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert tape.measurements[0].return_type is Expectation_
 
     def test_operation_list_as_position(self):
         """Test if expected tape is returned when an operation list is passed in position"""
@@ -211,7 +211,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert tape.measurements[0].return_type is Expectation_
 
     def test_end(self):
         """Test if the expected tape is returned when the end position is requested"""
@@ -236,7 +236,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert tape.measurements[0].return_type is Expectation_
 
     def test_start_with_state_prep(self):
         """Test if the expected tape is returned when the start position is requested in a tape
@@ -263,7 +263,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert tape.measurements[0].return_type is Expectation_
 
     def test_all_with_state_prep(self):
         """Test if the expected tape is returned when the all position is requested in a tape
@@ -294,7 +294,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert tape.measurements[0].return_type is Expectation_
 
     def test_end_with_state_prep(self):
         """Test if the expected tape is returned when the end position is requested in a tape
@@ -323,7 +323,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert tape.measurements[0].return_type is Expectation_
 
     def test_with_qfunc_op(self):
         """Test if the transform works as expected if the operation is a qfunc rather than single
@@ -356,7 +356,7 @@ class TestInsert:
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == ["PauliZ", "PauliZ"]
         assert tape.observables[0].wires.tolist() == [0, 1]
-        assert tape.measurements[0].return_type is Expectation
+        assert tape.measurements[0].return_type is Expectation_
 
 
 def test_insert_qnode():
@@ -433,10 +433,10 @@ def test_insert_dev(mocker, monkeypatch):
     assert len(tape.measurements) == 2
     assert tape.observables[0].name == ["PauliZ", "PauliZ"]
     assert tape.observables[0].wires.tolist() == [0, 1]
-    assert tape.measurements[0].return_type is Expectation
+    assert tape.measurements[0].return_type is Expectation_
     assert tape.observables[1].name == "PauliZ"
     assert tape.observables[1].wires.tolist() == [0]
-    assert tape.measurements[1].return_type is Expectation
+    assert tape.measurements[1].return_type is Expectation_
 
     assert not np.allclose(res_without_noise, res_with_noise)
 

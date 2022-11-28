@@ -32,7 +32,7 @@ from pennylane.interfaces import set_shots
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
-    AllCounts,
+    AllCounts_,
     ClassicalShadow,
     MeasurementProcess,
     _Counts,
@@ -1669,7 +1669,7 @@ class QubitDevice(Device):
             if obs.all_outcomes:
                 outcomes = self.generate_basis_states(num_wires)
                 outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
-        elif obs.return_type is AllCounts:
+        elif obs.return_type is AllCounts_:
             outcomes = qml.eigvals(obs)
 
         # generate empty outcome dict, populate values with state counts

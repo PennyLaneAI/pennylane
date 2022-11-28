@@ -26,12 +26,12 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
-    Expectation,
-    Probability,
-    Sample,
-    ShadowExpval,
-    State,
-    Variance,
+    Expectation_,
+    Probability_,
+    Sample_,
+    ShadowExpval_,
+    State_,
+    Variance_,
     _Counts,
     _MidMeasure,
     _Probability,
@@ -467,19 +467,19 @@ class Device(abc.ABC):
                 else:
                     wires = obs.wires
 
-                if obs.return_type is Expectation:
+                if obs.return_type is Expectation_:
                     results.append(self.expval(obs.name, wires, obs.parameters))
 
-                elif obs.return_type is Variance:
+                elif obs.return_type is Variance_:
                     results.append(self.var(obs.name, wires, obs.parameters))
 
-                elif obs.return_type is Sample:
+                elif obs.return_type is Sample_:
                     results.append(np.array(self.sample(obs.name, wires, obs.parameters)))
 
-                elif obs.return_type is Probability:
+                elif obs.return_type is Probability_:
                     results.append(list(self.probability(wires=wires).values()))
 
-                elif obs.return_type is State:
+                elif obs.return_type is State_:
                     raise qml.QuantumFunctionError("Returning the state is not supported")
 
                 elif obs.return_type is not None:
@@ -502,9 +502,9 @@ class Device(abc.ABC):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(obs.return_type is Sample for obs in observables):
+            if all(obs.return_type is Sample_ for obs in observables):
                 return self._asarray(results)
-            if any(obs.return_type is Sample for obs in observables):
+            if any(obs.return_type is Sample_ for obs in observables):
                 return self._asarray(results, dtype="object")
 
             return self._asarray(results)
@@ -736,7 +736,7 @@ class Device(abc.ABC):
 
         return_types = [m.return_type for m in circuit.observables]
 
-        is_shadow = ShadowExpval in return_types
+        is_shadow = ShadowExpval_ in return_types
 
         if hamiltonian_in_obs and (
             (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known

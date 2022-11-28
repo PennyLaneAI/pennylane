@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MutualInfo, State, VnEntropy
+from pennylane.measurements import MutualInfo_, State_, VnEntropy_
 from pennylane.tape import QuantumScript
 
 measures = [
@@ -322,7 +322,7 @@ class TestOutputShape:
             pytest.skip("Sample doesn't support analytic computations.")
 
         if (
-            measurement.return_type in {State, MutualInfo, VnEntropy}
+            measurement.return_type in {State_, MutualInfo_, VnEntropy_}
             and measurement.wires is not None
         ):
             pytest.skip("Density matrix does not support parameter broadcasting")
@@ -351,7 +351,7 @@ class TestOutputShape:
         if shots is None and measurement.return_type is qml.measurements.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
-        if measurement.return_type in {State, MutualInfo, VnEntropy}:
+        if measurement.return_type in {State_, MutualInfo_, VnEntropy_}:
             pytest.skip("Multiple measurements not supported.")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
