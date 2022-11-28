@@ -178,9 +178,13 @@ class _Counts(SampleMeasurement):
             return self._samples_to_counts(samples)
 
         num_wires = len(self.wires) if self.wires else len(wire_order)
-        shape = (-1, bin_size, num_wires) if self.obs is None else (-1, bin_size)
+        samples = (
+            samples.reshape((num_wires, -1)).T.reshape(-1, bin_size, num_wires)
+            if self.obs is None
+            else samples.reshape((-1, bin_size))
+        )
 
-        return [self._samples_to_counts(bin_sample) for bin_sample in samples.reshape(shape)]
+        return [self._samples_to_counts(bin_sample) for bin_sample in samples]
 
     def _samples_to_counts(self, samples):
         """Groups the samples into a dictionary showing number of occurences for
