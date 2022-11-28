@@ -26,7 +26,13 @@ def get_circuit(wires, shots, seed_recipes, interface="autograd", device="defaul
     Return a QNode that prepares the state (|00...0> + |11...1>) / sqrt(2)
         and performs the classical shadow measurement
     """
-    dev = qml.device(device, wires=wires, shots=shots)
+    if device is not None:
+        dev = qml.device(device, wires=wires, shots=shots)
+    else:
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+
+        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
+        dev.classical_shadow = super(type(dev), dev).classical_shadow
 
     @qml.qnode(dev, interface=interface)
     def circuit():
@@ -35,7 +41,7 @@ def get_circuit(wires, shots, seed_recipes, interface="autograd", device="defaul
         for target in range(1, wires):
             qml.CNOT(wires=[0, target])
 
-        return qml.classical_shadow(wires=range(wires), seed_recipes=seed_recipes)
+        return qml.classical_shadow(wires=range(wires), seed=seed_recipes)
 
     return circuit
 
@@ -44,13 +50,19 @@ def get_x_basis_circuit(wires, shots, interface="autograd", device="default.qubi
     """
     Return a QNode that prepares the |++..+> state and performs a classical shadow measurement
     """
-    dev = qml.device(device, wires=wires, shots=shots)
+    if device is not None:
+        dev = qml.device(device, wires=wires, shots=shots)
+    else:
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+
+        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
+        dev.classical_shadow = super(type(dev), dev).classical_shadow
 
     @qml.qnode(dev, interface=interface)
     def circuit():
         for wire in range(wires):
             qml.Hadamard(wire)
-        return qml.classical_shadow(wires=range(wires), seed_recipes=False)
+        return qml.classical_shadow(wires=range(wires))
 
     return circuit
 
@@ -59,7 +71,13 @@ def get_y_basis_circuit(wires, shots, interface="autograd", device="default.qubi
     """
     Return a QNode that prepares the |+i>|+i>...|+i> state and performs a classical shadow measurement
     """
-    dev = qml.device(device, wires=wires, shots=shots)
+    if device is not None:
+        dev = qml.device(device, wires=wires, shots=shots)
+    else:
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+
+        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
+        dev.classical_shadow = super(type(dev), dev).classical_shadow
 
     @qml.qnode(dev, interface=interface)
     def circuit():
@@ -75,11 +93,17 @@ def get_z_basis_circuit(wires, shots, interface="autograd", device="default.qubi
     """
     Return a QNode that prepares the |00..0> state and performs a classical shadow measurement
     """
-    dev = qml.device(device, wires=wires, shots=shots)
+    if device is not None:
+        dev = qml.device(device, wires=wires, shots=shots)
+    else:
+        dev = qml.device("default.qubit", wires=wires, shots=shots)
+
+        # make the device call the superclass method to switch between the general qubit device and device specific implementations (i.e. for default qubit)
+        dev.classical_shadow = super(type(dev), dev).classical_shadow
 
     @qml.qnode(dev, interface=interface)
     def circuit():
-        return qml.classical_shadow(wires=range(wires), seed_recipes=False)
+        return qml.classical_shadow(wires=range(wires))
 
     return circuit
 
@@ -97,7 +121,7 @@ class TestClassicalShadow:
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_measurement_process_numeric_type(self, wires, seed):
         """Test that the numeric type of the MeasurementProcess instance is correct"""
-        res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
+        res = qml.classical_shadow(wires=range(wires), seed=seed)
         assert res.numeric_type == int
 
     @pytest.mark.parametrize("shots", shots_list)
@@ -105,7 +129,7 @@ class TestClassicalShadow:
     def test_measurement_process_shape(self, wires, shots, seed):
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
-        res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
+        res = qml.classical_shadow(wires=range(wires), seed=seed)
         assert res.shape(device=dev) == (1, 2, shots, wires)
 
     def test_shape_matches(self, wires):
@@ -125,7 +149,7 @@ class TestClassicalShadow:
     def test_measurement_process_copy(self, wires, seed):
         """Test that the attributes of the MeasurementProcess instance are
         correctly copied"""
-        res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
+        res = qml.classical_shadow(wires=range(wires), seed=seed)
 
         copied_res = copy.copy(res)
         assert isinstance(copied_res, type(res))
@@ -137,7 +161,7 @@ class TestClassicalShadow:
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("seed", seed_recipes_list)
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", None])
     def test_format(self, wires, shots, seed, interface, device):
         """Test that the format of the returned classical shadow
         measurement is correct"""
@@ -167,7 +191,7 @@ class TestClassicalShadow:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("device", ["default.qubit", None])
     @pytest.mark.parametrize(
         "circuit_fn, basis_recipe",
         [(get_x_basis_circuit, 0), (get_y_basis_circuit, 1), (get_z_basis_circuit, 2)],
