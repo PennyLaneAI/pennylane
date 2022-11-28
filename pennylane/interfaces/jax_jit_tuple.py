@@ -20,7 +20,6 @@ to a PennyLane Device class.
 import jax
 import jax.numpy as jnp
 
-import numpy as np
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
@@ -29,7 +28,7 @@ from pennylane.interfaces.jax_jit import _numeric_type_to_dtype
 dtype = jnp.float64
 
 
-def _extract_shape_dtype_structs_new(tapes, device):
+def _tapes_shape_dtype_tuple(tapes, device):
     """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
     the tapes and the device.
 
@@ -56,8 +55,7 @@ def _extract_shape_dtype_structs_new(tapes, device):
     return shape_dtypes
 
 
-# TODO: refactor!
-def _extract_jac_shape(tapes, device):
+def _grad_transform_jac_shape_dtype(tapes, device):
     """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
     the tapes and the device.
 
@@ -96,36 +94,48 @@ def _extract_jac_shape(tapes, device):
     return tuple(shape_dtypes)
 
 
-def jac_device_shape(tapes, num_params):
-    """TODO"""
+def _device_grad_jac_shape_dtype(tapes, device):
+    """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
+    the tapes and the device.
 
-    # TODO: generalize
-    shape_dtype_structs = jax.ShapeDtypeStruct((), dtype)
-    if num_params == 1:
-        abc = []
-        for t in tapes:
-            num_meas = len(t.measurements)
-            shape = (
-                [shape_dtype_structs] if num_meas == 1 else tuple([shape_dtype_structs] * num_meas)
-            )
-            abc.append(shape)
-    else:
-        abc = []
-        for t in tapes:
-            num_params = len(t.trainable_params)
-            num_meas = len(t.measurements)
+    The jax.pure_callback function expects jax.ShapeDtypeStruct objects to
+    describe the output of the function call.
+    """
+    shapes_for_tapes = []
+    for t in tapes:
+        shape_dtype_structs = t.shape(device)
+        num_params = len(t.trainable_params)
+        num_meas = len(t.measurements)
+        if num_params == 1:
+            if num_meas == 1:
+                shape = [shape_dtype_structs]
+            else:
+                shape = tuple([shape_dtype_structs] * num_meas)
+        else:
             if num_meas == 1:
                 shape = tuple([shape_dtype_structs] * num_params)
             else:
                 shape = [tuple([shape_dtype_structs] * num_params)] * num_meas
-            abc.append(shape)
 
-        if len(abc) == 1:
-            abc = abc[0]
-    return abc
+        shapes_for_tapes.append(shape)
+
+    if len(shapes_for_tapes) == 1:
+        shapes_for_tapes = shapes_for_tapes[0]
+    return shapes_for_tapes
 
 
-def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
+def _squeeze_nested(jvps, multi_measurements, multi_params):
+    """Post-process the JVP by squeezing arrays in the result with a nested structure."""
+    res_jvps = []
+    for m, p, j in zip(multi_measurements, multi_params, jvps):
+        if m and p:
+            res_jvps.append(tuple(jnp.squeeze(j_comp) for j_comp in j))
+        else:
+            res_jvps.append(jnp.squeeze(j))
+    return res_jvps
+
+
+def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -170,7 +180,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
     if gradient_fn is None:
-        return _execute_fwd_new(
+        return _execute_fwd_tuple(
             parameters,
             tapes=tapes,
             device=device,
@@ -179,7 +189,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
             _n=_n,
         )
 
-    return _execute_bwd_new(
+    return _execute_bwd_tuple(
         parameters,
         tapes=tapes,
         device=device,
@@ -190,7 +200,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
     )
 
 
-def _execute_bwd_new(
+def _execute_bwd_tuple(
     params,
     tapes=None,
     device=None,
@@ -215,31 +225,29 @@ def _execute_bwd_new(
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
             return res
 
-        shape_dtype_structs = _extract_shape_dtype_structs_new(tapes, device)
+        shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
         res = jax.pure_callback(wrapper, shape_dtype_structs, params)
         return res
 
-    def callback_fun_device(params, num_params):
-        # Backward: Gradient function is a device method.
-        def wrapper(params):
-            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
-            with qml.tape.Unwrap(*new_tapes):
-                return gradient_fn(new_tapes, **gradient_kwargs)
+    def _grad_transform_jac_via_callback(params, device):
+        """Perform a callback to compute the jacobian of tapes using a gradient transform (e.g., parameter-shift or
+        finite differences grad transform).
 
-        shape_dtype_structs = jac_device_shape(tapes, num_params)
-        return jax.pure_callback(wrapper, shape_dtype_structs, params)
+        Note: we are not using the batch_jvp pipeline and rather split the steps of unwrapping tapes and the JVP
+        computation because:
 
-    def post_proc_res(jvps, multi_measurements, multi_params):
-        res_jvps = []
-        for m, p, j in zip(multi_measurements, multi_params, jvps):
-            if m and p:
-                res_jvps.append(tuple(jnp.squeeze(j_comp) for j_comp in j))
-            else:
-                res_jvps.append(jnp.squeeze(j))
-        return res_jvps
+        1. Tape unwrapping has to happen in the callback: otherwise jitting is broken and Tracer objects
+        are converted to NumPy, something that raises an error;
 
-    @jax.custom_jvp
-    def callback_fun(params, num_tapes):
+        2. Passing in the tangents as an argument to the wrapper function called by the jax.pure_callback raises an
+        error (as of jax and jaxlib 0.3.25):
+        ValueError: Pure callbacks do not support transpose. Please use jax.custom_vjp to use callbacks while
+        taking gradients.
+
+        Solution: Use the callback to compute the jacobian and then separately compute the JVP using the
+        tangent.
+        """
+
         def wrapper(params):
             new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
 
@@ -256,57 +264,48 @@ def _execute_bwd_new(
 
             return all_jacs
 
-        expected_shapes = _extract_jac_shape(tapes, device)
+        expected_shapes = _grad_transform_jac_shape_dtype(tapes, device)
         res = jax.pure_callback(wrapper, expected_shapes, params)
         return res
 
-    @callback_fun.defjvp
-    def callback_fun_jvp(primals, tangents):
-        return primals, tangents
+    def _device_method_jac_via_callback(params, device):
+        """Perform a callback to compute the jacobian of tapes using a device method (e.g., adjoint)."""
+
+        def wrapper(params):
+            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
+            with qml.tape.Unwrap(*new_tapes):
+                return gradient_fn(new_tapes, **gradient_kwargs)
+
+        shape_dtype_structs = _device_grad_jac_shape_dtype(tapes, device)
+        return jax.pure_callback(wrapper, shape_dtype_structs, params)
 
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):
         params = primals[0]
-
-        new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
-        num_params = np.sum([len(p) for p in params])
+        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
+        multi_params = [len(tape.trainable_params) > 1 for tape in tapes]
 
         # Execution: execute the function first
         evaluation_results = execute_wrapper(params)
-        multi_measurements = [len(tape.measurements) > 1 for tape in new_tapes]
-        multi_params = [len(tape.trainable_params) > 1 for tape in new_tapes]
 
         # Backward: branch off based on the gradient function is a device method.
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             # Gradient function is a gradient transform
-            multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
-            # Note: we have to split up the tape Unwrapping and the JVP computation and cannot rely on the batch_jvp
-            # pipeline because:
-            #
-            # 1. Tape unwrapping has to happen in the callback: otherwise jitting is broken and Tracer objects
-            # are converted to NumPy, something that raises an error
-            #
-            # 2. Passing in the tangents as an argument to the function called by the callback raises an error (as of
-            # jax and jaxlib 0.3.25):
-            # ValueError: Pure callbacks do not support transpose. Please use jax.custom_vjp to use callbacks while
-            # taking gradients.
-            #
-            # Solution: Use the callback to compute the jacobian and then separately compute the JVP using the
-            # tangent
-            res_from_callback = callback_fun(params, num_params)
+            res_from_callback = _grad_transform_jac_via_callback(params, device)
             if len(tapes) == 1:
                 res_from_callback = [res_from_callback]
 
             jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
+            # jvps = _squeeze_nested(jvps, multi_measurements, multi_params)
         else:
             # Gradient function is a device method
-            res_from_callback = callback_fun_device(params, num_params)
+            res_from_callback = _device_method_jac_via_callback(params, device)
             if len(tapes) == 1:
                 res_from_callback = [res_from_callback]
 
             jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
-            jvps = post_proc_res(jvps, multi_measurements, multi_params)
+            jvps = _squeeze_nested(jvps, multi_measurements, multi_params)
 
         return evaluation_results, jvps
 
@@ -314,7 +313,7 @@ def _execute_bwd_new(
 
 
 # The execute function in forward mode
-def _execute_fwd_new(
+def _execute_fwd_tuple(
     params,
     tapes=None,
     device=None,
@@ -337,7 +336,7 @@ def _execute_fwd_new(
             # On the forward execution return the jacobian too
             return res, jacs
 
-        fwd_shape_dtype_struct = _extract_shape_dtype_structs_new(tapes, device)
+        fwd_shape_dtype_struct = _tapes_shape_dtype_tuple(tapes, device)
 
         # params should be the parameters for each tape queried prior, assert
         # to double-check
