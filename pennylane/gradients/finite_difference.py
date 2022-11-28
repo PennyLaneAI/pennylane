@@ -724,13 +724,13 @@ def finite_diff(
 
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res)
-            g = sum(c * r for c, r in zip(coeffs, res))
+            g = sum(r * c for c, r in zip(coeffs, res))
 
             if c0 is not None:
                 # add on the unshifted term
-                g = g + c0 * r0
+                g = g + r0 * c0
 
-            grads.append(g / (h**n))
+            grads.append(g * (h**(-n)))
 
         # The following is for backwards compatibility; currently,
         # the device stacks multiple measurement arrays, even if not the same
