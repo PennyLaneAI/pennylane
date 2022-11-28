@@ -22,7 +22,7 @@ import jax.numpy as jnp
 
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
-from pennylane.interfaces.jax import _raise_vector_valued_fwd
+from pennylane.interfaces.jax import _compute_jvps
 from pennylane.interfaces.jax_jit import _numeric_type_to_dtype
 
 dtype = jnp.float64
@@ -266,7 +266,6 @@ def _execute_bwd_tuple(
                 res_from_callback = [res_from_callback]
 
             jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
-            # jvps = _squeeze_nested(jvps, multi_measurements, multi_params)
         else:
             # Gradient function is a device method
             res_from_callback = _device_method_jac_via_callback(params, device)
@@ -290,100 +289,4 @@ def _execute_fwd_tuple(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-    @jax.custom_vjp
-    def wrapped_exec(params):
-        def wrapper(p):
-            """Compute the forward pass by returning the jacobian too."""
-            new_tapes = []
-
-            for t, a in zip(tapes, p):
-                new_tapes.append(t.copy(copy_operations=True))
-                new_tapes[-1].set_parameters(a)
-
-            res, jacs = execute_fn(new_tapes, **gradient_kwargs)
-
-            # On the forward execution return the jacobian too
-            return res, jacs
-
-        fwd_shape_dtype_struct = _tapes_shape_dtype_tuple(tapes, device)
-
-        # params should be the parameters for each tape queried prior, assert
-        # to double-check
-        assert len(tapes) == len(params)
-
-        jacobian_shape = []
-        for t, p in zip(tapes, params):
-            shape = t.shape(device) + (len(p),)
-            _dtype = _numeric_type_to_dtype(t.numeric_type)
-            shape = [shape] if isinstance(shape, int) else shape
-            o = jax.ShapeDtypeStruct(tuple(shape), _dtype)
-            jacobian_shape.append(o)
-
-        res, jacs = jax.pure_callback(
-            wrapper, params, tuple([fwd_shape_dtype_struct, jacobian_shape])
-        )
-        return res, jacs
-
-    def wrapped_exec_fwd(params):
-        res, jacs = wrapped_exec(params)
-        return res, tuple([jacs, params])
-
-    def wrapped_exec_bwd(params, g):
-
-        _raise_vector_valued_fwd(tapes)
-
-        # Use the jacobian that was computed on the forward pass
-        jacs, params = params
-
-        # Adjust the structure of how the jacobian is returned to match the
-        # non-forward mode cases
-        # E.g.,
-        # [DeviceArray([[ 0.06695931,  0.01383095, -0.46500877]], dtype=float32)]
-        # is mapped to
-        # [[DeviceArray(0.06695931, dtype=float32), DeviceArray(0.01383095,
-        # dtype=float32), DeviceArray(-0.46500877, dtype=float32)]]
-        res_jacs = []
-        for j in jacs:
-            this_j = []
-            for i in range(j.shape[1]):
-                this_j.append(j[0, i])
-            res_jacs.append(this_j)
-        return tuple([tuple(res_jacs)])
-
-    wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
-    res = wrapped_exec(params)
-
-    tracing = any(isinstance(r, jax.interpreters.ad.JVPTracer) for r in res)
-
-    # When there are no tracers (not differentiating), we have the result of
-    # the forward pass and the jacobian, but only need the result of the
-    # forward pass
-    if len(res) == 2 and not tracing:
-        res = res[0]
-
-    return res
-
-
-def _compute_jvps(jacs, tangents, multi_measurements):
-    """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
-    jvps = []
-    for i, multi in enumerate(multi_measurements):
-        if multi:
-            jvps.append(qml.gradients.compute_jvp_multi(tangents[i], jacs[i]))
-        else:
-            jvps.append(qml.gradients.compute_jvp_single(tangents[i], jacs[i]))
-    return jvps
-
-
-def _to_jax(res):
-    """Auxiliary function for converting nested results to JAX typed arrays."""
-    res_ = []
-    for r in res:
-        if not isinstance(r, tuple):
-            res_.append(jnp.array(r))
-        else:
-            sub_r = []
-            for r_i in r:
-                sub_r.append(jnp.array(r_i))
-            res_.append(tuple(sub_r))
-    return res_
+    raise NotImplementedError("Forward mode execution for device gradients is not yet implemented.")

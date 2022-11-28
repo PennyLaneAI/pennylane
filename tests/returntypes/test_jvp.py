@@ -70,6 +70,7 @@ class TestComputeJVP:
         jac = tuple([np.array([0.3]), np.array([0.2, 0.5])])
 
         jvp = qml.gradients.compute_jvp_multi(tangent, jac)
+
         assert isinstance(jvp, tuple)
         assert len(jvp) == 2
 
@@ -133,6 +134,7 @@ class TestComputeJVP:
         jac = tuple([np.array(0.1), np.array(0.2)])
 
         jvp = qml.gradients.compute_jvp_single(tangent, jac)
+
         assert np.all(jvp == np.zeros([2]))
 
     def test_zero_dy_multi(self):

@@ -1107,13 +1107,17 @@ class TestVectorValuedJIT:
         for r, e in zip(res, exp):
             assert jnp.allclose(r, e, atol=1e-7)
 
-    # TODO
-    @pytest.mark.skip()
+    # TODO: update when fwd mode is implemented
     def test_multiple_expvals_raises_fwd_device_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
-        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        if not fwd_mode:
-            pytest.skip("Forward mode is not turned on.")
+        execute_kwargs = {
+            "gradient_fn": "device",
+            "mode": "forward",
+            "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
+        }
+        # fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
+        # if not fwd_mode:
+        #     pytest.skip("Forward mode is not turned on.")
 
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
@@ -1131,7 +1135,8 @@ class TestVectorValuedJIT:
             )
             return res[0]
 
-        with pytest.raises(InterfaceUnsupportedError):
+        with pytest.raises(NotImplementedError):
+            # with pytest.raises(InterfaceUnsupportedError):
             jax.jacobian(cost)(params, cache=None)
 
     def test_assertion_error_fwd(self, execute_kwargs):

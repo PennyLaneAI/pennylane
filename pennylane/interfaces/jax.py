@@ -477,8 +477,7 @@ def _execute_bwd_new(
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
-                    r = execute_fn(jvp_tapes)[0]
-                    jvps = processing_fn(r)
+                    jvps = processing_fn(execute_fn(jvp_tapes)[0])
 
             else:
                 jvp_tapes, processing_fn = qml.gradients.batch_jvp(
