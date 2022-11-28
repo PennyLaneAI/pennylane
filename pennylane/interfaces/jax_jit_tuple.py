@@ -282,11 +282,14 @@ def _execute_bwd_new(
                 # Solution: Use the callback to compute the jacobian and then separately compute the JVP using the
                 # tangent
                 res_from_callback = callback_fun(params, num_params)
-                jvps = _compute_jvps([res_from_callback], tangents[0], multi_measurements)
+                if len(tapes) == 1:
+                    res_from_callback = [res_from_callback]
+
+                #jvps = post_proc_res(res_from_callback, multi_measurements, multi_params)
+                jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
                 jvps = [jnp.squeeze(j) for j in jvps]
 
             # TODO: need?
-            #jvps = post_proc_res(jvps, multi_measurements, multi_params)
         else:
             # Gradient function is a device method
             jacs = callback_fun_fwd(new_tapes, num_params)
