@@ -149,16 +149,21 @@ class TestIntegration:
             qml.Hadamard(3)
             qml.Hadamard(5)
             qml.T(5)
-            return [
+            return (
                 qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
                 qml.expval(qml.PauliX(0)),
                 qml.expval(qml.PauliZ(1)),
                 qml.expval(qml.PauliX(1) @ qml.PauliX(4)),
                 qml.expval(qml.PauliX(3)),
                 qml.expval(qml.PauliY(5)),
-            ]
+            )
 
         res = circuit()
+        assert isinstance(res, tuple)
+        assert len(res) == 6
+        assert all(isinstance(r, np.ndarray) for r in res)
+        assert all(r.shape == () for r in res)
+
         res = qml.math.stack(res)
 
         assert all(np.isclose(res, np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
@@ -176,7 +181,7 @@ class TestIntegration:
             qml.Hadamard(3)
             qml.Hadamard(5)
             qml.T(5)
-            return [
+            return (
                 qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
                 qml.expval(qml.PauliX(0)),
                 qml.expval(qml.PauliZ(1)),
@@ -186,9 +191,18 @@ class TestIntegration:
                 qml.expval(qml.PauliX(1) @ qml.PauliX(4)),
                 qml.expval(qml.PauliX(3)),
                 qml.expval(qml.PauliY(5)),
-            ]
+            )
 
         res = circuit()
+        assert isinstance(res, tuple)
+        assert len(res) == 4
+        assert all(isinstance(shot_res, tuple) for shot_res in res)
+        assert all(len(shot_res) == 7 for shot_res in res)
+        assert all(
+            all(list(isinstance(r, np.ndarray) and r.shape == () for r in shot_res))
+            for shot_res in res
+        )
+
         res = qml.math.stack([qml.math.stack(r) for r in res])
 
         assert np.allclose(
@@ -255,6 +269,44 @@ class TestAutodiffSplitNonCommuting:
         grad = jax.jacobian(circuit)(params)
         assert all(np.isclose(res, exp_res))
         assert all(np.isclose(grad, exp_grad, atol=1e-5).flatten())
+
+    @pytest.mark.jax
+    def test_split_with_jax_multi_params(self):
+        """Test that results after splitting are still differentiable with jax
+        with multiple parameters"""
+
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit.jax", wires=3)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            return (
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+                qml.expval(qml.PauliY(0)),
+                qml.expval(qml.PauliZ(0)),
+            )
+
+        x = jnp.array(0.5)
+        y = jnp.array(0.5)
+
+        res = circuit(x, y)
+        grad = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+
+        assert all(np.isclose(res, exp_res))
+
+        assert isinstance(grad, tuple)
+        assert len(grad) == 3
+
+        for i, meas_grad in enumerate(grad):
+            assert isinstance(meas_grad, tuple)
+            assert len(meas_grad) == 2
+            assert all(isinstance(g, jnp.ndarray) and g.shape == () for g in meas_grad)
+
+            assert np.allclose(meas_grad, exp_grad[i], atol=1e-5)
 
     @pytest.mark.jax
     def test_split_with_jax_jit(self):
