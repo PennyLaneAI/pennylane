@@ -371,6 +371,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   with all interfaces
   [(#3392)](https://github.com/PennyLaneAI/pennylane/pull/3392)
 
+* Fixed a bug where a QNode returning `qml.sample` would produce incorrect results when
+  run on a device defined with a shot vector.
+  [#3422](https://github.com/PennyLaneAI/pennylane/pull/3422)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):

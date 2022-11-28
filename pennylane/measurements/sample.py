@@ -141,7 +141,7 @@ class _Sample(SampleMeasurement):
 
         if self.obs is None:
             # if no observable was provided then return the raw samples
-            return samples if bin_size is None else samples.reshape(num_wires, bin_size, -1)
+            return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
         if name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
