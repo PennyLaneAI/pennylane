@@ -41,7 +41,7 @@ def get_circuit(wires, shots, seed_recipes, interface="autograd", device="defaul
         for target in range(1, wires):
             qml.CNOT(wires=[0, target])
 
-        return qml.classical_shadow(wires=range(wires), seed_recipes=seed_recipes)
+        return qml.classical_shadow(wires=range(wires), seed=seed_recipes)
 
     return circuit
 
@@ -121,7 +121,7 @@ class TestClassicalShadow:
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_measurement_process_numeric_type(self, wires, seed):
         """Test that the numeric type of the MeasurementProcess instance is correct"""
-        res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
+        res = qml.classical_shadow(wires=range(wires), seed=seed)
         assert res.numeric_type == int
 
     @pytest.mark.parametrize("shots", shots_list)
@@ -129,7 +129,7 @@ class TestClassicalShadow:
     def test_measurement_process_shape(self, wires, shots, seed):
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
-        res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
+        res = qml.classical_shadow(wires=range(wires), seed=seed)
         assert res.shape(device=dev) == (1, 2, shots, wires)
 
         # test an error is raised when device is None
@@ -154,7 +154,7 @@ class TestClassicalShadow:
     def test_measurement_process_copy(self, wires, seed):
         """Test that the attributes of the MeasurementProcess instance are
         correctly copied"""
-        res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
+        res = qml.classical_shadow(wires=range(wires), seed=seed)
 
         copied_res = copy.copy(res)
         assert isinstance(copied_res, type(res))

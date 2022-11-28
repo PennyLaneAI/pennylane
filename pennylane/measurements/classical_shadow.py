@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 from .measurements import CustomMeasurement, MeasurementShapeError, Shadow, ShadowExpval
 
 
-def shadow_expval(H, k=1, seed_recipes=True):
+def shadow_expval(H, k=1, seed=None):
     r"""Compute expectation values using classical shadows in a differentiable manner.
 
     The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
@@ -84,11 +84,11 @@ def shadow_expval(H, k=1, seed_recipes=True):
     >>> qml.jacobian(qnode)(x, Hs)
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
-    seed = np.random.randint(2**30) if seed_recipes else None
+    seed = seed or np.random.randint(2**30)
     return _ShadowExpval(ShadowExpval, H=H, seed=seed, k=k)
 
 
-def classical_shadow(wires, seed_recipes=True):
+def classical_shadow(wires, seed=None):
     """
     The classical shadow measurement protocol.
 
@@ -206,7 +206,7 @@ def classical_shadow(wires, seed_recipes=True):
     """
     wires = Wires(wires)
 
-    seed = np.random.randint(2**30) if seed_recipes else None
+    seed = seed or np.random.randint(2**30)
     return ClassicalShadow(Shadow, wires=wires, seed=seed)
 
 
@@ -362,9 +362,7 @@ class _ShadowExpval(CustomMeasurement):
         Returns:
             float: expectation value estimate.
         """
-        bits, recipes = qml.classical_shadow(wires=self.wires, seed_recipes=self.seed).process(
-            tape, device
-        )
+        bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 
