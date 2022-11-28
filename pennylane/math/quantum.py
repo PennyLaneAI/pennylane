@@ -455,6 +455,100 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     return density_matrix
 
 
+def purity(state, indices, check_state=False, c_dtype="complex128"):
+    r"""Computes the purity from a state vector or density matrix.
+
+    .. math::
+        \gamma = \text{Tr}(\rho^2)
+
+    where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
+    :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
+    A pure state has a purity of 1.
+
+    It is possible to compute the purity of a sub-system from a given state. To find the purity of
+    the overall state, include all wires in the ``indices`` argument.
+
+    Args:
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        indices (list(int)): List of indices in the considered subsystem.
+        check_state (bool): If ``True``, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Purity of the considered subsystem.
+
+    **Example**
+
+    >>> x = [1, 0, 0, 1] / np.sqrt(2)
+    >>> purity(x, [0, 1])
+    1.0
+    >>> purity(x, [0])
+    0.5
+
+    >>> x = [[1/2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1/2]]
+    >>> purity(x, [0, 1])
+    0.5
+
+    .. seealso:: :func:`pennylane.qinfo.transforms.purity`
+    """
+
+    # Cast as a c_dtype array
+    state = cast(state, dtype=c_dtype)
+    len_state = state.shape[0]
+    num_wires = int(np.log2(len_state))
+
+    # If the state is a state vector and the system in question is the entire system,
+    # return 1 directly because a valid state vector always represents a pure state.
+    if state.shape == (len_state,) and len(indices) == num_wires:
+
+        if check_state:
+            _check_state_vector(state)
+
+        # Returning 1 in this ugly way for torch grad compatibility. When taking the
+        # gradient with torch, it is required that the return type is of torch.tensor
+        # so that res.backward() can be called on the output. The state, created from
+        # the input parameters, has the type and properties (requires_grad and grad_fn)
+        # required to do the gradient on the platform. Therefore, we must include it
+        # in the return value, such that these properties are transferred to the result
+        # as well. Adding 2 instead of 1 because state[0] could be -1 in some cases, and
+        # converting to a real number for jax grad compatibility.
+        return np.real((state[0] + 2.0) / (state[0] + 2.0))
+
+    # If the state is a state vector but the system in question is a sub-system of the
+    # overall state, then the purity of the sub-system still needs to be computed.
+    if state.shape == (len_state,):
+        density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
+        return _compute_purity(density_matrix)
+
+    # If the state is a density matrix, compute the purity.
+    density_matrix = _density_matrix_from_matrix(state, indices, check_state)
+    return _compute_purity(density_matrix)
+
+
+def _compute_purity(density_matrix):
+    """Compute the purity from a density matrix
+
+    Args:
+        density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
+
+    Returns:
+        float: Purity of the density matrix.
+
+    **Example**
+
+    >>> x = [[1/2, 0], [0, 1/2]]
+    >>> _compute_purity(x)
+    0.5
+
+    >>> x = [[1/2, 1/2], [1/2, 1/2]]
+    >>> _compute_purity(x)
+    1
+
+    """
+    matrix_pow = qml.math.dot(density_matrix, density_matrix)
+    return qml.math.real(qml.math.trace(matrix_pow))
+
+
 def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
     r"""Compute the Von Neumann entropy from a state vector or density matrix on a given subsystem. It supports all
     interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
