@@ -20,6 +20,7 @@
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Add the controlled Hadamard gate.
+
   ```pycon
   >>> ch = qml.CH(wires=[0, 1])
   >>> matrix = ch.compute_matrix()
@@ -28,6 +29,7 @@
    [ 0.          0.          0.70710678  0.70710678]
    [ 0.          0.          0.70710678 -0.70710678]]
   ```
+
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Support custom measurement processes:
@@ -160,10 +162,11 @@
 
 <h4>Return types project</h4>
 
-* The autograd interface now supports devices with shot vectors.
+* The autograd interface for the new return types now supports devices with shot vectors.
   [#3374](https://github.com/PennyLaneAI/pennylane/pull/3374)
 
   Example with a single measurement:
+
   ```python
   dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
 
@@ -176,7 +179,8 @@
   def cost(a):
       return qml.math.stack(circuit(a))
   ```
-  ```
+
+  ```pycon
   >>> qml.enable_return()
   >>> a = np.array(0.4)
   >>> circuit(a)
@@ -186,7 +190,9 @@
   >>> qml.jacobian(cost)(a)
   array([-0.391     , -0.389     , -0.38433333])
   ```
+
   Example with multiple measurements:
+
   ```python
   dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
 
@@ -201,7 +207,8 @@
       res = circuit(a)
       return qml.math.stack([qml.math.hstack(r) for r in res])
   ```
-  ```
+
+  ```pycon
   >>> circuit(a)
   ((array(0.904), array([0.952, 0.   , 0.   , 0.048])),
    (array(0.915), array([0.9575, 0.    , 0.    , 0.0425])),
@@ -214,6 +221,59 @@
   array([[-0.37      , -0.185     ,  0.        ,  0.        ,  0.185     ],
          [-0.409     , -0.2045    ,  0.        ,  0.        ,  0.2045    ],
          [-0.37133333, -0.18566667,  0.        ,  0.        ,  0.18566667]])
+  ```
+
+* The TensorFlow interface for the new return types now supports devices with shot vectors.
+  [#3400](https://github.com/PennyLaneAI/pennylane/pull/3400)
+
+  Example with a single measurement:
+  ```python
+  dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
+
+  @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+  def circuit(a):
+      qml.RY(a, wires=0)
+      qml.RX(0.2, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  ```
+  >>> qml.enable_return()
+  >>> a = tf.Variable(0.4)
+  >>> with tf.GradientTape() as tape:
+  ...     res = circuit(a)
+  ...     res = tf.stack(res)
+  ...
+  >>> res
+  <tf.Tensor: shape=(3,), dtype=float64, numpy=array([0.902     , 0.904     , 0.89533333])>
+  >>> tape.jacobian(res, a)
+  <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.365     , -0.3765    , -0.37533333])>
+  ```
+  Example with multiple measurements:
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
+
+  @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+  def circuit(a):
+      qml.RY(a, wires=0)
+      qml.RX(0.2, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+  ```
+  ```
+  >>> with tf.GradientTape() as tape:
+  ...     res = circuit(a)
+  ...     res = tf.stack([tf.experimental.numpy.hstack(r) for r in res])
+  ...
+  >>> res
+  <tf.Tensor: shape=(3, 5), dtype=float64, numpy=
+  array([[0.902, 0.951, 0.   , 0.   , 0.049],
+         [0.898, 0.949, 0.   , 0.   , 0.051],
+         [0.892, 0.946, 0.   , 0.   , 0.054]])>
+  >>> tape.jacobian(res, a)
+  <tf.Tensor: shape=(3, 5), dtype=float64, numpy=
+  array([[-0.345     , -0.1725    ,  0.        ,  0.        ,  0.1725    ],
+         [-0.383     , -0.1915    ,  0.        ,  0.        ,  0.1915    ],
+         [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
 
 
@@ -230,6 +290,20 @@
   `OrderedDict` and encapsulates the queue. Consequentially, this also applies to the `QuantumTape`
   class which inherits from `AnnotatedQueue`.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
+
+* Changed the signature of the `QubitDevice.statistics` method from
+
+  ```python
+  def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
+  ```
+
+  to
+
+  ```python
+  def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
+  ```
+
+  [#3421](https://github.com/PennyLaneAI/pennylane/pull/3421)
 
 <h3>Deprecations</h3>
 
