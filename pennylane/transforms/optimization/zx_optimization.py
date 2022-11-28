@@ -98,41 +98,60 @@ def zx_optimization(tape: QuantumTape):
         qml.apply(m)
 
 
-from typing import Dict, List, Optional
+from collections import OrderedDict
+from typing import Dict, List, Optional, Type
 
-import pyzx
-from pyzx import Circuit
-from pyzx import TargetMapper
+from pennylane.wires import Wires
+
+from pyzx.circuit import Gate
+from pyzx.circuit.gates import (
+    TargetMapper,
+    NOT,
+    Z,
+    S,
+    T,
+    HAD,
+    XPhase,
+    YPhase,
+    ZPhase,
+    SWAP,
+    CNOT,
+    CZ,
+    CRZ,
+    CHAD,
+    CCZ,
+    Tofolli,
+    Measurement,
+)
 from pyzx.utils import EdgeType, VertexType, FloatInt, FractionLike
 from pyzx.graph import Graph
 from pyzx.graph.base import BaseGraph, VT, ET
 
 
 gate_types: Dict[str, Type[Gate]] = {
-    "XPhase": XPhase,
-    "NOT": NOT,
-    "ZPhase": ZPhase,
-    "YPhase": YPhase,
+    "PauliX": NOT,
     "PauliZ": Z,
     "S": S,
     "T": T,
+    "Hadamard": HAD,
+    "RX": XPhase,
+    "RZ": ZPhase,
+    "PhaseShift": ZPhase,
+    "RY": YPhase,
+    "SWAP": SWAP,
     "CNOT": CNOT,
     "CZ": CZ,
-    "CX": CX,
-    "SWAP": SWAP,
     "CRZ": CRZ,
-    "HAD": HAD,
-    "H": HAD,
-    "CHAD": CHAD,
-    "Toffoli": Tofolli,
+    "CH": CHAD,
     "CCZ": CCZ,
+    "Toffoli": Tofolli,
     "Measurement": Measurement,
 }
 #    "ParityPhase": ParityPhase,
 
 
 def circuit_to_graph(
-    q: QuantumTape, compress_rows: bool = True, backend: Optional[str] = None
+    tape: QuantumTape, compress_rows: bool = True, backend: Optional[str] = None
 ) -> BaseGraph[VT, ET]:
     """Turns a PennyLane quantum tape into a ZX-Graph.
     If ``compress_rows`` is set, it tries to put single qubit gates on different qubits,
@@ -143,24 +162,49 @@ def circuit_to_graph(
     inputs = []
     outputs = []
 
-    # Tape wires
-    for i in range(q.qubits):
+    # Map the wires to consecutive wires
+    consecutive_wires = Wires(range(len(tape.wires)))
+    consecutive_wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
+    tape = qml.map_wires(input=tape, wire_map=consecutive_wires_map)
+
+    # Create the qubit
+    for i in range(len(tape.wires)):
         v = g.add_vertex(VertexType.BOUNDARY, i, 0)
         inputs.append(v)
         q_mapper.set_prev_vertex(i, v)
         q_mapper.set_next_row(i, 1)
         q_mapper.set_qubit(i, i)
 
-    # Expand the tape: add rotation first: only Z measurement I think
+    # Expand the tape and add rotations first for measurements
+    stop_crit = qml.BooleanFn(lambda obj: obj.name in gate_types.keys())
+    tape = qml.tape.tape.expand_tape(tape, depth=10, stop_at=stop_crit, expand_measurements=True)
 
     # Create graph from circuit in the tape (operations, measurements)
-    for op in q.circuit:
+    for op in tape.operations:
+
         # Map the gate
+        name = op.name
+        if name not in gate_types.keys():
+            raise qml.QuantumFunctionError(
+                "The expansion of the tape failed, PyZx does not support", name
+            )
 
-        # Control, target, phase
-        gate = gate_types[op.name]
-        gate = gate(*op.wires)
+        # Apply wires and parameters
+        map_gate = gate_types[name]
+        par = op.parameters
+        wires = list(op.wires)
+        # Max number of parameter is one
+        if par:
+            # Single wires is int
+            if len(wires) == 1:
+                wires = wires[0]
+            args = [wires, par[0]]
+        else:
+            args = wires
 
+        gate = map_gate(*args)
+
+        # Create node in the graph
         if not compress_rows:  # or not isinstance(gate, (ZPhase, XPhase, HAD)):
             r = max(q_mapper.max_row(), c_mapper.max_row())
             q_mapper.set_all_rows(r)
@@ -184,3 +228,68 @@ def circuit_to_graph(
     g.set_outputs(tuple(outputs))
 
     return g
+
+
+"""
+def graph_to_circuit(g:BaseGraph[VT,ET], split_phases:bool=True) -> Circuit:
+    c = Circuit(g.qubit_count())
+    qs = g.qubits()
+    rs = g.rows()
+    ty = g.types()
+    phases = g.phases()
+    rows: Dict[FloatInt,List[VT]] = {}
+
+    inputs = g.inputs()
+    for v in g.vertices():
+        if v in inputs: continue
+        r = g.row(v)
+        if r in rows: rows[r].append(v)
+        else: rows[r] = [v]
+    for r in sorted(rows.keys()):
+        for v in rows[r]:
+            q = qs[v]
+            phase = phases[v]
+            t = ty[v]
+            neigh = [w for w in g.neighbors(v) if rs[w]<r]
+            if len(neigh) != 1:
+                raise TypeError("Graph doesn't seem circuit like: multiple parents")
+            n = neigh[0]
+            if qs[n] != q:
+                raise TypeError("Graph doesn't seem circuit like: cross qubit connections")
+            if g.edge_type(g.edge(n,v)) == EdgeType.HADAMARD:
+                c.add_gate("HAD", q)
+            if t == VertexType.BOUNDARY: #vertex is an output
+                continue
+            if phase!=0 and not split_phases:
+                if t == VertexType.Z: c.add_gate("ZPhase", q, phase=phase)
+                else: c.add_gate("XPhase", q, phase=phase)
+            elif t == VertexType.Z and phase.denominator == 2:
+                c.add_gate("S", q, adjoint=(phase.numerator==3))
+            elif t == VertexType.Z and phase.denominator == 4:
+                if phase.numerator in (1,7): c.add_gate("T", q, adjoint=(phase.numerator==7))
+                if phase.numerator in (3,5):
+                    c.add_gate("Z", q)
+                    c.add_gate("T", q, adjoint=(phase.numerator==3))
+            elif phase == 1:
+                if t == VertexType.Z: c.add_gate("Z", q)
+                else: c.add_gate("NOT", q)
+            elif phase != 0:
+                if t == VertexType.Z: c.add_gate("ZPhase", q, phase=phase)
+                else: c.add_gate("XPhase", q, phase=phase)
+
+            neigh = [w for w in g.neighbors(v) if rs[w]==r and w<v] # type: ignore # TODO: find a different way to do comparison of vertices
+            for n in neigh:
+                t2 = ty[n]
+                q2 = qs[n]
+                if t == t2:
+                    if g.edge_type(g.edge(v,n)) != EdgeType.HADAMARD:
+                        raise TypeError("Invalid vertical connection between vertices of the same type")
+                    if t == VertexType.Z: c.add_gate("CZ", q2, q)
+                    else: c.add_gate("CX", q2, q)
+                else:
+                    if g.edge_type(g.edge(v,n)) != EdgeType.SIMPLE:
+                        raise TypeError("Invalid vertical connection between vertices of different type")
+                    if t == VertexType.Z: c.add_gate("CNOT", q, q2)
+                    else: c.add_gate("CNOT", q2, q)
+    return c
+"""
