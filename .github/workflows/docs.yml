@@ -23,6 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10' 
     - uses: josh146/sphinx-action@master
       with:
         docs-folder: "doc/"
