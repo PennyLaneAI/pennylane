@@ -84,7 +84,7 @@ def shadow_expval(H, k=1, seed=None):
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
     seed = seed or np.random.randint(2**30)
-    return _ShadowExpval(ShadowExpval, H=H, seed=seed, k=k)
+    return _ShadowExpval(H=H, seed=seed, k=k)
 
 
 def classical_shadow(wires, seed=None):
@@ -205,7 +205,7 @@ def classical_shadow(wires, seed=None):
     wires = Wires(wires)
 
     seed = seed or np.random.randint(2**30)
-    return ClassicalShadow(Shadow, wires=wires, seed=seed)
+    return ClassicalShadow(wires=wires, seed=seed)
 
 
 class ClassicalShadow(CustomMeasurement):
