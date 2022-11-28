@@ -118,15 +118,18 @@ def hamiltonian_expand(tape, group=True):
     2
     """
 
-    hamiltonian = tape.measurements[0].obs
-
     if (
-        not isinstance(hamiltonian, qml.Hamiltonian)
-        or len(tape.measurements) > 1
+        len(tape.measurements) != 1
+        or not isinstance(hamiltonian := tape.measurements[0].obs, qml.Hamiltonian)
         or tape.measurements[0].return_type != qml.measurements.Expectation
     ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
+        )
+
+    if qml.math.shape(hamiltonian.coeffs) == (0,) and qml.math.shape(hamiltonian.ops) == (0,):
+        raise ValueError(
+            "The Hamiltonian in the tape has no terms defined - cannot perform the Hamiltonian expansion."
         )
 
     # note: for backward passes of some frameworks
@@ -172,7 +175,8 @@ def hamiltonian_expand(tape, group=True):
                     qml.math.dot(r_group, c_group)
                     for c_group, r_group in zip(coeff_groupings, res_groupings)
                 ]
-            return qml.math.sum(qml.math.stack(dot_products), axis=0)
+            summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+            return qml.math.convert_like(summed_dot_products, res_groupings[0])
 
         return tapes, processing_fn
 
@@ -188,6 +192,7 @@ def hamiltonian_expand(tape, group=True):
     # pylint: disable=function-redefined
     def processing_fn(res):
         dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
-        return qml.math.sum(qml.math.stack(dot_products), axis=0)
+        summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+        return qml.math.convert_like(summed_dot_products, res[0])
 
     return tapes, processing_fn

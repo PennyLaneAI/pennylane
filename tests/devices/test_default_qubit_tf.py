@@ -36,6 +36,7 @@ from gate_data import (
     T,
     CNOT,
     CZ,
+    CCZ,
     SWAP,
     CNOT,
     Toffoli,
@@ -100,7 +101,7 @@ two_qubit_param = [
     (qml.MultiRZ, MultiRZ2),
     (qml.ControlledPhaseShift, ControlledPhaseShift),
 ]
-three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
+three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP), (qml.CCZ, CCZ)]
 four_qubit_param = [(qml.OrbitalRotation, OrbitalRotation)]
 
 #####################################################
