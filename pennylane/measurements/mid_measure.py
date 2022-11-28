@@ -20,6 +20,7 @@ from typing import Generic, TypeVar
 
 import pennylane as qml
 import pennylane.numpy as np
+from pennylane.operation import Wires
 
 from .measurements import MeasurementProcess, MidMeasure
 
@@ -61,7 +62,7 @@ def measure(wires):  # TODO: Change name to mid_measure
     Raises:
         QuantumFunctionError: if multiple wires were specified
     """
-    wire = qml.wires.Wires(wires)
+    wire = Wires(wires)
     if len(wire) > 1:
         raise qml.QuantumFunctionError(
             "Only a single qubit can be measured in the middle of the circuit"

@@ -16,8 +16,8 @@
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementValue
 import pennylane.numpy as np
+from pennylane.measurements import MeasurementValue, MeasurementValueError
 
 
 class TestMeasure:
