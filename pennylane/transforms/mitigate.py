@@ -531,6 +531,7 @@ def mitigate_with_zne(
         if qml.active_return():
             for i, tape in enumerate(out_tapes):
                 # stack the results if there are multiple measurements
+                # this will not create ragged arrays since only expval measurements are allowed
                 if len(tape.observables) > 1:
                     results[i] = qml.math.stack(results[i])
 
@@ -542,6 +543,14 @@ def mitigate_with_zne(
             results_flattened.append(mean(qml.math.stack(results[i : i + reps_per_factor]), axis=0))
 
         extrapolated = extrapolate(scale_factors, results_flattened, **extrapolate_kwargs)
+
+        if qml.active_return():
+            extrapolated = extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
+
+            # unstack the results in the case of multiple measurements
+            return (
+                extrapolated if shape(extrapolated) == () else tuple(qml.math.unstack(extrapolated))
+            )
 
         return extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
 

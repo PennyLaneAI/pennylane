@@ -143,7 +143,7 @@ class TestMitigateWithZNE:
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-        res_mitigated = mitigated_circuit(w1, w2)
+        res_mitigated = qml.math.stack(mitigated_circuit(w1, w2))
         res_ideal = qml.math.stack(ideal_circuit(w1, w2))
 
         assert res_mitigated.shape == res_ideal.shape
@@ -227,7 +227,7 @@ class TestMitiqIntegration:
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-        res_mitigated = mitigated_circuit(w1, w2)
+        res_mitigated = qml.math.stack(mitigated_circuit(w1, w2))
         res_ideal = qml.math.stack(ideal_circuit(w1, w2))
 
         assert res_mitigated.shape == res_ideal.shape
