@@ -12,8 +12,7 @@
   Given some QNode `circuit` that takes, say, an argument `x`, the approximate
   gradient can be computed via
 
-  >>> grad_fn = qml.gradients.spsa_grad(circuit, h=0.1, num_directions=1)
-  >>> grad = grad_fn(x)
+  ```pycon
   >>> dev = qml.device("default.qubit", wires=2) 
   >>> x = pnp.array(0.4, requires_grad=True)
   >>> @qml.qnode(dev)
@@ -24,6 +23,7 @@
   >>> grad_fn = qml.gradients.spsa_grad(circuit, h=0.1, num_directions=1)
   >>> grad_fn(x)
   array(-0.38876964)
+  ```
 
   The argument `num_directions` determines how many directions of simultaneous
   perturbation are used and therefore the number of circuit evaluations, up
