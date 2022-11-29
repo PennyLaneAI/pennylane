@@ -4,6 +4,20 @@
 
 <h3>New features since last release</h3>
 
+* Added ability to create expressions from mid circuit measurements.
+  ```python
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.Hadamard(wires=1)
+      m0 = qml.measure(wires=0)
+      m1 = qml.measure(wires=1)
+      combined = 2*m1 + m0
+      qml.cond(combined == 2, qml.RX)(1.3, wires=2)
+      return qml.probs(wires=2)
+  ```
+  
+  [#3159](https://github.com/PennyLaneAI/pennylane/pull/3159)
+
 * Add the controlled CZ gate: CCZ.
   ```pycon
   >>> ccz = qml.CCZ(wires=[0, 1, 2])
@@ -377,6 +391,7 @@ This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola
 Utkarsh Azad
+Samuel Banning
 Astral Cai
 Pieter Eendebak
 Lillian M. A. Frederiksen
