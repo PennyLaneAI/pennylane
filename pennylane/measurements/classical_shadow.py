@@ -16,6 +16,7 @@
 This module contains the qml.classical_shadow measurement.
 """
 import copy
+import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -26,7 +27,7 @@ from pennylane.wires import Wires
 from .measurements import CustomMeasurement, MeasurementShapeError, Shadow, ShadowExpval
 
 
-def shadow_expval(H, k=1, seed=None):
+def shadow_expval(H, k=1, seed=None, seed_recipes=True):
     r"""Compute expectation values using classical shadows in a differentiable manner.
 
     The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
@@ -83,11 +84,16 @@ def shadow_expval(H, k=1, seed=None):
     >>> qml.jacobian(qnode)(x, Hs)
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
+    if seed_recipes is False:
+        warnings.warn(
+            "Using ``seed_recipes`` is deprecated. Please use ``seed`` instead.",
+            UserWarning,
+        )
     seed = seed or np.random.randint(2**30)
     return _ShadowExpval(H=H, seed=seed, k=k)
 
 
-def classical_shadow(wires, seed=None):
+def classical_shadow(wires, seed=None, seed_recipes=True):
     """
     The classical shadow measurement protocol.
 
@@ -202,6 +208,11 @@ def classical_shadow(wires, seed=None):
         >>> np.all(bits1 == bits2)
         False
     """
+    if seed_recipes is False:
+        warnings.warn(
+            "Using ``seed_recipes`` is deprecated. Please use ``seed`` instead.",
+            UserWarning,
+        )
     wires = Wires(wires)
 
     seed = seed or np.random.randint(2**30)
@@ -246,14 +257,9 @@ class ClassicalShadow(CustomMeasurement):
         of shots and ``n`` is the number of qubits, then both the measured bits and the
         Pauli measurements have shape ``(T, n)``.
 
-        This implementation leverages vectorization and offers a significant speed-up over
-        the generic implementation.
-
-        .. Note::
-
-            This method internally calls ``np.einsum`` which supports at most 52 indices,
-            thus the classical shadow measurement for this device supports at most 52
-            qubits.
+        This implementation is device-agnostic and works by executing single-shot
+        tapes containing randomized Pauli observables. Devices should override this
+        if they can offer cleaner or faster implementations.
 
         .. seealso:: :func:`~.classical_shadow`
 

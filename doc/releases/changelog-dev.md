@@ -35,9 +35,10 @@
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Support custom measurement processes:
-  * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
-    method to process samples/quantum state.
+  * `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
+    They contain an abstract method to process samples/quantum state/quantum script.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
   * Add `_Expectation` class.
     [#3343](https://github.com/PennyLaneAI/pennylane/pull/3343)
@@ -357,6 +358,11 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead.
   [(#3433)](https://github.com/PennyLaneAI/pennylane/pull/3433)
+
+* The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` is deprecated.
+  A new argument ``seed`` has been added, which defaults to None and can contain an integer with the
+  wanted seed.
+  [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 <h3>Documentation</h3>
 
