@@ -5,6 +5,7 @@
 <h3>New features since last release</h3>
 
 * Add the controlled CZ gate: CCZ.
+
   ```pycon
   >>> ccz = qml.CCZ(wires=[0, 1, 2])
   >>> matrix = ccz.compute_matrix()
@@ -17,6 +18,7 @@
    [ 0  0  0  0  0  0  1  0]
    [ 0  0  0  0  0  0  0 -1]]
   ```
+
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Add the controlled Hadamard gate.
@@ -233,6 +235,7 @@
   [#3400](https://github.com/PennyLaneAI/pennylane/pull/3400)
 
   Example with a single measurement:
+
   ```python
   dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
 
@@ -242,6 +245,7 @@
       qml.RX(0.2, wires=0)
       return qml.expval(qml.PauliZ(0))
   ```
+
   ```
   >>> qml.enable_return()
   >>> a = tf.Variable(0.4)
@@ -254,7 +258,9 @@
   >>> tape.jacobian(res, a)
   <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.365     , -0.3765    , -0.37533333])>
   ```
+
   Example with multiple measurements:
+
   ```python
   dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
 
@@ -265,6 +271,7 @@
       qml.CNOT(wires=[0, 1])
       return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
   ```
+
   ```
   >>> with tf.GradientTape() as tape:
   ...     res = circuit(a)
@@ -281,7 +288,6 @@
          [-0.383     , -0.1915    ,  0.        ,  0.        ,  0.1915    ],
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
-
 
 <h3>Breaking changes</h3>
 
@@ -332,6 +338,11 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
+
+* The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` is deprecated.
+  A new argument ``seed`` has been added, which defaults to None and can contain an integer with the
+  wanted seed.
+  [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 <h3>Documentation</h3>
 
