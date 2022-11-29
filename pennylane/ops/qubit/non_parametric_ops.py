@@ -316,7 +316,7 @@ class PauliX(Observable, Operation):
     def _pauli_rep(self):
         """PauliSentence representation of X."""
         wire = self.wires[0]
-        return qml.pauli.PauliSentence({qml.pauli.PauliWord({wire: 'X'}): 1.0})
+        return qml.pauli.PauliSentence({qml.pauli.PauliWord({wire: "X"}): 1.0})
 
     def adjoint(self):
         return PauliX(wires=self.wires)
@@ -475,7 +475,7 @@ class PauliY(Observable, Operation):
     def _pauli_rep(self):
         """PauliSentence representation of Y."""
         wire = self.wires[0]
-        return qml.pauli.PauliSentence({qml.pauli.PauliWord({wire: 'Y'}): 1.0})
+        return qml.pauli.PauliSentence({qml.pauli.PauliWord({wire: "Y"}): 1.0})
 
     def adjoint(self):
         return PauliY(wires=self.wires)
@@ -619,7 +619,7 @@ class PauliZ(Observable, Operation):
     def _pauli_rep(self):
         """PauliSentence representation of Z."""
         wire = self.wires[0]
-        return qml.pauli.PauliSentence({qml.pauli.PauliWord({wire: 'Z'}): 1.0})
+        return qml.pauli.PauliSentence({qml.pauli.PauliWord({wire: "Z"}): 1.0})
 
     def adjoint(self):
         return PauliZ(wires=self.wires)

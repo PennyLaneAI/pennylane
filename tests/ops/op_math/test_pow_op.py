@@ -358,9 +358,9 @@ class TestProperties:
         assert op.batch_size == 3
 
     op_pauli_reps = (
-        (qml.PauliZ(wires=0), 1, qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'Z'}): 1})),
+        (qml.PauliZ(wires=0), 1, qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1})),
         (qml.PauliX(wires=1), 2, qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),  # identity
-        (qml.PauliY(wires='a'), 5, qml.pauli.PauliSentence({qml.pauli.PauliWord({'a': 'Y'}): 1})),
+        (qml.PauliY(wires="a"), 5, qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1})),
     )
 
     @pytest.mark.parametrize("base, exp, rep", op_pauli_reps)

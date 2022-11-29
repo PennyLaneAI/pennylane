@@ -734,16 +734,21 @@ class TestProperties:
 
     op_pauli_reps = (
         (
-            qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires='a')),
-            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'X', 1: 'Y', 'a': 'Z'}): 1}),
+            qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires="a")),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 1: "Y", "a": "Z"}): 1}),
         ),
         (
             qml.prod(qml.PauliX(wires=0), qml.PauliX(wires=0)),
             qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1}),
         ),
         (
-            qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliZ(wires='a'), qml.PauliZ(wires='a')),
-            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'Z'}): 1j}),
+            qml.prod(
+                qml.PauliX(wires=0),
+                qml.PauliY(wires=0),
+                qml.PauliZ(wires="a"),
+                qml.PauliZ(wires="a"),
+            ),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1j}),
         ),
     )
 
@@ -765,17 +770,19 @@ class TestProperties:
                 qml.pow(qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)), z=3),
                 qml.pow(qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)), z=5),
             ),
-            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'Z', 1: 'Y', 2: 'Z'}): 1j}),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Y", 2: "Z"}): 1j}),
         ),  # prod + pow
         (
             qml.prod(
                 qml.s_prod(
                     -2j,
-                    qml.prod(qml.s_prod(0.5, qml.PauliX(wires=0)), qml.s_prod(2, qml.PauliZ(wires=1)))
+                    qml.prod(
+                        qml.s_prod(0.5, qml.PauliX(wires=0)), qml.s_prod(2, qml.PauliZ(wires=1))
+                    ),
                 ),
                 qml.s_prod(3, qml.PauliY(wires=0)),
             ),
-            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'Z', 1: 'Z'}): 6}),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Z"}): 6}),
         ),  # prod + s_prod
     )
 

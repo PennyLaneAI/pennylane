@@ -530,9 +530,18 @@ class TestProperties:
         assert len(cache["matrices"]) == 1
 
     op_pauli_reps = (
-        (qml.s_prod(1.23, qml.PauliZ(wires=0)), qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'Z'}): 1.23})),
-        (qml.s_prod(-1j, qml.PauliX(wires=1)), qml.pauli.PauliSentence({qml.pauli.PauliWord({1: 'X'}): -1j})),
-        (qml.s_prod(1.23-4j, qml.PauliY(wires='a')), qml.pauli.PauliSentence({qml.pauli.PauliWord({'a': 'Y'}): 1.23-4j})),
+        (
+            qml.s_prod(1.23, qml.PauliZ(wires=0)),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1.23}),
+        ),
+        (
+            qml.s_prod(-1j, qml.PauliX(wires=1)),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({1: "X"}): -1j}),
+        ),
+        (
+            qml.s_prod(1.23 - 4j, qml.PauliY(wires="a")),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1.23 - 4j}),
+        ),
     )
 
     @pytest.mark.parametrize("op, rep", op_pauli_reps)

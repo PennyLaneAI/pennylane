@@ -1352,7 +1352,7 @@ class TestSparseMatrix:
 
         assert type(sparse_mat) == type(expected_sparse_mat)
         assert all(sparse_mat.data == expected_sparse_mat.data)
-        assert all(sparse_mat.indices == expected_sparse_mat.indices)  
+        assert all(sparse_mat.indices == expected_sparse_mat.indices)
 
 
 label_data = [
@@ -1452,10 +1452,10 @@ def test_adjoint_method(op, tol):
 
 
 op_pauli_rep = (
-    (qml.PauliX(wires=0), qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'X'}): 1})),
-    (qml.PauliY(wires='a'), qml.pauli.PauliSentence({qml.pauli.PauliWord({'a': 'Y'}): 1})),
-    (qml.PauliZ(wires=4), qml.pauli.PauliSentence({qml.pauli.PauliWord({4: 'Z'}): 1})),
-    (qml.Identity(wires='target'), qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),
+    (qml.PauliX(wires=0), qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X"}): 1})),
+    (qml.PauliY(wires="a"), qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1})),
+    (qml.PauliZ(wires=4), qml.pauli.PauliSentence({qml.pauli.PauliWord({4: "Z"}): 1})),
+    (qml.Identity(wires="target"), qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),
 )
 
 
