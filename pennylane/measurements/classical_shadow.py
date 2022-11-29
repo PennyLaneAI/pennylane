@@ -22,7 +22,6 @@ from collections.abc import Iterable
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 from .measurements import CustomMeasurement, MeasurementShapeError, Shadow, ShadowExpval
@@ -237,7 +236,7 @@ class ClassicalShadow(CustomMeasurement):
         self.seed = seed
         super().__init__(*args, **kwargs)
 
-    def process(self, tape: QuantumScript, device):
+    def process(self, tape, device):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
