@@ -162,6 +162,30 @@ class TestStateForward:
                     circuit
                 )
 
+    def test_multi_measurement_error(self):
+        """Test that an error is raised when classical shadows is returned
+        with other measurement processes"""
+        dev = qml.device("default.qubit", wires=2, shots=100)
+
+        @qml.qnode(dev)
+        def circuit_shadow():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.classical_shadow(wires=[0, 1]), qml.expval(qml.PauliZ(0))
+
+        msg = "Classical shadows cannot be returned in combination with other return types"
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            circuit_shadow()
+
+        @qml.qnode(dev)
+        def circuit_expval():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.shadow_expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            circuit_expval()
+
 
 @pytest.mark.all_interfaces
 class TestStateForwardInterfaces:
