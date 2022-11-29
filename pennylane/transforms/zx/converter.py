@@ -11,84 +11,53 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Transform finding all maximal matches of a pattern in a quantum circuit and optimizing the circuit by
-substitution."""
+"""Transforms for interacting with PyZX, framework for ZX calculus."""
+# pylint: disable=too-many-statements, too-many-branches
+
 from collections import OrderedDict
-from typing import Dict, List, Optional, Type
-
-
-import pyzx as pyzx
-from pyzx.circuit import Gate
-from pyzx.circuit.gates import (
-    TargetMapper,
-    NOT,
-    Z,
-    S,
-    T,
-    HAD,
-    XPhase,
-    YPhase,
-    ZPhase,
-    SWAP,
-    CNOT,
-    CZ,
-    CRZ,
-    CHAD,
-    CCZ,
-    Tofolli,
-    Measurement,
-)
-from pyzx.utils import EdgeType, VertexType, FloatInt
-from pyzx.graph import Graph
-from pyzx.graph.base import BaseGraph, VT, ET
+from typing import Dict, List
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
 
-def _import_pyzx():
-    """Import PyZx."""
+def tape_to_graph_zx(tape, compress_rows=True, backend=None):
+    """Turns a PennyLane quantum tape into a ZX-Graph in PyZx.
+    If ``compress_rows`` is set, it tries to put single qubit gates on different qubits,
+    on the same row."""
     try:
-        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        # pylint: disable=import-outside-toplevel
         import pyzx
+        from pyzx.utils import VertexType
+        from pyzx.circuit.gates import TargetMapper
+        from pyzx.graph import Graph
+        from pyzx.graph.base import VT
 
     except ImportError as Error:
         raise ImportError(
             "This feature requires pyzx. It can be installed with: pip install pyzx"
         ) from Error
 
-    return pyzx
+    # Dictionary of gates
+    gate_types = {
+        "PauliX": pyzx.circuit.gates.NOT,
+        "PauliZ": pyzx.circuit.gates.Z,
+        "S": pyzx.circuit.gates.S,
+        "T": pyzx.circuit.gates.T,
+        "Hadamard": pyzx.circuit.gates.HAD,
+        "RX": pyzx.circuit.gates.XPhase,
+        "RZ": pyzx.circuit.gates.ZPhase,
+        "PhaseShift": pyzx.circuit.gates.ZPhase,
+        "RY": pyzx.circuit.gates.YPhase,
+        "SWAP": pyzx.circuit.gates.SWAP,
+        "CNOT": pyzx.circuit.gates.CNOT,
+        "CZ": pyzx.circuit.gates.CZ,
+        "CRZ": pyzx.circuit.gates.CRZ,
+        "CH": pyzx.circuit.gates.CHAD,
+        "CCZ": pyzx.circuit.gates.CCZ,
+        "Toffoli": pyzx.circuit.gates.Tofolli,
+    }
 
-
-gate_types: Dict[str, Type[Gate]] = {
-    "PauliX": NOT,
-    "PauliZ": Z,
-    "S": S,
-    "T": T,
-    "Hadamard": HAD,
-    "RX": XPhase,
-    "RZ": ZPhase,
-    "PhaseShift": ZPhase,
-    "RY": YPhase,
-    "SWAP": SWAP,
-    "CNOT": CNOT,
-    "CZ": CZ,
-    "CRZ": CRZ,
-    "CH": CHAD,
-    "CCZ": CCZ,
-    "Toffoli": Tofolli,
-    "Measurement": Measurement,
-}
-#    "ParityPhase": ParityPhase,
-
-
-def circuit_to_graph(
-    tape: QuantumTape, compress_rows: bool = True, backend: Optional[str] = None
-) -> BaseGraph[VT, ET]:
-    """Turns a PennyLane quantum tape into a ZX-Graph.
-    If ``compress_rows`` is set, it tries to put single qubit gates on different qubits,
-    on the same row."""
     g = Graph(backend)
     q_mapper: TargetMapper[VT] = TargetMapper()
     c_mapper: TargetMapper[VT] = TargetMapper()
@@ -100,7 +69,7 @@ def circuit_to_graph(
     consecutive_wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
     tape = qml.map_wires(input=tape, wire_map=consecutive_wires_map)
 
-    # Create the qubit
+    # Create the qubits
     for i in range(len(tape.wires)):
         v = g.add_vertex(VertexType.BOUNDARY, i, 0)
         inputs.append(v)
@@ -109,7 +78,7 @@ def circuit_to_graph(
         q_mapper.set_qubit(i, i)
 
     # Expand the tape and add rotations first for measurements
-    stop_crit = qml.BooleanFn(lambda obj: obj.name in gate_types.keys())
+    stop_crit = qml.BooleanFn(lambda obj: obj.name in gate_types)
     tape = qml.tape.tape.expand_tape(tape, depth=10, stop_at=stop_crit, expand_measurements=True)
 
     # Create graph from circuit in the tape (operations, measurements)
@@ -117,7 +86,7 @@ def circuit_to_graph(
 
         # Map the gate
         name = op.name
-        if name not in gate_types.keys():
+        if name not in gate_types:
             raise qml.QuantumFunctionError(
                 "The expansion of the tape failed, PyZx does not support", name
             )
@@ -163,8 +132,19 @@ def circuit_to_graph(
     return g
 
 
-def graph_to_circuit(g: BaseGraph[VT, ET], split_phases: bool = True) -> qml.tape.QuantumTape:
+def graph_zx_to_tape(g, split_phases=True):
     """From PyZX graph to a PennyLane tape."""
+
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import
+        import pyzx
+        from pyzx.utils import EdgeType, VertexType, FloatInt
+        from pyzx.graph.base import VT
+
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires pyzx. It can be installed with: pip install pyzx"
+        ) from Error
 
     operations = []
     qs = g.qubits()

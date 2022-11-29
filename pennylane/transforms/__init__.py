@@ -231,4 +231,5 @@ from .tape_expand import (
 from .transpile import transpile
 from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
+from .zx import graph_zx_to_tape, tape_to_graph_zx
 from .broadcast_expand import broadcast_expand
