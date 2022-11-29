@@ -57,7 +57,9 @@ def measure(wires):  # TODO: Change name to mid_measure
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Mid circuit measurements can be manipulated using the following dunder methods
-    +, *, ~ (not), & (and), | (or), ==, <=, >=, <, >.
+    +, -, *, /, ~ (not), & (and), | (or), ==, <=, >=, <, >.
+
+    Note: python `not`, `and`, `or`, do not work since these do not have dunder methods. Instead use ~, &, |.
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
@@ -122,6 +124,14 @@ class MeasurementValue(Generic[T]):
     def __radd__(self, other):
         return self._apply(lambda v: other + v)
 
+    def __sub__(self, other):
+        if isinstance(other, MeasurementValue):
+            return self._merge(other)._apply(lambda v: v[0] - v[1])
+        return self._apply(lambda v: v - other)
+
+    def __rsub__(self, other):
+        return self._apply(lambda v: other - v)
+
     def __mul__(self, other):
         if isinstance(other, MeasurementValue):
             return self._merge(other)._apply(lambda v: v[0] * v[1])
@@ -129,6 +139,14 @@ class MeasurementValue(Generic[T]):
 
     def __rmul__(self, other):
         return self._apply(lambda v: other * v)
+
+    def __truediv__(self, other):
+        if isinstance(other, MeasurementValue):
+            return self._merge(other)._apply(lambda v: v[0] / v[1])
+        return self._apply(lambda v: v / other)
+
+    def __rtruediv__(self, other):
+        return self._apply(lambda v: other / v)
 
     def __lt__(self, other):
         if isinstance(other, MeasurementValue):

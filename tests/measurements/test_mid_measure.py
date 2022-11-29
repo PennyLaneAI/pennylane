@@ -103,6 +103,30 @@ class TestMeasurementValueManipulation:
         assert m_add[0] == 5
         assert m_add[1] == 6
 
+    def test_sub_with_scalar(self):
+        """test the __sub__ dunder method between MeasurementValue and scalar."""
+        m = MeasurementValue(["m"], lambda v: v)
+        m_add = m - 5
+        assert m_add[0] == -5
+        assert m_add[1] == -4
+
+    def test_sub_to_measurements(self):
+        """test the __sub__ dunder method between two MeasurementValues."""
+        m0 = MeasurementValue(["m0"], lambda v: v)
+        m1 = MeasurementValue(["m1"], lambda v: v)
+        sum_of_measurements = m0 - m1
+        assert sum_of_measurements[0] == 0
+        assert sum_of_measurements[1] == -1
+        assert sum_of_measurements[2] == 1
+        assert sum_of_measurements[3] == 0
+
+    def test_rsub_with_scalar(self):
+        """test the __rsub__ dunder method between a scalar and a MeasurementValue."""
+        m = MeasurementValue(["m"], lambda v: v)
+        m_add = 5 - m
+        assert m_add[0] == 5
+        assert m_add[1] == 4
+
     def test_mul_with_scalar(self):
         """test the __mul__ dunder method between a MeasurementValue and a scalar"""
         m = MeasurementValue(["m"], lambda v: v)
@@ -126,6 +150,30 @@ class TestMeasurementValueManipulation:
         m_mul = 5 * m
         assert m_mul[0] == 0
         assert m_mul[1] == 5
+
+    def test_truediv_with_scalar(self):
+        """test the __truediv__ dunder method between a MeasurementValue and a scalar"""
+        m = MeasurementValue(["m"], lambda v: v)
+        m_mul = m / 5.0
+        assert m_mul[0] == 0
+        assert m_mul[1] == 1 / 5.0
+
+    def test_truediv_with_measurement(self):
+        """test the __truediv__ dunder method between two MeasurementValues."""
+        m0 = MeasurementValue(["m0"], lambda v: v) + 3.0
+        m1 = MeasurementValue(["m1"], lambda v: v) + 5.0
+        mul_of_measurements = m0 / m1
+        assert mul_of_measurements[0] == 3.0 / 5.0
+        assert mul_of_measurements[1] == 3.0 / 6.0
+        assert mul_of_measurements[2] == 4.0 / 5.0
+        assert mul_of_measurements[3] == 4.0 / 6.0
+
+    def test_rtruediv_with_scalar(self):
+        """test the __rtruediv__ dunder method between a scalar and a MeasurementValue."""
+        m = MeasurementValue(["m"], lambda v: v) + 3.0
+        m_mul = 5 / m
+        assert m_mul[0] == 5 / 3.0
+        assert m_mul[1] == 5 / 4.0
 
     def test_inversion(self):
         """test the __inv__ dunder method."""
