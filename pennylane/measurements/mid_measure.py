@@ -57,9 +57,10 @@ def measure(wires):  # TODO: Change name to mid_measure
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Mid circuit measurements can be manipulated using the following dunder methods
-    +, -, *, /, ~ (not), & (and), | (or), ==, <=, >=, <, >.
+    `+`, `-`, `*`, `/`, `~` (not), `&` (and), `|` (or), `==`, `<=`, `>=`, `<`, `>`. With other mid-circuit measurements or scalars.
 
-    Note: python `not`, `and`, `or`, do not work since these do not have dunder methods. Instead use ~, &, |.
+    Note:
+        python `not`, `and`, `or`, do not work since these do not have dunder methods. Instead use `~`, `&`, `|`.
 
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
