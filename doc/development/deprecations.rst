@@ -6,6 +6,13 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` is deprecated.
+  A new argument ``seed`` has been added, which defaults to None and can contain an integer with the 
+  wanted seed.
+
+  - Still accessible in v0.27
+  - Will be removed in v0.28
+
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
 
@@ -132,3 +139,9 @@ Completed deprecation cycles
 
   - Deprecated in v0.24
   - Removed in v0.27
+
+* The ``qml.Operation.get_parameter_shift`` method is removed. Use the methods of the ``gradients`` module
+  for general parameter-shift rules instead.
+
+  - Deprecated in v0.22
+  - Removed in v0.28
