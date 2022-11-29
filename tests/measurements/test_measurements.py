@@ -222,6 +222,10 @@ class TestStatisticsQueuing:
 class TestProperties:
     """Test for the properties"""
 
+    def test_return_type(self):
+        """Test MeasurementProcess ``return_type`` property is None."""
+        assert MeasurementProcess().return_type is None
+
     def test_wires_match_observable(self):
         """Test that the wires of the measurement process
         match an internal observable"""
