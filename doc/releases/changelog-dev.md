@@ -331,6 +331,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
 
+* The `u_tape` argument in `qml.HilbertSchmidt` is deprecated. Please use `u_script` instead.
+  [(#3432)](https://github.com/PennyLaneAI/pennylane/pull/3432)
+
 <h3>Documentation</h3>
 
 * Adds developer documentation for the queuing module.

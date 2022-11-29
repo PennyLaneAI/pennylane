@@ -17,7 +17,7 @@ Pending deprecations
   have been consolidated in the ``pauli/grouping/`` directory.
 
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
-  use ``qml.adjoint`` or ``qml.pow`` instead. 
+  use ``qml.adjoint`` or ``qml.pow`` instead.
 
   - Still accessible in v0.27 and v0.28
   - Will be removed in v0.29
@@ -40,7 +40,7 @@ Pending deprecations
   PauliX(wires=[0])**-1
 
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
-  
+
   - Deprecated in v0.24
   - Will be removed in v0.28
 
@@ -87,6 +87,11 @@ Pending deprecations
 
     tapes, fn = qml.transforms.hamiltonian_expand(tape)
 
+* The `u_tape` argument in `qml.HilbertSchmidt` is deprecated. Please use `u_script` instead.
+
+  - Deprecated in v0.28
+  - Will be removed in v0.29
+
 Completed deprecation cycles
 ----------------------------
 
@@ -111,7 +116,7 @@ Completed deprecation cycles
   - Deprecated in v0.27
   - Removed in v0.28
 
-* ``QueuingContext`` is renamed ``QueuingManager``. 
+* ``QueuingContext`` is renamed ``QueuingManager``.
 
   - Deprecated name ``QueuingContext`` in v0.27
   - Removed in v0.28
