@@ -85,9 +85,6 @@ class AdjointOperation(Operation):
     def grad_recipe(self):
         return self.base.grad_recipe
 
-    def get_parameter_shift(self, idx):
-        return self.base.get_parameter_shift(idx)
-
     @property
     def parameter_frequencies(self):
         return self.base.parameter_frequencies
