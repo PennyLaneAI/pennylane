@@ -1081,7 +1081,7 @@ class TestFermionicSWAP:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_fermionic_swap_decomp(self, phi):
-        """Tests that the FermionicSWAP operation calculates the correct decomposition."""
+        """Tests that the FermionicSWAP operation calculates the correct decomposition"""
         decomp1 = qml.FermionicSWAP(phi, wires=[0, 1]).decomposition()
         decomp2 = qml.FermionicSWAP.compute_decomposition(phi, wires=[0, 1])
 
@@ -1120,7 +1120,7 @@ class TestFermionicSWAP:
         assert qml.math.allclose(pow_mat, mat_then_pow)
 
     def test_adjoint(self):
-        """Test adjoint method for adjoint op decomposition."""
+        """Test adjoint method for adjoint op decomposition"""
 
         phi = 1.234
         wires = (0, 1)
