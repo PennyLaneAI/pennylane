@@ -35,9 +35,10 @@
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Support custom measurement processes:
-  * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
-    method to process samples/quantum state.
+  * `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
+    They contain an abstract method to process samples/quantum state/quantum script.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
   * Add `_Expectation` class.
     [#3343](https://github.com/PennyLaneAI/pennylane/pull/3343)
