@@ -148,7 +148,7 @@ class TestUpdate:
             qml.measurements.Shadow,
             qml.measurements.ShadowExpval,
         )
-        assert qs.samples_computational_basis is (True if shadow_mp else False)
+        assert qs.samples_computational_basis is shadow_mp
 
         qs = QuantumScript(measurements=[sample_ms, sample_ms, qml.sample()])
         assert qs.is_sampled is True
@@ -725,3 +725,60 @@ class TestQScriptDraw:
 
         assert qs.draw() == qml.drawer.tape_text(qs)
         assert qs.draw(max_length=20) == qml.drawer.tape_text(qs, max_length=20)
+
+
+class TestMakeQscript:
+    """Test the make_qscript method."""
+
+    def test_ops_are_recorded_to_qscript(self):
+        """Test make_qscript records operations from the quantum function passed to it."""
+
+        def qfunc():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            qml.expval(qml.PauliX(0))
+
+        qscript = qml.tape.make_qscript(qfunc)()
+        assert len(qscript.operations) == 2
+        assert len(qscript.measurements) == 1
+
+    def test_qfunc_is_recording_during_make_qscript(self):
+        """Test that quantum functions passed to make_qscript run in a recording context."""
+
+        def assert_recording():
+            assert qml.QueuingManager.recording()
+
+        qml.tape.make_qscript(assert_recording)()
+
+    def test_ops_are_not_recorded_to_surrounding_context(self):
+        """Test that ops are not recorded to any surrounding context during make_qscript."""
+
+        def qfunc():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+
+        with qml.queuing.AnnotatedQueue() as q:
+            recorded_op = qml.PauliX(0)
+            qscript = qml.tape.make_qscript(qfunc)()
+        assert q.queue == [recorded_op]
+        assert len(qscript.operations) == 2
+
+    def test_make_qscript_returns_callable(self):
+        """Test that make_qscript returns a callable."""
+
+        def qfunc():
+            qml.Hadamard(0)
+
+        assert callable(qml.tape.make_qscript(qfunc))
+
+    def test_non_queued_ops_are_not_recorded(self):
+        """Test that ops are not recorded to the qscript when recording is disabled."""
+
+        def qfunc():
+            qml.PauliX(0)
+            with qml.QueuingManager.stop_recording():
+                qml.Hadamard(0)
+
+        qscript = qml.tape.make_qscript(qfunc)()
+        assert len(qscript.operations) == 1
+        assert qscript.operations[0].name == "PauliX"
