@@ -2282,7 +2282,10 @@ class TestPassthruIntegration:
             assert qml.qnode(dev, diff_method="autograd", interface=interface)(circuit)
         assert (
             str(e.value)
-            == "Differentiation method autograd not recognized. Allowed options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint')."
+            == (
+                "Differentiation method autograd not recognized. Allowed options are ('best', "
+                "'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint', 'spsa')."
+            )
         )
 
 
