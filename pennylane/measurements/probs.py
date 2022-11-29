@@ -20,7 +20,7 @@ from typing import Sequence, Tuple
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import Probability, SampleMeasurement, StateMeasurement
+from .measurements import MeasurementShapeError, Probability, SampleMeasurement, StateMeasurement
 
 
 def probs(wires=None, op=None):
@@ -126,6 +126,36 @@ class _Probability(SampleMeasurement, StateMeasurement):
     @property
     def numeric_type(self):
         return float
+
+    def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
+        num_shot_elements = (
+            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
+        )
+        len_wires = len(self.wires)
+        dim = self._get_num_basis_states(len_wires, device)
+
+        return (num_shot_elements, dim)
+
+    def _shape_new(self, device=None):
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
+        num_shot_elements = (
+            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
+        )
+        len_wires = len(self.wires)
+        dim = self._get_num_basis_states(len_wires, device)
+
+        return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
     def process_samples(
         self,
