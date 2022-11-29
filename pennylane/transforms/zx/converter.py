@@ -97,10 +97,9 @@ def tape_to_graph_zx(tape, compress_rows=True, backend=None):
         wires = list(op.wires)
         # Max number of parameter is one
         if par:
-            # Single wires is int
-            if len(wires) == 1:
-                wires = wires[0]
-            args = [wires, par[0]]
+            args = []
+            args.extend(wires)
+            args.extend(par)
         else:
             args = wires
 
@@ -179,8 +178,10 @@ def graph_zx_to_tape(g, split_phases=True):
                 continue
             if phase != 0 and not split_phases:
                 if t == VertexType.Z:
+                    phase = float(phase)
                     operations.append(qml.RZ(phase, wires=q))
                 else:
+                    phase = float(phase)
                     operations.append(qml.RX(phase, wires=q))
             elif t == VertexType.Z and phase.denominator == 2:
                 if phase.numerator == 3:
@@ -206,8 +207,10 @@ def graph_zx_to_tape(g, split_phases=True):
                     operations.append(qml.PauliX(wires=q))
             elif phase != 0:
                 if t == VertexType.Z:
+                    phase = float(phase)
                     operations.append(qml.RZ(phase, wires=q))
                 else:
+                    phase = float(phase)
                     operations.append(qml.RX(phase, wires=q))
 
             neigh = [w for w in g.neighbors(v) if rs[w] == r and w < v]
