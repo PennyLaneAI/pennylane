@@ -14,7 +14,6 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
-from copy import copy
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -79,6 +78,10 @@ ops = (
         qml.Rot(0.34, 1.0, 0, wires=0),
     ),
 )
+
+
+def _get_pw(w, pauil_op):
+    return qml.pauli.PauliWord({w: pauil_op})
 
 
 def sum_using_dunder_method(*summands, do_queue=True, id=None):
@@ -508,6 +511,125 @@ class TestProperties:
 
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
+
+    op_pauli_reps = (
+        (
+            qml.op_sum(qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliZ(wires=0)),
+            qml.pauli.PauliSentence({_get_pw(0, 'X'): 1, _get_pw(0, 'Y'): 1, _get_pw(0, 'Z'): 1})
+        ),
+        (
+            qml.op_sum(qml.PauliX(wires=0), qml.PauliX(wires=0), qml.PauliZ(wires=0)),
+            qml.pauli.PauliSentence({_get_pw(0, 'X'): 2, _get_pw(0, 'Z'): 1})
+        ),
+        (
+            qml.op_sum(qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires='a'), qml.PauliZ(wires='a')),
+            qml.pauli.PauliSentence({_get_pw(0, 'X'): 1, _get_pw(1, 'Y'): 1, _get_pw('a', 'Z'): 2})
+        ),
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps)
+    def test_pauli_rep(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep
+
+    def test_pauli_rep_raises_error(self):
+        """Test that an error is raised if any of the summands don't have a
+        _pauli_rep property implemented."""
+        op = qml.op_sum(qml.PauliX(wires=0), qml.RX(1.23, wires=1))
+        with pytest.raises(NotImplementedError, match="Pauli rep not defined for sum"):
+            _ = op._pauli_rep
+
+    op_pauli_reps_nested = (
+        (
+            qml.op_sum(
+                qml.pow(
+                    qml.op_sum(
+                        qml.pow(qml.PauliZ(wires=0), z=3),
+                        qml.pow(qml.PauliX(wires=1), z=2),
+                        qml.pow(qml.PauliY(wires=2), z=1),
+                    ), z=3
+                ),
+                qml.PauliY(wires=2),
+            ),
+            qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({0: 'Z'}): 7,
+                    qml.pauli.PauliWord({2: 'Y'}): 8,
+                    qml.pauli.PauliWord({0: 'Z', 2: 'Y'}): 6,
+                    qml.pauli.PauliWord({}): 7,  # identity
+                }
+            )
+        ),  # sum + pow
+        (
+            qml.prod(
+                qml.op_sum(
+                    qml.prod(
+                        qml.op_sum(qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)),
+                        qml.op_sum(qml.PauliZ(wires=0), qml.PauliZ(wires=1), qml.PauliZ(wires=2))
+                    ),
+                    qml.Identity(wires=1)
+                ),
+                qml.PauliY(wires=3)
+            ),
+            qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({0: 'Y', 3: 'Y'}): -1j,
+                    qml.pauli.PauliWord({0: 'X', 1: 'Z', 3: 'Y'}): 1,
+                    qml.pauli.PauliWord({0: 'X', 2: 'Z', 3: 'Y'}): 1,
+                    qml.pauli.PauliWord({0: 'Z', 1: 'Y', 3: 'Y'}): 1,
+                    qml.pauli.PauliWord({1: 'X', 3: 'Y'}): 1j,
+                    qml.pauli.PauliWord({1: 'Y', 2: 'Z', 3: 'Y'}): 1,
+                    qml.pauli.PauliWord({0: 'Z', 2: 'Z', 3: 'Y'}): 1,
+                    qml.pauli.PauliWord({1: 'Z', 2: 'Z', 3: 'Y'}): 1,
+                    qml.pauli.PauliWord({3: 'Y'}): 2,
+                }
+            )
+        ),  # sum + prod
+        (
+            qml.op_sum(
+                qml.s_prod(
+                    0.5,
+                    qml.op_sum(
+                        qml.s_prod(2j, qml.PauliX(wires=0)),
+                        qml.s_prod(-4, qml.PauliY(wires=1)),
+                    )
+                ),
+                qml.s_prod(1.23-0.4j, qml.PauliZ(wires=2)),
+            ),
+            qml.pauli.PauliSentence({_get_pw(0, 'X'): 1.0j, _get_pw(1, 'Y'): -2.0, _get_pw(2, 'Z'): 1.23-0.4j})
+        ),  # sum + s_prod
+        (
+            qml.prod(
+                qml.s_prod(
+                    -2,
+                    qml.op_sum(
+                        qml.s_prod(1j, qml.PauliX(wires=0)),
+                        qml.PauliY(wires=1),
+                    )
+                ),
+                qml.pow(
+                    qml.op_sum(
+                        qml.s_prod(3, qml.PauliZ(wires=0)),
+                        qml.PauliZ(wires=1),
+                    ),
+                    z=2
+                )
+            ),
+            qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({0: 'X'}): -20j,
+                    qml.pauli.PauliWord({1: 'Y'}): -20,
+                    qml.pauli.PauliWord({0: 'Y', 1: 'Z'}): -12,
+                    qml.pauli.PauliWord({0: 'Z', 1: 'X'}): -12j,
+                }
+            ),
+        ),  # mixed
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps_nested)
+    def test_pauli_rep(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep
 
 
 class TestSimplify:

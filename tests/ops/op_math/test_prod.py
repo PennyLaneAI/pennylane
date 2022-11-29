@@ -86,6 +86,10 @@ ops_hermitian_status = (  # computed manually
 )
 
 
+def _get_pw(w, pauil_op):
+    return qml.pauli.PauliWord({w: pauil_op})
+
+
 def compare_and_expand_mat(mat1, mat2):
     """Helper function which takes two square matrices (of potentially different sizes)
     and expands the smaller matrix until their shapes match."""
@@ -727,6 +731,58 @@ class TestProperties:
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
         assert diag_prod_op.diagonalizing_gates() == []
+
+    op_pauli_reps = (
+        (
+            qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires='a')),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'X', 1: 'Y', 'a': 'Z'}): 1}),
+        ),
+        (
+            qml.prod(qml.PauliX(wires=0), qml.PauliX(wires=0)),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1}),
+        ),
+        (
+            qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliZ(wires='a'), qml.PauliZ(wires='a')),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'Z'}): 1j}),
+        ),
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps)
+    def test_pauli_rep(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep
+
+    def test_pauli_rep_raises_error(self):
+        """Test that an error is raised if any of the terms don't have a
+        _pauli_rep property implemented."""
+        op = qml.prod(qml.PauliX(wires=0), qml.RX(1.23, wires=1))
+        with pytest.raises(NotImplementedError, match="Pauli rep not defined for product"):
+            _ = op._pauli_rep
+
+    op_pauli_reps_nested = (
+        (
+            qml.prod(
+                qml.pow(qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)), z=3),
+                qml.pow(qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)), z=5),
+            ),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'Z', 1: 'Y', 2: 'Z'}): 1j}),
+        ),  # prod + pow
+        (
+            qml.prod(
+                qml.s_prod(
+                    -2j,
+                    qml.prod(qml.s_prod(0.5, qml.PauliX(wires=0)), qml.s_prod(2, qml.PauliZ(wires=1)))
+                ),
+                qml.s_prod(3, qml.PauliY(wires=0)),
+            ),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'Z', 1: 'Z'}): 6}),
+        ),  # prod + s_prod
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps_nested)
+    def test_pauli_rep(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep
 
 
 class TestSimplify:
