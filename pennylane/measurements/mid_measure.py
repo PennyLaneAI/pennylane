@@ -116,17 +116,19 @@ class MeasurementValue(Generic[T]):
 
     def __add__(self, other):
         if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(sum)
+            return self._merge(other)._apply(lambda v: v[0] + v[1])
         return self._apply(lambda v: v + other)
 
-    __radd__ = __add__
+    def __radd__(self, other):
+        return self._apply(lambda v: other + v)
 
     def __mul__(self, other):
         if isinstance(other, MeasurementValue):
-            return self._merge(other._apply(lambda x, y: x * y))
+            return self._merge(other)._apply(lambda v: v[0] * v[1])
         return self._apply(lambda v: v * other)
 
-    __rmul__ = __mul__
+    def __rmul__(self, other):
+        return self._apply(lambda v: other * v)
 
     def __lt__(self, other):
         if isinstance(other, MeasurementValue):
