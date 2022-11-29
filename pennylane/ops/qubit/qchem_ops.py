@@ -1169,16 +1169,10 @@ class FermionicSWAP(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        c = qml.math.cos(phi / 2)
-        s = qml.math.sin(phi / 2)
-        g = qml.math.exp(1j * phi / 2)
-        p = qml.math.exp(1j * phi)
-
-        # The following avoids casting an imaginary quantity to reals when backpropagating
-        c = (1 + 0j) * c
-        s = (1 + 0j) * s
-        g = (1 + 0j) * g
-        p = (1 + 0j) * p
+        c = qml.math.cast_like(qml.math.cos(phi / 2), 1j)
+        s = qml.math.cast_like(qml.math.sin(phi / 2), 1j)
+        g = qml.math.cast_like(qml.math.exp(1j * phi / 2), 1j)
+        p = qml.math.cast_like(qml.math.exp(1j * phi), 1j)
 
         zeros = qml.math.zeros_like(phi)
         ones = qml.math.ones_like(phi)
