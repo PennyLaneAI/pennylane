@@ -465,12 +465,12 @@ def _finite_diff_new(
             if c0 is not None:
                 if len(tape.measurements) == 1:
                     c = qml.math.convert_like(c0, r0)
-                    pre_grads = [pre_grads[0] + c * r0]
+                    pre_grads = [pre_grads[0] + r0 * c]
                 else:
                     for i in range(len(tape.measurements)):
                         r_i = r0[i]
                         c = qml.math.convert_like(c0, r_i)
-                        pre_grads[i] = pre_grads[i] + c * r_i
+                        pre_grads[i] = pre_grads[i] + r_i * c
 
             coeff_div = qml.math.cast_like(
                 qml.math.convert_like(1 / h**n, pre_grads[0]), pre_grads[0]
