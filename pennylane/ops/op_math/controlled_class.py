@@ -614,7 +614,7 @@ class ControlledQubitUnitary(ControlledOp):
             "control_values": control_values,
         }
 
-        super().__init__(base, control_wires)
+        super().__init__(base, control_wires, control_values=control_values, do_queue=do_queue)
 
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
