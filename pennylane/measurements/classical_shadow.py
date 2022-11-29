@@ -89,7 +89,6 @@ def shadow_expval(H, k=1, seed=None, seed_recipes=True):
             "Using ``seed_recipes`` is deprecated. Please use ``seed`` instead.",
             UserWarning,
         )
-    seed = seed or np.random.randint(2**30)
     return _ShadowExpval(ShadowExpval, H=H, seed=seed, k=k)
 
 
@@ -215,7 +214,6 @@ def classical_shadow(wires, seed=None, seed_recipes=True):
         )
     wires = Wires(wires)
 
-    seed = seed or np.random.randint(2**30)
     return ClassicalShadow(Shadow, wires=wires, seed=seed)
 
 
@@ -271,7 +269,7 @@ class ClassicalShadow(CustomMeasurement):
         """
         wires = self.wires
         n_snapshots = device.shots
-        seed = self.seed
+        seed = self.seed or np.random.randint(2**30)
 
         with qml.interfaces.set_shots(device, shots=1):
             # slow implementation but works for all devices
