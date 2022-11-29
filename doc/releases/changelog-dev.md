@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* New gradient transform `qml.gradients.spsa` based on the idea of SPSA.
+* New gradient transform `qml.gradients.spsa_grad` based on the idea of SPSA.
   [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
   [#3439](https://github.com/PennyLaneAI/pennylane/pull/3439)
 
@@ -14,8 +14,16 @@
   gradient can be computed via
 
   ```pycon
-  >>> grad_fn = qml.gradients.spsa(circuit, h=0.1, num_samples=1
-  >>> grad = grad_fn(x)
+  >>> dev = qml.device("default.qubit", wires=2) 
+  >>> x = pnp.array(0.4, requires_grad=True)
+  >>> @qml.qnode(dev)
+  ... def circuit(x):
+  ...     qml.RX(x, 0) 
+  ...     qml.RX(x, 1)
+  ...     return qml.expval(qml.PauliZ(0)) 
+  >>> grad_fn = qml.gradients.spsa_grad(circuit, h=0.1, num_directions=1)
+  >>> grad_fn(x)
+  array(-0.38876964)
   ```
 
   This method also is registered as QNode differentiation method and can be
@@ -32,11 +40,11 @@
   DeviceArray(-0.4792258, dtype=float32, weak_type=True)
   ```
 
-  The argument `num_samples` determines how many directions of simultaneous
+  The argument `num_directions` determines how many directions of simultaneous
   perturbation are used and therefore the number of circuit evaluations, up
   to a prefactor. See the
   [spsa gradient transform documentation](
-  https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa.html
+  https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html
   ) for details.
   Note: The full SPSA optimization method already is available as `SPSAOptimizer`.
 

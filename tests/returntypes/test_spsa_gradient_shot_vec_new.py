@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the gradients.spsa module using shot vectors.
+Tests for the gradients.spsa_gradient module using shot vectors.
 """
 import numpy
 import pytest
