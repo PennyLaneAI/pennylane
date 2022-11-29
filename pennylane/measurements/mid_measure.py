@@ -56,6 +56,9 @@ def measure(wires):  # TODO: Change name to mid_measure
     >>> func(*pars)
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
+    Mid circuit measurements can be manipulated using the following dunder methods
+    +, *, ~ (not), & (and), | (or), ==, <=, >=, <, >.
+
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
 
@@ -75,14 +78,6 @@ def measure(wires):  # TODO: Change name to mid_measure
 
 
 T = TypeVar("T")
-
-
-# def _binary_dunder(dunder_method):
-#     def wrapper(self, other):
-#         if isinstance(other, MeasurementValue):
-#             return self._merge(other)._apply(lambda v: dunder_method(v[0], v[1]))
-#         return self._apply(lambda v: dunder_method(v, other))
-#     return wrapper
 
 
 class MeasurementValueError(ValueError):

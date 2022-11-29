@@ -34,7 +34,10 @@ class TestMeasure:
 
 
 class TestMeasurementValueManipulation:
+    """test all the dunder methods associated with the MeasurementValue class"""
+
     def test_apply_function_to_measurement(self):
+        """test the general _apply method that can apply an arbitrary function to a measurement."""
 
         m = MeasurementValue(["m"], lambda v: v)
 
@@ -43,6 +46,7 @@ class TestMeasurementValueManipulation:
         assert sin_of_m[1] == np.sin(1)
 
     def test_add_to_measurements(self):
+        """test the __add__ dunder method between two MeasurementValues."""
         m0 = MeasurementValue(["m0"], lambda v: v)
         m1 = MeasurementValue(["m1"], lambda v: v)
         sum_of_measurements = m0 + m1
@@ -52,24 +56,28 @@ class TestMeasurementValueManipulation:
         assert sum_of_measurements[3] == 2
 
     def test_equality_with_scalar(self):
+        """test the __eq__ dunder method between a MeasurementValue and an integer."""
         m = MeasurementValue(["m"], lambda v: v)
         m_eq = m == 0
         assert m_eq[0] is True  # confirming value is actually eq to True, not just truthy
         assert m_eq[1] is False
 
     def test_inversion(self):
+        """test the __inv__ dunder method."""
         m = MeasurementValue(["m"], lambda v: v)
         m_inversion = ~m
         assert m_inversion[0] is True
         assert m_inversion[1] is False
 
     def test_lt(self):
+        """test the __lt__ dunder method between a MeasurementValue and a float."""
         m = MeasurementValue(["m"], lambda v: v)
         m_inversion = m < 0.5
         assert m_inversion[0] is True
         assert m_inversion[1] is False
 
     def test_lt_with_other_measurement_value(self):
+        """test the __lt__ dunder method between a two MeasurementValues"""
         m1 = MeasurementValue(["m1"], lambda v: v)
         m2 = MeasurementValue(["m2"], lambda v: v)
         compared = m1 < m2
@@ -79,12 +87,14 @@ class TestMeasurementValueManipulation:
         assert compared[3] is False
 
     def test_gt(self):
+        """test the __gt__ dunder method between a MeasurementValue and a flaot."""
         m = MeasurementValue(["m"], lambda v: v)
         m_inversion = m > 0.5
         assert m_inversion[0] is False
         assert m_inversion[1] is True
 
     def test_gt_with_other_measurement_value(self):
+        """test the __gt__ dunder method between two MeasurementValues."""
         m1 = MeasurementValue(["m1"], lambda v: v)
         m2 = MeasurementValue(["m2"], lambda v: v)
         compared = m1 > m2
@@ -94,12 +104,14 @@ class TestMeasurementValueManipulation:
         assert compared[3] is False
 
     def test_eq(self):
+        """test the __eq__ dunder method between a MeasurementValue and an int."""
         m = MeasurementValue(["m"], lambda v: v)
         m_eq = m == 1
         assert m_eq[0] is False
         assert m_eq[1] is True
 
     def test_eq_with_other_measurement_value(self):
+        """test the __eq__ dunder method between two MeasurementValues."""
         m1 = MeasurementValue(["m1"], lambda v: v)
         m2 = MeasurementValue(["m2"], lambda v: v)
         compared = m1 == m2
@@ -109,6 +121,8 @@ class TestMeasurementValueManipulation:
         assert compared[3] is True
 
     def test_merge_measurements_values_dependant_on_same_measurement(self):
+        """test that the _merge operation does not create more than 2 branches when combining two MeasurementValues
+        that are based on the same measurement."""
         m0 = MeasurementValue(["m"], lambda v: v)
         m1 = MeasurementValue(["m"], lambda v: v)
         combined = m0 + m1
@@ -116,16 +130,21 @@ class TestMeasurementValueManipulation:
         assert combined[1] == 2
 
     def test_combine_measurement_value_with_non_measurement(self):
+        """test that we can use dunder methods to combine a MeasurementValue with the underlying "primitive"
+        of that measurement value."""
         m0 = MeasurementValue(["m"], lambda v: v)
         out = m0 + 10
         assert out[0] == 10
         assert out[1] == 11
 
     def test_str(self):
+        """test that the output of the __str__ dunder method is as expected"""
         m = MeasurementValue(["m"], lambda v: v)
         assert str(m) == "if m=0 => 0\nif m=1 => 1"
 
     def test_complex_str(self):
+        """test that the output of the __str__ dunder method is as expected
+        w.r.t a more complicated MeasurementValue"""
         a = MeasurementValue(["a"], lambda v: v)
         b = MeasurementValue(["b"], lambda v: v)
         assert (
