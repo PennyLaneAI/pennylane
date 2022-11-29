@@ -15,6 +15,7 @@
 broadcasted tape into multiple tapes."""
 import pennylane as qml
 from .batch_transform import batch_transform
+from pennylane.transforms.batch_params import _nested_stack
 
 
 @batch_transform
@@ -103,4 +104,11 @@ def broadcast_expand(tape):
         new_tape.set_parameters(p, trainable_only=False)
         output_tapes.append(new_tape)
 
-    return output_tapes, lambda x: qml.math.squeeze(qml.math.stack(x))
+    def processing_fn(res):
+        print('raw res', res, type(res))
+        if qml.active_return():
+            return res[0] if len(res) == 1 else _nested_stack(res)
+
+        return qml.math.squeeze(qml.math.stack(res))
+
+    return output_tapes, processing_fn
