@@ -147,7 +147,7 @@ class TestExpvalMeasurement:
     def test_seed_recipes_deprecated(self):
         """Test that using the ``seed_recipes`` argument is deprecated."""
         with pytest.warns(
-            DeprecationWarning,
+            UserWarning,
             match="Using ``seed_recipes`` is deprecated. Please use ``seed`` instead",
         ):
             qml.shadow_expval(H=qml.PauliX(0), seed_recipes=False)

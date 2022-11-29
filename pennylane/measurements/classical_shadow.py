@@ -87,7 +87,7 @@ def shadow_expval(H, k=1, seed=None, seed_recipes=True):
     if seed_recipes is False:
         warnings.warn(
             "Using ``seed_recipes`` is deprecated. Please use ``seed`` instead.",
-            DeprecationWarning,
+            UserWarning,
         )
     seed = seed or np.random.randint(2**30)
     return _ShadowExpval(ShadowExpval, H=H, seed=seed, k=k)
@@ -211,7 +211,7 @@ def classical_shadow(wires, seed=None, seed_recipes=True):
     if seed_recipes is False:
         warnings.warn(
             "Using ``seed_recipes`` is deprecated. Please use ``seed`` instead.",
-            DeprecationWarning,
+            UserWarning,
         )
     wires = Wires(wires)
 
