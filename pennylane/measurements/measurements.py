@@ -165,9 +165,9 @@ class MeasurementProcess(ABC):
         self.queue()
 
     @property
-    @abstractmethod
     def return_type(self):
         """Measurement return type."""
+        return None
 
     @property
     @functools.lru_cache()
