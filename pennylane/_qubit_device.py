@@ -865,7 +865,7 @@ class QubitDevice(Device):
                 )
 
             elif isinstance(m, StateMeasurement):
-                if self.shots is None:
+                if self.shots is not None:
                     warnings.warn(
                         f"Requested measurement {m.__class__.__name__} with finite shots; the "
                         "returned state information is analytic and is unaffected by sampling. "

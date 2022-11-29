@@ -448,3 +448,97 @@ class TestSampleMeasurement:
             return MyMeasurement()
 
         assert circuit() == 1
+
+    def test_sample_measurement_without_shots(self):
+        """Test that executing a sampled measurement with ``shots=None`` raises an error."""
+
+        class MyMeasurement(SampleMeasurement):
+            def process_samples(self, samples, wire_order, shot_range, bin_size):
+                return 1
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        with pytest.raises(
+            ValueError, match="Shots must be specified in the device to compute the measurement "
+        ):
+            circuit()
+
+
+class TestStateMeasurement:
+    """Tests for the SampleMeasurement class."""
+
+    def test_custom_state_measurement(self):
+        """Test the execution of a custom state measurement."""
+
+        class MyMeasurement(StateMeasurement):
+            def process_state(self, state, wire_order):
+                return 1
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        assert circuit() == 1
+
+    def test_sample_measurement_with_shots(self):
+        """Test that executing a state measurement with shots raises a warning."""
+
+        class MyMeasurement(StateMeasurement):
+            def process_state(self, state, wire_order):
+                return 1
+
+        dev = qml.device("default.qubit", wires=2, shots=1000)
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        with pytest.warns(
+            UserWarning,
+            match="Requested measurement MyMeasurement with finite shots",
+        ):
+            circuit()
+
+    def test_method_overriden_by_device(self):
+        """Test that the device can override a measurement process."""
+
+        class MyMeasurement(StateMeasurement):
+            method_name = "test_method"
+
+            def process_state(self, state, wire_order):
+                return 1
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
+
+        assert circuit() == 2
+
+
+class TestCustomMeasurement:
+    """Tests for the CustomMeasurement class."""
+
+    def test_custom_measurement(self):
+        """Test the execution of a custom measurement."""
+
+        class MyMeasurement(CustomMeasurement):
+            def process(self, tape, device):
+                return {device.shots: len(tape)}
+
+        dev = qml.device("default.qubit", wires=2, shots=1000)
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        assert circuit() == {dev.shots: len(circuit.tape)}
