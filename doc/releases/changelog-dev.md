@@ -174,6 +174,10 @@
   its functionality from the `QuantumTape` class.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
+* Adds `qml.tape.make_qscript` for converting a quantum function into a quantum script.
+  Replaces `qml.transforms.make_tape` with `make_qscript`.
+  [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
@@ -384,6 +388,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * The `pad_with` argument in the `AmplitudeEmbedding` template is now compatible
   with all interfaces
   [(#3392)](https://github.com/PennyLaneAI/pennylane/pull/3392)
+
+* Fixed a bug where a QNode returning `qml.sample` would produce incorrect results when
+  run on a device defined with a shot vector.
+  [#3422](https://github.com/PennyLaneAI/pennylane/pull/3422)
 
 <h3>Contributors</h3>
 
