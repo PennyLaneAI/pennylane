@@ -754,7 +754,7 @@ class QubitDevice(Device):
                 )
 
             elif obs.return_type is State:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination"
                         " with other return types"
