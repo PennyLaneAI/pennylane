@@ -168,6 +168,9 @@
   its functionality from the `QuantumTape` class.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
+* Refactor `MeasurementProcess` class.
+  [(#3435)](https://github.com/PennyLaneAI/pennylane/pull/3435)
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
