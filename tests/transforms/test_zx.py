@@ -16,7 +16,9 @@ Unit tests for the `pennylane.transforms.zx` folder.
 """
 
 import pytest
-import pyzx
+
+pyzx = pytest.importorskip("pyzx")
+
 import pennylane as qml
 
 pytestmark = pytest.mark.zx
