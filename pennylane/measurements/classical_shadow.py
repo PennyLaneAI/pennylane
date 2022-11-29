@@ -255,20 +255,15 @@ class ClassicalShadow(CustomMeasurement):
         of shots and ``n`` is the number of qubits, then both the measured bits and the
         Pauli measurements have shape ``(T, n)``.
 
-        This implementation leverages vectorization and offers a significant speed-up over
-        the generic implementation.
-
-        .. Note::
-
-            This method internally calls ``np.einsum`` which supports at most 52 indices,
-            thus the classical shadow measurement for this device supports at most 52
-            qubits.
+        This implementation is device-agnostic and works by executing single-shot
+        tapes containing randomized Pauli observables. Devices should override this
+        if they can offer cleaner or faster implementations.
 
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            tape (QuantumScript): the tape to be processed
-            device (Device): the device used to process the tape
+            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow measurement process
+            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
