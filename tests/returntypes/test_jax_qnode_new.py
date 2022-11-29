@@ -31,8 +31,7 @@ qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-    # TODO:
-    # ["default.qubit", "adjoint", "forward", "jax-jit"],
+    ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
@@ -252,8 +251,7 @@ vv_qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-    # TODO:
-    # ["default.qubit", "adjoint", "forward", "jax-jit"],
+    ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
@@ -1251,8 +1249,7 @@ class TestCV:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-# TODO: add support for fwd mode to JAX-JIT
-@pytest.mark.parametrize("interface", ["jax-python"])
+@pytest.mark.parametrize("interface", ["jax-python", "jax-jit"])
 def test_adjoint_reuse_device_state(mocker, interface):
     """Tests that the jax interface reuses the device state for adjoint differentiation"""
     dev = qml.device("default.qubit", wires=1)
