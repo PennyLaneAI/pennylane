@@ -568,11 +568,13 @@ class TestConditionalOperations:
 
 
 class TestExpressionConditionals:
+    """Test Conditionals that rely on expressions of mid circuit measurements."""
+
     @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
     @pytest.mark.parametrize("op", [qml.RX, qml.RY, qml.RZ])
     def test_conditional_rotations(self, r, op):
         """Test that the quantum conditional operations match the output of
-        controlled rotations."""
+        controlled rotations. And additionally that summing measurements works as expected."""
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
@@ -598,6 +600,7 @@ class TestExpressionConditionals:
         assert np.allclose(normal_probs, cond_probs)
 
     def test_triple_measurement_condition_expression(self):
+        """test that combining the results of three mid circuit measurements works as expected."""
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
@@ -637,6 +640,9 @@ class TestExpressionConditionals:
         assert np.allclose(normal_probs, cond_probs)
 
     def test_multiple_conditions(self):
+        """test that when multiple "branches" of the mid circuit measurements all satisfy the criteria then
+        this translates to multiple control gates.
+        """
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
