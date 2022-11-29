@@ -12,7 +12,6 @@
   using simultaneous perturbation of parameters and a stochastic approximation.
   Given some QNode `circuit` that takes, say, an argument `x`, the approximate
   gradient can be computed via
-
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2) 
   >>> x = pnp.array(0.4, requires_grad=True)
@@ -25,10 +24,8 @@
   >>> grad_fn(x)
   array(-0.38876964)
   ```
-
   This method also is registered as QNode differentiation method and can be
   selected via
-  
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2)
   >>> @qml.qnode(dev, interface="jax", diff_method="spsa", h=0.05, num_directions=20)
@@ -39,7 +36,6 @@
   >>> jax.jacobian(circuit)(jax.numpy.array(0.5)) 
   DeviceArray(-0.4792258, dtype=float32, weak_type=True)
   ```
-
   The argument `num_directions` determines how many directions of simultaneous
   perturbation are used and therefore the number of circuit evaluations, up
   to a prefactor. See the
