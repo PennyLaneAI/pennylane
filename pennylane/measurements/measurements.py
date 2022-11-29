@@ -125,6 +125,16 @@ class MeasurementProcess(ABC):
         log_base (float): Base for the logarithm.
     """
 
+    method_name = None
+    """Devices can override the logic of a measurement process by defining a method with the
+    name ``method_name`` of the corresponding class. The method should have the following signature:
+
+    .. code-block:: python
+
+        def method_name(self, measurement, shot_range=None, bin_size=None):
+            "Device's custom measurement implementation."
+    """
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
