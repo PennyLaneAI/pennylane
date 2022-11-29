@@ -306,7 +306,10 @@ class Prod(CompositeOp):
     def _pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
         try:
-            return reduce(lambda a, b: a * b, (op._pauli_rep for op in self.operands))
+            return reduce(
+                lambda a, b: a * b,
+                (op._pauli_rep for op in self.operands),  # pylint: disable=protected-access
+            )
         except NotImplementedError as e:
             raise NotImplementedError(f"Pauli rep not defined for product {self}") from e
 

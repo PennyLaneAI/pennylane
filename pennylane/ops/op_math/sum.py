@@ -209,7 +209,10 @@ class Sum(CompositeOp):
     def _pauli_rep(self):
         """PauliSentence representation of the Sum of operations."""
         try:
-            return reduce(lambda a, b: a + b, (op._pauli_rep for op in self.operands))
+            return reduce(
+                lambda a, b: a + b,
+                (op._pauli_rep for op in self.operands),  # pylint: disable=protected-access
+            )
         except NotImplementedError as e:
             raise NotImplementedError(f"Pauli rep not defined for sum {self}") from e
 

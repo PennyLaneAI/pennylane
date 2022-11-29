@@ -86,10 +86,6 @@ ops_hermitian_status = (  # computed manually
 )
 
 
-def _get_pw(w, pauil_op):
-    return qml.pauli.PauliWord({w: pauil_op})
-
-
 def compare_and_expand_mat(mat1, mat2):
     """Helper function which takes two square matrices (of potentially different sizes)
     and expands the smaller matrix until their shapes match."""

@@ -244,7 +244,7 @@ class SProd(SymbolicOp):
         """PauliSentence representation of the scalar product of operations."""
         try:
             pr = {}
-            base_ps = self.base._pauli_rep
+            base_ps = self.base._pauli_rep  # pylint: disable=protected-access
 
             for pw, coeff in base_ps.items():
                 pr[pw] = coeff * self.scalar

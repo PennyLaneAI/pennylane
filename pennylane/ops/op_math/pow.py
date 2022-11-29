@@ -328,8 +328,8 @@ class Pow(SymbolicOp):
         if isinstance(self.z, int) and self.z > 0:
             try:
                 pr = qml.pauli.PauliSentence({})
-                for i in range(self.z):
-                    pr = pr * self.base._pauli_rep
+                for _ in range(self.z):
+                    pr = pr * self.base._pauli_rep  # pylint: disable=protected-access
                 return pr
 
             except NotImplementedError as e:
