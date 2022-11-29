@@ -146,7 +146,9 @@ class HilbertSchmidt(Operation):
 
         decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
-        decomp_ops.extend(qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range))
+        decomp_ops.extend(
+            qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+        )
 
         # Unitary U
         for op_u in u_tape.operations:
@@ -157,7 +159,10 @@ class HilbertSchmidt(Operation):
         # Unitary V conjugate
         decomp_ops.extend(qml.adjoint(op_v, lazy=False) for op_v in v_tape.operations)
         # CNOT second layer
-        decomp_ops.extend(qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(reversed(first_range), reversed(second_range)))
+        decomp_ops.extend(
+            qml.CNOT(wires=[wires[i], wires[j]])
+            for i, j in zip(reversed(first_range), reversed(second_range))
+        )
 
         # Hadamard second layer
         decomp_ops.extend(qml.Hadamard(wires[i]) for i in first_range)
@@ -246,7 +251,9 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
-        decomp_ops.extend(qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range))
+        decomp_ops.extend(
+            qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+        )
 
         # Unitary U
         for op_u in u_tape.operations:
