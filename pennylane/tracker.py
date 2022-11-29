@@ -33,8 +33,8 @@ class Tracker:
     * ``totals`` keeps a running sum per keyword when the values are numeric.
 
     Standard devices will track the number of executions, number of shots, number of batch
-    executions, and batch execution length, but plugins may store additional information with
-    no changes to this class.
+    executions, batch execution length, and results of circuit executions, but plugins may store
+    additional information with no changes to this class.
 
     Information is only stored when the class attribute ``active`` is set to ``True``. This
     attribute can be toggled via a context manager and Python's ``with`` statement. Upon entering a
@@ -72,12 +72,13 @@ class Tracker:
     You can then access the tabulated information through ``totals``, ``history``, and ``latest``:
 
     >>> tracker.totals
-    {'executions': 3, 'shots': 300, 'batches': 1, 'batch_len': 2}
+    {'executions': 3, 'shots': 300, 'batches': 2, 'batch_len': 3}
     >>> tracker.history
     {'executions': [1, 1, 1],
      'shots': [100, 100, 100],
-     'batches': [1],
-     'batch_len': [2]}
+     'results': [array([1.]), array([-0.06]), array([0.18])],
+     'batches': [1, 1],
+     'batch_len': [1, 2]}
     >>> tracker.latest
     {'batches': 1, 'batch_len': 2}
 

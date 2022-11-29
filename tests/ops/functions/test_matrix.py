@@ -689,3 +689,19 @@ class TestDifferentiation:
         assert isinstance(matrix, qml.numpy.tensor)
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))
+
+
+class TestMeasurements:
+    @pytest.mark.parametrize(
+        "measurements,N",
+        [
+            ([qml.expval(qml.PauliX(0))], 2),
+            ([qml.probs(qml.PauliX(0)), qml.probs(qml.PauliZ(1))], 4),
+            ([qml.probs(wires=[0, 1])], 4),
+            ([qml.counts(wires=[0, 1, 2])], 8),
+        ],
+    )
+    def test_all_measurement_matrices_are_identity(self, measurements, N):
+        """Test that the matrix of a script with only observables is Identity."""
+        qscript = qml.tape.QuantumScript(measurements=measurements)
+        assert np.array_equal(qml.matrix(qscript), np.eye(N))

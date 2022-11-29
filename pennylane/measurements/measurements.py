@@ -21,12 +21,14 @@ and measurement samples using AnnotatedQueues.
 import contextlib
 import copy
 import functools
+from abc import ABC, abstractmethod
 from enum import Enum
+from typing import Sequence, Tuple, Union
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import Observable
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -125,22 +127,18 @@ class MeasurementProcess:
         log_base (float): Base for the logarithm.
     """
 
-    # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-arguments
-
     def __init__(
         self,
         return_type: ObservableReturnTypes,
-        obs: Operator = None,
+        obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
         id=None,
-        log_base=None,
     ):
         self.return_type = return_type
         self.obs = obs
         self.id = id
-        self.log_base = log_base
 
         if wires is not None:
             if len(wires) == 0:
@@ -509,15 +507,12 @@ class MeasurementProcess:
         return f"{self.obs}"
 
     def __copy__(self):
-        cls = self.__class__
-
-        if self.obs is not None:
-            return cls(self.return_type, obs=copy.copy(self.obs))
-
-        if self.log_base is not None:
-            return cls(self.return_type, wires=self._wires, log_base=self.log_base)
-
-        return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
+        return self.__class__(
+            self.return_type,
+            obs=copy.copy(self.obs),
+            wires=self._wires,
+            eigvals=self._eigvals,
+        )
 
     @property
     def wires(self):
@@ -528,9 +523,11 @@ class MeasurementProcess:
         if self.obs is not None:
             return self.obs.wires
 
-        wires = self._wires or Wires([])
-
-        return Wires.all_wires(wires) if isinstance(wires, list) else wires
+        return (
+            Wires.all_wires(self._wires)
+            if isinstance(self._wires, list)
+            else self._wires or Wires([])
+        )
 
     @property
     def raw_wires(self):
@@ -693,7 +690,100 @@ class MeasurementProcess:
             .MeasurementProcess: new measurement process
         """
         new_measurement = copy.copy(self)
-        new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         if self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
+        else:
+            new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
+
+    def _permute_wires(self, wires: Wires):
+        r"""Given an observable which acts on multiple wires, permute the wires to
+          be consistent with the device wire order.
+
+          Suppose we are given an observable :math:`\hat{O} = \Identity \otimes \Identity \otimes \hat{Z}`.
+          This observable can be represented in many ways:
+
+        .. code-block:: python
+
+              O_1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
+              O_2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
+
+          Notice that while the explicit tensor product matrix representation of :code:`O_1` and :code:`O_2` is
+          different, the underlying operator is identical due to the wire labelling (assuming the labels in
+          ascending order are {0,1,2}). If we wish to compute the expectation value of such an observable, we must
+          ensure it is identical in both cases. To facilitate this, we permute the wires in our state vector such
+          that they are consistent with this swapping of order in the tensor observable.
+
+        .. code-block:: python
+
+              >>> print(O_1.wires)
+              <Wires = [0, 1, 2]>
+              >>> print(O_2.wires)
+              <Wires = [2, 0, 1]>
+
+          We might naively think that we must permute our state vector to match the wire order of our tensor observable.
+          We must be careful and realize that the wire order of the terms in the tensor observable DOES NOT match the
+          permutation of the terms themselves. As an example we directly compare :code:`O_1` and :code:`O_2`:
+
+          The first term in :code:`O_1` (:code:`qml.Identity(wires=0)`) became the second term in :code:`O_2`.
+          By similar comparison we see that each term in the tensor product was shifted one position forward
+          (i.e 0 --> 1, 1 --> 2, 2 --> 0). The wires in our permuted quantum state should follow their respective
+          terms in the tensor product observable.
+
+          Thus, the correct wire ordering should be :code:`permuted_wires = <Wires = [1, 2, 0]>`. But if we had
+          taken the naive approach we would have permuted our state according to
+          :code:`permuted_wires = <Wires = [2, 0, 1]>` which is NOT correct.
+
+          This function uses the observable wires and the global device wire ordering in order to determine the
+          permutation of the wires in the observable required such that if our quantum state vector is
+          permuted accordingly then the amplitudes of the state will match the matrix representation of the observable.
+
+          Args:
+              observable (Observable): the observable whose wires are to be permuted.
+
+          Returns:
+              permuted_wires (Wires): permuted wires object
+        """
+        wire_map = dict(zip(wires, range(len(wires))))
+        ordered_obs_wire_lst = sorted(self.wires.tolist(), key=lambda label: wire_map[label])
+        mapped_wires = [wire_map[w] for w in self.wires]
+        permutation = qml.math.argsort(mapped_wires)  # extract permutation via argsort
+        return Wires([ordered_obs_wire_lst[index] for index in permutation])
+
+
+class SampleMeasurement(MeasurementProcess, ABC):
+    """Sample-based measurement process."""
+
+    @abstractmethod
+    def process_samples(
+        self,
+        samples: Sequence[complex],
+        wire_order: Wires,
+        shot_range: Tuple[int] = None,
+        bin_size: int = None,
+    ):
+        """Process the given samples.
+
+        Args:
+            samples (Sequence[complex]): computational basis samples generated for all wires
+            wire_order (Wires): wires determining the subspace that ``samples`` acts on
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+        """
+
+
+class StateMeasurement(MeasurementProcess, ABC):
+    """State-based measurement process."""
+
+    @abstractmethod
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
+        """Process the given quantum state.
+
+        Args:
+            state (Sequence[complex]): quantum state
+            wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+                dimension :math:`2^n` acts on a subspace of :math:`n` wires
+        """

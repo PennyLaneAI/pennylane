@@ -87,6 +87,7 @@ special_cases = {
     ops.Toffoli: _add_cx,
     ops.MultiControlledX: _add_multicontrolledx,
     ops.CZ: _add_cz,
+    ops.CCZ: _add_cz,
     ops.Barrier: _add_barrier,
     ops.WireCut: _add_wirecut,
 }
@@ -186,7 +187,7 @@ def tape_mpl(
         style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
             'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
             'black_white' style will be used. Setting style does not modify matplotlib global plotting settings.
-            If None, the current matplotlib settings will be used.
+            If ``None``, the current matplotlib settings will be used.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
