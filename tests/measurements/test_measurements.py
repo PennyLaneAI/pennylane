@@ -19,12 +19,15 @@ import pennylane as qml
 from pennylane.measurements import (
     ClassicalShadow,
     Counts,
+    CustomMeasurement,
     Expectation,
     MeasurementProcess,
     MidMeasure,
     Probability,
     Sample,
+    SampleMeasurement,
     State,
+    StateMeasurement,
     Variance,
     _Counts,
     _Expectation,
@@ -426,3 +429,22 @@ class TestDiagonalizingGates:
         expected_classes = [qml.PauliZ, qml.S, qml.Hadamard]
         for op, c in zip(res, expected_classes):
             assert isinstance(op, c)
+
+
+class TestSampleMeasurement:
+    """Tests for the SampleMeasurement class."""
+
+    def test_custom_sample_measurement(self):
+        """Test the execution of a custom sampled measurement."""
+
+        class MyMeasurement(SampleMeasurement):
+            def process_samples(self, samples, wire_order, shot_range, bin_size):
+                return 1
+
+        dev = qml.device("default.qubit", wires=2, shots=1000)
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        assert circuit() == 1

@@ -741,7 +741,22 @@ class QubitDevice(Device):
             else:
                 obs = m
 
-            if obs.return_type in (Counts, AllCounts):
+            # Pass instances directly
+            if obs.return_type is Expectation:
+                # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
+                results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
+
+            elif obs.return_type is Variance:
+                # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
+                results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
+
+            elif obs.return_type is Sample:
+                # Appends a result of shape (shots, num_bins,) if bin_size is not None else (shots,)
+                results.append(
+                    self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
+                )
+
+            elif obs.return_type in (Counts, AllCounts):
                 results.append(
                     self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
                 )
