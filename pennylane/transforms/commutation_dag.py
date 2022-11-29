@@ -22,7 +22,7 @@ import networkx as nx
 from networkx.drawing.nx_pydot import to_pydot
 
 import pennylane as qml
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, make_qscript
 from pennylane.wires import Wires
 
 
@@ -107,7 +107,7 @@ def commutation_dag(circuit):
 
         elif callable(circuit):
             # user passed something that is callable but not a tape or qnode.
-            tape = qml.transforms.make_tape(circuit)(*args, **kwargs)
+            tape = make_qscript(circuit)(*args, **kwargs)
             # raise exception if it is not a quantum function
             if len(tape.operations) == 0:
                 raise ValueError("Function contains no quantum operation")
