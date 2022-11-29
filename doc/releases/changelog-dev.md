@@ -6,7 +6,7 @@
 
 * New gradient transform `qml.gradients.spsa_grad` based on the idea of SPSA.
   [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
-  [#3439](https://github.com/PennyLaneAI/pennylane/pull/3439)
+  [#3440](https://github.com/PennyLaneAI/pennylane/pull/3440)
 
   This new transform allows to compute a single estimate of a quantum gradient
   using simultaneous perturbation of parameters and a stochastic approximation.
