@@ -713,6 +713,49 @@ class TestComplicatedConditionals:
 
         assert np.allclose(normal_probs, cond_probs)
 
+    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
+    def test_multiple_conditions(self, device):
+        dev = qml.device(device, wires=4)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def normal_circuit(rads):
+            qml.RX(2.4, wires=0)
+            qml.RY(1.3, wires=1)
+            qml.RX(1.7, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 2])
+
+            qml.ctrl(qml.RX, (0, 1, 2), [False, True, True])(rads, wires=3)
+            qml.ctrl(qml.RX, (0, 1, 2), [True, False, False])(rads, wires=3)
+            qml.ctrl(qml.RX, (0, 1, 2), [True, False, True])(rads, wires=3)
+            qml.ctrl(qml.RX, (0, 1, 2), [True, True, False])(rads, wires=3)
+
+            return qml.probs(wires=3)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def quantum_control_circuit(rads):
+            qml.RX(2.4, wires=0)
+            qml.RY(1.3, wires=1)
+            qml.RX(1.7, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 2])
+            m_0 = qml.measure(0)
+            m_1 = qml.measure(1)
+            m_2 = qml.measure(2)
+
+            expression = 4 * m_0 + 2 * m_1 + m_2
+            qml.cond((3 <= expression) & (expression <= 6), qml.RX)(rads, wires=3)
+            return qml.probs(wires=3)
+
+        normal_probs = normal_circuit(1.0)
+        cond_probs = quantum_control_circuit(1.0)
+
+        assert np.allclose(normal_probs, cond_probs)
+
 
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""

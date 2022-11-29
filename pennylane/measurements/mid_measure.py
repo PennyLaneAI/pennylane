@@ -77,6 +77,14 @@ def measure(wires):  # TODO: Change name to mid_measure
 T = TypeVar("T")
 
 
+# def _binary_dunder(dunder_method):
+#     def wrapper(self, other):
+#         if isinstance(other, MeasurementValue):
+#             return self._merge(other)._apply(lambda v: dunder_method(v[0], v[1]))
+#         return self._apply(lambda v: dunder_method(v, other))
+#     return wrapper
+
+
 class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""
 
@@ -130,10 +138,30 @@ class MeasurementValue(Generic[T]):
             return self._merge(other)._apply(lambda v: v[0] < v[1])
         return self._apply(lambda v: v < other)
 
+    def __le__(self, other):
+        if isinstance(other, MeasurementValue):
+            return self._merge(other)._apply(lambda v: v[0] <= v[1])
+        return self._apply(lambda v: v <= other)
+
     def __gt__(self, other):
         if isinstance(other, MeasurementValue):
             return self._merge(other)._apply(lambda v: v[0] > v[1])
         return self._apply(lambda v: v > other)
+
+    def __ge__(self, other):
+        if isinstance(other, MeasurementValue):
+            return self._merge(other)._apply(lambda v: v[0] >= v[1])
+        return self._apply(lambda v: v >= other)
+
+    def __and__(self, other):
+        if isinstance(other, MeasurementValue):
+            return self._merge(other)._apply(lambda v: v[0] and v[1])
+        return self._apply(lambda v: v and other)
+
+    def __or__(self, other):
+        if isinstance(other, MeasurementValue):
+            return self._merge(other)._apply(lambda v: v[0] or v[1])
+        return self._apply(lambda v: v or other)
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
