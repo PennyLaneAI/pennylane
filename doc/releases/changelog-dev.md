@@ -280,6 +280,8 @@
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
 
+* Updated `qml.transforms.split_non_commuting` to support the new return types.
+  [#3414](https://github.com/PennyLaneAI/pennylane/pull/3414)
 
 <h3>Breaking changes</h3>
 
