@@ -84,7 +84,7 @@ gate_types: Dict[str, Type[Gate]] = {
 
 
 def circuit_to_graph(
-        tape: QuantumTape, compress_rows: bool = True, backend: Optional[str] = None
+    tape: QuantumTape, compress_rows: bool = True, backend: Optional[str] = None
 ) -> BaseGraph[VT, ET]:
     """Turns a PennyLane quantum tape into a ZX-Graph.
     If ``compress_rows`` is set, it tries to put single qubit gates on different qubits,
