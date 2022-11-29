@@ -174,6 +174,45 @@ class TestHilbertSchmidt:
         ):
             qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[0], u_script=U)
 
+    def test_correct_init(self):
+        """Test that HilbertSchmidt is correctly initialized."""
+        U = qml.tape.QuantumScript([qml.Hadamard(wires=0)])
+
+        def v_func(params):
+            qml.RZ(params[0], wires=1)
+
+        qml.HilbertSchmidt([0], v_function=v_func, v_wires=[1], u_script=U)
+
+    def test_using_u_tape_raises_deprecation_warning(self):
+        """Test that passing u_tape to HilbertSchmidt raises a deprecation warning."""
+        U = qml.tape.QuantumScript([qml.Hadamard(wires=0)])
+
+        def v_func(params):
+            qml.RZ(params[0], wires=1)
+
+        with pytest.warns(UserWarning, match="The u_tape keyword is deprecated"):
+            qml.HilbertSchmidt([0], v_function=v_func, v_wires=[1], u_tape=U)
+
+    def test_using_u_tape_and_u_script_raises_valueerror(self):
+        """Test that passing u_tape and u_script to HilbertSchmidt raises an error."""
+        U = qml.tape.QuantumScript([qml.Hadamard(wires=0)])
+
+        def v_func(params):
+            qml.RZ(params[0], wires=1)
+
+        with pytest.raises(ValueError, match="Only u_script should be used"):
+            qml.HilbertSchmidt([0], v_function=v_func, v_wires=[1], u_tape=U, u_script=U)
+
+    def test_not_using_u_tape_or_u_script_raises_typeerror(self):
+        """Test that not passing u_tape or u_script to HilbertSchmidt raises an error."""
+        U = qml.tape.QuantumScript([qml.Hadamard(wires=0)])
+
+        def v_func(params):
+            qml.RZ(params[0], wires=1)
+
+        with pytest.raises(TypeError, match="missing 1 required keyword-only argument: 'u_script'"):
+            qml.HilbertSchmidt([0], v_function=v_func, v_wires=[1])
+
 
 class TestLocalHilbertSchmidt:
     """Tests for the Local Hilbert-Schmidt template."""

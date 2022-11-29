@@ -97,12 +97,16 @@ class HilbertSchmidt(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, v_function, v_wires, u_script=None, do_queue=True, id=None, u_tape=None):
+    def __init__(
+        self, *params, v_function, v_wires, u_script=None, do_queue=True, id=None, u_tape=None
+    ):
 
         if u_script is None:
             if u_tape is None:
                 raise TypeError("__init__() missing 1 required keyword-only argument: 'u_script'")
-            warnings.warn("The u_tape keyword is deprecated. Please use u_script instead.", UserWarning)
+            warnings.warn(
+                "The u_tape keyword is deprecated. Please use u_script instead.", UserWarning
+            )
             u_script = u_tape
         elif u_tape is not None:
             raise ValueError("Only u_script should be used. The u_tape keyword is deprecated.")
