@@ -168,6 +168,10 @@
   its functionality from the `QuantumTape` class.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
+* Adds `qml.tape.make_qscript` for converting a quantum function into a quantum script.
+  Replaces `qml.transforms.make_tape` with `make_qscript`.
+  [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
@@ -307,6 +311,10 @@
   `qml.classical_shadow` function name.
   [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
+* The method `qml.Operation.get_parameter_shift` is removed. The `gradients` module should be used
+  for general parameter-shift rules instead.
+  [(#3419)](https://github.com/PennyLaneAI/pennylane/pull/3419)
+
 * Changed the signature of the `QubitDevice.statistics` method from
 
   ```python
@@ -345,6 +353,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
+
+* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
+  instead.
+  [(#3433)](https://github.com/PennyLaneAI/pennylane/pull/3433)
 
 <h3>Documentation</h3>
 
@@ -389,6 +401,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * The `pad_with` argument in the `AmplitudeEmbedding` template is now compatible
   with all interfaces
   [(#3392)](https://github.com/PennyLaneAI/pennylane/pull/3392)
+
+* Fixed a bug where a QNode returning `qml.sample` would produce incorrect results when
+  run on a device defined with a shot vector.
+  [#3422](https://github.com/PennyLaneAI/pennylane/pull/3422)
 
 <h3>Contributors</h3>
 
