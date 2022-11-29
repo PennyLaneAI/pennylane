@@ -357,6 +357,35 @@ class TestProperties:
         assert op.ndim_params == (0, 2)
         assert op.batch_size == 3
 
+    op_pauli_reps = (
+        (qml.PauliZ(wires=0), 1, qml.pauli.PauliSentence({qml.pauli.PauliWord({0: 'Z'}): 1})),
+        (qml.PauliX(wires=1), 2, qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),  # identity
+        (qml.PauliY(wires='a'), 5, qml.pauli.PauliSentence({qml.pauli.PauliWord({'a': 'Y'}): 1})),
+    )
+
+    @pytest.mark.parametrize("base, exp, rep", op_pauli_reps)
+    def test_pauli_rep(self, base, exp, rep, power_method):
+        """Test the pauli rep is produced as expected."""
+        op = power_method(base, exp)
+        assert op._pauli_rep == rep
+
+    def test_pauli_rep_error_exponent(self, power_method):
+        """Test that an error is produced if the exponent is not positive or non integer."""
+        base = qml.PauliX(wires=0)
+        exponents = [1.23, -2]
+
+        for exponent in exponents:
+            with pytest.raises(NotImplementedError, match="Pauli rep not defined for power op"):
+                op = power_method(base, z=exponent)
+                _ = op._pauli_rep
+
+    def test_pauli_rep_error_in_base(self, power_method):
+        """Test that an error is produced if the base op does not have a pauli rep"""
+        base = qml.RX(1.23, wires=0)
+        with pytest.raises(NotImplementedError, match="Pauli rep not defined for power op"):
+            op = power_method(base, z=2)
+            _ = op._pauli_rep
+
 
 class TestSimplify:
     """Test Pow simplify method and depth property."""

@@ -322,6 +322,21 @@ class Pow(SymbolicOp):
         """
         return self.base.diagonalizing_gates()
 
+    @property
+    def _pauli_rep(self):
+        """PauliSentence representation of the power of operations."""
+        if isinstance(self.z, int) and self.z > 0:
+            try:
+                pr = qml.pauli.PauliSentence({})
+                for i in range(self.z):
+                    pr = pr * self.base._pauli_rep
+                return pr
+
+            except NotImplementedError as e:
+                raise NotImplementedError(f"Pauli rep not defined for power op {self}") from e
+
+        raise NotImplementedError(f"Pauli rep not defined for power op {self}")
+
     def eigvals(self):
         base_eigvals = self.base.eigvals()
         return [value**self.z for value in base_eigvals]

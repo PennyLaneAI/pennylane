@@ -216,10 +216,23 @@ class PauliSentence(dict):
 
         return larger_ps
 
+    def __copy__(self):
+        """Return a deepcopy of self"""
+        copied_ps = {}
+        for pw, coeff in self.items():
+            copied_ps[copy(pw)] = coeff
+        return PauliSentence(copied_ps)
+
     def __mul__(self, other):
         """Multiply two Pauli sentences by iterating over each sentence and multiplying
         the Pauli words pair-wise"""
         final_ps = PauliSentence()
+
+        if len(self) == 0:
+            return copy(other)
+
+        if len(other) == 0:
+            return copy(self)
 
         for pw1 in self:
             for pw2 in other:

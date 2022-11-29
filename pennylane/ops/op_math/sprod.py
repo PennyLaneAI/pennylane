@@ -239,6 +239,21 @@ class SProd(SymbolicOp):
         """
         return None
 
+    @property
+    def _pauli_rep(self):
+        """PauliSentence representation of the scalar product of operations."""
+        try:
+            pr = {}
+            base_ps = self.base._pauli_rep
+
+            for pw, coeff in base_ps.items():
+                pr[pw] = coeff * self.scalar
+
+            return qml.pauli.PauliSentence(pr)
+
+        except NotImplementedError as e:
+            raise NotImplementedError(f"Pauli rep not defined for scalar product {self}") from e
+
     def pow(self, z):
         return [SProd(scalar=self.scalar**z, base=Pow(base=self.base, z=z))]
 

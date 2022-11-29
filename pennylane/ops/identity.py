@@ -163,6 +163,11 @@ class Identity(CVObservable, Operation):
         """Alias for matrix representation of the identity operator."""
         return Identity.compute_matrix(*params)
 
+    @property
+    def _pauli_rep(self):
+        """PauliSentence representation of Identity"""
+        return qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
+
     def adjoint(self):
         return Identity(wires=self.wires)
 

@@ -17,6 +17,7 @@ computing the sum of operations.
 """
 from copy import copy
 from typing import List
+from functools import reduce
 
 import numpy as np
 
@@ -203,6 +204,14 @@ class Sum(CompositeOp):
 
     def adjoint(self):
         return Sum(*(qml.adjoint(summand) for summand in self))
+
+    @property
+    def _pauli_rep(self):
+        """PauliSentence representation of the Sum of operations."""
+        try:
+            return reduce(lambda a, b: a + b, (op._pauli_rep for op in self.operands))
+        except NotImplementedError as e:
+            raise NotImplementedError(f"Pauli rep not defined for sum {self}") from e
 
     @classmethod
     def _simplify_summands(cls, summands: List[Operator]):

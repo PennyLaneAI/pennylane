@@ -235,6 +235,9 @@ class TestPauliSentence:
             ),
         ),
         (ps3, ps4, ps3),
+        (ps4, ps3, ps3),
+        (ps1, ps5, ps1),
+        (ps5, ps1, ps1),
     )
 
     @pytest.mark.parametrize("ps1, ps2, res", tup_ps_mult)
