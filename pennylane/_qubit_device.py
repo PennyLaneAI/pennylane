@@ -485,7 +485,7 @@ class QubitDevice(Device):
 
             if isinstance(r, qml.numpy.ndarray):
                 if shot_tuple.copies > 1:
-                    results.extend(r.T)
+                    results.extend([self._asarray(r_) for r_ in qml.math.unstack(r.T)])
                 else:
                     results.append(r.T)
 
@@ -1756,7 +1756,7 @@ class QubitDevice(Device):
             ]
 
         return (
-            samples.reshape((num_wires, bin_size, -1))
+            samples.T.reshape((num_wires, bin_size, -1))
             if no_observable_provided
             else samples.reshape((bin_size, -1))
         )

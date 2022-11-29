@@ -20,6 +20,7 @@ import os
 import warnings
 
 import pennylane as qml
+from pennylane.tape import make_qscript
 
 
 def make_tape(fn):
@@ -65,28 +66,12 @@ def make_tape(fn):
     """
 
     def wrapper(*args, **kwargs):
-        active_tape = qml.QueuingManager.active_context()
-        new_tape = qml.tape.QuantumTape() if active_tape is None else active_tape.__class__()
-        with qml.QueuingManager.stop_recording(), new_tape:
+        with qml.QueuingManager.stop_recording(), qml.tape.QuantumTape() as new_tape:
             fn(*args, **kwargs)
 
         return new_tape
 
     return wrapper
-
-
-class NonQueuingTape(qml.queuing.AnnotatedQueue):
-    """Mixin class that creates a tape that does not queue
-    itself to the current queuing context."""
-
-    def _process_queue(self):
-        # accesses the parent of the target class that NonQueingTape is mixed into
-        super()._process_queue()  # pylint:disable=no-member
-
-        for obj, info in self.items():
-            qml.queuing.QueuingManager.append(obj, **info)
-
-        qml.queuing.QueuingManager.remove(self)
 
 
 class single_tape_transform:
@@ -159,16 +144,12 @@ class single_tape_transform:
         functools.update_wrapper(self, transform_fn)
 
     def __call__(self, tape, *args, **kwargs):
-        tape_class = type(tape.__class__.__name__, (NonQueuingTape, tape.__class__), {})
-
-        # new_tape, when first created, is of the class (NonQueuingTape, tape.__class__), so that it
-        # doesn't result in a nested tape
-        with tape_class() as new_tape:
+        with qml.queuing.AnnotatedQueue() as q:
             self.transform_fn(tape, *args, **kwargs)
-
-        # Once we're done, revert it back to be simply an instance of tape.__class__.
-        new_tape.__class__ = tape.__class__
-        return new_tape
+        qs = qml.tape.QuantumScript(*qml.queuing.process_queue(q))
+        for obj, info in q.items():
+            qml.queuing.QueuingManager.append(obj, **info)
+        return qs
 
 
 def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform_kwargs):
@@ -184,7 +165,7 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
 
         return new_dev
 
-    if isinstance(fn, qml.tape.QuantumTape):
+    if isinstance(fn, qml.tape.QuantumScript):
         return tape_transform(fn, *transform_args, **transform_kwargs)
 
     if not callable(fn):
@@ -195,7 +176,7 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
 
     @functools.wraps(fn)
     def internal_wrapper(*args, **kwargs):
-        tape = make_tape(fn)(*args, **kwargs)
+        tape = make_qscript(fn)(*args, **kwargs)
         tape = tape_transform(tape, *transform_args, **transform_kwargs)
 
         if len(tape.measurements) == 1:
@@ -352,15 +333,15 @@ def qfunc_transform(tape_transform):
 
             def transform(old_qfunc, params):
                 def new_qfunc(*args, **kwargs):
-                    # 1. extract the tape from the old qfunc, being
+                    # 1. extract the QuantumScript from the old qfunc, being
                     # careful *not* to have it queued.
-                    tape = make_tape(old_qfunc)(*args, **kwargs)
+                    qscript = make_qscript(old_qfunc)(*args, **kwargs)
 
-                    # 2. transform the tape
-                    new_tape = tape_transform(tape, params)
+                    # 2. transform the qscript
+                    new_script = tape_transform(qscript, params)
 
-                    # 3. queue the *new* tape to the active queuing context
-                    new_tape.queue()
+                    # 3. queue the *new* qscript to the active queuing context
+                    new_script.queue()
                 return new_qfunc
 
         *Note: this is pseudocode; the actual implementation is significantly more complicated!*
