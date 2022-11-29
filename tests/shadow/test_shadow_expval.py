@@ -144,6 +144,14 @@ class TestExpvalMeasurement:
         assert len(tape.measurements) == 1
         assert isinstance(tape.measurements[0], _ShadowExpval)
 
+    def test_seed_recipes_deprecated(self):
+        """Test that using the ``seed_recipes`` argument is deprecated."""
+        with pytest.warns(
+            DeprecationWarning,
+            match="Using ``seed_recipes`` is deprecated. Please use ``seed`` instead",
+        ):
+            qml.shadow_expval(H=qml.PauliX(0), seed_recipes=False)
+
 
 obs_hadamard = [
     qml.PauliX(1),
