@@ -125,7 +125,7 @@ class MeasurementProcess(ABC):
         log_base (float): Base for the logarithm.
     """
 
-    method_name = None
+    method_name = ""
     """Devices can override the logic of a measurement process by defining a method with the
     name ``method_name`` of the corresponding class. The method should have the following signature:
 
