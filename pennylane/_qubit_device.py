@@ -852,7 +852,7 @@ class QubitDevice(Device):
         density matrices.
 
         Args:
-            circuit (~.tape.QuantumScript): the quantum tape currently being executed
+            circuit (~.tape.QuantumScript): the quantum script currently being executed
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
