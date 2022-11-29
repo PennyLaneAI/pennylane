@@ -1116,6 +1116,9 @@ class CZ(Operation):
     def pow(self, z):
         return super().pow(z % 2)
 
+    def _controlled(self, wire):
+        return CCZ(wires=wire + self.wires)
+
     @property
     def control_wires(self):
         return Wires(self.wires[0])
@@ -1905,6 +1908,148 @@ class CSWAP(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[0])
+
+    @property
+    def is_hermitian(self):
+        return True
+
+
+class CCZ(Operation):
+    r"""CCZ(wires)
+    CCZ (controlled-controlled-Z) gate.
+
+    .. math::
+
+        CCZ =
+        \begin{pmatrix}
+        1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+        0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\
+        0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
+        0 & 0 & 0 & 1 & 0 & 0 & 0 & 0\\
+        0 & 0 & 0 & 0 & 1 & 0 & 0 & 0\\
+        0 & 0 & 0 & 0 & 0 & 1 & 0 & 0\\
+        0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & -1
+        \end{pmatrix}
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the subsystem the gate acts on
+    """
+    num_wires = 3
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    basis = "Z"
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "Z"
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CCZ.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CCZ.compute_matrix())
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 0 0 -1]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, -1],
+            ]
+        )
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.Toffoli.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.CCZ.compute_decomposition((0,1,2))
+        [CNOT(wires=[1, 2]),
+        Adjoint(T)(wires=[2]),
+        CNOT(wires=[0, 2]),
+        T(wires=[2]),
+        CNOT(wires=[1, 2]),
+        Adjoint(T)(wires=[2]),
+        CNOT(wires=[0, 2]),
+        T(wires=[2]),
+        T(wires=[1]),
+        CNOT(wires=[0, 1]),
+        Hadamard(wires=[2]),
+        T(wires=[0]),
+        Adjoint(T)(wires=[1]),
+        CNOT(wires=[0, 1]),
+        Hadamard(wires=[2]),]
+
+        """
+        return [
+            CNOT(wires=[wires[1], wires[2]]),
+            qml.adjoint(T(wires=wires[2])),
+            CNOT(wires=[wires[0], wires[2]]),
+            T(wires=wires[2]),
+            CNOT(wires=[wires[1], wires[2]]),
+            qml.adjoint(T(wires=wires[2])),
+            CNOT(wires=[wires[0], wires[2]]),
+            T(wires=wires[2]),
+            T(wires=wires[1]),
+            CNOT(wires=[wires[0], wires[1]]),
+            Hadamard(wires=wires[2]),
+            T(wires=wires[0]),
+            qml.adjoint(T(wires=wires[1])),
+            CNOT(wires=[wires[0], wires[1]]),
+            Hadamard(wires=[2]),
+        ]
+
+    def adjoint(self):
+        return CCZ(wires=self.wires)
+
+    def pow(self, z):
+        return super().pow(z % 2)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[:2])
 
     @property
     def is_hermitian(self):

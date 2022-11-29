@@ -9,8 +9,8 @@ Pending deprecations
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
 
-  - Still accessible in v0.27
-  - Will be removed in v0.28
+  - Still accessible in v0.27, v0.28
+  - Will be removed in v0.29
 
   The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
@@ -132,3 +132,9 @@ Completed deprecation cycles
 
   - Deprecated in v0.24
   - Removed in v0.27
+
+* The ``qml.Operation.get_parameter_shift`` method is removed. Use the methods of the ``gradients`` module
+  for general parameter-shift rules instead.
+
+  - Deprecated in v0.22
+  - Removed in v0.28
