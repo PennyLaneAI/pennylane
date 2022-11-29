@@ -17,7 +17,8 @@ Contains the QuantumPhaseEstimation template.
 # pylint: disable=too-many-arguments,arguments-differ
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops import Hadamard, ControlledQubitUnitary
+from pennylane.ops import Hadamard
+from pennylane.ops.op_math.controlled_class import ControlledQubitUnitary
 
 
 class QuantumPhaseEstimation(Operation):
