@@ -1756,7 +1756,7 @@ class QubitDevice(Device):
             ]
 
         return (
-            samples.reshape((num_wires, bin_size, -1))
+            samples.T.reshape((num_wires, bin_size, -1))
             if no_observable_provided
             else samples.reshape((bin_size, -1))
         )
