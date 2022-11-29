@@ -233,6 +233,81 @@ class TestConditionalOperations:
 
         assert tape.measurements[0] is terminal_measurement
 
+    def test_correct_ops_in_tape_inversion(self):
+        """Test that the underlying tape contains the correct operations if a
+        measurement value was inverted."""
+        dev = qml.device("default.qubit", wires=3)
+
+        first_par = 0.1
+        sec_par = 0.3
+
+        terminal_measurement = qml.expval(qml.PauliZ(1))
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(~m_0, qml.RY)(first_par, wires=1)
+            qml.apply(terminal_measurement)
+
+        tape = qml.defer_measurements(tape)
+
+        # Conditioned on 0 as the control value, PauliX is applied before and after
+        assert len(tape.operations) == 3
+        assert len(tape.measurements) == 1
+
+        # We flip the control qubit
+        first_x = tape.operations[0]
+        assert isinstance(first_x, qml.PauliX)
+        assert first_x.wires == qml.wires.Wires(0)
+
+        # Check the two underlying Controlled instance
+        ctrl_op = tape.operations[1]
+        assert isinstance(ctrl_op, qml.ops.op_math.Controlled)
+        assert qml.equal(ctrl_op.base, qml.RY(first_par, 1))
+
+        assert ctrl_op.wires == qml.wires.Wires([0, 1])
+
+        # We flip the control qubit back
+        sec_x = tape.operations[2]
+        assert isinstance(sec_x, qml.PauliX)
+        assert sec_x.wires == qml.wires.Wires(0)
+
+    def test_correct_ops_in_tape_assert_zero_state(self):
+        """Test that the underlying tape contains the correct operations if a
+        conditional operation was applied in the zero state case.
+
+        Note: this case is the same as inverting right after obtaining a
+        measurement value."""
+        dev = qml.device("default.qubit", wires=3)
+
+        first_par = 0.1
+        sec_par = 0.3
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0 == 0, qml.RY)(first_par, wires=1)
+            qml.expval(qml.PauliZ(1))
+
+        tape = qml.defer_measurements(tape)
+
+        # Conditioned on 0 as the control value, PauliX is applied before and after
+        assert len(tape.operations) == 3
+        assert len(tape.measurements) == 1
+
+        # We flip the control qubit
+        first_x = tape.operations[0]
+        assert isinstance(first_x, qml.PauliX)
+        assert first_x.wires == qml.wires.Wires(0)
+
+        # Check the underlying Controlled instance
+        ctrl_op = tape.operations[1]
+        assert isinstance(ctrl_op, qml.ops.op_math.Controlled)
+        assert qml.equal(ctrl_op.base, qml.RY(first_par, 1))
+
+        # We flip the control qubit back
+        sec_x = tape.operations[2]
+        assert isinstance(sec_x, qml.PauliX)
+        assert sec_x.wires == qml.wires.Wires(0)
+
     @pytest.mark.parametrize("rads", np.linspace(0.0, np.pi, 3))
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_quantum_teleportation(self, device, rads):
@@ -569,11 +644,12 @@ class TestConditionalOperations:
 
 class TestExpressionConditionals:
     @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
+    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("op", [qml.RX, qml.RY, qml.RZ])
-    def test_conditional_rotations(self, r, op):
+    def test_conditional_rotations(self, device, r, op):
         """Test that the quantum conditional operations match the output of
         controlled rotations."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device(device, wires=3)
 
         @qml.qnode(dev)
         def normal_circuit(rads):
@@ -597,8 +673,9 @@ class TestExpressionConditionals:
 
         assert np.allclose(normal_probs, cond_probs)
 
+    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     def test_triple_measurement_condition_expression(self, device):
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device(device, wires=4)
 
         @qml.qnode(dev)
         @qml.defer_measurements
