@@ -29,7 +29,7 @@
   perturbation are used and therefore the number of circuit evaluations, up
   to a prefactor. See the
   [spsa gradient transform documentation](
-  https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_gradient.html
+  https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html
   ) for details.
   Note: The full SPSA optimization method already is available as `SPSAOptimizer`.
 
