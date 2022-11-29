@@ -129,42 +129,6 @@ class _State(StateMeasurement):
     def return_type(self):
         return State
 
-    @property
-    def numeric_type(self):
-        return complex
-
-    def shape(self, device):
-        if qml.active_return():
-            return self._shape_new(device)
-        num_shot_elements = (
-            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
-        )
-
-        if self.wires:
-            # qml.density_matrix()
-            dim = 2 ** len(self.wires)
-            return (num_shot_elements, dim, dim)
-        # qml.state()
-        dim = 2 ** len(device.wires)
-        return (num_shot_elements, dim)
-
-    def _shape_new(self, device):
-        num_shot_elements = (
-            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
-        )
-
-        if self.wires:
-            # qml.density_matrix()
-            dim = 2 ** len(self.wires)
-            return (
-                (dim, dim)
-                if num_shot_elements == 1
-                else tuple((dim, dim) for _ in range(num_shot_elements))
-            )
-        # qml.state()
-        dim = 2 ** len(device.wires)
-        return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
-
     # pylint: disable=redefined-outer-name
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         if self.wires:

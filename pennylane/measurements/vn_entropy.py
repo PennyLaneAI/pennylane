@@ -88,24 +88,6 @@ class _VnEntropy(StateMeasurement):
     def return_type(self):
         return VnEntropy
 
-    @property
-    def numeric_type(self):
-        return float
-
-    def shape(self, device):
-        if qml.active_return():
-            return self._shape_new(device)
-        if device.shot_vector is None:
-            return (1,)
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
-        return (num_shot_elements,)
-
-    def _shape_new(self, device):
-        if device.shot_vector is None:
-            return ()
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
-        return tuple(() for _ in range(num_shot_elements))
-
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=state.dtype, base=self.log_base

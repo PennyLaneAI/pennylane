@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import CustomMeasurement, Shadow, ShadowExpval
+from .measurements import CustomMeasurement, MeasurementShapeError, Shadow, ShadowExpval
 
 
 def shadow_expval(H, k=1, seed=None):
@@ -306,6 +306,13 @@ class ClassicalShadow(CustomMeasurement):
         return Shadow
 
     def shape(self, device=None):
+        # otherwise, the return type requires a device
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of a classical "
+                "shadow measurement process."
+            )
+
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
         return (1, 2, device.shots, len(self.wires))

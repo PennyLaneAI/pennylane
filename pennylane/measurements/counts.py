@@ -159,10 +159,6 @@ class _Counts(SampleMeasurement):
         super().__init__(obs, wires, eigvals, id)
 
     @property
-    def samples_computational_basis(self):
-        return self.obs is None
-
-    @property
     def return_type(self):
         return AllCounts if self.all_outcomes else Counts
 

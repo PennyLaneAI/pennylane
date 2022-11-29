@@ -133,6 +133,11 @@ class TestClassicalShadow:
         res = qml.classical_shadow(wires=range(wires), seed=seed)
         assert res.shape(device=dev) == (1, 2, shots, wires)
 
+        # test an error is raised when device is None
+        msg = "The device argument is required to obtain the shape of a classical shadow measurement process"
+        with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
+            res.shape(device=None)
+
     def test_shape_matches(self, wires):
         """Test that the shape of the MeasurementProcess matches the shape
         of the tape execution"""

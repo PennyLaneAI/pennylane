@@ -125,9 +125,8 @@ class TestExpval:
     )
     def test_shape(self, obs):
         """Test that the shape is correct."""
-        dev = qml.device("default.qubit", wires=2)
         res = qml.expval(obs)
-        assert res.shape(dev) == (1,)
+        assert res.shape() == (1,)
 
     @pytest.mark.parametrize(
         "obs",
