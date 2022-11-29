@@ -9,8 +9,8 @@ Pending deprecations
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead.
 
-  - Still accessible in v0.27
-  - Will be removed in v0.28
+  - Still accessible in v0.28
+  - Will be removed in v0.29
 
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
