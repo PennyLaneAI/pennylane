@@ -113,7 +113,7 @@ class HilbertSchmidt(Operation):
 
         self.hyperparameters["v_function"] = v_function
 
-        v_tape = qml.transforms.make_tape(v_function)(*params)
+        v_tape = qml.tape.make_qscript(v_function)(*params)
         self.hyperparameters["v_tape"] = v_tape
         self.hyperparameters["v_wires"] = v_tape.wires
 
