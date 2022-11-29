@@ -567,14 +567,13 @@ class TestConditionalOperations:
         assert np.allclose(qml.matrix(normal_circuit)(x, y), qml.matrix(cond_qnode)(x, y))
 
 
-class TestComplicatedConditionals:
+class TestExpressionConditionals:
     @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
-    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("op", [qml.RX, qml.RY, qml.RZ])
-    def test_conditional_rotations(self, device, r, op):
+    def test_conditional_rotations(self, r, op):
         """Test that the quantum conditional operations match the output of
         controlled rotations."""
-        dev = qml.device(device, wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def normal_circuit(rads):
@@ -598,9 +597,8 @@ class TestComplicatedConditionals:
 
         assert np.allclose(normal_probs, cond_probs)
 
-    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     def test_triple_measurement_condition_expression(self, device):
-        dev = qml.device(device, wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         @qml.defer_measurements
@@ -638,9 +636,8 @@ class TestComplicatedConditionals:
 
         assert np.allclose(normal_probs, cond_probs)
 
-    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
-    def test_multiple_conditions(self, device):
-        dev = qml.device(device, wires=4)
+    def test_multiple_conditions(self):
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         @qml.defer_measurements
