@@ -127,7 +127,6 @@ from pyzx.utils import EdgeType, VertexType, FloatInt, FractionLike
 from pyzx.graph import Graph
 from pyzx.graph.base import BaseGraph, VT, ET
 
-
 gate_types: Dict[str, Type[Gate]] = {
     "PauliX": NOT,
     "PauliZ": Z,
@@ -147,6 +146,8 @@ gate_types: Dict[str, Type[Gate]] = {
     "Toffoli": Tofolli,
     "Measurement": Measurement,
 }
+
+
 #    "ParityPhase": ParityPhase,
 
 
@@ -230,66 +231,96 @@ def circuit_to_graph(
     return g
 
 
-"""
-def graph_to_circuit(g:BaseGraph[VT,ET], split_phases:bool=True) -> Circuit:
-    c = Circuit(g.qubit_count())
+def graph_to_circuit(g: BaseGraph[VT, ET], split_phases: bool = True) -> qml.tape.QuantumTape:
+    """From PyZX graph to a PennyLane tape."""
+
+    operations = []
     qs = g.qubits()
     rs = g.rows()
     ty = g.types()
     phases = g.phases()
-    rows: Dict[FloatInt,List[VT]] = {}
+    rows: Dict[FloatInt, List[VT]] = {}
 
     inputs = g.inputs()
     for v in g.vertices():
-        if v in inputs: continue
+        if v in inputs:
+            continue
         r = g.row(v)
-        if r in rows: rows[r].append(v)
-        else: rows[r] = [v]
+        if r in rows:
+            rows[r].append(v)
+        else:
+            rows[r] = [v]
     for r in sorted(rows.keys()):
         for v in rows[r]:
             q = qs[v]
             phase = phases[v]
             t = ty[v]
-            neigh = [w for w in g.neighbors(v) if rs[w]<r]
+            neigh = [w for w in g.neighbors(v) if rs[w] < r]
             if len(neigh) != 1:
                 raise TypeError("Graph doesn't seem circuit like: multiple parents")
             n = neigh[0]
             if qs[n] != q:
                 raise TypeError("Graph doesn't seem circuit like: cross qubit connections")
-            if g.edge_type(g.edge(n,v)) == EdgeType.HADAMARD:
-                c.add_gate("HAD", q)
-            if t == VertexType.BOUNDARY: #vertex is an output
+            if g.edge_type(g.edge(n, v)) == EdgeType.HADAMARD:
+                operations.append(qml.Hadamard(wires=q))
+            if t == VertexType.BOUNDARY:  # vertex is an output
                 continue
-            if phase!=0 and not split_phases:
-                if t == VertexType.Z: c.add_gate("ZPhase", q, phase=phase)
-                else: c.add_gate("XPhase", q, phase=phase)
+            if phase != 0 and not split_phases:
+                if t == VertexType.Z:
+                    operations.append(qml.RZ(phase, wires=q))
+                else:
+                    operations.append(qml.RX(phase, wires=q))
             elif t == VertexType.Z and phase.denominator == 2:
-                c.add_gate("S", q, adjoint=(phase.numerator==3))
+                if phase.numerator == 3:
+                    operations.append(qml.adjoint(qml.S(wires=q)))
+                else:
+                    operations.append(qml.S(wires=q))
             elif t == VertexType.Z and phase.denominator == 4:
-                if phase.numerator in (1,7): c.add_gate("T", q, adjoint=(phase.numerator==7))
-                if phase.numerator in (3,5):
-                    c.add_gate("Z", q)
-                    c.add_gate("T", q, adjoint=(phase.numerator==3))
+                if phase.numerator in (1, 7):
+                    if phase.numerator == 7:
+                        operations.append(qml.adjoint(qml.T(wires=q)))
+                    else:
+                        operations.append(qml.T(wires=q))
+                if phase.numerator in (3, 5):
+                    operations.append(qml.PauliZ(wires=q))
+                    if phase.numerator == 3:
+                        operations.append(qml.adjoint(qml.T(wires=q)))
+                    else:
+                        operations.append(qml.T(wires=q))
             elif phase == 1:
-                if t == VertexType.Z: c.add_gate("Z", q)
-                else: c.add_gate("NOT", q)
+                if t == VertexType.Z:
+                    operations.append(qml.PauliZ(wires=q))
+                else:
+                    operations.append(qml.PauliX(wires=q))
             elif phase != 0:
-                if t == VertexType.Z: c.add_gate("ZPhase", q, phase=phase)
-                else: c.add_gate("XPhase", q, phase=phase)
+                if t == VertexType.Z:
+                    operations.append(qml.RZ(phase, wires=q))
+                else:
+                    operations.append(qml.RX(phase, wires=q))
 
-            neigh = [w for w in g.neighbors(v) if rs[w]==r and w<v] # type: ignore # TODO: find a different way to do comparison of vertices
+            neigh = [w for w in g.neighbors(v) if rs[w] == r and w < v]
             for n in neigh:
                 t2 = ty[n]
                 q2 = qs[n]
                 if t == t2:
-                    if g.edge_type(g.edge(v,n)) != EdgeType.HADAMARD:
-                        raise TypeError("Invalid vertical connection between vertices of the same type")
-                    if t == VertexType.Z: c.add_gate("CZ", q2, q)
-                    else: c.add_gate("CX", q2, q)
+                    if g.edge_type(g.edge(v, n)) != EdgeType.HADAMARD:
+                        raise TypeError(
+                            "Invalid vertical connection between vertices of the same type"
+                        )
+                    if t == VertexType.Z:
+                        operations.append(qml.CZ(wires=[q2, q]))
+                    else:
+                        operations.append(qml.Hadamard(wires=q2))
+                        operations.append(qml.CNOT(wires=[q2, q]))
+                        operations.append(qml.Hadamard(wires=q2))
                 else:
-                    if g.edge_type(g.edge(v,n)) != EdgeType.SIMPLE:
-                        raise TypeError("Invalid vertical connection between vertices of different type")
-                    if t == VertexType.Z: c.add_gate("CNOT", q, q2)
-                    else: c.add_gate("CNOT", q2, q)
-    return c
-"""
+                    if g.edge_type(g.edge(v, n)) != EdgeType.SIMPLE:
+                        raise TypeError(
+                            "Invalid vertical connection between vertices of different type"
+                        )
+                    if t == VertexType.Z:
+                        operations.append(qml.CNOT(wires=[q, q2]))
+                    else:
+                        operations.append(qml.CNOT(wires=[q2, q]))
+    tape = qml.tape.QuantumTape(operations, [], prep=[])
+    return tape
