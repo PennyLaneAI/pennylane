@@ -317,12 +317,12 @@ class TestExtractStatistics:
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
             with pytest.warns(
-                DeprecationWarning,
+                UserWarning,
                 match="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. ",
             ):
                 dev.statistics([])
             with pytest.warns(
-                DeprecationWarning,
+                UserWarning,
                 match="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. ",
             ):
                 dev.statistics(observables=[])

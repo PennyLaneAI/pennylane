@@ -724,7 +724,7 @@ class QubitDevice(Device):
             warnings.warn(
                 message="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. "
                 "Please use ``circuit`` instead.",
-                category=DeprecationWarning,
+                category=UserWarning,
             )
             observables = circuit if circuit is not None else observables
 
