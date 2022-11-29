@@ -32,7 +32,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+        new_tape = qml.tape.make_qscript(transformed_qfunc)()
 
         assert len(new_tape.operations) == 0
 
@@ -45,7 +45,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+        new_tape = qml.tape.make_qscript(transformed_qfunc)()
 
         assert len(new_tape.operations) == 0
 
@@ -58,7 +58,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+        new_tape = qml.tape.make_qscript(transformed_qfunc)()
 
         assert len(new_tape.operations) == 0
 
@@ -71,7 +71,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+        new_tape = qml.tape.make_qscript(transformed_qfunc)()
 
         assert len(new_tape.operations) == 0
 
@@ -84,7 +84,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+        new_tape = qml.tape.make_qscript(transformed_qfunc)()
 
         assert len(new_tape.operations) == 0
 
@@ -98,7 +98,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard", "RZ", "Hadamard"]
         wires_expected = [Wires(0)] * 3
@@ -113,7 +113,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard"] * 2
         wires_expected = [Wires(0), Wires(1)]
@@ -131,7 +131,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard", "CNOT", "RZ"]
         wires_expected = [Wires(0), Wires([0, 2]), Wires(2)]
@@ -149,7 +149,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard", "PauliX", "CNOT", "RZ", "PauliX"]
         wires_expected = [Wires(0), Wires(1), Wires([0, 1]), Wires(2), Wires(1)]
@@ -169,7 +169,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Toffoli"] * 3
         wires_expected = [Wires(["a", "b", "c"]), Wires(["a", "c", "b"]), Wires(["a", "c", "d"])]
@@ -184,7 +184,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == 0
 
@@ -197,7 +197,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CNOT"] * 2
         wires_expected = [Wires([0, 1]), Wires([1, 0])]
@@ -212,7 +212,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == 0
 
