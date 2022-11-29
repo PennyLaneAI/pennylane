@@ -34,14 +34,17 @@ from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
     AllCounts,
     Counts,
+    CustomMeasurement,
     Expectation,
     MeasurementProcess,
     MutualInfo,
     Probability,
     Sample,
+    SampleMeasurement,
     Shadow,
     ShadowExpval,
     State,
+    StateMeasurement,
     Variance,
     VnEntropy,
 )
@@ -669,6 +672,7 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
+    # pylint: disable=too-many-statements
     def statistics(
         self, circuit: QuantumScript = None, shot_range=None, bin_size=None, observables=None
     ):
@@ -718,7 +722,7 @@ class QubitDevice(Device):
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
         if isinstance(circuit, QuantumScript):
-            observables = circuit.observables
+            measurements = circuit.measurements
 
         else:
             warnings.warn(
@@ -726,11 +730,17 @@ class QubitDevice(Device):
                 "Please use ``circuit`` instead.",
                 category=UserWarning,
             )
-            observables = circuit if circuit is not None else observables
+            measurements = circuit if circuit is not None else observables
 
         results = []
 
-        for obs in observables:
+        for m in measurements:
+            if isinstance(m, MeasurementProcess) and m.obs is not None:
+                obs = m.obs
+                obs.return_type = m.return_type
+            else:
+                obs = m
+
             # Pass instances directly
             if obs.return_type is Expectation:
                 # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
@@ -838,6 +848,34 @@ class QubitDevice(Device):
                     )
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
+            elif isinstance(m, CustomMeasurement):
+                results.append(m.process(tape=circuit, device=self))
+
+            elif isinstance(m, SampleMeasurement) and self.shots is not None:
+                results.append(
+                    m.process_samples(
+                        samples=self._samples,
+                        wire_order=self.wires,
+                        shot_range=shot_range,
+                        bin_size=bin_size,
+                    )
+                )
+
+            elif isinstance(m, StateMeasurement):
+                if self.shots is None:
+                    warnings.warn(
+                        f"Requested measurement {m.__class__.__name__} with finite shots; the "
+                        "returned state information is analytic and is unaffected by sampling. "
+                        "To silence this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+                results.append(m.process_state(state=self.state, wire_order=self.wires))
+
+            elif isinstance(m, SampleMeasurement) and self.shots is None:
+                raise ValueError(
+                    "Shots must be specified in the device to compute the measurement "
+                    f"{m.__class__.__name__}"
+                )
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
