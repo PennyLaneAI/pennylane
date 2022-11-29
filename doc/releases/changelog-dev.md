@@ -6,14 +6,31 @@
 
 * New gradient transform `qml.gradients.spsa` based on the idea of SPSA.
   [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
+  [#3439](https://github.com/PennyLaneAI/pennylane/pull/3439)
 
   This new transform allows to compute a single estimate of a quantum gradient
   using simultaneous perturbation of parameters and a stochastic approximation.
   Given some QNode `circuit` that takes, say, an argument `x`, the approximate
   gradient can be computed via
 
+  ```pycon
   >>> grad_fn = qml.gradients.spsa(circuit, h=0.1, num_samples=1
   >>> grad = grad_fn(x)
+  ```
+
+  This method also is registered as QNode differentiation method and can be
+  selected via
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev, interface="jax", diff_method="spsa", h=0.05, num_directions=20)
+  ... def circuit(x):
+  ...     qml.RX(x, 0)
+  ...     qml.RX(x, 1)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> jax.jacobian(circuit)(jax.numpy.array(0.5)) 
+  DeviceArray(-0.4792258, dtype=float32, weak_type=True)
+  ```
 
   The argument `num_samples` determines how many directions of simultaneous
   perturbation are used and therefore the number of circuit evaluations, up
