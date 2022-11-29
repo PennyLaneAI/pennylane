@@ -42,6 +42,16 @@ def _rademacher_sampler(indices, num_params, *args):
     r"""Sample a random vector with (independent) entries from {+1, -1} with balanced probability.
     That is, each entry follows the
     `Rademacher distribution. <https://en.wikipedia.org/wiki/Rademacher_distribution>`_
+
+    The signature corresponds to the one required for the input ``sampler`` to ``spsa_grad``:
+
+    Args:
+        indices (Sequence[int]): Indices of the trainable tape parameters that will be perturbed.
+        num_params (int): Total number of trainable tape parameters.
+
+    Returns:
+        tensor_like: Vector of size ``num_params`` with non-zero entries at positions indicated
+        by ``indices``, each entry sampled independently from the Rademacher distribution.
     """
     # pylint: disable=unused-argument
     direction = np.zeros(num_params)
@@ -104,6 +114,18 @@ def _spsa_grad_new(
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.
+        sampler (callable): Sampling method to obtain the simultaneous perturbation directions.
+            The sampler should take the following arguments:
+
+              - A ``Sequence[int]`` that contains the indices of those trainable tape parameters
+                that will be perturbed, i.e. have non-zero entries in the output vector.
+
+              - An ``int`` that indicates the total number of trainable tape parameters. The
+                size of the output vector has to match this input.
+
+              - An ``int`` indicating the iteration counter during the gradient estimation.
+                A valid sampling method can, but does not have to, take this counter into
+                account. In any case, ``sampler`` has to accept this third argument.
 
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]] or tuple[list[QuantumTape], function]:
@@ -256,14 +278,13 @@ def _spsa_grad_new(
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
-    indices = [
-        i for i, _ in enumerate(tape.trainable_params) if (i in method_map and method_map[i] != "0")
-    ]
+    num_trainable_params = len(tape.trainable_params)
+    indices = [i for i in range(num_trainable_params) if (i in method_map and method_map[i] != "0")]
 
     tapes_per_grad = len(shifts)
     all_coeffs = []
     for idx_rep in range(num_directions):
-        direction = sampler(indices, len(tape.trainable_params), idx_rep)
+        direction = sampler(indices, num_trainable_params, idx_rep)
         inv_direction = qml.math.divide(
             1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
         )
@@ -290,7 +311,7 @@ def _spsa_grad_new(
                     + grads
                 )
             grads = grads / num_directions
-            if len(tape.trainable_params) == 1:
+            if num_trainable_params == 1:
                 return qml.math.convert_like(grads[0], res)
             return tuple(qml.math.convert_like(g, res) for g in grads)
 
@@ -309,7 +330,7 @@ def _spsa_grad_new(
             grad = grad / num_directions
             grads.append(tuple(qml.math.convert_like(g, grad) for g in grad))
 
-        if len(tape.trainable_params) == 1:
+        if num_trainable_params == 1:
             return grads[0]
         return tuple(grads)
 
@@ -387,6 +408,18 @@ def spsa_grad(
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.
+        sampler (callable): Sampling method to obtain the simultaneous perturbation directions.
+            The sampler should take the following arguments:
+
+              - A ``Sequence[int]`` that contains the indices of those trainable tape parameters
+                that will be perturbed, i.e. have non-zero entries in the output vector.
+
+              - An ``int`` that indicates the total number of trainable tape parameters. The
+                size of the output vector has to match this input.
+
+              - An ``int`` indicating the iteration counter during the gradient estimation.
+                A valid sampling method can, but does not have to, take this counter into
+                account. In any case, ``sampler`` has to accept this third argument.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
@@ -501,8 +534,9 @@ def spsa_grad(
     else:
         diff_methods = ["F" for i in tape.trainable_params]
 
+    num_trainable_params = len(tape.trainable_params)
     if all(g == "0" for g in diff_methods):
-        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        return [], lambda _: np.zeros([tape.output_dim, num_trainable_params])
 
     gradient_tapes = []
     extract_r0 = False
@@ -522,14 +556,12 @@ def spsa_grad(
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
-    indices = [
-        i for i, _ in enumerate(tape.trainable_params) if (i in method_map and method_map[i] != "0")
-    ]
+    indices = [i for i in range(num_trainable_params) if (i in method_map and method_map[i] != "0")]
 
     tapes_per_grad = len(shifts)
     all_coeffs = []
     for idx_rep in range(num_directions):
-        direction = sampler(indices, len(tape.trainable_params), idx_rep)
+        direction = sampler(indices, num_trainable_params, idx_rep)
         inv_direction = qml.math.divide(
             1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
         )
