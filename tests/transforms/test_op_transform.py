@@ -234,9 +234,7 @@ class TestTransformParameters:
 
         @qml.op_transform
         def my_transform(op, lower=False):
-            if lower:
-                return op.name.lower()
-            return op.name
+            return op.name.lower() if lower else op.name
 
         op = qml.RX(0.5, wires=0)
         res = my_transform(op, lower=True)
@@ -247,9 +245,7 @@ class TestTransformParameters:
 
         @qml.op_transform
         def my_transform(op, lower=False):
-            if lower:
-                return op.name.lower()
-            return op.name
+            return op.name.lower() if lower else op.name
 
         res = my_transform(qml.RX, lower=True)(0.5, wires=0)
         assert res == "rx"
@@ -260,9 +256,7 @@ class TestTransformParameters:
 
         @qml.op_transform
         def my_transform(op, lower=False):
-            if lower:
-                return op.name.lower()
-            return op.name
+            return op.name.lower() if lower else op.name
 
         @my_transform.tape_transform
         def my_transform(tape, lower=False):
