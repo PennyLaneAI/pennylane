@@ -932,11 +932,15 @@ class QubitDevice(Device):
             * Finally, we repeat the measurement statistics for the final 100 shots,
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
-        observables = circuit.observables
+        measurements = circuit.measurements
         results = []
 
-        for obs in observables:
-
+        for m in measurements:
+            if m.obs is not None:
+                obs = m.obs
+                obs.return_type = m.return_type
+            else:
+                obs = m
             # 1. Based on the return_type, compute statistics
             # Pass instances directly
             if obs.return_type is Expectation:
@@ -956,7 +960,7 @@ class QubitDevice(Device):
                 result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
 
             elif obs.return_type is State:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination"
                         " with other return types"
@@ -1018,6 +1022,35 @@ class QubitDevice(Device):
                 wires0, wires1 = obs.raw_wires
                 result = self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
 
+            elif method := getattr(self, m.method_name, False):
+                result = method(obs, shot_range=shot_range, bin_size=bin_size)
+
+            elif isinstance(m, CustomMeasurement):
+                result = m.process(tape=circuit, device=self)
+
+            elif isinstance(m, SampleMeasurement) and self.shots is not None:
+                result = m.process_samples(
+                    samples=self._samples,
+                    wire_order=self.wires,
+                    shot_range=shot_range,
+                    bin_size=bin_size,
+                )
+
+            elif isinstance(m, StateMeasurement):
+                if self.shots is not None:
+                    warnings.warn(
+                        f"Requested measurement {m.__class__.__name__} with finite shots; the "
+                        "returned state information is analytic and is unaffected by sampling. "
+                        "To silence this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+                result = m.process_state(state=self.state, wire_order=self.wires)
+
+            elif isinstance(m, SampleMeasurement) and self.shots is None:
+                raise ValueError(
+                    "Shots must be specified in the device to compute the measurement "
+                    f"{m.__class__.__name__}"
+                )
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
