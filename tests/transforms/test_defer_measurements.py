@@ -597,7 +597,7 @@ class TestExpressionConditionals:
 
         assert np.allclose(normal_probs, cond_probs)
 
-    def test_triple_measurement_condition_expression(self, device):
+    def test_triple_measurement_condition_expression(self):
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
