@@ -162,6 +162,10 @@ class _Counts(SampleMeasurement):
     def return_type(self):
         return AllCounts if self.all_outcomes else Counts
 
+    @property
+    def samples_computational_basis(self):
+        return self.obs is None
+
     def process_samples(
         self,
         samples: Sequence[complex],
