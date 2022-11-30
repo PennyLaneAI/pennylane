@@ -86,6 +86,7 @@ class DefaultMixed(QubitDevice):
         "SX",
         "CNOT",
         "SWAP",
+        "ISWAP",
         "CSWAP",
         "Toffoli",
         "CCZ",

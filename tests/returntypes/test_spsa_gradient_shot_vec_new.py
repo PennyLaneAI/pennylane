@@ -469,6 +469,7 @@ class TestSpsaGradient:
 
         assert all(t == q for t, q in zip(transform, expected))
 
+    @pytest.mark.skip("The SPSA gradient is not integrated with QNode diff_method yet.")
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rather than a number."""
@@ -488,7 +489,7 @@ class TestSpsaGradient:
                 return SpecialObject(self.val * other)
 
             def __add__(self, other):
-                new = self.val + other.val if isinstance(other, self.__class__) else other
+                new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
         class SpecialObservable(Observable):
@@ -507,7 +508,7 @@ class TestSpsaGradient:
 
             @staticmethod
             def _asarray(arr, dtype=None):
-                return arr
+                return np.array(arr)
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
@@ -522,12 +523,12 @@ class TestSpsaGradient:
 
         dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="spsa")
         def qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(SpecialObservable(wires=0))
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="spsa")
         def reference_qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))

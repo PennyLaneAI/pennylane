@@ -365,7 +365,7 @@ class TestSpsaGradient:
                 return SpecialObject(self.val * other)
 
             def __add__(self, other):
-                new = self.val + other.val if isinstance(other, self.__class__) else other
+                new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
         class SpecialObservable(Observable):
@@ -384,7 +384,7 @@ class TestSpsaGradient:
 
             @staticmethod
             def _asarray(arr, dtype=None):
-                return arr
+                return np.array(arr)
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
