@@ -113,7 +113,7 @@ class HilbertSchmidt(Operation):
 
         self.hyperparameters["v_function"] = v_function
 
-        v_tape = qml.transforms.make_tape(v_function)(*params)
+        v_tape = qml.tape.make_qscript(v_function)(*params)
         self.hyperparameters["v_tape"] = v_tape
         self.hyperparameters["v_wires"] = v_tape.wires
 
@@ -141,18 +141,14 @@ class HilbertSchmidt(Operation):
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators."""
         n_wires = len(u_tape.wires + v_tape.wires)
-        decomp_ops = []
+        first_range = range(n_wires // 2)
+        second_range = range(n_wires // 2, n_wires)
 
-        first_range = range(0, int(n_wires / 2))
-        second_range = range(int(n_wires / 2), n_wires)
-
-        # Hadamard first layer
-        for i in first_range:
-            decomp_ops.append(qml.Hadamard(wires[i]))
-
+        decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
-        for i, j in zip(first_range, second_range):
-            decomp_ops.append(qml.CNOT(wires=[wires[i], wires[j]]))
+        decomp_ops.extend(
+            qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+        )
 
         # Unitary U
         for op_u in u_tape.operations:
@@ -161,16 +157,15 @@ class HilbertSchmidt(Operation):
             decomp_ops.append(op_u)
 
         # Unitary V conjugate
-        for op_v in v_tape.operations:
-            decomp_ops.append(qml.adjoint(op_v, lazy=False))
-
+        decomp_ops.extend(qml.adjoint(op_v, lazy=False) for op_v in v_tape.operations)
         # CNOT second layer
-        for i, j in zip(reversed(first_range), reversed(second_range)):
-            decomp_ops.append(qml.CNOT(wires=[wires[i], wires[j]]))
+        decomp_ops.extend(
+            qml.CNOT(wires=[wires[i], wires[j]])
+            for i, j in zip(reversed(first_range), reversed(second_range))
+        )
 
         # Hadamard second layer
-        for i in first_range:
-            decomp_ops.append(qml.Hadamard(wires[i]))
+        decomp_ops.extend(qml.Hadamard(wires[i]) for i in first_range)
         return decomp_ops
 
 
@@ -250,18 +245,15 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         params, wires, u_tape, v_tape, v_function=None, v_wires=None
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators (static method)."""
-        decomp_ops = []
         n_wires = len(u_tape.wires + v_tape.wires)
-        first_range = range(0, int(n_wires / 2))
-        second_range = range(int(n_wires / 2), n_wires)
+        first_range = range(n_wires // 2)
+        second_range = range(n_wires // 2, n_wires)
 
-        # Hadamard first layer
-        for i in first_range:
-            decomp_ops.append(qml.Hadamard(wires[i]))
-
+        decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
-        for i, j in zip(first_range, second_range):
-            decomp_ops.append(qml.CNOT(wires=[wires[i], wires[j]]))
+        decomp_ops.extend(
+            qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+        )
 
         # Unitary U
         for op_u in u_tape.operations:
@@ -269,13 +261,8 @@ class LocalHilbertSchmidt(HilbertSchmidt):
             decomp_ops.append(op_u)
 
         # Unitary V conjugate
-        for op_v in v_tape.operations:
-            decomp_ops.append(qml.adjoint(qml.apply, lazy=False)(op_v))
+        decomp_ops.extend(qml.adjoint(qml.apply, lazy=False)(op_v) for op_v in v_tape.operations)
 
-        # Only one CNOT
-        decomp_ops.append(qml.CNOT(wires=[wires[0], wires[int(n_wires / 2)]]))
-
-        # Only one Hadamard
-        decomp_ops.append(qml.Hadamard(wires[0]))
+        decomp_ops.extend((qml.CNOT(wires=[wires[0], wires[n_wires // 2]]), qml.Hadamard(wires[0])))
 
         return decomp_ops
