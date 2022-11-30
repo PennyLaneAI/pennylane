@@ -312,6 +312,21 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
+    def test_observables_deprecated(self, mock_qubit_device_extract_stats, monkeypatch):
+        """Test that using a list of observables as an argument is deprecated."""
+        with monkeypatch.context() as m:
+            dev = mock_qubit_device_extract_stats()
+            with pytest.warns(
+                UserWarning,
+                match="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. ",
+            ):
+                dev.statistics([])
+            with pytest.warns(
+                UserWarning,
+                match="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. ",
+            ):
+                dev.statistics(observables=[])
+
     @pytest.mark.parametrize("returntype", [Expectation, Variance, Sample, Probability, State])
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method simply builds a results list without any side-effects"""
