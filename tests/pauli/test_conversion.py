@@ -55,9 +55,7 @@ class TestPauliSentence:
             @ qml.Identity(wires="b"),
             PauliSentence({PauliWord({0: "X", "a": "Y", 1: "Z"}): 1}),
         ),
-        (
-            qml.PauliX(wires=0) @ qml.PauliY(wires=0), PauliSentence({PauliWord({0: 'Z'}): 1j})
-        ),
+        (qml.PauliX(wires=0) @ qml.PauliY(wires=0), PauliSentence({PauliWord({0: "Z"}): 1j})),
     )
 
     @pytest.mark.parametrize("op, ps", tensor_ps)

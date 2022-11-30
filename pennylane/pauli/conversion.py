@@ -19,7 +19,7 @@ from functools import reduce, singledispatch
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 
-from .pauli_arithmetic import PauliWord, PauliSentence, X, Y, Z, op_to_str_map
+from .pauli_arithmetic import PauliWord, PauliSentence, X, Y, Z
 from .utils import is_pauli_word
 
 
