@@ -123,7 +123,9 @@ class TestDecomposition:
 
         with pytest.raises(ValueError, match="TwoLocalSwapNetwork requires at least 2 wires"):
             qml.templates.TwoLocalSwapNetwork.compute_decomposition(
-                weights=None, wires=range(1), acquaintances=None,
+                weights=None,
+                wires=range(1),
+                acquaintances=None,
             )
 
 
