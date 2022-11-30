@@ -108,7 +108,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess(ABC):
+class MeasurementProcess:
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -745,7 +745,7 @@ class MeasurementProcess(ABC):
         return Wires([ordered_obs_wire_lst[index] for index in permutation])
 
 
-class SampleMeasurement(MeasurementProcess):
+class SampleMeasurement(MeasurementProcess, ABC):
     """Sample-based measurement process."""
 
     @abstractmethod
@@ -769,7 +769,7 @@ class SampleMeasurement(MeasurementProcess):
         """
 
 
-class StateMeasurement(MeasurementProcess):
+class StateMeasurement(MeasurementProcess, ABC):
     """State-based measurement process."""
 
     @abstractmethod
