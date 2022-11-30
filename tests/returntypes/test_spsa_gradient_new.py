@@ -532,7 +532,7 @@ class TestSpsaGradientIntegration:
             h=1e-6,
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=6,
+            num_directions=2,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
@@ -575,7 +575,7 @@ class TestSpsaGradientIntegration:
             argnum=[0, 1],
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=8,
+            num_directions=2,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
@@ -623,7 +623,7 @@ class TestSpsaGradientIntegration:
             argnum=1,
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=11,
+            num_directions=3,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
@@ -699,7 +699,7 @@ class TestSpsaGradientIntegration:
             tape,
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=12,
+            num_directions=2,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
@@ -745,7 +745,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             sampler=coordinate_sampler,
-            num_directions=12,
+            num_directions=2,
         )
         res = fn(dev.batch_execute(tapes))
 
@@ -789,7 +789,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             sampler=coordinate_sampler,
-            num_directions=10,
+            num_directions=2,
         )
         res = fn(dev.batch_execute(tapes))
 
