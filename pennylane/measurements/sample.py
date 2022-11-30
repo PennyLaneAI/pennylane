@@ -15,6 +15,7 @@
 """
 This module contains the qml.sample measurement.
 """
+import functools
 import warnings
 from typing import Sequence, Tuple, Union
 
@@ -119,6 +120,27 @@ class _Sample(SampleMeasurement):
     @property
     def return_type(self):
         return Sample
+
+    @property
+    @functools.lru_cache()
+    def numeric_type(self):
+        # Note: we only assume an integer numeric type if the observable is a
+        # built-in observable with integer eigenvalues or a tensor product thereof
+        if self.obs is None:
+
+            # Computational basis samples
+            return int
+        int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
+        tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
+        every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
+        return int if every_term_standard else float
+
+    @property
+    def samples_computational_basis(self):
+        r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
+        computational basis states.
+        """
+        return self.obs is None
 
     def process_samples(
         self,
