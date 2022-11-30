@@ -158,6 +158,9 @@
 
 <h3>Improvements</h3>
 
+* The `qml.is_pauli_word` now supports instances of `Hamiltonian`.
+  [(#3389)](https://github.com/PennyLaneAI/pennylane/pull/3389)
+
 * The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency. 
   [(#3284)](https://github.com/PennyLaneAI/pennylane/pull/3284)
   

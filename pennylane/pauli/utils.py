@@ -66,7 +66,7 @@ def is_pauli_word(observable):
 
 
     Args:
-        observable (Union[~.Observable]): the operator to be examined
+        observable (~.Observable): the operator to be examined
 
     Returns:
         bool: true if the input observable is a Pauli word, false otherwise.
