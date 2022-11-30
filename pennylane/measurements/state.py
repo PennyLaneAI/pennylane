@@ -136,19 +136,22 @@ class _State(StateMeasurement):
     def shape(self, device=None):
         if qml.active_return():
             return self._shape_new(device)
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
-            )
         num_shot_elements = (
-            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
+            1
+            if (device is None and device.shot_vector is None)
+            else sum(s.copies for s in device.shot_vector)
         )
 
         if self.wires:
             # qml.density_matrix()
             dim = 2 ** len(self.wires)
             return (num_shot_elements, dim, dim)
+
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
         # qml.state()
         dim = 2 ** len(device.wires)
         return (num_shot_elements, dim)
