@@ -108,13 +108,11 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess:
+class MeasurementProcess(ABC):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
     Args:
-        return_type (.ObservableReturnTypes): The type of measurement process.
-            This includes ``Expectation``, ``Variance``, ``Sample``, ``State``, or ``Probability``.
         obs (.Observable): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
@@ -130,13 +128,11 @@ class MeasurementProcess:
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
         id=None,
     ):
-        self.return_type = return_type
         self.obs = obs
         self.id = id
 
@@ -153,20 +149,25 @@ class MeasurementProcess:
             self._eigvals = np.array(eigvals)
 
         # TODO: remove the following lines once devices
-        # have been refactored to accept and understand recieving
+        # have been refactored to accept and understand receiving
         # measurement processes rather than specific observables.
 
         # The following lines are only applicable for measurement processes
         # that do not have corresponding observables (e.g., Probability). We use
-        # them to 'trick' the device into thinking it has recieved an observable.
+        # them to 'trick' the device into thinking it has received an observable.
 
         # Below, we imitate an identity observable, so that the
-        # device undertakes no action upon recieving this observable.
+        # device undertakes no action upon receiving this observable.
         self.name = "Identity"
         self.data = []
 
         # Queue the measurement process
         self.queue()
+
+    @property
+    def return_type(self):
+        """Measurement return type."""
+        return None
 
     @property
     @functools.lru_cache()
@@ -505,7 +506,6 @@ class MeasurementProcess:
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             wires=self._wires,
             eigvals=self._eigvals,
@@ -620,7 +620,7 @@ class MeasurementProcess:
 
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
-            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
+            self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 
@@ -671,10 +671,7 @@ class MeasurementProcess:
         Returns:
             .MeasurementProcess: A measurement process with a simplified observable.
         """
-        if self.obs is None:
-            return self
-
-        return MeasurementProcess(return_type=self.return_type, obs=self.obs.simplify())
+        return self if self.obs is None else self.__class__(obs=self.obs.simplify())
 
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
@@ -748,7 +745,7 @@ class MeasurementProcess:
         return Wires([ordered_obs_wire_lst[index] for index in permutation])
 
 
-class SampleMeasurement(MeasurementProcess, ABC):
+class SampleMeasurement(MeasurementProcess):
     """Sample-based measurement process."""
 
     @abstractmethod
@@ -772,7 +769,7 @@ class SampleMeasurement(MeasurementProcess, ABC):
         """
 
 
-class StateMeasurement(MeasurementProcess, ABC):
+class StateMeasurement(MeasurementProcess):
     """State-based measurement process."""
 
     @abstractmethod
@@ -786,7 +783,7 @@ class StateMeasurement(MeasurementProcess, ABC):
         """
 
 
-class CustomMeasurement(MeasurementProcess, ABC):
+class CustomMeasurement(MeasurementProcess):
     """Custom measurement process.
 
     Any class inheriting from this class should define its own ``process`` method, which takes a

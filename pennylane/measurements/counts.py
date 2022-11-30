@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
 
-from .measurements import AllCounts, Counts, ObservableReturnTypes, SampleMeasurement
+from .measurements import AllCounts, Counts, SampleMeasurement
 
 
 def counts(op=None, wires=None, all_outcomes=False):
@@ -140,11 +140,7 @@ def counts(op=None, wires=None, all_outcomes=False):
             )
         wires = Wires(wires)
 
-    # TODO: Remove this conditional branch when using `Counts.process` in devices
-    if all_outcomes:
-        return _Counts(AllCounts, obs=op, wires=wires, all_outcomes=all_outcomes)
-
-    return _Counts(Counts, obs=op, wires=wires, all_outcomes=all_outcomes)
+    return _Counts(obs=op, wires=wires, all_outcomes=all_outcomes)
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
@@ -153,7 +149,6 @@ class _Counts(SampleMeasurement):
 
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
@@ -161,7 +156,11 @@ class _Counts(SampleMeasurement):
         all_outcomes=False,
     ):
         self.all_outcomes = all_outcomes
-        super().__init__(return_type, obs, wires, eigvals, id)
+        super().__init__(obs, wires, eigvals, id)
+
+    @property
+    def return_type(self):
+        return AllCounts if self.all_outcomes else Counts
 
     def process_samples(
         self,
@@ -187,21 +186,19 @@ class _Counts(SampleMeasurement):
         return [self._samples_to_counts(bin_sample) for bin_sample in samples]
 
     def _samples_to_counts(self, samples):
-        """Groups the samples into a dictionary showing number of occurences for
+        """Groups the samples into a dictionary showing number of occurrences for
         each possible outcome.
 
-        The format of the dictionary depends on obs.return_type, which is set when
-        calling measurements.counts by setting the kwarg all_outcomes (bool). By default,
+        The format of the dictionary depends on the all_outcomes attribute. By default,
         the dictionary will only contain the observed outcomes. Optionally (all_outcomes=True)
         the dictionary will instead contain all possible outcomes, with a count of 0
         for those not observed. See example.
-
 
         Args:
             samples: samples in an array of dimension ``(shots,len(wires))``
 
         Returns:
-            dict: dictionary with format ``{'outcome': num_occurences}``, including all
+            dict: dictionary with format ``{'outcome': num_occurrences}``, including all
                 outcomes for the sampled observable
 
         **Example**
@@ -212,11 +209,11 @@ class _Counts(SampleMeasurement):
                     [1, 0]], requires_grad=True)
 
             By default, this will return:
-            >>> self._samples_to_counts(samples, obs, num_wires)
+            >>> self._samples_to_counts(samples)
             {'00': 2, '10': 1}
 
-            However, if obs.return_type is AllCounts, this will return:
-            >>> self._samples_to_counts(samples, obs, num_wires)
+            However, if ``all_outcomes=True``, this will return:
+            >>> self._samples_to_counts(samples)
             {'00': 2, '01': 0, '10': 1, '11': 0}
 
             The variable all_outcomes can be set when running measurements.counts, i.e.:
@@ -254,7 +251,6 @@ class _Counts(SampleMeasurement):
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             eigvals=self._eigvals,
             wires=self._wires,

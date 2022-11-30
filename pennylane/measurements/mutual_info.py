@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import MutualInfo, ObservableReturnTypes, StateMeasurement
+from .measurements import MutualInfo, StateMeasurement
 
 
 def mutual_info(wires0, wires1, log_base=None):
@@ -73,15 +73,15 @@ def mutual_info(wires0, wires1, log_base=None):
 
     .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.math.mutual_info`
     """
+    wires0 = qml.wires.Wires(wires0)
+    wires1 = qml.wires.Wires(wires1)
+
     # the subsystems cannot overlap
     if [wire for wire in wires0 if wire in wires1]:
         raise qml.QuantumFunctionError(
             "Subsystems for computing mutual information must not overlap."
         )
-
-    wires0 = qml.wires.Wires(wires0)
-    wires1 = qml.wires.Wires(wires1)
-    return _MutualInfo(MutualInfo, wires=[wires0, wires1], log_base=log_base)
+    return _MutualInfo(wires=[wires0, wires1], log_base=log_base)
 
 
 class _MutualInfo(StateMeasurement):
@@ -90,7 +90,6 @@ class _MutualInfo(StateMeasurement):
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Operator = None,
         wires=None,
         eigvals=None,
@@ -98,7 +97,11 @@ class _MutualInfo(StateMeasurement):
         log_base=None,
     ):
         self.log_base = log_base
-        super().__init__(return_type=return_type, obs=obs, wires=wires, eigvals=eigvals, id=id)
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+
+    @property
+    def return_type(self):
+        return MutualInfo
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         return qml.math.mutual_info(
@@ -111,7 +114,6 @@ class _MutualInfo(StateMeasurement):
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             wires=self._wires,
             eigvals=self._eigvals,
