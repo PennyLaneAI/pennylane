@@ -68,6 +68,7 @@ from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
 from pennylane.templates.tensornetworks import *
+from pennylane.templates.swap_networks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa

@@ -26,9 +26,9 @@ class TwoLocalSwapNetwork(Operation):
     r"""Apply two-local gate operations using a canonical 2-complete linear (2-CCL) swap network.
 
     Args:
-        weights (tensor): one dimensional tensor to provide weights for the acquaintances of length :math:`N \times (N - 1) / 2`, where `N` is the number of wires and each weight is specified by the `param` argument in the callable given for `acquaintances`. Specify ``None`` if provided acquintances will not be parameterized
         wires (Iterable or Wires): ordered sequence of wires on which the swap network acts
         acquaintances (Callable): a callable `func(index, wires, param=None, **kwargs)` that returns a two-local operation being applied on pair of wires specified by `index` that are currently stored in physical qubits or fermionic modes specified by `wires` before they are swapped apart and kwargs accepts any additional keyword argument required for this operation. Note that these kwargs should be provided separately
+        weights (tensor): one dimensional tensor to provide weights for the acquaintances of length :math:`N \times (N - 1) / 2`, where `N` is the number of wires and each weight is specified by the `param` argument in the callable given for `acquaintances`. Specify ``None`` if specified acquintances will not be parameterized
         fermionic (bool): If ``True``, qubits are realized as fermionic modes and :class:`~.pennylane.FermionicSWAP` with :math:`\phi=2\pi` is used instead of class:`~.pennylane.SWAP` to build 2-CCL
         shift (bool): If ``True``, odd-numbered layers begins from the second qubit instead of first
         **kwargs: additional keyword arguments for acquaintances
@@ -53,8 +53,6 @@ class TwoLocalSwapNetwork(Operation):
         2: ─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─┤  State
         3: ─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─┤  State
         4: ───────────╰X─╰fSWAP───────────╰X─╰fSWAP───────────┤  State
-
-    See "Usage Details" for further examples.
 
     .. details::
         :title: Usage Details
@@ -96,10 +94,10 @@ class TwoLocalSwapNetwork(Operation):
         do_queue=True,
         id=None,
         **kwargs,
-    ):
+    ):  # pylint: disable=too-many-arguments
 
         if len(wires) < 2:
-            raise ValueError(f"TwoLocalSwapNetwork requires at least 2 qubits, got {len(wires)}")
+            raise ValueError(f"TwoLocalSwapNetwork requires at least 2 wires, got {len(wires)}")
 
         if not callable(acquaintances) and acquaintances is not None:
             raise ValueError(
@@ -109,26 +107,40 @@ class TwoLocalSwapNetwork(Operation):
         if weights is not None and acquaintances is None:
             warnings.warn("Weights are being provided without acquaintances")
 
-        if qml.math.shape(weights) != self.shape(len(wires)) and acquaintances is not None:
+        if (
+            weights is not None
+            and acquaintances is not None
+            and qml.math.shape(weights) != self.shape(len(wires))
+        ):
             raise ValueError(
                 f"Weight tensor must be of size {self.shape(len(wires))}, got {qml.math.shape(weights)}"
             )
-        print(acquaintances, weights)
-        self._acquaintances = acquaintances
+
         self._weights = weights
-        if self._acquaintances is not None and self._weights is not None:
+        self._hyperparameters = {
+            "acquaintances": acquaintances,
+            "fermionic": fermionic,
+            "shift": shift,
+            **kwargs,
+        }
+
+        if acquaintances is not None and self._weights is not None:
             super().__init__(self._weights, wires=wires, do_queue=do_queue, id=id)
         else:
             super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
-        return 1 if self._acquaintances is not None and self._weights is not None else 0
+        return (
+            1
+            if self._hyperparameters["acquaintances"] is not None and self._weights is not None
+            else 0
+        )
 
     @staticmethod
     def compute_decomposition(
         weights=None, wires=None, acquaintances=None, fermionic=True, shift=False, **kwargs
-    ):  # pylint: disable=arguments-differ
+    ):  # pylint: disable=arguments-differ too-many-arguments
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -147,10 +159,13 @@ class TwoLocalSwapNetwork(Operation):
             list[.Operator]: decomposition of the operator
         """
 
+        if wires is None:
+            raise ValueError(f"TwoLocalSwapNetwork requires at least 2 wires, got {n_wires}")
+
         op_list = []
 
         wire_order = list(wires).copy()
-        itrweights = iter([]) if weights is None else iter(weights)
+        itrweights = iter([]) if weights is None or acquaintances is None else iter(weights)
         for layer in range(len(wires)):
             qubit_pairs = [[i, i + 1] for i in range((layer + shift) % 2, len(wires) - 1, 2)]
             for i, j in qubit_pairs:
@@ -183,6 +198,6 @@ class TwoLocalSwapNetwork(Operation):
         """
 
         if n_wires < 2:
-            raise ValueError(f"TwoLocalSwapNetwork requires at least 2 qubits, got {n_wires}")
+            raise ValueError(f"TwoLocalSwapNetwork requires at least 2 wires, got {n_wires}")
 
         return (int(n_wires * (n_wires - 1) * 0.5),)

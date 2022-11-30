@@ -152,6 +152,29 @@
   -0.5
   ```
 
+* Added a new template that implements a canonical 2-complete linear (2-CCL) swap network
+  described in [arXiv:1905.05118](https://arxiv.org/abs/1905.05118).
+  [(#3447)](https://github.com/PennyLaneAI/pennylane/pull/3447)
+
+  ```python3
+  import pennylane as qml
+  dev = qml.device('default.qubit', wires=5)
+  acquaintances = lambda index, wires, param=None: qml.CNOT(index)
+  @qml.qnode(dev)
+  def swap_network_circuit():
+     qml.templates.TwoLocalSwapNetwork(None, dev.wires, acquaintances, fermionic=True, shift=False)
+     return qml.state()
+  ```
+
+  ```pycon
+  >>> qml.draw(swap_network_circuit)()
+  0: ─╭●─╭fSWAP───────────╭●─╭fSWAP───────────╭●─╭fSWAP─┤  State
+  1: ─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─┤  State
+  2: ─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─┤  State
+  3: ─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─┤  State
+  4: ───────────╰X─╰fSWAP───────────╰X─╰fSWAP───────────┤  State
+  ```
+
 <h3>Improvements</h3>
 
 * Added more input validation to `hamiltonian_expand` such that Hamiltonian objects with no terms raise an error.
