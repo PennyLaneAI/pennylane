@@ -21,7 +21,7 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane import DeviceError, QuantumFunctionError, QubitDevice, QutritDevice
+from pennylane import DeviceError, QubitDevice, QutritDevice
 from pennylane import numpy as pnp
 from pennylane.measurements import (
     Counts,
@@ -31,7 +31,6 @@ from pennylane.measurements import (
     Sample,
     State,
     Variance,
-    state,
 )
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
