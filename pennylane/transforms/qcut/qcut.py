@@ -32,10 +32,10 @@ from networkx import MultiDiGraph, has_path, weakly_connected_components
 import pennylane as qml
 from pennylane import apply, expval
 from pennylane import numpy as np
-from pennylane.pauli import string_to_pauli_word
 from pennylane.measurements import Expectation, MeasurementProcess, Sample
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
+from pennylane.pauli import string_to_pauli_word
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
@@ -245,7 +245,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
                     "is not supported in circuit cutting"
                 )
             for o in obs.obs:
-                m_ = MeasurementProcess(m.return_type, obs=o)
+                m_ = m.__class__(obs=o)
 
                 _add_operator_node(graph, m_, order, wire_latest_node)
         elif m.return_type is Sample and obs is None:
