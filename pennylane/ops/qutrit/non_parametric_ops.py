@@ -436,7 +436,7 @@ class THadamard(Operation):
     r"""THadamard(wires, subspace)
     The ternary Hadamard operator
 
-    Performs the Hadamard operation on the specified 2D subspace if specified. The subspace is
+    Performs the Hadamard operation on a 2D subspace, if specified. The subspace is
     given as a keyword argument and determines which two of three single-qutrit basis states the
     operation applies to. When a subspace is not specified, the generalized Hadamard operation
     is used.
