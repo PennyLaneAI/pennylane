@@ -817,7 +817,7 @@ class QubitDevice(Device):
                         "Classical shadows cannot be returned in combination"
                         " with other return types"
                     )
-                results.append(self.classical_shadow(obs, circuit=circuit))
+                results.append(self.classical_shadow(obs, circuit))
 
             elif obs.return_type is ShadowExpval:
                 if len(observables) > 1:
@@ -1250,7 +1250,7 @@ class QubitDevice(Device):
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow measurement process
+            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
         Returns:
@@ -1269,13 +1269,10 @@ class QubitDevice(Device):
             n_qubits = len(wires)
             mapped_wires = np.array(self.map_wires(wires))
 
-            if seed is not None:
-                # seed the random measurement generation so that recipes
-                # are the same for different executions with the same seed
-                rng = np.random.RandomState(seed)
-                recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-            else:
-                recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+            # seed the random measurement generation so that recipes
+            # are the same for different executions with the same seed
+            rng = np.random.RandomState(seed)
+            recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
             obs_list = [qml.PauliX, qml.PauliY, qml.PauliZ]
 
             outcomes = np.zeros((n_snapshots, n_qubits))
@@ -1303,7 +1300,7 @@ class QubitDevice(Device):
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
 
         Args:
-            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow expectation
+            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow expectation
                 value measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
