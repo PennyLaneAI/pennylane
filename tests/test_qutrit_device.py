@@ -31,7 +31,6 @@ from pennylane.measurements import (
     Sample,
     State,
     Variance,
-    state,
 )
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -258,13 +257,17 @@ class TestObservables:
 
     def test_unsupported_observable_return_type_raise_error(self, mock_qutrit_device, monkeypatch):
         """Check that an error is raised if the return type of an observable is unsupported"""
+
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return "SomeUnsupportedReturnType"
+
         U = unitary_group.rvs(3, random_state=10)
 
         with qml.tape.QuantumTape() as tape:
             qml.QutritUnitary(U, wires=0)
-            qml.measurements.MeasurementProcess(
-                return_type="SomeUnsupportedReturnType", obs=qml.Identity(0)
-            )
+            UnsupportedMeasurement(obs=qml.Identity(0))
 
         with monkeypatch.context() as m:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: None)
@@ -298,7 +301,12 @@ class TestExtractStatistics:
     def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
-        qscript = QuantumScript(measurements=[MeasurementProcess(returntype)])
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
+
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         with monkeypatch.context() as m:
             dev = mock_qutrit_device_extract_stats()
@@ -323,7 +331,12 @@ class TestExtractStatistics:
     def test_results_created_empty(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method returns an empty list if the return type is None"""
 
-        qscript = QuantumScript(measurements=[MeasurementProcess(returntype)])
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
+
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         with monkeypatch.context() as m:
             dev = mock_qutrit_device_extract_stats()
@@ -339,7 +352,12 @@ class TestExtractStatistics:
 
         assert returntype not in [Expectation, Variance, Sample, Probability, State, Counts, None]
 
-        qscript = QuantumScript(measurements=[MeasurementProcess(returntype)])
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
+
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         dev = mock_qutrit_device_extract_stats()
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):

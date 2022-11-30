@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.measurements import MeasurementProcess
 
 wires = [2, 3, 4]
 
@@ -1210,11 +1211,14 @@ class TestQubitDeviceNewUnits:
     def test_unsupported_observable_return_type_raise_error(self):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
+        class DummyMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return "SomeUnsupportedReturnType"
+
         with qml.tape.QuantumTape() as tape:
             qml.PauliX(wires=0)
-            qml.measurements.MeasurementProcess(
-                return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0)
-            )
+            DummyMeasurement(obs=qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=3)
         with pytest.raises(

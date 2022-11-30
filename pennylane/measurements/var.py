@@ -55,11 +55,15 @@ def var(op: Operator):
     """
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
-    return _Variance(Variance, obs=op)
+    return _Variance(obs=op)
 
 
 class _Variance(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the variance of the supplied observable."""
+
+    @property
+    def return_type(self):
+        return Variance
 
     def process_samples(
         self,
