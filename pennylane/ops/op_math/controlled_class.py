@@ -17,7 +17,7 @@ This submodule defines the symbolic operation that indicates the control of an o
 import warnings
 from copy import copy
 from inspect import signature
-from typing import List
+from typing import List, Iterable
 
 import numpy as np
 from scipy import sparse
@@ -27,6 +27,7 @@ from pennylane import math as qmlmath
 from pennylane import operation
 from pennylane.wires import Wires
 from pennylane.operation import AnyWires
+from pennylane.ops.qubit.matrix_ops import QubitUnitary
 
 from .symbolicop import SymbolicOp
 
@@ -613,6 +614,9 @@ class ControlledQubitUnitary(ControlledOp):
             "control_wires": control_wires,
             "control_values": control_values,
         }
+
+        if isinstance(base, Iterable):
+            base = QubitUnitary(base, wires=wires)
 
         super().__init__(base, control_wires, control_values=control_values, do_queue=do_queue)
 
