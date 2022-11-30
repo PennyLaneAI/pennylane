@@ -22,8 +22,7 @@ import numpy as np
 import retworkx as rx
 
 import pennylane as qml
-from pennylane.measurements import Sample, State
-from pennylane.measurements.state import _State
+from pennylane.measurements import Sample, State, _State
 from pennylane.wires import Wires
 
 
