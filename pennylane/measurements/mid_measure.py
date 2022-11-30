@@ -70,11 +70,19 @@ def measure(wires):  # TODO: Change name to mid_measure
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
+    _MidMeasure(wires=wire, id=measurement_id)
     return MeasurementValue(measurement_id)
 
 
 T = TypeVar("T")
+
+
+class _MidMeasure(MeasurementProcess):
+    """Mid-circuit measurement."""
+
+    @property
+    def return_type(self):
+        return MidMeasure
 
 
 class MeasurementValueError(ValueError):

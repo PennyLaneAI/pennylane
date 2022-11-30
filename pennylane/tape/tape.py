@@ -177,9 +177,7 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
             qscript._ops.extend(rotations)
 
             for o, i in zip(diag_obs, qscript._obs_sharing_wires_id):
-                new_m = qml.measurements.MeasurementProcess(
-                    qscript.measurements[i].return_type, obs=o
-                )
+                new_m = qscript.measurements[i].__class__(obs=o)
                 qscript._measurements[i] = new_m
 
     for queue, new_queue in [
