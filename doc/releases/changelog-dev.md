@@ -5,6 +5,7 @@
 <h3>New features since last release</h3>
 
 * Add the controlled CZ gate: CCZ.
+
   ```pycon
   >>> ccz = qml.CCZ(wires=[0, 1, 2])
   >>> matrix = ccz.compute_matrix()
@@ -17,6 +18,7 @@
    [ 0  0  0  0  0  0  1  0]
    [ 0  0  0  0  0  0  0 -1]]
   ```
+
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Add the controlled Hadamard gate.
@@ -33,9 +35,10 @@
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Support custom measurement processes:
-  * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
-    method to process samples/quantum state.
+  * `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
+    They contain an abstract method to process samples/quantum state/quantum script.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
   * Add `_Expectation` class.
     [#3343](https://github.com/PennyLaneAI/pennylane/pull/3343)
@@ -60,6 +63,12 @@
 
   * Add `_MutualInfo` class.
     [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
+
+  * Add `ClassicalShadow` class.
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
+
+  * Add `_ShadowExpval` class.
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
@@ -135,12 +144,15 @@
   wires. Calling any measurement with an empty wire list will raise an error.
   [#3299](https://github.com/PennyLaneAI/pennylane/pull/3299)
 
+* The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency. 
+  [(#3284)](https://github.com/PennyLaneAI/pennylane/pull/3284)
+  
 * Added more input validation to `hamiltonian_expand` such that Hamiltonian objects with no terms raise an error.
   [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
 
 * Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
-
+  
 * `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
    [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
 
@@ -235,6 +247,7 @@
   [#3400](https://github.com/PennyLaneAI/pennylane/pull/3400)
 
   Example with a single measurement:
+
   ```python
   dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
 
@@ -244,6 +257,7 @@
       qml.RX(0.2, wires=0)
       return qml.expval(qml.PauliZ(0))
   ```
+
   ```
   >>> qml.enable_return()
   >>> a = tf.Variable(0.4)
@@ -256,7 +270,9 @@
   >>> tape.jacobian(res, a)
   <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.365     , -0.3765    , -0.37533333])>
   ```
+
   Example with multiple measurements:
+
   ```python
   dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
 
@@ -267,6 +283,7 @@
       qml.CNOT(wires=[0, 1])
       return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
   ```
+
   ```
   >>> with tf.GradientTape() as tape:
   ...     res = circuit(a)
@@ -287,6 +304,10 @@
 * Updated `qml.transforms.split_non_commuting` to support the new return types.
   [#3414](https://github.com/PennyLaneAI/pennylane/pull/3414)
 
+* Updated `qml.transforms.mitigate_with_zne` to support the new return types.
+  [#3415](https://github.com/PennyLaneAI/pennylane/pull/3415)
+
+
 <h3>Breaking changes</h3>
 
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
@@ -300,6 +321,10 @@
   `OrderedDict` and encapsulates the queue. Consequentially, this also applies to the `QuantumTape`
   class which inherits from `AnnotatedQueue`.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
+
+* Change class name `ShadowMeasurementProcess` to `ClassicalShadow`, to be consistent with the
+  `qml.classical_shadow` function name.
+  [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 * The method `qml.Operation.get_parameter_shift` is removed. The `gradients` module should be used
   for general parameter-shift rules instead.
@@ -319,6 +344,13 @@
 
   [#3421](https://github.com/PennyLaneAI/pennylane/pull/3421)
 
+* The `MeasurementProcess.return_type` argument has been removed from the `__init__` method. Now
+  it is a property of the class.
+  [#3434](https://github.com/PennyLaneAI/pennylane/pull/3434)
+
+* The `MeasurementProcess` class is now an abstract class.
+  [#3434](https://github.com/PennyLaneAI/pennylane/pull/3434)
+
 <h3>Deprecations</h3>
 
 Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://docs.pennylane.ai/en/latest/development/deprecations.html).
@@ -336,6 +368,16 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
+
+* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
+  instead.
+  [(#3433)](https://github.com/PennyLaneAI/pennylane/pull/3433)
+
+* The `seed_recipes` argument in `qml.classical_shadow` and `qml.shadow_expval` is deprecated.
+  A new argument `seed` has been added, which defaults to None and can contain an integer with the
+  wanted seed.
+  [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+
 
 <h3>Documentation</h3>
 
@@ -392,6 +434,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Utkarsh Azad
 Astral Cai
+Isaac De Vlugt
 Pieter Eendebak
 Lillian M. A. Frederiksen
 Soran Jahangiri

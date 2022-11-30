@@ -17,7 +17,12 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.measurements import MeasurementProcess, MeasurementShapeError, Probability
+from pennylane.measurements import (
+    MeasurementProcess,
+    MeasurementShapeError,
+    Probability,
+    _Probability,
+)
 from pennylane.queuing import AnnotatedQueue
 
 
@@ -66,14 +71,24 @@ def init_state():
     return _init_state
 
 
-# pylint: disable=redefined-outer-name
 class TestProbs:
     """Tests for the probs function"""
 
-    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
-    def test_numeric_type(self, wires):
+    def test_queue(self):
+        """Test that the right measurement class is queued."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.probs(wires=0)
+
+        circuit()
+
+        assert isinstance(circuit.tape[0], _Probability)
+
+    def test_numeric_type(self):
         """Test that the numeric type is correct."""
-        res = qml.probs(wires=wires)
+        res = qml.probs(wires=0)
         assert res.numeric_type is float
 
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
