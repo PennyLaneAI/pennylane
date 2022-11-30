@@ -215,6 +215,8 @@ class MeasurementProcess:
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
+        if qml.active_return():
+            return self._shape_new(device=device)
         raise qml.QuantumFunctionError(
             "Cannot deduce the shape of the measurement process with unrecognized return_type "
             + f"{self.return_type}."
