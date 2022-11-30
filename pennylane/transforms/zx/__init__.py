@@ -14,3 +14,4 @@
 """PennyLane ZX calculus module
 """
 from .converter import tape_to_graph_zx, graph_zx_to_tape
+from .drawer import draw_zx
