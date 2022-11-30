@@ -300,6 +300,10 @@
 * Updated `qml.transforms.split_non_commuting` to support the new return types.
   [#3414](https://github.com/PennyLaneAI/pennylane/pull/3414)
 
+* Updated `qml.transforms.mitigate_with_zne` to support the new return types.
+  [#3415](https://github.com/PennyLaneAI/pennylane/pull/3415)
+
+
 <h3>Breaking changes</h3>
 
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
@@ -336,6 +340,13 @@
 
   [#3421](https://github.com/PennyLaneAI/pennylane/pull/3421)
 
+* The `MeasurementProcess.return_type` argument has been removed from the `__init__` method. Now
+  it is a property of the class.
+  [#3434](https://github.com/PennyLaneAI/pennylane/pull/3434)
+
+* The `MeasurementProcess` class is now an abstract class.
+  [#3434](https://github.com/PennyLaneAI/pennylane/pull/3434)
+
 <h3>Deprecations</h3>
 
 Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://docs.pennylane.ai/en/latest/development/deprecations.html).
@@ -362,6 +373,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   A new argument `seed` has been added, which defaults to None and can contain an integer with the
   wanted seed.
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+
 
 <h3>Documentation</h3>
 

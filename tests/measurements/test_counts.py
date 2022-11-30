@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the counts module"""
+import copy
+
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import AllCounts, Counts
+from pennylane.measurements import AllCounts, Counts, _Counts
 from pennylane.operation import Operator
+from pennylane.wires import Wires
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -48,6 +51,32 @@ def custom_measurement_process(device, spy):
 
 class TestCounts:
     """Tests for the counts function"""
+
+    def test_counts_properties(self):
+        """Test that the properties are correct."""
+        meas1 = qml.counts(wires=0)
+        meas2 = qml.counts(op=qml.PauliX(0), all_outcomes=True)
+        assert meas1.return_type == Counts
+        assert meas2.return_type == AllCounts
+
+    def test_queue(self):
+        """Test that the right measurement class is queued."""
+        dev = qml.device("default.qubit", wires=2, shots=1000)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.counts(wires=0)
+
+        circuit()
+
+        assert isinstance(circuit.tape[0], _Counts)
+
+    def test_copy(self):
+        """Test that the ``__copy__`` method also copies the ``all_outcomes`` information."""
+        meas = qml.counts(wires=0, all_outcomes=True)
+        meas_copy = copy.copy(meas)
+        assert meas_copy.wires == Wires(0)
+        assert meas_copy.all_outcomes == True
 
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are

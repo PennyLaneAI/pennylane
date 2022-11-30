@@ -82,7 +82,7 @@ def probs(wires=None, op=None):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable): Observable (with a diagonalzing_gates attribute) that rotates
+        op (Observable): Observable (with a diagonalizing_gates attribute) that rotates
          the computational basis
     """
     # pylint: disable=protected-access
@@ -111,13 +111,17 @@ def probs(wires=None, op=None):
                 "Cannot specify the wires to probs if an observable is "
                 "provided. The wires for probs will be determined directly from the observable."
             )
-        return _Probability(Probability, wires=qml.wires.Wires(wires))
-    return _Probability(Probability, obs=op)
+        wires = qml.wires.Wires(wires)
+    return _Probability(obs=op, wires=wires)
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
 class _Probability(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
+
+    @property
+    def return_type(self):
+        return Probability
 
     def process_samples(
         self,
@@ -175,8 +179,8 @@ class _Probability(SampleMeasurement, StateMeasurement):
 
     @staticmethod
     def _count_samples(indices, batch_size, dim):
-        """Count the occurences of sampled indices and convert them to relative
-        counts in order to estimate their occurence probability."""
+        """Count the occurrences of sampled indices and convert them to relative
+        counts in order to estimate their occurrence probability."""
         num_bins, bin_size = indices.shape[-2:]
         if batch_size is None:
             prob = qml.math.zeros((dim, num_bins), dtype="float64")
@@ -201,7 +205,7 @@ class _Probability(SampleMeasurement, StateMeasurement):
 
     def marginal_prob(self, prob, wire_order, batch_size):
         r"""Return the marginal probability of the computational basis
-        states by summing the probabiliites on the non-specified wires.
+        states by summing the probabilities on the non-specified wires.
 
         If no wires are specified, then all the basis states representable by
         the device are considered and no marginalization takes place.
