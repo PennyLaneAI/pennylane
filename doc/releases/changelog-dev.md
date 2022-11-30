@@ -7,7 +7,7 @@
 * New gradient transform `qml.gradients.spsa_grad` based on the idea of SPSA.
   [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
 
-  This new transform allows to compute a single estimate of a quantum gradient
+  This new transform allows users to compute a single estimate of a quantum gradient
   using simultaneous perturbation of parameters and a stochastic approximation.
   Given some QNode `circuit` that takes, say, an argument `x`, the approximate
   gradient can be computed via
@@ -26,10 +26,10 @@
   The argument `num_directions` determines how many directions of simultaneous
   perturbation are used and therefore the number of circuit evaluations, up
   to a prefactor. See the
-  [spsa gradient transform documentation](
+  [SPSA gradient transform documentation](
   https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html
   ) for details.
-  Note: The full SPSA optimization method already is available as `SPSAOptimizer`.
+  Note: The full SPSA optimization method is already available as `SPSAOptimizer`.
 
 * Add the controlled CZ gate: CCZ.
 
