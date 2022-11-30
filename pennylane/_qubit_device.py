@@ -669,20 +669,21 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
-    def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
+    def statistics(
+        self, circuit: QuantumScript = None, shot_range=None, bin_size=None, observables=None
+    ):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
         density matrices.
 
         Args:
-            observables (List[.Observable]): the observables to be measured
+            circuit (~.tape.QuantumScript): the quantum script currently being executed
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
                 returns the measurement statistic separately over each bin. If not
                 provided, the entire shot range is treated as a single bin.
-            circuit (~.tape.QuantumTape): the quantum tape currently being executed
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -716,7 +717,17 @@ class QubitDevice(Device):
             * Finally, we repeat the measurement statistics for the final 100 shots,
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
-        observables = circuit.observables
+        if isinstance(circuit, QuantumScript):
+            observables = circuit.observables
+
+        else:
+            warnings.warn(
+                message="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. "
+                "Please use ``circuit`` instead.",
+                category=UserWarning,
+            )
+            observables = circuit if circuit is not None else observables
+
         results = []
 
         for obs in observables:
@@ -841,7 +852,7 @@ class QubitDevice(Device):
         density matrices.
 
         Args:
-            observables (List[.Observable]): the observables to be measured
+            circuit (~.tape.QuantumScript): the quantum script currently being executed
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
