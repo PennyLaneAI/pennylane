@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the vn_entropy module"""
+import copy
+
 import pytest
 
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
+from pennylane.measurements import VnEntropy
 from pennylane.measurements.vn_entropy import _VnEntropy
+from pennylane.wires import Wires
 
 
 class TestVnEntropy:
@@ -57,3 +61,15 @@ class TestVnEntropy:
         circuit()
 
         assert isinstance(circuit.tape[0], _VnEntropy)
+
+    def test_copy(self):
+        """Test that the ``__copy__`` method also copies the ``log_base`` information."""
+        meas = qml.vn_entropy(wires=0, log_base=2)
+        meas_copy = copy.copy(meas)
+        assert meas_copy.log_base == 2
+        assert meas_copy.wires == Wires(0)
+
+    def test_properties(self):
+        """Test that the properties are correct."""
+        meas = qml.vn_entropy(wires=0)
+        assert meas.return_type == VnEntropy
