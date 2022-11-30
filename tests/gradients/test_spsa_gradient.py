@@ -51,22 +51,26 @@ class TestRademacherSampler:
             assert np.allclose(np.abs(direction)[ids_mask], 1)
             assert np.allclose(direction[~ids_mask], 0)
 
-    @pytest.mark.parametrize("num_directions, tol", [(100, 0.1), (500, 5e-3)])
-    def test_convergence_single_par(self, num_directions, tol):
-        """Test that the SPSA gradient converges to the gradient for many direction samples
-        and the Rademacher distribution."""
+    def test_call_with_third_arg(self):
+        _rademacher_sampler([0, 1, 2], 4, "ignored dummy")
 
-        x = 0.543
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(x, wires=[0])
-            qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=1)
-        tapes, fn = spsa_grad(tape, num_directions=num_directions)
-        res = fn(dev.batch_execute(tapes))
-
-        expected = -np.sin(x)
-        assert np.isclose(res, expected, atol=tol, rtol=0)
+    @pytest.mark.parametrize(
+        "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
+    )
+    @pytest.mark.parametrize("N", [10, 10000])
+    def test_mean_and_var(self, ids, num, N):
+        np.random.seed(42)
+        ids_mask = np.zeros(num, dtype=bool)
+        ids_mask[ids] = True
+        outputs = [_rademacher_sampler(ids, num) for _ in range(N)]
+        # Test that the mean of non-zero entries is approximately right
+        assert np.allclose(np.mean(outputs, axis=0)[ids_mask], 0, atol=4 / np.sqrt(N))
+        # Test that the variance of non-zero entries is approximately right
+        assert np.allclose(np.var(outputs, axis=0)[ids_mask], 1, atol=4 / N)
+        # Test that the mean of zero entries is exactly 0, because all entries should be
+        assert np.allclose(np.mean(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
+        # Test that the variance of zero entries is exactly 0, because all entries are the same
+        assert np.allclose(np.var(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
 
 
 class TestSpsaGradient:
@@ -408,6 +412,23 @@ class TestSpsaGradient:
         par = np.array(0.2, requires_grad=True)
         assert np.isclose(qnode(par).item().val, reference_qnode(par))
         assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
+
+    @pytest.mark.parametrize("num_directions, tol", [(100, 0.1), (500, 5e-3)])
+    def test_convergence_single_par(self, num_directions, tol):
+        """Test that the SPSA gradient converges to the gradient for many direction samples
+        and the Rademacher distribution."""
+
+        x = 0.543
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=[0])
+            qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=1)
+        tapes, fn = spsa_grad(tape, num_directions=num_directions)
+        res = fn(dev.batch_execute(tapes))
+
+        expected = -np.sin(x)
+        assert np.isclose(res, expected, atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("approx_order", [2, 4])
