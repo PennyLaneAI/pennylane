@@ -160,7 +160,7 @@ class TwoLocalSwapNetwork(Operation):
         """
 
         if wires is None:
-            raise ValueError(f"TwoLocalSwapNetwork requires at least 2 wires, got {n_wires}")
+            raise ValueError(f"TwoLocalSwapNetwork requires at least 2 wires")
 
         op_list = []
 
