@@ -74,7 +74,7 @@ class TestCounts:
         assert isinstance(circuit.tape[0], _Counts)
 
     def test_copy(self):
-        """Test that the ``__copy__`` method also copies the ``log_base`` information."""
+        """Test that the ``__copy__`` method also copies the ``all_outcomes`` information."""
         meas = qml.counts(wires=0, all_outcomes=True)
         meas_copy = copy.copy(meas)
         assert meas_copy.wires == Wires(0)

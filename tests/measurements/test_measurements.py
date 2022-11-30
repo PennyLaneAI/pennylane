@@ -31,6 +31,7 @@ from pennylane.measurements import (
     _MutualInfo,
     _Probability,
     _Sample,
+    _ShadowExpval,
     _State,
     _Variance,
     _VnEntropy,
@@ -38,7 +39,6 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.measurements.classical_shadow import _ShadowExpval
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
 
@@ -98,7 +98,7 @@ def test_shape_unrecognized_error():
     dev = qml.device("default.qubit", wires=2)
     mp = NotValidMeasurement()
     with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the shape"):
-        mp.shape(dev)
+        mp.shape()
 
 
 @pytest.mark.parametrize(
