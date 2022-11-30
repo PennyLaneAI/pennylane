@@ -122,7 +122,9 @@ class TestDecomposition:
         """Test that the decomposition function warns if there are not enough qubits."""
 
         with pytest.raises(ValueError, match="TwoLocalSwapNetwork requires at least 2 wires"):
-            qml.templates.TwoLocalSwapNetwork.shape(n_wires=1)
+            qml.templates.TwoLocalSwapNetwork.compute_decomposition(
+                weights=None, wires=range(1), acquaintances=None,
+            )
 
 
 class TestInputs:

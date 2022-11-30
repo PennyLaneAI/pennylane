@@ -159,8 +159,8 @@ class TwoLocalSwapNetwork(Operation):
             list[.Operator]: decomposition of the operator
         """
 
-        if wires is None:
-            raise ValueError("TwoLocalSwapNetwork requires at least 2 wires")
+        if wires is None or len(wires) < 2:
+            raise ValueError(f"TwoLocalSwapNetwork requires at least 2 wires, got {wires}")
 
         op_list = []
 
