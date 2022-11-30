@@ -41,7 +41,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == len(expected_ops)
 
@@ -67,7 +67,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == len(expected_ops)
 
@@ -85,7 +85,7 @@ class TestMergeRotations:
         # Try with default tolerance; these ops should still be applied
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == 1
         assert ops[0].name == "RZ"
@@ -93,7 +93,7 @@ class TestMergeRotations:
 
         # Now try with higher tolerance threshold; the ops should cancel
         transformed_qfunc = merge_rotations(atol=1e-5)(qfunc)
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
         assert len(ops) == 0
 
     @pytest.mark.parametrize(
@@ -114,7 +114,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == len(expected_ops)
 
@@ -142,7 +142,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == len(expected_ops)
 
@@ -164,7 +164,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations(include_gates=["RX", "CRX"])(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CRX", "RY", "RY", "RX", "RZ"]
         wires_expected = [Wires([0, 1]), Wires("a"), Wires("a"), Wires(2), Wires(2)]
@@ -185,7 +185,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["RX", "Hadamard", "RX"]
         wires_expected = [Wires(0)] * 3
@@ -205,7 +205,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["RX", "CNOT", "RX"]
         wires_expected = [Wires(0), Wires([0, 1]), Wires(0)]
@@ -230,7 +230,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == len(expected_ops)
 
@@ -248,7 +248,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CRX", "CRX"]
         wires_expected = [Wires(["w1", "w2"]), Wires(["w2", "w1"])]
