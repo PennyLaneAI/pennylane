@@ -113,7 +113,6 @@ class QuantumPhaseEstimation(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
 
             # use the product to specify compound operators
             unitary = qml.RX(np.pi / 2, wires=[0]) @ qml.CNOT(wires=[0, 1])
