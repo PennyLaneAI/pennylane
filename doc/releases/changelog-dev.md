@@ -5,6 +5,7 @@
 <h3>New features since last release</h3>
 
 * Add the controlled CZ gate: CCZ.
+
   ```pycon
   >>> ccz = qml.CCZ(wires=[0, 1, 2])
   >>> matrix = ccz.compute_matrix()
@@ -17,9 +18,11 @@
    [ 0  0  0  0  0  0  1  0]
    [ 0  0  0  0  0  0  0 -1]]
   ```
+
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Add the controlled Hadamard gate.
+
   ```pycon
   >>> ch = qml.CH(wires=[0, 1])
   >>> matrix = ch.compute_matrix()
@@ -28,12 +31,14 @@
    [ 0.          0.          0.70710678  0.70710678]
    [ 0.          0.          0.70710678 -0.70710678]]
   ```
+
   [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Support custom measurement processes:
-  * `SampleMeasurement` and `StateMeasurement` classes have been added. They contain an abstract
-    method to process samples/quantum state.
+  * `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
+    They contain an abstract method to process samples/quantum state/quantum script.
     [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
   * Add `_Expectation` class.
     [#3343](https://github.com/PennyLaneAI/pennylane/pull/3343)
@@ -58,6 +63,12 @@
 
   * Add `_MutualInfo` class.
     [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
+
+  * Add `ClassicalShadow` class.
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
+
+  * Add `_ShadowExpval` class.
+    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
@@ -161,12 +172,17 @@
   its functionality from the `QuantumTape` class.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
+* Adds `qml.tape.make_qscript` for converting a quantum function into a quantum script.
+  Replaces `qml.transforms.make_tape` with `make_qscript`.
+  [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
   [#3374](https://github.com/PennyLaneAI/pennylane/pull/3374)
 
   Example with a single measurement:
+
   ```python
   dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
 
@@ -179,7 +195,8 @@
   def cost(a):
       return qml.math.stack(circuit(a))
   ```
-  ```
+
+  ```pycon
   >>> qml.enable_return()
   >>> a = np.array(0.4)
   >>> circuit(a)
@@ -189,7 +206,9 @@
   >>> qml.jacobian(cost)(a)
   array([-0.391     , -0.389     , -0.38433333])
   ```
+
   Example with multiple measurements:
+
   ```python
   dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
 
@@ -204,7 +223,8 @@
       res = circuit(a)
       return qml.math.stack([qml.math.hstack(r) for r in res])
   ```
-  ```
+
+  ```pycon
   >>> circuit(a)
   ((array(0.904), array([0.952, 0.   , 0.   , 0.048])),
    (array(0.915), array([0.9575, 0.    , 0.    , 0.0425])),
@@ -223,6 +243,7 @@
   [#3400](https://github.com/PennyLaneAI/pennylane/pull/3400)
 
   Example with a single measurement:
+
   ```python
   dev = qml.device("default.qubit", wires=1, shots=[1000, 2000, 3000])
 
@@ -232,6 +253,7 @@
       qml.RX(0.2, wires=0)
       return qml.expval(qml.PauliZ(0))
   ```
+
   ```
   >>> qml.enable_return()
   >>> a = tf.Variable(0.4)
@@ -244,7 +266,9 @@
   >>> tape.jacobian(res, a)
   <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.365     , -0.3765    , -0.37533333])>
   ```
+
   Example with multiple measurements:
+
   ```python
   dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
 
@@ -255,6 +279,7 @@
       qml.CNOT(wires=[0, 1])
       return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
   ```
+
   ```
   >>> with tf.GradientTape() as tape:
   ...     res = circuit(a)
@@ -272,6 +297,9 @@
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
 
+* Updated `qml.transforms.split_non_commuting` to support the new return types.
+  [#3414](https://github.com/PennyLaneAI/pennylane/pull/3414)
+
 <h3>Breaking changes</h3>
 
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
@@ -285,6 +313,28 @@
   `OrderedDict` and encapsulates the queue. Consequentially, this also applies to the `QuantumTape`
   class which inherits from `AnnotatedQueue`.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
+
+* Change class name `ShadowMeasurementProcess` to `ClassicalShadow`, to be consistent with the
+  `qml.classical_shadow` function name.
+  [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
+
+* The method `qml.Operation.get_parameter_shift` is removed. The `gradients` module should be used
+  for general parameter-shift rules instead.
+  [(#3419)](https://github.com/PennyLaneAI/pennylane/pull/3419)
+
+* Changed the signature of the `QubitDevice.statistics` method from
+
+  ```python
+  def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
+  ```
+
+  to
+
+  ```python
+  def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
+  ```
+
+  [#3421](https://github.com/PennyLaneAI/pennylane/pull/3421)
 
 <h3>Deprecations</h3>
 
@@ -303,6 +353,11 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
+
+* The `seed_recipes` argument in `qml.classical_shadow` and `qml.shadow_expval` is deprecated.
+  A new argument `seed` has been added, which defaults to None and can contain an integer with the
+  wanted seed.
+  [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 <h3>Documentation</h3>
 
@@ -347,6 +402,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * The `pad_with` argument in the `AmplitudeEmbedding` template is now compatible
   with all interfaces
   [(#3392)](https://github.com/PennyLaneAI/pennylane/pull/3392)
+
+* Fixed a bug where a QNode returning `qml.sample` would produce incorrect results when
+  run on a device defined with a shot vector.
+  [#3422](https://github.com/PennyLaneAI/pennylane/pull/3422)
 
 <h3>Contributors</h3>
 
