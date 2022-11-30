@@ -784,3 +784,15 @@ class StateMeasurement(MeasurementProcess, ABC):
             wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
+
+
+class CustomMeasurement(MeasurementProcess, ABC):
+    """Custom measurement process.
+
+    Any class inheriting from this class should define its own ``process`` method, which takes a
+    device instance and a tape and returns the result of the measurement process.
+    """
+
+    @abstractmethod
+    def process(self, tape, device):
+        """Process the given tape."""
