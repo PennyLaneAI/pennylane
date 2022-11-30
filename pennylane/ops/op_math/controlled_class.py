@@ -705,16 +705,13 @@ class ControlledQubitUnitary(ControlledOp):
         return self.hyperparameters["control_values"]
 
     def pow(self, z):
-        if isinstance(z, int):
-            return [
-                ControlledQubitUnitary(
-                    qml.math.linalg.matrix_power(self.data[0], z),
-                    control_wires=self.control_wires,
-                    control_values=self.control_values,
-                    wires=self.hyperparameters["u_wires"],
-                )
-            ]
-        return super().pow(z)
+        base_pow = self.base.pow(z)
+        return [
+            ControlledQubitUnitary(
+                op, control_wires=self.control_wires, control_values=self.control_values
+            )
+            for op in base_pow
+        ]
 
     def _controlled(self, wire):
         ctrl_wires = self.control_wires + wire
