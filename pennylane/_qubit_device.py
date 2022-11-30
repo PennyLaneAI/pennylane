@@ -977,13 +977,38 @@ class QubitDevice(Device):
                 wires0, wires1 = obs.raw_wires
                 result = self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
 
+            elif obs.return_type is Shadow:
+                if len(observables) > 1:
+                    raise qml.QuantumFunctionError(
+                        "Classical shadows cannot be returned in combination"
+                        " with other return types"
+                    )
+
+                result = self.classical_shadow(obs, circuit=circuit)
+
+            elif obs.return_type is ShadowExpval:
+                if len(observables) > 1:
+                    raise qml.QuantumFunctionError(
+                        "Classical shadows cannot be returned in combination"
+                        " with other return types"
+                    )
+
+                result = self.shadow_expval(obs, circuit=circuit)
+
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
                 )
 
             # 2. Post-process statistics results (if need be)
-            float_return_types = {Expectation, Variance, Probability, VnEntropy, MutualInfo}
+            float_return_types = {
+                Expectation,
+                Variance,
+                Probability,
+                VnEntropy,
+                MutualInfo,
+                ShadowExpval,
+            }
 
             if obs.return_type in float_return_types:
                 result = self._asarray(result, dtype=self.R_DTYPE)

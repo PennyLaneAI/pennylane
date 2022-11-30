@@ -90,7 +90,7 @@ def shadow_expval(H, k=1, seed=None, seed_recipes=True):
             UserWarning,
         )
     seed = seed or np.random.randint(2**30)
-    return _ShadowExpval(ShadowExpval, H=H, seed=seed, k=k)
+    return _ShadowExpval(H=H, seed=seed, k=k)
 
 
 def classical_shadow(wires, seed=None, seed_recipes=True):
@@ -215,7 +215,7 @@ def classical_shadow(wires, seed=None, seed_recipes=True):
         )
     wires = Wires(wires)
     seed = seed or np.random.randint(2**30)
-    return ClassicalShadow(Shadow, wires=wires, seed=seed)
+    return ClassicalShadow(wires=wires, seed=seed)
 
 
 class ClassicalShadow(CustomMeasurement):
@@ -306,6 +306,10 @@ class ClassicalShadow(CustomMeasurement):
     def numeric_type(self):
         return int
 
+    @property
+    def return_type(self):
+        return Shadow
+
     def shape(self, device=None):
         # otherwise, the return type requires a device
         if device is None:
@@ -320,7 +324,6 @@ class ClassicalShadow(CustomMeasurement):
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             seed=self.seed,
             wires=self._wires,
@@ -370,6 +373,10 @@ class _ShadowExpval(CustomMeasurement):
     def numeric_type(self):
         return float
 
+    @property
+    def return_type(self):
+        return ShadowExpval
+
     def shape(self, device=None):
         return (1,)
 
@@ -399,7 +406,6 @@ class _ShadowExpval(CustomMeasurement):
             [copy.copy(H) for H in self.H] if isinstance(self.H, Iterable) else copy.copy(self.H)
         )
         return self.__class__(
-            self.return_type,
             H=H_copy,
             k=self.k,
             seed=self.seed,

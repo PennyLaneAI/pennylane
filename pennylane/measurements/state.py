@@ -77,7 +77,7 @@ def state():
         -0.07471906623679961
     """
     # pylint: disable=protected-access
-    return _State(State)
+    return _State()
 
 
 def density_matrix(wires):
@@ -119,11 +119,15 @@ def density_matrix(wires):
     """
     # pylint: disable=protected-access
     wires = Wires(wires)
-    return _State(State, wires=wires)
+    return _State(wires=wires)
 
 
 class _State(StateMeasurement):
     """Measurement process that returns the quantum state."""
+
+    @property
+    def return_type(self):
+        return State
 
     # pylint: disable=redefined-outer-name
     def process_state(self, state: Sequence[complex], wire_order: Wires):

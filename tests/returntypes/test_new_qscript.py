@@ -27,12 +27,11 @@ from pennylane.measurements import (
     MeasurementShapeError,
     counts,
     expval,
+    probs,
     sample,
     var,
-    probs,
 )
 from pennylane.tape import QuantumScript
-
 
 measures = [
     (qml.expval(qml.PauliZ(0)), ()),
