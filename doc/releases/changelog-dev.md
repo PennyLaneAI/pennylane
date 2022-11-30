@@ -140,6 +140,9 @@
 
 <h3>Improvements</h3>
 
+* Made `gradients.finite_diff` more convenient to use with custom data type observables/devices.
+  [(#3426)](https://github.com/PennyLaneAI/pennylane/pull/3426)
+
 * The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency. 
   [(#3284)](https://github.com/PennyLaneAI/pennylane/pull/3284)
   
