@@ -12,14 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains templates, which are pre-coded routines that can be used in a quantum node.
+SWAP network templates can be used to create quantum circuits with optimal scaling with respect to
+qubit routing for performing some specific quantum simulations tasks.
 """
+from .ccl2 import TwoLocalSwapNetwork
 
-from .broadcast import *
-from .layer import *
-from .layers import *
-from .embeddings import *
-from .subroutines import *
-from .state_preparations import *
-from .tensornetworks import *
-from .swap_networks import *
+# from .trotter import TrotterStepSwapNetwork
+# from .cclk import GeneralizedSwapNetwork
