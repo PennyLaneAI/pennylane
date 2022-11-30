@@ -694,16 +694,6 @@ class ControlledQubitUnitary(ControlledOp):
             return qml.math.stack([qml.math.block_diag([left_pad, _U, right_pad]) for _U in U])
         return qml.math.block_diag([left_pad, U, right_pad])
 
-    @property
-    def control_wires(self):
-        return self.hyperparameters["control_wires"]
-
-    @property
-    def control_values(self):
-        """str.  Specifies whether or not to control on zero "0" or one "1" for each
-        control wire."""
-        return self.hyperparameters["control_values"]
-
     def pow(self, z):
         base_pow = self.base.pow(z)
         return [
