@@ -360,7 +360,7 @@ class TestOutputShape:
             pytest.skip("Sample doesn't support analytic computations.")
 
         if measurement.return_type in {State, MutualInfo, VnEntropy}:
-            pytest.skip("Multiple measurements not supported.")
+            pytest.skip("Density matrix does not support parameter broadcasting.")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
