@@ -108,13 +108,11 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess:
+class MeasurementProcess(ABC):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
     Args:
-        return_type (.ObservableReturnTypes): The type of measurement process.
-            This includes ``Expectation``, ``Variance``, ``Sample``, ``State``, or ``Probability``.
         obs (.Observable): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
@@ -130,13 +128,11 @@ class MeasurementProcess:
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
         id=None,
     ):
-        self.return_type = return_type
         self.obs = obs
         self.id = id
 
@@ -153,15 +149,15 @@ class MeasurementProcess:
             self._eigvals = np.array(eigvals)
 
         # TODO: remove the following lines once devices
-        # have been refactored to accept and understand recieving
+        # have been refactored to accept and understand receiving
         # measurement processes rather than specific observables.
 
         # The following lines are only applicable for measurement processes
         # that do not have corresponding observables (e.g., Probability). We use
-        # them to 'trick' the device into thinking it has recieved an observable.
+        # them to 'trick' the device into thinking it has received an observable.
 
         # Below, we imitate an identity observable, so that the
-        # device undertakes no action upon recieving this observable.
+        # device undertakes no action upon receiving this observable.
         self.name = "Identity"
         self.data = []
 
@@ -169,7 +165,11 @@ class MeasurementProcess:
         self.queue()
 
     @property
-    @functools.lru_cache()
+    def return_type(self):
+        """Measurement return type."""
+        return None
+
+    @property
     def numeric_type(self):
         """The Python numeric type of the measurement result.
 
@@ -180,25 +180,6 @@ class MeasurementProcess:
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        if self.return_type in (Expectation, MutualInfo, Probability, Variance, VnEntropy):
-            return float
-
-        if self.return_type is State:
-            return complex
-
-        if self.return_type is Sample:
-
-            # Note: we only assume an integer numeric type if the observable is a
-            # built-in observable with integer eigenvalues or a tensor product thereof
-            if self.obs is None:
-
-                # Computational basis samples
-                return int
-            int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
-            tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
-            every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
-            return int if every_term_standard else float
-
         raise qml.QuantumFunctionError(
             "Cannot deduce the numeric type of the measurement process with unrecognized "
             + f"return_type {self.return_type}."
@@ -505,7 +486,6 @@ class MeasurementProcess:
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             wires=self._wires,
             eigvals=self._eigvals,
@@ -576,11 +556,7 @@ class MeasurementProcess:
         r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
         computational basis states.
         """
-        return (
-            self.return_type
-            in (qml.measurements.AllCounts, qml.measurements.Counts, qml.measurements.Sample)
-            and self.obs is None
-        )
+        return False
 
     def expand(self):
         """Expand the measurement of an observable to a unitary
@@ -620,7 +596,7 @@ class MeasurementProcess:
 
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
-            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
+            self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 
@@ -642,7 +618,7 @@ class MeasurementProcess:
         This property is a temporary solution that should not exist long-term and should not be
         used outside of ``QuantumTape._process_queue``.
         """
-        return "_ops" if self.return_type is MidMeasure else "_measurements"
+        return "_measurements"
 
     @property
     def hash(self):
@@ -671,10 +647,7 @@ class MeasurementProcess:
         Returns:
             .MeasurementProcess: A measurement process with a simplified observable.
         """
-        if self.obs is None:
-            return self
-
-        return MeasurementProcess(return_type=self.return_type, obs=self.obs.simplify())
+        return self if self.obs is None else self.__class__(obs=self.obs.simplify())
 
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
@@ -748,7 +721,7 @@ class MeasurementProcess:
         return Wires([ordered_obs_wire_lst[index] for index in permutation])
 
 
-class SampleMeasurement(MeasurementProcess, ABC):
+class SampleMeasurement(MeasurementProcess):
     """Sample-based measurement process."""
 
     @abstractmethod
@@ -772,7 +745,7 @@ class SampleMeasurement(MeasurementProcess, ABC):
         """
 
 
-class StateMeasurement(MeasurementProcess, ABC):
+class StateMeasurement(MeasurementProcess):
     """State-based measurement process."""
 
     @abstractmethod
@@ -784,3 +757,15 @@ class StateMeasurement(MeasurementProcess, ABC):
             wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
+
+
+class CustomMeasurement(MeasurementProcess):
+    """Custom measurement process.
+
+    Any class inheriting from this class should define its own ``process`` method, which takes a
+    device instance and a tape and returns the result of the measurement process.
+    """
+
+    @abstractmethod
+    def process(self, tape, device):
+        """Process the given tape."""
