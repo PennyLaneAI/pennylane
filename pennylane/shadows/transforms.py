@@ -42,6 +42,10 @@ def _replace_obs(tape, obs, *args, **kwargs):
         obs(*args, **kwargs)
 
     def processing_fn(res):
+        if qml.active_return():
+            # no stacking necessary since there is only one measurement
+            return res[0]
+
         return qml.math.squeeze(qml.math.stack(res))
 
     return [new_tape], processing_fn
