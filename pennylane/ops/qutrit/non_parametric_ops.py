@@ -453,7 +453,7 @@ class THadamard(Operation):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        subspace (Sequence[int]): the 2D subspace on which to apply operation. This should be
+        subspace (Sequence[int]): the 2D subspace on which to apply the operation. This should be
             `None` for the generalized Hadamard.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
