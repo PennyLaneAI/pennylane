@@ -138,7 +138,7 @@ class _State(StateMeasurement):
             return self._shape_new(device)
         num_shot_elements = (
             1
-            if (device is None and device.shot_vector is None)
+            if (device is None or device.shot_vector is None)
             else sum(s.copies for s in device.shot_vector)
         )
 
@@ -157,13 +157,10 @@ class _State(StateMeasurement):
         return (num_shot_elements, dim)
 
     def _shape_new(self, device=None):
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
-            )
         num_shot_elements = (
-            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
+            1
+            if (device is None or device.shot_vector is None)
+            else sum(s.copies for s in device.shot_vector)
         )
 
         if self.wires:
@@ -174,7 +171,14 @@ class _State(StateMeasurement):
                 if num_shot_elements == 1
                 else tuple((dim, dim) for _ in range(num_shot_elements))
             )
+
         # qml.state()
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
+
         dim = 2 ** len(device.wires)
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
