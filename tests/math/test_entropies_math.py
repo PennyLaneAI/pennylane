@@ -18,7 +18,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from tests.math.test_density_matrices import single_wires_list
 
 pytestmark = pytest.mark.all_interfaces
 
