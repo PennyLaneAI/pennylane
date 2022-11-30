@@ -1076,7 +1076,7 @@ class FermionicSWAP(Operation):
         &|10\rangle \mapsto -ie^{i \phi/2} \sin(\phi/2)|01\rangle + e^{i \phi/2} \cos(\phi/2)|10\rangle\\
         &|11\rangle \mapsto e^{i \phi}|11\rangle,
 
-    where a qubit in :math:`|0\rangle` and :math:`|1\rangle` states represent a hole and a fermion in
+    where qubits in :math:`|0\rangle` and :math:`|1\rangle` states represent a hole and a fermion in
     the orbital, respectively. It preserves anti-symmetrization of orbitals by applying a phase factor
     of :math:`e^{i \phi/2}` to the state for each qubit initially in :math:`|1\rangle` state. Consequently,
     for :math:`\phi=\pi`, the given rotation will essentially perform a SWAP operation on the qubits while
