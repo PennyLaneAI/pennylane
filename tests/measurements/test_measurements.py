@@ -31,6 +31,7 @@ from pennylane.measurements import (
     _MutualInfo,
     _Probability,
     _Sample,
+    _ShadowExpval,
     _State,
     _Variance,
     _VnEntropy,
@@ -38,7 +39,6 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.measurements.classical_shadow import _ShadowExpval
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
 
