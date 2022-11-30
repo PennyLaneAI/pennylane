@@ -98,7 +98,7 @@ def test_shape_unrecognized_error():
     dev = qml.device("default.qubit", wires=2)
     mp = NotValidMeasurement()
     with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the shape"):
-        mp.shape(dev)
+        mp.shape()
 
 
 @pytest.mark.parametrize(
