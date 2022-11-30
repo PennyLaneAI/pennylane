@@ -102,7 +102,9 @@ class TwoLocalSwapNetwork(Operation):
             raise ValueError(f"TwoLocalSwapNetwork requires at least 2 qubits, got {len(wires)}")
 
         if not callable(acquaintances) and acquaintances is not None:
-            raise ValueError(f"Acquaintances must either be a callable or None, got {acquaintances}")
+            raise ValueError(
+                f"Acquaintances must either be a callable or None, got {acquaintances}"
+            )
 
         if weights is not None and acquaintances is None:
             warnings.warn("Weights are being provided without acquaintances")
@@ -150,17 +152,22 @@ class TwoLocalSwapNetwork(Operation):
         wire_order = list(wires).copy()
         itrweights = iter([]) if weights is None else iter(weights)
         for layer in range(len(wires)):
-            qubit_pairs = [[i, i+1] for i in range((layer + shift) % 2, len(wires)-1, 2)]
+            qubit_pairs = [[i, i + 1] for i in range((layer + shift) % 2, len(wires) - 1, 2)]
             for i, j in qubit_pairs:
                 qb1, qb2 = wire_order[i], wire_order[j]
                 if acquaintances is not None:
                     op_list.append(
                         acquaintances(
-                            index=[wires[i], wires[j]], wires=[qb1, qb2], param=next(itrweights, 0.0), **kwargs
+                            index=[wires[i], wires[j]],
+                            wires=[qb1, qb2],
+                            param=next(itrweights, 0.0),
+                            **kwargs,
                         )
                     )
                 op_list.append(
-                    SWAP(wires=[wires[i], wires[j]]) if not fermionic else FermionicSWAP(np.pi, wires=[wires[i], wires[j]])
+                    SWAP(wires=[wires[i], wires[j]])
+                    if not fermionic
+                    else FermionicSWAP(np.pi, wires=[wires[i], wires[j]])
                 )
                 wire_order[i], wire_order[j] = qb2, qb1
 
