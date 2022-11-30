@@ -1,7 +1,7 @@
 from typing import List, Tuple, Union
 
 import pennylane as qml
-from pennylane import adjoint
+from pennylane import adjoint, Tracker
 from pennylane.gradients import param_shift
 
 from pennylane.operation import operation_derivative
@@ -15,21 +15,27 @@ from .preprocessor import simple_preprocessor
 class TestDevicePythonSim(AbstractDevice):
     "Device containing a Python simulator favouring composition-like interface"
 
-    short_name = "test_py_dev"
-    name = "TestDevicePythonSim PennyLane plugin"
-    pennylane_requires = 0.1
-    version = 0.1
-    author = "Xanadu Inc."
+    tracker = None
 
     def __init__(self, dev_config: Union[DeviceConfig, None] = None, *args, **kwargs):
         super().__init__(dev_config, *args, **kwargs)
+        self.tracker = Tracker()
 
-    def execute(self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config = None):
+    def execute(self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config=None):
         if isinstance(qscript, QuantumScript):
             interface = qml.math.get_interface(*qscript.get_parameters(trainable_only=False))
             simulator = JaxSimulator() if interface == "jax" else PlainNumpySimulator()
-            self._private_sim = simulator
-            return simulator.execute(qscript)
+            results = simulator.execute(qscript)
+
+            if self.tracker.active:
+                self.tracker.update(executions=1, results=results)
+                self.tracker.record()
+
+            return results
+
+        if self.tracker.active:
+            self.tracker.update(batches=1, batch_len=len(qscript))
+            self.tracker.record()
 
         return [self.execute(qs) for qs in qscript]
 
@@ -37,9 +43,12 @@ class TestDevicePythonSim(AbstractDevice):
         return self.dev_config if hasattr(self, "dev_config") else {}
 
     def preprocess(
-        self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config = None
+        self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config=None
     ) -> Tuple[List[QuantumScript], Callable]:
-        return simple_preprocessor(qscript)
+        return_script = simple_preprocessor(qscript)
+        if isinstance(return_script, QuantumScript):
+            return_script = [return_script]
+        return return_script, lambda res: res
 
     def execute_and_gradients(self, qscripts, *args, **kwargs):
         """Defined for temporary compatability."""
@@ -49,28 +58,35 @@ class TestDevicePythonSim(AbstractDevice):
 
         return res, [grads]
 
-    def gradient(self, qscript: QuantumScript, order: int = 1):
-        if order != 1:
-            raise NotImplementedError
 
-        state = self._private_sim.create_zeroes_state(qscript.num_wires)
-        for op in qscript.operations:
-            state = self._private_sim.apply_operation(state, op)
-        bra = self._private_sim.apply_operation(state, qscript.measurements[0].obs)
-        ket = state
+@TestDevicePythonSim.register_gradient(order=1)
+def gradient(self, qscript: QuantumScript, order: int = 1):
+    if order != 1:
+        raise NotImplementedError
 
-        grads = []
-        for op in reversed(qscript.operations):
-            adj_op = adjoint(op)
-            ket = self._private_sim.apply_operation(ket, adj_op)
+    if self.tracker.active:
+        self.tracker.update(gradients=1)
+        self.tracker.record()
 
-            if op.num_params != 0:
-                dU = operation_derivative(op)
-                ket_temp = self._private_sim.apply_matrix(ket, dU, op.wires)
-                dM = 2 * np.real(np.vdot(bra, ket_temp))
-                grads.append(dM)
+    sim = PlainNumpySimulator()
+    state = sim.create_zeroes_state(qscript.num_wires)
+    for op in qscript.operations:
+        state = sim.apply_operation(state, op)
+    bra = sim.apply_operation(state, qscript.measurements[0].obs)
+    ket = state
 
-            bra = self._private_sim.apply_operation(bra, adj_op)
+    grads = []
+    for op in reversed(qscript.operations):
+        adj_op = adjoint(op)
+        ket = sim.apply_operation(ket, adj_op)
 
-        grads = grads[::-1]
-        return grads
+        if op.num_params != 0:
+            dU = operation_derivative(op)
+            ket_temp = sim.apply_matrix(ket, dU, op.wires)
+            dM = 2 * np.real(np.vdot(bra, ket_temp))
+            grads.append(dM)
+
+        bra = sim.apply_operation(bra, adj_op)
+
+    grads = grads[::-1]
+    return grads

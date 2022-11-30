@@ -1,7 +1,7 @@
 from typing import List, Union
 
 from pennylane.tape import QuantumScript
-from pennylane import simplify
+from pennylane import simplify, map_wires
 
 
 def stopping_condition(obj):
@@ -20,7 +20,10 @@ def simple_preprocessor(
         return [simple_preprocessor(qs) for qs in qscript]
 
     max_expansion = 20
-    new_qscript = qscript.expand(depth=max_expansion, stop_at=stopping_condition)
+
+    new_qscript = qscript.expand(
+        depth=max_expansion, stop_at=stopping_condition, expand_measurements=False
+    )
 
     for op in new_qscript.operations:
         if not stopping_condition(op):
@@ -30,4 +33,7 @@ def simple_preprocessor(
             f"Requested execution with {new_qscript.num_wires} qubits. We support at most 30."
         )
 
-    return simplify(new_qscript)
+    wire_map = {w: i for i, w in enumerate(qscript.wires)}
+    new_qscript = map_wires(new_qscript, wire_map)
+
+    return new_qscript  # simplify(new_qscript)

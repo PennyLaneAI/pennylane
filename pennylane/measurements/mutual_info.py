@@ -117,3 +117,9 @@ class _MutualInfo(StateMeasurement):
             eigvals=self._eigvals,
             log_base=self.log_base,
         )
+
+    def map_wires(self, wire_map):
+        new_op = self.__copy__()
+        new_op._wires[0] = qml.wires.Wires([wire_map.get(wire, wire) for wire in self._wires[0]])
+        new_op._wires[1] = qml.wires.Wires([wire_map.get(wire, wire) for wire in self._wires[1]])
+        return new_op

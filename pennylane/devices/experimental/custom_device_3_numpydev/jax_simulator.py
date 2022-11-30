@@ -31,8 +31,6 @@ class JaxSimulator:
 
     """
 
-    name = "Jax"
-
     def __init__(self):
         pass
 
@@ -126,5 +124,11 @@ class JaxSimulator:
         if isinstance(measurementprocess, qml.measurements.StateMeasurement):
             total_indices = len(state.shape)
             wires = qml.wires.Wires(range(total_indices))
+            if (
+                measurementprocess.obs is not None
+                and measurementprocess.obs.has_diagonalizing_gates
+            ):
+                for op in measurementprocess.obs.diagonalizing_gates():
+                    state = cls.apply_operation(state, op)
             return measurementprocess.process_state(state.flatten(), wires)
         return state

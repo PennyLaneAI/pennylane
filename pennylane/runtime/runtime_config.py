@@ -53,13 +53,9 @@ class ExecutionConfig:
     """
 
     shots: int = 0
-    grad: Union[None, Callable] = None
-    preproc: Union[None, Callable] = None
-    postproc: Union[None, Callable] = None
     interface: Union[None, InterfaceType] = InterfaceType.AUTOGRAD
     diff_method: Union[None, DiffType] = DiffType.DEVICE
     cache_size: int = 10000  # Set to 0 to disable cache#
     max_expansion: int = 10
     max_diff: int = 1
     grad_args: dict = field(default_factory=dict)
-    expansion_strategy: Union[None, ExpansionStrategy] = ExpansionStrategy.GRADIENT

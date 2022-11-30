@@ -43,9 +43,8 @@ class PlainNumpySimulator:
         for op in qs._ops:
             state = cls.apply_operation(state, op)
 
-        if len(qs.measurements) == 1:
-            return cls.measure(state, qs.measurements[0])
-        return tuple(cls.measure(state, m) for m in qs.measurements)
+        measurements = tuple(cls.measure_state(state, m) for m in qs.measurements)
+        return measurements[0] if len(measurements) == 1 else measurements
 
     @staticmethod
     def create_zeroes_state(num_indices, dtype=np.complex128):
@@ -122,9 +121,29 @@ class PlainNumpySimulator:
         return np.einsum(einsum_indices, reshaped_mat, state)
 
     @classmethod
-    def measure(cls, state, measurementprocess):
+    def measure_state(cls, state, measurementprocess):
         if isinstance(measurementprocess, qml.measurements.StateMeasurement):
             total_indices = len(state.shape)
             wires = qml.wires.Wires(range(total_indices))
+            if (
+                measurementprocess.obs is not None
+                and measurementprocess.obs.has_diagonalizing_gates
+            ):
+                for op in measurementprocess.obs.diagonalizing_gates():
+                    state = cls.apply_operation(state, op)
             return measurementprocess.process_state(state.flatten(), wires)
         return state
+
+    @classmethod
+    def generate_samples(cls, state, rng, shots=1):
+        total_indices = len(state.shape)
+        probs = np.real(state) ** 2 + np.imag(state) ** 2
+        basis_states = np.arange(2**total_indices)
+        samples = rng.choice(basis_states, shots, p=probs.flatten())
+
+        powers_of_two = 1 << np.arange(total_indices, dtype=np.int64)
+        # `samples` typically is one-dimensional, but can be two-dimensional with broadcasting.
+        # In any case we want to append a new axis at the *end* of the shape.
+        states_sampled_base_ten = samples[..., None] & powers_of_two
+        # `states_sampled_base_ten` can be two- or three-dimensional. We revert the *last* axis.
+        return (states_sampled_base_ten > 0).astype(np.int64)[..., ::-1]
