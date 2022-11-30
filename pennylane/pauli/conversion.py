@@ -120,7 +120,7 @@ def pauli_decompose(
         if not np.allclose(coeff, 0):
             obs_term = (
                 [(o, w) for w, o in zip(wire_order, term) if o != I]
-                if hide_identity
+                if hide_identity and not all(t == I for t in term)
                 else [(o, w) for w, o in zip(wire_order, term)]
             )
 

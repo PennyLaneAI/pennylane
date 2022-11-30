@@ -59,6 +59,15 @@ class TestDecomposition:
             no_identities = not any(isinstance(o, Identity) for o in tensor.obs)
             assert all_identities or no_identities
 
+    def test_hide_identity_true_all_identities(self):
+        """Tests that the all identity operator remains even with hide_identity = True."""
+        H = np.eye(4)
+        coeff, obs_list = qml.pauli_decompose(H, hide_identity=True).terms()
+        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
+
+        for tensor in tensors:
+            assert all(isinstance(o, Identity) for o in tensor.obs)
+
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_observable_types(self, hamiltonian, hide_identity):
