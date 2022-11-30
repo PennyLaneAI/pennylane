@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as npp
-from pennylane.measurements import MeasurementProcess, ObservableReturnTypes
+from pennylane.measurements import _Expectation
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qml.RX,
@@ -150,8 +150,8 @@ PARAMETRIZED_MEASUREMENTS = [
             [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         )
     ),
-    MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, -1]),
-    MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, 2]),
+    _Expectation(eigvals=[1, -1]),
+    _Expectation(eigvals=[1, 2]),
 ]
 PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
     itertools.combinations(
