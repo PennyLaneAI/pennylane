@@ -90,10 +90,7 @@ def is_pauli_word(observable):
     if isinstance(observable, Hamiltonian):
         terms_pauli_word = []
         for _, ob in zip(*observable.terms()):
-            if isinstance(ob, Tensor):
-                terms_pauli_word.append(set(ob.name).issubset(pauli_word_names))
-            else:
-                terms_pauli_word.append(ob.name in pauli_word_names)
+            terms_pauli_word.append(is_pauli_word(ob))
         return all(terms_pauli_word)
 
     return observable.name in pauli_word_names
