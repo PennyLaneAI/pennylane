@@ -25,6 +25,8 @@ def _nested_stack(res):
     """
     Given a list of identical nested tuple structures, stack the arrays at the leaves
     """
+    # for some reason pylint thinks qml.numpy.builtins is a dict
+    # pylint: disable=no-member
     if not isinstance(res[0], (tuple, qml.numpy.builtins.SequenceBox)):
         return qml.math.stack(res)
 
