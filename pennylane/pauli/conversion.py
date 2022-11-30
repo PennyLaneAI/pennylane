@@ -63,12 +63,8 @@ def _(op: Tensor):
     if not is_pauli_word(op):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
-    pw = {}
-    for factor in op.obs:
-        wire, pauli = (factor.wires[0], op_to_str_map[factor.__class__])
-        pw[wire] = pauli
-
-    return PauliSentence({PauliWord(pw): 1.0})
+    factors = (pauli_sentence(factor) for factor in op.obs)
+    return reduce(lambda a, b: a * b, factors)
 
 
 @pauli_sentence.register
