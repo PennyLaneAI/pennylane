@@ -88,6 +88,10 @@ class _VnEntropy(StateMeasurement):
     def return_type(self):
         return VnEntropy
 
+    @property
+    def numeric_type(self):
+        return float
+
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=state.dtype, base=self.log_base

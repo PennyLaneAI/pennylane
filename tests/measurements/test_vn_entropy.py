@@ -72,4 +72,5 @@ class TestVnEntropy:
     def test_properties(self):
         """Test that the properties are correct."""
         meas = qml.vn_entropy(wires=0)
+        assert meas.numeric_type == float
         assert meas.return_type == VnEntropy

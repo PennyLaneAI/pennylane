@@ -129,6 +129,10 @@ class _State(StateMeasurement):
     def return_type(self):
         return State
 
+    @property
+    def numeric_type(self):
+        return complex
+
     # pylint: disable=redefined-outer-name
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         if self.wires:

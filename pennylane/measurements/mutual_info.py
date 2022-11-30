@@ -103,6 +103,10 @@ class _MutualInfo(StateMeasurement):
     def return_type(self):
         return MutualInfo
 
+    @property
+    def numeric_type(self):
+        return float
+
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         return qml.math.mutual_info(
             state,
