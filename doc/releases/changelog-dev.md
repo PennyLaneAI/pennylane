@@ -354,6 +354,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
 
+* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
+  instead.
+  [(#3433)](https://github.com/PennyLaneAI/pennylane/pull/3433)
+
 * The `seed_recipes` argument in `qml.classical_shadow` and `qml.shadow_expval` is deprecated.
   A new argument `seed` has been added, which defaults to None and can contain an integer with the
   wanted seed.
