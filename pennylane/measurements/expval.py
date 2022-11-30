@@ -67,6 +67,10 @@ class _Expectation(SampleMeasurement, StateMeasurement):
     def return_type(self):
         return Expectation
 
+    @property
+    def numeric_type(self):
+        return float
+
     def process_samples(
         self,
         samples: Sequence[complex],

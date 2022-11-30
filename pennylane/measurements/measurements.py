@@ -170,7 +170,6 @@ class MeasurementProcess(ABC):
         return None
 
     @property
-    @functools.lru_cache()
     def numeric_type(self):
         """The Python numeric type of the measurement result.
 
@@ -181,25 +180,6 @@ class MeasurementProcess(ABC):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        if self.return_type in (Expectation, MutualInfo, Probability, Variance, VnEntropy):
-            return float
-
-        if self.return_type is State:
-            return complex
-
-        if self.return_type is Sample:
-
-            # Note: we only assume an integer numeric type if the observable is a
-            # built-in observable with integer eigenvalues or a tensor product thereof
-            if self.obs is None:
-
-                # Computational basis samples
-                return int
-            int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
-            tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
-            every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
-            return int if every_term_standard else float
-
         raise qml.QuantumFunctionError(
             "Cannot deduce the numeric type of the measurement process with unrecognized "
             + f"return_type {self.return_type}."
@@ -576,11 +556,7 @@ class MeasurementProcess(ABC):
         r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
         computational basis states.
         """
-        return (
-            self.return_type
-            in (qml.measurements.AllCounts, qml.measurements.Counts, qml.measurements.Sample)
-            and self.obs is None
-        )
+        return False
 
     def expand(self):
         """Expand the measurement of an observable to a unitary
@@ -642,7 +618,7 @@ class MeasurementProcess(ABC):
         This property is a temporary solution that should not exist long-term and should not be
         used outside of ``QuantumTape._process_queue``.
         """
-        return "_ops" if self.return_type is MidMeasure else "_measurements"
+        return "_measurements"
 
     @property
     def hash(self):

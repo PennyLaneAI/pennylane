@@ -65,6 +65,10 @@ class _Variance(SampleMeasurement, StateMeasurement):
     def return_type(self):
         return Variance
 
+    @property
+    def numeric_type(self):
+        return float
+
     def process_samples(
         self,
         samples: Sequence[complex],

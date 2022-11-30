@@ -71,6 +71,7 @@ class TestMutualInfo:
     def test_properties(self):
         """Test that the properties are correct."""
         meas = qml.mutual_info(wires0=[0], wires1=[1])
+        assert meas.numeric_type == float
         assert meas.return_type == MutualInfo
 
     def test_copy(self):
