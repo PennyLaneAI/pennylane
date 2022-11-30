@@ -6,6 +6,12 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
+  instead.
+
+  - Still accessible in v0.28
+  - Will be removed in v0.29
+
 * The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` is deprecated.
   A new argument ``seed`` has been added, which defaults to ``None`` and can contain an integer with the 
   wanted seed.
