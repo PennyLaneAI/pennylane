@@ -40,6 +40,26 @@ def test_simple_circuit():
     assert res.shape == (batch_size,)
 
 
+def test_simple_circuit():
+    """Test that batching works for a simple circuit when the batch size is 1"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_input(argnum=1)
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(inputs, weights):
+        qml.RY(weights[0], wires=0)
+        qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
+        qml.RY(weights[1], wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+    batch_size = 1
+    inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
+    weights = np.random.uniform(-np.pi, np.pi, (2,))
+
+    res = circuit(inputs, weights)
+    assert res.shape == (batch_size,)
+
+
 def test_circuit_non_param_operator_before_batched_operator():
     """Test a circuit where a non-parametric operation is located before a batched operator."""
     dev = qml.device("default.qubit", wires=2)
@@ -169,7 +189,7 @@ def test_multi_returns():
         qml.RY(weights[1], wires=1)
         return qml.expval(qml.PauliZ(1)), qml.probs(wires=[0, 1])
 
-    batch_size = 5
+    batch_size = 6
     inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
     weights = np.random.uniform(-np.pi, np.pi, (2,))
 
@@ -193,7 +213,7 @@ def test_shot_vector():
         qml.RY(weights[1], wires=1)
         return qml.probs(wires=[0, 1])
 
-    batch_size = 5
+    batch_size = 6
     inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
     weights = np.random.uniform(-np.pi, np.pi, (2,))
 
@@ -217,7 +237,7 @@ def test_multi_returns_shot_vector():
         qml.RY(weights[1], wires=1)
         return qml.expval(qml.PauliZ(1)), qml.probs(wires=[0, 1])
 
-    batch_size = 5
+    batch_size = 6
     inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
     weights = np.random.uniform(-np.pi, np.pi, (2,))
 

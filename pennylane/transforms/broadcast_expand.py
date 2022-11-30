@@ -105,7 +105,6 @@ def broadcast_expand(tape):
         output_tapes.append(new_tape)
 
     def processing_fn(res):
-        print('raw res', res, type(res))
         if qml.active_return():
             return res[0] if len(res) == 1 else _nested_stack(res)
 

@@ -25,14 +25,14 @@ def _nested_stack(res):
     """
     Given a list of identical nested tuple structures, stack the arrays at the leaves
     """
-    if not isinstance(res[0], tuple):
+    if not isinstance(res[0], (tuple, qml.numpy.builtins.SequenceBox)):
         return qml.math.stack(res)
 
     stacked_results = []
     for i in range(len(res[0])):
         stacked_results.append(_nested_stack([r[i] for r in res]))
 
-    return stacked_results[0] if len(stacked_results) == 0 else tuple(stacked_results)
+    return tuple(stacked_results)
 
 
 @batch_transform
