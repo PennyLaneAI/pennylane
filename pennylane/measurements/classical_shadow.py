@@ -24,7 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import CustomMeasurement, MeasurementShapeError, Shadow, ShadowExpval
+from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
 
 
 def shadow_expval(H, k=1, seed=None, seed_recipes=True):
@@ -218,7 +218,7 @@ def classical_shadow(wires, seed=None, seed_recipes=True):
     return ClassicalShadow(wires=wires, seed=seed)
 
 
-class ClassicalShadow(CustomMeasurement):
+class ClassicalShadow(MeasurementTransform):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -237,7 +237,7 @@ class ClassicalShadow(CustomMeasurement):
         self.seed = seed
         super().__init__(*args, **kwargs)
 
-    def process(self, tape, device):
+    def process(self, qscript, device):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -298,7 +298,7 @@ class ClassicalShadow(CustomMeasurement):
                 ]
 
                 device.reset()
-                device.apply(tape.operations, rotations=tape.diagonalizing_gates + rotations)
+                device.apply(qscript.operations, rotations=qscript.diagonalizing_gates + rotations)
 
                 outcomes[t] = device.generate_samples()[0][mapped_wires]
 
@@ -333,7 +333,7 @@ class ClassicalShadow(CustomMeasurement):
         )
 
 
-class _ShadowExpval(CustomMeasurement):
+class _ShadowExpval(MeasurementTransform):
     """Measures the expectation value of an operator using the classical shadow measurement process.
 
     This has the same arguments as the base class MeasurementProcess, plus other additional
@@ -357,7 +357,7 @@ class _ShadowExpval(CustomMeasurement):
         self.k = k
         super().__init__(*args, **kwargs)
 
-    def process(self, tape, device):
+    def process(self, qscript, device):
         """Compute expectation values using classical shadows in a differentiable manner.
 
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
@@ -369,7 +369,9 @@ class _ShadowExpval(CustomMeasurement):
         Returns:
             float: expectation value estimate.
         """
-        bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
+        bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(
+            qscript, device
+        )
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 

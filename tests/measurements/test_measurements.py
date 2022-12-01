@@ -19,9 +19,9 @@ import pennylane as qml
 from pennylane.measurements import (
     ClassicalShadow,
     Counts,
-    CustomMeasurement,
     Expectation,
     MeasurementProcess,
+    MeasurementTransform,
     MidMeasure,
     Probability,
     Sample,
@@ -554,7 +554,7 @@ class TestCustomMeasurement:
     def test_custom_measurement(self):
         """Test the execution of a custom measurement."""
 
-        class MyMeasurement(CustomMeasurement):
+        class MyMeasurement(MeasurementTransform):
             def process(self, qscript, device):
                 return {device.shots: len(qscript)}
 
@@ -569,7 +569,7 @@ class TestCustomMeasurement:
     def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        class MyMeasurement(CustomMeasurement):
+        class MyMeasurement(MeasurementTransform):
             method_name = "test_method"
 
             def process(self, qscript, device):

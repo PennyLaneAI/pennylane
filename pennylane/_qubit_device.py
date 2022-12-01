@@ -35,9 +35,9 @@ from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
     AllCounts,
     Counts,
-    CustomMeasurement,
     Expectation,
     MeasurementProcess,
+    MeasurementTransform,
     MutualInfo,
     Probability,
     Sample,
@@ -853,7 +853,7 @@ class QubitDevice(Device):
                     )
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
-            elif isinstance(m, CustomMeasurement):
+            elif isinstance(m, MeasurementTransform):
                 if method := getattr(self, m.method_name, False):
                     results.append(method(qscript=circuit))
                 else:
@@ -1073,7 +1073,7 @@ class QubitDevice(Device):
             elif method := getattr(self, m.method_name, False):
                 result = method(obs, shot_range=shot_range, bin_size=bin_size)
 
-            elif isinstance(m, CustomMeasurement):
+            elif isinstance(m, MeasurementTransform):
                 result = m.process(qscript=circuit, device=self)
 
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):

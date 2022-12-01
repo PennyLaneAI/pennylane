@@ -584,8 +584,9 @@ class StateMeasurement(MeasurementProcess):
         """
 
 
-class CustomMeasurement(MeasurementProcess):
-    """Custom measurement process.
+class MeasurementTransform(MeasurementProcess):
+    """Measurement process that applies a transform into the given quantum script. This transform
+    is carried out inside the gradient black box, thus is not tracked by the gradient transform.
 
     Any class inheriting from this class should define its own ``process`` method, which takes a
     device instance and a tape and returns the result of the measurement process.

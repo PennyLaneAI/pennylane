@@ -20,10 +20,10 @@ from .expval import _Expectation, expval
 from .measurements import (
     AllCounts,
     Counts,
-    CustomMeasurement,
     Expectation,
     MeasurementProcess,
     MeasurementShapeError,
+    MeasurementTransform,
     MidMeasure,
     MutualInfo,
     ObservableReturnTypes,
