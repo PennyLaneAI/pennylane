@@ -128,7 +128,11 @@ def tape_to_graph_zx(tape, backend=None):
 
 
 def graph_zx_to_tape(graph, split_phases=True):
-    """From PyZX graph to a PennyLane tape."""
+    """It converts a graph from PyZX to a PennyLane tape, if graph is diagram-like.
+    Args:
+        graph(Graph): ZX graph in PyZX.
+        split_phases(bool): If True the phases are split.
+    """
 
     # Avoid to make PyZX a requirement for PennyLane.
     try:
@@ -154,6 +158,8 @@ def graph_zx_to_tape(graph, split_phases=True):
     rows = {}
 
     inputs = graph.inputs()
+
+    # Set up the rows dictionary
     for vertex in graph.vertices():
         if vertex in inputs:
             continue
@@ -162,21 +168,33 @@ def graph_zx_to_tape(graph, split_phases=True):
             rows[row_index].append(vertex)
         else:
             rows[row_index] = [vertex]
+
     for row_key in sorted(rows.keys()):
         for vertex in rows[row_key]:
+
             qubit_1 = qubits[vertex]
             param = params[vertex]
             type_1 = types[vertex]
-            neigh = [w for w in graph.neighbors(vertex) if graph_rows[w] < row_key]
-            if len(neigh) != 1:
-                raise TypeError("Graph doesn't seem circuit like: multiple parents")
-            n = neigh[0]
-            if qubits[n] != qubit_1:
+            neighbors = [w for w in graph.neighbors(vertex) if graph_rows[w] < row_key]
+
+            # The graph is not diagram like.
+            if len(neighbors) != 1:
+                raise TypeError(
+                    "Graph doesn't seem circuit like: multiple parents. Use extract circuit function."
+                )
+
+            neighbor_0 = neighbors[0]
+
+            if qubits[neighbor_0] != qubit_1:
                 raise TypeError("Graph doesn't seem circuit like: cross qubit connections")
-            if graph.edge_type(graph.edge(n, vertex)) == EdgeType.HADAMARD:
+
+            if graph.edge_type(graph.edge(neighbor_0, vertex)) == EdgeType.HADAMARD:
                 operations.append(qml.Hadamard(wires=qubit_1))
-            if type_1 == VertexType.BOUNDARY:  # vertex is an output
+
+            if type_1 == VertexType.BOUNDARY:
                 continue
+
+            # Given the phase add a 1 qubit gate
             if param != 0 and not split_phases:
                 if type_1 == VertexType.Z:
                     param = float(param)
@@ -214,29 +232,40 @@ def graph_zx_to_tape(graph, split_phases=True):
                     param = float(param)
                     operations.append(qml.RX(param, wires=qubit_1))
 
-            neigh = [w for w in graph.neighbors(vertex) if graph_rows[w] == row_key and w < vertex]
-            for n in neigh:
-                t2 = types[n]
-                qubit_2 = qubits[n]
-                if type_1 == t2:
-                    if graph.edge_type(graph.edge(vertex, n)) != EdgeType.HADAMARD:
+            # Given the neighbors add two qubits gate
+            neighbors = [
+                w for w in graph.neighbors(vertex) if graph_rows[w] == row_key and w < vertex
+            ]
+
+            for neighbor in neighbors:
+
+                type_2 = types[neighbor]
+                qubit_2 = qubits[neighbor]
+
+                if type_1 == type_2:
+
+                    if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.HADAMARD:
                         raise TypeError(
                             "Invalid vertical connection between vertices of the same type"
                         )
+
                     if type_1 == VertexType.Z:
                         operations.append(qml.CZ(wires=[qubit_2, qubit_1]))
                     else:
                         operations.append(qml.Hadamard(wires=qubit_2))
                         operations.append(qml.CNOT(wires=[qubit_2, qubit_1]))
                         operations.append(qml.Hadamard(wires=qubit_2))
+
                 else:
-                    if graph.edge_type(graph.edge(vertex, n)) != EdgeType.SIMPLE:
+                    if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.SIMPLE:
                         raise TypeError(
                             "Invalid vertical connection between vertices of different type"
                         )
+
                     if type_1 == VertexType.Z:
                         operations.append(qml.CNOT(wires=[qubit_1, qubit_2]))
                     else:
                         operations.append(qml.CNOT(wires=[qubit_2, qubit_1]))
+
     tape = QuantumTape(operations, [], prep=[])
     return tape
