@@ -539,38 +539,6 @@ class TestOperationConstruction:
         op = DummyOp(x, wires=0)
         assert op.grad_recipe == ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
 
-    def test_warning_get_parameter_shift(self):
-        """Test that ``get_parameter_shift`` issues a deprecation
-        warning."""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            grad_recipe = ("Dummy recipe",)
-
-        op = DummyOp(0.1, wires=0)
-        with pytest.warns(UserWarning, match="get_parameter_shift is deprecated"):
-            assert op.get_parameter_shift(0) == "Dummy recipe"
-
-    @pytest.mark.filterwarnings("ignore:The method get_parameter_shift is deprecated")
-    def test_error_get_parameter_shift_no_recipe(self):
-        """Test that ``get_parameter_shift`` raises an Error if no grad_recipe
-        is available, as we no longer assume the two-term rule by default."""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            num_params = 1
-            grad_recipe = (None,)
-
-        op = DummyOp(0.1, wires=0)
-        with pytest.raises(
-            qml.operation.OperatorPropertyUndefined,
-            match="The operation DummyOp does not have a parameter-shift recipe",
-        ):
-            op.get_parameter_shift(0)
-
     def test_default_grad_method_with_frequencies(self):
         """Test that the correct ``grad_method`` is returned by default
         if ``parameter_frequencies`` are present.

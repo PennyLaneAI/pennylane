@@ -230,15 +230,21 @@ class TestSample:
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
             return qml.sample()
 
         res = circuit()
 
         assert isinstance(res, tuple)
 
-        expected_shapes = [(num_wires,), (num_wires, shots2), (num_wires, shots3)]
+        expected_shapes = [(num_wires,), (shots2, num_wires), (shots3, num_wires)]
         assert len(res) == len(expected_shapes)
-        assert (r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
+        assert all(r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
+
+        # assert first wire is always the same as second
+        assert np.all(res[0][0] == res[0][1])
+        assert np.all(res[1][:, 0] == res[1][:, 1])
+        assert np.all(res[2][:, 0] == res[2][:, 1])
 
         custom_measurement_process(dev, spy)
 

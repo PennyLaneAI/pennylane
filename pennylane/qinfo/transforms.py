@@ -176,9 +176,8 @@ def vn_entropy(qnode, wires, base=None):
         # If pure state directly return 0.
         if len(wires) == len(qnode.device.wires):
             qnode.construct(args, kwargs)
-            if len(qnode.tape.observables) != 1 or not isinstance(
-                qnode.tape.measurements[0], State
-            ):
+            measurements = qnode.tape.measurements
+            if len(measurements) != 1 or not isinstance(measurements[0], State):
                 raise ValueError("The qfunc return type needs to be a state.")
             density_matrix = qnode(*args, **kwargs)
             if density_matrix.shape == (density_matrix.shape[0],):

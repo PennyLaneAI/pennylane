@@ -79,6 +79,6 @@ class TestVnEntropy:
     def test_shape(self, shots, shape):
         """Test the ``shape`` method."""
         meas = qml.vn_entropy(wires=0)
-        dev = qml.device("default.qubit", wires=0, shots=shots)
+        dev = qml.device("default.qubit", wires=1, shots=shots)
 
         assert meas.shape(dev) == shape

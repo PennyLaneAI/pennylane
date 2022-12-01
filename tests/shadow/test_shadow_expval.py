@@ -77,6 +77,7 @@ class TestExpvalMeasurement:
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         H = qml.PauliZ(0)
         res = qml.shadow_expval(H)
+        assert res.shape() == (1,)
         assert res.shape(dev) == (1,)
 
     def test_shape_matches(self):
@@ -90,7 +91,7 @@ class TestExpvalMeasurement:
         circuit.construct((H,), {})
 
         res = qml.execute([circuit.tape], circuit.device, None)[0]
-        expected_shape = qml.shadow_expval(H).shape(circuit.device)
+        expected_shape = qml.shadow_expval(H).shape()
 
         assert res.shape == expected_shape
 
@@ -142,6 +143,14 @@ class TestExpvalMeasurement:
         assert tape.operations[0].name == "PauliY"
         assert len(tape.measurements) == 1
         assert isinstance(tape.measurements[0], ShadowExpval)
+
+    def test_seed_recipes_deprecated(self):
+        """Test that using the ``seed_recipes`` argument is deprecated."""
+        with pytest.warns(
+            UserWarning,
+            match="Using ``seed_recipes`` is deprecated. Please use ``seed`` instead",
+        ):
+            qml.shadow_expval(H=qml.PauliX(0), seed_recipes=False)
 
 
 obs_hadamard = [

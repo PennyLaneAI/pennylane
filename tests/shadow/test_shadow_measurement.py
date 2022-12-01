@@ -117,7 +117,7 @@ class TestClassicalShadow:
     """Unit tests for classical_shadow measurement"""
 
     shots_list = [1, 100]
-    seed_recipes_list = [True, False]
+    seed_recipes_list = [None, 74]  # random seed
 
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_measurement_process_numeric_type(self, wires, seed):
@@ -132,6 +132,11 @@ class TestClassicalShadow:
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         res = qml.classical_shadow(wires=range(wires), seed=seed)
         assert res.shape(device=dev) == (1, 2, shots, wires)
+
+        # test an error is raised when device is None
+        msg = "The device argument is required to obtain the shape of a classical shadow measurement process"
+        with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
+            res.shape(device=None)
 
     def test_shape_matches(self, wires):
         """Test that the shape of the MeasurementProcess matches the shape
@@ -261,3 +266,11 @@ class TestClassicalShadow:
         msg = "Classical shadows cannot be returned in combination with other return types"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             circuit()
+
+    def test_seed_recipes_deprecated(self, wires):
+        """Test that using the ``seed_recipes`` argument is deprecated."""
+        with pytest.warns(
+            UserWarning,
+            match="Using ``seed_recipes`` is deprecated. Please use ``seed`` instead",
+        ):
+            qml.classical_shadow(wires=wires, seed_recipes=False)

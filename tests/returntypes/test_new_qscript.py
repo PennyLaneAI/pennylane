@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import _MutualInfo, _State, _VnEntropy
+from pennylane.measurements import MeasurementShapeError, _MutualInfo, _State, _VnEntropy
 from pennylane.tape import QuantumScript
 
 measures = [
@@ -113,14 +113,22 @@ class TestMeasurementProcess:
 
         assert measurement.shape(dev) == expected_shape
 
+    @pytest.mark.parametrize("measurement", [qml.probs(wires=[0, 1]), qml.state(), qml.sample()])
+    def test_no_device_error(self, measurement):
+        """Test that an error is raised when a measurement that requires a device
+        is called without a device"""
+        msg = "The device argument is required to obtain the shape of the measurement process"
+
+        with pytest.raises(MeasurementShapeError, match=msg):
+            measurement.shape()
+
     def test_undefined_shape_error(self):
         """Test that an error is raised for a measurement with an undefined shape"""
-        dev = qml.device("default.qubit", wires=2)
         measurement = qml.counts(wires=[0, 1])
         msg = "The shape of the measurement Counts is not defined"
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            measurement.shape(dev)
+            measurement.shape()
 
 
 class TestOutputShape:
@@ -352,7 +360,7 @@ class TestOutputShape:
             pytest.skip("Sample doesn't support analytic computations.")
 
         if measurement.return_type in {_State, _MutualInfo, _VnEntropy}:
-            pytest.skip("Multiple measurements not supported.")
+            pytest.skip("Density matrix does not support parameter broadcasting.")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
 

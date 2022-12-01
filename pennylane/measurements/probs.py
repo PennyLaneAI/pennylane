@@ -20,7 +20,7 @@ from typing import Sequence, Tuple
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import SampleMeasurement, StateMeasurement, _Probability
+from .measurements import MeasurementShapeError, SampleMeasurement, StateMeasurement, _Probability
 
 
 def probs(wires=None, op=None):
@@ -118,6 +118,8 @@ def probs(wires=None, op=None):
 class Probability(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
 
+    method_name = "probability"
+
     @property
     def return_type(self):
         return _Probability
@@ -126,9 +128,14 @@ class Probability(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device):
+    def shape(self, device=None):
         if qml.active_return():
             return self._shape_new(device)
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
         num_shot_elements = (
             1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
         )
@@ -137,7 +144,12 @@ class Probability(SampleMeasurement, StateMeasurement):
 
         return (num_shot_elements, dim)
 
-    def _shape_new(self, device):
+    def _shape_new(self, device=None):
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
         num_shot_elements = (
             1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
         )

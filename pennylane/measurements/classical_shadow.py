@@ -16,6 +16,7 @@
 This module contains the qml.classical_shadow measurement.
 """
 import copy
+import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -23,10 +24,10 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import CustomMeasurement, _Shadow, _ShadowExpval
+from .measurements import MeasurementShapeError, MeasurementTransform, _Shadow, _ShadowExpval
 
 
-def shadow_expval(H, k=1, seed=None):
+def shadow_expval(H, k=1, seed=None, seed_recipes=True):
     r"""Compute expectation values using classical shadows in a differentiable manner.
 
     The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
@@ -83,11 +84,16 @@ def shadow_expval(H, k=1, seed=None):
     >>> qml.jacobian(qnode)(x, Hs)
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
+    if seed_recipes is False:
+        warnings.warn(
+            "Using ``seed_recipes`` is deprecated. Please use ``seed`` instead.",
+            UserWarning,
+        )
     seed = seed or np.random.randint(2**30)
     return ShadowExpval(H=H, seed=seed, k=k)
 
 
-def classical_shadow(wires, seed=None):
+def classical_shadow(wires, seed=None, seed_recipes=True):
     """
     The classical shadow measurement protocol.
 
@@ -202,13 +208,17 @@ def classical_shadow(wires, seed=None):
         >>> np.all(bits1 == bits2)
         False
     """
+    if seed_recipes is False:
+        warnings.warn(
+            "Using ``seed_recipes`` is deprecated. Please use ``seed`` instead.",
+            UserWarning,
+        )
     wires = Wires(wires)
-
     seed = seed or np.random.randint(2**30)
     return ClassicalShadow(wires=wires, seed=seed)
 
 
-class ClassicalShadow(CustomMeasurement):
+class ClassicalShadow(MeasurementTransform):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -221,11 +231,13 @@ class ClassicalShadow(CustomMeasurement):
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
+    method_name = "classical_shadow"
+
     def __init__(self, *args, seed=None, **kwargs):
         self.seed = seed
         super().__init__(*args, **kwargs)
 
-    def process(self, tape, device):
+    def process(self, qscript, device):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -244,14 +256,9 @@ class ClassicalShadow(CustomMeasurement):
         of shots and ``n`` is the number of qubits, then both the measured bits and the
         Pauli measurements have shape ``(T, n)``.
 
-        This implementation leverages vectorization and offers a significant speed-up over
-        the generic implementation.
-
-        .. Note::
-
-            This method internally calls ``np.einsum`` which supports at most 52 indices,
-            thus the classical shadow measurement for this device supports at most 52
-            qubits.
+        This implementation is device-agnostic and works by executing single-shot
+        tapes containing randomized Pauli observables. Devices should override this
+        if they can offer cleaner or faster implementations.
 
         .. seealso:: :func:`~.classical_shadow`
 
@@ -291,7 +298,7 @@ class ClassicalShadow(CustomMeasurement):
                 ]
 
                 device.reset()
-                device.apply(tape.operations, rotations=tape.diagonalizing_gates + rotations)
+                device.apply(qscript.operations, rotations=qscript.diagonalizing_gates + rotations)
 
                 outcomes[t] = device.generate_samples()[0][mapped_wires]
 
@@ -306,6 +313,13 @@ class ClassicalShadow(CustomMeasurement):
         return _Shadow
 
     def shape(self, device=None):
+        # otherwise, the return type requires a device
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of a classical "
+                "shadow measurement process."
+            )
+
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
         return (1, 2, device.shots, len(self.wires))
@@ -319,7 +333,7 @@ class ClassicalShadow(CustomMeasurement):
         )
 
 
-class ShadowExpval(CustomMeasurement):
+class ShadowExpval(MeasurementTransform):
     """Measures the expectation value of an operator using the classical shadow measurement process.
 
     This has the same arguments as the base class MeasurementProcess, plus other additional
@@ -335,13 +349,15 @@ class ShadowExpval(CustomMeasurement):
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
+    method_name = "shadow_expval"
+
     def __init__(self, *args, H, seed=None, k=1, **kwargs):
         self.seed = seed
         self.H = H
         self.k = k
         super().__init__(*args, **kwargs)
 
-    def process(self, tape, device):
+    def process(self, qscript, device):
         """Compute expectation values using classical shadows in a differentiable manner.
 
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
@@ -353,7 +369,9 @@ class ShadowExpval(CustomMeasurement):
         Returns:
             float: expectation value estimate.
         """
-        bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
+        bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(
+            qscript, device
+        )
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 

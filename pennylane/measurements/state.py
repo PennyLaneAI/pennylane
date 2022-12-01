@@ -20,7 +20,7 @@ from typing import Sequence
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement, _State
+from .measurements import MeasurementShapeError, StateMeasurement, _State
 
 
 def state():
@@ -125,6 +125,8 @@ def density_matrix(wires):
 class State(StateMeasurement):
     """Measurement process that returns the quantum state."""
 
+    method_name = "state"
+
     @property
     def return_type(self):
         return _State
@@ -133,24 +135,34 @@ class State(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def shape(self, device):
+    def shape(self, device=None):
         if qml.active_return():
             return self._shape_new(device)
         num_shot_elements = (
-            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
+            1
+            if (device is None or device.shot_vector is None)
+            else sum(s.copies for s in device.shot_vector)
         )
 
         if self.wires:
             # qml.density_matrix()
             dim = 2 ** len(self.wires)
             return (num_shot_elements, dim, dim)
+
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
         # qml.state()
         dim = 2 ** len(device.wires)
         return (num_shot_elements, dim)
 
-    def _shape_new(self, device):
+    def _shape_new(self, device=None):
         num_shot_elements = (
-            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
+            1
+            if (device is None or device.shot_vector is None)
+            else sum(s.copies for s in device.shot_vector)
         )
 
         if self.wires:
@@ -161,7 +173,14 @@ class State(StateMeasurement):
                 if num_shot_elements == 1
                 else tuple((dim, dim) for _ in range(num_shot_elements))
             )
+
         # qml.state()
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
+
         dim = 2 ** len(device.wires)
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 

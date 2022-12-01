@@ -1286,35 +1286,6 @@ class Operation(Operator):
         """
         raise NotImplementedError
 
-    def get_parameter_shift(self, idx):
-        r"""Multiplier and shift for the given parameter, based on its gradient recipe.
-
-        Args:
-            idx (int): parameter index within the operation
-
-        Returns:
-            list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
-
-        Note that the default value for ``shift`` is None, which is replaced by the
-        default shift :math:`\pi/2`.
-        """
-        warnings.warn(
-            "The method get_parameter_shift is deprecated. Use the methods of "
-            "the gradients module for general parameter-shift rules instead.",
-            UserWarning,
-        )
-        # get the gradient recipe for this parameter
-        recipe = self.grad_recipe[idx]
-        if recipe is not None:
-            return recipe
-
-        # We no longer assume any default parameter-shift rule to apply.
-        raise OperatorPropertyUndefined(
-            f"The operation {self.name} does not have a parameter-shift recipe defined."
-            " This error might occur if previously the two-term shift rule was assumed"
-            " silently. In this case, consider adding it explicitly to the operation."
-        )
-
     @property
     def parameter_frequencies(self):
         r"""Returns the frequencies for each operator parameter with respect

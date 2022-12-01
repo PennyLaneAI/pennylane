@@ -20,6 +20,7 @@ from .expval import Expectation, expval
 from .measurements import (
     MeasurementProcess,
     MeasurementShapeError,
+    MeasurementTransform,
     ObservableReturnTypes,
     SampleMeasurement,
     StateMeasurement,

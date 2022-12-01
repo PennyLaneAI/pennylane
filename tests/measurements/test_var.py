@@ -46,7 +46,7 @@ def custom_measurement_process(device, spy):
 class TestVar:
     """Tests for the var function"""
 
-    @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
+    @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     def test_value(self, tol, r_dtype, mocker, shots):
         """Test that the var function works"""
@@ -116,9 +116,8 @@ class TestVar:
     )
     def test_shape(self, obs):
         """Test that the shape is correct."""
-        dev = qml.device("default.qubit", wires=3)
         res = qml.var(obs)
-        assert res.shape(dev) == (1,)
+        assert res.shape() == (1,)
 
     @pytest.mark.parametrize(
         "obs",
