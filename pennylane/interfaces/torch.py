@@ -290,10 +290,8 @@ def pytreeify(cls):
     return cls
 
 
-def _compute_vjps_new(dys, jacs, multi_measurements, device=None):
+def _compute_vjps_new(dys, jacs, multi_measurements):
     """Compute the vjps of multiple tapes, directly for a Jacobian and tangents."""
-    # pylint: disable=unused-argument
-    # TODO: add device
     vjps = []
 
     for i, multi in enumerate(multi_measurements):
@@ -378,7 +376,7 @@ class ExecuteTapesNew(torch.autograd.Function):
         if ctx.jacs:
             # Jacobians were computed on the forward pass (mode="forward")
             # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = _compute_vjps_new(dy, ctx.jacs, multi_measurements, device=ctx.torch_device)
+            vjps = _compute_vjps_new(dy, ctx.jacs, multi_measurements)
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -442,7 +440,7 @@ class ExecuteTapesNew(torch.autograd.Function):
                 with qml.tape.Unwrap(*ctx.tapes):
                     jacs = ctx.gradient_fn(ctx.tapes, **ctx.gradient_kwargs)
 
-                vjps = _compute_vjps_new(dy, jacs, multi_measurements, device=ctx.torch_device)
+                vjps = _compute_vjps_new(dy, jacs, multi_measurements)
 
         # Remove empty vjps
         vjps = [vjp for vjp in vjps if not isinstance(vjp, np.ndarray)]
@@ -455,6 +453,7 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
     """Execute a batch of tapes with Torch parameters on a device.
     This function may be called recursively, if ``gradient_fn`` is a differentiable
     transform, and ``_n < max_diff``.
+
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
         device (.Device): Device to use to execute the batch of tapes.
@@ -527,8 +526,9 @@ def _res_to_torch(r, i, ctx):
 
 def _jac_to_torch(i, ctx):
     """Convert Jacobian from unwrapped execution to torch in the given ctx."""
-    jac_ = []
     if ctx.jacs:
+        jac_ = []
+
         multi_m = len(ctx.tapes[i].measurements) > 1
         multi_p = len(ctx.tapes[i].trainable_params) > 1
 
