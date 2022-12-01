@@ -1905,12 +1905,14 @@ class TestReturn:
         assert isinstance(hess[0], tuple)
         assert len(hess[0]) == 2
         assert isinstance(hess[0][0], torch.Tensor)
+        assert isinstance(hess[0][1], torch.Tensor)
         assert hess[0][0].shape == ()
         assert hess[0][1].shape == ()
 
         assert isinstance(hess[1], tuple)
         assert len(hess[1]) == 2
         assert isinstance(hess[1][0], torch.Tensor)
+        assert isinstance(hess[1][1], torch.Tensor)
         assert hess[1][0].shape == ()
         assert hess[1][1].shape == ()
 
@@ -1938,7 +1940,7 @@ class TestReturn:
         assert hess.shape == (2, 2)
 
     def test_hessian_var_multiple_params(self, dev_name, diff_method, mode, shots):
-        """The hessian of single a measurement with multiple params return a tuple of arrays."""
+        """The hessian of a single measurement with multiple params returns a tuple of arrays."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
         if shots is not None and diff_method in ("backprop", "adjoint"):

@@ -43,7 +43,7 @@ class TestTorchDevice:
         assert x.grad.is_cuda
 
     def test_mixed_devices(self):
-        """Asserts works with both cuda and cpu input data"""
+        """Asserts that the device works with both cuda and cpu input data"""
 
         dev = qml.device("default.qubit.torch", wires=1)
 
