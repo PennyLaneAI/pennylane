@@ -526,6 +526,8 @@ class QNode:
             self._qfunc_output = self.func(*args, **kwargs)
         self._tape = QuantumScript.from_queue(q)
         self._tape._qfunc_output = self._qfunc_output
+        self._tape._queue_category = "_ops"
+        qml.QueuingManager.append(self.tape)
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
