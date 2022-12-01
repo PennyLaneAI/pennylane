@@ -26,6 +26,7 @@ from pennylane.measurements import (
     Probability,
     Sample,
     SampleMeasurement,
+    ShadowExpval,
     State,
     StateMeasurement,
     Variance,
