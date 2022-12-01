@@ -19,7 +19,7 @@
    [ 0  0  0  0  0  0  0 -1]]
   ```
 
-  [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
+  [(#3408)](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Add the controlled Hadamard gate.
 
@@ -32,43 +32,43 @@
    [ 0.          0.          0.70710678 -0.70710678]]
   ```
 
-  [#3408](https://github.com/PennyLaneAI/pennylane/pull/3408)
+  [(#3408)](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Support custom measurement processes:
   * `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
     They contain an abstract method to process samples/quantum state/quantum script.
-    [#3286](https://github.com/PennyLaneAI/pennylane/pull/3286)
-    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
+    [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
+    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
   * Add `_Expectation` class.
-    [#3343](https://github.com/PennyLaneAI/pennylane/pull/3343)
+    [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
 
   * Add `_Sample` class.
-    [#3288](https://github.com/PennyLaneAI/pennylane/pull/3288)
+    [(#3288)](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
   * Add `_Var` class.
-    [#3312](https://github.com/PennyLaneAI/pennylane/pull/3312)
+    [(#3312)](https://github.com/PennyLaneAI/pennylane/pull/3312)
 
   * Add `_Probability` class.
-    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+    [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
   * Add `_Counts` class.
-    [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
+    [(#3292)](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
   * Add `_State` class.
-    [#3287](https://github.com/PennyLaneAI/pennylane/pull/3287)
+    [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
   * Add `_VnEntropy` class.
-    [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
+    [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
   * Add `_MutualInfo` class.
-    [#3327](https://github.com/PennyLaneAI/pennylane/pull/3327)
+    [(#3327)](https://github.com/PennyLaneAI/pennylane/pull/3327)
 
   * Add `ClassicalShadow` class.
-    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
+    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
   * Add `_ShadowExpval` class.
-    [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
+    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
@@ -91,7 +91,25 @@
   ```
 
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
-  [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
+  [(#3279)](https://github.com/PennyLaneAI/pennylane/pull/3279)
+  
+* Added two new methods `operation()`, `hamiltonian()` for both `PauliSentence` and `PauliWord` classes to generate an equivalent PennyLane 
+  `Operation` or `Hamiltonian` instance from a `PauliSentence` or `PauliWord` one.
+  [(#3391)](https://github.com/PennyLaneAI/pennylane/pull/3391)
+
+  ```pycon
+  >>> pw = qml.pauli.PauliWord({0: 'X', 1: 'Y'})
+  >>> print(pw.operation())
+  PauliX(wires=[0]) @ PauliY(wires=[1])
+  >>> print(pw.hamiltonian())
+    (1) [X0 Y1]
+  >>>
+  >>> ps = qml.pauli.PauliSentence({pw: -1.23})
+  >>> print(ps.operation())
+  -1.23*(PauliX(wires=[0]) @ PauliY(wires=[1]))
+  >>> print(ps.hamiltonian())
+    (-1.23) [X0 Y1]
+  ```
 
 * Added a new gate operation `FermionicSWAP`, which implements the exchange of spin orbitals
   representing fermionic-modes while maintaining proper anti-symmetrization.
@@ -121,7 +139,7 @@
 
 * Support for purity computation is added. The `qml.math.purity` function computes the purity from a state vector or a density matrix:
 
-  [#3290](https://github.com/PennyLaneAI/pennylane/pull/3290)
+  [(#3290)](https://github.com/PennyLaneAI/pennylane/pull/3290)
 
   ```pycon
   >>> x = [1, 0, 0, 1] / np.sqrt(2)
@@ -192,7 +210,7 @@
   [(#3390)](https://github.com/PennyLaneAI/pennylane/pull/3390)
 
 * Remove private `_wires` setter from the `Controlled.map_wires` method.
-  [3405](https://github.com/PennyLaneAI/pennylane/pull/3405)
+  [(#3405)](https://github.com/PennyLaneAI/pennylane/pull/3405)
 
 * `QuantumTape._process_queue` has been moved to `qml.queuing.process_queue` to disentangle
   its functionality from the `QuantumTape` class.
@@ -205,7 +223,7 @@
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
-  [#3374](https://github.com/PennyLaneAI/pennylane/pull/3374)
+  [(#3374)](https://github.com/PennyLaneAI/pennylane/pull/3374)
 
   Example with a single measurement:
 
@@ -266,7 +284,7 @@
   ```
 
 * The TensorFlow interface for the new return types now supports devices with shot vectors.
-  [#3400](https://github.com/PennyLaneAI/pennylane/pull/3400)
+  [(#3400)](https://github.com/PennyLaneAI/pennylane/pull/3400)
 
   Example with a single measurement:
 
@@ -324,17 +342,17 @@
   ```
 
 * Updated `qml.transforms.split_non_commuting` to support the new return types.
-  [#3414](https://github.com/PennyLaneAI/pennylane/pull/3414)
+  [(#3414)](https://github.com/PennyLaneAI/pennylane/pull/3414)
 
 * Updated `qml.transforms.mitigate_with_zne` to support the new return types.
-  [#3415](https://github.com/PennyLaneAI/pennylane/pull/3415)
+  [(#3415)](https://github.com/PennyLaneAI/pennylane/pull/3415)
 
 
 <h3>Breaking changes</h3>
 
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
   `_MutualInfo` classes, which inherit from `MeasurementProcess`.
-  [#3326](https://github.com/PennyLaneAI/pennylane/pull/3326)
+  [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
 * Python 3.7 support is no longer maintained.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
@@ -346,7 +364,7 @@
 
 * Change class name `ShadowMeasurementProcess` to `ClassicalShadow`, to be consistent with the
   `qml.classical_shadow` function name.
-  [#3388](https://github.com/PennyLaneAI/pennylane/pull/3388)
+  [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 * The method `qml.Operation.get_parameter_shift` is removed. The `gradients` module should be used
   for general parameter-shift rules instead.
@@ -364,14 +382,14 @@
   def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
   ```
 
-  [#3421](https://github.com/PennyLaneAI/pennylane/pull/3421)
+  [(#3421)](https://github.com/PennyLaneAI/pennylane/pull/3421)
 
 * The `MeasurementProcess.return_type` argument has been removed from the `__init__` method. Now
   it is a property of the class.
-  [#3434](https://github.com/PennyLaneAI/pennylane/pull/3434)
+  [(#3434)](https://github.com/PennyLaneAI/pennylane/pull/3434)
 
 * The `MeasurementProcess` class is now an abstract class.
-  [#3434](https://github.com/PennyLaneAI/pennylane/pull/3434)
+  [(#3434)](https://github.com/PennyLaneAI/pennylane/pull/3434)
 
 <h3>Deprecations</h3>
 
@@ -423,16 +441,16 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   [(#3177)](https://github.com/PennyLaneAI/pennylane/pull/3177)
 
 * Original tape `_obs_sharing_wires` attribute is updated during its expansion.
-  [#3293](https://github.com/PennyLaneAI/pennylane/pull/3293)
+  [(#3293)](https://github.com/PennyLaneAI/pennylane/pull/3293)
 
 * Small fix of `MeasurementProcess.map_wires`, where both the `self.obs` and `self._wires`
   attributes were modified.
-  [#3292](https://github.com/PennyLaneAI/pennylane/pull/3292)
+  [(#3292)](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
 * An issue with `drain=False` in the adaptive optimizer is fixed. Before the fix, the operator pool
   needed to be re-constructed inside the optimization pool when `drain=False`. With the new fix,
   this reconstruction is not needed.
-  [#3361](https://github.com/PennyLaneAI/pennylane/pull/3361)
+  [(#3361)](https://github.com/PennyLaneAI/pennylane/pull/3361)
 
 * If the device originally has no shots but finite shots are dynamically specified, Hamiltonian
   expansion now occurs.
@@ -447,7 +465,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 * Fixed a bug where a QNode returning `qml.sample` would produce incorrect results when
   run on a device defined with a shot vector.
-  [#3422](https://github.com/PennyLaneAI/pennylane/pull/3422)
+  [(#3422)](https://github.com/PennyLaneAI/pennylane/pull/3422)
 
 <h3>Contributors</h3>
 
