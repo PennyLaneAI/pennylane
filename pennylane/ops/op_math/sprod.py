@@ -114,6 +114,16 @@ class SProd(SymbolicOp):
         self._check_scalar_is_valid()
         super().__init__(base=base, do_queue=do_queue, id=id)
 
+        try:
+            base_ps = self.base._pauli_rep  # pylint: disable=protected-access
+            pr = {}
+            for pw, coeff in base_ps.items():
+                pr[pw] = coeff * self.scalar
+            self._pauli_rep = qml.pauli.PauliSentence(pr)
+
+        except (AttributeError, TypeError):
+            self._pauli_rep = None
+
     def __repr__(self):
         """Constructor-call-like representation."""
         return f"{self.scalar}*({self.base})"
@@ -238,21 +248,6 @@ class SProd(SymbolicOp):
         Returns: None
         """
         return None
-
-    @property
-    def _pauli_rep(self):
-        """PauliSentence representation of the scalar product of operations."""
-        try:
-            pr = {}
-            base_ps = self.base._pauli_rep  # pylint: disable=protected-access
-
-            for pw, coeff in base_ps.items():
-                pr[pw] = coeff * self.scalar
-
-            return qml.pauli.PauliSentence(pr)
-
-        except NotImplementedError as e:
-            raise NotImplementedError(f"Pauli rep not defined for scalar product {self}") from e
 
     def pow(self, z):
         return [SProd(scalar=self.scalar**z, base=Pow(base=self.base, z=z))]

@@ -900,16 +900,6 @@ class Operator(abc.ABC):
             or cls.decomposition != Operator.decomposition
         )
 
-    @property
-    def _pauli_rep(self):
-        """The operator represented as a linear combination of Pauli
-        words using the PauliSentence class.
-
-        Raises:
-            NotImplementedError: if no such representation is provided.
-        """
-        raise NotImplementedError(f"Pauli representation not implemented for {self}.")
-
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.
 

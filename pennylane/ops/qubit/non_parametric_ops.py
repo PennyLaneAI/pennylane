@@ -202,6 +202,10 @@ class PauliX(Observable, Operation):
 
     _queue_category = "_ops"
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
@@ -312,12 +316,6 @@ class PauliX(Observable, Operation):
         ]
         return decomp_ops
 
-    @property
-    def _pauli_rep(self):
-        """PauliSentence representation of X."""
-        wire = self.wires[0]
-        return qml.pauli.PauliSentence({qml.pauli.PauliWord({wire: "X"}): 1.0})
-
     def adjoint(self):
         return PauliX(wires=self.wires)
 
@@ -358,6 +356,10 @@ class PauliY(Observable, Operation):
     basis = "Y"
 
     _queue_category = "_ops"
+
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
@@ -471,12 +473,6 @@ class PauliY(Observable, Operation):
         ]
         return decomp_ops
 
-    @property
-    def _pauli_rep(self):
-        """PauliSentence representation of Y."""
-        wire = self.wires[0]
-        return qml.pauli.PauliSentence({qml.pauli.PauliWord({wire: "Y"}): 1.0})
-
     def adjoint(self):
         return PauliY(wires=self.wires)
 
@@ -512,6 +508,10 @@ class PauliZ(Observable, Operation):
     basis = "Z"
 
     _queue_category = "_ops"
+
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
@@ -614,12 +614,6 @@ class PauliZ(Observable, Operation):
 
         """
         return [qml.PhaseShift(np.pi, wires=wires)]
-
-    @property
-    def _pauli_rep(self):
-        """PauliSentence representation of Z."""
-        wire = self.wires[0]
-        return qml.pauli.PauliSentence({qml.pauli.PauliWord({wire: "Z"}): 1.0})
 
     def adjoint(self):
         return PauliZ(wires=self.wires)

@@ -549,12 +549,11 @@ class TestProperties:
         """Test the pauli rep is produced as expected."""
         assert op._pauli_rep == rep
 
-    def test_pauli_rep_error_in_base(self):
-        """Test that an error is produced if the base op does not have a pauli rep"""
+    def test_pauli_rep_none_if_base_pauli_rep_none(self):
+        """Test that None is produced if the base op does not have a pauli rep"""
         base = qml.RX(1.23, wires=0)
-        with pytest.raises(NotImplementedError, match="Pauli rep not defined for scalar product"):
-            op = qml.s_prod(2, base)
-            _ = op._pauli_rep
+        op = qml.s_prod(2, base)
+        assert op._pauli_rep is None
 
 
 class TestSimplify:
