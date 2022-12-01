@@ -622,6 +622,8 @@ class ControlledQubitUnitary(ControlledOp):
 
         super().__init__(base, control_wires, control_values=control_values, do_queue=do_queue)
 
+        self._name = "ControlledQubitUnitary"
+
     @staticmethod
     def compute_matrix(
         U, control_wires, u_wires, control_values=None
