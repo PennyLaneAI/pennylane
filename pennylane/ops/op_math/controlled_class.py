@@ -601,7 +601,10 @@ class ControlledQubitUnitary(ControlledOp):
         if control_wires is None:
             raise ValueError("Must specify control wires")
 
-        wires = Wires(wires)
+        if isinstance(base, Iterable):
+            base = QubitUnitary(base, wires=wires)
+
+        wires = Wires(base.wires)
         control_wires = Wires(control_wires)
 
         if Wires.shared_wires([wires, control_wires]):
@@ -614,9 +617,6 @@ class ControlledQubitUnitary(ControlledOp):
             "control_wires": control_wires,
             "control_values": control_values,
         }
-
-        if isinstance(base, Iterable):
-            base = QubitUnitary(base, wires=wires)
 
         super().__init__(base, control_wires, control_values=control_values, do_queue=do_queue)
 
