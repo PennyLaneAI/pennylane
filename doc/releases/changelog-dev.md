@@ -140,12 +140,15 @@
 
 <h3>Improvements</h3>
 
+* The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency. 
+  [(#3284)](https://github.com/PennyLaneAI/pennylane/pull/3284)
+  
 * Added more input validation to `hamiltonian_expand` such that Hamiltonian objects with no terms raise an error.
   [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
 
 * Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
-
+  
 * `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
    [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
 
@@ -294,6 +297,13 @@
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
 
+* Updated `qml.transforms.split_non_commuting` to support the new return types.
+  [#3414](https://github.com/PennyLaneAI/pennylane/pull/3414)
+
+* Updated `qml.transforms.mitigate_with_zne` to support the new return types.
+  [#3415](https://github.com/PennyLaneAI/pennylane/pull/3415)
+
+
 <h3>Breaking changes</h3>
 
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
@@ -355,10 +365,15 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
 
-* The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` is deprecated.
-  A new argument ``seed`` has been added, which defaults to None and can contain an integer with the
+* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
+  instead.
+  [(#3433)](https://github.com/PennyLaneAI/pennylane/pull/3433)
+
+* The `seed_recipes` argument in `qml.classical_shadow` and `qml.shadow_expval` is deprecated.
+  A new argument `seed` has been added, which defaults to None and can contain an integer with the
   wanted seed.
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+
 
 <h3>Documentation</h3>
 
@@ -415,6 +430,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Utkarsh Azad
 Astral Cai
+Isaac De Vlugt
 Pieter Eendebak
 Lillian M. A. Frederiksen
 Soran Jahangiri
