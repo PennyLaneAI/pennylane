@@ -319,7 +319,9 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     tkwargs.setdefault("device_wires", qnode.device.wires)
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
-    _expand_fn = lambda tape: self.expand_fn(tape, *targs, **tkwargs)
+    def _expand_fn(tape):
+        return self.expand_fn(tape, *targs, **tkwargs)
+
     cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
@@ -351,7 +353,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                     "much more efficient to request the block-diagonal approximation directly!"
                 )
             tkwargs["approx"] = "block-diag"
-            return self.__call__(qnode, *targs, **tkwargs)(*args, **kwargs)
+            return self(qnode, *targs, **tkwargs)(*args, **kwargs)
 
         if not hybrid:
             return mt
