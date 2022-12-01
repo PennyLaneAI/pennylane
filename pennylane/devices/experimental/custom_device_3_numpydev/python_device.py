@@ -58,35 +58,33 @@ class TestDevicePythonSim(AbstractDevice):
 
         return res, [grads]
 
+    def gradient(self, qscript: QuantumScript, order: int = 1):
+        if order != 1:
+            raise NotImplementedError
 
-@TestDevicePythonSim.register_gradient(order=1)
-def gradient(self, qscript: QuantumScript, order: int = 1):
-    if order != 1:
-        raise NotImplementedError
+        if self.tracker.active:
+            self.tracker.update(gradients=1)
+            self.tracker.record()
 
-    if self.tracker.active:
-        self.tracker.update(gradients=1)
-        self.tracker.record()
+        sim = PlainNumpySimulator()
+        state = sim.create_zeroes_state(qscript.num_wires)
+        for op in qscript.operations:
+            state = sim.apply_operation(state, op)
+        bra = sim.apply_operation(state, qscript.measurements[0].obs)
+        ket = state
 
-    sim = PlainNumpySimulator()
-    state = sim.create_zeroes_state(qscript.num_wires)
-    for op in qscript.operations:
-        state = sim.apply_operation(state, op)
-    bra = sim.apply_operation(state, qscript.measurements[0].obs)
-    ket = state
+        grads = []
+        for op in reversed(qscript.operations):
+            adj_op = adjoint(op)
+            ket = sim.apply_operation(ket, adj_op)
 
-    grads = []
-    for op in reversed(qscript.operations):
-        adj_op = adjoint(op)
-        ket = sim.apply_operation(ket, adj_op)
+            if op.num_params != 0:
+                dU = operation_derivative(op)
+                ket_temp = sim.apply_matrix(ket, dU, op.wires)
+                dM = 2 * np.real(np.vdot(bra, ket_temp))
+                grads.append(dM)
 
-        if op.num_params != 0:
-            dU = operation_derivative(op)
-            ket_temp = sim.apply_matrix(ket, dU, op.wires)
-            dM = 2 * np.real(np.vdot(bra, ket_temp))
-            grads.append(dM)
+            bra = sim.apply_operation(bra, adj_op)
 
-        bra = sim.apply_operation(bra, adj_op)
-
-    grads = grads[::-1]
-    return grads
+        grads = grads[::-1]
+        return grads
