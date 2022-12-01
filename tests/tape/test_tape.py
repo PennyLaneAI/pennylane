@@ -13,12 +13,10 @@
 # limitations under the License.
 """Unit tests for the QuantumTape"""
 import copy
-import warnings
 from collections import defaultdict
 
 import numpy as np
 import pytest
-from this import d
 
 import pennylane as qml
 from pennylane import CircuitGraph
@@ -27,11 +25,11 @@ from pennylane.measurements import (
     MeasurementShapeError,
     counts,
     expval,
+    probs,
     sample,
     var,
-    probs,
 )
-from pennylane.tape import QuantumTape, TapeError
+from pennylane.tape import QuantumTape
 
 
 def TestOperationMonkeypatching():
@@ -1171,6 +1169,26 @@ class TestExpand:
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error_msg):
             tape.expand(expand_measurements=True)
+
+    def test_multiple_expand_no_change_original_tape(self):
+        """Test that the original tape is not changed multiple time after maximal expansion."""
+        with QuantumTape() as tape:
+            qml.RX(0.1, wires=[0])
+            qml.RY(0.2, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.expval(qml.PauliZ(0))
+
+        expand_tape = tape.expand()
+        circuit_after_first_expand = tape.operations
+        twice_expand_tape = tape.expand()
+        circuit_after_second_expand = tape.operations
+        assert all(
+            [
+                qml.equal(op1, op2)
+                for op1, op2 in zip(circuit_after_first_expand, circuit_after_second_expand)
+            ]
+        )
 
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
         """Test that the is_sampled property is correctly set when tape

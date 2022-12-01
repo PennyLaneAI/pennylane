@@ -47,7 +47,7 @@ class TestPreconstructedOp:
         assert isinstance(out, Adjoint)
         assert out.base is base
         assert len(tape) == 1
-        assert len(tape._queue) == 1
+        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
         assert base not in tape.queue
 
     def test_single_op_defined_outside_queue_eager(self):
@@ -62,7 +62,7 @@ class TestPreconstructedOp:
         assert len(tape) == 1
         assert tape[0] is out
 
-        assert len(tape._queue) == 1
+        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
 
     def test_single_observable(self):
         """Test passing a single preconstructed observable in a queuing context."""
@@ -171,7 +171,7 @@ class TestNonLazyExecution:
 
         assert len(tape) == 1
         assert out is tape[0]
-        assert len(tape.queue) == 1
+        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
 
         assert isinstance(out, Adjoint)
         assert isinstance(out.base, qml.S)

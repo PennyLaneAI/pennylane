@@ -11,8 +11,161 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module contains the :class:`QueuingManager`.
+r"""
+This module contains the classes for placing objects into queues.
+
+Description
+-----------
+
+Users provide *quantum functions* which PennyLane needs to convert into a circuit representation capable
+of being executed by a device. A quantum function is any callable that:
+
+* accepts classical inputs
+* constructs any number of quantum :class:`~.Operator` objects
+* returns one or more :class:`~.MeasurementProcess` objects.
+
+For example:
+
+.. code-block:: python
+
+    def qfunc(x, scale_value=1):
+        qml.RX(x * scale_value, wires=0)
+        if (1 != 2):
+            qml.S(0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+To convert from a quantum function to a representation of a circuit, we use queuing.
+
+A *queuable object* is anything that can be placed into a queue. These will be :class:`~.Operator`,
+:class:`~.MeasurementProcess`, and :class:`~.QuantumTape` objects. :class:`~.Operator` and
+:class:`~.MeasurementProcess` objects achieve queuing via a :meth:`~.Operator.queue` method called upon construction.
+Note that even though :class:`~.QuantumTape` is a queuable object, it does not have a ``queue`` method.
+
+When an object is queued, it sends itself to the :class:`~.QueuingManager`. The :class:`~.QueuingManager`
+is a global singleton class that facilitates placing objects in the queue. All of :class:`~.QueuingManager`'s methods
+and properties are class methods and properties, so all instances will access the same information.
+
+The :meth:`~.QueuingManager.active_context` is the queue where any new objects are placed.
+The :class:`~.QueuingManager` is said to be *recording* if an active context exists.
+
+Active contexts are :class:`~.AnnotatedQueue` instances. They are *context managers* where recording occurs
+within a ``with`` block.
+
+Let's take a look at an example. If we query the :class:`~.QueuingManager` outside of an
+:class:`~.AnnotatedQueue`'s context, we can see that nothing is recording and no active context exists.
+
+>>> print("Are we recording? ", qml.QueuingManager.recording())
+Are we recording?  False
+>>> print("What's the active context? ", qml.QueuingManager.active_context())
+What's the active context?  None
+
+Inside of a context, we can see the active recording context:
+
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     print("Are we recording? ", qml.QueuingManager.recording())
+...     print("Is q the active queue? ", q is qml.QueuingManager.active_context())
+Are we recording?  True
+Is q the active queue?  True
+
+If we have nested :class:`~.AnnotatedQueue` contexts, only the innermost one will be recording.
+Once the currently active queue exits, any outer queue will resume recording.
+
+>>> with qml.queuing.AnnotatedQueue() as q1:
+...     print("Is q1 recording? ", q1 is qml.QueuingManager.active_context())
+...     with qml.queuing.AnnotatedQueue() as q2:
+...         print("Is q1 recording? ", q1 is qml.QueuingManager.active_context())
+...     print("Is q1 recording? ", q1 is qml.QueuingManager.active_context())
+Is q1 recording?  True
+Is q1 recording?  False
+Is q1 recording?  True
+
+If we construct an operator inside the recording context, we can see it is added to the queue:
+
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     op = qml.PauliX(0)
+>>> q.queue
+[PauliX(wires=[0])]
+
+If an operator is constructed outside of the context, we can manually add it to the queue by
+calling the :meth:`~.Operator.queue` method. The :meth:`~.Operator.queue` method is automatically
+called upon initialization, but it can also be manually called at a later time.
+
+>>> op = qml.PauliX(0)
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     op.queue()
+>>> q.queue
+[PauliX(wires=[0])]
+
+An object can only exist up to *once* in the queue, so calling queue multiple times will
+not do anything.
+
+>>> op = qml.PauliX(0)
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     op.queue()
+...     op.queue()
+>>> q.queue
+[PauliX(wires=[0])]
+
+The :func:`~.apply` method allows a single object to be queued multiple times in a circuit.
+The function queues a copy of the original object if it already in the queue.
+
+>>> op = qml.PauliX(0)
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     qml.apply(op)
+...     qml.apply(op)
+>>> q.queue
+[PauliX(wires=[0]), PauliX(wires=[0])]
+>>> q.queue[0] is q.queue[1]
+False
+
+In the case of operators composed of other operators, each operator in the composite will be queued.
+For example, both ``PauliX`` and ``PauliX`` raised to a power.
+
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     base = qml.PauliX(0)
+...     pow_op = base ** 1.5
+>>> q.queue
+[PauliX(wires=[0]), PauliX(wires=[0])**1.5]
+
+In this case, each object will have metadata associated with it. At later processing steps, the original
+``PauliX`` will be ignored in favor of the operator that *owns* it.
+
+>>> q.get_info(base)
+{'owner': PauliX(wires=[0])**1.5}
+>>> q.get_info(base)["owner"] is pow_op
+True
+
+Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations,
+measurements, and state prep present in the final circuit. This step eliminates any object that has an owner.
+
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     qml.QubitStateVector(np.array([1.0, 0]), wires=0)
+...     base = qml.PauliX(0)
+...     pow_op = base ** 1.5
+...     qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+>>> ops, measurements, prep = qml.queuing.process_queue(q)
+>>> ops
+[PauliX(wires=[0])**1.5]
+>>> measurements
+[expval(PauliZ(wires=[0]) @ PauliX(wires=[1]))]
+>>> prep
+[QubitStateVector(tensor([1., 0.], requires_grad=True), wires=[0])]
+
+These three lists can be used to construct a :class:`~.QuantumScript`:
+
+>>> qml.tape.QuantumScript(ops, measurements, prep)
+<QuantumScript: wires=[0, 1], params=1>
+
+In order to construct new operators within a recording, but without queuing them, either
+use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=False` upon construction:
+
+>>> with qml.queuing.AnnotatedQueue() as q:
+...     qml.PauliX(0, do_queue=False)
+...     with qml.QueuingManager.stop_recording():
+...         qml.PauliY(1)
+>>> q.queue
+[]
+
 """
 
 import copy
@@ -183,12 +336,9 @@ class QueuingManager:
         return cls.active_context().get_info(obj) if cls.recording() else None
 
 
-class AnnotatedQueue:
+class AnnotatedQueue(OrderedDict):
     """Lightweight class that maintains a basic queue of operations, in addition
     to metadata annotations."""
-
-    def __init__(self):
-        self._queue = OrderedDict()
 
     def __enter__(self):
         """Adds this instance to the global list of active contexts.
@@ -206,29 +356,29 @@ class AnnotatedQueue:
 
     def append(self, obj, **kwargs):
         """Append ``obj`` into the queue with ``kwargs`` metadata."""
-        self._queue[obj] = kwargs
+        self[obj] = kwargs
 
     def remove(self, obj):
         """Remove ``obj`` from the queue. Passes silently if the object is not in the queue."""
         if obj in self._queue:
-            del self._queue[obj]
+            del self[obj]
 
     def update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
-        if obj in self._queue:
-            self._queue[obj].update(kwargs)
+        if obj in self:
+            self[obj].update(kwargs)
 
     def get_info(self, obj):
         """Retrieve the metadata for ``obj``.  Raises a ``QueuingError`` if obj is not in the queue."""
-        if obj not in self._queue:
+        if obj not in self:
             raise QueuingError(f"Object {obj} not in the queue.")
 
-        return self._queue[obj]
+        return self[obj]
 
     @property
     def queue(self):
         """Returns a list of objects in the annotated queue"""
-        return list(self._queue.keys())
+        return list(self.keys())
 
 
 def apply(op, context=QueuingManager):
@@ -348,3 +498,34 @@ def apply(op, context=QueuingManager):
         context.append(op)
 
     return op
+
+
+# pylint: disable=protected-access
+def process_queue(queue: AnnotatedQueue):
+    """Process the annotated queue, creating a list of quantum
+    operations and measurement processes.
+
+    Args:
+        queue (.AnnotatedQueue): The queue to be processed into individual lists
+
+    Returns:
+        tuple[list(.Operation), list(.MeasurementProcess)], list(.Operation):
+        The list of main tape operations, the list of tape measurements, and the list of preparation operations
+    """
+    lists = {"_prep": [], "_ops": [], "_measurements": []}
+    list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
+    current_list = "_prep"
+
+    for obj, info in queue.items():
+
+        if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
+            if list_order[obj._queue_category] > list_order[current_list]:
+                current_list = obj._queue_category
+            elif list_order[obj._queue_category] < list_order[current_list]:
+                raise ValueError(
+                    f"{obj._queue_category[1:]} operation {obj} must occur prior "
+                    f"to {current_list[1:]}. Please place earlier in the queue."
+                )
+            lists[obj._queue_category].append(obj)
+
+    return lists["_ops"], lists["_measurements"], lists["_prep"]

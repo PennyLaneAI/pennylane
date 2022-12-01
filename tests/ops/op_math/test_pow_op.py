@@ -601,7 +601,7 @@ class TestMatrix:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
-    def test_matrix_against_shortcut_jax(self, z):
+    def test_matrix_against_shortcut_tf(self, z):
         """Test the matrix using a tf variable parameter."""
         import tensorflow as tf
 

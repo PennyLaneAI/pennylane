@@ -617,8 +617,7 @@ class TestQueuing:
         with qml.tape.QuantumTape() as tape:
             op = Controlled(base, ("a", "b"))
 
-        assert len(tape._queue) == 1
-        assert tape.operations == [op]
+        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
 
     def test_do_queue_false(self):
         """Test that when `do_queue=False` is specified, the controlled op is not queued."""
@@ -627,7 +626,7 @@ class TestQueuing:
         with qml.tape.QuantumTape() as tape:
             op = Controlled(base, 1, do_queue=False)
 
-        assert len(tape._queue) == 0
+        assert qml.queuing.AnnotatedQueue.__len__(tape) == 0
 
 
 base_num_control_mats = [
