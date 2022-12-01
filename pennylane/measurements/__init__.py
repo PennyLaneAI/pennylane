@@ -14,20 +14,32 @@
 """
 This module contains measurements supported by PennyLane.
 """
-from .classical_shadow import ClassicalShadow, Shadow, ShadowExpval, classical_shadow, shadow_expval
-from .counts import AllCounts, Counts, counts
-from .expval import Expectation, expval
+from .classical_shadow import ClassicalShadow, _ShadowExpval, classical_shadow, shadow_expval
+from .counts import _Counts, counts
+from .expval import _Expectation, expval
 from .measurements import (
+    AllCounts,
+    Counts,
+    Expectation,
     MeasurementProcess,
     MeasurementShapeError,
+    MidMeasure,
+    MutualInfo,
     ObservableReturnTypes,
+    Probability,
+    Sample,
     SampleMeasurement,
+    Shadow,
+    ShadowExpval,
+    State,
     StateMeasurement,
+    Variance,
+    VnEntropy,
 )
-from .mid_measure import MeasurementValue, MeasurementValueError, MidMeasure, measure
-from .mutual_info import MutualInfo, mutual_info
-from .probs import Probability, probs
-from .sample import Sample, sample
-from .state import State, density_matrix, state
-from .var import Variance, var
-from .vn_entropy import VnEntropy, vn_entropy
+from .mid_measure import MeasurementValue, MeasurementValueError, measure
+from .mutual_info import _MutualInfo, mutual_info
+from .probs import _Probability, probs
+from .sample import _Sample, sample
+from .state import _State, density_matrix, state
+from .var import _Variance, var
+from .vn_entropy import _VnEntropy, vn_entropy
