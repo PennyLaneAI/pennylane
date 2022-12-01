@@ -261,10 +261,11 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
 
 def pytreeify(cls):
-    """The Pytree class is used to bypass some PyTorch limitation of `autograd.Function. The forward pass can only
+    """The Pytree class is used to bypass some PyTorch limitation of `autograd.Function`. The forward pass can only
     return tuple of tensors but not any other nested structure. This class apply flatten to the forward pass and
     unflatten the results in the apply function. In this way it is possible to treat multiple tape with multiple
-    measurements."""
+    measurements.
+    """
     orig_fw = cls.forward
     orig_bw = cls.backward
     orig_apply = cls.apply
