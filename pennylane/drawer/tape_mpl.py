@@ -87,6 +87,7 @@ special_cases = {
     ops.Toffoli: _add_cx,
     ops.MultiControlledX: _add_multicontrolledx,
     ops.CZ: _add_cz,
+    ops.CCZ: _add_cz,
     ops.Barrier: _add_barrier,
     ops.WireCut: _add_wirecut,
 }
