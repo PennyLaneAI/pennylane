@@ -136,9 +136,14 @@ class MeasurementProcess(ABC):
         self.obs = obs
         self.id = id
 
-        if wires is not None and obs is not None:
-            raise ValueError("Cannot set the wires if an observable is provided.")
+        if wires is not None:
+            if len(wires) == 0:
+                raise ValueError("Cannot set an empty list of wires.")
+            if obs is not None:
+                raise ValueError("Cannot set the wires if an observable is provided.")
 
+        # _wires = None indicates broadcasting across all available wires.
+        # It translates to the public property wires = Wires([])
         self._wires = wires
         self._eigvals = None
 

@@ -1481,7 +1481,7 @@ class QubitDevice(Device):
         Returns:
             array[float]: list of the probabilities
         """
-
+        wires = wires or self.wires
         if self.shots is None:
             return self.analytic_probability(wires=wires)
 
