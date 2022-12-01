@@ -447,7 +447,7 @@ class ExecuteTapesNew(torch.autograd.Function):
                 vjps = _compute_vjps_new(dy, jacs, multi_measurements)
 
         # Remove empty vjps
-        vjps = [vjp for vjp in vjps if not isinstance(vjp, np.ndarray)]
+        vjps = [vjp for vjp in vjps if vjp.shape != (1, 0)]
         # The output of backward must match the input of forward.
         # Therefore, we return `None` for the gradient of `kwargs`.
         return (None,) + tuple(vjps)
