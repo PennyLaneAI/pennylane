@@ -23,14 +23,21 @@ A configuration is specified by:
 
 A configuration is supported if gradients can be computed for the
 QNode without an exception being raised."""
+import pytest
 import re
 
-import pytest
-
 import pennylane as qml
-from pennylane import QuantumFunctionError
 from pennylane import numpy as np
-from pennylane.measurements import Expectation, MutualInfo, Probability, Sample, Variance, VnEntropy
+from pennylane import QuantumFunctionError
+from pennylane.measurements import (
+    State,
+    Probability,
+    Expectation,
+    Variance,
+    Sample,
+    VnEntropy,
+    MutualInfo,
+)
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -440,16 +447,17 @@ class TestSupportedConfs:
         msg = "state\\(wires=\\[0?\\]\\)\\ is\\ not\\ in\\ list"
 
         complex = return_type == "StateVector"
-        # the error is no longer raised!
-        circuit = get_qnode(interface, "finite-diff", return_type, shots, wire_specs)
-        x = get_variable(interface, wire_specs, complex=complex)
 
-        if shots is not None:
+        with pytest.raises(ValueError, match=msg):
+            circuit = get_qnode(interface, "finite-diff", return_type, shots, wire_specs)
+            x = get_variable(interface, wire_specs, complex=complex)
 
-            with pytest.warns(UserWarning, match="unaffected by sampling"):
+            if shots is not None:
+
+                with pytest.warns(UserWarning, match="unaffected by sampling"):
+                    grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
+            else:
                 grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
-        else:
-            grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
