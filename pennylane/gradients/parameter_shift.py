@@ -23,10 +23,10 @@ from functools import partial
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import MutualInfo, State, VnEntropy
 from pennylane._device import _get_num_copies
+from pennylane.measurements import MutualInfo, State, VnEntropy
 
-from .finite_difference import finite_diff, _all_zero_grad_new, _no_trainable_grad_new
+from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new, finite_diff
 from .general_shift_rules import (
     _iterate_shift_rule,
     frequencies_to_period,
@@ -976,9 +976,7 @@ def _var_param_shift_tuple(
     # Convert all variance measurements on the tape into expectation values
     for i in var_indices:
         obs = expval_tape._measurements[i].obs
-        expval_tape._measurements[i] = qml.measurements.MeasurementProcess(
-            qml.measurements.Expectation, obs=obs
-        )
+        expval_tape._measurements[i] = qml.expval(op=obs)
 
     # evaluate the analytic derivative of <A>
     pdA_tapes, pdA_fn = expval_param_shift(
@@ -1014,9 +1012,7 @@ def _var_param_shift_tuple(
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
             obs = _square_observable(tape_with_obs_squared_expval._measurements[i].obs)
-            tape_with_obs_squared_expval._measurements[i] = qml.measurements.MeasurementProcess(
-                qml.measurements.Expectation, obs=obs
-            )
+            tape_with_obs_squared_expval._measurements[i] = qml.expval(op=obs)
 
         # Non-involutory observables are present; the partial derivative of <A^2>
         # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
@@ -1086,9 +1082,7 @@ def var_param_shift(
     # Convert all variance measurements on the tape into expectation values
     for i in var_idx:
         obs = expval_tape._measurements[i].obs
-        expval_tape._measurements[i] = qml.measurements.MeasurementProcess(
-            qml.measurements.Expectation, obs=obs
-        )
+        expval_tape._measurements[i] = qml.expval(op=obs)
 
     # evaluate the analytic derivative of <A>
     pdA_tapes, pdA_fn = expval_param_shift(
@@ -1126,9 +1120,7 @@ def var_param_shift(
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
             obs = _square_observable(expval_sq_tape._measurements[i].obs)
-            expval_sq_tape._measurements[i] = qml.measurements.MeasurementProcess(
-                qml.measurements.Expectation, obs=obs
-            )
+            expval_sq_tape._measurements[i] = qml.expval(op=obs)
 
         # Non-involutory observables are present; the partial derivative of <A^2>
         # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
