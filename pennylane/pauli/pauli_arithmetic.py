@@ -191,7 +191,7 @@ class PauliWord(dict):
         """
         if len(self) == 0:
             if wire_order is None or wire_order == wires.Wires([]):
-                raise ValueError("Can't get the matrix of an empty PauliWord.")
+                raise ValueError("Can't get the matrix of an empty PauliWord with no wires.")
             return (
                 np.eye(2 ** len(wire_order))
                 if format == "dense"
@@ -308,8 +308,11 @@ class PauliSentence(dict):
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
 
-        def _pw_wires(w):
+        def _process_wires(w, wire_order=None):
             """To account for empty pauli_words which represent identity operations."""
+            if isinstance(w, set):
+                w = list(w)
+
             if w:
                 return wires.Wires(w)
 
@@ -318,6 +321,10 @@ class PauliSentence(dict):
                 return wires.Wires(
                     list(ps_wires)[0]
                 )  # return any wire from the Pauli sentence's wires
+
+            if not w and wire_order:
+                return wires.Wires(wire_order)
+
             return wires.Wires([])
 
         if len(self) == 0:
@@ -329,8 +336,8 @@ class PauliSentence(dict):
 
         mats_and_wires_gen = (
             (
-                coeff * pw.to_mat(wire_order=_pw_wires(list(pw.wires)), format=format),
-                _pw_wires(list(pw.wires)),
+                coeff * pw.to_mat(wire_order=_process_wires(pw.wires, wire_order), format=format),
+                _process_wires(pw.wires, wire_order),
             )
             for pw, coeff in self.items()
         )
