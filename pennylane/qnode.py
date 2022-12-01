@@ -25,7 +25,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 
 
 class QNode:
@@ -35,7 +35,7 @@ class QNode:
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumScript` instance representing
     the quantum circuit.
 
     Args:
@@ -513,7 +513,7 @@ class QNode:
         )
 
     @property
-    def tape(self) -> QuantumTape:
+    def tape(self) -> QuantumScript:
         """The quantum tape"""
         return self._tape
 
@@ -522,10 +522,9 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self._tape = qml.tape.QuantumTape()
-
-        with self.tape:
+        with qml.queuing.AnnotatedQueue() as q:
             self._qfunc_output = self.func(*args, **kwargs)
+        self._tape = QuantumScript.from_queue(q)
         self._tape._qfunc_output = self._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)

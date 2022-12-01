@@ -408,7 +408,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
         # Create a quantum tape with all operations
         # prior to the parametrized layer, and the rotations
         # to measure in the basis of the parametrized layer generators.
-        with tape.__class__() as layer_tape:
+        with qml.queuing.AnnotatedQueue() as layer_q:
             for op in queue:
                 qml.apply(op)
 
@@ -417,6 +417,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
             qml.probs(wires=tape.wires)
 
+        layer_tape = qml.tape.QuantumScript.from_queue(layer_q)
         metric_tensor_tapes.append(layer_tape)
 
     def processing_fn(probs):
@@ -516,7 +517,7 @@ def _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire):
         for diffed_op_j, par_idx_j in zip(layer_j.ops, layer_j.param_inds):
             gen_op_j = _get_gen_op(diffed_op_j, allow_nonunitary, aux_wire)
 
-            with tape.__class__() as new_tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 # Initialize auxiliary wire
                 qml.Hadamard(wires=aux_wire)
                 # Apply backward cone of first layer
@@ -532,7 +533,7 @@ def _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire):
                 # Measure X on auxiliary wire
                 qml.expval(qml.PauliX(aux_wire))
 
-            tapes.append(new_tape)
+            tapes.append(qml.tape.QuantumScript.from_queue(q))
             # Memorize to which metric entry this tape belongs
             ids.append((par_idx_i, par_idx_j))
 

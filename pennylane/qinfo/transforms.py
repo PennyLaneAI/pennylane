@@ -306,17 +306,18 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
     if wires is None:
         wires = tape.wires
 
-    with qml.tape.QuantumTape() as new_tape:
+    with qml.queuing.AnnotatedQueue() as q:
         for op in tape.operations:
             qml.apply(op)
         qml.probs(wires=wires)
+    qscript = qml.tape.QuantumScript.from_queue(q)
 
     if post_processing_fn is None:
 
         def post_processing_fn(x):
             return qml.math.squeeze(qml.math.stack(x))
 
-    return [new_tape], post_processing_fn
+    return [qscript], post_processing_fn
 
 
 def classical_fisher(qnode, argnums=0):

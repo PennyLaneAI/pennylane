@@ -36,7 +36,8 @@ from pennylane.measurements import Expectation, MeasurementProcess, Sample
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.pauli import string_to_pauli_word
-from pennylane.tape import QuantumTape
+from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.wires import Wires
 
 from pennylane.transforms.batch_transform import batch_transform
@@ -119,8 +120,8 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
     graph.remove_node(node)
 
     for wire in node.wires:
-        predecessor = predecessor_on_wire.get(wire, None)
-        successor = successor_on_wire.get(wire, None)
+        predecessor = predecessor_on_wire.get(wire)
+        successor = successor_on_wire.get(wire)
 
         meas = MeasureNode(wires=wire)
         prep = PrepareNode(wires=wire)
@@ -405,7 +406,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
         graph (nx.MultiDiGraph): directed multigraph to be converted to a tape
 
     Returns:
-        QuantumTape: the quantum tape corresponding to the input graph
+        QuantumScript: the quantum script corresponding to the input graph
 
     **Example**
 
@@ -446,7 +447,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     copy_meas = [copy.copy(op) for _, op in ordered_ops if isinstance(op, MeasurementProcess)]
     observables = []
 
-    with QuantumTape() as tape:
+    with AnnotatedQueue() as q:
         for op in copy_ops:
             op = qml.map_wires(op, wire_map=wire_map, queue=True)
             if isinstance(op, MeasureNode):
@@ -489,7 +490,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 else:
                     qml.expval(obs)
 
-    return tape
+    return QuantumScript.from_queue(q)
 
 
 def _get_measurements(
@@ -584,7 +585,7 @@ def expand_fragment_tape(
             :class:`PrepareNode` operations to be expanded
 
     Returns:
-        Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]: the
+        Tuple[List[QuantumScript], List[PrepareNode], List[MeasureNode]]: the
         tapes corresponding to each configuration and the order of preparation nodes and
         measurement nodes used in the expansion
 
@@ -644,7 +645,7 @@ def expand_fragment_tape(
                 n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
             }
 
-            with QuantumTape() as tape_:
+            with AnnotatedQueue() as q:
                 for op in tape.operations:
                     if isinstance(op, PrepareNode):
                         w = op.wires[0]
@@ -657,7 +658,7 @@ def expand_fragment_tape(
                 for meas in measurements:
                     apply(meas)
 
-                tapes.append(tape_)
+            tapes.append(QuantumScript.from_queue(q))
 
     return tapes, prepare_nodes, measure_nodes
 
@@ -800,7 +801,7 @@ def expand_fragment_tapes_mc(
     for tape in tapes:
         frag_config = []
         for shot in range(shots):
-            with qml.tape.QuantumTape() as new_tape:
+            with AnnotatedQueue() as q:
                 for op in tape.operations:
                     w = op.wires[0]
                     if isinstance(op, PrepareNode):
@@ -811,11 +812,11 @@ def expand_fragment_tapes_mc(
                 for meas in tape.measurements:
                     qml.apply(meas)
                 for op in tape.operations:
-                    meas_w = op.wires[0]
                     if isinstance(op, MeasureNode):
+                        meas_w = op.wires[0]
                         MC_MEASUREMENTS[meas_settings[op.id][shot]](meas_w)
 
-            frag_config.append(new_tape)
+            frag_config.append(QuantumScript.from_queue(q))
 
         all_configs.append(frag_config)
 
@@ -830,9 +831,7 @@ def _reshape_results(results: Sequence, shots: int) -> List[List]:
     """
     results = [qml.math.flatten(r) for r in results]
     results = [results[i : i + shots] for i in range(0, len(results), shots)]
-    results = list(map(list, zip(*results)))  # calculate list-based transpose
-
-    return results
+    return list(map(list, zip(*results)))  # calculate list-based transpose
 
 
 def qcut_processing_fn_sample(
@@ -864,9 +863,10 @@ def qcut_processing_fn_sample(
 
     samples = []
     for result in results:
-        sample = []
-        for fragment_result, out_degree in zip(result, out_degrees):
-            sample.append(fragment_result[: -out_degree or None])
+        sample = [
+            fragment_result[: -out_degree or None]
+            for fragment_result, out_degree in zip(result, out_degrees)
+        ]
         samples.append(np.hstack(sample))
     return [qml.math.convert_like(np.array(samples), res0)]
 
@@ -1292,7 +1292,7 @@ def cut_circuit_mc(
             "with a single output measurement"
         )
 
-    if not all(m.return_type is Sample for m in tape.measurements):
+    if any(m.return_type is not Sample for m in tape.measurements):
         raise ValueError(
             "The Monte Carlo circuit cutting workflow only supports circuits "
             "with sampling-based measurements"
@@ -1406,9 +1406,7 @@ def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
         )
 
         out = processing_fn(res)
-        if isinstance(out, list) and len(out) == 1:
-            return out[0]
-        return out
+        return out[0] if isinstance(out, list) and len(out) == 1 else out
 
     return _wrapper
 
@@ -1712,10 +1710,9 @@ def qcut_processing_fn(
     flat_results = qml.math.concatenate(results)
 
     tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes)
-    result = contract_tensors(
+    return contract_tensors(
         tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
     )
-    return result
 
 
 @batch_transform
@@ -2016,7 +2013,7 @@ def cut_circuit(
             "measurement"
         )
 
-    if not all(m.return_type is Expectation for m in tape.measurements):
+    if any(m.return_type is not Expectation for m in tape.measurements):
         raise ValueError(
             "The circuit cutting workflow only supports circuits with expectation "
             "value measurements"
@@ -2315,14 +2312,12 @@ class CutStrategy:
                     wire_depths[w] = wire_depths.get(w, 0) + 1 / len(g.wires)
         self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
 
-        probed_cuts = self._infer_probed_cuts(
+        return self._infer_probed_cuts(
             wire_depths=wire_depths,
             max_wires_by_fragment=max_wires_by_fragment,
             max_gates_by_fragment=max_gates_by_fragment,
             exhaustive=exhaustive,
         )
-
-        return probed_cuts
 
     @staticmethod
     def _infer_imbalance(k, wire_depths, free_wires, free_gates, imbalance_tolerance=None) -> float:
@@ -2386,12 +2381,15 @@ class CutStrategy:
                 raise ValueError(
                     "`max_gates_by_fragment` is expected to contain positive integers only."
                 )
-        if max_wires_by_fragment is not None and max_gates_by_fragment is not None:
-            if len(max_wires_by_fragment) != len(max_gates_by_fragment):
-                raise ValueError(
-                    "The lengths of `max_wires_by_fragment` and `max_gates_by_fragment` should be "
-                    f"equal, but got {len(max_wires_by_fragment)} and {len(max_gates_by_fragment)}."
-                )
+        if (
+            max_wires_by_fragment is not None
+            and max_gates_by_fragment is not None
+            and len(max_wires_by_fragment) != len(max_gates_by_fragment)
+        ):
+            raise ValueError(
+                "The lengths of `max_wires_by_fragment` and `max_gates_by_fragment` should be "
+                f"equal, but got {len(max_wires_by_fragment)} and {len(max_gates_by_fragment)}."
+            )
 
     def _infer_probed_cuts(
         self,
@@ -2550,7 +2548,7 @@ def _graph_to_hmetis(
         for v0, v1, wire in edges:
             hyperwires[wire].update([nodes.index(v0), nodes.index(v1)])
 
-        for wire, nodes_on_wire in hyperwires.items():
+        for nodes_on_wire in hyperwires.values():
             nwv = len(nodes_on_wire)
             edge_splits.append(nwv + edge_splits[-1])
             adj_nodes = adj_nodes + list(nodes_on_wire)
@@ -2791,7 +2789,7 @@ def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
                     uncut_graph.remove_node(op)
                     uncut_graph.remove_node(op1)
 
-    if len([n for n in uncut_graph.nodes if isinstance(n, (MeasureNode, PrepareNode))]) > 0:
+    if [n for n in uncut_graph.nodes if isinstance(n, (MeasureNode, PrepareNode))]:
         warnings.warn(
             "The circuit contains `MeasureNode` or `PrepareNode` operations that are "
             "not paired up correctly. Please check.",
@@ -3065,9 +3063,7 @@ def _is_valid_cut(
     correct_num_fragments = k <= num_fragments_requested
     best_candidate_yet = (key not in cut_candidates) or (len(cut_candidates[key]) > num_cuts)
     # pylint: disable=no-member
-    all_fragments_fit = all(
-        len(graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
-    )
+    all_fragments_fit = all(len(graph_to_tape(f).wires) <= max_free_wires for f in fragments)
 
     return correct_num_fragments and best_candidate_yet and all_fragments_fit
 

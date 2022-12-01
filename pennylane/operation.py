@@ -1091,19 +1091,18 @@ class Operator(abc.ABC):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        tape = qml.tape.QuantumTape(do_queue=False)
-
-        with tape:
-            if getattr(self, "inverse", False):
-                qml.adjoint(self.decomposition, lazy=False)()
-            else:
-                self.decomposition()
+        decomp_fn = (
+            qml.adjoint(self.decomposition, lazy=False)
+            if getattr(self, "inverse", False)
+            else self.decomposition
+        )
+        qscript = qml.tape.make_qscript(decomp_fn)()
 
         if not self.data:
             # original operation has no trainable parameters
-            tape.trainable_params = {}
+            qscript.trainable_params = {}
 
-        return tape
+        return qscript
 
     @property
     def arithmetic_depth(self) -> int:
