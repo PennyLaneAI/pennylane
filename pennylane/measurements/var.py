@@ -61,6 +61,8 @@ def var(op: Operator):
 class _Variance(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the variance of the supplied observable."""
 
+    method_name = "var"
+
     @property
     def return_type(self):
         return Variance
@@ -69,16 +71,16 @@ class _Variance(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device):
+    def shape(self, device=None):
         if qml.active_return():
             return self._shape_new(device)
-        if device.shot_vector is None:
+        if device is None or device.shot_vector is None:
             return (1,)
         num_shot_elements = sum(s.copies for s in device.shot_vector)
         return (num_shot_elements,)
 
-    def _shape_new(self, device):
-        if device.shot_vector is None:
+    def _shape_new(self, device=None):
+        if device is None or device.shot_vector is None:
             return ()
         num_shot_elements = sum(s.copies for s in device.shot_vector)
         return tuple(() for _ in range(num_shot_elements))

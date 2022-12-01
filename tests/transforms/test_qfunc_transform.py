@@ -116,7 +116,7 @@ class TestQFuncTransforms:
         new_qfunc = my_transform(qfunc)
         x = 0.543
 
-        ops = qml.transforms.make_tape(new_qfunc)(x).operations
+        ops = qml.tape.make_qscript(new_qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -150,7 +150,7 @@ class TestQFuncTransforms:
             qml.CRX(x, wires=[0, 1])
 
         x = 0.543
-        ops = qml.transforms.make_tape(qfunc)(x).operations
+        ops = qml.tape.make_qscript(qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -188,7 +188,7 @@ class TestQFuncTransforms:
         x = 0.543
         new_qfunc = my_transform(a, b)(qfunc)
 
-        ops = qml.transforms.make_tape(new_qfunc)(x).operations
+        ops = qml.tape.make_qscript(new_qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -225,7 +225,7 @@ class TestQFuncTransforms:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
-        ops = qml.transforms.make_tape(qfunc)(x).operations
+        ops = qml.tape.make_qscript(qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -265,7 +265,7 @@ class TestQFuncTransforms:
         def ansatz():
             qml.CNOT(wires=[0, 1])
 
-        ops = qml.transforms.make_tape(ansatz)().operations
+        ops = qml.tape.make_qscript(ansatz)().operations
         assert len(ops) == 2
         assert ops[0].name == "RZ"
         assert ops[0].parameters == [x]

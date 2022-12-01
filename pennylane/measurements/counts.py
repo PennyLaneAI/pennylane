@@ -147,6 +147,8 @@ def counts(op=None, wires=None, all_outcomes=False):
 class _Counts(SampleMeasurement):
     """Measurement process that returns the samples of a given observable."""
 
+    method_name = "counts"
+
     def __init__(
         self,
         obs: Union[Observable, None] = None,
@@ -159,12 +161,12 @@ class _Counts(SampleMeasurement):
         super().__init__(obs, wires, eigvals, id)
 
     @property
-    def samples_computational_basis(self):
-        return self.obs is None
-
-    @property
     def return_type(self):
         return AllCounts if self.all_outcomes else Counts
+
+    @property
+    def samples_computational_basis(self):
+        return self.obs is None
 
     def process_samples(
         self,
@@ -181,9 +183,13 @@ class _Counts(SampleMeasurement):
             return self._samples_to_counts(samples)
 
         num_wires = len(self.wires) if self.wires else len(wire_order)
-        shape = (-1, bin_size, num_wires) if self.obs is None else (-1, bin_size)
+        samples = (
+            samples.reshape((num_wires, -1)).T.reshape(-1, bin_size, num_wires)
+            if self.obs is None
+            else samples.reshape((-1, bin_size))
+        )
 
-        return [self._samples_to_counts(bin_sample) for bin_sample in samples.reshape(shape)]
+        return [self._samples_to_counts(bin_sample) for bin_sample in samples]
 
     def _samples_to_counts(self, samples):
         """Groups the samples into a dictionary showing number of occurrences for

@@ -53,6 +53,7 @@ Operator to Operator functions
     ~pennylane.cond
     ~pennylane.exp
     ~pennylane.op_sum
+    ~pennylane.pow
     ~pennylane.prod
     ~pennylane.s_prod
     ~pennylane.generator
@@ -209,6 +210,7 @@ Quantum chemistry gates
     ~pennylane.DoubleExcitationPlus
     ~pennylane.DoubleExcitationMinus
     ~pennylane.OrbitalRotation
+    ~pennylane.FermionicSWAP
 
 :html:`</div>`
 

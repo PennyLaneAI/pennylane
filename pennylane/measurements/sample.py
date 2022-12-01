@@ -117,6 +117,8 @@ def sample(op: Union[Observable, None] = None, wires=None):
 class _Sample(SampleMeasurement):
     """Measurement process that returns the samples of a given observable."""
 
+    method_name = "sample"
+
     @property
     def return_type(self):
         return Sample
@@ -135,9 +137,21 @@ class _Sample(SampleMeasurement):
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
 
-    def shape(self, device):
+    @property
+    def samples_computational_basis(self):
+        r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
+        computational basis states.
+        """
+        return self.obs is None
+
+    def shape(self, device=None):
         if qml.active_return():
             return self._shape_new(device)
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
         if device.shot_vector is not None:
             if self.obs is None:
                 # TODO: revisit when qml.sample without an observable fully
@@ -152,7 +166,12 @@ class _Sample(SampleMeasurement):
         len_wires = len(device.wires)
         return (1, device.shots) if self.obs is not None else (1, device.shots, len_wires)
 
-    def _shape_new(self, device):
+    def _shape_new(self, device=None):
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
         if device.shot_vector is not None:
             if self.obs is None:
                 return tuple(
@@ -166,13 +185,6 @@ class _Sample(SampleMeasurement):
             len_wires = len(device.wires)
             return (device.shots, len_wires) if device.shots != 1 else (len_wires,)
         return (device.shots,) if device.shots != 1 else ()
-
-    @property
-    def samples_computational_basis(self):
-        r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
-        computational basis states.
-        """
-        return self.obs is None
 
     def process_samples(
         self,
@@ -199,7 +211,7 @@ class _Sample(SampleMeasurement):
 
         if self.obs is None:
             # if no observable was provided then return the raw samples
-            return samples if bin_size is None else samples.reshape(num_wires, bin_size, -1)
+            return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
         if name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
