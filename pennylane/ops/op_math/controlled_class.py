@@ -279,8 +279,9 @@ class Controlled(SymbolicOp):
         new_base = self.base.map_wires(wire_map=wire_map)
         new_control_wires = Wires([wire_map.get(wire, wire) for wire in self.control_wires])
         new_work_wires = Wires([wire_map.get(wire, wire) for wire in self.work_wires])
+        cls = self.__class__
 
-        return Controlled(
+        return cls(
             base=new_base,
             control_wires=new_control_wires,
             control_values=self.control_values,
@@ -597,6 +598,7 @@ class ControlledQubitUnitary(ControlledOp):
         wires=None,
         control_values=None,
         do_queue=True,
+        **kwargs,  # pylint: disable=unused-argument
     ):
         if control_wires is None:
             raise ValueError("Must specify control wires")
