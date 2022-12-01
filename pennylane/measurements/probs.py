@@ -37,6 +37,9 @@ def probs(wires=None, op=None):
     the wires to a subset of the full system; the size of the
     returned array will be ``[2**len(wires)]``.
 
+    .. Note::
+        If no wires or observable are given, the probability of all wires is returned.
+
     **Example:**
 
     .. code-block:: python3
@@ -86,11 +89,6 @@ def probs(wires=None, op=None):
          the computational basis
     """
     # pylint: disable=protected-access
-
-    if wires is None and op is None:
-        raise qml.QuantumFunctionError(
-            "qml.probs requires either the wires or the observable to be passed."
-        )
 
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")

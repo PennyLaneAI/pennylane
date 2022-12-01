@@ -202,6 +202,10 @@
 * The `qml.is_pauli_word` now supports instances of `Hamiltonian`.
   [(#3389)](https://github.com/PennyLaneAI/pennylane/pull/3389)
 
+* Support calling `qml.probs()`, `qml.counts()` and `qml.sample()` with no arguments to measure all
+  wires. Calling any measurement with an empty wire list will raise an error.
+  [#3299](https://github.com/PennyLaneAI/pennylane/pull/3299)
+
 * Made `gradients.finite_diff` more convenient to use with custom data type observables/devices.
   [(#3426)](https://github.com/PennyLaneAI/pennylane/pull/3426)
 
