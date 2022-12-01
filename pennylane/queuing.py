@@ -360,7 +360,7 @@ class AnnotatedQueue(OrderedDict):
 
     def remove(self, obj):
         """Remove ``obj`` from the queue. Passes silently if the object is not in the queue."""
-        if obj in self._queue:
+        if obj in self:
             del self[obj]
 
     def update_info(self, obj, **kwargs):

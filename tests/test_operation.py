@@ -1204,7 +1204,8 @@ class TestTensor:
             op3 = qml.PauliZ(2)
             t2 = t1 @ op3
 
-        assert len(tape.queue) == 1
+        assert len(q) == 1
+        assert q.queue[0] is t2
 
     def test_queuing_tensor_rmatmul(self):
         """Tests tensor-specific rmatmul updates queuing metatadata."""

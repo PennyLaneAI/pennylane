@@ -568,7 +568,7 @@ class TestQueueing:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Adjoint(base)
 
-        assert base not in tape._queue
+        assert base not in tape.queue
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
@@ -577,8 +577,8 @@ class TestQueueing:
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
         with qml.tape.QuantumTape() as tape:
             op = Adjoint(base)
-a
-        assert len(tape._queue) == 1
+
+        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
         assert tape.operations == [op]
 
     def test_do_queue_False(self):

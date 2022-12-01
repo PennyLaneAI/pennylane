@@ -354,6 +354,10 @@
 
 <h3>Breaking changes</h3>
 
+* Nested operators like `Tensor`, `Hamiltonian` and `Adjoint` now remove their owned operators
+  from the queue instead of updating their metadata to have an `"owner"`.
+  [(#3282)](https://github.com/PennyLaneAI/pennylane/pull/3282)
+
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
   `_MutualInfo` classes, which inherit from `MeasurementProcess`.
   [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
