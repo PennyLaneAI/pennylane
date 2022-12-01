@@ -1081,6 +1081,10 @@ class QubitDevice(Device):
                     result = method(obs, shot_range=shot_range, bin_size=bin_size)
                 else:
                     result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
+            elif obs.return_type is not None:
+                raise qml.QuantumFunctionError(
+                    f"Unsupported return type specified for observable {obs.name}"
+                )
 
             # 2. Post-process statistics results (if need be)
             float_return_types = {
