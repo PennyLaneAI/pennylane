@@ -65,6 +65,24 @@ class _Variance(SampleMeasurement, StateMeasurement):
     def return_type(self):
         return Variance
 
+    @property
+    def numeric_type(self):
+        return float
+
+    def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
+        if device is None or device.shot_vector is None:
+            return (1,)
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return (num_shot_elements,)
+
+    def _shape_new(self, device=None):
+        if device is None or device.shot_vector is None:
+            return ()
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return tuple(() for _ in range(num_shot_elements))
+
     def process_samples(
         self,
         samples: Sequence[complex],
