@@ -731,6 +731,7 @@ class Device(abc.ABC):
             for obs in circuit.observables
             if obs.name == "Hamiltonian"
         )
+        use_grouping = getattr(self, 'use_grouping', True)
 
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
 
@@ -739,7 +740,7 @@ class Device(abc.ABC):
         is_shadow = ShadowExpval in return_types
 
         if hamiltonian_in_obs and (
-            (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known
+            (not supports_hamiltonian or (finite_shots and not is_shadow)) or (use_grouping and grouping_known)
         ):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
