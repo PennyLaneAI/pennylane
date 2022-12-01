@@ -471,6 +471,25 @@ class TestSampleMeasurement:
         ):
             circuit()
 
+    def test_method_overriden_by_device(self):
+        """Test that the device can override a measurement process."""
+
+        class MyMeasurement(SampleMeasurement):
+            method_name = "test_method"
+
+            def process_samples(self, samples, wire_order, shot_range, bin_size):
+                return 1
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
+
+        assert circuit() == 2
+
 
 class TestStateMeasurement:
     """Tests for the SampleMeasurement class."""
@@ -536,8 +555,8 @@ class TestCustomMeasurement:
         """Test the execution of a custom measurement."""
 
         class MyMeasurement(CustomMeasurement):
-            def process(self, tape, device):
-                return {device.shots: len(tape)}
+            def process(self, qscript, device):
+                return {device.shots: len(qscript)}
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
@@ -546,3 +565,22 @@ class TestCustomMeasurement:
             return MyMeasurement()
 
         assert circuit() == {dev.shots: len(circuit.tape)}
+
+    def test_method_overriden_by_device(self):
+        """Test that the device can override a measurement process."""
+
+        class MyMeasurement(CustomMeasurement):
+            method_name = "test_method"
+
+            def process(self, qscript, device):
+                return {device.shots: len(qscript)}
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        circuit.device.test_method = lambda qscript, device: 2
+
+        assert circuit() == 2

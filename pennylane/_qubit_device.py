@@ -853,16 +853,17 @@ class QubitDevice(Device):
                     )
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
-            elif method := getattr(self, m.method_name, False):
-                results.append(
-                    method(obs, shot_range=shot_range, bin_size=bin_size, circuit=circuit)
-                )
-
             elif isinstance(m, CustomMeasurement):
-                results.append(m.process(tape=circuit, device=self))
+                if method := getattr(self, m.method_name, False):
+                    results.append(method(qscript=circuit, device=self))
+                else:
+                    results.append(m.process(qscript=circuit, device=self))
 
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
-                results.append(self._measure(m, shot_range=shot_range, bin_size=bin_size))
+                if method := getattr(self, m.method_name, False):
+                    results.append(method(obs, shot_range=shot_range, bin_size=bin_size))
+                else:
+                    results.append(self._measure(m, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -1073,7 +1074,7 @@ class QubitDevice(Device):
                 result = method(obs, shot_range=shot_range, bin_size=bin_size)
 
             elif isinstance(m, CustomMeasurement):
-                result = m.process(tape=circuit, device=self)
+                result = m.process(qscript=circuit, device=self)
 
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)

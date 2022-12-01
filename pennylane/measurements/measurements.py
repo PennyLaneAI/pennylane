@@ -131,7 +131,7 @@ class MeasurementProcess(ABC):
 
     .. code-block:: python
 
-        def method_name(self, measurement, shot_range=None, bin_size=None, circuit=None):
+        def method_name(self, measurement, shot_range=None, bin_size=None):
             "Device's custom measurement implementation."
     """
 
@@ -592,5 +592,5 @@ class CustomMeasurement(MeasurementProcess):
     """
 
     @abstractmethod
-    def process(self, tape, device):
+    def process(self, qscript, device):
         """Process the given tape."""
