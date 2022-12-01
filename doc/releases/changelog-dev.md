@@ -91,8 +91,26 @@
   ```
 
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
-  [(#3279)](https://github.com/PennyLaneAI/pennylane/pull/3279)
-  
+  [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
+
+* New `pauli_sentence()` function which takes native `Operator` or `Hamiltonian`
+  instances representing a linear combination of Pauli words and returns 
+  the equivalent `PauliSentence`.
+  [(#3389)](https://github.com/PennyLaneAI/pennylane/pull/3389)
+
+  ```pycon
+  >>> op = 1.23 * qml.prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
+  >>> op
+  1.23*(PauliX(wires=[0]) @ PauliZ(wires=[1]))
+  >>> h = qml.Hamiltonian([1.23], [qml.PauliX(wires=0) @ qml.PauliZ(wires=1)])
+  >>> print(h)
+    (1.23) [X0 Z1]
+  >>> qml.pauli.pauli_sentence(op)
+  1.23 * Z(1) @ X(0)
+  >>> qml.pauli.pauli_sentence(h)
+  1.23 * X(0) @ Z(1)
+  ```
+
 * Added two new methods `operation()`, `hamiltonian()` for both `PauliSentence` and `PauliWord` classes to generate an equivalent PennyLane 
   `Operation` or `Hamiltonian` instance from a `PauliSentence` or `PauliWord` one.
   [(#3391)](https://github.com/PennyLaneAI/pennylane/pull/3391)
@@ -181,6 +199,9 @@
 
 <h3>Improvements</h3>
 
+* The `qml.is_pauli_word` now supports instances of `Hamiltonian`.
+  [(#3389)](https://github.com/PennyLaneAI/pennylane/pull/3389)
+
 * Support calling `qml.probs()`, `qml.counts()` and `qml.sample()` with no arguments to measure all
   wires. Calling any measurement with an empty wire list will raise an error.
   [#3299](https://github.com/PennyLaneAI/pennylane/pull/3299)
@@ -188,15 +209,15 @@
 * Made `gradients.finite_diff` more convenient to use with custom data type observables/devices.
   [(#3426)](https://github.com/PennyLaneAI/pennylane/pull/3426)
 
-* The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency. 
+* The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency.
   [(#3284)](https://github.com/PennyLaneAI/pennylane/pull/3284)
-  
+
 * Added more input validation to `hamiltonian_expand` such that Hamiltonian objects with no terms raise an error.
   [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
 
 * Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
-  
+
 * `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
    [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
 
@@ -353,6 +374,10 @@
 
 * Updated `qml.transforms.mitigate_with_zne` to support the new return types.
   [(#3415)](https://github.com/PennyLaneAI/pennylane/pull/3415)
+
+* Updated `qml.transforms.metric_tensor`, `qml.transforms.adjoint_metric_tensor`,
+  `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
+  [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
 
 
 <h3>Breaking changes</h3>
