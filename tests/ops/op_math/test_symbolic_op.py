@@ -181,7 +181,6 @@ class TestQueuing:
         with qml.tape.QuantumTape() as tape:
             op = SymbolicOp(base)
 
-
         assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
         assert tape.operations == [op]
 
