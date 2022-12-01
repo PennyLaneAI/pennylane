@@ -23,6 +23,8 @@ torch = pytest.importorskip("torch")
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
 class TestTorchDevice:
+    """Test GPU with cuda for Torch device."""
+
     def test_device_to_cuda(self):
         """Checks device executes with cuda is input data is cuda"""
 
