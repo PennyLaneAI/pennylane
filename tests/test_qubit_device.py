@@ -29,7 +29,6 @@ from pennylane.measurements import (
     Sample,
     State,
     Variance,
-    state,
 )
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires

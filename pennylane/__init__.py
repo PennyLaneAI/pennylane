@@ -348,7 +348,7 @@ def __getattr__(name):
     if name == "grouping":
         warnings.warn(
             "The qml.grouping module is deprecated, please use qml.pauli instead.",
-            DeprecationWarning,
+            UserWarning,
         )
         import pennylane.grouping as grouping  # pylint:disable=import-outside-toplevel,consider-using-from-import
 

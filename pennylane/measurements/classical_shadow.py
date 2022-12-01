@@ -214,7 +214,6 @@ def classical_shadow(wires, seed=None, seed_recipes=True):
             UserWarning,
         )
     wires = Wires(wires)
-
     seed = seed or np.random.randint(2**30)
     return ClassicalShadow(wires=wires, seed=seed)
 

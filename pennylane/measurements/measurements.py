@@ -225,6 +225,8 @@ class MeasurementProcess(ABC):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
+        if qml.active_return():
+            return self._shape_new(device=device)
         raise qml.QuantumFunctionError(
             "Cannot deduce the shape of the measurement process with unrecognized return_type "
             + f"{self.return_type}."
@@ -582,7 +584,7 @@ class StateMeasurement(MeasurementProcess):
         """
 
 
-class CustomMeasurement(MeasurementProcess, ABC):
+class CustomMeasurement(MeasurementProcess):
     """Custom measurement process.
 
     Any class inheriting from this class should define its own ``process`` method, which takes a

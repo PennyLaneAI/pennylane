@@ -488,7 +488,7 @@ class QubitDevice(Device):
 
             if isinstance(r, qml.numpy.ndarray):
                 if shot_tuple.copies > 1:
-                    results.extend(r.T)
+                    results.extend([self._asarray(r_) for r_ in qml.math.unstack(r.T)])
                 else:
                     results.append(r.T)
 
@@ -682,7 +682,7 @@ class QubitDevice(Device):
         density matrices.
 
         Args:
-            circuit (~.tape.QuantumScript): the quantum tape currently being executed
+            circuit (~.tape.QuantumScript): the quantum script currently being executed
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
@@ -893,7 +893,7 @@ class QubitDevice(Device):
         density matrices.
 
         Args:
-            circuit (~.tape.QuantumScript): the quantum tape currently being executed
+            circuit (~.tape.QuantumScript): the quantum script currently being executed
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
@@ -1022,6 +1022,24 @@ class QubitDevice(Device):
                 wires0, wires1 = obs.raw_wires
                 result = self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
 
+            elif obs.return_type is Shadow:
+                if len(measurements) > 1:
+                    raise qml.QuantumFunctionError(
+                        "Classical shadows cannot be returned in combination"
+                        " with other return types"
+                    )
+
+                result = self.classical_shadow(obs, circuit=circuit)
+
+            elif obs.return_type is ShadowExpval:
+                if len(measurements) > 1:
+                    raise qml.QuantumFunctionError(
+                        "Classical shadows cannot be returned in combination"
+                        " with other return types"
+                    )
+
+                result = self.shadow_expval(obs, circuit=circuit)
+
             elif method := getattr(self, m.method_name, False):
                 result = method(obs, shot_range=shot_range, bin_size=bin_size)
 
@@ -1051,13 +1069,21 @@ class QubitDevice(Device):
                     "Shots must be specified in the device to compute the measurement "
                     f"{m.__class__.__name__}"
                 )
+
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
                 )
 
             # 2. Post-process statistics results (if need be)
-            float_return_types = {Expectation, Variance, Probability, VnEntropy, MutualInfo}
+            float_return_types = {
+                Expectation,
+                Variance,
+                Probability,
+                VnEntropy,
+                MutualInfo,
+                ShadowExpval,
+            }
 
             if obs.return_type in float_return_types:
                 result = self._asarray(result, dtype=self.R_DTYPE)
