@@ -305,12 +305,7 @@ class PauliSentence(dict):
             if w:
                 return wires.Wires(w)
 
-            ps_wires = self.wires
-            if len(ps_wires) > 0:
-                return wires.Wires(
-                    list(ps_wires)[0]
-                )  # return any wire from the Pauli sentence's wires
-            return wires.Wires([])
+            return wires.Wires(list(self.wires[0])) if len(self.wires) > 0 else wires.Wires([])
 
         if len(self) == 0:
             if wire_order is None or wire_order == wires.Wires([]):
@@ -321,8 +316,8 @@ class PauliSentence(dict):
 
         mats_and_wires_gen = (
             (
-                coeff * pw.to_mat(wire_order=_pw_wires(list(pw.wires)), format=format),
-                _pw_wires(list(pw.wires)),
+                coeff * pw.to_mat(wire_order=_pw_wires(pw.wires), format=format),
+                _pw_wires(pw.wires),
             )
             for pw, coeff in self.items()
         )
