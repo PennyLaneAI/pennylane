@@ -35,10 +35,20 @@ from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
     AllCounts,
     ClassicalShadow,
+    Counts,
+    Expectation,
     MeasurementProcess,
     MeasurementTransform,
+    MutualInfo,
+    Probability,
+    Sample,
     SampleMeasurement,
+    Shadow,
+    ShadowExpval,
+    State,
     StateMeasurement,
+    Variance,
+    VnEntropy,
     _Counts,
     _Expectation,
     _MutualInfo,
@@ -738,34 +748,35 @@ class QubitDevice(Device):
                 obs.return_type = m.return_type
             else:
                 obs = m
+            # TODO: Remove return_type when `observables` argument is removed from this method
             # Pass instances directly
-            if isinstance(m, _Expectation):
+            if obs.return_type is Expectation:
                 # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
                 results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
 
-            elif isinstance(m, _Variance):
+            elif obs.return_type is Variance:
                 # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
                 results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
 
-            elif isinstance(m, _Sample):
+            elif obs.return_type is Sample:
                 # Appends a result of shape (shots, num_bins,) if bin_size is not None else (shots,)
                 results.append(
                     self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
                 )
 
-            elif isinstance(m, _Counts):
+            elif obs.return_type in (Counts, AllCounts):
                 results.append(
                     self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
                 )
 
-            elif isinstance(m, _Probability):
+            elif obs.return_type is Probability:
                 # Appends a result of shape (2**len(obs.wires), num_bins,)
                 # if bin_size is not None else (2**len(obs.wires),)
                 results.append(
                     self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
                 )
 
-            elif isinstance(m, _State):
+            elif obs.return_type is State:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination"
@@ -784,7 +795,7 @@ class QubitDevice(Device):
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
 
-            elif isinstance(m, _VnEntropy):
+            elif obs.return_type is VnEntropy:
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
@@ -805,7 +816,7 @@ class QubitDevice(Device):
 
                 results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
 
-            elif isinstance(m, _MutualInfo):
+            elif obs.return_type is MutualInfo:
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
@@ -829,7 +840,7 @@ class QubitDevice(Device):
                     self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
                 )
 
-            elif isinstance(m, ClassicalShadow):
+            elif obs.return_type is Shadow:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
@@ -837,7 +848,7 @@ class QubitDevice(Device):
                     )
                 results.append(self.classical_shadow(obs, circuit))
 
-            elif isinstance(m, _ShadowExpval):
+            elif obs.return_type is ShadowExpval:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
