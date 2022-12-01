@@ -15,12 +15,11 @@
 """Unit tests for the classical shadows transforms"""
 
 import builtins
-
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.measurements.classical_shadow import _ShadowExpval
+from pennylane import numpy as np
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
@@ -164,6 +163,30 @@ class TestStateForward:
                     circuit
                 )
 
+    def test_multi_measurement_error(self):
+        """Test that an error is raised when classical shadows is returned
+        with other measurement processes"""
+        dev = qml.device("default.qubit", wires=2, shots=100)
+
+        @qml.qnode(dev)
+        def circuit_shadow():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.classical_shadow(wires=[0, 1]), qml.expval(qml.PauliZ(0))
+
+        msg = "Classical shadows cannot be returned in combination with other return types"
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            circuit_shadow()
+
+        @qml.qnode(dev)
+        def circuit_expval():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.shadow_expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            circuit_expval()
+
 
 @pytest.mark.all_interfaces
 class TestStateForwardInterfaces:
@@ -222,13 +245,12 @@ class TestStateBackward:
         sub_wires = [[0, 1], [1, 2]]
         shadow_circuit = qml.shadows.shadow_state(wires=sub_wires, diffable=True)(shadow_circuit)
 
-        x = jnp.array(self.x, dtype=np.complex64)
-
-        actual = qml.math.real(jax.jacrev(shadow_circuit, holomorphic=True)(x))
+        x = jnp.array(self.x)
+        actual = jax.jacobian(lambda x: qml.math.real(qml.math.stack(shadow_circuit(x))))(x)
 
         for act, w in zip(qml.math.unstack(actual), sub_wires):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "jax")
-            expected = qml.math.real(jax.jacrev(exact_circuit, holomorphic=True)(x))
+            expected = jax.jacobian(lambda x: qml.math.real(exact_circuit(x)))(x)
 
             assert qml.math.allclose(act, expected, atol=1e-1)
 
@@ -339,8 +361,12 @@ class TestExpvalTransform:
 
         x = np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
 
+        def exact_cost(x, obs):
+            res = exact_circuit(x, obs)
+            return qml.math.stack(res)
+
         actual = qml.jacobian(shadow_circuit)(x)
-        expected = qml.jacobian(exact_circuit)(x, obs)
+        expected = qml.jacobian(exact_cost)(x, obs)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 

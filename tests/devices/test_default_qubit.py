@@ -1912,6 +1912,7 @@ class TestDtypePreserved:
             qml.DoubleExcitationPlus,
             qml.DoubleExcitationMinus,
             qml.OrbitalRotation,
+            qml.FermionicSWAP,
             qml.QubitSum,
             qml.QubitCarry,
         ],
