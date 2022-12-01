@@ -313,8 +313,12 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
 
     if post_processing_fn is None:
 
-        def post_processing_fn(x):
-            return qml.math.squeeze(qml.math.stack(x))
+        def post_processing_fn(res):
+            if qml.active_return():
+                # only a single probs measurement, so no stacking needed
+                return res[0]
+
+            return qml.math.squeeze(qml.math.stack(res))
 
     return [new_tape], post_processing_fn
 
@@ -462,7 +466,7 @@ def classical_fisher(qnode, argnums=0):
             [2.16840434e-18, 2.81967252e-01]]]))
 
     """
-    new_qnode = _make_probs(qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.stack(x)))
+    new_qnode = _make_probs(qnode)
 
     interface = qnode.interface
 
