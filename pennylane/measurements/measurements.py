@@ -131,8 +131,8 @@ class MeasurementProcess(ABC):
 
     .. code-block:: python
 
-        def method_name(self, measurement, shot_range=None, bin_size=None):
-            "Device's custom measurement implementation."
+        def method_name(self, measurement: MeasurementProcess, shot_range=None, bin_size=None):
+            "Device's custom measurement implementation.
     """
 
     # pylint: disable=too-many-arguments
