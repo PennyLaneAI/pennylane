@@ -21,6 +21,10 @@ from collections import namedtuple
 import numpy as np
 import retworkx as rx
 
+import pennylane as qml
+from pennylane.measurements import Sample, State, _State
+from pennylane.wires import Wires
+
 
 def _by_idx(x):
     """Sorting key for Operators: queue index aka temporal order.
@@ -111,8 +115,21 @@ class CircuitGraph:
         """int: number of wires the circuit contains"""
         for k, op in enumerate(queue):
             op.queue_idx = k  # store the queue index in the Operator
-            op_wires = op.wires or wires  # use all wires when op.wires == []
-            for w in op_wires:
+            meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
+            if hasattr(op, "return_type"):
+                if op.return_type is State:
+                    # State measurements contain no wires by default, but wires are
+                    # required for the circuit drawer, so we recreate the state
+                    # measurement with all wires
+                    op = _State(wires=meas_wires)
+
+                elif op.return_type is Sample and op.wires == Wires([]):
+                    # Sampling without specifying wires is treated as sampling all wires
+                    op = qml.sample(wires=meas_wires)
+
+                op.queue_idx = k
+
+            for w in op.wires:
                 # get the index of the wire on the device
                 wire = wires.index(w)
                 # add op to the grid, to the end of wire w
