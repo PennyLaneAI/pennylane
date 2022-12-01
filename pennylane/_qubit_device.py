@@ -23,6 +23,7 @@ import abc
 import contextlib
 import itertools
 import warnings
+from typing import Union
 
 import numpy as np
 
@@ -849,42 +850,65 @@ class QubitDevice(Device):
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
             elif method := getattr(self, m.method_name, False):
-                results.append(method(obs, shot_range=shot_range, bin_size=bin_size))
+                results.append(
+                    method(obs, shot_range=shot_range, bin_size=bin_size, circuit=circuit)
+                )
 
             elif isinstance(m, CustomMeasurement):
                 results.append(m.process(tape=circuit, device=self))
 
-            elif isinstance(m, SampleMeasurement) and self.shots is not None:
-                results.append(
-                    m.process_samples(
-                        samples=self._samples,
-                        wire_order=self.wires,
-                        shot_range=shot_range,
-                        bin_size=bin_size,
-                    )
-                )
+            elif isinstance(m, (SampleMeasurement, StateMeasurement)):
+                results.append(self._measure(m, shot_range=shot_range, bin_size=bin_size))
 
-            elif isinstance(m, StateMeasurement):
-                if self.shots is not None:
-                    warnings.warn(
-                        f"Requested measurement {m.__class__.__name__} with finite shots; the "
-                        "returned state information is analytic and is unaffected by sampling. "
-                        "To silence this warning, set shots=None on the device.",
-                        UserWarning,
-                    )
-                results.append(m.process_state(state=self.state, wire_order=self.wires))
-
-            elif isinstance(m, SampleMeasurement) and self.shots is None:
-                raise ValueError(
-                    "Shots must be specified in the device to compute the measurement "
-                    f"{m.__class__.__name__}"
-                )
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
                 )
 
         return results
+
+    def _measure(
+        self,
+        measurement: Union[SampleMeasurement, StateMeasurement],
+        shot_range=None,
+        bin_size=None,
+    ):
+        """Compute the corresponding measurement process depending on ``shots`` and the measurement
+        type.
+
+        Args:
+            measurement (Union[SampleMeasurement, StateMeasurement]): measurement process
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+
+        Raises:
+            ValueError: if the measurement cannot be computed
+
+        Returns:
+            Union[float, dict, list[float]]: result of the measurement
+        """
+        if self.shots is None:
+            if isinstance(measurement, StateMeasurement):
+                return measurement.process_state(state=self.state, wire_order=self.wires)
+
+            raise ValueError(
+                "Shots must be specified in the device to compute the measurement "
+                f"{measurement.__class__.__name__}"
+            )
+        if isinstance(measurement, StateMeasurement):
+            warnings.warn(
+                f"Requested measurement {measurement.__class__.__name__} with finite shots; the "
+                "returned state information is analytic and is unaffected by sampling. "
+                "To silence this warning, set shots=None on the device.",
+                UserWarning,
+            )
+            return measurement.process_state(state=self.state, wire_order=self.wires)
+        return measurement.process_samples(
+            samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
+        )
 
     def _statistics_new(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
@@ -1047,29 +1071,8 @@ class QubitDevice(Device):
             elif isinstance(m, CustomMeasurement):
                 result = m.process(tape=circuit, device=self)
 
-            elif isinstance(m, SampleMeasurement) and self.shots is not None:
-                result = m.process_samples(
-                    samples=self._samples,
-                    wire_order=self.wires,
-                    shot_range=shot_range,
-                    bin_size=bin_size,
-                )
-
-            elif isinstance(m, StateMeasurement):
-                if self.shots is not None:
-                    warnings.warn(
-                        f"Requested measurement {m.__class__.__name__} with finite shots; the "
-                        "returned state information is analytic and is unaffected by sampling. "
-                        "To silence this warning, set shots=None on the device.",
-                        UserWarning,
-                    )
-                result = m.process_state(state=self.state, wire_order=self.wires)
-
-            elif isinstance(m, SampleMeasurement) and self.shots is None:
-                raise ValueError(
-                    "Shots must be specified in the device to compute the measurement "
-                    f"{m.__class__.__name__}"
-                )
+            elif isinstance(m, (SampleMeasurement, StateMeasurement)):
+                result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(

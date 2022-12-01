@@ -131,7 +131,7 @@ class MeasurementProcess(ABC):
 
     .. code-block:: python
 
-        def method_name(self, measurement, shot_range=None, bin_size=None):
+        def method_name(self, measurement, shot_range=None, bin_size=None, circuit=None):
             "Device's custom measurement implementation."
     """
 
