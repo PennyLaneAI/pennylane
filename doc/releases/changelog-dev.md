@@ -93,6 +93,29 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
+* Added a new gate operation `FermionicSWAP`, which implements the exchange of spin orbitals
+  representing fermionic-modes while maintaining proper anti-symmetrization.
+  [(#3380)](https://github.com/PennyLaneAI/pennylane/pull/3380)
+
+  An example circuit that uses `FermionicSWAP` operation is:
+
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.BasisState(np.array([0, 1]), wires=[0, 1])
+      qml.FermionicSWAP(phi, wires=[0, 1])
+      return qml.state()
+  ```
+
+  If we run this circuit, we will get the following output
+
+  ```pycon
+  >>> circuit(0.1)
+  array([0.+0.j, 0.9975+0.04992j, 0.0025-0.04992j, 0.+0.j])
+  ```
+
 * New parametric qubit ops `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10` which perform a phaseshift, similar to `qml.ControlledPhaseShift` but on different positions of the state vector.
   [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
 
