@@ -26,9 +26,7 @@
   The argument `num_directions` determines how many directions of simultaneous
   perturbation are used and therefore the number of circuit evaluations, up
   to a prefactor. See the
-  [SPSA gradient transform documentation](
-  https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html
-  ) for details.
+  [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details.
   Note: The full SPSA optimization method is already available as `SPSAOptimizer`.
 
 * Add the controlled CZ gate: CCZ.
