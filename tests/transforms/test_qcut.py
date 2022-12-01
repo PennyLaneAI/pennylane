@@ -29,9 +29,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.transforms import qcut
-
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
