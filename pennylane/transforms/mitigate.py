@@ -504,7 +504,7 @@ def mitigate_with_zne(
     if isinstance(folding, qml.batch_transform):
         folding = fold_global_tape
 
-    tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
+    tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
 
     with AnnotatedQueue() as q_removed:
         for op in tape._ops:

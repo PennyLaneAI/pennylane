@@ -2434,7 +2434,7 @@ def operation_derivative(operation) -> np.ndarray:
 @qml.BooleanFn
 def not_tape(obj):
     """Returns ``True`` if the object is not a quantum tape"""
-    return isinstance(obj, qml.tape.QuantumTape)
+    return isinstance(obj, qml.tape.QuantumScript)
 
 
 @qml.BooleanFn
