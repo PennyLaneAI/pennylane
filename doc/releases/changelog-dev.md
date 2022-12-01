@@ -166,22 +166,27 @@
   [(#3447)](https://github.com/PennyLaneAI/pennylane/pull/3447)
 
   ```python3
-  import pennylane as qml
   dev = qml.device('default.qubit', wires=5)
-  acquaintances = lambda index, wires, param=None: qml.CNOT(index)
+  weights = np.random.random(size=TwoLocalSwapNetwork.shape(len(dev.wires)))
+  acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
+                                   if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
   @qml.qnode(dev)
   def swap_network_circuit():
-     qml.templates.TwoLocalSwapNetwork(None, dev.wires, acquaintances, fermionic=True, shift=False)
+     qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
      return qml.state()
   ```
 
   ```pycon
-  >>> qml.draw(swap_network_circuit)()
-  0: ─╭●─╭fSWAP───────────╭●─╭fSWAP───────────╭●─╭fSWAP─┤  State
-  1: ─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─┤  State
-  2: ─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─┤  State
-  3: ─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─┤  State
-  4: ───────────╰X─╰fSWAP───────────╰X─╰fSWAP───────────┤  State
+  >>> print(weights)
+  tensor([0.20308242, 0.91906199, 0.67988804, 0.81290256, 0.08708985,
+          0.81860084, 0.34448344, 0.05655892, 0.61781612, 0.51829044], requires_grad=True)
+  >>> qml.draw(swap_network_circuit, expansion_strategy = 'device')()
+  0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤  State
+  1: ─╰RY(0.20)─╰SWAP─╭●────────╭SWAP─╰RY(0.09)─╰SWAP─╭●────────╭SWAP─╰RY(0.62)─╰SWAP─┤  State
+  2: ─╭●────────╭SWAP─╰RY(0.68)─╰SWAP─╭●────────╭SWAP─╰RY(0.34)─╰SWAP─╭●────────╭SWAP─┤  State
+  3: ─╰RY(0.92)─╰SWAP─╭●────────╭SWAP─╰RY(0.82)─╰SWAP─╭●────────╭SWAP─╰RY(0.52)─╰SWAP─┤  State
+  4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
+
   ```
 
 <h3>Improvements</h3>

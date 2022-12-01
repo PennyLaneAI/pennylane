@@ -27,11 +27,11 @@ class TwoLocalSwapNetwork(Operation):
 
     Args:
         wires (Iterable or Wires): ordered sequence of wires on which the swap network acts
-        acquaintances (Callable): a callable `func(index, wires, param=None, **kwargs)` that returns a two-local operation being applied on pair of wires specified by `index` that are currently stored in physical qubits or fermionic modes specified by `wires` before they are swapped apart and kwargs accepts any additional keyword argument required for this operation. Note that these kwargs should be provided separately
-        weights (tensor): one dimensional tensor to provide weights for the acquaintances of length :math:`N \times (N - 1) / 2`, where `N` is the number of wires and each weight is specified by the `param` argument in the callable given for `acquaintances`. Specify ``None`` if specified acquintances will not be parameterized
-        fermionic (bool): If ``True``, qubits are realized as fermionic modes and :class:`~.pennylane.FermionicSWAP` with :math:`\phi=2\pi` is used instead of class:`~.pennylane.SWAP` to build 2-CCL
-        shift (bool): If ``True``, odd-numbered layers begins from the second qubit instead of first
-        **kwargs: additional keyword arguments for acquaintances
+        acquaintances (Callable): callable `func(index, wires, param=None, **kwargs)` that returns a two-local operation applied on a pair of logical wires specified by `index` currently stored in physical wires provided by `wires` before they are swapped apart. Parameters for the operation are specified using `param`, and any additional keyword arguments for the callable should be provided using the ``kwargs`` separately
+        weights (tensor): weight tensor for the parameterized acquaintances of length :math:`N \times (N - 1) / 2`, where `N` is the length of `wires`
+        fermionic (bool): If ``True``, qubits are realized as fermionic modes and :class:`~.pennylane.FermionicSWAP` with :math:`\phi=\pi` is used instead of :class:`~.pennylane.SWAP`
+        shift (bool): If ``True``, odd-numbered layers begins from the second qubit instead of first one
+        **kwargs: additional keyword arguments for `acquaintances`
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -45,14 +45,14 @@ class TwoLocalSwapNetwork(Operation):
         >>> acquaintances = lambda index, wires, param=None: qml.CNOT(index)
         >>> @qml.qnode(dev)
         ... def swap_network_circuit():
-        ...    qml.templates.TwoLocalSwapNetwork(None, dev.wires, acquaintances, fermionic=True, shift=False)
+        ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, fermionic=True, shift=False)
         ...    return qml.state()
-        >>> qml.draw(swap_network_circuit)()
-        0: ─╭●─╭fSWAP───────────╭●─╭fSWAP───────────╭●─╭fSWAP─┤  State
-        1: ─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─┤  State
-        2: ─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─┤  State
-        3: ─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─╭●─╭fSWAP─╰X─╰fSWAP─┤  State
-        4: ───────────╰X─╰fSWAP───────────╰X─╰fSWAP───────────┤  State
+        >>> qml.draw(swap_network_circuit, expansion_strategy = 'device')()
+        0: ─╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─────────────────╭●─╭fSWAP(3.14)─┤  State
+        1: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤  State
+        2: ─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─┤  State
+        3: ─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─╭●─╭fSWAP(3.14)─╰X─╰fSWAP(3.14)─┤  State
+        4: ─────────────────╰X─╰fSWAP(3.14)─────────────────╰X─╰fSWAP(3.14)─────────────────┤  State
 
     .. details::
         :title: Usage Details
@@ -62,7 +62,7 @@ class TwoLocalSwapNetwork(Operation):
         .. code-block:: python
 
             >>> dev = qml.device('default.qubit', wires=5)
-            >>> weights = np.random.rand(*TwoLocalSwapNetwork.shape(len(dev.wires)))
+            >>> weights = np.random.random(size=TwoLocalSwapNetwork.shape(len(dev.wires)))
             >>> print(weights)
             tensor([0.20308242, 0.91906199, 0.67988804, 0.81290256, 0.08708985,
                     0.81860084, 0.34448344, 0.05655892, 0.61781612, 0.51829044], requires_grad=True)
@@ -70,9 +70,9 @@ class TwoLocalSwapNetwork(Operation):
             ...                                  if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
             >>> @qml.qnode(dev)
             ... def swap_network_circuit():
-            ...    qml.templates.TwoLocalSwapNetwork(weights, dev.wires, acquaintances, fermionic=false)
+            ...    qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
             ...    return qml.state()
-            >>> qml.draw(swap_network_circuit)()
+            >>> qml.draw(swap_network_circuit, expansion_strategy = 'device')()
             0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤  State
             1: ─╰RY(0.20)─╰SWAP─╭●────────╭SWAP─╰RY(0.09)─╰SWAP─╭●────────╭SWAP─╰RY(0.62)─╰SWAP─┤  State
             2: ─╭●────────╭SWAP─╰RY(0.68)─╰SWAP─╭●────────╭SWAP─╰RY(0.34)─╰SWAP─╭●────────╭SWAP─┤  State
@@ -110,10 +110,11 @@ class TwoLocalSwapNetwork(Operation):
         if (
             weights is not None
             and acquaintances is not None
-            and qml.math.shape(weights) != self.shape(len(wires))
+            and qml.math.shape(weights)[0] != int(len(wires) * (len(wires) - 1) / 2)
         ):
             raise ValueError(
-                f"Weight tensor must be of size {self.shape(len(wires))}, got {qml.math.shape(weights)}"
+                f"Weight tensor must be of length {int(len(wires) * (len(wires) - 1) / 2)}, \
+                    got {qml.math.shape(weights)[0]}"
             )
 
         self._weights = weights
@@ -148,12 +149,12 @@ class TwoLocalSwapNetwork(Operation):
         .. seealso:: :meth:`~.TwoLocalSwapNetwork.decomposition`.
 
         Args:
-            weights (tensor): one dimensional tensor to provide weights for the acquaintances of length :math:`N \times (N - 1) / 2`, where `N` is the number of wires and each weight is specified by the `param` argument in the callable given for `acquaintances`. Specify ``None`` if provided acquintances will not be parameterized
+            weights (tensor): weight tensor for the parameterized acquaintances of length :math:`N \times (N - 1) / 2`, where `N` is the length of `wires`
             wires (Iterable or Wires): ordered sequence of wires on which the swap network acts
-            acquaintances (Callable): a callable `func(index, wires, param=None, **kwargs)` that returns a two-local operation being applied on pair of wires specified by `index` that are currently stored in physical qubits or fermionic modes specified by `wires` before they are swapped apart and kwargs accepts any additional keyword argument required for this operation. Note that these kwargs should be provided separately
-            fermionic (bool): If ``True``, qubits are realized as fermionic modes and :class:`~.pennylane.FermionicSWAP` with :math:`\phi=2\pi` is used instead of class:`~.pennylane.SWAP` to build 2-CCL
-            shift (bool): If ``True``, odd-numbered layers begins from the second qubit instead of first
-            **kwargs: additional keyword arguments for acquaintances
+            acquaintances (Callable): callable `func(index, wires, param=None, **kwargs)` that returns a two-local operation applied on a pair of logical wires specified by `index` currently stored in physical wires provided by `wires` before they are swapped apart. Parameters for the operation are specified using `param`, and any additional keyword arguments for the callable should be provided using the ``kwargs`` separately
+            fermionic (bool): If ``True``, qubits are realized as fermionic modes and :class:`~.pennylane.FermionicSWAP` with :math:`\phi=\pi` is used instead of :class:`~.pennylane.SWAP`
+            shift (bool): If ``True``, odd-numbered layers begins from the second qubit instead of first one
+            **kwargs: additional keyword arguments for `acquaintances`
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -175,7 +176,7 @@ class TwoLocalSwapNetwork(Operation):
                         acquaintances(
                             index=[wires[i], wires[j]],
                             wires=[qb1, qb2],
-                            param=next(itrweights, 0.0),
+                            param=next(itrweights, None),
                             **kwargs,
                         )
                     )

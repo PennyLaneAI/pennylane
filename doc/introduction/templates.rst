@@ -177,8 +177,8 @@ can be broadcast with the shape and connectivity of tensor networks.
 Swap networks
 --------------
 
-Swap network templates can be used to create quantum circuits with optimal scaling with respect to
-qubit routing for performing some specific quantum simulations tasks.
+Swap network templates perform qubit routing with linear cost, providing a quadratic advantage in
+circuit depth for carrying out all pair-wise interactions between qubits.
 
 .. gallery-item::
     :description: :doc:`Canonical 2-Complete Linear Swap Network <../code/api/pennylane.TwoLocalSwapNetwork>`

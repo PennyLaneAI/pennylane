@@ -59,7 +59,7 @@ class TestDecomposition:
             ]
         )
 
-        # whole gate set
+        # complete gate set
         gate_order = []
         ac_op = acquaintances if acquaintances is not None else ()
         for pairs in qubit_pairs:
@@ -98,25 +98,81 @@ class TestDecomposition:
         assert np.allclose(circuit(), circuit2(), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        ("wires", "acquaintances", "weights", "fermionic", "shift", "exp_state"),
+        ("num_wires", "acquaintances", "weights", "fermionic", "shift", "exp_state"),
         [
             (
+                3,
+                None,
+                False,
+                True,
+                False,
+                qml.math.array([0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0]),
+            ),
+            (
+                3,
+                lambda index, wires, param: qml.CNOT(index),
+                False,
+                True,
+                False,
+                qml.math.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            ),
+            (
                 4,
-                None,
-                None,
+                lambda index, wires, param: qml.CNOT(index),
+                False,
+                False,
+                False,
+                qml.math.array(
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+                ),
+            ),
+            (
+                4,
+                lambda index, wires, param: qml.CRX(param, index),
+                True,
                 True,
                 False,
                 qml.math.array(
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+                    [
+                        0.0,
+                        -0.5j,
+                        0.0,
+                        0.0,
+                        0.0,
+                        -0.5,
+                        0.0,
+                        0.5j,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        -0.5,
+                    ]
                 ),
             ),
         ],
     )
-    def test_ccl2(self, wires, acquaintances, weights, fermionic, shift, exp_state):
-        """Test that the TwoLocalSwapNetwork template with multiple layers works correctly asserting the prepared state."""
+    def test_ccl2(self, num_wires, acquaintances, weights, fermionic, shift, exp_state):
+        """Test that the TwoLocalSwapNetwork template works correctly by asserting the prepared state."""
 
-        wires = range(wires)
-        pass
+        wires = range(num_wires)
+
+        shape = qml.templates.TwoLocalSwapNetwork.shape(num_wires)
+        weights = np.pi / 2 * qml.math.ones(shape) if weights else None
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=[0])
+            qml.PauliX(wires=[2])
+            qml.templates.TwoLocalSwapNetwork(wires, acquaintances, weights, fermionic, shift)
+            return qml.state()
+
+        assert qml.math.allclose(circuit(), exp_state, atol=1e-8)
 
     def test_decomposition_exception_not_enough_qubits(self):
         """Test that the decomposition function warns if there are not enough qubits."""
@@ -157,7 +213,7 @@ class TestInputs:
                 np.random.rand(12),
                 True,
                 False,
-                "Weight tensor must be of size",
+                "Weight tensor must be of length",
             ),
         ],
     )

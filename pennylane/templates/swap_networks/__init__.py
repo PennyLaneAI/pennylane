@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-SWAP network templates can be used to create quantum circuits with optimal scaling with respect to
-qubit routing for performing some specific quantum simulations tasks.
+Swap network templates perform qubit routing with linear cost, providing a quadratic advantage in
+circuit depth for carrying out all pair-wise interactions between qubits.
 """
 from .ccl2 import TwoLocalSwapNetwork
 
