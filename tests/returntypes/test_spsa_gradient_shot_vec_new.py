@@ -32,7 +32,7 @@ default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([100000] * 3)
 
 
-def coordinate_sampler(indices, num_params, idx):
+def coordinate_sampler(indices, num_params, idx, seed=None):
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
@@ -633,6 +633,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
+        np.random.seed(5214)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654

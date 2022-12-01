@@ -38,7 +38,7 @@ from .gradient_transform import (
 from .general_shift_rules import generate_multishifted_tapes
 
 
-def _rademacher_sampler(indices, num_params, *args):
+def _rademacher_sampler(indices, num_params, *args, seed=None):
     r"""Sample a random vector with (independent) entries from {+1, -1} with balanced probability.
     That is, each entry follows the
     `Rademacher distribution. <https://en.wikipedia.org/wiki/Rademacher_distribution>`_
@@ -54,6 +54,8 @@ def _rademacher_sampler(indices, num_params, *args):
         by ``indices``, each entry sampled independently from the Rademacher distribution.
     """
     # pylint: disable=unused-argument
+    if seed is not None:
+        np.random.seed(seed)
     direction = np.zeros(num_params)
     direction[indices] = np.random.choice([-1, 1], size=len(indices))
     return direction
@@ -72,6 +74,7 @@ def _spsa_grad_new(
     shots=None,
     num_directions=1,
     sampler=_rademacher_sampler,
+    sampler_seed=None,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
@@ -126,6 +129,14 @@ def _spsa_grad_new(
               - An ``int`` indicating the iteration counter during the gradient estimation.
                 A valid sampling method can, but does not have to, take this counter into
                 account. In any case, ``sampler`` has to accept this third argument.
+
+              - The keyword argument ``seed``, expected to be ``None`` or an ``int``.
+                This argument should be passed to some method that seeds any randomness used in
+                the sampler.
+
+        sampler_seed (int or None): Seed passed to ``sampler``. The seed is passed in each
+            call to the sampler, so that only one unique direction is sampled even if
+            ``num_directions>1``.
 
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]] or tuple[list[QuantumTape], function]:
@@ -284,7 +295,7 @@ def _spsa_grad_new(
     tapes_per_grad = len(shifts)
     all_coeffs = []
     for idx_rep in range(num_directions):
-        direction = sampler(indices, num_trainable_params, idx_rep)
+        direction = sampler(indices, num_trainable_params, idx_rep, seed=sampler_seed)
         inv_direction = qml.math.divide(
             1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
         )
@@ -299,7 +310,8 @@ def _spsa_grad_new(
         shots or a single component of a shot vector"""
 
         r0, results = (results[0], results[1:]) if extract_r0 else (f0, results)
-        if len(tape.measurements) == 1:
+        num_measurements = len(tape.measurements)
+        if num_measurements == 1:
             grads = 0
             for rep, _coeffs in enumerate(all_coeffs):
                 res = results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]
@@ -316,7 +328,7 @@ def _spsa_grad_new(
             return tuple(qml.math.convert_like(g, res) for g in grads)
 
         grads = []
-        for i, _ in enumerate(tape.measurements):
+        for i in range(num_measurements):
             grad = 0
             for rep, _coeffs in enumerate(all_coeffs):
                 res = [r[i] for r in results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]]
@@ -366,6 +378,7 @@ def spsa_grad(
     shots=None,
     num_directions=1,
     sampler=_rademacher_sampler,
+    sampler_seed=None,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
@@ -420,6 +433,14 @@ def spsa_grad(
               - An ``int`` indicating the iteration counter during the gradient estimation.
                 A valid sampling method can, but does not have to, take this counter into
                 account. In any case, ``sampler`` has to accept this third argument.
+
+              - The keyword argument ``seed``, expected to be ``None`` or an ``int``.
+                This argument should be passed to some method that seeds any randomness used in
+                the sampler.
+
+        sampler_seed (int or None): Seed passed to ``sampler``. The seed is passed in each
+            call to the sampler, so that only one unique direction is sampled even if
+            ``num_directions>1``.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
@@ -517,6 +538,7 @@ def spsa_grad(
             shots=shots,
             num_directions=num_directions,
             sampler=sampler,
+            sampler_seed=sampler_seed,
         )
 
     if argnum is None and not tape.trainable_params:
@@ -561,7 +583,7 @@ def spsa_grad(
     tapes_per_grad = len(shifts)
     all_coeffs = []
     for idx_rep in range(num_directions):
-        direction = sampler(indices, num_trainable_params, idx_rep)
+        direction = sampler(indices, num_trainable_params, idx_rep, seed=sampler_seed)
         inv_direction = qml.math.divide(
             1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
         )

@@ -25,7 +25,7 @@ from pennylane.gradients.spsa_gradient import _rademacher_sampler
 from pennylane.operation import AnyWires, Observable
 
 
-def coordinate_sampler(indices, num_params, idx):
+def coordinate_sampler(indices, num_params, idx, seed=None):
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
