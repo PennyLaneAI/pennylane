@@ -705,7 +705,7 @@ class ControlledQubitUnitary(ControlledOp):
 
     def _controlled(self, wire):
         ctrl_wires = self.control_wires + wire
-        values = None if self.control_values is None else f"{self.control_values}1"
+        values = None if self.control_values is None else self.control_values.append(True)
         new_op = ControlledQubitUnitary(
             *self.parameters,
             control_wires=ctrl_wires,
