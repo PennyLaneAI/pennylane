@@ -389,9 +389,9 @@ def _find_new_wire(wires: Wires) -> int:
 
 
 # pylint: disable=protected-access
-def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
+def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
     """
-    Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
+    Converts a directed multigraph to the corresponding :class:`~.QuantumScript`.
 
     To account for the possibility of needing to perform mid-circuit measurements, if any operations
     follow a :class:`MeasureNode` operation on a given wire then these operations are mapped to a
