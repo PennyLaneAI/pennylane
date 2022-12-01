@@ -261,7 +261,10 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
 
 def pytreeify(cls):
-    """Pytree class"""
+    """The Pytree class is used to bypass some PyTorch limitation of `autograd.Function. The forward pass can only
+    return tuple of tensors but not any other nested structure. This class apply flatten to the forward pass and
+    unflatten the results in the apply function. In this way it is possible to treat multiple tape with multiple
+    measurements."""
     orig_fw = cls.forward
     orig_bw = cls.backward
     orig_apply = cls.apply
@@ -282,6 +285,7 @@ def pytreeify(cls):
     def new_backward(ctx, *flat_grad_outputs):
         grad_outputs = pytree.tree_unflatten(flat_grad_outputs, ctx._out_struct)
         grad_inputs = orig_bw(ctx, *grad_outputs)
+        # None corresponds to the diff of out_struct_holder
         return (None,) + tuple(grad_inputs)
 
     cls.apply = new_apply
@@ -546,5 +550,5 @@ def _jac_to_torch(i, ctx):
             ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
         # Multiple measurements or multiple parameters: Jacobian is a tuple
         else:
-            jacobian = [torch.as_tensor(t, device=ctx.torch_device) for t in ctx.jacs[i]]
+            jacobian = [torch.as_tensor(jac, device=ctx.torch_device) for jac in ctx.jacs[i]]
             ctx.jacs[i] = tuple(jacobian)

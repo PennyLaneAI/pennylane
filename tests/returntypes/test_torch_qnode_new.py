@@ -1522,6 +1522,8 @@ class TestReturn:
 
         res = circuit(a)
 
+        assert isinstance(res, torch.Tensor)
+        assert res.shape == ()
         # gradient
         res.backward()
         grad = a.grad
@@ -1966,12 +1968,14 @@ class TestReturn:
         assert len(hess[0]) == 2
         assert isinstance(hess[0][0], torch.Tensor)
         assert hess[0][0].shape == ()
+        assert isinstance(hess[0][1], torch.Tensor)
         assert hess[0][1].shape == ()
 
         assert isinstance(hess[1], tuple)
         assert len(hess[1]) == 2
         assert isinstance(hess[1][0], torch.Tensor)
         assert hess[1][0].shape == ()
+        assert isinstance(hess[1][1], torch.Tensor)
         assert hess[1][1].shape == ()
 
     def test_hessian_var_multiple_param_array(self, dev_name, diff_method, mode, shots):
