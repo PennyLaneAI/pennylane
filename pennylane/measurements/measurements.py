@@ -591,6 +591,16 @@ class CustomMeasurement(MeasurementProcess):
     device instance and a tape and returns the result of the measurement process.
     """
 
+    method_name = ""
+    """Devices can override the logic of a measurement process by defining a method with the
+    name ``method_name`` of the corresponding class. The method should have the following signature:
+
+    .. code-block:: python
+
+        def method_name(self, qscript: QuantumScript):
+            "Device's custom measurement implementation."
+    """
+
     @abstractmethod
     def process(self, qscript, device):
         """Process the given tape."""

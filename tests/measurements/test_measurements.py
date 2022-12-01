@@ -581,6 +581,6 @@ class TestCustomMeasurement:
         def circuit():
             return MyMeasurement()
 
-        circuit.device.test_method = lambda qscript, device: 2
+        circuit.device.test_method = lambda qscript: 2
 
         assert circuit() == 2

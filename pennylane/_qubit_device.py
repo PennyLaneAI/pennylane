@@ -855,7 +855,7 @@ class QubitDevice(Device):
 
             elif isinstance(m, CustomMeasurement):
                 if method := getattr(self, m.method_name, False):
-                    results.append(method(qscript=circuit, device=self))
+                    results.append(method(qscript=circuit))
                 else:
                     results.append(m.process(qscript=circuit, device=self))
 
