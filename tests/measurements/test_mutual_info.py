@@ -68,6 +68,13 @@ class TestMutualInfo:
 
         assert isinstance(circuit.tape[0], _MutualInfo)
 
+    @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ([1, 10], (2,))])
+    def test_shape(self, shots, shape):
+        """Test that the shape is correct."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        res = qml.mutual_info(wires0=[0], wires1=[1])
+        assert res.shape(dev) == shape
+
     def test_properties(self):
         """Test that the properties are correct."""
         meas = qml.mutual_info(wires0=[0], wires1=[1])
