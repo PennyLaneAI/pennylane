@@ -1297,7 +1297,7 @@ class TestParameterShiftRule:
                 return SpecialObject(self.val * other)
 
             def __add__(self, other):
-                newval = self.val + other.val if isinstance(other, self.__class__) else other
+                newval = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(newval)
 
         class SpecialObservable(Observable):

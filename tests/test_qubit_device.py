@@ -321,10 +321,35 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
+    def test_observables_deprecated(self, mock_qubit_device_extract_stats, monkeypatch):
+        """Test that using a list of observables as an argument is deprecated."""
+        with monkeypatch.context() as m:
+            dev = mock_qubit_device_extract_stats()
+            with pytest.warns(
+                UserWarning,
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
+            ):
+                dev.statistics([])
+            with pytest.warns(
+                UserWarning,
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
+            ):
+                dev.statistics(observables=[])
+            qscript = QuantumScript()
+            with pytest.warns(
+                UserWarning,
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
+            ):
+                dev.statistics([], circuit=qscript)
+            with pytest.raises(
+                ValueError, match="Please provide a circuit into the statistics method"
+            ):
+                dev.statistics()
+
     @pytest.mark.parametrize(
         "measurement", [_Expectation, _Variance, _Sample, _Probability, _State]
     )
-    def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, measurement):
+    def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
         qscript = QuantumScript(measurements=[measurement(obs=qml.PauliX(0))])

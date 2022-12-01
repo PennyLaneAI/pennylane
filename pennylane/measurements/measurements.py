@@ -125,6 +125,25 @@ class MeasurementProcess(ABC):
         log_base (float): Base for the logarithm.
     """
 
+    method_name = ""
+    """Devices can override the logic of a measurement process by defining a method with the
+    name ``method_name`` of the corresponding class. The method should have the following signature:
+
+    .. code-block:: python
+
+        def method_name(self, measurement: MeasurementProcess, shot_range=None, bin_size=None):
+            '''Device's custom measurement implementation.
+
+            Args:
+                measurement (MeasurementProcess): measurement to override
+                shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                    to use. If not specified, all samples are used.
+                bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                    returns the measurement statistic separately over each bin. If not
+                    provided, the entire shot range is treated as a single bin.
+            '''
+    """
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -165,6 +184,11 @@ class MeasurementProcess(ABC):
         self.queue()
 
     @property
+    def return_type(self):
+        """Measurement return type."""
+        return None
+
+    @property
     def numeric_type(self):
         """The Python numeric type of the measurement result.
 
@@ -179,7 +203,7 @@ class MeasurementProcess(ABC):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def shape(self, device):
+    def shape(self, device=None):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device when the shot vector is defined in
@@ -205,11 +229,13 @@ class MeasurementProcess(ABC):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
+        if qml.active_return():
+            return self._shape_new(device=device)
         raise qml.QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
-    def _shape_new(self, device):
+    def _shape_new(self, device=None):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device when the shot vector is defined in
@@ -233,11 +259,6 @@ class MeasurementProcess(ABC):
         raise qml.QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
-
-    @property
-    @abstractmethod
-    def return_type(self):
-        """Return type property."""
 
     @staticmethod
     @functools.lru_cache()
@@ -561,13 +582,28 @@ class StateMeasurement(MeasurementProcess):
         """
 
 
-class CustomMeasurement(MeasurementProcess, ABC):
-    """Custom measurement process.
+class MeasurementTransform(MeasurementProcess):
+    """Measurement process that applies a transform into the given quantum script. This transform
+    is carried out inside the gradient black box, thus is not tracked by the gradient transform.
 
     Any class inheriting from this class should define its own ``process`` method, which takes a
     device instance and a tape and returns the result of the measurement process.
     """
 
+    method_name = ""
+    """Devices can override the logic of a measurement process by defining a method with the
+    name ``method_name`` of the corresponding class. The method should have the following signature:
+
+    .. code-block:: python
+
+        def method_name(self, qscript: QuantumScript):
+            '''Device's custom measurement implementation.
+
+            Args:
+                qscript: quantum script to transform
+            '''
+    """
+
     @abstractmethod
-    def process(self, tape, device):
+    def process(self, qscript, device):
         """Process the given tape."""
