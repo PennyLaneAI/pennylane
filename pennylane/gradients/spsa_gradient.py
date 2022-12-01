@@ -120,19 +120,19 @@ def _spsa_grad_new(
         sampler (callable): Sampling method to obtain the simultaneous perturbation directions.
             The sampler should take the following arguments:
 
-              - A ``Sequence[int]`` that contains the indices of those trainable tape parameters
-                that will be perturbed, i.e. have non-zero entries in the output vector.
+            - A ``Sequence[int]`` that contains the indices of those trainable tape parameters
+              that will be perturbed, i.e. have non-zero entries in the output vector.
 
-              - An ``int`` that indicates the total number of trainable tape parameters. The
-                size of the output vector has to match this input.
+            - An ``int`` that indicates the total number of trainable tape parameters. The
+              size of the output vector has to match this input.
 
-              - An ``int`` indicating the iteration counter during the gradient estimation.
-                A valid sampling method can, but does not have to, take this counter into
-                account. In any case, ``sampler`` has to accept this third argument.
+            - An ``int`` indicating the iteration counter during the gradient estimation.
+              A valid sampling method can, but does not have to, take this counter into
+              account. In any case, ``sampler`` has to accept this third argument.
 
-              - The keyword argument ``seed``, expected to be ``None`` or an ``int``.
-                This argument should be passed to some method that seeds any randomness used in
-                the sampler.
+            - The keyword argument ``seed``, expected to be ``None`` or an ``int``.
+              This argument should be passed to some method that seeds any randomness used in
+              the sampler.
 
         sampler_seed (int or None): Seed passed to ``sampler``. The seed is passed in each
             call to the sampler, so that only one unique direction is sampled even if
@@ -424,19 +424,19 @@ def spsa_grad(
         sampler (callable): Sampling method to obtain the simultaneous perturbation directions.
             The sampler should take the following arguments:
 
-              - A ``Sequence[int]`` that contains the indices of those trainable tape parameters
-                that will be perturbed, i.e. have non-zero entries in the output vector.
+            - A ``Sequence[int]`` that contains the indices of those trainable tape parameters
+              that will be perturbed, i.e. have non-zero entries in the output vector.
 
-              - An ``int`` that indicates the total number of trainable tape parameters. The
-                size of the output vector has to match this input.
+            - An ``int`` that indicates the total number of trainable tape parameters. The
+              size of the output vector has to match this input.
 
-              - An ``int`` indicating the iteration counter during the gradient estimation.
-                A valid sampling method can, but does not have to, take this counter into
-                account. In any case, ``sampler`` has to accept this third argument.
+            - An ``int`` indicating the iteration counter during the gradient estimation.
+              A valid sampling method can, but does not have to, take this counter into
+              account. In any case, ``sampler`` has to accept this third argument.
 
-              - The keyword argument ``seed``, expected to be ``None`` or an ``int``.
-                This argument should be passed to some method that seeds any randomness used in
-                the sampler.
+            - The keyword argument ``seed``, expected to be ``None`` or an ``int``.
+              This argument should be passed to some method that seeds any randomness used in
+              the sampler.
 
         sampler_seed (int or None): Seed passed to ``sampler``. The seed is passed in each
             call to the sampler, so that only one unique direction is sampled even if
