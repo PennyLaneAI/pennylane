@@ -18,7 +18,7 @@ Contains the QuantumPhaseEstimation template.
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard
-from pennylane.ops.op_math.controlled_class import ControlledQubitUnitary
+from pennylane.ops.op_math.controlled_ops import ControlledQubitUnitary
 
 
 class QuantumPhaseEstimation(Operation):
