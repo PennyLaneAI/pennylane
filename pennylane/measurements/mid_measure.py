@@ -84,6 +84,10 @@ class _MidMeasure(MeasurementProcess):
     def return_type(self):
         return MidMeasure
 
+    @property
+    def _queue_category(self):
+        return "_ops"
+
 
 class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""

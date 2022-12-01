@@ -123,6 +123,10 @@ class _Probability(SampleMeasurement, StateMeasurement):
     def return_type(self):
         return Probability
 
+    @property
+    def numeric_type(self):
+        return float
+
     def process_samples(
         self,
         samples: Sequence[complex],
