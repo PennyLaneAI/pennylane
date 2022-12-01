@@ -758,7 +758,7 @@ def _get_var_with_second_order(pdA2, f0, pdA):
             saving a quantum evaluation.
     """
     # Only necessary for numpy array with shape () not to be float
-    if any(isinstance(var, np.ndarray) for var in [pdA2, f0, pdA]):
+    if any(isinstance(term, np.ndarray) for term in [pdA2, f0, pdA]):
         # It breaks differentiability for Torch
         return qml.math.array(pdA2 - 2 * f0 * pdA)
     return pdA2 - 2 * f0 * pdA
