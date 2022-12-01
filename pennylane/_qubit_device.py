@@ -754,9 +754,8 @@ class QubitDevice(Device):
             elif obs.return_type is Probability:
                 # Appends a result of shape (2**len(obs.wires), num_bins,)
                 # if bin_size is not None else (2**len(obs.wires),)
-                wires = obs.wires or self.wires
                 results.append(
-                    self.probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
+                    self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
                 )
 
             elif obs.return_type is State:
@@ -1482,7 +1481,7 @@ class QubitDevice(Device):
         Returns:
             array[float]: list of the probabilities
         """
-
+        wires = wires or self.wires
         if self.shots is None:
             return self.analytic_probability(wires=wires)
 

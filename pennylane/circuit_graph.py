@@ -118,7 +118,7 @@ class CircuitGraph:
 
             if hasattr(op, "return_type"):
                 meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
-                if op.return_type is qml.measurements.State:
+                if op.return_type is State:
                     # State measurements contain no wires by default, but wires are
                     # required for the circuit drawer, so we recreate the state
                     # measurement with all wires
