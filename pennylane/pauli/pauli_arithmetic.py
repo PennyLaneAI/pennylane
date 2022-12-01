@@ -305,7 +305,7 @@ class PauliSentence(dict):
             if w:
                 return wires.Wires(w)
 
-            return wires.Wires(list(self.wires[0])) if len(self.wires) > 0 else wires.Wires([])
+            return wires.Wires(list(self.wires)[0]) if len(self.wires) > 0 else wires.Wires([])
 
         if len(self) == 0:
             if wire_order is None or wire_order == wires.Wires([]):
