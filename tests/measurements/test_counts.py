@@ -527,5 +527,22 @@ class TestCounts:
         assert len(res[0]) == 10
         assert res[1] == {"00": 10}
         assert res[2] == {"00": 10, "01": 0, "10": 0, "11": 0}
-
         custom_measurement_process(dev, spy)
+
+    def test_counts_empty_wires(self):
+        """Test that using ``qml.counts`` with an empty wire list raises an error."""
+        with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
+            qml.counts(wires=[])
+
+    @pytest.mark.parametrize("shots", [1, 100])
+    def test_counts_no_arguments(self, shots):
+        """Test that using ``qml.counts`` with no arguments returns the counts of all wires."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.counts()
+
+        res = circuit()
+
+        assert qml.math.allequal(res, {"000": shots})
