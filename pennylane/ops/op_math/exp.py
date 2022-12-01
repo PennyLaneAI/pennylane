@@ -27,7 +27,6 @@ from pennylane.operation import (
     GeneratorUndefinedError,
     Tensor,
 )
-from pennylane.pauli import is_pauli_word, pauli_word_to_string
 from pennylane.wires import Wires
 from pennylane.operation import Operation
 
@@ -182,7 +181,7 @@ class Exp(SymbolicOp, Operation):
                     "when the base operator is a Tensor object with overlapping wires. "
                     f"Received base {self.base}."
                 )
-        return math.real(self.coeff) == 0 and is_pauli_word(self.base)
+        return math.real(self.coeff) == 0 and qml.pauli.is_pauli_word(self.base)
 
     @property
     def inverse(self):
@@ -228,7 +227,7 @@ class Exp(SymbolicOp, Operation):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
         new_coeff = math.real(2j * self.coeff)
-        string_base = pauli_word_to_string(self.base)
+        string_base = qml.pauli.pauli_word_to_string(self.base)
         return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
 
     def matrix(self, wire_order=None):

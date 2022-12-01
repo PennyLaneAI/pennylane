@@ -14,18 +14,24 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
-import pytest
-import numpy as np
 from random import random
 
+import numpy as np
+import pytest
+
 import pennylane as qml
+from pennylane import DeviceError, QubitDevice
 from pennylane import numpy as pnp
-from pennylane import QubitDevice, DeviceError, QuantumFunctionError
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State
-from pennylane.circuit_graph import CircuitGraph
+from pennylane.measurements import (
+    Expectation,
+    MeasurementProcess,
+    Probability,
+    Sample,
+    State,
+    Variance,
+)
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
-from pennylane.tape import QuantumTape
-from pennylane.measurements import state
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -274,11 +280,14 @@ class TestObservables:
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return "SomeUnsupportedReturnType"
+
         with qml.tape.QuantumTape() as tape:
             qml.PauliX(wires=0)
-            qml.measurements.MeasurementProcess(
-                return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0)
-            )
+            UnsupportedMeasurement(obs=qml.PauliZ(0))
 
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
@@ -306,46 +315,65 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
+    def test_observables_deprecated(self, mock_qubit_device_extract_stats, monkeypatch):
+        """Test that using a list of observables as an argument is deprecated."""
+        with monkeypatch.context() as m:
+            dev = mock_qubit_device_extract_stats()
+            with pytest.warns(
+                UserWarning,
+                match="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. ",
+            ):
+                dev.statistics([])
+            with pytest.warns(
+                UserWarning,
+                match="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. ",
+            ):
+                dev.statistics(observables=[])
+
     @pytest.mark.parametrize("returntype", [Expectation, Variance, Sample, Probability, State])
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
-            return_type = returntype
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
 
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
-            results = dev.statistics([obs])
+            results = dev.statistics(qscript)
 
         assert results == [0]
 
     def test_results_no_state(self, mock_qubit_device_extract_stats, monkeypatch):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QubitDevice does not have a state attribute"""
+        qscript = QuantumScript(measurements=[qml.state()])
+
         with monkeypatch.context():
             dev = mock_qubit_device_extract_stats()
             delattr(dev.__class__, "state")
             with pytest.raises(
                 qml.QuantumFunctionError, match="The state is not available in the current"
             ):
-                dev.statistics([state()])
+                dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method returns an empty list if the return type is None"""
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
-            return_type = returntype
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
 
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
-            results = dev.statistics([obs])
+            results = dev.statistics(qscript)
 
         assert results == []
 
@@ -355,15 +383,16 @@ class TestExtractStatistics:
 
         assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
-            return_type = returntype
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
 
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev = mock_qubit_device_extract_stats()
-            dev.statistics([obs])
+            dev.statistics(qscript)
 
 
 class TestGenerateSamples:

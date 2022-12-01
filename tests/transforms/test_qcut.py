@@ -29,7 +29,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms import qcut
+from pennylane.transforms.qcut import qcut
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
@@ -3733,70 +3733,6 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected, atol=atol)
 
 
-class TestRemapTapeWires:
-    """Tests for the remap_tape_wires function"""
-
-    def test_raises(self):
-        """Test if a ValueError is raised when too few wires are provided"""
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.5, wires=2)
-            qml.RY(0.6, wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
-
-        with pytest.raises(ValueError, match="a 2-wire circuit on a 1-wire device"):
-            qcut.remap_tape_wires(tape, [0])
-
-    def test_mapping(self):
-        """Test if the function returns the expected tape when an observable measurement is
-        used"""
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.5, wires=2)
-            qml.RY(0.6, wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.expval(qml.PauliZ(2))
-
-        with qml.tape.QuantumTape() as expected_tape:
-            qml.RX(0.5, wires=0)
-            qml.RY(0.6, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-
-        new_tape = qcut.remap_tape_wires(tape, [0, 1])
-
-        compare_tapes(expected_tape, new_tape)
-
-    def test_mapping_tensor(self):
-        """Test if the function returns the expected tape when a tensor product measurement is
-        used"""
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.5, wires=2)
-            qml.RY(0.6, wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
-
-        with qml.tape.QuantumTape() as expected_tape:
-            qml.RX(0.5, wires=0)
-            qml.RY(0.6, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        new_tape = qcut.remap_tape_wires(tape, [0, 1])
-
-        compare_tapes(expected_tape, new_tape)
-
-    def test_deprecation_warning(self):
-        """Test that a deprecation warning is raised when calling `remap_tape_wires`."""
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.5, wires=2)
-            qml.RY(0.6, wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
-
-        with pytest.warns(UserWarning, match="The method remap_tape_wires is deprecated."):
-            qcut.remap_tape_wires(tape, [0, 1])
-
-
 class TestCutCircuitTransformValidation:
     """Tests of validation checks in the cut_circuit function"""
 
@@ -4105,7 +4041,7 @@ class TestCutStrategy:
                 else {num_fragments_probed}
             )
         elif exhaustive:
-            num_tape_gates = sum(not isinstance(n, qcut.WireCut) for n in tape_dag.nodes)
+            num_tape_gates = sum(not isinstance(n, qml.WireCut) for n in tape_dag.nodes)
             assert {v["num_fragments"] for v in all_cut_kwargs} == set(range(2, num_tape_gates + 1))
 
     @pytest.mark.parametrize(
@@ -4237,7 +4173,7 @@ class TestKaHyPar:
         ),
     ]
     config_path = str(
-        Path(__file__).parent.parent.parent / "pennylane/transforms/_cut_kKaHyPar_sea20.ini"
+        Path(__file__).parent.parent.parent / "pennylane/transforms/qcut/_cut_kKaHyPar_sea20.ini"
     )
 
     def test_seed_in_ci(self):
@@ -4750,3 +4686,10 @@ class TestAutoCutCircuit:
 
         # each frag should have the device size constraint satisfied.
         assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
+
+
+class TestRedirect:
+    """Tests that redirect in qcut.__init__ works to maintain import pathways while reorganizing files"""
+
+    def test_qcut_redirects_to_qcut_qcut(self):
+        assert qml.transforms.qcut._prep_one_state == qml.transforms.qcut.qcut._prep_one_state
