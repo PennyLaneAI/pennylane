@@ -735,12 +735,12 @@ class QubitDevice(Device):
         results = []
 
         for m in measurements:
+            # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
             if isinstance(m, MeasurementProcess) and m.obs is not None:
                 obs = m.obs
                 obs.return_type = m.return_type
             else:
                 obs = m
-
             # Pass instances directly
             if obs.return_type is Expectation:
                 # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
@@ -936,6 +936,7 @@ class QubitDevice(Device):
         results = []
 
         for m in measurements:
+            # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
             if m.obs is not None:
                 obs = m.obs
                 obs.return_type = m.return_type
