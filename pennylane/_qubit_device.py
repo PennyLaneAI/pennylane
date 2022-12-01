@@ -1070,19 +1070,17 @@ class QubitDevice(Device):
 
                 result = self.shadow_expval(obs, circuit=circuit)
 
-            elif method := getattr(self, m.method_name, False):
-                result = method(obs, shot_range=shot_range, bin_size=bin_size)
-
             elif isinstance(m, MeasurementTransform):
-                result = m.process(qscript=circuit, device=self)
+                if method := getattr(self, m.method_name, False):
+                    result = method(qscript=circuit)
+                else:
+                    result = m.process(qscript=circuit, device=self)
 
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
-                result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
-
-            elif obs.return_type is not None:
-                raise qml.QuantumFunctionError(
-                    f"Unsupported return type specified for observable {obs.name}"
-                )
+                if method := getattr(self, m.method_name, False):
+                    result = method(obs, shot_range=shot_range, bin_size=bin_size)
+                else:
+                    result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
             # 2. Post-process statistics results (if need be)
             float_return_types = {

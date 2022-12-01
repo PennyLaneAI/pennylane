@@ -443,28 +443,30 @@ class TestSampleMeasurement:
 
         class MyMeasurement(SampleMeasurement):
             def process_samples(self, samples, wire_order, shot_range, bin_size):
-                return 1
+                return qml.math.sum(samples[..., self.wires])
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
-            return MyMeasurement()
+            qml.PauliX(0)
+            return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
-        assert circuit() == 1
+        assert qml.math.allequal(circuit(), [1000, 0])
 
     def test_sample_measurement_without_shots(self):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
         class MyMeasurement(SampleMeasurement):
             def process_samples(self, samples, wire_order, shot_range, bin_size):
-                return 1
+                return qml.math.sum(samples[..., self.wires])
 
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit():
-            return MyMeasurement()
+            qml.PauliX(0)
+            return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
         with pytest.raises(
             ValueError, match="Shots must be specified in the device to compute the measurement "
@@ -478,17 +480,18 @@ class TestSampleMeasurement:
             method_name = "test_method"
 
             def process_samples(self, samples, wire_order, shot_range, bin_size):
-                return 1
+                return qml.math.sum(samples[..., self.wires])
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
-            return MyMeasurement()
+            qml.PauliX(0)
+            return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
         circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
-        assert circuit() == 2
+        assert qml.math.allequal(circuit(), [2, 2])
 
 
 class TestStateMeasurement:
@@ -499,7 +502,7 @@ class TestStateMeasurement:
 
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
-                return 1
+                return qml.math.sum(state)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -514,7 +517,7 @@ class TestStateMeasurement:
 
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
-                return 1
+                return qml.math.sum(state)
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
@@ -535,7 +538,7 @@ class TestStateMeasurement:
             method_name = "test_method"
 
             def process_state(self, state, wire_order):
-                return 1
+                return qml.math.sum(state)
 
         dev = qml.device("default.qubit", wires=2)
 
