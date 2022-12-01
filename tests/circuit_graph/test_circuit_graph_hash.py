@@ -14,12 +14,12 @@
 """
 Unit and integration tests for creating the :mod:`pennylane` :attr:`QNode.qtape.graph.hash` attribute.
 """
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
-from pennylane.operation import Tensor
 from pennylane.circuit_graph import CircuitGraph
+from pennylane.operation import Tensor
 from pennylane.wires import Wires
 
 
@@ -115,7 +115,7 @@ class TestCircuitGraphHash:
     returntype6 = qml.state
 
     numeric_observable_queue = [
-        (returntype6, "PauliX[0]|||ObservableReturnTypes.State!Identity[0]"),
+        (returntype6, "PauliX[0]|||ObservableReturnTypes.State!Identity[]"),
     ]
 
     @pytest.mark.parametrize("obs, expected_string", numeric_observable_queue)
