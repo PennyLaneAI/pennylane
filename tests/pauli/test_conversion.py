@@ -29,7 +29,6 @@ test_hamiltonians = [
 ]
 
 
-
 class TestDecomposition:
     """Tests the pauli_decompose function"""
 
