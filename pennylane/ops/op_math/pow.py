@@ -244,6 +244,13 @@ class Pow(SymbolicOp):
         )
 
     def matrix(self, wire_order=None):
+        try:
+            pr = self._pauli_rep
+            wires = wire_order or self.wires.tolist()
+            return pr.to_mat(wire_order=wires)
+        except NotImplementedError:
+            pass
+
         if isinstance(self.base, qml.Hamiltonian):
             base_matrix = qml.matrix(self.base)
         else:
@@ -266,6 +273,22 @@ class Pow(SymbolicOp):
             base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
             return base_matrix**z
         raise SparseMatrixUndefinedError
+
+    def sparse_matrix(self, wire_order=None):
+        try:
+            pr = self._pauli_rep
+            wires = wire_order or self.wires.tolist()
+            return pr.to_mat(wire_order=wires, format="csr")
+        except NotImplementedError:
+            pass
+
+        canonical_sparse_matrix = self.compute_sparse_matrix(
+            *self.parameters, **self.hyperparameters
+        )
+
+        return qmlmath.expand_matrix(
+            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
+        )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
