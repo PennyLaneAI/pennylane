@@ -188,7 +188,7 @@ class QubitUnitary(Operation):
         return super().pow(z)
 
     def _controlled(self, wire):
-        new_op = OldControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
+        new_op = qml.ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
         return new_op.inv() if self.inverse else new_op
 
     def label(self, decimals=None, base_label=None, cache=None):
