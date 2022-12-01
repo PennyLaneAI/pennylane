@@ -382,6 +382,6 @@ class TestExpvalTransform:
             qml.Hadamard(0)
             return qml.expval(qml.PauliZ(0))
 
-        msg = "Tape measurement must be ClassicalShadow, got '_Expectation'"
+        msg = "Tape measurement must be ClassicalShadow, got 'Expectation'"
         with pytest.raises(ValueError, match=msg):
             circuit()
