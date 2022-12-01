@@ -319,7 +319,9 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     tkwargs.setdefault("device_wires", qnode.device.wires)
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
-    _expand_fn = lambda tape: self.expand_fn(tape, *targs, **tkwargs)
+    def _expand_fn(tape):
+        return self.expand_fn(tape, *targs, **tkwargs)
+
     cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
@@ -351,7 +353,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                     "much more efficient to request the block-diagonal approximation directly!"
                 )
             tkwargs["approx"] = "block-diag"
-            return self.__call__(qnode, *targs, **tkwargs)(*args, **kwargs)
+            return self(qnode, *targs, **tkwargs)(*args, **kwargs)
 
         if not hybrid:
             return mt
@@ -610,6 +612,10 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
         diag_res, off_diag_res = results[:num_diag_tapes], results[num_diag_tapes:]
         # Get full block-diagonal tensor
         diag_mt = diag_proc_fn(diag_res)
+
+        if qml.active_return():
+            # the off diag tapes only have a single expval measurement
+            off_diag_res = [qml.math.expand_dims(res, 0) for res in off_diag_res]
 
         # Prepare the mask to match the used interface
         mask = qml.math.convert_like(mask, diag_mt)

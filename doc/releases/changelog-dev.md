@@ -188,15 +188,15 @@
 * Made `gradients.finite_diff` more convenient to use with custom data type observables/devices.
   [(#3426)](https://github.com/PennyLaneAI/pennylane/pull/3426)
 
-* The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency. 
+* The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency.
   [(#3284)](https://github.com/PennyLaneAI/pennylane/pull/3284)
-  
+
 * Added more input validation to `hamiltonian_expand` such that Hamiltonian objects with no terms raise an error.
   [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
 
 * Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
-  
+
 * `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
    [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
 
@@ -350,6 +350,10 @@
 
 * Updated `qml.transforms.mitigate_with_zne` to support the new return types.
   [(#3415)](https://github.com/PennyLaneAI/pennylane/pull/3415)
+
+* Updated `qml.transforms.metric_tensor`, `qml.transforms.adjoint_metric_tensor`,
+  `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
+  [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
 
 
 <h3>Breaking changes</h3>
