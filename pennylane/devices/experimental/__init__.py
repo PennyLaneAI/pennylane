@@ -82,12 +82,14 @@ We can also use :func:`~.execute` or :class:`~.QNode` with ``cache=False``.
  (-0.0038567269892757494,),
  (0.1339705146860149,),
  (-0.03780669772690448,)]
->>> @qml.qnode(dev, cache=False)
+>>> @qml.qnode(dev, cache=False, diff_method="device")
 ... def circuit(x):
 ...     qml.RX(x, 0)
-...     return qml.probs(0)
+...     return qml.expval(qml.PauliZ(0))
 >>> circuit(1.2)
-(array([0.68117888, 0.31882112]),)
+(0.36235775447667357,)
+>>> qml.grad(circuit)(qml.numpy.array(1.2))
+-0.9320390859672264
 
 """
 

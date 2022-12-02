@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.tape import QuantumTape
+from pennylane.workflow import ExecutionConfig
 
 
 class QNode:
@@ -488,6 +489,14 @@ class QNode:
 
     @staticmethod
     def _validate_device_method(device):
+        if isinstance(device, qml.devices.experimental.AbstractDevice):
+            config = ExecutionConfig(order=1, shots=None)
+            if device.supports_gradient_with_configuration(config):
+                return "device", {}, device
+            raise qml.QuantumFunctionError(
+                f"The experimental device {device}" "does not provide a gradient"
+            )
+
         # determine if the device provides its own jacobian method
         if device.capabilities().get("provides_jacobian", False):
             return "device", {}, device
