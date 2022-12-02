@@ -377,6 +377,9 @@
   [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
 
 
+* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
+  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
+
 <h3>Breaking changes</h3>
 
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
