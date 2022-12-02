@@ -16,6 +16,9 @@ This module contains the functions needed for computing the dipole moment.
 """
 import autograd.numpy as anp
 
+import pennylane as qml
+from pennylane import numpy as np
+
 from .basis_data import atomic_numbers
 from .hartree_fock import scf
 from .matrices import moment_matrix
@@ -106,18 +109,18 @@ def dipole_integrals(mol, core=None, active=None):
         _, coeffs, _, _, _ = scf(mol)(*args)
 
         # x, y, z components
-        d_x = anp.einsum(
+        d_x = qml.math.einsum(
             "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 0)(*args), coeffs
         )
-        d_y = anp.einsum(
+        d_y = qml.math.einsum(
             "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 1)(*args), coeffs
         )
-        d_z = anp.einsum(
+        d_z = qml.math.einsum(
             "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 2)(*args), coeffs
         )
 
         # x, y, z components (core orbitals contribution)
-        core_x, core_y, core_z = anp.array([0]), anp.array([0]), anp.array([0])
+        core_x, core_y, core_z = np.array([0]), np.array([0]), np.array([0])
 
         if core is None and active is None:
             return (core_x, core_y, core_z), (d_x, d_y, d_z)
@@ -127,9 +130,9 @@ def dipole_integrals(mol, core=None, active=None):
             core_y = core_y + 2 * d_y[i][i]
             core_z = core_z + 2 * d_z[i][i]
 
-        d_x = d_x[anp.ix_(active, active)]
-        d_y = d_y[anp.ix_(active, active)]
-        d_z = d_z[anp.ix_(active, active)]
+        d_x = d_x[qml.math.ix_(active, active)]
+        d_y = d_y[qml.math.ix_(active, active)]
+        d_z = d_z[qml.math.ix_(active, active)]
 
         return (core_x, core_y, core_z), (d_x, d_y, d_z)
 
@@ -205,7 +208,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
         """
         constants, integrals = dipole_integrals(mol, core, active)(*args)
 
-        nd = [anp.array([0]), anp.array([0]), anp.array([0])]
+        nd = [np.array([0]), np.array([0]), np.array([0])]
         for i, s in enumerate(mol.symbols):  # nuclear contributions
             nd[0] = nd[0] + atomic_numbers[s] * mol.coordinates[i][0]
             nd[1] = nd[1] + atomic_numbers[s] * mol.coordinates[i][1]
@@ -214,7 +217,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
         f = []
         for i in range(3):
             coeffs, ops = fermionic_observable(constants[i], integrals[i], cutoff=cutoff)
-            f.append((anp.concatenate((nd[i], coeffs * (-1))), [[]] + ops))
+            f.append((qml.math.concatenate((nd[i], coeffs * (-1))), [[]] + ops))
 
         return f
 
