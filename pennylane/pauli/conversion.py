@@ -43,7 +43,7 @@ def pauli_decompose(
 
     Returns:
         Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
-            of Pauli operators, either as a ``~.Hamiltonian`` or ``~.PauliSentence`` instance.
+            of Pauli operators, either as a :class:``~.Hamiltonian`` or :class:``~.PauliSentence`` instance.
 
     **Example:**
 
