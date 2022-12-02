@@ -15,6 +15,7 @@
 This submodule contains controlled operators based on the Controlled and ControlledOp class.
 """
 
+import warnings
 from typing import Iterable
 
 from pennylane.wires import Wires
@@ -89,6 +90,10 @@ class ControlledQubitUnitary(ControlledOp):
         do_queue=True,
         **kwargs,  # pylint: disable=unused-argument, too-many-arguments
     ):
+        if getattr(base, "wires", False) and wires is not None:
+            warnings.warn(
+                "base operator already has wires; values specified through wires kwarg will be ignored."
+            )
 
         if isinstance(base, Iterable):
             base = QubitUnitary(base, wires=wires)
