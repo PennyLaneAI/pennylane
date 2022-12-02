@@ -90,7 +90,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
                     "is not supported in circuit cutting"
                 )
             for o in obs.obs:
-                m_ = MeasurementProcess(m.return_type, o)
+                m_ = m.__class__(obs=o)
 
                 _add_operator_node(graph, m_, order, wire_latest_node)
         elif m.return_type is Sample and obs is None:
