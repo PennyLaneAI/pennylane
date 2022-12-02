@@ -93,6 +93,22 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
+* Added a `pauli_decompose()` which takes a hermitian matrix and decomposes it in the 
+  Pauli basis, returning it either as a `Hamiltonian` or `PauliSentence` instance.
+  [(#3384)](https://github.com/PennyLaneAI/pennylane/pull/3384)
+
+  ```pycon
+  >>> mat = np.array([[1, 1], [1, -1]])
+  >>> h = qml.pauli_decompose(mat)
+  >>> print(h)
+    (1.0) [X0]
+  + (1.0) [Z0]
+  >>> ps = qml.pauli_decompose(mat, pauli=True, wire_order=["a"])
+  >>> print(ps)
+  1.0 * X(a)
+  + 1.0 * Z(a)
+  ```
+
 * New `pauli_sentence()` function which takes native `Operator` or `Hamiltonian`
   instances representing a linear combination of Pauli words and returns
   the equivalent `PauliSentence`.
@@ -392,6 +408,9 @@
 * Python 3.7 support is no longer maintained.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
 
+* Removed `qml.utils.decompose_hamiltonian()`, please use `qml.pauli_decompose()` instead.
+  [(#3384)](https://github.com/PennyLaneAI/pennylane/pull/3384)
+
 * Instead of having an `OrderedDict` attribute called `_queue`, `AnnotatedQueue` now inherits from
   `OrderedDict` and encapsulates the queue. Consequentially, this also applies to the `QuantumTape`
   class which inherits from `AnnotatedQueue`.
@@ -518,6 +537,7 @@ Christina Lee
 Albert Mitjans Coma
 Romain Moyard
 Matthew Silverman
+Jay Soni
 Antal Száva
 David Wierichs
 Moritz Willmann

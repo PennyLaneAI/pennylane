@@ -103,6 +103,12 @@ Pending deprecations
 Completed deprecation cycles
 ----------------------------
 
+* The ``qml.utils.decompose_hamiltonian()`` method is removed. Please
+  use ``qml.pauli_decompose()``.
+
+  - Still accessible in v0.27
+  - Removed in v0.28
+
 * ``qml.tape.get_active_tape`` is deprecated. Please use ``qml.QueuingManager.active_context()`` instead.
 
   - Deprecated in v0.27
