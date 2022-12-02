@@ -18,7 +18,8 @@ from typing import Any, Dict, Optional, Sequence, Union
 
 from pennylane import QNode, apply, adjoint
 from pennylane.math import mean, shape, round
-from pennylane.tape import QuantumTape
+from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.transforms import batch_transform
 
 import pennylane as qml
@@ -40,7 +41,7 @@ def fold_global(circuit, scale_factor):
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
-        QuantumTape: Folded circuit
+        QuantumScript: Folded circuit
 
     .. seealso:: :func:`~.pennylane.transforms.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
@@ -195,7 +196,7 @@ def fold_global_tape(circuit, scale_factor):
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
-        QuantumTape: Folded circuit
+        QuantumScript: Folded circuit
 
     """
 
@@ -216,7 +217,7 @@ def fold_global_tape(circuit, scale_factor):
     num_to_fold = int(round(fraction_scale * n_ops / 2))
 
     # Create new_circuit from folded list
-    with QuantumTape() as new_circuit:
+    with AnnotatedQueue() as new_circuit_q:
         # Original U
         for op in base_ops:
             qfunc(op)
@@ -240,7 +241,7 @@ def fold_global_tape(circuit, scale_factor):
         for meas in circuit.measurements:
             apply(meas)
 
-    return new_circuit
+    return QuantumScript.from_queue(new_circuit_q)
 
 
 # TODO: make this a pennylane.math function
@@ -503,14 +504,15 @@ def mitigate_with_zne(
     if isinstance(folding, qml.batch_transform):
         folding = fold_global_tape
 
-    tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
+    tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
 
-    with QuantumTape() as tape_removed:
+    with AnnotatedQueue() as q_removed:
         for op in tape._ops:
             apply(op)
+    script_removed = QuantumScript.from_queue(q_removed)
 
     tapes = [
-        [folding(tape_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
+        [folding(script_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
         for s in scale_factors
     ]
 
@@ -520,11 +522,11 @@ def mitigate_with_zne(
 
     for tape_ in tapes:
         # pylint: disable=expression-not-assigned
-        with QuantumTape() as t:
+        with AnnotatedQueue() as q:
             [apply(p) for p in tape._prep]
             [apply(op) for op in tape_.operations]
             [apply(m) for m in tape.measurements]
-        out_tapes.append(t)
+        out_tapes.append(QuantumScript.from_queue(q))
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""

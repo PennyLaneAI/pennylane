@@ -303,13 +303,7 @@ def _compute_cfim(p, dp):
 @batch_transform
 def _make_probs(tape, wires=None, post_processing_fn=None):
     """Ignores the return types of any qnode and creates a new one that outputs probabilities"""
-    if wires is None:
-        wires = tape.wires
-
-    with qml.tape.QuantumTape() as new_tape:
-        for op in tape.operations:
-            qml.apply(op)
-        qml.probs(wires=wires)
+    qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(wires=wires or tape.wires)])
 
     if post_processing_fn is None:
 
@@ -320,7 +314,7 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
 
             return qml.math.squeeze(qml.math.stack(res))
 
-    return [new_tape], post_processing_fn
+    return [qscript], post_processing_fn
 
 
 def classical_fisher(qnode, argnums=0):
