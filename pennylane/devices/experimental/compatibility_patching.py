@@ -35,4 +35,5 @@ def backward_patch_interface(dev):
 
     # short name needed for validation in one place
     dev.short_name = "testpython"
+    dev.capabilities = lambda: {}
     return dev

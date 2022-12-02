@@ -25,7 +25,7 @@ from .python_preprocessor import simple_preprocessor
 
 
 def _multiprocessing_single_execution(
-    task_i: int, single_qs: QuantumScript, return_dict: multiprocessing.managers.DictProxy
+    task_i: int, single_qs: QuantumScript, return_dict: "multiprocessing.managers.DictProxy"
 ):
     """Perform a single execution. Wrapped for use with the ``multiprocessing`` module.
 

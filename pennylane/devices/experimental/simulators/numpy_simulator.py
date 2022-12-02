@@ -85,7 +85,7 @@ class PlainNumpySimulator:
         return np.roll(state, 1, index)
 
     @classmethod
-    def apply_cnot(cls, state: np.ndarray, indices: tuple(int, int)) -> np.ndarray:
+    def apply_cnot(cls, state: np.ndarray, indices: tuple) -> np.ndarray:
         """Apply a CNOT gate on the state at ``indices``."""
         ndim = np.ndim(state)
         sl_0 = _get_slice(0, indices[0], ndim)

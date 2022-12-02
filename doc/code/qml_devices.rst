@@ -20,4 +20,4 @@ Experimental
 
 .. currentmodule:: pennylane.devices.experimental
 
-..automodule:: pennylane.devices.experimental
+.. automodule:: pennylane.devices.experimental
