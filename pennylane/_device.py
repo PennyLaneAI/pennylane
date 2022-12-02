@@ -125,7 +125,7 @@ class Device(abc.ABC):
     """
 
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
-    _capabilities = {"model": None, "supports_broadcasting": False, "use_grouping": True}
+    _capabilities = {"model": None, "supports_broadcasting": False}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
 
