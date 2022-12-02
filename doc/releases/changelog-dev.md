@@ -176,6 +176,10 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
+* Add a UserWarning when creating a `Tensor` object with overlapping wires, 
+  informing that this can in some cases lead to undefined behaviour.
+  [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3459)
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
