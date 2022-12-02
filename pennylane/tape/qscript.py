@@ -1343,8 +1343,10 @@ def make_qscript(fn):
 
     def wrapper(*args, **kwargs):
         with qml.QueuingManager.stop_recording(), AnnotatedQueue() as q:
-            fn(*args, **kwargs)
+            result = fn(*args, **kwargs)
 
-        return QuantumScript.from_queue(q)
+        qscript = QuantumScript.from_queue(q)
+        qscript._qfunc_output = result
+        return qscript
 
     return wrapper

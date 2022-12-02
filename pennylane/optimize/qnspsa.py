@@ -407,13 +407,8 @@ class QNSPSAOptimizer:
         op_forward = self._get_operations(cost, args1, kwargs)
         op_inv = self._get_operations(cost, args2, kwargs)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for op in op_forward:
-                qml.apply(op)
-            for op in reversed(op_inv):
-                op.adjoint()
-            qml.probs(wires=cost.tape.wires.labels)
-        return qml.tape.QuantumScript.from_queue(q)
+        new_ops = op_forward + [op.adjoint() for op in reversed(op_inv)]
+        return qml.tape.QuantumScript(new_ops, [qml.probs(wires=cost.tape.wires.labels)])
 
     @staticmethod
     def _get_operations(cost, args, kwargs):

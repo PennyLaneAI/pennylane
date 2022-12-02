@@ -303,14 +303,7 @@ def _compute_cfim(p, dp):
 @batch_transform
 def _make_probs(tape, wires=None, post_processing_fn=None):
     """Ignores the return types of any qnode and creates a new one that outputs probabilities"""
-    if wires is None:
-        wires = tape.wires
-
-    with qml.queuing.AnnotatedQueue() as q:
-        for op in tape.operations:
-            qml.apply(op)
-        qml.probs(wires=wires)
-    qscript = qml.tape.QuantumScript.from_queue(q)
+    qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(wires=wires or tape.wires)])
 
     if post_processing_fn is None:
 

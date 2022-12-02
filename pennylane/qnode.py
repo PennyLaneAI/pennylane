@@ -25,7 +25,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, make_qscript
 
 
 class QNode:
@@ -522,11 +522,9 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            self._qfunc_output = self.func(*args, **kwargs)
-        self._tape = QuantumScript.from_queue(q)
-        self._tape._qfunc_output = self._qfunc_output
+        self._tape = make_qscript(self.func)(*args, **kwargs)
         self._tape._queue_category = "_ops"
+        self._qfunc_output = self.tape._qfunc_output
         qml.QueuingManager.append(self.tape)
 
         params = self.tape.get_parameters(trainable_only=False)
