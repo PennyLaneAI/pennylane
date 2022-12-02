@@ -173,6 +173,8 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
             f"The qfunc to transform, {fn}, does not appear "
             "to be a valid Python function or callable."
         )
+    if isinstance(fn, qml.QNode):
+        raise ValueError("QNodes cannot be declared as qfunc transforms.")
 
     @functools.wraps(fn)
     def internal_wrapper(*args, **kwargs):

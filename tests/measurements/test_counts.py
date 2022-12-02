@@ -56,7 +56,9 @@ class TestCounts:
         """Test that the properties are correct."""
         meas1 = qml.counts(wires=0)
         meas2 = qml.counts(op=qml.PauliX(0), all_outcomes=True)
+        assert meas1.samples_computational_basis is True
         assert meas1.return_type == Counts
+        assert meas2.samples_computational_basis is False
         assert meas2.return_type == AllCounts
 
     def test_queue(self):
@@ -525,5 +527,22 @@ class TestCounts:
         assert len(res[0]) == 10
         assert res[1] == {"00": 10}
         assert res[2] == {"00": 10, "01": 0, "10": 0, "11": 0}
-
         custom_measurement_process(dev, spy)
+
+    def test_counts_empty_wires(self):
+        """Test that using ``qml.counts`` with an empty wire list raises an error."""
+        with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
+            qml.counts(wires=[])
+
+    @pytest.mark.parametrize("shots", [1, 100])
+    def test_counts_no_arguments(self, shots):
+        """Test that using ``qml.counts`` with no arguments returns the counts of all wires."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.counts()
+
+        res = circuit()
+
+        assert qml.math.allequal(res, {"000": shots})
