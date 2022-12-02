@@ -85,13 +85,14 @@ def measurement_grouping(tape, obs_list, coeffs_list):
 
     for obs in obs_groupings:
 
-        with tape.__class__() as new_tape:
+        with qml.queuing.AnnotatedQueue() as q:
             for op in tape.operations:
                 op.queue()
 
             for o in obs:
                 qml.expval(o)
 
+        new_tape = qml.tape.QuantumScript.from_queue(q)
         new_tape = new_tape.expand(stop_at=lambda obj: True)
         tapes.append(new_tape)
 

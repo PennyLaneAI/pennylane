@@ -705,7 +705,7 @@ class Operator(abc.ABC):
                 return format(x)
 
         param_string = ",\n".join(_format(p) for p in params)
-        return op_label + f"\n({param_string})"
+        return f"{op_label}\n({param_string})"
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
@@ -1091,19 +1091,18 @@ class Operator(abc.ABC):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        tape = qml.tape.QuantumTape(do_queue=False)
-
-        with tape:
-            if getattr(self, "inverse", False):
-                qml.adjoint(self.decomposition, lazy=False)()
-            else:
-                self.decomposition()
+        decomp_fn = (
+            qml.adjoint(self.decomposition, lazy=False)
+            if getattr(self, "inverse", False)
+            else self.decomposition
+        )
+        qscript = qml.tape.make_qscript(decomp_fn)()
 
         if not self.data:
             # original operation has no trainable parameters
-            tape.trainable_params = {}
+            qscript.trainable_params = {}
 
-        return tape
+        return qscript
 
     @property
     def arithmetic_depth(self) -> int:
@@ -1383,10 +1382,7 @@ class Operation(Operator):
     def eigvals(self):
         op_eigvals = super().eigvals()
 
-        if self.inverse:
-            return qml.math.conj(op_eigvals)
-
-        return op_eigvals
+        return qml.math.conj(op_eigvals) if self.inverse else op_eigvals
 
     @property
     def base_name(self):
@@ -1397,7 +1393,7 @@ class Operation(Operator):
     @property
     def name(self):
         """Name of the operator."""
-        return self._name + ".inv" if self.inverse else self._name
+        return f"{self._name}.inv" if self.inverse else self._name
 
     def label(self, decimals=None, base_label=None, cache=None):
         if self.inverse:
@@ -1537,10 +1533,11 @@ class Observable(Operator):
         if self.return_type is None:
             return temp
 
-        if self.return_type is qml.measurements.Probability:
-            return repr(self.return_type) + f"(wires={self.wires.tolist()})"
-
-        return repr(self.return_type) + "(" + temp + ")"
+        return (
+            f"{repr(self.return_type)}(wires={self.wires.tolist()})"
+            if self.return_type is qml.measurements.Probability
+            else f"{repr(self.return_type)}({temp})"
+        )
 
     def __matmul__(self, other):
         if isinstance(other, (Tensor, qml.Hamiltonian)):
@@ -1712,10 +1709,7 @@ class Tensor(Observable):
         return "@".join(ob.label(decimals=decimals) for ob in self.obs)
 
     def queue(self, context=QueuingManager, init=False):  # pylint: disable=arguments-differ
-        constituents = self.obs
-
-        if init:
-            constituents = self._args
+        constituents = self._args if init else self.obs
 
         for o in constituents:
 
@@ -1747,10 +1741,11 @@ class Tensor(Observable):
         if self.return_type is None:
             return s
 
-        if self.return_type is qml.measurements.Probability:
-            return repr(self.return_type) + f"(wires={self.wires.tolist()})"
-
-        return repr(self.return_type) + "(" + s + ")"
+        return (
+            f"{repr(self.return_type)}(wires={self.wires.tolist()})"
+            if self.return_type is qml.measurements.Probability
+            else f"{repr(self.return_type)}({s})"
+        )
 
     @property
     def name(self):
@@ -2049,11 +2044,7 @@ class Tensor(Observable):
         (8, 8)
         """
 
-        if wires is None:
-            wires = self.wires
-        else:
-            wires = Wires(wires)
-
+        wires = self.wires if wires is None else Wires(wires)
         list_of_sparse_ops = [eye(2, format="coo")] * len(wires)
 
         for o in self.obs:
@@ -2188,11 +2179,7 @@ class CV:
             for k, w in enumerate(wire_indices):
                 W[loc(w)] = U[loc(k)]
         elif U.ndim == 2:
-            if isinstance(self, Observable):
-                W = np.zeros((dim, dim))
-            else:
-                W = np.eye(dim)
-
+            W = np.zeros((dim, dim)) if isinstance(self, Observable) else np.eye(dim)
             W[0, 0] = U[0, 0]
 
             for k1, w1 in enumerate(wire_indices):
@@ -2447,7 +2434,7 @@ def operation_derivative(operation) -> np.ndarray:
 @qml.BooleanFn
 def not_tape(obj):
     """Returns ``True`` if the object is not a quantum tape"""
-    return isinstance(obj, qml.tape.QuantumTape)
+    return isinstance(obj, qml.tape.QuantumScript)
 
 
 @qml.BooleanFn
@@ -2523,7 +2510,4 @@ def gen_is_multi_term_hamiltonian(obj):
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
 
-    if isinstance(o, qml.Hamiltonian):
-        if len(o.coeffs) > 1:
-            return True
-    return False
+    return isinstance(o, qml.Hamiltonian) and len(o.coeffs) > 1
