@@ -245,6 +245,9 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
+* Extended the functionality of `qml.matrix` to qutrits.
+  [(#3460)](https://github.com/PennyLaneAI/pennylane/pull/3460)
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
