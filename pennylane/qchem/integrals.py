@@ -19,9 +19,13 @@ import itertools as it
 
 import autograd.numpy as anp
 import autograd.scipy as asp
-
-# import jax.scipy as jsp
+import jax
+import jax.scipy as jsp
+import jaxlib
 from scipy.special import factorial2 as fac2
+
+import pennylane as qml
+from pennylane import numpy as np
 
 
 def primitive_norm(l, alpha):
@@ -58,9 +62,9 @@ def primitive_norm(l, alpha):
     """
     lx, ly, lz = l
     n = (
-        (2 * alpha / anp.pi) ** 0.75
+        (2 * alpha / np.pi) ** 0.75
         * (4 * alpha) ** (sum(l) / 2)
-        / anp.sqrt(fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1))
+        / qml.math.sqrt(fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1))
     )
     return n
 
@@ -103,11 +107,11 @@ def contracted_norm(l, alpha, a):
     0.39969026908800853
     """
     lx, ly, lz = l
-    c = anp.pi**1.5 / 2 ** sum(l) * fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1)
+    c = np.pi**1.5 / 2 ** sum(l) * fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1)
     s = (
         (a.reshape(len(a), 1) * a) / ((alpha.reshape(len(alpha), 1) + alpha) ** (sum(l) + 1.5))
     ).sum()
-    n = 1 / anp.sqrt(c * s)
+    n = 1 / qml.math.sqrt(c * s)
     return n
 
 
@@ -192,12 +196,13 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     >>> c
     array([1.])
     """
-    p = anp.array(alpha + beta)
-    q = anp.array(alpha * beta / p)
-    r = anp.array(ra - rb)
+    p = alpha + beta
+    q = alpha * beta / p
+    q = np.array(q, requires_grad=True)
+    r = ra - rb
 
     if la == lb == t == 0:
-        return anp.exp(-q * r**2)
+        return qml.math.exp(-q * r**2)
 
     if t < 0 or t > (la + lb):
         return 0.0
@@ -254,7 +259,7 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     p = alpha + beta
     s = 1.0
     for i in range(3):
-        s = s * anp.sqrt(anp.pi / p) * expansion(la[i], lb[i], ra[i], rb[i], alpha, beta, 0)
+        s = s * qml.math.sqrt(np.pi / p) * expansion(la[i], lb[i], ra[i], rb[i], alpha, beta, 0)
     return s
 
 
@@ -306,8 +311,8 @@ def overlap_integral(basis_a, basis_b, normalize=True):
             na
             * nb
             * (
-                (ca[:, anp.newaxis] * cb)
-                * gaussian_overlap(basis_a.l, basis_b.l, ra, rb, alpha[:, anp.newaxis], beta)
+                (ca[:, np.newaxis] * cb)
+                * gaussian_overlap(basis_a.l, basis_b.l, ra, rb, alpha[:, np.newaxis], beta)
             ).sum()
         )
 
@@ -365,12 +370,12 @@ def hermite_moment(alpha, beta, t, order, r):
     >>> hermite_moment(alpha, beta, t, order, r)
     array([1.0157925])
     """
-    p = anp.array(alpha + beta)
+    p = alpha + beta
 
     if t > order or (order == 0 and t != 0):
         return 0.0
     if order == 0 and t == 0:
-        return anp.sqrt(anp.pi / p)
+        return qml.math.sqrt(np.pi / p)
     m = (
         hermite_moment(alpha, beta, t - 1, order - 1, r) * t
         + hermite_moment(alpha, beta, t, order - 1, r) * r
@@ -498,24 +503,24 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
         else:
             na = nb = 1.0
 
-        p = alpha[:, anp.newaxis] + beta
-        q = anp.sqrt(anp.pi / p)
+        p = alpha[:, np.newaxis] + beta
+        q = qml.math.sqrt(np.pi / p)
         r = (
-            alpha[:, anp.newaxis] * ra[:, anp.newaxis, anp.newaxis]
-            + beta * rb[:, anp.newaxis, anp.newaxis]
+            alpha[:, np.newaxis] * ra[:, np.newaxis, np.newaxis]
+            + beta * rb[:, np.newaxis, np.newaxis]
         ) / p
 
-        i, j, k = anp.roll(anp.array([0, 2, 1]), idx)
+        i, j, k = np.roll(np.array([0, 2, 1]), idx)
 
         s = (
-            gaussian_moment(la[i], lb[i], ra[i], rb[i], alpha[:, anp.newaxis], beta, order, r[i])
-            * expansion(la[j], lb[j], ra[j], rb[j], alpha[:, anp.newaxis], beta, 0)
+            gaussian_moment(la[i], lb[i], ra[i], rb[i], alpha[:, np.newaxis], beta, order, r[i])
+            * expansion(la[j], lb[j], ra[j], rb[j], alpha[:, np.newaxis], beta, 0)
             * q
-            * expansion(la[k], lb[k], ra[k], rb[k], alpha[:, anp.newaxis], beta, 0)
+            * expansion(la[k], lb[k], ra[k], rb[k], alpha[:, np.newaxis], beta, 0)
             * q
         )
 
-        return (na * nb * (ca[:, anp.newaxis] * cb) * s).sum()
+        return (na * nb * (ca[:, np.newaxis] * cb) * s).sum()
 
     return _moment_integral
 
@@ -545,9 +550,11 @@ def _diff2(i, j, ri, rj, alpha, beta):
     """
     p = alpha + beta
 
-    d1 = j * (j - 1) * anp.sqrt(anp.pi / p) * expansion(i, j - 2, ri, rj, alpha, beta, 0)
-    d2 = -2 * beta * (2 * j + 1) * anp.sqrt(anp.pi / p) * expansion(i, j, ri, rj, alpha, beta, 0)
-    d3 = 4 * beta**2 * anp.sqrt(anp.pi / p) * expansion(i, j + 2, ri, rj, alpha, beta, 0)
+    d1 = j * (j - 1) * qml.math.sqrt(np.pi / p) * expansion(i, j - 2, ri, rj, alpha, beta, 0)
+    d2 = (
+        -2 * beta * (2 * j + 1) * qml.math.sqrt(np.pi / p) * expansion(i, j, ri, rj, alpha, beta, 0)
+    )
+    d3 = 4 * beta**2 * qml.math.sqrt(np.pi / p) * expansion(i, j + 2, ri, rj, alpha, beta, 0)
 
     return d1 + d2 + d3
 
@@ -597,24 +604,24 @@ def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
 
     t1 = (
         _diff2(la[0], lb[0], ra[0], rb[0], alpha, beta)
-        * anp.sqrt(anp.pi / p)
+        * qml.math.sqrt(np.pi / p)
         * expansion(la[1], lb[1], ra[1], rb[1], alpha, beta, 0)
-        * anp.sqrt(anp.pi / p)
+        * qml.math.sqrt(np.pi / p)
         * expansion(la[2], lb[2], ra[2], rb[2], alpha, beta, 0)
     )
 
     t2 = (
-        anp.sqrt(anp.pi / p)
+        qml.math.sqrt(np.pi / p)
         * expansion(la[0], lb[0], ra[0], rb[0], alpha, beta, 0)
         * _diff2(la[1], lb[1], ra[1], rb[1], alpha, beta)
-        * anp.sqrt(anp.pi / p)
+        * qml.math.sqrt(np.pi / p)
         * expansion(la[2], lb[2], ra[2], rb[2], alpha, beta, 0)
     )
 
     t3 = (
-        anp.sqrt(anp.pi / p)
+        qml.math.sqrt(np.pi / p)
         * expansion(la[0], lb[0], ra[0], rb[0], alpha, beta, 0)
-        * anp.sqrt(anp.pi / p)
+        * qml.math.sqrt(np.pi / p)
         * expansion(la[1], lb[1], ra[1], rb[1], alpha, beta, 0)
         * _diff2(la[2], lb[2], ra[2], rb[2], alpha, beta)
     )
@@ -671,8 +678,8 @@ def kinetic_integral(basis_a, basis_b, normalize=True):
             na
             * nb
             * (
-                (ca[:, anp.newaxis] * cb)
-                * gaussian_kinetic(basis_a.l, basis_b.l, ra, rb, alpha[:, anp.newaxis], beta)
+                (ca[:, np.newaxis] * cb)
+                * gaussian_kinetic(basis_a.l, basis_b.l, ra, rb, alpha[:, np.newaxis], beta)
             ).sum()
         )
 
@@ -708,7 +715,7 @@ def _boys(n, t):
     Returns:
         (array[float]): value of the Boys function
     """
-    return anp.where(
+    return np.where(
         t == 0.0,
         1 / (2 * n + 1),
         asp.special.gammainc(n + 0.5, t + (t == 0.0))
@@ -761,7 +768,12 @@ def _hermite_coulomb(t, u, v, n, p, dr):
     r = 0
 
     if t == u == v == 0:
-        return ((-2 * p) ** n) * _boys(n, T)
+        if isinstance(T, jaxlib.xla_extension.DeviceArray) or isinstance(
+            T, jax.interpreters.ad.JVPTracer
+        ):
+            return ((-2 * p) ** n) * _boys_jax(n, T)
+        else:
+            return ((-2 * p) ** n) * _boys(n, T)
 
     if t == u == 0:
         if v > 1:
@@ -812,17 +824,17 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     l1, m1, n1 = la
     l2, m2, n2 = lb
     p = alpha + beta
-    rgp = (alpha * ra[:, anp.newaxis, anp.newaxis] + beta * rb[:, anp.newaxis, anp.newaxis]) / (
+    rgp = (alpha * ra[:, np.newaxis, np.newaxis] + beta * rb[:, np.newaxis, np.newaxis]) / (
         alpha + beta
     )
-    dr = rgp - anp.array(r)[:, anp.newaxis, anp.newaxis]
+    dr = rgp - np.array(r)[:, np.newaxis, np.newaxis]
 
     a = 0.0
     for t, u, v in it.product(*[range(l) for l in [l1 + l2 + 1, m1 + m2 + 1, n1 + n2 + 1]]):
         a = a + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
             m1, m2, ra[1], rb[1], alpha, beta, u
         ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * _hermite_coulomb(t, u, v, 0, p, dr)
-    a = a * 2 * anp.pi / p
+    a = a * 2 * np.pi / p
     return a
 
 
@@ -886,10 +898,8 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
             na
             * nb
             * (
-                (ca * cb[:, anp.newaxis])
-                * nuclear_attraction(
-                    basis_a.l, basis_b.l, ra, rb, alpha, beta[:, anp.newaxis], coor
-                )
+                (ca * cb[:, np.newaxis])
+                * nuclear_attraction(basis_a.l, basis_b.l, ra, rb, alpha, beta[:, np.newaxis], coor)
             ).sum()
         )
         return v
@@ -942,13 +952,13 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     q = gamma + delta
 
     p_ab = (
-        alpha * ra[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
-        + beta * rb[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
+        alpha * ra[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+        + beta * rb[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
     ) / (alpha + beta)
 
     p_cd = (
-        gamma * rc[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
-        + delta * rd[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
+        gamma * rc[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+        + delta * rd[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
     ) / (gamma + delta)
 
     g_t = [expansion(l1, l2, ra[0], rb[0], alpha, beta, t) for t in range(l1 + l2 + 1)]
@@ -965,7 +975,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
             (-1) ** (r + s + w)
         ) * _hermite_coulomb(t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd)
 
-    g = g * 2 * (anp.pi**2.5) / (p * q * anp.sqrt(p + q))
+    g = g * 2 * (np.pi**2.5) / (p * q * qml.math.sqrt(p + q))
 
     return g
 
@@ -1040,9 +1050,9 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
             * (
                 (
                     ca
-                    * cb[:, anp.newaxis]
-                    * cc[:, anp.newaxis, anp.newaxis]
-                    * cd[:, anp.newaxis, anp.newaxis, anp.newaxis]
+                    * cb[:, np.newaxis]
+                    * cc[:, np.newaxis, np.newaxis]
+                    * cd[:, np.newaxis, np.newaxis, np.newaxis]
                 )
                 * electron_repulsion(
                     basis_a.l,
@@ -1054,9 +1064,9 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
                     rc,
                     rd,
                     alpha,
-                    beta[:, anp.newaxis],
-                    gamma[:, anp.newaxis, anp.newaxis],
-                    delta[:, anp.newaxis, anp.newaxis, anp.newaxis],
+                    beta[:, np.newaxis],
+                    gamma[:, np.newaxis, np.newaxis],
+                    delta[:, np.newaxis, np.newaxis, np.newaxis],
                 )
             ).sum()
         )
