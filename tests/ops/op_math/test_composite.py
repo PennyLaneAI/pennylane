@@ -45,6 +45,9 @@ class ValidOp(CompositeOp):
     _op_symbol = "#"
     _math_op = None
 
+    def _build_pauli_rep(self):
+        return qml.pauli.PauliSentence({})
+
     @property
     def is_hermitian(self):
         return False
