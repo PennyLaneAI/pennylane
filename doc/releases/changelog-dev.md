@@ -94,7 +94,7 @@
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
 * New `pauli_sentence()` function which takes native `Operator` or `Hamiltonian`
-  instances representing a linear combination of Pauli words and returns 
+  instances representing a linear combination of Pauli words and returns
   the equivalent `PauliSentence`.
   [(#3389)](https://github.com/PennyLaneAI/pennylane/pull/3389)
 
@@ -111,7 +111,7 @@
   1.23 * X(0) @ Z(1)
   ```
 
-* Added two new methods `operation()`, `hamiltonian()` for both `PauliSentence` and `PauliWord` classes to generate an equivalent PennyLane 
+* Added two new methods `operation()`, `hamiltonian()` for both `PauliSentence` and `PauliWord` classes to generate an equivalent PennyLane
   `Operation` or `Hamiltonian` instance from a `PauliSentence` or `PauliWord` one.
   [(#3391)](https://github.com/PennyLaneAI/pennylane/pull/3391)
 
@@ -245,6 +245,9 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
+* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
+  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
@@ -376,9 +379,10 @@
   `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
   [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
 
+* Updated `qml.transforms.cut_circuit` and `qml.transforms.cut_circuit_mc` to
+  support the new return types.
+  [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
 
-* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
-  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
 
 <h3>Breaking changes</h3>
 
