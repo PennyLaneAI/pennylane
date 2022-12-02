@@ -1670,6 +1670,14 @@ class Tensor(Observable):
     tensor = True
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
+
+        wires = [op.wires for op in args]
+        if len(wires) != len(set(wires)):
+            warnings.warn(
+                "Tensor object acts on overlapping wires; in some PennyLane functions this will lead to undefined behaviour",
+                UserWarning,
+            )
+
         self._eigvals_cache = None
         self.obs: List[Observable] = []
         self._args = args
@@ -1825,6 +1833,13 @@ class Tensor(Observable):
 
         else:
             raise ValueError("Can only perform tensor products between observables.")
+
+        wires = [op.wires for op in self.obs]
+        if len(wires) != len(set(wires)):
+            warnings.warn(
+                "Tensor object acts on overlapping wires; in some PennyLane functions this will lead to undefined behaviour",
+                UserWarning,
+            )
 
         if QueuingManager.recording() and self not in QueuingManager.active_context():
             QueuingManager.append(self)

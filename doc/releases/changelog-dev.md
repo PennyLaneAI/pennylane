@@ -261,6 +261,10 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
+* Add a UserWarning when creating a `Tensor` object with overlapping wires, 
+  informing that this can in some cases lead to undefined behaviour.
+  [(#3459)](https://github.com/PennyLaneAI/pennylane/pull/3459)
+
 * Extended the `qml.equal` function to `Controlled` and `ControlledOp` objects.
   [(#3463)](https://github.com/PennyLaneAI/pennylane/pull/3463)
 
