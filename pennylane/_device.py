@@ -731,6 +731,7 @@ class Device(abc.ABC):
             for obs in circuit.observables
             if obs.name == "Hamiltonian"
         )
+        # device property present in braket plugin
         use_grouping = getattr(self, "use_grouping", True)
 
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
