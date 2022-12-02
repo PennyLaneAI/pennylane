@@ -1266,6 +1266,8 @@ class TestControlledComparisons:
         with pytest.raises(NotImplementedError, match="Unable to compare base operators "):
             qml.equal(op1, op2)
 
+    @pytest.mark.torch
+    @pytest.mark.jax
     def test_kwargs_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the base operators"""
         import torch
