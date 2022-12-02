@@ -178,7 +178,7 @@
 
 * Add a UserWarning when creating a `Tensor` object with overlapping wires, 
   informing that this can in some cases lead to undefined behaviour.
-  [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3459)
+  [(#3459)](https://github.com/PennyLaneAI/pennylane/pull/3459)
 
 <h4>Return types project</h4>
 
