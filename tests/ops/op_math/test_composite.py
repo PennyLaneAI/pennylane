@@ -178,7 +178,7 @@ class TestConstruction:
 
     def test_build_pauli_rep(self):
         """Test the build_pauli_rep"""
-        op = ValidOp(self.simple_operands)
+        op = ValidOp(*self.simple_operands)
         assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
 
 
