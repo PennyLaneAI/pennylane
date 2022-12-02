@@ -191,6 +191,7 @@ def _spsa_grad_new(
           tensor(0.65617915, requires_grad=True)))
 
         We may compare this to the more precise values obtained from finite differences:
+
         >>> qml.gradients.finite_diff(circuit)(params)
         ((tensor(-0.38751724, requires_grad=True),
           tensor(-0.18884792, requires_grad=True),
@@ -487,6 +488,7 @@ def spsa_grad(
                 [ 0.59483632,  0.34143874,  0.51811744]], requires_grad=True)
 
         We may compare this to the exact value obtained from parameter-shift rules:
+
         >>> qml.gradients.param_shift(circuit)(params)
         tensor([[-0.3875172 , -0.18884787, -0.38355704],
                 [ 0.69916862,  0.34072424,  0.69202359]], requires_grad=True)
