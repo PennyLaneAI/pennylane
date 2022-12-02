@@ -14,9 +14,9 @@
 """
 Unit tests for Hartree-Fock functions.
 """
-import autograd
 import pytest
 
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
 
@@ -183,7 +183,7 @@ def test_hf_energy_gradient(symbols, geometry, g_ref):
     correct."""
     mol = qchem.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    g = autograd.grad(qchem.hf_energy(mol))(*args)
+    g = qml.grad(qchem.hf_energy(mol))(*args)
 
     assert np.allclose(g, g_ref)
 
@@ -237,5 +237,5 @@ def test_nuclear_energy_gradient(symbols, geometry, g_ref):
     r"""Test that nuclear energy gradients are correct."""
     mol = qchem.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    g = autograd.grad(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
+    g = qml.grad(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
     assert np.allclose(g, g_ref)

@@ -14,7 +14,6 @@
 """
 Unit tests for functions needed for computing the dipole.
 """
-import autograd
 import pytest
 
 import pennylane as qml
@@ -306,7 +305,7 @@ def test_expvalD(symbols, geometry, charge, core, active, d_ref):
 
 
 def test_gradient_expvalD():
-    r"""Test that the gradient of expval(D) computed with ``autograd.grad`` is equal to the value
+    r"""Test that the gradient of expval(D) computed with ``qml.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [1.0, 1.7, 0.0], [2.0, 0.0, 0.0]], requires_grad=False)
@@ -335,7 +334,7 @@ def test_gradient_expvalD():
 
         return circuit
 
-    grad_autograd = autograd.grad(dipole(mol))(*args)
+    grad_qml = qml.grad(dipole(mol))(*args)
 
     alpha_1 = np.array(
         [
@@ -360,4 +359,4 @@ def test_gradient_expvalD():
 
     grad_finitediff = (d_2 - d_1) / 0.0002
 
-    assert np.allclose(grad_autograd[0][0], grad_finitediff)
+    assert np.allclose(grad_qml[0][0], grad_finitediff)

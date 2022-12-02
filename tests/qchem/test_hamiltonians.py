@@ -14,7 +14,6 @@
 """
 Unit tests for functions needed for computing the Hamiltonian.
 """
-import autograd
 import pytest
 
 import pennylane as qml
@@ -278,7 +277,7 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
 
 
 def test_gradient_expvalH():
-    r"""Test that the gradient of expval(H) computed with ``autograd.grad`` is equal to the value
+    r"""Test that the gradient of expval(H) computed with ``qml.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H"]
     geometry = (
@@ -305,7 +304,7 @@ def test_gradient_expvalH():
 
         return circuit
 
-    grad_autograd = autograd.grad(energy(mol), argnum=0)(*args)
+    grad_qml = qml.grad(energy(mol), argnum=0)(*args)
 
     alpha_1 = np.array(
         [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
@@ -322,4 +321,4 @@ def test_gradient_expvalH():
 
     grad_finitediff = (e_2 - e_1) / 0.0002
 
-    assert np.allclose(grad_autograd[0][0], grad_finitediff)
+    assert np.allclose(grad_qml[0][0], grad_finitediff)
