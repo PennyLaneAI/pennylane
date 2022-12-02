@@ -17,11 +17,7 @@ This module contains the functions needed for computing integrals over basis fun
 # pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
 import itertools as it
 
-import autograd.numpy as anp
 import autograd.scipy as asp
-import jax
-import jax.scipy as jsp
-import jaxlib
 from scipy.special import factorial2 as fac2
 
 import pennylane as qml
@@ -768,12 +764,7 @@ def _hermite_coulomb(t, u, v, n, p, dr):
     r = 0
 
     if t == u == v == 0:
-        if isinstance(T, jaxlib.xla_extension.DeviceArray) or isinstance(
-            T, jax.interpreters.ad.JVPTracer
-        ):
-            return ((-2 * p) ** n) * _boys_jax(n, T)
-        else:
-            return ((-2 * p) ** n) * _boys(n, T)
+        return ((-2 * p) ** n) * _boys(n, T)
 
     if t == u == 0:
         if v > 1:
