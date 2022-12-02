@@ -16,7 +16,7 @@ This file defines a prototype python device conforming to the new device interfa
 """
 from typing import Sequence, Tuple, Union, Callable
 import multiprocessing
-
+from concurrent.futures import ProcessPoolExecutor
 from pennylane.tape import QuantumScript
 
 from .device_interface import AbstractDevice
@@ -38,6 +38,16 @@ def _multiprocessing_single_execution(
     return_dict[task_i] = simulator.execute(single_qs)
 
 
+def _single_execution(single_qs: QuantumScript):
+    """Perform a single execution on an instantiated simulator.
+
+    Args:
+        single_qs (QuantumScript): A single quantum script to execute
+    """
+    simulator = PlainNumpySimulator()
+    return simulator.execute(single_qs)
+
+
 class PythonDevice(AbstractDevice):
     """Device containing a Python simulator favouring composition-like interface.
 
@@ -46,8 +56,10 @@ class PythonDevice(AbstractDevice):
 
     """
 
-    def __init__(self, use_mutliprocessing=False):
-        self.use_multiprocessing = use_mutliprocessing
+    def __init__(self, use_multiprocessing=False, use_mpi=False, use_ray=False):
+        self.use_multiprocessing = use_multiprocessing
+        self.use_mpi = use_mpi
+        self.use_ray = use_ray
         super().__init__()
 
     def execute(
@@ -67,6 +79,10 @@ class PythonDevice(AbstractDevice):
             self.tracker.update(batches=1, batch_len=len(qscripts))
             self.tracker.record()
 
+        if self.use_ray:
+            return self._ray_execution(qscripts)
+        if self.use_mpi:
+            return self._mpi_execution(qscripts)
         if not self.use_multiprocessing:
             return tuple(self.execute(qs) for qs in qscripts)
         return self._multiprocess_execution(qscripts)
@@ -74,19 +90,34 @@ class PythonDevice(AbstractDevice):
     @staticmethod
     def _multiprocess_execution(qscript: Sequence[QuantumScript]) -> Tuple:
         """Perform the execution of a quantum script batch with multiple processes."""
-        manager = multiprocessing.Manager()
-        return_dict = manager.dict()
-        jobs = []
-        for i, single_qs in enumerate(qscript):
-            p = multiprocessing.Process(
-                target=_multiprocessing_single_execution, args=(i, single_qs, return_dict)
-            )
-            jobs.append(p)
-            p.start()
+        results = None
+        with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+            if executor is not None:
+                results = executor.map(_single_execution, qscript)
+        return tuple(results)
 
-        for proc in jobs:
-            proc.join()
-        return tuple(return_dict[i] for i in range(len(qscript)))
+    @staticmethod
+    def _mpi_execution(qscript: Sequence[QuantumScript]) -> Tuple:
+        """Perform the execution of a quantum script batch with multiple processes."""
+        from mpi4py.futures import MPIPoolExecutor
+
+        results = None
+        with MPIPoolExecutor() as executor:
+            if executor is not None:
+                results = executor.map(_single_execution, qscript)
+        return tuple(results)
+
+    @staticmethod
+    def _ray_execution(qscript: Sequence[QuantumScript]) -> Tuple:
+        """Perform the execution of a quantum script batch with multiple processes usin Ray"""
+        import ray
+
+        @ray.remote
+        def fn(qscript: QuantumScript):
+            return _single_execution(qscript)
+
+        futures = [fn.remote(s) for s in qscript]
+        return tuple(ray.get(futures))
 
     def preprocess(
         self, qscript: Union[QuantumScript, Sequence[QuantumScript]], execution_config=None
