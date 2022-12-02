@@ -176,6 +176,11 @@ class TestConstruction:
         assert mapped_op[0].wires == Wires(5)
         assert mapped_op[1].wires == Wires(7)
 
+    def test_build_pauli_rep(self):
+        """Test the build_pauli_rep"""
+        op = ValidOp(self.simple_operands)
+        assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
+
 
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
