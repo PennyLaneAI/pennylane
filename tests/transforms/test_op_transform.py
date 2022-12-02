@@ -436,7 +436,7 @@ class TestQFuncTransformIntegration:
 
         weights = np.array([0.1, 0.0, 0.0])
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError, match="QNodes cannot be declared as qfunc transforms"):
             circuit(weights)
 
 

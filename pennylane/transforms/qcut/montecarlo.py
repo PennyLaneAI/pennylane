@@ -26,7 +26,8 @@ from networkx import MultiDiGraph
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import Sample
-from pennylane.tape import QuantumTape
+from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.wires import Wires
 
 from pennylane.transforms.batch_transform import batch_transform
@@ -676,7 +677,7 @@ def expand_fragment_tapes_mc(
     for tape in tapes:
         frag_config = []
         for shot in range(shots):
-            with qml.tape.QuantumTape() as new_tape:
+            with AnnotatedQueue() as q:
                 for op in tape.operations:
                     w = op.wires[0]
                     if isinstance(op, PrepareNode):
@@ -687,11 +688,11 @@ def expand_fragment_tapes_mc(
                 for meas in tape.measurements:
                     qml.apply(meas)
                 for op in tape.operations:
-                    meas_w = op.wires[0]
                     if isinstance(op, MeasureNode):
+                        meas_w = op.wires[0]
                         MC_MEASUREMENTS[meas_settings[op.id][shot]](meas_w)
 
-            frag_config.append(new_tape)
+            frag_config.append(QuantumScript.from_queue(q))
 
         all_configs.append(frag_config)
 
