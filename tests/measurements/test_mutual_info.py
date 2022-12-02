@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the mutual_info module"""
+import copy
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
+from pennylane.measurements import MutualInfo
 from pennylane.measurements.mutual_info import _MutualInfo
+from pennylane.wires import Wires
 
 
 class TestMutualInfo:
@@ -45,7 +49,7 @@ class TestMutualInfo:
 
         res = circuit()
         new_res = qml.mutual_info(wires0=[0, 2], wires1=[1, 3]).process_state(
-            state=circuit.device.state, wires=circuit.device.wires
+            state=circuit.device.state, wire_order=circuit.device.wires
         )
         assert np.allclose(res, expected, atol=1e-6)
         assert np.allclose(new_res, expected, atol=1e-6)
@@ -63,3 +67,23 @@ class TestMutualInfo:
         circuit()
 
         assert isinstance(circuit.tape[0], _MutualInfo)
+
+    @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ([1, 10], (2,))])
+    def test_shape(self, shots, shape):
+        """Test that the shape is correct."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        res = qml.mutual_info(wires0=[0], wires1=[1])
+        assert res.shape(dev) == shape
+
+    def test_properties(self):
+        """Test that the properties are correct."""
+        meas = qml.mutual_info(wires0=[0], wires1=[1])
+        assert meas.numeric_type == float
+        assert meas.return_type == MutualInfo
+
+    def test_copy(self):
+        """Test that the ``__copy__`` method also copies the ``log_base`` information."""
+        meas = qml.mutual_info(wires0=[0], wires1=[1], log_base=2)
+        meas_copy = copy.copy(meas)
+        assert meas_copy.log_base == 2
+        assert meas_copy.wires == Wires([0, 1])

@@ -460,6 +460,76 @@ class TestParamShift:
         grad = fn(qml.execute(tapes, dev, None))
         assert qml.math.allclose(grad, -np.sin(x[0] + x[1]), atol=1e-5)
 
+    @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
+    @pytest.mark.parametrize("multi_measure", [False, True])
+    def test_custom_recipe_unshifted_only(self, ops_with_custom_recipe, multi_measure):
+        """Test that if the gradient recipe has a zero-shift component, then
+        the tape is executed only once using the current parameter
+        values."""
+        dev = qml.device("default.qubit", wires=2)
+        x = [0.543, -0.654]
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x[0], wires=[0])
+            qml.RX(x[1], wires=[0])
+            qml.expval(qml.PauliZ(0))
+            if multi_measure:
+                qml.expval(qml.PauliZ(1))
+
+        gradient_recipes = tuple(
+            [[-1e7, 1, 0], [1e7, 1, 0]] if i in ops_with_custom_recipe else None for i in range(2)
+        )
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+
+        # two tapes per parameter that doesn't use a custom recipe,
+        # plus one global (unshifted) call if at least one uses the custom recipe
+        num_ops_standard_recipe = tape.num_params - len(ops_with_custom_recipe)
+        assert len(tapes) == 2 * num_ops_standard_recipe + int(
+            tape.num_params != num_ops_standard_recipe
+        )
+        # Test that executing the tapes and the postprocessing function works
+        grad = fn(qml.execute(tapes, dev, None))
+        if multi_measure:
+            expected = np.array([[-np.sin(x[0] + x[1])] * 2, [0, 0]])
+            # The custom recipe estimates gradients to be 0
+            for i in ops_with_custom_recipe:
+                expected[0, i] = 0
+        else:
+            expected = [
+                -np.sin(x[0] + x[1]) if i not in ops_with_custom_recipe else 0 for i in range(2)
+            ]
+        assert qml.math.allclose(grad, expected, atol=1e-5)
+
+    @pytest.mark.parametrize("ops_with_custom_recipe", [[0], [1], [0, 1]])
+    def test_custom_recipe_mixing_unshifted_shifted(self, ops_with_custom_recipe):
+        """Test that if the gradient recipe has a zero-shift component, then
+        the tape is executed only once using the current parameter
+        values."""
+        dev = qml.device("default.qubit", wires=2)
+        x = [0.543, -0.654]
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x[0], wires=[0])
+            qml.RX(x[1], wires=[0])
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(1))
+
+        gradient_recipes = tuple(
+            [[-1e-7, 1, 0], [1e-7, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]]
+            if i in ops_with_custom_recipe
+            else None
+            for i in range(2)
+        )
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+
+        # two tapes per parameter, independent of recipe
+        # plus one global (unshifted) call if at least one uses the custom recipe
+        assert len(tapes) == 2 * tape.num_params + int(len(ops_with_custom_recipe) > 0)
+        # Test that executing the tapes and the postprocessing function works
+        grad = fn(qml.execute(tapes, dev, None))
+        assert qml.math.allclose(grad[0], -np.sin(x[0] + x[1]), atol=1e-5)
+        assert qml.math.allclose(grad[1], 0, atol=1e-5)
+
     @pytest.mark.parametrize("y_wire", [0, 1])
     def test_f0_provided(self, y_wire):
         """Test that if the original tape output is provided, then
@@ -1926,72 +1996,72 @@ class TestParameterShiftRule:
 
     # TODO: revisit the following test when the Autograd interface supports
     # parameter-shift with the new return type system
-    # def test_special_observable_qnode_differentiation(self):
-    #     """Test differentiation of a QNode on a device supporting a
-    #     special observable that returns an object rather than a number."""
+    def test_special_observable_qnode_differentiation(self):
+        """Test differentiation of a QNode on a device supporting a
+        special observable that returns an object rather than a number."""
 
-    #     class SpecialObject:
-    #         """SpecialObject
+        class SpecialObject:
+            """SpecialObject
 
-    #         A special object that conveniently encapsulates the return value of
-    #         a special observable supported by a special device and which supports
-    #         multiplication with scalars and addition.
-    #         """
+            A special object that conveniently encapsulates the return value of
+            a special observable supported by a special device and which supports
+            multiplication with scalars and addition.
+            """
 
-    #         def __init__(self, val):
-    #             self.val = val
+            def __init__(self, val):
+                self.val = val
 
-    #         def __mul__(self, other):
-    #             return SpecialObject(self.val * other)
+            def __mul__(self, other):
+                return SpecialObject(self.val * other)
 
-    #         def __add__(self, other):
-    #             newval = self.val + other.val if isinstance(other, self.__class__) else other
-    #             return SpecialObject(newval)
+            def __add__(self, other):
+                new = self.val + (other.val if isinstance(other, self.__class__) else other)
+                return SpecialObject(new)
 
-    #     class SpecialObservable(Observable):
-    #         """SpecialObservable"""
+        class SpecialObservable(Observable):
+            """SpecialObservable"""
 
-    #         num_wires = AnyWires
+            num_wires = AnyWires
 
-    #         def diagonalizing_gates(self):
-    #             """Diagonalizing gates"""
-    #             return []
+            def diagonalizing_gates(self):
+                """Diagonalizing gates"""
+                return []
 
-    #     class DeviceSupporingSpecialObservable(DefaultQubit):
-    #         name = "Device supporting SpecialObservable"
-    #         short_name = "default.qubit.specialobservable"
-    #         observables = DefaultQubit.observables.union({"SpecialObservable"})
+        class DeviceSupporingSpecialObservable(DefaultQubit):
+            name = "Device supporting SpecialObservable"
+            short_name = "default.qubit.specialobservable"
+            observables = DefaultQubit.observables.union({"SpecialObservable"})
 
-    #         @staticmethod
-    #         def _asarray(arr, dtype=None):
-    #             return arr
+            @staticmethod
+            def _asarray(arr, dtype=None):
+                return np.array(arr)
 
-    #         def init(self, *args, **kwargs):
-    #             super().__init__(*args, **kwargs)
-    #             self.R_DTYPE = SpecialObservable
+            def init(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.R_DTYPE = SpecialObservable
 
-    #         def expval(self, observable, **kwargs):
-    #             if self.analytic and isinstance(observable, SpecialObservable):
-    #                 val = super().expval(qml.PauliZ(wires=0), **kwargs)
-    #                 return SpecialObject(val)
+            def expval(self, observable, **kwargs):
+                if self.analytic and isinstance(observable, SpecialObservable):
+                    val = super().expval(qml.PauliZ(wires=0), **kwargs)
+                    return SpecialObject(val)
 
-    #             return super().expval(observable, **kwargs)
+                return super().expval(observable, **kwargs)
 
-    #     dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
+        dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
 
-    #     @qml.qnode(dev, diff_method="parameter-shift")
-    #     def qnode(x):
-    #         qml.RY(x, wires=0)
-    #         return qml.expval(SpecialObservable(wires=0))
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(SpecialObservable(wires=0))
 
-    #     @qml.qnode(dev, diff_method="parameter-shift")
-    #     def reference_qnode(x):
-    #         qml.RY(x, wires=0)
-    #         return qml.expval(qml.PauliZ(wires=0))
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def reference_qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
 
-    #     par = np.array(0.2, requires_grad=True)
-    #     assert np.isclose(qnode(par).item().val, reference_qnode(par))
-    #     assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
+        par = np.array(0.2, requires_grad=True)
+        assert np.isclose(qnode(par).item().val, reference_qnode(par))
+        assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
     def test_multi_measure_no_warning(self):
         """Test computing the gradient of a tape that contains multiple
