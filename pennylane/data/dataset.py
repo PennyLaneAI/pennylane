@@ -18,13 +18,26 @@ Contains the :class:`~pennylane.data.Dataset` class and its associated functions
 from abc import ABC
 from glob import glob
 import os
-import dill
-import zstd
 
 from pennylane import Hamiltonian
 from pennylane.pauli import string_to_pauli_word
 
 
+def _import_zstd_dill():
+    """Import zstd and dill."""
+    try:
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        import zstd, dill
+    except ImportError as Error:
+        raise ImportError(
+            "This feature requires zstd and dill."
+            "They can be installed with:\n\n pip install zstd dill."
+        ) from Error
+
+    return zstd, dill
+
+
+# pylint: disable=too-many-instance-attributes
 class Dataset(ABC):
     """Create a dataset object to store a collection of information describing
     a physical system and its evolution. For example, a dataset for an arbitrary
@@ -32,14 +45,16 @@ class Dataset(ABC):
     and an efficient state-preparation circuit for that state.
 
     Args:
-        *args: For internal use only. These will be ignored if called with standard=False
-        standard (bool): For internal use only. See below for behaviour if this is set to True
+        *args: For internal use only. These will be ignored if called with ``standard=False``
+        standard (bool): For internal use only. See the note below for the behavior when this is set to ``True``
         **kwargs: variable-length keyword arguments specifying the data to be stored in the dataset
 
     Note on the ``standard`` kwarg:
-        A "standard" Dataset uses previously generated, downloadable quantum data. This special instance of
-        the Dataset class makes some assumptions for folder management and file downloading. As such, the
-        Dataset class should not be invoked directly with ``standard=True``. Instead, call :meth:`~load`
+        A `standard` Dataset uses previously generated, hosted quantum data. This special instance of the
+        ``Dataset`` class makes certain assumptions about folder management for downloading the data and
+        handling I/O. As such, the ``Dataset`` class should not be instantiated by the users directly with
+        ``standard=True``. Instead, they should use :meth:`~load`.
+
 
     .. seealso:: :meth:`~load`
 
@@ -94,6 +109,7 @@ class Dataset(ABC):
         self._folder = folder.rstrip("/")
         self._prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
         self._prefix_len = len(attr_prefix) + 1
+        self._description = os.path.join(data_name, self._folder.split(data_name)[-1][1:])
         self.__doc__ = docstring
 
         self._fullfile = self._prefix.format("full")
@@ -124,6 +140,15 @@ class Dataset(ABC):
             self._is_standard = False
             self.__base_init__(**kwargs)
 
+    def __repr__(self):
+        attr_str = (
+            str(list(self.attrs))
+            if len(self.attrs) < 3
+            else str(list(self.attrs)[:2])[:-1] + ", ...]"
+        )
+        std_str = f"description: {self._description}, " if self._is_standard else ""
+        return f"<Dataset = {std_str}attributes: {attr_str}>"
+
     @property
     def attrs(self):
         """Returns attributes of the dataset."""
@@ -139,6 +164,7 @@ class Dataset(ABC):
         with open(filepath, "rb") as f:
             compressed_pickle = f.read()
 
+        zstd, dill = _import_zstd_dill()
         depressed_pickle = zstd.decompress(compressed_pickle)
         return dill.loads(depressed_pickle)
 
@@ -167,6 +193,7 @@ class Dataset(ABC):
     @staticmethod
     def _write_file(data, filepath, protocol=4):
         """General method to write data to a file."""
+        zstd, dill = _import_zstd_dill()
         pickled_data = dill.dumps(data, protocol=protocol)
         compressed_pickle = zstd.compress(pickled_data)
         with open(filepath, "wb") as f:

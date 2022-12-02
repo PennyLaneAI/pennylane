@@ -18,6 +18,7 @@ from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane._device import _process_shot_sequence, _get_num_copies
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import _get_operation_recipe, _put_zeros_in_pdA2_involutory
 from pennylane.devices import DefaultQubit
@@ -2016,72 +2017,72 @@ class TestParameterShiftRule:
 
     # TODO: revisit the following test when the Autograd interface supports
     # parameter-shift with the new return type system
-    # def test_special_observable_qnode_differentiation(self):
-    #     """Test differentiation of a QNode on a device supporting a
-    #     special observable that returns an object rather than a number."""
+    def test_special_observable_qnode_differentiation(self):
+        """Test differentiation of a QNode on a device supporting a
+        special observable that returns an object rather than a number."""
 
-    #     class SpecialObject:
-    #         """SpecialObject
+        class SpecialObject:
+            """SpecialObject
 
-    #         A special object that conveniently encapsulates the return value of
-    #         a special observable supported by a special device and which supports
-    #         multiplication with scalars and addition.
-    #         """
+            A special object that conveniently encapsulates the return value of
+            a special observable supported by a special device and which supports
+            multiplication with scalars and addition.
+            """
 
-    #         def __init__(self, val):
-    #             self.val = val
+            def __init__(self, val):
+                self.val = val
 
-    #         def __mul__(self, other):
-    #             return SpecialObject(self.val * other)
+            def __mul__(self, other):
+                return SpecialObject(self.val * other)
 
-    #         def __add__(self, other):
-    #             newval = self.val + other.val if isinstance(other, self.__class__) else other
-    #             return SpecialObject(newval)
+            def __add__(self, other):
+                new = self.val + (other.val if isinstance(other, self.__class__) else other)
+                return SpecialObject(new)
 
-    #     class SpecialObservable(Observable):
-    #         """SpecialObservable"""
+        class SpecialObservable(Observable):
+            """SpecialObservable"""
 
-    #         num_wires = AnyWires
+            num_wires = AnyWires
 
-    #         def diagonalizing_gates(self):
-    #             """Diagonalizing gates"""
-    #             return []
+            def diagonalizing_gates(self):
+                """Diagonalizing gates"""
+                return []
 
-    #     class DeviceSupporingSpecialObservable(DefaultQubit):
-    #         name = "Device supporting SpecialObservable"
-    #         short_name = "default.qubit.specialobservable"
-    #         observables = DefaultQubit.observables.union({"SpecialObservable"})
+        class DeviceSupporingSpecialObservable(DefaultQubit):
+            name = "Device supporting SpecialObservable"
+            short_name = "default.qubit.specialobservable"
+            observables = DefaultQubit.observables.union({"SpecialObservable"})
 
-    #         @staticmethod
-    #         def _asarray(arr, dtype=None):
-    #             return arr
+            @staticmethod
+            def _asarray(arr, dtype=None):
+                return np.array(arr)
 
-    #         def init(self, *args, **kwargs):
-    #             super().__init__(*args, **kwargs)
-    #             self.R_DTYPE = SpecialObservable
+            def init(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.R_DTYPE = SpecialObservable
 
-    #         def expval(self, observable, **kwargs):
-    #             if self.analytic and isinstance(observable, SpecialObservable):
-    #                 val = super().expval(qml.PauliZ(wires=0), **kwargs)
-    #                 return SpecialObject(val)
+            def expval(self, observable, **kwargs):
+                if self.analytic and isinstance(observable, SpecialObservable):
+                    val = super().expval(qml.PauliZ(wires=0), **kwargs)
+                    return SpecialObject(val)
 
-    #             return super().expval(observable, **kwargs)
+                return super().expval(observable, **kwargs)
 
-    #     dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
+        dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
 
-    #     @qml.qnode(dev, diff_method="parameter-shift")
-    #     def qnode(x):
-    #         qml.RY(x, wires=0)
-    #         return qml.expval(SpecialObservable(wires=0))
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(SpecialObservable(wires=0))
 
-    #     @qml.qnode(dev, diff_method="parameter-shift")
-    #     def reference_qnode(x):
-    #         qml.RY(x, wires=0)
-    #         return qml.expval(qml.PauliZ(wires=0))
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def reference_qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
 
-    #     par = np.array(0.2, requires_grad=True)
-    #     assert np.isclose(qnode(par).item().val, reference_qnode(par))
-    #     assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
+        par = np.array(0.2, requires_grad=True)
+        assert np.isclose(qnode(par).item().val, reference_qnode(par))
+        assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
     def test_multi_measure_no_warning(self):
         """Test computing the gradient of a tape that contains multiple
@@ -2497,7 +2498,9 @@ Shot vectors may have some edge cases:
 """
 
 
-@pytest.mark.parametrize("shot_vec", [(100, 1, 10), (1, 1, 10), (*[1] * 2, 10), (1, 1, 1)])
+@pytest.mark.parametrize(
+    "shot_vec", [(100, 1, 10), (1, 1, 10), ((1, 2), 10), (10, (1, 2)), (1, 1, 1)]
+)
 class TestReturn:
     """Class to test the shape of Jacobian with different return types.
 
@@ -2532,10 +2535,11 @@ class TestReturn:
         # One trainable param
         tape.trainable_params = {0}
 
-        tapes, fn = qml.gradients.param_shift(tape, shots=shot_vec)
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        tapes, fn = qml.gradients.param_shift(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == len(shot_vec)
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
         assert isinstance(all_res, tuple)
 
         for res in all_res:
@@ -2564,10 +2568,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0}
 
-        tapes, fn = qml.gradients.param_shift(tape, shots=shot_vec)
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        tapes, fn = qml.gradients.param_shift(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == len(shot_vec)
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]
@@ -2596,10 +2601,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0, 1}
 
-        tapes, fn = qml.gradients.param_shift(tape, shots=shot_vec)
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        tapes, fn = qml.gradients.param_shift(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == len(shot_vec)
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
         assert isinstance(all_res, tuple)
 
         for param_res in all_res:
@@ -2635,10 +2641,11 @@ class TestReturn:
         # Multiple trainable params
         tape.trainable_params = {0, 1, 2, 3, 4}
 
-        tapes, fn = qml.gradients.param_shift(tape, shots=shot_vec)
+        grad_transform_shots = _process_shot_sequence(shot_vec)[1]
+        tapes, fn = qml.gradients.param_shift(tape, shots=grad_transform_shots)
         all_res = fn(dev.batch_execute(tapes))
 
-        assert len(all_res) == len(shot_vec)
+        assert len(all_res) == _get_num_copies(grad_transform_shots)
         assert isinstance(all_res, tuple)
 
         expected_shapes = [(), (4,), (), ()]

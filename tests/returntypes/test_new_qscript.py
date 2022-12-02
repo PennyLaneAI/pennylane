@@ -12,27 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QuantumScript"""
-import copy
-import warnings
-from collections import defaultdict
-
 import numpy as np
 import pytest
-from this import d
 
 import pennylane as qml
-from pennylane import CircuitGraph
-from pennylane.measurements import (
-    MeasurementProcess,
-    MeasurementShapeError,
-    counts,
-    expval,
-    sample,
-    var,
-    probs,
-)
+from pennylane.measurements import MeasurementShapeError, MutualInfo, State, VnEntropy
 from pennylane.tape import QuantumScript
-
 
 measures = [
     (qml.expval(qml.PauliZ(0)), ()),
@@ -46,6 +31,8 @@ measures = [
         None,
     ),  # Shape is None because the expected shape is in the test case
     (qml.sample(), None),  # Shape is None because the expected shape is in the test case
+    (qml.mutual_info(wires0=[0], wires1=[1]), ()),
+    (qml.vn_entropy(wires=[0, 1]), ()),
 ]
 
 multi_measurements = [
@@ -69,6 +56,8 @@ class TestMeasurementProcess:
         (qml.probs(wires=[0, 1]), (4,)),
         (qml.state(), (8,)),
         (qml.density_matrix(wires=[0, 1]), (4, 4)),
+        (qml.mutual_info(wires0=[0], wires1=[1]), ()),
+        (qml.vn_entropy(wires=[0, 1]), ()),
     ]
 
     measurements_finite_shots = [
@@ -79,6 +68,8 @@ class TestMeasurementProcess:
         (qml.density_matrix(wires=[0, 1]), (4, 4)),
         (qml.sample(qml.PauliZ(0)), (10,)),
         (qml.sample(), (10, 3)),
+        (qml.mutual_info(wires0=0, wires1=1), ()),
+        (qml.vn_entropy(wires=[0, 1]), ()),
     ]
 
     measurements_shot_vector = [
@@ -89,6 +80,8 @@ class TestMeasurementProcess:
         (qml.density_matrix(wires=[0, 1]), ((4, 4), (4, 4), (4, 4))),
         (qml.sample(qml.PauliZ(0)), ((10,), (20,), (30,))),
         (qml.sample(), ((10, 3), (20, 3), (30, 3))),
+        (qml.mutual_info(wires0=0, wires1=1), ((), (), ())),
+        (qml.vn_entropy(wires=[0, 1]), ((), (), ())),
     ]
 
     @pytest.mark.parametrize("measurement, expected_shape", measurements_no_shots)
@@ -111,7 +104,7 @@ class TestMeasurementProcess:
         assert measurement.shape(dev) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measurements_shot_vector)
-    def test_output_shapes_no_shots(self, measurement, expected_shape):
+    def test_output_shapes_shot_vector(self, measurement, expected_shape):
         """Test that the output shape of the measurement process is expected
         when shots is a vector"""
         num_wires = 3
@@ -328,6 +321,65 @@ class TestOutputShape:
         assert res_shape == expected
 
     @pytest.mark.autograd
+    @pytest.mark.parametrize("measurement, expected_shape", measures)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_broadcasting_single(self, measurement, expected_shape, shots):
+        """Test that the output shape produced by the tape matches the expected
+        output shape for a single measurement and parameter broadcasting"""
+        if shots is None and measurement.return_type is qml.measurements.Sample:
+            pytest.skip("Sample doesn't support analytic computations.")
+
+        if (
+            measurement.return_type in {State, MutualInfo, VnEntropy}
+            and measurement.wires is not None
+        ):
+            pytest.skip("Density matrix does not support parameter broadcasting")
+
+        num_wires = 3
+        dev = qml.device("default.qubit", wires=num_wires, shots=shots)
+
+        a = np.array([0.1, 0.2, 0.3])
+        b = np.array([0.4, 0.5, 0.6])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.apply(measurement)
+
+        expected_shape = qml.execute([tape], dev, gradient_fn=None)[0].shape
+
+        assert tape.shape(dev) == expected_shape
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("measurement, expected", measures)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_broadcasting_multi(self, measurement, expected, shots):
+        """Test that the output shape produced by the tape matches the expected
+        output shape for multiple measurements and parameter broadcasting"""
+        if shots is None and measurement.return_type is qml.measurements.Sample:
+            pytest.skip("Sample doesn't support analytic computations.")
+
+        if measurement.return_type in {State, MutualInfo, VnEntropy}:
+            pytest.skip("Density matrix does not support parameter broadcasting.")
+
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array([0.1, 0.2, 0.3])
+        b = np.array([0.4, 0.5, 0.6])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for _ in range(2):
+                qml.apply(measurement)
+
+        expected = qml.execute([tape], dev, gradient_fn=None)[0]
+        actual = tape.shape(dev)
+
+        for exp, act in zip(expected, actual):
+            assert exp.shape == act
+
+    @pytest.mark.autograd
     def test_multi_measure_sample_obs_shot_vector(self):
         """Test that the expected output shape is obtained when using multiple
         qml.sample measurements with an observable with a shot vector."""
@@ -374,12 +426,34 @@ class TestOutputShape:
 
         assert res == expected_shape
 
+    def test_raises_broadcasting_shot_vector(self):
+        """Test that getting the output shape of a tape that uses parameter
+        broadcasting along with a device with a shot vector raises an error."""
+        dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(np.array([0.1, 0.2]), wires=0)
+            qml.RX(np.array([0.3, 0.4]), wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        msg = "Parameter broadcasting when using a shot vector is not supported yet"
+
+        with pytest.raises(NotImplementedError, match=msg):
+            tape.shape(dev)
+
 
 class TestNumericType:
     """Tests for determining the numeric type of the tape output."""
 
     @pytest.mark.parametrize(
-        "ret", [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0)), qml.probs(wires=[0])]
+        "ret",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(0)),
+            qml.probs(wires=[0]),
+            qml.mutual_info(wires0=0, wires1=1),
+            qml.vn_entropy(wires=[0, 1]),
+        ],
     )
     @pytest.mark.parametrize("shots", [None, 1, (1, 2, 3)])
     def test_float_measures(self, ret, shots):

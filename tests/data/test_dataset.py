@@ -17,8 +17,15 @@ Unit tests for the :class:`pennylane.data.Dataset` class and its functions.
 # pylint:disable=protected-access
 from copy import copy
 import os
+import sys
 import pytest
 import pennylane as qml
+
+pytestmark = pytest.mark.data
+
+# TODO: Bring pytest skip to relevant tests.
+zstd = pytest.importorskip("zstd")
+dill = pytest.importorskip("dill")
 
 
 def test_build_dataset():
@@ -186,3 +193,49 @@ def test_hamiltonian_is_loaded_properly(tmp_path):
     assert coeffs == [0.1, 0.2]
     assert qml.equal(qml.Identity(0), ops[0])
     assert qml.equal(qml.PauliZ(0), ops[1])
+
+
+def test_import_zstd_dill(monkeypatch):
+    """Test if an ImportError is raised by _import_zstd_dill function."""
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "zstd", None)
+
+        with pytest.raises(ImportError, match="This feature requires zstd and dill"):
+            qml.data.dataset._import_zstd_dill()
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "dill", None)
+
+        with pytest.raises(ImportError, match="This feature requires zstd and dill"):
+            qml.data.dataset._import_zstd_dill()
+
+
+def test_repr_standard(tmp_path):
+    """Test that __repr__ for standard Datasets look as expected."""
+    folder = tmp_path / "qchem" / "H2" / "STO-3G" / "1.02"
+    os.makedirs(folder)
+    qml.data.Dataset._write_file(
+        {"molecule": 1, "hf_state": 2}, str(folder / "H2_STO-3G_1.02_full.dat")
+    )
+
+    dataset = qml.data.Dataset("qchem", str(folder), "H2_STO-3G_1.02", "", standard=True)
+    assert (
+        repr(dataset)
+        == "<Dataset = description: qchem/H2/STO-3G/1.02, attributes: ['molecule', 'hf_state']>"
+    )
+
+    dataset.vqe_energy = 1.1
+    assert (
+        repr(dataset)
+        == "<Dataset = description: qchem/H2/STO-3G/1.02, attributes: ['molecule', 'hf_state', ...]>"
+    )
+
+
+def test_repr_non_standard():
+    """Test that __repr__ for non-standard Datasets look as expected."""
+    dataset = qml.data.Dataset(foo=1, bar=2)
+    assert repr(dataset) == "<Dataset = attributes: ['foo', 'bar']>"
+
+    dataset.baz = 3
+    assert repr(dataset) == "<Dataset = attributes: ['foo', 'bar', ...]>"

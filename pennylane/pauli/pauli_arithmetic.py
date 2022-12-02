@@ -18,11 +18,28 @@ from functools import reduce
 import numpy as np
 from scipy import sparse
 from pennylane import math, wires
+from pennylane.operation import Tensor
+from pennylane.ops import s_prod, op_sum, prod, Identity, PauliX, PauliY, PauliZ, Hamiltonian
+
 
 I = "I"
 X = "X"
 Y = "Y"
 Z = "Z"
+
+op_map = {
+    I: Identity,
+    X: PauliX,
+    Y: PauliY,
+    Z: PauliZ,
+}
+
+op_to_str_map = {
+    Identity: I,
+    PauliX: X,
+    PauliY: Y,
+    PauliZ: Z,
+}
 
 matI = np.eye(2)
 matX = np.array([[0, 1], [1, 0]])
@@ -77,10 +94,13 @@ mul_map = {I: _map_I, X: _map_X, Y: _map_Y, Z: _map_Z}
 
 
 class PauliWord(dict):
-    """Immutable dictionary used to represent a Pauli Word.
+    """Immutable dictionary used to represent a Pauli Word,
+    associating wires with their respective operators.
     Can be constructed from a standard dictionary.
 
-    >>> w = PauliWord({"a": X, 2: Y, 3: Z})
+    >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
+    >>> w
+    X(a) @ Y(2) @ Z(3)
     """
 
     def __missing__(self, key):
@@ -143,7 +163,7 @@ class PauliWord(dict):
     def __str__(self):
         """String representation of a PauliWord."""
         if len(self) == 0:
-            return "()"
+            return "I"
         return " @ ".join(f"{op}({w})" for w, op in self.items())
 
     def __repr__(self):
@@ -183,15 +203,38 @@ class PauliWord(dict):
 
         return reduce(kron, (matrix_map[self[w]] for w in wire_order))
 
+    def operation(self, wire_order=None):
+        """Returns a native PennyLane``~.Operator`` representing the PauliWord."""
+        if len(self) == 0:
+            if wire_order in (None, [], wires.Wires([])):
+                raise ValueError("Can't get the operation for an empty PauliWord.")
+            return Identity(wires=wire_order)
+
+        factors = [op_map[op](wire) for wire, op in self.items()]
+        return factors[0] if len(factors) == 1 else prod(*factors)
+
+    def hamiltonian(self, wire_order=None):
+        """Return ~.Hamiltonian representing the PauliWord"""
+        if len(self) == 0:
+            if wire_order in (None, [], wires.Wires([])):
+                raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
+            return Hamiltonian([1], [Identity(wires=wire_order)])
+
+        obs = [op_map[op](wire) for wire, op in self.items()]
+        return Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
+
 
 class PauliSentence(dict):
-    """Dict representing a Pauli Sentence. The keys are
-    PauliWord instances and the values correspond to coefficients.
+    """Dictionary representing a linear combination of Pauli words, with the keys
+    as PauliWord instances and the values correspond to coefficients.
 
     >>> ps = PauliSentence({
-            PauliWord({0:X, 1:Y}): 1.23
-            PauliWord({2:Z, 0:Y}): -0.45j
+            PauliWord({0:'X', 1:'Y'}): 1.23,
+            PauliWord({2:'Z', 0:'Y'}): -0.45j
         })
+    >>> ps
+    1.23 * X(0) @ Y(1)
+    + (-0-0.45j) * Z(2) @ Y(0)
     """
 
     def __missing__(self, key):
@@ -224,6 +267,8 @@ class PauliSentence(dict):
 
     def __str__(self):
         """String representation of the PauliSentence."""
+        if len(self) == 0:
+            return "I"
         return "\n+ ".join(f"{coeff} * {str(pw)}" for pw, coeff in self.items())
 
     def __repr__(self):
@@ -249,19 +294,30 @@ class PauliSentence(dict):
         Rasies:
             ValueError: Can't get the matrix of an empty PauliSentence.
         """
+
+        def _pw_wires(w):
+            """To account for empty pauli_words which represent identity operations."""
+            if w:
+                return wires.Wires(w)
+
+            ps_wires = self.wires
+            if len(ps_wires) > 0:
+                return wires.Wires(
+                    list(ps_wires)[0]
+                )  # return any wire from the Pauli sentence's wires
+            return wires.Wires([])
+
         if len(self) == 0:
             if wire_order is None or wire_order == wires.Wires([]):
                 raise ValueError("Can't get the matrix of an empty PauliSentence.")
-            return (
-                np.eye(2 ** len(wire_order))
-                if format == "dense"
-                else sparse.eye(2 ** len(wire_order), format=format)
-            )
+            if format == "dense":
+                return np.eye(2 ** len(wire_order))
+            return sparse.eye(2 ** len(wire_order), format=format)
 
         mats_and_wires_gen = (
             (
-                coeff * pw.to_mat(wire_order=wires.Wires(list(pw.wires)), format=format),
-                wires.Wires(list(pw.wires)),
+                coeff * pw.to_mat(wire_order=_pw_wires(list(pw.wires)), format=format),
+                _pw_wires(list(pw.wires)),
             )
             for pw, coeff in self.items()
         )
@@ -271,6 +327,29 @@ class PauliSentence(dict):
         )
 
         return math.expand_matrix(reduced_mat, result_wire_order, wire_order=wire_order)
+
+    def operation(self, wire_order=None):
+        """Returns a native PennyLane``~.Operator`` representing the PauliSentence."""
+        if len(self) == 0:
+            if wire_order in (None, [], wires.Wires([])):
+                raise ValueError("Can't get the operation for an empty PauliSentence.")
+            return Identity(wires=wire_order)
+
+        summands = [
+            s_prod(coeff, pw.operation(wire_order=list(self.wires))) for pw, coeff in self.items()
+        ]
+        return summands[0] if len(summands) == 1 else op_sum(*summands)
+
+    def hamiltonian(self, wire_order=None):
+        """Returns a native PennyLane ~.Hamiltonian representing the PauliSentence."""
+        if len(self) == 0:
+            if wire_order in (None, [], wires.Wires([])):
+                raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
+            return Hamiltonian([1], [Identity(wires=wire_order)])
+
+        return sum(
+            coeff * pw.hamiltonian(wire_order=list(self.wires)) for pw, coeff in self.items()
+        )
 
     def simplify(self, tol=1e-8):
         """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""

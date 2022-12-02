@@ -91,10 +91,10 @@ def ctrl(op, control, control_values=None, work_wires=None):
 
     @wraps(op)
     def wrapper(*args, **kwargs):
-        tape = qml.transforms.make_tape(op)(*args, **kwargs)
+        qscript = qml.tape.make_qscript(op)(*args, **kwargs)
 
         # flip control_values == 0 wires here, so we don't have to do it for each individual op.
-        flip_control_on_zero = (len(tape) > 1) and (control_values is not None)
+        flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
         op_control_values = None if flip_control_on_zero else control_values
         if flip_control_on_zero:
             _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
@@ -103,15 +103,15 @@ def ctrl(op, control, control_values=None, work_wires=None):
             Controlled(
                 op, control_wires=control, control_values=op_control_values, work_wires=work_wires
             )
-            for op in tape.operations
+            for op in qscript.operations
         ]
 
         if flip_control_on_zero:
             _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
 
         if qml.QueuingManager.recording():
-            _ = [qml.apply(m) for m in tape.measurements]
+            _ = [qml.apply(m) for m in qscript.measurements]
 
-        return tape.measurements
+        return qscript.measurements
 
     return wrapper

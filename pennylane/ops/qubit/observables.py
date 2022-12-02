@@ -252,6 +252,11 @@ class SparseHamiltonian(Observable):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, do_queue=do_queue, id=id)
+        mat_len = 2 ** len(self.wires)
+        if H.shape != (mat_len, mat_len):
+            raise ValueError(
+                f"Sparse Matrix must be of shape ({mat_len}, {mat_len}). Got {H.shape}."
+            )
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
@@ -431,7 +436,7 @@ class Projector(Observable):
     def compute_eigvals(basis_state):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
