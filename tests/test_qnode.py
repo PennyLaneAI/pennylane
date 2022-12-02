@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumScript
 
 
 def dummyfunc():
@@ -513,7 +513,7 @@ class TestTapeConstruction:
 
         res = qn(x, y)
 
-        assert isinstance(qn.qtape, QuantumTape)
+        assert isinstance(qn.qtape, QuantumScript)
         assert len(qn.qtape.operations) == 3
         assert len(qn.qtape.observables) == 1
         assert qn.qtape.num_params == 2
@@ -719,7 +719,7 @@ class TestDecorator:
 
         res = func(x, y)
 
-        assert isinstance(func.qtape, QuantumTape)
+        assert isinstance(func.qtape, QuantumScript)
         assert len(func.qtape.operations) == 3
         assert len(func.qtape.observables) == 1
         assert func.qtape.num_params == 2
