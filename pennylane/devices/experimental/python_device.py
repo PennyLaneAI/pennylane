@@ -18,9 +18,10 @@ from typing import Sequence, Tuple, Union, Callable
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 from pennylane.tape import QuantumScript
+from pennylane.workflow import ExecutionConfig
 
 from .device_interface import AbstractDevice
-from .simulators import PlainNumpySimulator, adjoint_diff_gradient
+from .simulator import PlainNumpySimulator, adjoint_diff_gradient
 from .python_preprocessor import simple_preprocessor
 
 
@@ -129,6 +130,7 @@ class PythonDevice(AbstractDevice):
         return simple_preprocessor(qscript), identity_post_processing
 
     def gradient(self, qscript: QuantumScript, execution_config=None):
+        execution_config = ExecutionConfig()
         if execution_config.order != 1 and execution_config.shots is None:
             raise NotImplementedError
 

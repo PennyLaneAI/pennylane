@@ -1293,6 +1293,11 @@ class QuantumScript:
 
         return qasm_str
 
+    @staticmethod
+    def from_queue(queue):
+        """Construct a QuantumScript from an AnnotatedQueue."""
+        return QuantumScript(*process_queue(queue))
+
 
 def make_qscript(fn):
     """Returns a function that generates a qscript from a quantum function without any
@@ -1338,8 +1343,10 @@ def make_qscript(fn):
 
     def wrapper(*args, **kwargs):
         with qml.QueuingManager.stop_recording(), AnnotatedQueue() as q:
-            fn(*args, **kwargs)
+            result = fn(*args, **kwargs)
 
-        return QuantumScript(*process_queue(q))
+        qscript = QuantumScript.from_queue(q)
+        qscript._qfunc_output = result
+        return qscript
 
     return wrapper
