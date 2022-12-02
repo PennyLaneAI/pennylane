@@ -24,7 +24,7 @@ from pennylane.measurements.classical_shadow import _ShadowExpval
 from pennylane.measurements.mutual_info import _MutualInfo
 from pennylane.measurements.vn_entropy import _VnEntropy
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian
+from pennylane.ops import Hamiltonian, Controlled
 
 
 def equal(
@@ -195,6 +195,19 @@ def _equal_operators(
                 return False
 
     return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
+
+
+@_equal.register
+def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
+    # wires are ordered [control wires, operator wires, work wires]
+    # comparing op.wires and op.base.wires (in return) is sufficient to compare all wires
+    if [op1.wires, op1.control_values, op1.arithmetic_depth] != [
+        op2.wires,
+        op2.control_values,
+        op2.arithmetic_depth,
+    ]:
+        return False
+    return qml.equal(op1.base, op2.base, **kwargs)
 
 
 @_equal.register
