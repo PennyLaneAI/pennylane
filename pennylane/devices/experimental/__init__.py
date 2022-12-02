@@ -22,6 +22,11 @@ to have a more relevant location.
 .. autosummary::
     :toctree: api
 
+    ~AbstractDevice
+    ~backward_patch_interface
+    ~PythonDevice
+    ~Tracker
+
 """
 
 from .tracker import Tracker
