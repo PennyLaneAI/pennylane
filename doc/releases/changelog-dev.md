@@ -245,6 +245,9 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
+* Extended the `qml.equal` function to `Controlled` and `ControlledOp` objects.
+  [(#3463)](https://github.com/PennyLaneAI/pennylane/pull/3463)
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
