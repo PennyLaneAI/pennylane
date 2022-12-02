@@ -658,8 +658,7 @@ class TestControlledQubitUnitary:
         "control_wires,wires,control_values,expected_error_message",
         [
             ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
-            ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
-            ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
+            ([0, 1], 2, "011", "control_values should be the same length as control_wires"),
         ],
     )
     def test_invalid_mixed_polarity_controls(
@@ -797,15 +796,6 @@ class TestControlledQubitUnitary:
         )
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
-
-    def test_no_decomp(self):
-        """Test that ControlledQubitUnitary raises a decomposition undefined
-        error."""
-        mat = qml.PauliX(0).matrix()
-        with pytest.raises(qml.operation.DecompositionUndefinedError):
-            qml.ControlledQubitUnitary(mat, wires=0, control_wires=1).decomposition()
-        with pytest.raises(qml.operation.DecompositionUndefinedError):
-            qml.ControlledQubitUnitary(X_broadcasted, wires=0, control_wires=1).decomposition()
 
     @pytest.mark.parametrize("n", (2, -1, -2))
     def test_pow(self, n):
