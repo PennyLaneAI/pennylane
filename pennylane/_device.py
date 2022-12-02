@@ -739,9 +739,9 @@ class Device(abc.ABC):
         return_types = [m.return_type for m in circuit.observables]
 
         is_shadow = ShadowExpval in return_types
-        hamiltonian_usable = not supports_hamiltonian or (finite_shots and not is_shadow)
+        hamiltonian_unusable = not supports_hamiltonian or (finite_shots and not is_shadow)
 
-        if hamiltonian_in_obs and (hamiltonian_usable or (use_grouping and grouping_known)):
+        if hamiltonian_in_obs and (hamiltonian_unusable or (use_grouping and grouping_known)):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
