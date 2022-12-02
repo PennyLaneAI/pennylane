@@ -208,7 +208,12 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
         op2.arithmetic_depth,
     ]:
         return False
-    return qml.equal(op1.base, op2.base, **kwargs)
+    try:
+        return qml.equal(op1.base, op2.base, **kwargs)
+    except NotImplementedError as e:
+        raise NotImplementedError(
+            f"Unable to compare base operators {op1.base} and {op2.base}."
+        ) from e
 
 
 @_equal.register
