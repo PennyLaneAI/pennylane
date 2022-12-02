@@ -20,7 +20,7 @@ import multiprocessing
 from pennylane.tape import QuantumScript
 
 from .device_interface import AbstractDevice
-from .simulators import PlainNumpySimulator, adjoint_diff_gradient
+from .simulator import PlainNumpySimulator, adjoint_diff_gradient
 from .python_preprocessor import simple_preprocessor
 
 
@@ -46,8 +46,8 @@ class PythonDevice(AbstractDevice):
 
     """
 
-    def __init__(self, use_mutliprocessing=False):
-        self.use_multiprocessing = use_mutliprocessing
+    def __init__(self, use_multiprocessing=False):
+        self.use_multiprocessing = use_multiprocessing
         super().__init__()
 
     def execute(
