@@ -16,16 +16,27 @@
 import numpy as np
 
 from pennylane import adjoint, matrix, generator
+from pennylane.tape import QuantumScript
+
+from .numpy_simulator import PlainNumpySimulator
 
 
 def operation_derivative(operation):
     """This code is copied from operation.py.  It's moved here to reduce
     spagetti dependencies over an extremely simple function."""
-    generator = matrix(generator(operation, format="observable"), wire_order=operation.wires)
-    return 1j * generator @ operation.matrix()
+    gen = matrix(generator(operation, format="observable"), wire_order=operation.wires)
+    return 1j * gen @ operation.matrix()
 
 
-def adjoint_diff_gradient(qscript, sim):
+def adjoint_diff_gradient(qscript: QuantumScript, sim: PlainNumpySimulator) -> tuple:
+    """Calculate the gradient of a Quantum Script using adjoint differentiation with the provided
+    simulator.
+
+    Args:
+        qscript (QuantumScript): the quantum script to take the gradient of
+        sim (PlainNumpySimulator): the simulator to perform the computation with
+
+    """
     state = sim.create_zeroes_state(qscript.num_wires)
     for op in qscript.operations:
         state = sim.apply_operation(state, op)
@@ -46,4 +57,4 @@ def adjoint_diff_gradient(qscript, sim):
         bra = sim.apply_operation(bra, adj_op)
 
     grads = grads[::-1]
-    return grads
+    return tuple(grads)

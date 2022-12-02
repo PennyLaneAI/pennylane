@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""module docstring"""
+"""This module contains the Abstract Base Class for experimental pennylane devices.
+
+"""
 
 import abc
 
@@ -24,10 +26,15 @@ from pennylane import Tracker
 
 QScriptBatch = Sequence[QuantumScript]
 
-
+# pylint: disable=unused-argument
 class AbstractDevice(abc.ABC):
-    """
-    This abstract device interface enables direct and dynamic function registration for pre-processing, post-processing, gradients, VJPs, and arbitrary functionality.
+    """An experimental PennyLane device.
+
+    The child classes can define any number of class specific arguments and keyword arguments.
+
+    Experimental devicves should be configured to run under ``qml.enable_return()``, the newer
+    return shape specification.
+
     """
 
     tracker: Tracker = Tracker()
@@ -46,7 +53,6 @@ class AbstractDevice(abc.ABC):
 
             # Calling a user-provided callback function
             self.tracker.record()
-    
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -108,16 +114,29 @@ class AbstractDevice(abc.ABC):
         Returns:
             A numeric result of the computation.
 
+        **Return shape:**
+
         The result for each :class:`~.QuantumScript` must match the shape specified by :class:`~.QuantumScript.shape`.
 
+        For example:
+
+        >>> from pennylane.devices import experimental as devices
+        >>> qml.enable_return()
+        >>> dev = devices.PythonDevice()
+        >>> dev = devices.backward_patch_interface(dev)
+        >>> qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+        >>> qs.shape(dev)
+        ((), (4,))
+        >>> dev.execute(qs)
+        (1.0, array([1., 0., 0., 0.]))
+
         """
-        pass
+        raise NotImplementedError
 
     def execute_and_gradients(
         self,
         qscripts: Union[QuantumScript, QScriptBatch],
         execution_config: ExecutionConfig = None,
-        order: int = 1,
     ):
         """Compute the results and gradients of QuantumScripts at the same time.
 
@@ -128,36 +147,88 @@ class AbstractDevice(abc.ABC):
         Returns:
             tensor-like, tensor-like: A numeric result of the computation.
 
+        This method can be used when the result and execution need to be computed at the same time, such as
+        during a forward mode calculation of gradients. For certain gradient methods, such as adjoint
+        diff gradients, calculating the result and gradient at the same can save computational work.
+
         """
-        return self.execute(qscripts, execution_config), self.gradient(
-            qscripts, execution_config, order=order
-        )
+        return self.execute(qscripts, execution_config), self.gradient(qscripts, execution_config)
 
     def gradient(
         self,
         qscript: Union[QuantumScript, QScriptBatch],
         execution_config: ExecutionConfig = None,
-        order: int = 1,
     ):
-        """Main gradient method, contains validation and post-processing
-        so that device developers do not need to replicate all the
-        internal pieces. Contain 'user' facing details here."""
-        pass
-
-    def vjp(self, qscript: Union[QuantumScript, QScriptBatch], dy):
-        """VJP method. Added through registration"""
-        pass
-
-    @classmethod
-    def supports_gradient_of_order(cls, order: int = 1) -> bool:
-        """
+        """Calculate the gradient of either a single or a batch of Quantum Scripts.
 
         Args:
-            order (int): The order of gradient
+            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
+
+        Returns:
+            tensor-like: A numeric result of the computation.
+        """
+        raise NotImplementedError
+
+    def vjp(
+        self,
+        qscript: Union[QuantumScript, QScriptBatch],
+        dy,
+        execution_config: ExecutionConfig = None,
+    ):
+        """The vector jacobian product.
+
+        Args:
+            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            dy (tensor-like): Gradient-output vector. Must have shape matching the output shape of the
+                corresponding qscript
+            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
+
+        Returns:
+            tensor-like: A numeric result of computing the vector jacobian product
 
         """
-        return cls.gradient != AbstractDevice.gradient if order == 1 else False
+        raise NotImplementedError
 
     @classmethod
-    def supports_vjp(cls) -> bool:
+    def supports_gradient_with_configuration(cls, execution_config: ExecutionConfig) -> bool:
+        """Determine whether or not a gradient is available with a given execution configuration.
+
+        Default behaviour assumes first order derivatives exist if :meth:`~.gradient` is overriden.
+
+        Args:
+            execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
+
+        Returns:
+            Bool
+
+        **Example:**
+
+        For example, the current Python device supports adjoint differentiation if the order is ``1`` and
+        the execution occurs with no shots ``shots=None``.
+
+        >>> from pennylane.workflow import ExecutionConfig
+        >>> from pennylane.devices import experimental as devices
+        >>> dev = devices.PythonDevice()
+        >>> config = ExecutionConfig(order=1, shots=None)
+        >>> dev.supports_gradient_with_configuration(config)
+        True
+        >>> config = ExecutionConfig(order=1, shots=10)
+        >>> dev.supports_gradient_with_configuration(config)
+        False
+        >>> config = ExecutionConfig(order=2, shots=None)
+        >>> dev.supports_gradient_with_configuration(config)
+        False
+
+        """
+        return cls.gradient != AbstractDevice.gradient if execution_config.order == 1 else False
+
+    @classmethod
+    def supports_vjp(cls, execution_config: ExecutionConfig) -> bool:
+        """Whether or not a given device defines a custom vector jacobian product.
+
+        Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
+
+
+        """
         return cls.vjp != AbstractDevice.vjp

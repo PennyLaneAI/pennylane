@@ -36,51 +36,42 @@ class PlainNumpySimulator:
 
     * No support for state preparation yet
     * No sampling yet
-    * restricted measurement types
+    * state based measurements only
 
     Preprocessing restrictions:
     * Quantum Script wires must be adjacent integers starting from zero
     * All operations must have matrices
 
-
-
     """
-
-    name = "PlainNumpy"
 
     def __init__(self):
         pass
 
     @classmethod
     def execute(cls, qs: QuantumScript, dtype=np.complex128):
-        """docstring"""
+        """
+        Execute a single quantum script.
+
+        """
         num_indices = len(qs.wires)
         state = cls.create_zeroes_state(num_indices, dtype=dtype)
-        for op in qs._ops:
+        for op in qs.operations:  # assume no state prep here
             state = cls.apply_operation(state, op)
 
         measurements = tuple(cls.measure_state(state, m) for m in qs.measurements)
         return measurements[0] if len(measurements) == 1 else measurements
 
     @staticmethod
-    def create_zeroes_state(num_indices, dtype=np.complex128):
-        """docstring"""
+    def create_zeroes_state(num_indices: int, dtype=np.complex128) -> np.ndarray:
+        """Create a zeroes state with ``num_indices`` wires and of type ``dtype``."""
         state = np.zeros(2**num_indices, dtype=dtype)
         state[0] = 1
         state.shape = [2] * num_indices
         return state
 
-    @staticmethod
-    def create_state_vector_state(num_indices, statevector, indices):
-        """docstring"""
-        if list(range(num_indices)) == indices:
-            statevector.shape = [2] * num_indices
-            return statevector
-        raise NotImplementedError
-
     @classmethod
-    def apply_operation(cls, state, operation):
-        """docstring"""
+    def apply_operation(cls, state: np.ndarray, operation: qml.operation.Operator) -> np.ndarray:
+        """Apply ``operation`` to the input ``state`` and return a new ``state``."""
         matrix = operation.matrix()
         if operation.name == "CNOT":
             return cls.apply_cnot(state, operation.wires)
@@ -89,11 +80,13 @@ class PlainNumpySimulator:
         return cls.apply_matrix_tensordot(state, matrix, operation.wires)
 
     @staticmethod
-    def apply_x(state, index):
+    def apply_x(state: np.ndarray, index: int) -> np.ndarray:
+        """Apply an X gate at position ``index``"""
         return np.roll(state, 1, index)
 
     @classmethod
-    def apply_cnot(cls, state, indices):
+    def apply_cnot(cls, state: np.ndarray, indices: tuple(int, int)) -> np.ndarray:
+        """Apply a CNOT gate on the state at ``indices``."""
         ndim = np.ndim(state)
         sl_0 = _get_slice(0, indices[0], ndim)
         sl_1 = _get_slice(1, indices[0], ndim)
@@ -103,15 +96,19 @@ class PlainNumpySimulator:
         return np.stack([state[sl_0], state_x], axis=indices[0])
 
     @classmethod
-    def apply_matrix(cls, state, matrix, indices):
-        """docstring"""
+    def apply_matrix(cls, state: np.ndarray, matrix: np.ndarray, indices: tuple[int]) -> np.ndarray:
+        """Apply ``matrix`` to ``state`` at ``indices``. Dispatches between using einsum and tensordot
+        based on the number of indices."""
         if len(indices) < 3:
             return cls.apply_matrix_einsum(state, matrix, indices)
         return cls.apply_matrix_tensordot(state, matrix, indices)
 
     @staticmethod
-    def apply_matrix_tensordot(state, matrix, indices):
-        """docstring"""
+    def apply_matrix_tensordot(
+        state: np.ndarray, matrix: np.ndarray, indices: tuple[int]
+    ) -> np.ndarray:
+        """Apply ``matrix`` to ``state`` at ``indices`` using ``np.tensordot``. More efficient at higher numbers
+        of indices."""
         total_indices = len(state.shape)
         num_indices = len(indices)
         reshaped_mat = np.reshape(matrix, [2] * (num_indices * 2))
@@ -126,8 +123,12 @@ class PlainNumpySimulator:
         return np.transpose(tdot, inv_perm)
 
     @staticmethod
-    def apply_matrix_einsum(state, matrix, indices):
-        """
+    def apply_matrix_einsum(
+        state: np.ndarray, matrix: np.ndarray, indices: tuple[int]
+    ) -> np.ndarray:
+        """Apply ``matrix`` to ``state`` at ``indices``. Uses ``np.einsum`` and is more efficent at lower qubit
+        numbers.
+
         Args:
             state (array[complex]): input state
             mat (array): matrix to multiply
@@ -155,8 +156,10 @@ class PlainNumpySimulator:
         return np.einsum(einsum_indices, reshaped_mat, state)
 
     @classmethod
-    def measure_state(cls, state, measurementprocess):
-        """docstring"""
+    def measure_state(
+        cls, state: np.ndarray, measurementprocess: qml.measurements.MeasurementProcess
+    ):
+        """Measure ``state`` using ``measurementprocess``."""
         if isinstance(measurementprocess, qml.measurements.StateMeasurement):
             total_indices = len(state.shape)
             wires = qml.wires.Wires(range(total_indices))
@@ -170,8 +173,13 @@ class PlainNumpySimulator:
         return state
 
     @classmethod
-    def generate_samples(cls, state, rng, shots=1):
-        """docstring"""
+    def generate_samples(
+        cls, state: np.ndarray, rng: np.random._generator.Generator, shots: int = 1
+    ):
+        """UNFINISHED!
+
+        Generate ``shots`` samples from ``state`` using the provided random number generator.
+        """
         total_indices = len(state.shape)
         probs = np.real(state) ** 2 + np.imag(state) ** 2
         basis_states = np.arange(2**total_indices)

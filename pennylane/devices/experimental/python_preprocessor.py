@@ -13,13 +13,14 @@
 # limitations under the License.
 """module docstring"""
 
-from typing import List, Union
+from typing import Sequence, Union
 
 from pennylane.tape import QuantumScript
 from pennylane import map_wires
 
 
-def stopping_condition(obj):
+def _stopping_condition(obj) -> bool:
+    """Specify whether or not a object is natively supported by the Python Device."""
     if obj.name == "QFT" and len(obj.wires) >= 6:
         return False
     if obj.name == "GroverOperator" and len(obj.wires) >= 13:
@@ -27,21 +28,16 @@ def stopping_condition(obj):
     return getattr(obj, "has_matrix", False)
 
 
-def simple_preprocessor(
-    qscript: Union[QuantumScript, List[QuantumScript]]
-) -> Union[QuantumScript, List[QuantumScript]]:
-
-    if not isinstance(qscript, QuantumScript):
-        return [simple_preprocessor(qs) for qs in qscript]
+def _single_qscript_preprocessing(qscript: QuantumScript) -> QuantumScript:
 
     max_expansion = 20
 
     new_qscript = qscript.expand(
-        depth=max_expansion, stop_at=stopping_condition, expand_measurements=False
+        depth=max_expansion, stop_at=_stopping_condition, expand_measurements=False
     )
 
     for op in new_qscript.operations:
-        if not stopping_condition(op):
+        if not _stopping_condition(op):
             raise NotImplementedError(f"{op} not supported on device")
     if new_qscript.num_wires > 30:
         raise NotImplementedError(
@@ -49,6 +45,15 @@ def simple_preprocessor(
         )
 
     wire_map = {w: i for i, w in enumerate(qscript.wires)}
-    new_qscript = map_wires(new_qscript, wire_map)
+    return map_wires(new_qscript, wire_map)
 
-    return new_qscript
+
+def simple_preprocessor(
+    qscript: Union[QuantumScript, Sequence[QuantumScript]]
+) -> Sequence[QuantumScript]:
+    """Convert a single quantum script or a batch into a batch supported by the Python Device along withj."""
+
+    if isinstance(qscript, QuantumScript):
+        return [_single_qscript_preprocessing(qscript)]
+
+    return [_single_qscript_preprocessing(qs) for qs in qscript]

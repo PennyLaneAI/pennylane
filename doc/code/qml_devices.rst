@@ -14,3 +14,10 @@ qml.devices
 .. rubric:: Modules
 
 .. automodule:: pennylane.devices
+
+Experimental
+------------
+
+.. currentmodule:: pennylane.devices.experimental
+
+..automodule:: pennylane.devices.experimental
