@@ -15,7 +15,6 @@
 This submodule contains controlled operators based on the Controlled and ControlledOp class.
 """
 
-
 from typing import Iterable
 
 from pennylane.wires import Wires
@@ -90,38 +89,12 @@ class ControlledQubitUnitary(ControlledOp):
         do_queue=True,
         **kwargs,  # pylint: disable=unused-argument, too-many-arguments
     ):
-        if control_wires is None:
-            raise ValueError("Must specify control wires")
 
         if isinstance(base, Iterable):
             base = QubitUnitary(base, wires=wires)
 
-        wires = Wires(base.wires)
-        control_wires = Wires(control_wires)
-
-        if Wires.shared_wires([wires, control_wires]):
-            raise ValueError(
-                "The control wires must be different from the wires specified to apply the unitary on."
-            )
-
-        self._hyperparameters = {
-            "u_wires": wires,
-            "control_wires": control_wires,
-            "control_values": control_values,
-        }
-
         super().__init__(base, control_wires, control_values=control_values, do_queue=do_queue)
-
-        self._name = "ControlledQubitUnitary"
-
-    def pow(self, z):
-        base_pow = self.base.pow(z)
-        return [
-            ControlledQubitUnitary(
-                op, control_wires=self.control_wires, control_values=self.control_values
-            )
-            for op in base_pow
-        ]
+        self.hyperparameters["u_wires"] = Wires(base.wires)
 
     def _controlled(self, wire):
         ctrl_wires = self.control_wires + wire
