@@ -14,8 +14,6 @@
 """
 This module contains the functions needed for computing the dipole moment.
 """
-import autograd.numpy as anp
-
 import pennylane as qml
 from pennylane import numpy as np
 
