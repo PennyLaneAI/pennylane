@@ -230,15 +230,21 @@ class TestSample:
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
             return qml.sample()
 
         res = circuit()
 
         assert isinstance(res, tuple)
 
-        expected_shapes = [(num_wires,), (num_wires, shots2), (num_wires, shots3)]
+        expected_shapes = [(num_wires,), (shots2, num_wires), (shots3, num_wires)]
         assert len(res) == len(expected_shapes)
-        assert (r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
+        assert all(r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
+
+        # assert first wire is always the same as second
+        assert np.all(res[0][0] == res[0][1])
+        assert np.all(res[1][:, 0] == res[1][:, 1])
+        assert np.all(res[2][:, 0] == res[2][:, 1])
 
         custom_measurement_process(dev, spy)
 
@@ -341,6 +347,24 @@ class TestSample:
         assert isinstance(binned_samples, tuple)
         assert len(binned_samples) == len(shot_vec)
         assert binned_samples[0].shape == (shot_vec[0],)
+
+    def test_sample_empty_wires(self):
+        """Test that using ``qml.sample`` with an empty wire list raises an error."""
+        with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
+            qml.sample(wires=[])
+
+    @pytest.mark.parametrize("shots", [2, 100])
+    def test_sample_no_arguments(self, shots):
+        """Test that using ``qml.sample`` with no arguments returns the samples of all wires."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample()
+
+        res = circuit()
+
+        assert res.shape == (shots, 3)
 
     def test_new_sample_with_operator_with_no_eigvals(self):
         """Test that calling process with an operator that has no eigvals defined raises an error."""

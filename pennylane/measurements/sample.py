@@ -15,6 +15,7 @@
 """
 This module contains the qml.sample measurement.
 """
+import functools
 import warnings
 from typing import Sequence, Tuple, Union
 
@@ -22,7 +23,7 @@ import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
 
-from .measurements import Sample, SampleMeasurement
+from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 
 
 def sample(op: Union[Observable, None] = None, wires=None):
@@ -109,12 +110,79 @@ def sample(op: Union[Observable, None] = None, wires=None):
             )
         wires = Wires(wires)
 
-    return _Sample(Sample, obs=op, wires=wires)
+    return _Sample(obs=op, wires=wires)
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
 class _Sample(SampleMeasurement):
     """Measurement process that returns the samples of a given observable."""
+
+    @property
+    def return_type(self):
+        return Sample
+
+    @property
+    @functools.lru_cache()
+    def numeric_type(self):
+        # Note: we only assume an integer numeric type if the observable is a
+        # built-in observable with integer eigenvalues or a tensor product thereof
+        if self.obs is None:
+
+            # Computational basis samples
+            return int
+        int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
+        tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
+        every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
+        return int if every_term_standard else float
+
+    @property
+    def samples_computational_basis(self):
+        r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
+        computational basis states.
+        """
+        return self.obs is None
+
+    def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
+        if device.shot_vector is not None:
+            if self.obs is None:
+                # TODO: revisit when qml.sample without an observable fully
+                # supports shot vectors
+                raise MeasurementShapeError(
+                    "Getting the output shape of a measurement returning samples along with "
+                    "a device with a shot vector is not supported."
+                )
+            return tuple(
+                (shot_val,) if shot_val != 1 else tuple() for shot_val in device._raw_shot_sequence
+            )
+        len_wires = len(device.wires)
+        return (1, device.shots) if self.obs is not None else (1, device.shots, len_wires)
+
+    def _shape_new(self, device=None):
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement process; "
+                + f"got return type {self.return_type}."
+            )
+        if device.shot_vector is not None:
+            if self.obs is None:
+                return tuple(
+                    (shot_val, len(device.wires)) if shot_val != 1 else (len(device.wires),)
+                    for shot_val in device._raw_shot_sequence
+                )
+            return tuple(
+                (shot_val,) if shot_val != 1 else tuple() for shot_val in device._raw_shot_sequence
+            )
+        if self.obs is None:
+            len_wires = len(device.wires)
+            return (device.shots, len_wires) if device.shots != 1 else (len_wires,)
+        return (device.shots,) if device.shots != 1 else ()
 
     def process_samples(
         self,
@@ -141,7 +209,7 @@ class _Sample(SampleMeasurement):
 
         if self.obs is None:
             # if no observable was provided then return the raw samples
-            return samples if bin_size is None else samples.reshape(num_wires, bin_size, -1)
+            return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
         if name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
