@@ -1028,7 +1028,7 @@ class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
     @pytest.mark.parametrize("use_grouping", (True, False))
-    def test_batch_transform_checks_use_grouping_property(use_grouping):
+    def test_batch_transform_checks_use_grouping_property(self, use_grouping):
         """If the device specifies `use_grouping=False`, the batch transform
         method won't expand the hamiltonian when the measured hamiltonian has
         grouping indices.
