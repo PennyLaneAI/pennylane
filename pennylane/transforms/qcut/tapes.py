@@ -26,7 +26,8 @@ from pennylane import apply, expval
 from pennylane.pauli import string_to_pauli_word
 from pennylane.measurements import Expectation, MeasurementProcess, Sample
 from pennylane.ops.qubit.non_parametric_ops import WireCut
-from pennylane.tape import QuantumTape
+from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.wires import Wires
 from pennylane.operation import Operator, Tensor
 
@@ -105,9 +106,9 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
 
 # pylint: disable=protected-access
-def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
+def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
     """
-    Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
+    Converts a directed multigraph to the corresponding :class:`~.QuantumScript`.
 
     To account for the possibility of needing to perform mid-circuit measurements, if any operations
     follow a :class:`MeasureNode` operation on a given wire then these operations are mapped to a
@@ -122,7 +123,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
         graph (nx.MultiDiGraph): directed multigraph to be converted to a tape
 
     Returns:
-        QuantumTape: the quantum tape corresponding to the input graph
+        QuantumScript: the quantum script corresponding to the input graph
 
     **Example**
 
@@ -163,7 +164,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     copy_meas = [copy.copy(op) for _, op in ordered_ops if isinstance(op, MeasurementProcess)]
     observables = []
 
-    with QuantumTape() as tape:
+    with AnnotatedQueue() as q:
         for op in copy_ops:
             op = qml.map_wires(op, wire_map=wire_map, queue=True)
             if isinstance(op, MeasureNode):
@@ -206,7 +207,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 else:
                     qml.expval(obs)
 
-    return tape
+    return QuantumScript.from_queue(q)
 
 
 def _add_operator_node(graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict):
@@ -309,7 +310,7 @@ def expand_fragment_tape(
                 n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
             }
 
-            with QuantumTape() as tape_:
+            with AnnotatedQueue() as q:
                 for op in tape.operations:
                     if isinstance(op, PrepareNode):
                         w = op.wires[0]
@@ -322,7 +323,7 @@ def expand_fragment_tape(
                 for meas in measurements:
                     apply(meas)
 
-                tapes.append(tape_)
+            tapes.append(QuantumScript.from_queue(q))
 
     return tapes, prepare_nodes, measure_nodes
 
