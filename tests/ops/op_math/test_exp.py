@@ -90,6 +90,12 @@ class TestInitialization:
         op = constructor(DummyOp(1), 2.312)
         assert op.has_diagonalizing_gates is value
 
+    def test_base_is_not_operator_error(self, constructor):
+        """Test that Exp raises an error if a base is provided that is not an Operator"""
+
+        with pytest.raises(TypeError, match="base is expected to be type None or Operator"):
+            constructor(2, qml.PauliX(0))
+
 
 class TestProperties:
     """Test of the properties of the Exp class."""
