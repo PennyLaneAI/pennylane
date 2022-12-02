@@ -101,7 +101,8 @@ def equal(
         :title: Usage Details
 
         You can use the optional arguments to get more specific results. These arguments are, however, not used
-        for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects. Additionally, they are
+        applied only to the base operator of `Controlled` operators.
 
         Consider the following comparisons:
 
@@ -119,6 +120,12 @@ def equal(
         False
 
         >>> qml.equal(op3, op4, check_trainability=False)
+        True
+
+        >>> qml.equal(Controlled(op3, control_wires=1), Controlled(op4, control_wires=1))
+        False
+
+        >>> qml.equal(Controlled(op3, control_wires=1), Controlled(op4, control_wires=1), check_trainability=False)
         True
     """
 
