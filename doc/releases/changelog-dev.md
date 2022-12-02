@@ -503,6 +503,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso
 Juan Miguel Arrazola
 Utkarsh Azad
 Astral Cai
