@@ -96,7 +96,7 @@ class PlainNumpySimulator:
         return np.stack([state[sl_0], state_x], axis=indices[0])
 
     @classmethod
-    def apply_matrix(cls, state: np.ndarray, matrix: np.ndarray, indices: tuple[int]) -> np.ndarray:
+    def apply_matrix(cls, state: np.ndarray, matrix: np.ndarray, indices: tuple) -> np.ndarray:
         """Apply ``matrix`` to ``state`` at ``indices``. Dispatches between using einsum and tensordot
         based on the number of indices."""
         if len(indices) < 3:
@@ -104,9 +104,7 @@ class PlainNumpySimulator:
         return cls.apply_matrix_tensordot(state, matrix, indices)
 
     @staticmethod
-    def apply_matrix_tensordot(
-        state: np.ndarray, matrix: np.ndarray, indices: tuple[int]
-    ) -> np.ndarray:
+    def apply_matrix_tensordot(state: np.ndarray, matrix: np.ndarray, indices: tuple) -> np.ndarray:
         """Apply ``matrix`` to ``state`` at ``indices`` using ``np.tensordot``. More efficient at higher numbers
         of indices."""
         total_indices = len(state.shape)
@@ -123,9 +121,7 @@ class PlainNumpySimulator:
         return np.transpose(tdot, inv_perm)
 
     @staticmethod
-    def apply_matrix_einsum(
-        state: np.ndarray, matrix: np.ndarray, indices: tuple[int]
-    ) -> np.ndarray:
+    def apply_matrix_einsum(state: np.ndarray, matrix: np.ndarray, indices: tuple) -> np.ndarray:
         """Apply ``matrix`` to ``state`` at ``indices``. Uses ``np.einsum`` and is more efficent at lower qubit
         numbers.
 
@@ -172,6 +168,7 @@ class PlainNumpySimulator:
             return measurementprocess.process_state(state.flatten(), wires)
         return state
 
+    # pylint: disable=protected-access
     @classmethod
     def generate_samples(
         cls, state: np.ndarray, rng: np.random._generator.Generator, shots: int = 1

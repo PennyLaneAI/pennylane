@@ -26,7 +26,7 @@ from pennylane import Tracker
 
 QScriptBatch = Sequence[QuantumScript]
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, no-self-use
 class AbstractDevice(abc.ABC):
     """An experimental PennyLane device.
 

@@ -71,7 +71,8 @@ class PythonDevice(AbstractDevice):
             return tuple(self.execute(qs) for qs in qscripts)
         return self._multiprocess_execution(qscripts)
 
-    def _multiprocess_execution(self, qscript: Sequence[QuantumScript]) -> Tuple:
+    @staticmethod
+    def _multiprocess_execution(qscript: Sequence[QuantumScript]) -> Tuple:
         """Perform the execution of a quantum script batch with multiple processes."""
         manager = multiprocessing.Manager()
         return_dict = manager.dict()
