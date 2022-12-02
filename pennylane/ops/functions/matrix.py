@@ -138,9 +138,9 @@ def _matrix(tape, wire_order=None):
     wire_order = wire_order or tape.wires
 
     # initialize the unitary matrix
-    result = qml.math.eye(2 ** len(wire_order), like=interface)
+    result = matrix(tape.operations[0], wire_order=wire_order)
 
-    for op in tape.operations:
+    for op in tape.operations[1:]:
         U = matrix(op, wire_order=wire_order)
         # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
         # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
