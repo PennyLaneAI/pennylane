@@ -24,6 +24,7 @@ import autograd
 
 import pennylane as qml
 from pennylane import Device
+from pennylane.devices.experimental import AbstractDevice
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.tape import QuantumTape
 from pennylane.workflow import ExecutionConfig
@@ -180,7 +181,7 @@ class QNode:
                 f"one of {SUPPORTED_INTERFACES}."
             )
 
-        if not isinstance(device, (Device, qml.devices.experimental.AbstractDevice)):
+        if not isinstance(device, (Device, AbstractDevice)):
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
@@ -489,7 +490,7 @@ class QNode:
 
     @staticmethod
     def _validate_device_method(device):
-        if isinstance(device, qml.devices.experimental.AbstractDevice):
+        if isinstance(device, AbstractDevice):
             config = ExecutionConfig(order=1, shots=None)
             if device.supports_gradient_with_configuration(config):
                 return "device", {}, device

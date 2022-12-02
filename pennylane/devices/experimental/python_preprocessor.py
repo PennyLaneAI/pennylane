@@ -15,8 +15,8 @@
 
 from typing import Sequence, Union
 
+import pennylane as qml
 from pennylane.tape import QuantumScript
-from pennylane import map_wires
 
 
 def _stopping_condition(obj) -> bool:
@@ -45,7 +45,7 @@ def _single_qscript_preprocessing(qscript: QuantumScript) -> QuantumScript:
         )
 
     wire_map = {w: i for i, w in enumerate(qscript.wires)}
-    return map_wires(new_qscript, wire_map)
+    return qml.map_wires(new_qscript, wire_map)
 
 
 def simple_preprocessor(
