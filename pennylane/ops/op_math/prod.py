@@ -310,7 +310,7 @@ class Prod(CompositeOp):
                 (op._pauli_rep for op in self.operands),  # pylint: disable=protected-access
             )
         except (AttributeError, TypeError):
-            return
+            return None
 
     def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
         """Reduces the depth of nested factors and groups identical factors.

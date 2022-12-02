@@ -213,7 +213,7 @@ class Sum(CompositeOp):
                 (op._pauli_rep for op in self.operands),  # pylint: disable=protected-access
             )
         except (AttributeError, TypeError):
-            return
+            return None
 
     @classmethod
     def _simplify_summands(cls, summands: List[Operator]):
