@@ -62,9 +62,13 @@ def qcut_processing_fn(
         the tensor network of circuit fragments
     """
     if qml.active_return():
+        # each tape contains only expval measurements or sample measurements, so
+        # stacking won't create any ragged arrays
         results = [
-            qml.math.stack(r) if isinstance(r, tuple) else qml.math.reshape(r, [-1])
-            for r in results
+            qml.math.stack(tape_res)
+            if isinstance(tape_res, tuple)
+            else qml.math.reshape(tape_res, [-1])
+            for tape_res in results
         ]
 
     flat_results = qml.math.concatenate(results)
@@ -188,7 +192,12 @@ def _reshape_results(results: Sequence, shots: int) -> List[List]:
     cuts.
     """
     if qml.active_return():
-        results = [qml.math.stack(r) if isinstance(r, tuple) else r for r in results]
+        # each tape contains only expval measurements or sample measurements, so
+        # stacking won't create any ragged arrays
+        results = [
+            qml.math.stack(tape_res) if isinstance(tape_res, tuple) else tape_res
+            for tape_res in results
+        ]
 
     results = [qml.math.flatten(r) for r in results]
     results = [results[i : i + shots] for i in range(0, len(results), shots)]
