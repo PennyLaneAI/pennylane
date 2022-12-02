@@ -199,6 +199,7 @@ def _equal_operators(
 
 @_equal.register
 def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
+    """Determine whether two Controlled or ControlledOp objects are equal"""
     # wires are ordered [control wires, operator wires, work wires]
     # comparing op.wires and op.base.wires (in return) is sufficient to compare all wires
     if [op1.wires, op1.control_values, op1.arithmetic_depth] != [
