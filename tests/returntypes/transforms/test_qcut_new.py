@@ -32,7 +32,7 @@ from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
 
-pytestmark = pytest.mark.qcut
+# pytestmark = pytest.mark.qcut
 
 I, X, Y, Z = (
     np.eye(2),
