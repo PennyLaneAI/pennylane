@@ -172,8 +172,8 @@ class TestQueuing:
             op = SymbolicOp(base)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        assert tape.get_info(base)["owner"] is op
-        assert tape.get_info(op)["owns"] is base
+        assert q.get_info(base)["owner"] is op
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_queuing_base_defined_outside(self):
@@ -184,8 +184,8 @@ class TestQueuing:
             op = SymbolicOp(base)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
-        assert tape.get_info(op)["owns"] is base
+        assert len(q) == 1
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_false(self):
@@ -195,5 +195,4 @@ class TestQueuing:
         with qml.queuing.AnnotatedQueue() as q:
             op = SymbolicOp(base, do_queue=False)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(tape.queue) == 0
+        assert len(q.queue) == 0

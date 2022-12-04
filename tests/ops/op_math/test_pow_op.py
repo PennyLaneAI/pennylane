@@ -535,8 +535,8 @@ class TestQueueing:
             op = Pow(base, 1.2)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        assert tape.get_info(base)["owner"] is op
-        assert tape.get_info(op)["owns"] is base
+        assert q.get_info(base)["owner"] is op
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
@@ -547,8 +547,8 @@ class TestQueueing:
             op = Pow(base, 3.4)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(tape.queue) == 1
-        assert tape.get_info(op)["owns"] is base
+        assert len(q.queue) == 1
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_False(self):

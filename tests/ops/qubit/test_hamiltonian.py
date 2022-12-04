@@ -735,11 +735,10 @@ class TestHamiltonian:
             H = qml.Hamiltonian([1.0, 2.0], [a, d])
             H.simplify()
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         # check that H is simplified
         assert H.ops == [a, b]
         # check that the simplified Hamiltonian is in the queue
-        assert tape.get_info(H) is not None
+        assert q.get_info(H) is not None
 
     def test_data(self):
         """Tests the obs_data method"""
@@ -893,12 +892,11 @@ class TestHamiltonian:
             qml.PauliX(wires=0)
             qml.expval(H)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(tape.queue) == 3
-        assert isinstance(tape.queue[0], qml.Hadamard)
-        assert isinstance(tape.queue[1], qml.PauliX)
-        assert isinstance(tape.queue[2], qml.measurements.MeasurementProcess)
-        assert H.compare(tape.queue[2].obs)
+        assert len(q.queue) == 3
+        assert isinstance(q.queue[0], qml.Hadamard)
+        assert isinstance(q.queue[1], qml.PauliX)
+        assert isinstance(q.queue[2], qml.measurements.MeasurementProcess)
+        assert H.compare(q.queue[2].obs)
 
     def test_hamiltonian_queue_inside(self):
         """Tests that Hamiltonian are queued correctly when components are instantiated inside the recording context."""
@@ -925,8 +923,7 @@ class TestHamiltonian:
                 )
             )
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
+        assert np.all([q1.compare(q2) for q1, q2 in zip(q.queue, queue)])
 
     def test_terms(self):
         """Tests that the terms representation is returned correctly."""
@@ -1394,8 +1391,7 @@ class TestGrouping:
         with qml.queuing.AnnotatedQueue() as q:
             H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert tape.queue == [H]
+        assert q.queue == [H]
 
     def test_grouping_method_can_be_set(self):
         r"""Tests that the grouping method can be controlled by kwargs.
