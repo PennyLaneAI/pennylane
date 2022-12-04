@@ -38,11 +38,12 @@ class TestTensorFlowExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute(
                 [tape],
                 dev,
@@ -64,11 +65,12 @@ class TestTensorFlowExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with mode='forward'"
         ):
@@ -81,11 +83,12 @@ class TestTensorFlowExecuteUnitTests:
         spy = mocker.spy(dev, "execute_and_gradients")
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute(
                 [tape],
                 dev,
@@ -106,11 +109,12 @@ class TestTensorFlowExecuteUnitTests:
         a = tf.Variable([0.1, 0.2])
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute(
                 [tape],
                 dev,
@@ -138,11 +142,12 @@ class TestCaching:
         a = tf.Variable([0.1, 0.2])
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute([tape], dev, gradient_fn=param_shift, cachesize=2, interface="tf")[0]
 
         t.jacobian(res, a)
@@ -160,11 +165,12 @@ class TestCaching:
         custom_cache = {}
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute([tape], dev, gradient_fn=param_shift, cache=custom_cache, interface="tf")[
                 0
             ]
@@ -187,11 +193,12 @@ class TestCaching:
         a = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="tf")[0]
 
         # Without caching, and non-vectorized, 9 evaluations are required to compute
@@ -228,7 +235,7 @@ class TestCaching:
         N = params.shape[0]
 
         def cost(x, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
 
@@ -238,6 +245,7 @@ class TestCaching:
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
                 [tape], dev, gradient_fn=param_shift, cache=cache, interface="tf", max_diff=2
             )[0]
@@ -333,19 +341,21 @@ class TestTensorFlowExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute([tape], dev, **execute_kwargs)[0]
 
         res = t.jacobian(res, a)
         assert res.shape == ()
 
         # compare to standard tape jacobian
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = [0]
         tapes, fn = param_shift(tape)
         expected = fn(dev.batch_execute(tapes))
@@ -360,12 +370,13 @@ class TestTensorFlowExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliY(1))
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute([tape], dev, max_diff=2, **execute_kwargs)[0]
             res = tf.stack(res)
 
@@ -418,13 +429,14 @@ class TestTensorFlowExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliY(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             assert tape.trainable_params == [0, 1]
             res = execute([tape], dev, **execute_kwargs)[0]
             res = tf.stack(res)
@@ -459,13 +471,14 @@ class TestTensorFlowExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with tf.GradientTape() as t:
             tape.set_parameters([a, b])
             assert tape.trainable_params == [0, 1]
@@ -501,12 +514,13 @@ class TestTensorFlowExecuteIntegration:
         dev = qml.device("default.qubit", wires=1)
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
                 qml.RX(c + c**2 + tf.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute([tape], dev, **execute_kwargs)[0]
             assert tape.trainable_params == [0, 2]
             assert tape.get_parameters() == [a * c, c + c**2 + tf.sin(a)]
@@ -522,13 +536,14 @@ class TestTensorFlowExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(0.2, wires=0)
                 qml.RX(b, wires=0)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute([tape], dev, **execute_kwargs)[0]
             res = qml.math.stack(res)
 
@@ -548,11 +563,12 @@ class TestTensorFlowExecuteIntegration:
 
         with tf.GradientTape() as t:
 
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute([tape], dev, **execute_kwargs)[0]
             assert tape.trainable_params == [1]
 
@@ -621,13 +637,14 @@ class TestTensorFlowExecuteIntegration:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=[0])
                 qml.probs(wires=[1])
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute([tape], dev, **execute_kwargs)[0]
             res = qml.math.stack(res)
 
@@ -665,13 +682,14 @@ class TestTensorFlowExecuteIntegration:
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.probs(wires=[1])
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute([tape], dev, **execute_kwargs)[0]
             res = tf.experimental.numpy.hstack(res)
 
@@ -697,12 +715,13 @@ class TestTensorFlowExecuteIntegration:
         dev = qml.device("default.qubit", wires=2, shots=10)
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.sample(qml.PauliZ(0))
                 qml.sample(qml.PauliX(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             res = execute([tape], dev, **execute_kwargs)[0]
             res = qml.math.stack(res)
 
@@ -772,11 +791,12 @@ class TestHigherOrderDerivatives:
 
         with tf.GradientTape() as t2:
             with tf.GradientTape(persistent=True) as t1:
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(params[0], wires=0)
                     qml.RX(params[1], wires=0)
                     qml.probs(wires=0)
 
+                tape = qml.tape.QuantumScript.from_queue(q)
                 res = execute([tape], dev, gradient_fn=param_shift, interface="tf", max_diff=2)[0]
                 res = tf.stack(res)
 
@@ -819,12 +839,13 @@ class TestHigherOrderDerivatives:
 
         with tf.GradientTape() as t2:
             with tf.GradientTape() as t1:
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RX(params[0], wires=[0])
                     qml.RY(params[1], wires=[1])
                     qml.CNOT(wires=[0, 1])
                     qml.expval(qml.PauliZ(0))
 
+                tape = qml.tape.QuantumScript.from_queue(q)
                 res = execute(
                     [tape],
                     dev,
@@ -903,13 +924,14 @@ class TestHamiltonianWorkflows:
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
 
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(H1)
                 qml.expval(H2)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return tf.stack(execute([tape], dev, **execute_kwargs)[0])
 
         return _cost_fn

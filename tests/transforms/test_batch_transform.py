@@ -105,10 +105,11 @@ class TestBatchTransform:
             tape2 = tape.copy()
             return [tape1, tape2], None
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = my_transform(tape)
         assert fn(5) == 5
 
@@ -185,10 +186,11 @@ class TestBatchTransform:
             MyTransform().my_transform, expand_fn=self.phaseshift_expand
         )
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PhaseShift(0.5, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy_expand = mocker.spy(transform_fn, "expand_fn")
 
         transform_fn(tape)
@@ -217,10 +219,11 @@ class TestBatchTransform:
         transform_fn = qml.batch_transform(
             MyTransform().my_transform, expand_fn=self.expand_logic_with_kwarg
         )
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PhaseShift(0.5, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy_expand = mocker.spy(transform_fn, "expand_fn")
 
         transform_fn(tape, perform_expansion=perform_expansion)
@@ -276,11 +279,12 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.RX(x, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = self.my_transform(tape, a, b)
 
         assert len(tapes[0].operations) == 2
@@ -301,11 +305,12 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.RX(x, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = self.my_transform(a, b)(tape)
 
         assert len(tapes[0].operations) == 2

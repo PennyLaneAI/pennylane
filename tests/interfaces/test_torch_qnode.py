@@ -1070,8 +1070,9 @@ class TestTapeExpansion:
             grad_method = None
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
+                tape = qml.tape.QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=2, interface="torch")
@@ -1124,8 +1125,9 @@ class TestTapeExpansion:
             grad_method = None
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
+                tape = qml.tape.QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="torch")

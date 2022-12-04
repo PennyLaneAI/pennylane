@@ -48,7 +48,7 @@ states_pure = [
     np.array([1, 1j]) / np.sqrt(2),
 ]
 
-with qml.tape.QuantumTape() as tape:
+with qml.queuing.AnnotatedQueue() as q:
     qml.RX(0.432, wires=0)
     qml.RY(0.543, wires="a")
     qml.CNOT(wires=[0, "a"])
@@ -57,6 +57,7 @@ with qml.tape.QuantumTape() as tape:
     qml.RZ(0.133, wires="a")
     qml.expval(qml.PauliZ(wires=[0]))
 
+tape = qml.tape.QuantumScript.from_queue(q)
 with qml.tape.QuantumTape() as multi_cut_tape:
     qml.RX(0.432, wires=0)
     qml.RY(0.543, wires="a")
@@ -356,7 +357,7 @@ class TestTapeToGraph:
         observables contained within the graph nodes
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=2)
             qml.CNOT(wires=[0, 1])
@@ -364,6 +365,7 @@ class TestTapeToGraph:
             qml.RZ(0.133, wires=1)
             qml.expval(obs)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         nodes = list(g.nodes)
 
@@ -389,7 +391,7 @@ class TestTapeToGraph:
         Tests that measurements are correctly converted
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=2)
             qml.CNOT(wires=[0, 1])
@@ -397,6 +399,7 @@ class TestTapeToGraph:
             qml.RZ(0.133, wires=1)
             qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         nodes = list(g.nodes)
 
@@ -410,7 +413,7 @@ class TestTapeToGraph:
         converted to a graph
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=2)
             qml.CNOT(wires=[0, 1])
@@ -419,6 +422,7 @@ class TestTapeToGraph:
             qml.expval(qml.PauliZ(wires=[0]))
             qml.expval(qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected_obs = [
             qml.expval(qml.PauliZ(wires=[0])),
             qml.expval(qml.PauliX(wires=[1])),
@@ -440,7 +444,7 @@ class TestTapeToGraph:
         correctly converted to a graph with a distinct node for each wire sampled
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -448,6 +452,7 @@ class TestTapeToGraph:
             qml.CNOT(wires=[1, 2])
             qml.sample(wires=[0, 1, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
 
         expected_nodes = [
@@ -475,7 +480,7 @@ class TestTapeToGraph:
         observables raises the correct error.
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -483,6 +488,7 @@ class TestTapeToGraph:
             qml.CNOT(wires=[1, 2])
             qml.sample(qml.PauliX(0) @ qml.PauliY(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="Sampling from tensor products of observables "):
             qcut.tape_to_graph(tape)
 
@@ -492,7 +498,7 @@ class TestTapeToGraph:
         over individual wires is supported.
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -502,6 +508,7 @@ class TestTapeToGraph:
             qml.sample(qml.PauliZ(1))
             qml.sample(qml.PauliZ(2))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
 
         expected_nodes = [
@@ -538,7 +545,7 @@ class TestReplaceWireCut:
 
         wire_cut_num = 1
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -550,6 +557,7 @@ class TestReplaceWireCut:
             qml.RY(0.543, wires=2)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
@@ -582,7 +590,7 @@ class TestReplaceWireCut:
         wire_cut_3 = 2
         wire_cut_num = [wire_cut_1, wire_cut_2, wire_cut_3]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires="a")
             qml.WireCut(wires=wire_cut_1)
@@ -598,6 +606,7 @@ class TestReplaceWireCut:
             qml.RZ(0.876, wires=3)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
@@ -630,7 +639,7 @@ class TestReplaceWireCut:
         """
         wire_cut_num = 1
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.RZ(0.133, wires=1)
@@ -639,6 +648,7 @@ class TestReplaceWireCut:
             qml.RY(0.543, wires=2)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
 
@@ -662,13 +672,14 @@ class TestReplaceWireCut:
         i.e if it has no predecessor
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
             qml.RX(0.432, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.RZ(0.133, wires=1)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
@@ -696,12 +707,13 @@ class TestReplaceWireCut:
         i.e if it has no successor
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.RZ(0.133, wires=1)
             qml.WireCut(wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
@@ -730,13 +742,14 @@ class TestReplaceWireCut:
         """
         wire_cut_num = 1
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.CNOT(wires=[0, "a"])
             qml.CNOT(wires=["a", 2])
             qml.WireCut(wires=[0, "a", 2])
             qml.CZ(wires=[0, 2])
             qml.Toffoli(wires=[0, "a", 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
 
@@ -966,12 +979,13 @@ class TestFragmentGraph:
         correctly
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires="a")
             qml.WireCut(wires="a")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1022,7 +1036,7 @@ class TestFragmentGraph:
         communication graph is the same each time.
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -1034,6 +1048,7 @@ class TestFragmentGraph:
             qml.RY(0.543, wires=2)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs_0, communication_graph_0 = qcut.fragment_graph(g)
@@ -1045,7 +1060,7 @@ class TestFragmentGraph:
     def test_contained_cut(self):
         """Tests that fragmentation ignores `MeasureNode` and `PrepareNode` pairs that do not
         result in a disconnection"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.WireCut(wires=0)
@@ -1053,6 +1068,7 @@ class TestFragmentGraph:
             qml.RX(0.4, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         fragments, communication_graph = qcut.fragment_graph(g)
@@ -1065,7 +1081,7 @@ class TestFragmentGraph:
         correctly
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -1073,6 +1089,7 @@ class TestFragmentGraph:
             qml.CNOT(wires=[1, 2])
             qml.sample(wires=[0, 1, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         fragments, communication_graph = qcut.fragment_graph(g)
@@ -1130,7 +1147,7 @@ class TestGraphToTape:
         Tests that directed multigraphs, containing MeasureNodes and
         PrepareNodes, are correctly converted to tapes
         """
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires="a")
             qml.WireCut(wires=[0, "a"])
@@ -1146,6 +1163,7 @@ class TestGraphToTape:
             qml.RZ(0.876, wires=3)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1282,10 +1300,11 @@ class TestGraphToTape:
         graph returned by tape_to_graph, and then combining those nodes again into a single tensor
         product in the circuit returned by graph_to_tape"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
         tape_out = qcut.graph_to_tape(graph)
 
@@ -1296,13 +1315,14 @@ class TestGraphToTape:
         """Tests that the graph_to_tape function correctly swaps the wires of observables when
         the tape contains mid-circuit measurements"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.CNOT(wires=[0, 1])
             qcut.MeasureNode(wires=1)
             qcut.PrepareNode(wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
         tape_out = qcut.graph_to_tape(graph)
 
@@ -1317,7 +1337,7 @@ class TestGraphToTape:
         fragment tapes
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -1325,6 +1345,7 @@ class TestGraphToTape:
             qml.CNOT(wires=[1, 2])
             qml.sample(wires=[0, 1, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1354,7 +1375,7 @@ class TestGraphToTape:
         correctly converted into tapes
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=1)
@@ -1371,6 +1392,7 @@ class TestGraphToTape:
             qml.CNOT(wires=[0, 1])
             qml.sample(wires=[0, 1, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1414,7 +1436,7 @@ class TestGraphToTape:
         error message.
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -1423,6 +1445,7 @@ class TestGraphToTape:
             qml.sample(wires=[0, 1])
             qml.expval(qml.PauliZ(wires=2))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1437,10 +1460,11 @@ class TestGraphToTape:
         Tests that a subgraph containing an unsupported measurement raises the
         correct error message.
         """
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.var(qml.PauliZ(wires=0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1518,7 +1542,7 @@ class TestExpandFragmentTapes:
         Tests that a fragment tape expands correctly
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -1530,6 +1554,7 @@ class TestExpandFragmentTapes:
             qml.RY(0.543, wires=2)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=2))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1609,7 +1634,7 @@ class TestExpandFragmentTapes:
         measurements after expansion
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=[0])
             qml.RX(0.432, wires=[0])
             qml.RY(0.543, wires=[1])
@@ -1623,6 +1648,7 @@ class TestExpandFragmentTapes:
             qml.CNOT(wires=[0, 3])
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # Here we have a fragment tape containing 2 MeasureNode and
         # PrepareNode pairs. This give 3**2 = 9 groups of Pauli measurements
         # and 4**2 = 16 preparations and thus 9*16 = 144 tapes.
@@ -1683,7 +1709,7 @@ class TestExpandFragmentTapes:
         preparation after expansion
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=[0])
             qml.RX(0.432, wires=[0])
             qml.RY(0.543, wires=[1])
@@ -1697,6 +1723,7 @@ class TestExpandFragmentTapes:
             qml.CNOT(wires=[0, 3])
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         fragment_configurations = qcut.expand_fragment_tape(tape)
         frag_tapes = fragment_configurations[0]
 
@@ -1925,8 +1952,9 @@ class TestExpandFragmentTapesMC:
 
         tapes = []
         for M in qcut.MC_MEASUREMENTS:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 M(wire)
+            tape = qml.tape.QuantumScript.from_queue(q)
             tapes.append(tape)
 
         expected_measurements = [
@@ -1955,8 +1983,9 @@ class TestExpandFragmentTapesMC:
 
         tapes = []
         for S in qcut.MC_STATES:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 S(wire)
+            tape = qml.tape.QuantumScript.from_queue(q)
             tapes.append(tape)
 
         expected_operations = [
@@ -2818,7 +2847,7 @@ class TestContractTensors:
         """Test if the contraction works as expected for a more complicated example based
         upon the circuit:
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QubitUnitary(np.eye(2 ** 3), wires=[0, 1, 2])
             qml.QubitUnitary(np.eye(2 ** 2), wires=[3, 4])
 
@@ -2832,6 +2861,7 @@ class TestContractTensors:
 
             qml.QubitUnitary(np.eye(2 ** 3), wires=[0, 1, 2])
             qml.QubitUnitary(np.eye(2 ** 2), wires=[3, 4])
+        tape = qml.tape.QuantumScript.from_queue(q)
         """
         if use_opt_einsum:
             opt_einsum = pytest.importorskip("opt_einsum")
@@ -3741,20 +3771,22 @@ class TestCutCircuitTransformValidation:
         """Tests if a ValueError is raised when a tape with multiple measurements is requested
         to be cut"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
             qcut.cut_circuit(tape)
 
     def test_no_measurements_raises(self):
         """Tests if a ValueError is raised when a tape with no measurement is requested
         to be cut"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
             qcut.cut_circuit(tape)
 
@@ -3762,19 +3794,21 @@ class TestCutCircuitTransformValidation:
         """Tests if a ValueError is raised when a tape with measurements that are not expectation
         values is requested to be cut"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
             qml.var(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="workflow only supports circuits with expectation"):
             qcut.cut_circuit(tape)
 
     def test_fail_import(self, monkeypatch):
         """Test if an ImportError is raised when opt_einsum is requested but not installed"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with monkeypatch.context() as m:
             m.setitem(sys.modules, "opt_einsum", None)
 
@@ -3784,9 +3818,10 @@ class TestCutCircuitTransformValidation:
     def test_no_cuts_raises(self):
         """Tests if a ValueError is raised when circuit cutting is to be applied to a circuit
         without cuts"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
             qcut.cut_circuit(tape)
 
@@ -3803,12 +3838,13 @@ class TestCutCircuitExpansion:
     def test_no_expansion(self, mocker, cut_transform, measurement):
         """Test if no/trivial expansion occurs if WireCut operations are already present in the
         tape"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.3, wires=0)
             qml.WireCut(wires=0)
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
         spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
 
@@ -3820,13 +3856,14 @@ class TestCutCircuitExpansion:
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion(self, mocker, cut_transform, measurement):
         """Test if expansion occurs if WireCut operations are present in a nested tape"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.3, wires=0)
             with qml.tape.QuantumTape() as _:
                 qml.WireCut(wires=0)
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(qcut.tapes, "_qcut_expand_fn")
         spy_cc = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
         spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
@@ -3840,7 +3877,7 @@ class TestCutCircuitExpansion:
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion_error(self, cut_transform, measurement):
         """Test if a ValueError is raised if expansion continues beyond the maximum depth"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.3, wires=0)
             with qml.tape.QuantumTape() as _:
                 with qml.tape.QuantumTape() as __:
@@ -3848,6 +3885,7 @@ class TestCutCircuitExpansion:
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
             kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
             cut_transform(tape, device_wires=[0], **kwargs)
@@ -4125,7 +4163,7 @@ def make_weakly_connected_tape(
     """Helper function for making random weakly connected tapes."""
     rng = np.random.default_rng(seed)
     inter_fragment_gate_wires = inter_fragment_gate_wires or {}
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         for _ in range(repeats):
             for i, wire_size in enumerate(fragment_wire_sizes):
                 double_gates_per_fragment = int(double_gates_multiplier * wire_size)
@@ -4146,6 +4184,7 @@ def make_weakly_connected_tape(
                 qml.expval(qml.PauliZ(wires=[f"{i}-0"]))
             else:
                 qml.expval(qml.PauliZ(wires=[f"{i}-0"]) @ qml.PauliZ(wires=[f"{i}-{wire_size-1}"]))
+    tape = qml.tape.QuantumScript.from_queue(q)
     return tape
 
 
@@ -4279,7 +4318,7 @@ class TestKaHyPar:
     @pytest.mark.parametrize("dangling_measure", [False, True])
     def test_remove_existing_cuts(self, dangling_measure):
         """Test if ``WireCut`` and ``MeasureNode``/``PrepareNode`` are correctly removed."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires="a")
             qml.WireCut(wires="a")
             qml.RY(0.543, wires="a")
@@ -4290,6 +4329,7 @@ class TestKaHyPar:
             qml.RX(0.678, wires=0)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
         if dangling_measure:
             with pytest.warns(
@@ -4315,13 +4355,14 @@ class TestKaHyPar:
     def test_place_wire_cuts(self):
         """Test if ``WireCut`` are correctly placed with the correct order."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires="a")
             qml.RY(0.543, wires="a")
             qml.CNOT(wires=[0, "a"])
             qml.RX(0.678, wires=0)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
         op0, op1, op2 = tape.operations[0], tape.operations[1], tape.operations[2]
         cut_edges = [e for e in graph.edges if e[0] is op0 and e[1] is op1]
@@ -4357,7 +4398,7 @@ class TestKaHyPar:
         """Integration tests for auto cutting pipeline."""
         pytest.importorskip("kahypar")
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.1, wires=0)
             qml.RY(0.2, wires=1)
             qml.RX(0.3, wires="a")
@@ -4373,6 +4414,7 @@ class TestKaHyPar:
             qml.RY(0.6, wires="b")
             qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
 
         if cut_strategy is None:

@@ -727,7 +727,7 @@ class TestHamiltonian:
         """Tests that simplifying a Hamiltonian in a tape context
         queues the simplified Hamiltonian."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             a = qml.PauliX(wires=0)
             b = qml.PauliY(wires=1)
             c = qml.Identity(wires=2)
@@ -735,6 +735,7 @@ class TestHamiltonian:
             H = qml.Hamiltonian([1.0, 2.0], [a, d])
             H.simplify()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # check that H is simplified
         assert H.ops == [a, b]
         # check that the simplified Hamiltonian is in the queue
@@ -887,11 +888,12 @@ class TestHamiltonian:
 
         H = qml.PauliX(1) + 3 * qml.PauliZ(0) @ qml.PauliZ(2) + qml.PauliZ(1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
             qml.expval(H)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape.queue) == 3
         assert isinstance(tape.queue[0], qml.Hadamard)
         assert isinstance(tape.queue[1], qml.PauliX)
@@ -914,7 +916,7 @@ class TestHamiltonian:
             ),
         ]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
             qml.expval(
@@ -923,6 +925,7 @@ class TestHamiltonian:
                 )
             )
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 
     def test_terms(self):
@@ -1388,9 +1391,10 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.queue == [H]
 
     def test_grouping_method_can_be_set(self):

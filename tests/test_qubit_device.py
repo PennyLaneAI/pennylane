@@ -174,10 +174,11 @@ class TestOperations:
         """Tests that the op_queue is correctly filled when apply is called and that accessing
         op_queue raises no error"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
             observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         call_history = []
 
         with monkeypatch.context() as m:
@@ -204,10 +205,11 @@ class TestOperations:
 
     def test_unsupported_operations_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.Hadamard(wires=2)]
             observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
@@ -230,10 +232,11 @@ class TestOperations:
     ):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             for op in queue + observables:
                 op.queue()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         call_history = {}
 
         with monkeypatch.context() as m:
@@ -262,7 +265,7 @@ class TestObservables:
 
     def test_unsupported_observables_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
 
             observables = [
@@ -271,6 +274,7 @@ class TestObservables:
                 qml.sample(qml.PauliZ(2)),
             ]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
@@ -285,10 +289,11 @@ class TestObservables:
             def return_type(self):
                 return "SomeUnsupportedReturnType"
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)
             UnsupportedMeasurement(obs=qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
             with pytest.raises(

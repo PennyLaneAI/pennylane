@@ -151,10 +151,11 @@ class TestOperations:
         op_queue raises no error"""
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.QutritUnitary(U, wires=0), qml.QutritUnitary(U, wires=0)]
             observables = [qml.expval(qml.Identity(0))]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         call_history = []
 
         with monkeypatch.context() as m:
@@ -181,7 +182,7 @@ class TestOperations:
         """Tests that the operations are properly applied and queued"""
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [
                 qml.QutritUnitary(U, wires=0),
                 qml.Hadamard(wires=1),
@@ -189,6 +190,7 @@ class TestOperations:
             ]
             observables = [qml.expval(qml.Identity(0)), qml.var(qml.Identity(1))]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         dev = mock_qutrit_device()
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(tape)
@@ -212,10 +214,11 @@ class TestOperations:
     ):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             for op in queue + observables:
                 op.queue()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         call_history = {}
 
         with monkeypatch.context() as m:
@@ -247,10 +250,11 @@ class TestObservables:
         """Tests that the operations are properly applied and queued"""
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.QutritUnitary(U, wires=0)]
             observables = [qml.expval(qml.Hadamard(0))]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         dev = mock_qutrit_device()
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(tape)
@@ -265,10 +269,11 @@ class TestObservables:
 
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QutritUnitary(U, wires=0)
             UnsupportedMeasurement(obs=qml.Identity(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with monkeypatch.context() as m:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: None)
             dev = mock_qutrit_device()
@@ -369,11 +374,12 @@ class TestExtractStatistics:
         """
         U = unitary_group.rvs(3, random_state=10)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QutritUnitary(U, wires=0)
             qml.state()
             qml.probs(wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         dev = mock_qutrit_device_extract_stats()
 
         with pytest.raises(

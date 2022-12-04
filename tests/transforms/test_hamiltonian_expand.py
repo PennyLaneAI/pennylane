@@ -132,12 +132,13 @@ class TestHamiltonianExpand:
         )
         assert H.grouping_indices is not None
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
             qml.expval(H)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
         assert len(tapes) == 2
 
@@ -150,12 +151,13 @@ class TestHamiltonianExpand:
 
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
             qml.expval(H)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
         assert len(tapes) == 3
 
@@ -204,7 +206,7 @@ class TestHamiltonianExpand:
             0.64123,
         ]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             for i in range(2):
                 qml.RX(np.array(0), wires=0)
                 qml.RX(np.array(0), wires=1)
@@ -214,6 +216,8 @@ class TestHamiltonianExpand:
                 qml.CNOT(wires=[2, 0])
 
             qml.expval(H)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
 
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
@@ -249,7 +253,7 @@ class TestHamiltonianExpand:
         ]
 
         with tf.GradientTape() as gtape:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 for i in range(2):
                     qml.RX(var[i, 0], wires=0)
                     qml.RX(var[i, 1], wires=1)
@@ -259,6 +263,7 @@ class TestHamiltonianExpand:
                     qml.CNOT(wires=[2, 0])
                 qml.expval(H)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             tapes, fn = qml.transforms.hamiltonian_expand(tape)
             res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
 

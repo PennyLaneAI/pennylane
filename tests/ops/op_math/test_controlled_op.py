@@ -603,10 +603,11 @@ class TestQueuing:
 
     def test_queuing(self):
         """Test that `Controlled` is queued upon initialization and updates base metadata."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.234, 2.345, 3.456, wires=2)
             op = Controlled(base, (0, 1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.get_info(base)["owner"] is op
         assert tape.get_info(op)["owns"] is base
         assert tape.operations == [op]
@@ -615,9 +616,10 @@ class TestQueuing:
         """Test that base isn't added to queue if its defined outside the recording context."""
 
         base = qml.IsingXX(1.234, wires=(0, 1))
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Controlled(base, ("a", "b"))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
         assert tape.get_info(op)["owns"] is base
         assert tape.operations == [op]
@@ -626,9 +628,10 @@ class TestQueuing:
         """Test that when `do_queue=False` is specified, the controlled op is not queued."""
 
         base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Controlled(base, 1, do_queue=False)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert qml.queuing.AnnotatedQueue.__len__(tape) == 0
 
 
@@ -694,10 +697,11 @@ class TestMatrix:
         op = Controlled(base, control_wires, control_values=control_values)
 
         mat = op.matrix()
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             [qml.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
             Controlled(base, control_wires, control_values=[1, 1, 1])
             [qml.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
+        tape = qml.tape.QuantumScript.from_queue(q)
         decomp_mat = qml.matrix(tape, wire_order=op.wires)
 
         assert qml.math.allclose(mat, decomp_mat)

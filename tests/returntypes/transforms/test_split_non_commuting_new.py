@@ -52,7 +52,7 @@ class TestUnittestSplitNonCommuting:
 
     def test_commuting_group_no_split(self, mocker):
         """Testing that commuting groups are not split"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliZ(0)
             qml.Hadamard(0)
             qml.CNOT((0, 1))
@@ -62,6 +62,7 @@ class TestUnittestSplitNonCommuting:
             qml.expval(qml.PauliZ(2))
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(3))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         split, fn = split_non_commuting(tape)
 
         spy = mocker.spy(qml.math, "concatenate")
@@ -104,7 +105,7 @@ class TestUnittestSplitNonCommuting:
     @pytest.mark.parametrize("meas_type", obs_fn)
     def test_different_measurement_types(self, meas_type):
         """Test that expval, var and sample are correctly reproduced"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliZ(0)
             qml.Hadamard(0)
             qml.CNOT((0, 1))
@@ -112,6 +113,7 @@ class TestUnittestSplitNonCommuting:
             meas_type(qml.PauliX(0) @ qml.PauliX(1))
             meas_type(qml.PauliZ(0))
             meas_type(qml.PauliX(0))
+        tape = qml.tape.QuantumScript.from_queue(q)
         the_return_type = tape.measurements[0].return_type
         split, _ = split_non_commuting(tape)
         for new_tape in split:
@@ -126,10 +128,11 @@ class TestUnittestSplitNonCommuting:
 
     def test_raise_not_supported(self):
         """Test that NotImplementedError is raised when probabilities or samples are called"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(NotImplementedError, match="non-commuting observables are used"):
             split_non_commuting(tape)
 

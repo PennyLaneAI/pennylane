@@ -86,13 +86,14 @@ class TestQubitCarry:
         dev = qml.device("default.qubit", wires=4)
         spy = mocker.spy(qml.QubitCarry, "decomposition")
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             for i in range(len(input_string)):
                 if input_string[i] == "1":
                     qml.PauliX(i)
             qml.QubitCarry(wires=wires)
             qml.probs(wires=[0, 1, 2, 3])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         if expand:
             tape = tape.expand()
         result = dev.execute(tape)
@@ -191,7 +192,7 @@ class TestQubitSum:
         dev = qml.device("default.qubit", wires=3)
         spy = mocker.spy(qml.QubitSum, "decomposition")
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QubitStateVector(input_state, wires=[0, 1, 2])
 
             if expand:
@@ -201,6 +202,7 @@ class TestQubitSum:
 
             qml.state()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         result = dev.execute(tape)
         assert np.allclose(result, output_state)
 

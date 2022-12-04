@@ -552,10 +552,11 @@ class TestInternalFunctions:
         dev = mock_device_with_paulis_and_methods(wires=2)
 
         # mid-circuit measurements are part of the queue (for now)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.measure(1)
             qml.PauliZ(0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # Raises an error for device that doesn't support mid-circuit measurements natively
         with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
             dev.check_validity(tape.operations, tape.observables)
@@ -567,10 +568,11 @@ class TestInternalFunctions:
         mid-circuit measurements are not supported natively"""
         dev = mock_device_with_paulis_and_methods(wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.cond(0, qml.RY)(0.3, wires=0)
             qml.PauliZ(0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # Raises an error for device that doesn't support conditional
         # operations natively
         with pytest.raises(DeviceError, match="Gate Conditional not supported on device"):

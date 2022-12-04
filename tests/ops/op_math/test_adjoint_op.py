@@ -564,10 +564,11 @@ class TestQueueing:
     def test_queueing(self):
         """Test queuing and metadata when both Adjoint and base defined inside a recording context."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Adjoint(base)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.get_info(base)["owner"] is op
         assert tape.get_info(op)["owns"] is base
         assert tape.operations == [op]
@@ -576,9 +577,10 @@ class TestQueueing:
         """Test that base isn't added to queue if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 1
         assert tape.get_info(op)["owns"] is base
         assert tape.operations == [op]
@@ -586,9 +588,10 @@ class TestQueueing:
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base, do_queue=False)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 0
 
 

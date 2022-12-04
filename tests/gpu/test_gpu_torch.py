@@ -30,10 +30,11 @@ class TestTorchDevice:
 
         x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
 
         assert res.is_cuda
@@ -50,11 +51,12 @@ class TestTorchDevice:
         x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
         y = torch.tensor(0.2, requires_grad=True, device=torch.device("cpu"))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.RY(y, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
 
         assert res.is_cuda
@@ -72,10 +74,11 @@ class TestTorchDevice:
 
         U = torch.eye(2, requires_grad=False, device=torch.device("cuda"))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QubitUnitary(U, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
         assert res.is_cuda
         assert "cuda" in dev._torch_device
