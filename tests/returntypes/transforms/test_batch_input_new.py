@@ -40,7 +40,7 @@ def test_simple_circuit():
     assert res.shape == (batch_size,)
 
 
-def test_simple_circuit():
+def test_simple_circuit_one_batch():
     """Test that batching works for a simple circuit when the batch size is 1"""
     dev = qml.device("default.qubit", wires=2)
 

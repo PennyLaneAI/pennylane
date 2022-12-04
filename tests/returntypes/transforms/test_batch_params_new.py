@@ -45,7 +45,7 @@ def test_simple_circuit(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
-def test_simple_circuit(mocker):
+def test_simple_circuit_one_batch(mocker):
     """Test that batching works for a simple circuit when the batch size is 1"""
     dev = qml.device("default.qubit", wires=3)
 
@@ -261,178 +261,400 @@ def test_multi_returns_shot_vector():
     assert all(shot_res[1].shape == (batch_size, 4) for shot_res in res)
 
 
-@pytest.mark.autograd
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-def test_autograd(diff_method, tol):
-    """Test derivatives when using autograd"""
-    dev = qml.device("default.qubit", wires=2)
+class TestDiffSingle:
+    """Test gradients for a single measurement"""
 
-    @qml.batch_params
-    @qml.qnode(dev, diff_method=diff_method)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        qml.RY(0.1, wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+    def test_autograd(self, diff_method, tol):
+        """Test derivatives when using autograd"""
+        dev = qml.device("default.qubit", wires=2)
 
-    def cost(x):
-        return np.sum(circuit(x))
+        @qml.batch_params
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.1, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-    batch_size = 3
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
+        def cost(x):
+            return np.sum(circuit(x))
 
-    res = qml.grad(cost)(x)
-    expected = -np.sin(0.1) * np.sin(x)
-    assert np.allclose(res, expected, atol=tol, rtol=0)
+        batch_size = 3
+        x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
 
+        res = qml.grad(cost)(x)
+        expected = -np.sin(0.1) * np.sin(x)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-@pytest.mark.jax
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-def test_jax(diff_method, tol):
-    """Test derivatives when using JAX."""
-    import jax
+    @pytest.mark.jax
+    @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+    def test_jax(self, diff_method, tol):
+        """Test derivatives when using JAX."""
+        import jax
 
-    jnp = jax.numpy
-    dev = qml.device("default.qubit", wires=2)
+        jnp = jax.numpy
+        dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_params
-    @qml.qnode(dev, interface="jax", diff_method=diff_method)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        qml.RY(0.1, wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        @qml.batch_params
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.1, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-    def cost(x):
-        return jnp.sum(circuit(x))
+        def cost(x):
+            return jnp.sum(circuit(x))
 
-    batch_size = 3
-    x = jnp.linspace(0.1, 0.5, batch_size)
+        batch_size = 3
+        x = jnp.linspace(0.1, 0.5, batch_size)
 
-    res = jax.grad(cost)(x)
-    expected = -np.sin(0.1) * np.sin(x)
-    assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = jax.grad(cost)(x)
+        expected = -np.sin(0.1) * np.sin(x)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.xfail(reason="Jax jit interface for new returns")
+    @pytest.mark.jax
+    @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
+    @pytest.mark.parametrize("interface", ["jax", "jax-jit"])
+    def test_jax_jit(self, diff_method, interface, tol):
+        """Test derivatives when using JAX and JIT."""
+        import jax
 
-@pytest.mark.xfail(reason="Jax jit interface for new returns")
-@pytest.mark.jax
-@pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
-@pytest.mark.parametrize("interface", ["jax", "jax-jit"])
-def test_jax_jit(diff_method, interface, tol):
-    """Test derivatives when using JAX and JIT."""
-    import jax
+        jnp = jax.numpy
+        dev = qml.device("default.qubit", wires=2)
 
-    jnp = jax.numpy
-    dev = qml.device("default.qubit", wires=2)
+        @qml.batch_params
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.1, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-    @qml.batch_params
-    @qml.qnode(dev, interface=interface, diff_method=diff_method)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        qml.RY(0.1, wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        @jax.jit
+        def cost(x):
+            return jnp.sum(circuit(x))
 
-    @jax.jit
-    def cost(x):
-        return jnp.sum(circuit(x))
+        batch_size = 3
+        x = jnp.linspace(0.1, 0.5, batch_size)
 
-    batch_size = 3
-    x = jnp.linspace(0.1, 0.5, batch_size)
+        res = jax.grad(cost)(x)
+        expected = -np.sin(0.1) * np.sin(x)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    res = jax.grad(cost)(x)
-    expected = -np.sin(0.1) * np.sin(x)
-    assert np.allclose(res, expected, atol=tol, rtol=0)
+    @pytest.mark.torch
+    @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+    def test_torch(self, diff_method, tol):
+        """Test derivatives when using Torch"""
+        import torch
 
+        dev = qml.device("default.qubit", wires=2)
 
-@pytest.mark.torch
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-def test_torch(diff_method, tol):
-    """Test derivatives when using Torch"""
-    import torch
+        @qml.batch_params
+        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.1, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-    dev = qml.device("default.qubit", wires=2)
+        def cost(x):
+            return torch.sum(circuit(x))
 
-    @qml.batch_params
-    @qml.qnode(dev, interface="torch", diff_method=diff_method)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        qml.RY(0.1, wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        batch_size = 3
+        x = torch.linspace(0.1, 0.5, batch_size, requires_grad=True)
 
-    def cost(x):
-        return torch.sum(circuit(x))
-
-    batch_size = 3
-    x = torch.linspace(0.1, 0.5, batch_size, requires_grad=True)
-
-    loss = cost(x)
-    loss.backward()
-
-    res = x.grad
-    expected = -np.sin(0.1) * torch.sin(x)
-    assert torch.allclose(res, expected, atol=tol, rtol=0)
-
-
-@pytest.mark.tf
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-def test_tf(diff_method, tol):
-    """Test derivatives when using TF"""
-    import tensorflow as tf
-
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.batch_params
-    @qml.qnode(dev, interface="tf", diff_method=diff_method)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        qml.RY(0.1, wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-    def cost(x):
-        return tf.reduce_sum(circuit(x))
-
-    batch_size = 3
-    x = tf.Variable(tf.linspace(0.1, 0.5, batch_size))
-
-    with tf.GradientTape() as tape:
         loss = cost(x)
+        loss.backward()
 
-    res = tape.gradient(loss, x)
-    expected = -np.sin(0.1) * tf.sin(x)
-    assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = x.grad
+        expected = -np.sin(0.1) * torch.sin(x)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+    def test_tf(self, diff_method, tol):
+        """Test derivatives when using TF"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.batch_params
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.1, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        def cost(x):
+            return tf.reduce_sum(circuit(x))
+
+        batch_size = 3
+        x = tf.Variable(tf.linspace(0.1, 0.5, batch_size))
+
+        with tf.GradientTape() as tape:
+            loss = cost(x)
+
+        res = tape.gradient(loss, x)
+        expected = -np.sin(0.1) * tf.sin(x)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_tf_autograph(self, tol):
+        """Test derivatives when using TF and autograph"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.batch_params
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.1, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        @tf.function
+        def cost(x):
+            return tf.reduce_sum(circuit(x))
+
+        batch_size = 3
+        x = tf.Variable(tf.linspace(0.1, 0.5, batch_size))
+
+        with tf.GradientTape() as tape:
+            loss = cost(x)
+
+        res = tape.gradient(loss, x)
+        expected = -np.sin(0.1) * tf.sin(x)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.tf
-def test_tf_autograph(tol):
-    """Test derivatives when using TF and autograph"""
-    import tensorflow as tf
+class TestDiffMulti:
+    """Test gradients for multiple measurements"""
 
-    dev = qml.device("default.qubit", wires=2)
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_autograd(self, diff_method, tol):
+        """Test derivatives when using autograd"""
+        dev = qml.device("default.qubit", wires=2)
 
-    @qml.batch_params
-    @qml.qnode(dev, interface="tf", diff_method="backprop")
-    def circuit(x):
-        qml.RX(x, wires=0)
-        qml.RY(0.1, wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        @qml.batch_params
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-    @tf.function
-    def cost(x):
-        return tf.reduce_sum(circuit(x))
+        def cost(x):
+            res = circuit(x)
+            return qml.math.concatenate([qml.math.expand_dims(res[0], 1), res[1]], axis=1)
 
-    batch_size = 3
-    x = tf.Variable(tf.linspace(0.1, 0.5, batch_size))
+        batch_size = 3
+        x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
 
-    with tf.GradientTape() as tape:
-        loss = cost(x)
+        res = cost(x)
+        expected = qml.math.transpose(
+            qml.math.stack(
+                [
+                    np.cos(x),
+                    np.cos(x / 2) ** 2,
+                    np.zeros_like(x),
+                    np.zeros_like(x),
+                    np.sin(x / 2) ** 2,
+                ]
+            )
+        )
+        assert qml.math.allclose(res, expected, atol=tol)
 
-    res = tape.gradient(loss, x)
-    expected = -np.sin(0.1) * tf.sin(x)
-    assert np.allclose(res, expected, atol=tol, rtol=0)
+        grad = qml.jacobian(cost)(x)
+        expected = qml.math.stack(
+            [-np.sin(x), -np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2]
+        ) * qml.math.expand_dims(np.eye(batch_size), 1)
+
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_jax(self, diff_method, tol):
+        """Test derivatives when using JAX"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.batch_params
+        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        def circuit(x):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        batch_size = 3
+        x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
+
+        res = circuit(x)
+        expected = (
+            jnp.cos(x),
+            qml.math.transpose(
+                qml.math.stack(
+                    [jnp.cos(x / 2) ** 2, jnp.zeros_like(x), jnp.zeros_like(x), jnp.sin(x / 2) ** 2]
+                )
+            ),
+        )
+
+        assert len(res) == 2
+        for r, exp in zip(res, expected):
+            assert qml.math.allclose(r, exp, atol=tol)
+
+        grad = jax.jacobian(circuit)(x)
+        expected = (
+            -np.sin(x) * np.eye(batch_size),
+            qml.math.stack([-np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2])
+            * qml.math.expand_dims(np.eye(batch_size), 1),
+        )
+
+        assert len(grad) == 2
+        for g, exp in zip(grad, expected):
+            assert qml.math.allclose(g, exp, atol=tol, rtol=0)
+
+    @pytest.mark.xfail(reason="Torch interface for new returns")
+    @pytest.mark.torch
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_torch(self, diff_method, tol):
+        """Test derivatives when using torch"""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.batch_params
+        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit(x):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        def cost(x):
+            res = circuit(x)
+            return qml.math.concatenate([qml.math.expand_dims(res[0], 1), res[1]], axis=1)
+
+        batch_size = 3
+        x = torch.tensor(np.linspace(0.1, 0.5, batch_size), requires_grad=True)
+
+        res = cost(x)
+        expected = qml.math.transpose(
+            qml.math.stack(
+                [
+                    torch.cos(x),
+                    torch.cos(x / 2) ** 2,
+                    torch.zeros_like(x),
+                    torch.zeros_like(x),
+                    torch.sin(x / 2) ** 2,
+                ]
+            )
+        )
+        assert qml.math.allclose(res, expected, atol=tol)
+
+        grad = torch.autograd.functional.jacobian(cost, x)
+        expected = qml.math.stack(
+            [
+                -torch.sin(x),
+                -torch.sin(x) / 2,
+                torch.zeros_like(x),
+                torch.zeros_like(x),
+                torch.sin(x) / 2,
+            ]
+        ) * qml.math.expand_dims(torch.eye(batch_size), 1)
+
+        assert qml.math.allclose(grad, expected, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_tf(self, diff_method, tol):
+        """Test derivatives when using TF"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.batch_params
+        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(x):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        batch_size = 3
+        x = tf.Variable(np.linspace(0.1, 0.5, batch_size))
+
+        with tf.GradientTape() as tape:
+            res = circuit(x)
+            res = qml.math.concatenate([qml.math.expand_dims(res[0], 1), res[1]], axis=1)
+
+        expected = qml.math.transpose(
+            qml.math.stack(
+                [
+                    np.cos(x),
+                    np.cos(x / 2) ** 2,
+                    np.zeros_like(x),
+                    np.zeros_like(x),
+                    np.sin(x / 2) ** 2,
+                ]
+            )
+        )
+        assert qml.math.allclose(res, expected, atol=tol)
+
+        grad = tape.jacobian(res, x)
+        expected = qml.math.stack(
+            [-np.sin(x), -np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2]
+        ) * qml.math.expand_dims(np.eye(batch_size), 1)
+
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+    def test_tf_autograph(self, diff_method, tol):
+        """Test derivatives when using TF"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @tf.function
+        @qml.batch_params
+        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(x):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        batch_size = 3
+        x = tf.Variable(np.linspace(0.1, 0.5, batch_size))
+
+        with tf.GradientTape() as tape:
+            res = circuit(x)
+            res = qml.math.concatenate([qml.math.expand_dims(res[0], 1), res[1]], axis=1)
+
+        expected = qml.math.transpose(
+            qml.math.stack(
+                [
+                    np.cos(x),
+                    np.cos(x / 2) ** 2,
+                    np.zeros_like(x),
+                    np.zeros_like(x),
+                    np.sin(x / 2) ** 2,
+                ]
+            )
+        )
+        assert qml.math.allclose(res, expected, atol=tol)
+
+        grad = tape.jacobian(res, x)
+        expected = qml.math.stack(
+            [-np.sin(x), -np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2]
+        ) * qml.math.expand_dims(np.eye(batch_size), 1)
+
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
 
 
 def test_all_operations(mocker):
