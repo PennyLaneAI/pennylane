@@ -13,4 +13,4 @@
 # limitations under the License.
 """PennyLane ZX calculus module
 """
-from .converter import tape_to_graph_zx, graph_zx_to_tape
+from .converter import to_zx, from_zx

@@ -15,13 +15,13 @@
 # pylint: disable=too-many-statements, too-many-branches
 
 from collections import OrderedDict
-
+import numpy as np
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
 
-def tape_to_graph_zx(tape, backend=None):
+def to_zx(tape, backend=None):
     """It converts a PennyLane quantum tape to a ZX-Graph in PyZX.
     Args:
         tape(QuantumTape): The PennyLane quantum tape.
@@ -97,8 +97,10 @@ def tape_to_graph_zx(tape, backend=None):
 
         # Apply wires and parameters
         map_gate = gate_types[name]
-        par = op.parameters
+
+        par = [param / np.pi for param in op.parameters]
         wires = list(op.wires)
+
         # Max number of parameter is one
         if par:
             args = []
@@ -127,7 +129,7 @@ def tape_to_graph_zx(tape, backend=None):
     return graph
 
 
-def graph_zx_to_tape(graph, split_phases=True):
+def from_zx(graph, split_phases=True):
     """It converts a graph from PyZX to a PennyLane tape, if graph is diagram-like.
     Args:
         graph(Graph): ZX graph in PyZX.
@@ -197,10 +199,10 @@ def graph_zx_to_tape(graph, split_phases=True):
             # Given the phase add a 1 qubit gate
             if param != 0 and not split_phases:
                 if type_1 == VertexType.Z:
-                    param = float(param)
+                    param = np.pi * float(param)
                     operations.append(qml.RZ(param, wires=qubit_1))
                 else:
-                    param = float(param)
+                    param = np.pi * float(param)
                     operations.append(qml.RX(param, wires=qubit_1))
             elif type_1 == VertexType.Z and param.denominator == 2:
                 if param.numerator == 3:
@@ -226,10 +228,10 @@ def graph_zx_to_tape(graph, split_phases=True):
                     operations.append(qml.PauliX(wires=qubit_1))
             elif param != 0:
                 if type_1 == VertexType.Z:
-                    param = float(param)
+                    param = np.pi * float(param)
                     operations.append(qml.RZ(param, wires=qubit_1))
                 else:
-                    param = float(param)
+                    param = np.pi * float(param)
                     operations.append(qml.RX(param, wires=qubit_1))
 
             # Given the neighbors add two qubits gate
