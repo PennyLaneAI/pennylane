@@ -56,8 +56,8 @@ def _tapes_shape_dtype_tuple(tapes, device):
 
 
 def _jac_shape_dtype_tuple(tapes, device):
-    """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
-    the tapes and the device.
+    """Auxiliary function for defining the jax.ShapeDtypeStruct objects when
+    computing the jacobian associated with the tapes and the device.
 
     The jax.pure_callback function expects jax.ShapeDtypeStruct objects to
     describe the output of the function call.
