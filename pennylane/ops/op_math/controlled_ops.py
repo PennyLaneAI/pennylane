@@ -101,6 +101,7 @@ class ControlledQubitUnitary(ControlledOp):
 
         super().__init__(base, control_wires, control_values=control_values, do_queue=do_queue)
         self.hyperparameters["u_wires"] = Wires(base.wires)
+        self._name = "ControlledQubitUnitary"
 
     def _controlled(self, wire):
         ctrl_wires = self.control_wires + wire
