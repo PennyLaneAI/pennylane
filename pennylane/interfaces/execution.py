@@ -247,7 +247,7 @@ def _execute_new(
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
 
     Args:
-        tapes (Sequence[.QuantumScript]): batch of scripts to execute
+        tapes (Sequence[.QuantumScript]): batch of tapes to execute
         device (.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
@@ -299,21 +299,21 @@ def _execute_new(
         dev = qml.device("lightning.qubit", wires=2)
 
         def cost_fn(params, x):
-            with qml.queuing.AnnotatedQueue() as q1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RX(params[0], wires=0)
                 qml.RY(params[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.queuing.AnnotatedQueue() as q2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RX(params[2], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=0)
 
-            scripts = [qml.tape.QuantumScript.from_queue(q) for q in (q1, q2)]
+            tapes = [tape1, tape2]
 
-            # execute both scripts in a batch on the given device
-            res = qml.execute(scripts, dev, gradient_fn=qml.gradients.param_shift, max_diff=2)
+            # execute both tapes in a batch on the given device
+            res = qml.execute(tapes, dev, gradient_fn=qml.gradients.param_shift, max_diff=2)
 
             return res[0] + res[1][0] - res[1][1]
 
@@ -544,21 +544,21 @@ def execute(
         dev = qml.device("lightning.qubit", wires=2)
 
         def cost_fn(params, x):
-            with qml.queuing.AnnotatedQueue() as q1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RX(params[0], wires=0)
                 qml.RY(params[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.queuing.AnnotatedQueue() as q2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RX(params[2], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=0)
 
-            scripts = [qml.tape.QuantumScript.from_queue(q) for q in (q1, q2)]
+            tapes = [tape1, tape2]
 
-            # execute both scripts in a batch on the given device
-            res = qml.execute(scripts, dev, qml.gradients.param_shift, max_diff=2)
+            # execute both tapes in a batch on the given device
+            res = qml.execute(tapes, dev, qml.gradients.param_shift, max_diff=2)
 
             return res[0][0] + res[1][0, 0] - res[1][0, 1]
 
