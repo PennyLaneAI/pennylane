@@ -519,6 +519,7 @@ class TestOperatorConstruction:
 
     def test_default_pauli_rep(self):
         """Test that the default _pauli_rep attribute is None"""
+
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = 1
