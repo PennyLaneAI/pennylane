@@ -26,9 +26,8 @@ jit_qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward"],
     ["default.qubit", "parameter-shift", "backward"],
-
     # TODO:
-    #["default.qubit", "adjoint", "forward"],
+    # ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
 ]
 
@@ -187,12 +186,10 @@ class TestJIT:
         assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
         assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
 
-    def test_matrix_parameter(
-        self, dev_name, diff_method, mode, jacobian, tol
-    ):
+    def test_matrix_parameter(self, dev_name, diff_method, mode, jacobian, tol):
         """Test that the JAX-JIT interface works correctly with a matrix
         parameter"""
-        dev = qml.device('default.qubit', wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
         def circ(p, U):
@@ -208,6 +205,7 @@ class TestJIT:
         jac_fn = jax.jit(jax.grad(circ, argnums=(0)))
         res = jac_fn(p, U)
         assert np.allclose(res, np.sin(p), atol=tol, rtol=0)
+
 
 qubit_device_and_diff_method_and_mode = [
     ["default.qubit", "backprop", "forward"],

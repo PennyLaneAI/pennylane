@@ -31,7 +31,6 @@ from pennylane.gradients import param_shift
 from pennylane.interfaces import execute, InterfaceUnsupportedError
 
 
-
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""
 
@@ -562,7 +561,9 @@ class TestJaxExecuteIntegration:
                 qml.RX(2 * x[1], wires=[1])
                 qml.expval(qml.PauliZ(0))
 
-            return execute(tapes=[tape1, tape2], device=dev, interface="jax-python", **execute_kwargs)
+            return execute(
+                tapes=[tape1, tape2], device=dev, interface="jax-python", **execute_kwargs
+            )
 
         res = cost_fn(params)
         assert isinstance(res, list)
