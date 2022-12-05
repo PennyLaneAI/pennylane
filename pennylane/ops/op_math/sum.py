@@ -208,7 +208,9 @@ class Sum(CompositeOp):
     def _build_pauli_rep(self):
         """PauliSentence representation of the Sum of operations."""
         if all(
-            operand_pauli_reps := [op._pauli_rep for op in self.operands]  # pylint: disable=protected-access
+            operand_pauli_reps := [
+                op._pauli_rep for op in self.operands  # pylint: disable=protected-access
+            ]
         ):
             return reduce((lambda a, b: a + b), operand_pauli_reps)
         return None

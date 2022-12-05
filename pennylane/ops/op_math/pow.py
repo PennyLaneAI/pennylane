@@ -218,7 +218,9 @@ class Pow(SymbolicOp):
 
         if isinstance(self.z, int) and self.z > 0:
             if (
-                base_pauli_rep := getattr(self.base, "_pauli_rep", None)  # pylint: disable=protected-access
+                base_pauli_rep := getattr(
+                    self.base, "_pauli_rep", None
+                )  # pylint: disable=protected-access
             ) is not None:
                 pr = qml.pauli.PauliSentence({})
                 for _ in range(self.z):
