@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.devices.experimental import AbstractDevice
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.tape import QuantumTape, make_qscript
+from pennylane.tape import QuantumScript, make_qscript
 from pennylane.workflow import ExecutionConfig
 
 
