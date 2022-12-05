@@ -465,12 +465,12 @@ def _finite_diff_new(
             if c0 is not None:
                 if len(tape.measurements) == 1:
                     c = qml.math.convert_like(c0, r0)
-                    pre_grads = [pre_grads[0] + c * r0]
+                    pre_grads = [pre_grads[0] + r0 * c]
                 else:
                     for i in range(len(tape.measurements)):
                         r_i = r0[i]
                         c = qml.math.convert_like(c0, r_i)
-                        pre_grads[i] = pre_grads[i] + c * r_i
+                        pre_grads[i] = pre_grads[i] + r_i * c
 
             coeff_div = qml.math.cast_like(
                 qml.math.convert_like(1 / h**n, pre_grads[0]), pre_grads[0]
@@ -724,13 +724,13 @@ def finite_diff(
 
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res)
-            g = sum(c * r for c, r in zip(coeffs, res))
+            g = sum(r * c for c, r in zip(coeffs, res))
 
             if c0 is not None:
                 # add on the unshifted term
-                g = g + c0 * r0
+                g = g + r0 * c0
 
-            grads.append(g / (h**n))
+            grads.append(g * (h ** (-n)))
 
         # The following is for backwards compatibility; currently,
         # the device stacks multiple measurement arrays, even if not the same

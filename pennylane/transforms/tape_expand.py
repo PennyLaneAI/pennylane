@@ -28,11 +28,6 @@ from pennylane.operation import (
     not_tape,
 )
 
-# Needed for custom decomposition context manager
-from pennylane.transforms.qfunc_transforms import NonQueuingTape
-
-NonQueuingTape = type("NonQueuingTape", (NonQueuingTape, qml.tape.QuantumTape), {})
-
 
 def _update_trainable_params(tape):
     params = tape.get_parameters(trainable_only=False)
