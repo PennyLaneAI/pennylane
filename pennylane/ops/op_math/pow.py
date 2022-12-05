@@ -217,13 +217,12 @@ class Pow(SymbolicOp):
         super().__init__(base, do_queue=do_queue, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
-            try:
-                base_ps = self.base._pauli_rep  # pylint: disable=protected-access
+            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) is not None:  # pylint: disable=protected-access
                 pr = qml.pauli.PauliSentence({})
                 for _ in range(self.z):
-                    pr = pr * base_ps
+                    pr = pr * base_pauli_rep
                 self._pauli_rep = pr
-            except (AttributeError, TypeError):
+            else:
                 self._pauli_rep = None
         else:
             self._pauli_rep = None

@@ -147,6 +147,8 @@ def counts(op=None, wires=None, all_outcomes=False):
 class _Counts(SampleMeasurement):
     """Measurement process that returns the samples of a given observable."""
 
+    method_name = "counts"
+
     def __init__(
         self,
         obs: Union[Observable, None] = None,

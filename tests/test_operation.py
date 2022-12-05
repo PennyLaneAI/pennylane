@@ -517,6 +517,15 @@ class TestOperatorConstruction:
         assert op.wires == Wires([0, 1, 2])
         assert mapped_op.wires == Wires([10, 1, 12])
 
+    def test_default_pauli_rep(self):
+        """Test that the default _pauli_rep attribute is None"""
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp()
+        assert op._pauli_rep is None
+
 
 class TestOperationConstruction:
     """Test custom operations construction."""
@@ -1143,6 +1152,18 @@ class TestTensor:
             ValueError, match="Can only perform tensor products between observables"
         ):
             Tensor(T, qml.CNOT(wires=[0, 1]))
+
+    def test_warning_for_overlapping_wires(self):
+        """Test that creating a Tensor with overlapping wires raises a warning"""
+        X = qml.PauliX(0)
+        Y = qml.PauliY(0)
+        op = qml.PauliX(0) @ qml.PauliY(1)
+
+        with pytest.warns(UserWarning, match="Tensor object acts on overlapping wires"):
+            Tensor(X, Y)
+
+        with pytest.warns(UserWarning, match="Tensor object acts on overlapping wires"):
+            op @ qml.PauliZ(1)
 
     def test_queuing_defined_outside(self):
         """Test the queuing of a Tensor object."""
