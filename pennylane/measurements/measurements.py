@@ -603,7 +603,7 @@ class MeasurementTransform(MeasurementProcess):
     is carried out inside the gradient black box, thus is not tracked by the gradient transform.
 
     Any class inheriting from this class should define its own ``process`` method, which takes a
-    device instance and a tape and returns the result of the measurement process.
+    device instance and a quantum script and returns the result of the measurement process.
     """
 
     method_name = ""
