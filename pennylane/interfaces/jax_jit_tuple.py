@@ -93,17 +93,6 @@ def _jac_shape_dtype_tuple(tapes, device):
     return tuple(shape_dtypes)
 
 
-def _squeeze_nested(jvps, multi_measurements, multi_params):
-    """Post-process the JVP by squeezing arrays in the result with a nested structure."""
-    res_jvps = []
-    for m, p, j in zip(multi_measurements, multi_params, jvps):
-        if m and p:
-            res_jvps.append(tuple(jnp.squeeze(j_comp) for j_comp in j))
-        else:
-            res_jvps.append(jnp.squeeze(j))
-    return res_jvps
-
-
 def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
     """Execute a batch of tapes with JAX parameters on a device.
 
@@ -278,7 +267,6 @@ def _execute_bwd_tuple(
                 res_from_callback = [res_from_callback]
 
             jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
-            jvps = _squeeze_nested(jvps, multi_measurements, multi_params)
 
         return evaluation_results, jvps
 
