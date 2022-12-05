@@ -29,7 +29,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.qcut import qcut
+from pennylane.transforms import qcut
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
@@ -2569,7 +2569,7 @@ class TestCutCircuitMCTransform:
             qml.CNOT(wires=[0, 1])
             return qml.sample(wires=[0, 1])
 
-        spy = mocker.spy(qcut, "qcut_processing_fn_mc")
+        spy = mocker.spy(qcut.montecarlo, "qcut_processing_fn_mc")
         x = np.array(0.531, requires_grad=True)
         res = circuit(x)
 
@@ -2612,7 +2612,7 @@ class TestCutCircuitMCTransform:
             qml.CNOT(wires=[0, 1])
             return qml.sample(wires=[0, 1])
 
-        spy = mocker.spy(qcut, "qcut_processing_fn_mc")
+        spy = mocker.spy(qcut.montecarlo, "qcut_processing_fn_mc")
 
         x = 0.4
         res = circuit(x)
@@ -2671,7 +2671,7 @@ class TestCutCircuitMCTransform:
 
             return qml.sample(wires=[1, 2, 3])
 
-        spy = mocker.spy(qcut, "qcut_processing_fn_mc")
+        spy = mocker.spy(qcut.montecarlo, "qcut_processing_fn_mc")
 
         params = np.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
         res = circuit(params)
@@ -2914,7 +2914,7 @@ class TestQCutProcessingFn:
             return qml.math.reshape(r, (4,) * (np + nm))
 
         with monkeypatch.context() as m:
-            m.setattr(qcut, "_process_tensor", mock_process_tensor)
+            m.setattr(qcut.processing, "_process_tensor", mock_process_tensor)
             tensors_out = qcut._to_tensors(results, prepare_nodes, measure_nodes)
 
         for t1, t2 in zip(tensors, tensors_out):
@@ -3202,7 +3202,7 @@ class TestCutCircuitTransform:
             qml.RZ(0.133, wires=1)
             return qml.expval(qml.PauliZ(wires=[0]))
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         x = np.array(0.531, requires_grad=True)
         cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
 
@@ -3333,7 +3333,7 @@ class TestCutCircuitTransform:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         x = np.array(0.531, requires_grad=True)
         cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
 
@@ -3375,7 +3375,7 @@ class TestCutCircuitTransform:
         )
 
         # Run once with original value
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.processing, "qcut_processing_fn")
         res = cut_circuit_trace(x)
 
         spy.assert_not_called()
@@ -3439,7 +3439,7 @@ class TestCutCircuitTransform:
         )
 
         # Run once with original value
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
 
         # Note we call the function twice but assert qcut_processing_fn is called once. We expect
         # qcut_processing_fn to be called once during JIT compilation, with subsequent calls to
@@ -3482,6 +3482,7 @@ class TestCutCircuitTransform:
 
         spy.assert_called_once()
 
+    @pytest.mark.jax
     def test_simple_cut_circuit_jax_jit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
@@ -3507,7 +3508,7 @@ class TestCutCircuitTransform:
         cut_circuit_jit = jax.jit(qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum))
 
         # Run once with original value
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
 
         # Note we call the function twice but assert qcut_processing_fn is called once. We expect
         # qcut_processing_fn to be called once during JIT compilation, with subsequent calls to
@@ -3609,7 +3610,7 @@ class TestCutCircuitTransform:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=[0]))
 
-        spy = mocker.spy(qcut, "contract_tensors")
+        spy = mocker.spy(qcut.processing, "contract_tensors")
 
         x = 0.4
         res = circuit(x)
@@ -3680,7 +3681,7 @@ class TestCutCircuitTransform:
         res_expected = circuit(params)
         grad_expected = qml.grad(circuit)(params)
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit(params)
         spy.assert_called_once()
         grad = qml.grad(cut_circuit)(params)
@@ -3725,7 +3726,7 @@ class TestCutCircuitTransform:
 
         res_expected = circuit()
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit()
         spy.assert_called_once()
 
@@ -3808,12 +3809,13 @@ class TestCutCircuitExpansion:
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
-        spy = mocker.spy(qcut, "_qcut_expand_fn")
+        spy = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
+        spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
 
         kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
         cut_transform(tape, device_wires=[0], **kwargs)
 
-        spy.assert_called_once()
+        assert spy.call_count == 1 or spy_mc.call_count == 1
 
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion(self, mocker, cut_transform, measurement):
@@ -3825,12 +3827,15 @@ class TestCutCircuitExpansion:
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
-        spy = mocker.spy(qcut, "_qcut_expand_fn")
+        spy = mocker.spy(qcut.tapes, "_qcut_expand_fn")
+        spy_cc = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
+        spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
 
         kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
         cut_transform(tape, device_wires=[0], **kwargs)
 
-        assert spy.call_count == 2
+        spy.assert_called_once()
+        assert spy_cc.call_count == 1 or spy_mc.call_count == 1
 
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion_error(self, cut_transform, measurement):
@@ -3872,9 +3877,13 @@ class TestCutCircuitExpansion:
         qnode = qml.QNode(circuit, dev_big)
         qnode_cut = qcut.cut_circuit(qml.QNode(circuit, dev_cut))
 
-        spy = mocker.spy(qcut, "_qcut_expand_fn")
+        spy_tapes = mocker.spy(qcut.tapes, "_qcut_expand_fn")
+        spy_cc = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
+
         res = qnode_cut(template_weights)
-        assert spy.call_count == 2
+
+        spy_tapes.assert_called_once()
+        spy_cc.assert_called_once()
 
         assert np.isclose(res, qnode(template_weights))
 
@@ -3901,9 +3910,13 @@ class TestCutCircuitExpansion:
 
         qnode_cut = qcut.cut_circuit_mc(qml.QNode(circuit, dev_cut))
 
-        spy = mocker.spy(qcut, "_qcut_expand_fn")
+        spy_tapes = mocker.spy(qcut.tapes, "_qcut_expand_fn")
+        spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
+
         qnode_cut(template_weights)
-        assert spy.call_count == 2
+
+        spy_tapes.assert_called_once()
+        spy_mc.assert_called_once()
 
 
 class TestCutStrategy:
@@ -4498,7 +4511,7 @@ class TestAutoCutCircuit:
         res_expected = circuit(params)
         grad_expected = qml.grad(circuit)(params)
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit(params)
         spy.assert_called_once()
         grad = qml.grad(cut_circuit)(params)
@@ -4541,7 +4554,7 @@ class TestAutoCutCircuit:
 
         res_expected = circuit()
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit()
         spy.assert_called_once()
 
