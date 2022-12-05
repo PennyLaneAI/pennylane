@@ -43,20 +43,15 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
     objects.
     """
 
-    _queue_category = "_obs"
-
     def __init__(
         self, ops=None, measurements=None, prep=None, name=None, do_queue=False, _update=True
-    ):
+    ):  # pylint: disable=unused-argument
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
-        self._do_queue = do_queue
         self.ops = None
         self.obs = None
 
     def __enter__(self):
-        if self._do_queue:
-            QueuingManager.append(self)
         return AnnotatedQueue.__enter__(self)
 
     def __exit__(self, exception_type, exception_value, traceback):
