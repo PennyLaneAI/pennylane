@@ -303,6 +303,7 @@
 
   a, b = jnp.array(1.0), jnp.array(2.0)
   ```
+
   ```pycon
   >>> jax.jacobian(circuit, argnums=[0, 1])(a, b)
   ((DeviceArray(0.35017549, dtype=float64, weak_type=True),
