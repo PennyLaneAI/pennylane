@@ -88,6 +88,7 @@ class ControlledQubitUnitary(ControlledOp):
         wires=None,
         control_values=None,
         do_queue=True,
+        unitary_check=False,
         **kwargs,  # pylint: disable=unused-argument, too-many-arguments
     ):
         if getattr(base, "wires", False) and wires is not None:
@@ -96,7 +97,7 @@ class ControlledQubitUnitary(ControlledOp):
             )
 
         if isinstance(base, Iterable):
-            base = QubitUnitary(base, wires=wires)
+            base = QubitUnitary(base, wires=wires, unitary_check=unitary_check)
 
         super().__init__(base, control_wires, control_values=control_values, do_queue=do_queue)
         self.hyperparameters["u_wires"] = Wires(base.wires)
