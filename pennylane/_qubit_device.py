@@ -1092,6 +1092,7 @@ class QubitDevice(Device):
             if isinstance(
                 m, (_Expectation, _Variance, _Probability, _VnEntropy, _MutualInfo, _ShadowExpval)
             ):
+                # Result is a float
                 result = self._asarray(result, dtype=self.R_DTYPE)
 
             if self._shot_vector is not None and isinstance(result, np.ndarray):
