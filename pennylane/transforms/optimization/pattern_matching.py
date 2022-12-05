@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.wires import Wires
@@ -178,7 +178,7 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
 
     for pattern in pattern_tapes:
         # Check the validity of the pattern
-        if not isinstance(pattern, QuantumTape):
+        if not isinstance(pattern, QuantumScript):
             raise qml.QuantumFunctionError("The pattern is not a valid quantum tape.")
 
         # Check that it does not contain a measurement.
@@ -211,7 +211,7 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
             # If some substitutions are possible, we create an optimized circuit.
             if substitution.substitution_list:
                 # Create a tape that does not affect the outside context.
-                with QuantumTape(do_queue=False) as tape_inside:
+                with qml.queuing.AnnotatedQueue() as q_inside:
                     # Loop over all possible substitutions
                     for group in substitution.substitution_list:
 
@@ -252,7 +252,8 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
                         inst = copy.deepcopy(node.op)
                         qml.apply(inst)
 
-                tape = qml.map_wires(input=tape_inside, wire_map=inverse_wires_map)
+                qscript = QuantumScript.from_queue(q_inside)
+                tape = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
 
     for op in tape.operations:
         qml.apply(op)

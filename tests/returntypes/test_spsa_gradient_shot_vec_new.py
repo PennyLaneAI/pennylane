@@ -29,10 +29,10 @@ h_val = 0.1
 spsa_shot_vec_tol = 0.3
 
 default_shot_vector = (1000, 2000, 3000)
-many_shots_shot_vector = tuple([1000000] * 3)
+many_shots_shot_vector = tuple([100000] * 3)
 
 
-def coordinate_sampler(indices, num_params, idx):
+def coordinate_sampler(indices, num_params, idx, seed=None):
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
@@ -83,7 +83,7 @@ class TestSpsaGradient:
             assert isinstance(res[1], numpy.ndarray)
             assert res[1].shape == (4,)
 
-    @pytest.mark.parametrize("num_directions", [1, 10])
+    @pytest.mark.parametrize("num_directions", [1, 6])
     def test_independent_parameter(self, num_directions, mocker):
         """Test that an independent parameter is skipped
         during the Jacobian computation."""
@@ -339,7 +339,7 @@ class TestSpsaGradient:
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        n = 13
+        n = 5
         tapes, fn = spsa_grad(
             tape,
             strategy="forward",
@@ -362,7 +362,7 @@ class TestSpsaGradient:
             qml.expval(qml.PauliZ(0))
 
         f0 = dev.execute(tape)
-        n = 9
+        n = 3
         tapes, fn = spsa_grad(
             tape,
             strategy="forward",
@@ -403,7 +403,7 @@ class TestSpsaGradient:
 
         assert len(tapes) == dev.num_executions == n1 + 1
 
-        n2 = 11
+        n2 = 3
         tapes, fn = spsa_grad(
             tape2,
             approx_order=1,
@@ -563,7 +563,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             shots=many_shots_shot_vector,
-            num_directions=10,
+            num_directions=3,
         )
         all_res = fn(dev.batch_execute(tapes))
         assert isinstance(all_res, tuple)
@@ -603,7 +603,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            num_directions=10,
+            num_directions=4,
             sampler=coordinate_sampler,
             shots=default_shot_vector,
         )
@@ -632,6 +632,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
+        np.random.seed(5214)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -649,7 +650,7 @@ class TestSpsaGradientIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            num_directions=10,
+            num_directions=4,
             sampler=coordinate_sampler,
             h=h_val,
             shots=many_shots_shot_vector,
@@ -700,7 +701,7 @@ class TestSpsaGradientIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            num_directions=10,
+            num_directions=4,
             sampler=coordinate_sampler,
             h=h_val,
             shots=many_shots_shot_vector,
@@ -754,7 +755,7 @@ class TestSpsaGradientIntegration:
             approx_order=approx_order,
             strategy=strategy,
             validate_params=validate,
-            num_directions=10,
+            num_directions=4,
             sampler=coordinate_sampler,
             h=h_val,
             shots=many_shots_shot_vector,
@@ -798,7 +799,7 @@ class TestSpsaGradientIntegration:
             validate_params=validate,
             sampler=coordinate_sampler,
             h=h_val,
-            num_directions=10,
+            num_directions=4,
             shots=many_shots_shot_vector,
         )
         all_res = fn(dev.batch_execute(tapes))
@@ -834,6 +835,7 @@ class TestSpsaGradientIntegration:
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        np.random.seed(52)
         x = 0.543
         y = -0.654
 
@@ -850,7 +852,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             h=h_val,
-            num_directions=10,
+            num_directions=6,
             sampler=coordinate_sampler,
             shots=many_shots_shot_vector,
         )
@@ -904,7 +906,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             sampler=coordinate_sampler,
-            num_directions=6,
+            num_directions=4,
             h=h_val,
             shots=many_shots_shot_vector,
         )

@@ -54,6 +54,7 @@ from gate_data import (
     MultiRZ2,
     ControlledPhaseShift,
     OrbitalRotation,
+    FermionicSWAP,
 )
 
 np.random.seed(42)
@@ -100,6 +101,7 @@ two_qubit_param = [
     (qml.CRZ, CRotz),
     (qml.MultiRZ, MultiRZ2),
     (qml.ControlledPhaseShift, ControlledPhaseShift),
+    (qml.FermionicSWAP, FermionicSWAP),
 ]
 three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP), (qml.CCZ, CCZ)]
 four_qubit_param = [(qml.OrbitalRotation, OrbitalRotation)]

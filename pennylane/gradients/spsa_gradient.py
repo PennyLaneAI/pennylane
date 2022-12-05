@@ -38,7 +38,7 @@ from .gradient_transform import (
 from .general_shift_rules import generate_multishifted_tapes
 
 
-def _rademacher_sampler(indices, num_params, *args):
+def _rademacher_sampler(indices, num_params, *args, seed=None):
     r"""Sample a random vector with (independent) entries from {+1, -1} with balanced probability.
     That is, each entry follows the
     `Rademacher distribution. <https://en.wikipedia.org/wiki/Rademacher_distribution>`_
@@ -54,6 +54,8 @@ def _rademacher_sampler(indices, num_params, *args):
         by ``indices``, each entry sampled independently from the Rademacher distribution.
     """
     # pylint: disable=unused-argument
+    if seed is not None:
+        np.random.seed(seed)
     direction = np.zeros(num_params)
     direction[indices] = np.random.choice([-1, 1], size=len(indices))
     return direction
@@ -72,6 +74,7 @@ def _spsa_grad_new(
     shots=None,
     num_directions=1,
     sampler=_rademacher_sampler,
+    sampler_seed=None,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
@@ -117,15 +120,23 @@ def _spsa_grad_new(
         sampler (callable): Sampling method to obtain the simultaneous perturbation directions.
             The sampler should take the following arguments:
 
-              - A ``Sequence[int]`` that contains the indices of those trainable tape parameters
-                that will be perturbed, i.e. have non-zero entries in the output vector.
+            - A ``Sequence[int]`` that contains the indices of those trainable tape parameters
+              that will be perturbed, i.e. have non-zero entries in the output vector.
 
-              - An ``int`` that indicates the total number of trainable tape parameters. The
-                size of the output vector has to match this input.
+            - An ``int`` that indicates the total number of trainable tape parameters. The
+              size of the output vector has to match this input.
 
-              - An ``int`` indicating the iteration counter during the gradient estimation.
-                A valid sampling method can, but does not have to, take this counter into
-                account. In any case, ``sampler`` has to accept this third argument.
+            - An ``int`` indicating the iteration counter during the gradient estimation.
+              A valid sampling method can, but does not have to, take this counter into
+              account. In any case, ``sampler`` has to accept this third argument.
+
+            - The keyword argument ``seed``, expected to be ``None`` or an ``int``.
+              This argument should be passed to some method that seeds any randomness used in
+              the sampler.
+
+        sampler_seed (int or None): Seed passed to ``sampler``. The seed is passed in each
+            call to the sampler, so that only one unique direction is sampled even if
+            ``num_directions>1``.
 
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]] or tuple[list[QuantumTape], function]:
@@ -180,6 +191,7 @@ def _spsa_grad_new(
           tensor(0.65617915, requires_grad=True)))
 
         We may compare this to the more precise values obtained from finite differences:
+
         >>> qml.gradients.finite_diff(circuit)(params)
         ((tensor(-0.38751724, requires_grad=True),
           tensor(-0.18884792, requires_grad=True),
@@ -284,7 +296,7 @@ def _spsa_grad_new(
     tapes_per_grad = len(shifts)
     all_coeffs = []
     for idx_rep in range(num_directions):
-        direction = sampler(indices, num_trainable_params, idx_rep)
+        direction = sampler(indices, num_trainable_params, idx_rep, seed=sampler_seed)
         inv_direction = qml.math.divide(
             1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
         )
@@ -299,7 +311,8 @@ def _spsa_grad_new(
         shots or a single component of a shot vector"""
 
         r0, results = (results[0], results[1:]) if extract_r0 else (f0, results)
-        if len(tape.measurements) == 1:
+        num_measurements = len(tape.measurements)
+        if num_measurements == 1:
             grads = 0
             for rep, _coeffs in enumerate(all_coeffs):
                 res = results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]
@@ -316,7 +329,7 @@ def _spsa_grad_new(
             return tuple(qml.math.convert_like(g, res) for g in grads)
 
         grads = []
-        for i, _ in enumerate(tape.measurements):
+        for i in range(num_measurements):
             grad = 0
             for rep, _coeffs in enumerate(all_coeffs):
                 res = [r[i] for r in results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]]
@@ -366,6 +379,7 @@ def spsa_grad(
     shots=None,
     num_directions=1,
     sampler=_rademacher_sampler,
+    sampler_seed=None,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
@@ -411,15 +425,23 @@ def spsa_grad(
         sampler (callable): Sampling method to obtain the simultaneous perturbation directions.
             The sampler should take the following arguments:
 
-              - A ``Sequence[int]`` that contains the indices of those trainable tape parameters
-                that will be perturbed, i.e. have non-zero entries in the output vector.
+            - A ``Sequence[int]`` that contains the indices of those trainable tape parameters
+              that will be perturbed, i.e. have non-zero entries in the output vector.
 
-              - An ``int`` that indicates the total number of trainable tape parameters. The
-                size of the output vector has to match this input.
+            - An ``int`` that indicates the total number of trainable tape parameters. The
+              size of the output vector has to match this input.
 
-              - An ``int`` indicating the iteration counter during the gradient estimation.
-                A valid sampling method can, but does not have to, take this counter into
-                account. In any case, ``sampler`` has to accept this third argument.
+            - An ``int`` indicating the iteration counter during the gradient estimation.
+              A valid sampling method can, but does not have to, take this counter into
+              account. In any case, ``sampler`` has to accept this third argument.
+
+            - The keyword argument ``seed``, expected to be ``None`` or an ``int``.
+              This argument should be passed to some method that seeds any randomness used in
+              the sampler.
+
+        sampler_seed (int or None): Seed passed to ``sampler``. The seed is passed in each
+            call to the sampler, so that only one unique direction is sampled even if
+            ``num_directions>1``.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
@@ -466,16 +488,21 @@ def spsa_grad(
                 [ 0.59483632,  0.34143874,  0.51811744]], requires_grad=True)
 
         We may compare this to the exact value obtained from parameter-shift rules:
+
         >>> qml.gradients.param_shift(circuit)(params)
         tensor([[-0.3875172 , -0.18884787, -0.38355704],
                 [ 0.69916862,  0.34072424,  0.69202359]], requires_grad=True)
 
         As we can see, the SPSA output is a rather coarse approximation to the true
-        gradient, and this although the parameter-shift rule for three parameters uses
-        just six circuit evaluations, much fewer than SPSA! Consequentially, SPSA is
-        not necessarily useful for small circuits with few parameters, but will pay off
-        for large circuits where other gradient estimators require unfeasibly many circuit
-        executions.
+        gradient. This means we used more circuit evaluations (namely 20) to
+        obtain a rough approximation than for the more precise parameter-shift
+        result (which only cost us six evaluations).
+        For few parameters, this will usually be the case, so that SPSA is not
+        very useful for few-parameter gradients. However, for circuits with
+        considerably more parameters, the parameter-shift gradient will require
+        many more evaluations, while the number of directions we need for a proper
+        approximation of the gradient will not grow as much. This makes SPSA
+        useful for such circuits.
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -517,6 +544,7 @@ def spsa_grad(
             shots=shots,
             num_directions=num_directions,
             sampler=sampler,
+            sampler_seed=sampler_seed,
         )
 
     if argnum is None and not tape.trainable_params:
@@ -561,7 +589,7 @@ def spsa_grad(
     tapes_per_grad = len(shifts)
     all_coeffs = []
     for idx_rep in range(num_directions):
-        direction = sampler(indices, num_trainable_params, idx_rep)
+        direction = sampler(indices, num_trainable_params, idx_rep, seed=sampler_seed)
         inv_direction = qml.math.divide(
             1, direction, where=(direction != 0), out=qml.math.zeros_like(direction)
         )

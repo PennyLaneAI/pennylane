@@ -74,3 +74,11 @@ class TestVnEntropy:
         meas = qml.vn_entropy(wires=0)
         assert meas.numeric_type == float
         assert meas.return_type == VnEntropy
+
+    @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ((1, 10), (2,))])
+    def test_shape(self, shots, shape):
+        """Test the ``shape`` method."""
+        meas = qml.vn_entropy(wires=0)
+        dev = qml.device("default.qubit", wires=1, shots=shots)
+
+        assert meas.shape(dev) == shape

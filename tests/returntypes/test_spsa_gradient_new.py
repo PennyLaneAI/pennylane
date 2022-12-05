@@ -25,7 +25,7 @@ from pennylane.gradients.spsa_gradient import _rademacher_sampler
 from pennylane.operation import AnyWires, Observable
 
 
-def coordinate_sampler(indices, num_params, idx):
+def coordinate_sampler(indices, num_params, idx, seed=None):
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
@@ -531,7 +531,7 @@ class TestSpsaGradientIntegration:
             h=1e-6,
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=6,
+            num_directions=2,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
@@ -574,7 +574,7 @@ class TestSpsaGradientIntegration:
             argnum=[0, 1],
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=8,
+            num_directions=2,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
@@ -622,7 +622,7 @@ class TestSpsaGradientIntegration:
             argnum=1,
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=11,
+            num_directions=3,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
@@ -698,7 +698,7 @@ class TestSpsaGradientIntegration:
             tape,
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=12,
+            num_directions=2,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
@@ -744,7 +744,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             sampler=coordinate_sampler,
-            num_directions=12,
+            num_directions=2,
         )
         res = fn(dev.batch_execute(tapes))
 
@@ -788,7 +788,7 @@ class TestSpsaGradientIntegration:
             strategy=strategy,
             validate_params=validate,
             sampler=coordinate_sampler,
-            num_directions=10,
+            num_directions=2,
         )
         res = fn(dev.batch_execute(tapes))
 

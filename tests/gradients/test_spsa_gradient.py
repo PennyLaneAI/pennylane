@@ -25,7 +25,7 @@ from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
 
-def coordinate_sampler(indices, num_params, idx):
+def coordinate_sampler(indices, num_params, idx, seed=None):
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
@@ -53,6 +53,27 @@ class TestRademacherSampler:
 
     def test_call_with_third_arg(self):
         _rademacher_sampler([0, 1, 2], 4, "ignored dummy")
+
+    def test_call_with_third_arg_and_seed_None(self):
+        _rademacher_sampler([0, 1, 2], 4, "ignored dummy", seed=None)
+
+    @pytest.mark.parametrize(
+        "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
+    )
+    def test_call_with_seed_not_None(self, ids, num):
+        seed = 12425
+        first_direction = _rademacher_sampler(ids, num, "ignored dummy", seed=seed)
+        for _ in range(5):
+            direction = _rademacher_sampler(ids, num, "ignored dummy", seed=seed)
+            assert np.allclose(first_direction, direction)
+
+    def test_differing_seeds(self):
+        ids = [0, 1, 2, 3, 4]
+        num = 5
+        seeds = [42, 43]
+        first_direction = _rademacher_sampler(ids, num, "ignored dummy", seeds[0])
+        second_direction = _rademacher_sampler(ids, num, "ignored dummy", seeds[1])
+        assert not np.allclose(first_direction, second_direction)
 
     @pytest.mark.parametrize(
         "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
