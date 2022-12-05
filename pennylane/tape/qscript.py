@@ -28,10 +28,8 @@ from pennylane.measurements import (
     Counts,
     MeasurementProcess,
     Sample,
-    SampleMeasurement,
     Shadow,
     ShadowExpval,
-    StateMeasurement,
 )
 from pennylane.operation import Observable, Operator
 from pennylane.queuing import AnnotatedQueue, process_queue
@@ -293,7 +291,7 @@ class QuantumScript:
         return obs
 
     @property
-    def measurements(self) -> List[Union[SampleMeasurement, StateMeasurement]]:
+    def measurements(self) -> List[MeasurementProcess]:
         """Returns the measurements on the quantum script.
 
         Returns:
