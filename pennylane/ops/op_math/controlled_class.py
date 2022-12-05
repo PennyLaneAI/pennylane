@@ -418,27 +418,38 @@ class Controlled(SymbolicOp):
         return self.base.has_adjoint
 
     def adjoint(self):
-        return Controlled(
-            self.base.adjoint(), self.control_wires, self.control_values, self.work_wires
+        cls = self.__class__
+        return cls(
+            self.base.adjoint(),
+            self.control_wires,
+            control_values=self.control_values,
+            work_wires=self.work_wires,
         )
 
     def pow(self, z):
         base_pow = self.base.pow(z)
+        cls = self.__class__
         return [
-            Controlled(op, self.control_wires, self.control_values, self.work_wires)
+            cls(
+                op,
+                self.control_wires,
+                control_values=self.control_values,
+                work_wires=self.work_wires,
+            )
             for op in base_pow
         ]
 
     def simplify(self) -> "Controlled":
+        cls = self.__class__
         if isinstance(self.base, Controlled):
             base = self.base.base.simplify()
-            return Controlled(
+            return cls(
                 base,
                 control_wires=self.control_wires + self.base.control_wires,
                 control_values=self.control_values + self.base.control_values,
                 work_wires=self.work_wires + self.base.work_wires,
             )
-        return Controlled(
+        return cls(
             base=self.base.simplify(),
             control_wires=self.control_wires,
             control_values=self.control_values,
