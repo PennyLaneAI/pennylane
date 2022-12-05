@@ -19,8 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane.tape import QuantumTape
 
-# pyzx = pytest.importorskip("pyzx")
-import pyzx
+pyzx = pytest.importorskip("pyzx")
 
 import pennylane as qml
 
