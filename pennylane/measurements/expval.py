@@ -56,12 +56,36 @@ def expval(op: Operator):
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
 
-    return _Expectation(Expectation, obs=op)
+    return _Expectation(obs=op)
 
 
 # TODO: Make public when removing the ObservableReturnTypes enum
 class _Expectation(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
+
+    method_name = "expval"
+
+    @property
+    def return_type(self):
+        return Expectation
+
+    @property
+    def numeric_type(self):
+        return float
+
+    def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
+        if device is None or device.shot_vector is None:
+            return (1,)
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return (num_shot_elements,)
+
+    def _shape_new(self, device=None):
+        if device is None or device.shot_vector is None:
+            return ()
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return tuple(() for _ in range(num_shot_elements))
 
     def process_samples(
         self,
