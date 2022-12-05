@@ -72,6 +72,8 @@ def vn_entropy(wires, log_base=None):
 class _VnEntropy(StateMeasurement):
     """Measurement process that returns the Von Neumann entropy."""
 
+    method_name = "vn_entropy"
+
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,
