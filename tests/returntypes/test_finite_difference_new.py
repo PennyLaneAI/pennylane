@@ -442,73 +442,75 @@ class TestFiniteDiff:
 
         assert all(t == q for t, q in zip(transform, expected))
 
-    # TODO: added with param shift
-    # def test_special_observable_qnode_differentiation(self):
-    #     """Test differentiation of a QNode on a device supporting a
-    #     special observable that returns an object rather than a number."""
-    #
-    #     class SpecialObject:
-    #         """SpecialObject
-    #
-    #         A special object that conveniently encapsulates the return value of
-    #         a special observable supported by a special device and which supports
-    #         multiplication with scalars and addition.
-    #         """
-    #
-    #         def __init__(self, val):
-    #             self.val = val
-    #
-    #         def __mul__(self, other):
-    #             return SpecialObject(self.val * other)
-    #
-    #         def __add__(self, other):
-    #             = self.val + other.val if isinstance(other, self.__class__) else other
-    #             return SpecialObject)
-    #
-    #     class SpecialObservable(Observable):
-    #         """SpecialObservable"""
-    #
-    #         num_wires = AnyWires
-    #
-    #         def diagonalizing_gates(self):
-    #             """Diagonalizing gates"""
-    #             return []
-    #
-    #     class DeviceSupportingSpecialObservable(DefaultQubit):
-    #         name = "Device supporting SpecialObservable"
-    #         short_name = "default.qubit.specialobservable"
-    #         observables = DefaultQubit.observables.union({"SpecialObservable"})
-    #
-    #         @staticmethod
-    #         def _asarray(arr, dtype=None):
-    #             return arr
-    #
-    #         def __init__(self, *args, **kwargs):
-    #             super().__init__(*args, **kwargs)
-    #             self.R_DTYPE = SpecialObservable
-    #
-    #         def expval(self, observable, **kwargs):
-    #             if self.analytic and isinstance(observable, SpecialObservable):
-    #                 val = super().expval(qml.PauliZ(wires=0), **kwargs)
-    #                 return SpecialObject(val)
-    #
-    #             return super().expval(observable, **kwargs)
-    #
-    #     dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
-    #
-    #     @qml.qnode(dev, diff_method="parameter-shift")
-    #     def qnode(x):
-    #         qml.RY(x, wires=0)
-    #         return qml.expval(SpecialObservable(wires=0))
-    #
-    #     @qml.qnode(dev, diff_method="parameter-shift")
-    #     def reference_qnode(x):
-    #         qml.RY(x, wires=0)
-    #         return qml.expval(qml.PauliZ(wires=0))
-    #
-    #     par = np.array(0.2, requires_grad=True)
-    #     assert np.isclose(qnode(par).item().val, reference_qnode(par))
-    #     assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
+    def test_special_observable_qnode_differentiation(self):
+        """Test differentiation of a QNode on a device supporting a
+        special observable that returns an object rather than a number."""
+
+        class SpecialObject:
+            """SpecialObject
+
+            A special object that conveniently encapsulates the return value of
+            a special observable supported by a special device and which supports
+            multiplication with scalars and addition.
+            """
+
+            def __init__(self, val):
+                self.val = val
+
+            def __mul__(self, other):
+                return SpecialObject(self.val * other)
+
+            def __add__(self, other):
+                new = self.val + (other.val if isinstance(other, self.__class__) else other)
+                return SpecialObject(new)
+
+            def __radd__(self, other):
+                return self + other
+
+        class SpecialObservable(Observable):
+            """SpecialObservable"""
+
+            num_wires = AnyWires
+
+            def diagonalizing_gates(self):
+                """Diagonalizing gates"""
+                return []
+
+        class DeviceSupportingSpecialObservable(DefaultQubit):
+            name = "Device supporting SpecialObservable"
+            short_name = "default.qubit.specialobservable"
+            observables = DefaultQubit.observables.union({"SpecialObservable"})
+
+            @staticmethod
+            def _asarray(arr, dtype=None):
+                return np.asarray(arr)
+
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.R_DTYPE = SpecialObservable
+
+            def expval(self, observable, **kwargs):
+                if self.analytic and isinstance(observable, SpecialObservable):
+                    val = super().expval(qml.PauliZ(wires=0), **kwargs)
+                    return SpecialObject(val)
+
+                return super().expval(observable, **kwargs)
+
+        dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
+
+        @qml.qnode(dev, diff_method="finite-diff")
+        def qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(SpecialObservable(wires=0))
+
+        @qml.qnode(dev, diff_method="finite-diff")
+        def reference_qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        par = np.array(0.2, requires_grad=True)
+        assert np.isclose(qnode(par).item().val, reference_qnode(par))
+        assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
 
 @pytest.mark.parametrize("approx_order", [2, 4])
