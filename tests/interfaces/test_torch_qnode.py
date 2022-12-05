@@ -392,10 +392,11 @@ class TestQNode:
                 theta, phi, lam = self.data
                 wires = self.wires
 
-                with QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q_tape:
                     qml.Rot(lam, theta, -lam, wires=wires)
                     qml.PhaseShift(phi + lam, wires=wires)
 
+                tape = qml.tape.QuantumScript.from_queue(q_tape)
                 return tape
 
         dev = qml.device(dev_name, wires=1)

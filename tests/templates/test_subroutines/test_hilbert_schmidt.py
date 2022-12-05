@@ -32,9 +32,10 @@ class TestHilbertSchmidt:
 
         op = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
@@ -59,9 +60,10 @@ class TestHilbertSchmidt:
 
         op = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2, 3], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=[0]),
             qml.Hadamard(wires=[1]),
@@ -92,9 +94,10 @@ class TestHilbertSchmidt:
 
         op = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=["c", "d"], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=["a"]),
             qml.Hadamard(wires=["b"]),
@@ -199,9 +202,10 @@ class TestLocalHilbertSchmidt:
 
         op = qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
@@ -226,9 +230,10 @@ class TestLocalHilbertSchmidt:
 
         op = qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=["b"], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=["a"]),
             qml.CNOT(wires=["a", "b"]),
@@ -254,9 +259,10 @@ class TestLocalHilbertSchmidt:
 
         op = qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2, 3], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=[0]),
             qml.Hadamard(wires=[1]),

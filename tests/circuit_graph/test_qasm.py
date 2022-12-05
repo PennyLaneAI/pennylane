@@ -39,7 +39,7 @@ class TestToQasmUnitTests:
     def test_native_qasm_gates(self):
         """Test that a circuit containing solely native QASM
         gates is properly serialized."""
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.RX(0.43, wires=0)
             qml.RY(0.35, wires=1)
             qml.RZ(0.35, wires=2)
@@ -48,6 +48,7 @@ class TestToQasmUnitTests:
             qml.CNOT(wires=[2, 0])
             qml.PauliX(wires=1)
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -74,12 +75,13 @@ class TestToQasmUnitTests:
     def test_native_inverse_gates(self):
         """Test that a circuit containing inverse gates that are supported
         natively by QASM, such as sdg, are correctly serialized."""
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.S(wires=0)
             qml.S(wires=0).inv()
             qml.T(wires=0)
             qml.T(wires=0).inv(),
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -100,10 +102,11 @@ class TestToQasmUnitTests:
 
     def test_unused_wires(self):
         """Test that unused wires are correctly taken into account"""
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.Hadamard(wires=4)
             qml.CNOT(wires=[1, 0])
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = circuit.to_openqasm(wires=Wires([0, 1, 2, 3, 4]))
 
         expected = dedent(
@@ -234,9 +237,10 @@ class TestToQasmUnitTests:
     def test_unsupported_gate(self):
         """Test an exception is raised if an unsupported operation is
         applied."""
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.S(wires=0), qml.DoubleExcitationPlus(0.5, wires=[0, 1, 2, 3])
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         with pytest.raises(
             ValueError, match="DoubleExcitationPlus not supported by the QASM serializer"
         ):
@@ -245,13 +249,14 @@ class TestToQasmUnitTests:
     def test_rotations(self):
         """Test that observable rotations are correctly applied."""
 
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliX(0))
             qml.expval(qml.PauliZ(1))
             qml.expval(qml.Hadamard(2))
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = circuit.to_openqasm()
 
         expected = dedent(
@@ -285,7 +290,7 @@ class TestToQasmUnitTests:
     def test_only_tape_measurements(self):
         """Test that no computational basis measurements are added other
         than those already in the tape when ``measure_all=False``."""
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.RX(0.43, wires="a")
             qml.RY(0.35, wires="b")
             qml.RZ(0.35, wires=2)
@@ -296,6 +301,7 @@ class TestToQasmUnitTests:
             qml.expval(qml.PauliZ("a"))
             qml.expval(qml.PauliZ(2))
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         res = circuit.to_openqasm(measure_all=False)
 
         expected = dedent(

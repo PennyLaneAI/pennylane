@@ -58,7 +58,7 @@ with qml.queuing.AnnotatedQueue() as q:
     qml.expval(qml.PauliZ(wires=[0]))
 
 tape = qml.tape.QuantumScript.from_queue(q)
-with qml.tape.QuantumTape() as multi_cut_tape:
+with qml.queuing.AnnotatedQueue() as q_multi_cut_tape:
     qml.RX(0.432, wires=0)
     qml.RY(0.543, wires="a")
     qml.WireCut(wires=0)
@@ -73,6 +73,9 @@ with qml.tape.QuantumTape() as multi_cut_tape:
     qml.RY(0.543, wires=2)
     qml.RZ(0.876, wires=3)
     qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]))
+
+
+multi_cut_tape = qml.tape.QuantumScript.from_queue(q_multi_cut_tape)
 
 
 def kron(*args):
@@ -100,7 +103,7 @@ def fn(x):
 
 
 # tape containing mid-circuit measurements
-with qml.tape.QuantumTape() as mcm_tape:
+with qml.queuing.AnnotatedQueue() as q_mcm_tape:
     qml.Hadamard(wires=0)
     qml.RX(0.432, wires=0)
     qml.RY(0.543, wires=1)
@@ -118,6 +121,7 @@ with qml.tape.QuantumTape() as mcm_tape:
     qml.expval(qml.PauliZ(wires=[0]))
 
 
+mcm_tape = qml.tape.QuantumScript.from_queue(q_mcm_tape)
 with qml.queuing.AnnotatedQueue() as q0:
     qml.Hadamard(wires=[0])
     qml.RX(0.432, wires=[0])
@@ -889,7 +893,7 @@ class TestFragmentGraph:
         correct nodes and edges. Focuses on the case where fragmentation results in two fragments
         that are disconnected from the final measurements.
         """
-        with qml.tape.QuantumTape() as multi_cut_tape:
+        with qml.queuing.AnnotatedQueue() as q_multi_cut_tape:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires="a")
             qml.WireCut(wires=0)
@@ -905,6 +909,7 @@ class TestFragmentGraph:
             qml.RZ(0.876, wires=3)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        multi_cut_tape = qml.tape.QuantumScript.from_queue(q_multi_cut_tape)
         g = qcut.tape_to_graph(multi_cut_tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1769,7 +1774,7 @@ class TestExpandFragmentTapes:
         configurations
         """
 
-        with qml.tape.QuantumTape() as frag:
+        with qml.queuing.AnnotatedQueue() as q_frag:
             qml.RY(0.543, wires=[1])
             qcut.PrepareNode(wires=[0])
             qml.CNOT(wires=[0, 1])
@@ -1777,6 +1782,7 @@ class TestExpandFragmentTapes:
             qml.RZ(0.133, wires=[1])
             qml.expval(qml.PauliZ(wires=[0]))
 
+        frag = qml.tape.QuantumScript.from_queue(q_frag)
         expanded_tapes, prep_nodes, meas_nodes = qcut.expand_fragment_tape(frag)
 
         ops = [
@@ -1869,12 +1875,13 @@ class TestExpandFragmentTapesMC:
 
         expected_tapes_0 = []
         for meas in frag_0_expected_meas:
-            with qml.tape.QuantumTape() as expected_tape:
+            with qml.queuing.AnnotatedQueue() as q_expected_tape:
                 for op in frag_0_ops:
                     qml.apply(op)
                 for m in meas:
                     qml.apply(m)
 
+            expected_tape = qml.tape.QuantumScript.from_queue(q_expected_tape)
             expected_tapes_0.append(expected_tape)
 
         for tape, exp_tape in zip(fragment_configurations[0], expected_tapes_0):
@@ -1894,11 +1901,12 @@ class TestExpandFragmentTapesMC:
 
         expected_tapes_1 = []
         for preps in frag_1_expected_preps:
-            with qml.tape.QuantumTape() as expected_tape:
+            with qml.queuing.AnnotatedQueue() as q_expected_tape:
                 for prep in preps:
                     qml.apply(prep)
                 for op in frag_1_ops_and_meas:
                     qml.apply(op)
+            expected_tape = qml.tape.QuantumScript.from_queue(q_expected_tape)
             expected_tapes_1.append(expected_tape)
 
         for tape, exp_tape in zip(fragment_configurations[1], expected_tapes_1):
@@ -3877,6 +3885,7 @@ class TestCutCircuitExpansion:
 
         assert spy.call_count == 1 or spy_mc.call_count == 1
 
+    @pytest.mark.skip("Nested tapes are being deprecated")
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion(self, mocker, cut_transform, measurement):
         """Test if expansion occurs if WireCut operations are present in a nested tape"""
@@ -3903,9 +3912,11 @@ class TestCutCircuitExpansion:
         """Test if a ValueError is raised if expansion continues beyond the maximum depth"""
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.3, wires=0)
-            with qml.tape.QuantumTape() as _:
-                with qml.tape.QuantumTape() as __:
+            with qml.queuing.AnnotatedQueue() as q__:
+                with qml.queuing.AnnotatedQueue() as q___:
                     qml.WireCut(wires=0)
+                __ = qml.tape.QuantumScript.from_queue(q___)
+            _ = qml.tape.QuantumScript.from_queue(q__)
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 

@@ -32,10 +32,11 @@ class TestMetricTensor:
         dev = qml.device("default.qubit", wires=1)
         params = np.array([1.0, 2.0, 3.0], requires_grad=True)
 
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.Rot(params[0], params[1], params[2], wires=0)
             qml.expval(qml.PauliX(0))
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         tapes, _ = qml.metric_tensor(circuit, approx="block-diag")
         assert len(tapes) == 3
 

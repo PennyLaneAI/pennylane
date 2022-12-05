@@ -399,12 +399,13 @@ class TestAdjointJacobian:
 
         # check the results against individually executed tapes
         for i, ob in enumerate(observables):
-            with qml.tape.QuantumTape() as indiv_tape:
+            with qml.queuing.AnnotatedQueue() as q_indiv_tape:
                 for op in ops:
                     qml.apply(op)
 
                 qml.expval(ob)
 
+            indiv_tape = qml.tape.QuantumScript.from_queue(q_indiv_tape)
             indiv_tape.trainable_params = {1, 2, 3}
 
             expected = dev.adjoint_jacobian(indiv_tape)
