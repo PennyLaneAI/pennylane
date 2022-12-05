@@ -211,8 +211,11 @@ class MeasurementProcess(ABC):
     def shape(self, device=None):
         """The expected output shape of the MeasurementProcess.
 
-        Note that the output shape is dependent on the device when the shot vector is defined in
-        the device.
+        Note that the output shape is dependent on the device when:
+
+        * The measurement type is either ``_Probability``, ``_State`` (from :func:`.state`) or
+          ``_Sample``;
+        * The shot vector was defined in the device.
 
         For example, assuming a device with ``shots=None``, expectation values
         and variances define ``shape=(1,)``, whereas probabilities in the qubit
@@ -220,7 +223,7 @@ class MeasurementProcess(ABC):
         number of wires the measurement acts on.
 
         Note that the shapes for vector-valued measurements such as
-        ``Probability`` and ``State`` are adjusted to the output of
+        ``_Probability`` and ``_State`` are adjusted to the output of
         ``qml.execute`` and may have an extra first element that is squeezed
         when using QNodes.
 
