@@ -35,7 +35,7 @@
   [(#3408)](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Support custom measurement processes:
-  * `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
+  * `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform` classes have been added.
     They contain an abstract method to process samples/quantum state/quantum script.
     [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
@@ -70,6 +70,10 @@
   * Add `_ShadowExpval` class.
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
+  * Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
+    measurement processes in `QubitDevice`.
+    [#3439](https://github.com/PennyLaneAI/pennylane/pull/3439)
+
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
   [(#3378)](https://github.com/PennyLaneAI/pennylane/pull/3378)
@@ -93,8 +97,24 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
+* Added a `pauli_decompose()` which takes a hermitian matrix and decomposes it in the 
+  Pauli basis, returning it either as a `Hamiltonian` or `PauliSentence` instance.
+  [(#3384)](https://github.com/PennyLaneAI/pennylane/pull/3384)
+
+  ```pycon
+  >>> mat = np.array([[1, 1], [1, -1]])
+  >>> h = qml.pauli_decompose(mat)
+  >>> print(h)
+    (1.0) [X0]
+  + (1.0) [Z0]
+  >>> ps = qml.pauli_decompose(mat, pauli=True, wire_order=["a"])
+  >>> print(ps)
+  1.0 * X(a)
+  + 1.0 * Z(a)
+  ```
+
 * New `pauli_sentence()` function which takes native `Operator` or `Hamiltonian`
-  instances representing a linear combination of Pauli words and returns 
+  instances representing a linear combination of Pauli words and returns
   the equivalent `PauliSentence`.
   [(#3389)](https://github.com/PennyLaneAI/pennylane/pull/3389)
 
@@ -111,7 +131,7 @@
   1.23 * X(0) @ Z(1)
   ```
 
-* Added two new methods `operation()`, `hamiltonian()` for both `PauliSentence` and `PauliWord` classes to generate an equivalent PennyLane 
+* Added two new methods `operation()`, `hamiltonian()` for both `PauliSentence` and `PauliWord` classes to generate an equivalent PennyLane
   `Operation` or `Hamiltonian` instance from a `PauliSentence` or `PauliWord` one.
   [(#3391)](https://github.com/PennyLaneAI/pennylane/pull/3391)
 
@@ -244,6 +264,17 @@
 * Adds `qml.tape.make_qscript` for converting a quantum function into a quantum script.
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
+
+* Add a UserWarning when creating a `Tensor` object with overlapping wires, 
+  informing that this can in some cases lead to undefined behaviour.
+  [(#3459)](https://github.com/PennyLaneAI/pennylane/pull/3459)
+
+* Extended the `qml.equal` function to `Controlled` and `ControlledOp` objects.
+  [(#3463)](https://github.com/PennyLaneAI/pennylane/pull/3463)
+
+* Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
+  [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
+
 
 <h4>Return types project</h4>
 
@@ -395,7 +426,6 @@
   `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
   [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
 
-
 * File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
   [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
 
@@ -407,6 +437,9 @@
 
 * Python 3.7 support is no longer maintained.
   [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
+
+* Removed `qml.utils.decompose_hamiltonian()`, please use `qml.pauli_decompose()` instead.
+  [(#3384)](https://github.com/PennyLaneAI/pennylane/pull/3384)
 
 * Instead of having an `OrderedDict` attribute called `_queue`, `AnnotatedQueue` now inherits from
   `OrderedDict` and encapsulates the queue. Consequentially, this also applies to the `QuantumTape`
@@ -460,7 +493,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
 
-* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
+* The `observables` argument in `QubitDevice.statistics` is deprecated. Please use `circuit`
   instead.
   [(#3433)](https://github.com/PennyLaneAI/pennylane/pull/3433)
 
@@ -468,7 +501,6 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   A new argument `seed` has been added, which defaults to None and can contain an integer with the
   wanted seed.
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
-
 
 <h3>Documentation</h3>
 
@@ -534,6 +566,7 @@ Christina Lee
 Albert Mitjans Coma
 Romain Moyard
 Matthew Silverman
+Jay Soni
 Antal Száva
 David Wierichs
 Moritz Willmann
