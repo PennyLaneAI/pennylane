@@ -23,6 +23,7 @@ from .measurements import (
     Expectation,
     MeasurementProcess,
     MeasurementShapeError,
+    MeasurementTransform,
     MidMeasure,
     MutualInfo,
     ObservableReturnTypes,

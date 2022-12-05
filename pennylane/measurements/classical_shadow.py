@@ -24,7 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import CustomMeasurement, MeasurementShapeError, Shadow, ShadowExpval
+from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
 
 
 def shadow_expval(H, k=1, seed=None, seed_recipes=True):
@@ -218,7 +218,7 @@ def classical_shadow(wires, seed=None, seed_recipes=True):
     return ClassicalShadow(wires=wires, seed=seed)
 
 
-class ClassicalShadow(CustomMeasurement):
+class ClassicalShadow(MeasurementTransform):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -231,11 +231,13 @@ class ClassicalShadow(CustomMeasurement):
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
+    method_name = "classical_shadow"
+
     def __init__(self, *args, seed=None, **kwargs):
         self.seed = seed
         super().__init__(*args, **kwargs)
 
-    def process(self, tape, device):
+    def process(self, qscript, device):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -255,14 +257,14 @@ class ClassicalShadow(CustomMeasurement):
         Pauli measurements have shape ``(T, n)``.
 
         This implementation is device-agnostic and works by executing single-shot
-        tapes containing randomized Pauli observables. Devices should override this
+        quantum scripts containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
 
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            tape (QuantumScript): the tape to be processed
-            device (Device): the device used to process the tape
+            qscript (QuantumScript): the quantum script to be processed
+            device (Device): the device used to process the quantum script
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -296,7 +298,7 @@ class ClassicalShadow(CustomMeasurement):
                 ]
 
                 device.reset()
-                device.apply(tape.operations, rotations=tape.diagonalizing_gates + rotations)
+                device.apply(qscript.operations, rotations=qscript.diagonalizing_gates + rotations)
 
                 outcomes[t] = device.generate_samples()[0][mapped_wires]
 
@@ -331,7 +333,7 @@ class ClassicalShadow(CustomMeasurement):
         )
 
 
-class _ShadowExpval(CustomMeasurement):
+class _ShadowExpval(MeasurementTransform):
     """Measures the expectation value of an operator using the classical shadow measurement process.
 
     This has the same arguments as the base class MeasurementProcess, plus other additional
@@ -347,25 +349,29 @@ class _ShadowExpval(CustomMeasurement):
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
+    method_name = "shadow_expval"
+
     def __init__(self, *args, H, seed=None, k=1, **kwargs):
         self.seed = seed
         self.H = H
         self.k = k
         super().__init__(*args, **kwargs)
 
-    def process(self, tape, device):
+    def process(self, qscript, device):
         """Compute expectation values using classical shadows in a differentiable manner.
 
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
 
         Args:
-            tape (QuantumScript): the tape to be processed
-            device (Device): the device used to process the tape
+            qscript (QuantumScript): the quantum script to be processed
+            device (Device): the device used to process the quantum script
 
         Returns:
             float: expectation value estimate.
         """
-        bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
+        bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(
+            qscript, device
+        )
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 

@@ -23,6 +23,7 @@ import abc
 import contextlib
 import itertools
 import warnings
+from typing import Union
 
 import numpy as np
 
@@ -36,12 +37,15 @@ from pennylane.measurements import (
     Counts,
     Expectation,
     MeasurementProcess,
+    MeasurementTransform,
     MutualInfo,
     Probability,
     Sample,
+    SampleMeasurement,
     Shadow,
     ShadowExpval,
     State,
+    StateMeasurement,
     Variance,
     VnEntropy,
 )
@@ -386,7 +390,7 @@ class QubitDevice(Device):
         if not self.analytic and self._shot_vector is not None:
             results = self._collect_shotvector_results(circuit, counts_exist)
         else:
-            results = self.statistics(circuit)
+            results = self.statistics(circuit=circuit)
 
         if not circuit.is_sampled:
 
@@ -669,8 +673,9 @@ class QubitDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
+    # pylint: disable=too-many-statements
     def statistics(
-        self, circuit: QuantumScript = None, shot_range=None, bin_size=None, observables=None
+        self, observables=None, shot_range=None, bin_size=None, circuit: QuantumScript = None
     ):
         """Process measurement results from circuit execution and return statistics.
 
@@ -717,20 +722,30 @@ class QubitDevice(Device):
             * Finally, we repeat the measurement statistics for the final 100 shots,
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
-        if isinstance(circuit, QuantumScript):
-            observables = circuit.observables
-
+        if observables is not None:
+            if isinstance(observables, QuantumScript):
+                measurements = observables.measurements
+            else:
+                warnings.warn(
+                    message="Using a list of observables in ``QubitDevice.statistics`` is "
+                    "deprecated. Please use a ``QuantumScript`` instead.",
+                    category=UserWarning,
+                )
+                measurements = observables
+        elif circuit is not None:
+            measurements = circuit.measurements
         else:
-            warnings.warn(
-                message="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. "
-                "Please use ``circuit`` instead.",
-                category=UserWarning,
-            )
-            observables = circuit if circuit is not None else observables
+            raise ValueError("Please provide a circuit into the statistics method.")
 
         results = []
 
-        for obs in observables:
+        for m in measurements:
+            # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
+            if isinstance(m, MeasurementProcess) and m.obs is not None:
+                obs = m.obs
+                obs.return_type = m.return_type
+            else:
+                obs = m
             # Pass instances directly
             if obs.return_type is Expectation:
                 # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
@@ -759,7 +774,7 @@ class QubitDevice(Device):
                 )
 
             elif obs.return_type is State:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination"
                         " with other return types"
@@ -823,7 +838,7 @@ class QubitDevice(Device):
                 )
 
             elif obs.return_type is Shadow:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
                         " with other return types"
@@ -831,12 +846,21 @@ class QubitDevice(Device):
                 results.append(self.classical_shadow(obs, circuit))
 
             elif obs.return_type is ShadowExpval:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
                         " with other return types"
                     )
                 results.append(self.shadow_expval(obs, circuit=circuit))
+
+            elif isinstance(m, MeasurementTransform):
+                if method := getattr(self, m.method_name, False):
+                    results.append(method(qscript=circuit))
+                else:
+                    results.append(m.process(qscript=circuit, device=self))
+
+            elif isinstance(m, (SampleMeasurement, StateMeasurement)):
+                results.append(self._measure(m, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -844,6 +868,51 @@ class QubitDevice(Device):
                 )
 
         return results
+
+    def _measure(
+        self,
+        measurement: Union[SampleMeasurement, StateMeasurement],
+        shot_range=None,
+        bin_size=None,
+    ):
+        """Compute the corresponding measurement process depending on ``shots`` and the measurement
+        type.
+
+        Args:
+            measurement (Union[SampleMeasurement, StateMeasurement]): measurement process
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+
+        Raises:
+            ValueError: if the measurement cannot be computed
+
+        Returns:
+            Union[float, dict, list[float]]: result of the measurement
+        """
+        if method := getattr(self, measurement.method_name, False):
+            return method(measurement, shot_range=shot_range, bin_size=bin_size)
+        if self.shots is None:
+            if isinstance(measurement, StateMeasurement):
+                return measurement.process_state(state=self.state, wire_order=self.wires)
+
+            raise ValueError(
+                "Shots must be specified in the device to compute the measurement "
+                f"{measurement.__class__.__name__}"
+            )
+        if isinstance(measurement, StateMeasurement):
+            warnings.warn(
+                f"Requested measurement {measurement.__class__.__name__} with finite shots; the "
+                "returned state information is analytic and is unaffected by sampling. "
+                "To silence this warning, set shots=None on the device.",
+                UserWarning,
+            )
+            return measurement.process_state(state=self.state, wire_order=self.wires)
+        return measurement.process_samples(
+            samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
+        )
 
     def _statistics_new(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
@@ -891,11 +960,16 @@ class QubitDevice(Device):
             * Finally, we repeat the measurement statistics for the final 100 shots,
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
-        observables = circuit.observables
+        measurements = circuit.measurements
         results = []
 
-        for obs in observables:
-
+        for m in measurements:
+            # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
+            if m.obs is not None:
+                obs = m.obs
+                obs.return_type = m.return_type
+            else:
+                obs = m
             # 1. Based on the return_type, compute statistics
             # Pass instances directly
             if obs.return_type is Expectation:
@@ -915,7 +989,7 @@ class QubitDevice(Device):
                 result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
 
             elif obs.return_type is State:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination"
                         " with other return types"
@@ -978,7 +1052,7 @@ class QubitDevice(Device):
                 result = self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
 
             elif obs.return_type is Shadow:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
                         " with other return types"
@@ -987,7 +1061,7 @@ class QubitDevice(Device):
                 result = self.classical_shadow(obs, circuit=circuit)
 
             elif obs.return_type is ShadowExpval:
-                if len(observables) > 1:
+                if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
                         " with other return types"
@@ -995,6 +1069,17 @@ class QubitDevice(Device):
 
                 result = self.shadow_expval(obs, circuit=circuit)
 
+            elif isinstance(m, MeasurementTransform):
+                if method := getattr(self, m.method_name, False):
+                    result = method(qscript=circuit)
+                else:
+                    result = m.process(qscript=circuit, device=self)
+
+            elif isinstance(m, (SampleMeasurement, StateMeasurement)):
+                if method := getattr(self, m.method_name, False):
+                    result = method(obs, shot_range=shot_range, bin_size=bin_size)
+                else:
+                    result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
