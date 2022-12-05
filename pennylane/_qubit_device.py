@@ -860,10 +860,7 @@ class QubitDevice(Device):
                     results.append(m.process(qscript=circuit, device=self))
 
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
-                if method := getattr(self, m.method_name, False):
-                    results.append(method(obs, shot_range=shot_range, bin_size=bin_size))
-                else:
-                    results.append(self._measure(m, shot_range=shot_range, bin_size=bin_size))
+                results.append(self._measure(m, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -895,6 +892,8 @@ class QubitDevice(Device):
         Returns:
             Union[float, dict, list[float]]: result of the measurement
         """
+        if method := getattr(self, measurement.method_name, False):
+            return method(measurement, shot_range=shot_range, bin_size=bin_size)
         if self.shots is None:
             if isinstance(measurement, StateMeasurement):
                 return measurement.process_state(state=self.state, wire_order=self.wires)
