@@ -131,7 +131,7 @@ def compute_vjp_single_new(dy, jac, num=None):
     if not isinstance(jac, (tuple, autograd.builtins.SequenceBox)):
         # No trainable parameters
         if jac.shape == (0,):
-            res = qml.math.convert_like(qml.math.zeros((1, 0)), dy)
+            res = qml.math.zeros((1, 0))
             return res
         # Single measurement with no dimension e.g. expval or with dimension e.g. probs
         if num == 1:
@@ -142,7 +142,7 @@ def compute_vjp_single_new(dy, jac, num=None):
     else:
         # No trainable parameters (adjoint)
         if len(jac) == 0:
-            res = qml.math.convert_like(qml.math.zeros((1, 0)), dy)
+            res = qml.math.zeros((1, 0))
             return res
         # Single measurement with no dimension e.g. expval
         if num == 1:

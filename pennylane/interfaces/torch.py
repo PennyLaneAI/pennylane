@@ -366,8 +366,9 @@ class ExecuteTapesNew(torch.autograd.Function):
 
         for i, r in enumerate(res):
 
-            res[i] = _res_to_torch(r, i, ctx)
+            res[i] = _res_to_torch(r, ctx)
 
+            # In place change of the numpy array Jacobians to Torch objects
             _jac_to_torch(i, ctx)
 
         return res
@@ -502,25 +503,15 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
     return ExecuteTapesNew.apply(kwargs, *parameters)
 
 
-def _res_to_torch(r, i, ctx):
+def _res_to_torch(r, ctx):
     """Convert results from unwrapped execution to torch."""
-    counts = False
-    if any(
-        m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-        for m in ctx.tapes[i].measurements
-    ):
-        counts = True
-
     if isinstance(r, (list, tuple)):
-        if counts:
-            res = []
-            for t in r:
-                if isinstance(t, dict):
-                    res.append(t)
-                else:
-                    res.append(torch.as_tensor(t, device=ctx.torch_device))
-        else:
-            res = [torch.as_tensor(t, device=ctx.torch_device) for t in r]
+        res = []
+        for t in r:
+            if isinstance(t, dict):
+                res.append(t)
+            else:
+                res.append(torch.as_tensor(t, device=ctx.torch_device))
         if isinstance(r, tuple):
             res = tuple(res)
     else:
