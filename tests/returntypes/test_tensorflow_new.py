@@ -317,16 +317,18 @@ class TestTensorFlowExecuteIntegration:
         b = tf.Variable(0.2)
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             res = execute([tape1, tape2], dev, **execute_kwargs)
 
         assert len(res) == 2
@@ -398,19 +400,22 @@ class TestTensorFlowExecuteIntegration:
         x, y = 1.0 * params
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.Hadamard(0)
                 qml.expval(qml.PauliX(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RY(0.5, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape3:
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+            with qml.queuing.AnnotatedQueue() as q3:
                 qml.RY(params[0], wires=0)
                 qml.RX(params[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape3 = qml.tape.QuantumScript.from_queue(q3)
             res = sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
             res = tf.stack(res)
 
@@ -749,18 +754,20 @@ class TestHigherOrderDerivatives:
 
         with tf.GradientTape() as t2:
             with tf.GradientTape() as t1:
-                with qml.tape.QuantumTape() as tape1:
+                with qml.queuing.AnnotatedQueue() as q1:
                     qml.RX(params[0], wires=[0])
                     qml.RY(params[1], wires=[1])
                     qml.CNOT(wires=[0, 1])
                     qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-                with qml.tape.QuantumTape() as tape2:
+                tape1 = qml.tape.QuantumScript.from_queue(q1)
+                with qml.queuing.AnnotatedQueue() as q2:
                     qml.RX(params[0], wires=0)
                     qml.RY(params[0], wires=1)
                     qml.CNOT(wires=[0, 1])
                     qml.probs(wires=1)
 
+                tape2 = qml.tape.QuantumScript.from_queue(q2)
                 result = execute(
                     [tape1, tape2], dev, gradient_fn=param_shift, interface="tf", max_diff=2
                 )
@@ -871,18 +878,20 @@ class TestHigherOrderDerivatives:
 
         with tf.GradientTape() as t2:
             with tf.GradientTape() as t1:
-                with qml.tape.QuantumTape() as tape1:
+                with qml.queuing.AnnotatedQueue() as q1:
                     qml.RX(params[0], wires=[0])
                     qml.RY(params[1], wires=[1])
                     qml.CNOT(wires=[0, 1])
                     qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-                with qml.tape.QuantumTape() as tape2:
+                tape1 = qml.tape.QuantumScript.from_queue(q1)
+                with qml.queuing.AnnotatedQueue() as q2:
                     qml.RX(params[0], wires=0)
                     qml.RY(params[0], wires=1)
                     qml.CNOT(wires=[0, 1])
                     qml.probs(wires=1)
 
+                tape2 = qml.tape.QuantumScript.from_queue(q2)
                 result = execute(
                     [tape1, tape2], dev, gradient_fn=param_shift, max_diff=1, interface="tf"
                 )

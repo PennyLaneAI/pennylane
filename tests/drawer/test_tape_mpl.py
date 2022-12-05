@@ -41,10 +41,13 @@ def test_empty_tape():
     plt.close()
 
 
-with QuantumTape() as tape1:
+with qml.queuing.AnnotatedQueue() as q1:
     qml.PauliX(0)
     qml.PauliX("a")
     qml.PauliX(1.234)
+
+
+tape1 = qml.tape.QuantumScript.from_queue(q1)
 
 
 def test_fontsize():

@@ -57,16 +57,18 @@ def test_adjoint_of_control():
         qml.RY(b, wires=3)
         qml.RZ(c, wires=0)
 
-    with QuantumTape() as tape1:
+    with qml.queuing.AnnotatedQueue() as q1:
         cmy_op_dagger = qml.adjoint(ctrl(my_op, 5))
         # Execute controlled and adjointed version of my_op.
         cmy_op_dagger(0.789, 0.123, c=0.456)
 
-    with QuantumTape() as tape2:
+    tape1 = qml.tape.QuantumScript.from_queue(q1)
+    with qml.queuing.AnnotatedQueue() as q2:
         cmy_op_dagger = ctrl(qml.adjoint(my_op), 5)
         # Execute adjointed and controlled version of my_op.
         cmy_op_dagger(0.789, 0.123, c=0.456)
 
+    tape2 = qml.tape.QuantumScript.from_queue(q2)
     expected = [
         qml.CRZ(-0.456, wires=[5, 0]),
         qml.CRY(-0.123, wires=[5, 3]),

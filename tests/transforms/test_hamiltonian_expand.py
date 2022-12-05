@@ -48,11 +48,12 @@ with pennylane.tape.QuantumTape() as tape2:
 
 H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
 
-with qml.tape.QuantumTape() as tape3:
+with qml.queuing.AnnotatedQueue() as q3:
     qml.PauliX(0)
     qml.expval(H3)
 
 
+tape3 = qml.tape.QuantumScript.from_queue(q3)
 H4 = (
     qml.PauliX(0) @ qml.PauliZ(2)
     + 3 * qml.PauliZ(2)
@@ -62,7 +63,7 @@ H4 = (
 )
 H4 += qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2)
 
-with qml.tape.QuantumTape() as tape4:
+with qml.queuing.AnnotatedQueue() as q4:
     qml.Hadamard(0)
     qml.Hadamard(1)
     qml.PauliZ(1)
@@ -70,6 +71,7 @@ with qml.tape.QuantumTape() as tape4:
 
     qml.expval(H4)
 
+tape4 = qml.tape.QuantumScript.from_queue(q4)
 TAPES = [tape1, tape2, tape3, tape4]
 OUTPUTS = [-1.5, -6, -1.5, -8]
 

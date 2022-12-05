@@ -268,16 +268,18 @@ class TestCaching:
         b = jnp.array(0.2)
 
         def cost(a, b, cache):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             res = execute(
                 [tape1, tape2],
                 dev,
@@ -405,16 +407,18 @@ class TestJaxExecuteIntegration:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, b):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             return execute([tape1, tape2], dev, interface=interface, **execute_kwargs)
 
         a = jnp.array(0.1)
@@ -551,18 +555,20 @@ class TestJaxExecuteIntegration:
         params = jax.numpy.array([0.3, 0.2])
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.Hadamard(0)
                 qml.RY(x[0], wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.Hadamard(0)
                 qml.CRX(2 * x[0] * x[1], wires=[0, 1])
                 qml.RX(2 * x[1], wires=[1])
                 qml.expval(qml.PauliZ(0))
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             result = execute(
                 tapes=[tape1, tape2], device=dev, interface=interface, **execute_kwargs
             )
@@ -577,18 +583,20 @@ class TestJaxExecuteIntegration:
         params = jax.numpy.array([0.3, 0.2])
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.Hadamard(0)
                 qml.RY(x[0], wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.Hadamard(0)
                 qml.CRX(2 * x[0] * x[1], wires=[0, 1])
                 qml.RX(2 * x[1], wires=[1])
                 qml.expval(qml.PauliZ(0))
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             return execute(tapes=[tape1, tape2], device=dev, interface=interface, **execute_kwargs)
 
         res = cost_fn(params)
@@ -761,17 +769,19 @@ class TestVectorValued:
         params = jax.numpy.array([0.3, 0.2])
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x[0], wires=[0])
                 qml.expval(qml.PauliY(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RX(x[1], wires=[0])
                 qml.RX(x[1], wires=[0])
                 qml.RX(-x[1], wires=[0])
                 qml.expval(qml.PauliY(0))
                 qml.expval(qml.PauliY(1))
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             result = qml.execute(
                 tapes=[tape1, tape2], device=dev, interface="jax", **execute_kwargs
             )
@@ -785,20 +795,22 @@ class TestVectorValued:
         """Test the jacobian computation with multiple tapes."""
 
         def cost(x, y, device, interface, ek):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             return qml.execute([tape1, tape2], device, **ek, interface=interface)
 
         dev = qml.device("default.qubit", wires=2)
@@ -840,20 +852,22 @@ class TestVectorValued:
             pytest.skip("The adjoint diff method doesn't support probabilities.")
 
         def cost(x, y, device, interface, ek):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=[0])
                 qml.probs(wires=[1])
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             return qml.execute([tape1, tape2], device, **ek, interface=interface)
 
         dev = qml.device("default.qubit", wires=2)
@@ -1081,20 +1095,22 @@ class TestVectorValuedJIT:
             pytest.skip("The adjoint diff method doesn't support probabilities.")
 
         def cost(x, y, device, interface, ek):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=[0])
                 qml.probs(wires=[1])
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             return qml.execute([tape1, tape2], device, **ek, interface=interface)[0]
 
         dev = qml.device("default.qubit", wires=2)

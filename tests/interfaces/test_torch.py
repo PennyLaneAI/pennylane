@@ -392,16 +392,18 @@ class TestTorchExecuteIntegration:
         a = torch.tensor(0.1, requires_grad=True, device=torch_device)
         b = torch.tensor(0.2, requires_grad=False, device=torch_device)
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         res = execute([tape1, tape2], dev, **execute_kwargs)
 
         assert len(res) == 2
@@ -482,19 +484,22 @@ class TestTorchExecuteIntegration:
         params = torch.tensor([0.1, 0.2], requires_grad=True, device=torch_device)
         x, y = params.detach()
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.Hadamard(0)
             qml.expval(qml.PauliX(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RY(0.5, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape3:
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        with qml.queuing.AnnotatedQueue() as q3:
             qml.RY(params[0], wires=0)
             qml.RX(params[1], wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape3 = qml.tape.QuantumScript.from_queue(q3)
         res = sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
         expected = torch.tensor(1 + np.cos(0.5), dtype=res.dtype) + torch.cos(x) * torch.cos(y)
         expected = expected.to(device=res.device)
@@ -911,18 +916,20 @@ class TestHigherOrderDerivatives:
         params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RX(x[0], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=1)
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             result = execute(
                 [tape1, tape2], dev, gradient_fn=param_shift, interface="torch", max_diff=2
             )
@@ -1048,18 +1055,20 @@ class TestHigherOrderDerivatives:
         params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RX(x[0], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=1)
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             result = execute(
                 [tape1, tape2], dev, gradient_fn=param_shift, max_diff=1, interface="torch"
             )

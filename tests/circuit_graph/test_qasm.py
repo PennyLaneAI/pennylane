@@ -127,14 +127,16 @@ class TestToQasmUnitTests:
     def test_rotation_gate_decomposition(self):
         """Test that gates not natively supported by QASM, such as the
         rotation gate, are correctly decomposed and serialized."""
-        with qml.tape.QuantumTape() as circuit1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.Rot(0.3, 0.1, 0.2, wires=1)
 
+        circuit1 = qml.tape.QuantumScript.from_queue(q1)
         qasm1 = circuit1.to_openqasm(wires=Wires([0, 1]))
 
-        with qml.tape.QuantumTape() as circuit2:
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.Rot.compute_decomposition(0.3, 0.1, 0.2, wires=1)
 
+        circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]))
 
         expected = dedent(
@@ -159,14 +161,16 @@ class TestToQasmUnitTests:
         is correctly applied."""
         psi = np.array([1, -1, -1, 1]) / np.sqrt(4)
 
-        with qml.tape.QuantumTape() as circuit1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.QubitStateVector(psi, wires=[0, 1])
 
+        circuit1 = qml.tape.QuantumScript.from_queue(q1)
         qasm1 = circuit1.to_openqasm(precision=11)
 
-        with qml.tape.QuantumTape() as circuit2:
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.QubitStateVector.compute_decomposition(psi, wires=[0, 1])
 
+        circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]), precision=11)
 
         expected = dedent(
@@ -196,14 +200,16 @@ class TestToQasmUnitTests:
         is correctly applied."""
         basis_state = np.array([1, 0, 1, 1])
 
-        with qml.tape.QuantumTape() as circuit1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.BasisState(basis_state, wires=[0, 1, 2, 3])
 
+        circuit1 = qml.tape.QuantumScript.from_queue(q1)
         qasm1 = circuit1.to_openqasm()
 
-        with qml.tape.QuantumTape() as circuit2:
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.BasisState.compute_decomposition(basis_state, wires=[0, 1, 2, 3])
 
+        circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = circuit2.to_openqasm(wires=[0, 1, 2, 3])
 
         expected = dedent(
@@ -268,9 +274,10 @@ class TestToQasmUnitTests:
 
         ops2 = circuit.operations + circuit.diagonalizing_gates
 
-        with qml.tape.QuantumTape() as circuit2:
+        with qml.queuing.AnnotatedQueue() as q2:
             [o.queue() for o in ops2]
 
+        circuit2 = qml.tape.QuantumScript.from_queue(q2)
         qasm2 = circuit2.to_openqasm()
 
         assert res == qasm2

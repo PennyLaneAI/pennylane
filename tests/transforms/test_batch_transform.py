@@ -667,18 +667,20 @@ class TestMapBatchTransform:
         x = 0.6
         y = 0.7
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(H)
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
             qml.CNOT(wires=[0, 1])
             qml.expval(H + 0.5 * qml.PauliY(0))
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         tapes, fn = qml.transforms.map_batch_transform(
             qml.transforms.hamiltonian_expand, [tape1, tape2]
@@ -700,18 +702,20 @@ class TestMapBatchTransform:
         weights = np.array([0.6, 0.8], requires_grad=True)
 
         def cost(weights):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(H)
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.Hadamard(wires=0)
                 qml.CRX(weights[0], wires=[0, 1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(H + 0.5 * qml.PauliY(0))
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             tapes, fn = qml.transforms.map_batch_transform(
                 qml.transforms.hamiltonian_expand, [tape1, tape2]
             )

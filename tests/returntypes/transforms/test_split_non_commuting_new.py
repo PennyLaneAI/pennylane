@@ -22,7 +22,7 @@ from pennylane.transforms import split_non_commuting
 from pennylane.qinfo.transforms import _make_probs, _compute_cfim
 
 ### example tape with 3 commuting groups [[0,3],[1,4],[2,5]]
-with qml.tape.QuantumTape() as non_commuting_tape3:
+with qml.queuing.AnnotatedQueue() as q3:
     qml.PauliZ(0)
     qml.Hadamard(0)
     qml.CNOT((0, 1))
@@ -33,8 +33,9 @@ with qml.tape.QuantumTape() as non_commuting_tape3:
     qml.expval(qml.PauliX(0))
     qml.expval(qml.PauliY(0))
 
+non_commuting_tape3 = qml.tape.QuantumScript.from_queue(q3)
 ### example tape with 2 -commuting groups [[0,2],[1,3]]
-with qml.tape.QuantumTape() as non_commuting_tape2:
+with qml.queuing.AnnotatedQueue() as q2:
     qml.PauliZ(0)
     qml.Hadamard(0)
     qml.CNOT((0, 1))
@@ -43,6 +44,7 @@ with qml.tape.QuantumTape() as non_commuting_tape2:
     qml.expval(qml.PauliZ(0))
     qml.expval(qml.PauliX(0))
 
+non_commuting_tape2 = qml.tape.QuantumScript.from_queue(q2)
 # For testing different observable types
 obs_fn = [qml.expval, qml.var]
 
@@ -68,7 +70,7 @@ class TestUnittestSplitNonCommuting:
         spy = mocker.spy(qml.math, "concatenate")
 
         assert split == [tape]
-        assert all(isinstance(t, qml.tape.QuantumTape) for t in split)
+        assert all(isinstance(t, qml.tape.QuantumScript) for t in split)
         assert fn([0.5]) == 0.5
 
         qs = qml.tape.QuantumScript(tape.operations, tape.measurements)

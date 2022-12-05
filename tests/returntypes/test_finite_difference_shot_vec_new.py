@@ -355,16 +355,18 @@ class TestFiniteDiff:
         parameters, the gradient should be evaluated to zero without executing the device."""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(1.0, wires=[0])
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(1.0, wires=[0])
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         tapes, fn = finite_diff(tape1, approx_order=1, h=h_val, shots=many_shots_shot_vector)
         j1 = fn(dev.batch_execute(tapes))
 

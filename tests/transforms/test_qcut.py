@@ -118,7 +118,7 @@ with qml.tape.QuantumTape() as mcm_tape:
     qml.expval(qml.PauliZ(wires=[0]))
 
 
-with qml.tape.QuantumTape() as frag0:
+with qml.queuing.AnnotatedQueue() as q0:
     qml.Hadamard(wires=[0])
     qml.RX(0.432, wires=[0])
     qml.RY(0.543, wires=[1])
@@ -133,7 +133,8 @@ with qml.tape.QuantumTape() as frag0:
     qml.sample(qml.Projector([1], wires=[0]))
     qml.sample(qml.Projector([1], wires=[3]))
 
-with qml.tape.QuantumTape() as frag1:
+frag0 = qml.tape.QuantumScript.from_queue(q0)
+with qml.queuing.AnnotatedQueue() as q1:
     qcut.PrepareNode(wires=[0])
     qml.CNOT(wires=[0, 1])
     qcut.MeasureNode(wires=[0])
@@ -144,6 +145,7 @@ with qml.tape.QuantumTape() as frag1:
     qml.sample(qml.Projector([1], wires=[1]))
 
 
+frag1 = qml.tape.QuantumScript.from_queue(q1)
 frag_edge_data = [
     (0, 1, {"pair": (frag0.operations[4], frag1.operations[0])}),
     (1, 0, {"pair": (frag1.operations[2], frag0.operations[5])}),
@@ -1170,15 +1172,17 @@ class TestGraphToTape:
 
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
 
-        with qml.tape.QuantumTape() as tape_0:
+        with qml.queuing.AnnotatedQueue() as q0:
             qml.RX(0.432, wires=[0])
             qcut.MeasureNode(wires=[0])
 
-        with qml.tape.QuantumTape() as tape_1:
+        tape_0 = qml.tape.QuantumScript.from_queue(q0)
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RY(0.543, wires=["a"])
             qcut.MeasureNode(wires=["a"])
 
-        with qml.tape.QuantumTape() as tape_2:
+        tape_1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qcut.PrepareNode(wires=[0])
             qcut.PrepareNode(wires=["a"])
             qml.CNOT(wires=[0, "a"])
@@ -1187,18 +1191,21 @@ class TestGraphToTape:
             qcut.MeasureNode(wires=["a"])
             qml.expval(qml.PauliZ(wires=[0]))
 
-        with qml.tape.QuantumTape() as tape_3:
+        tape_2 = qml.tape.QuantumScript.from_queue(q2)
+        with qml.queuing.AnnotatedQueue() as q3:
             qcut.PrepareNode(wires=["a"])
             qml.CNOT(wires=["a", 2])
             qml.RX(0.432, wires=["a"])
             qcut.MeasureNode(wires=[2])
 
-        with qml.tape.QuantumTape() as tape_4:
+        tape_3 = qml.tape.QuantumScript.from_queue(q3)
+        with qml.queuing.AnnotatedQueue() as q4:
             qcut.PrepareNode(wires=[2])
             qml.CNOT(wires=[2, 3])
             qml.RY(0.543, wires=[2])
             qml.RZ(0.876, wires=[3])
 
+        tape_4 = qml.tape.QuantumScript.from_queue(q4)
         expected_tapes = [tape_0, tape_1, tape_2, tape_3, tape_4]
 
         for tape, expected_tape in zip(tapes, expected_tapes):
@@ -1241,7 +1248,7 @@ class TestGraphToTape:
 
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
 
-        with qml.tape.QuantumTape() as tape_0:
+        with qml.queuing.AnnotatedQueue() as q0:
             qml.Hadamard(wires=[0])
             qml.RX(0.432, wires=[0])
             qml.RY(0.543, wires=[1])
@@ -1255,7 +1262,8 @@ class TestGraphToTape:
             qml.CNOT(wires=[0, 3])
             qml.expval(qml.PauliZ(wires=[0]))
 
-        with qml.tape.QuantumTape() as tape_1:
+        tape_0 = qml.tape.QuantumScript.from_queue(q0)
+        with qml.queuing.AnnotatedQueue() as q1:
             qcut.PrepareNode(wires=[1])
             qml.CNOT(wires=[1, 2])
             qcut.MeasureNode(wires=[1])
@@ -1264,6 +1272,7 @@ class TestGraphToTape:
             qml.CNOT(wires=[0, 2])
             qcut.MeasureNode(wires=[0])
 
+        tape_1 = qml.tape.QuantumScript.from_queue(q1)
         expected_tapes = [tape_0, tape_1]
 
         for tape, expected_tape in zip(tapes, expected_tapes):
@@ -1575,51 +1584,58 @@ class TestExpandFragmentTapes:
             qml.RZ(0.133, wires=[1]),
         ]
 
-        with qml.tape.QuantumTape() as tape_00:
+        with qml.queuing.AnnotatedQueue() as q0:
             for op in frag_meas_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]))
             qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]))
 
-        with qml.tape.QuantumTape() as tape_01:
+        tape_00 = qml.tape.QuantumScript.from_queue(q0)
+        with qml.queuing.AnnotatedQueue() as q1:
             for op in frag_meas_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]))
 
-        with qml.tape.QuantumTape() as tape_02:
+        tape_01 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             for op in frag_meas_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]))
 
+        tape_02 = qml.tape.QuantumScript.from_queue(q2)
         frag_meas_expected_tapes = [tape_00, tape_01, tape_02]
 
         frag_prep_ops = [qml.CNOT(wires=[1, 2]), qml.RX(0.432, wires=[1]), qml.RY(0.543, wires=[2])]
 
-        with qml.tape.QuantumTape() as tape_10:
+        with qml.queuing.AnnotatedQueue() as q0:
             qml.Identity(wires=[1])
             for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[2]))
 
-        with qml.tape.QuantumTape() as tape_11:
+        tape_10 = qml.tape.QuantumScript.from_queue(q0)
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.PauliX(wires=[1])
             for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[2]))
 
-        with qml.tape.QuantumTape() as tape_12:
+        tape_11 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.Hadamard(wires=[1])
             for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[2]))
 
-        with qml.tape.QuantumTape() as tape_13:
+        tape_12 = qml.tape.QuantumScript.from_queue(q2)
+        with qml.queuing.AnnotatedQueue() as q3:
             qml.Hadamard(wires=[1])
             qml.S(wires=[1])
             for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[2]))
 
+        tape_13 = qml.tape.QuantumScript.from_queue(q3)
         frag_prep_expected_tapes = [tape_10, tape_11, tape_12, tape_13]
 
         for tape_meas, exp_tape_meas in zip(frag_tapes_meas, frag_meas_expected_tapes):
@@ -1770,31 +1786,35 @@ class TestExpandFragmentTapes:
             qml.expval(qml.PauliZ(wires=[0])),
         ]
 
-        with qml.tape.QuantumTape() as config1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RY(0.543, wires=[1])
             qml.Identity(wires=[0])
             for optr in ops:
                 qml.apply(optr)
 
-        with qml.tape.QuantumTape() as config2:
+        config1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RY(0.543, wires=[1])
             qml.PauliX(wires=[0])
             for optr in ops:
                 qml.apply(optr)
 
-        with qml.tape.QuantumTape() as config3:
+        config2 = qml.tape.QuantumScript.from_queue(q2)
+        with qml.queuing.AnnotatedQueue() as q3:
             qml.RY(0.543, wires=[1])
             qml.Hadamard(wires=[0])
             for optr in ops:
                 qml.apply(optr)
 
-        with qml.tape.QuantumTape() as config4:
+        config3 = qml.tape.QuantumScript.from_queue(q3)
+        with qml.queuing.AnnotatedQueue() as q4:
             qml.RY(0.543, wires=[1])
             qml.Hadamard(wires=[0])
             qml.S(wires=[0])
             for optr in ops:
                 qml.apply(optr)
 
+        config4 = qml.tape.QuantumScript.from_queue(q4)
         expected_configs = [config1, config2, config3, config4]
 
         for tape, config in zip(expanded_tapes, expected_configs):
@@ -1812,18 +1832,20 @@ class TestExpandFragmentTapesMC:
         Tests that fragment configurations are generated correctly using the
         `expand_fragment_tapes_mc` function.
         """
-        with qml.tape.QuantumTape() as tape0:
+        with qml.queuing.AnnotatedQueue() as q0:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             qcut.MeasureNode(wires=[1])
             qml.sample(qml.Projector([1], wires=[0]))
 
-        with qml.tape.QuantumTape() as tape1:
+        tape0 = qml.tape.QuantumScript.from_queue(q0)
+        with qml.queuing.AnnotatedQueue() as q1:
             qcut.PrepareNode(wires=[1])
             qml.CNOT(wires=[1, 2])
             qml.sample(qml.Projector([1], wires=[1]))
             qml.sample(qml.Projector([1], wires=[2]))
 
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
         tapes = [tape0, tape1]
 
         edge_data = {"pair": (tape0.operations[2], tape1.operations[0])}
@@ -1905,7 +1927,7 @@ class TestExpandFragmentTapesMC:
 
         assert np.allclose(settings, fixed_choice)
 
-        with qml.tape.QuantumTape() as config1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.Hadamard(wires=[0])
             qml.RX(0.432, wires=[0])
             qml.RY(0.543, wires=[1])
@@ -1921,7 +1943,8 @@ class TestExpandFragmentTapesMC:
             qml.sample(qml.PauliY(wires=[1]))
             qml.sample(qml.Identity(wires=[2]))
 
-        with qml.tape.QuantumTape() as config2:
+        config1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.Hadamard(wires=[0])
             qml.RX(0.432, wires=[0])
             qml.RY(0.543, wires=[1])
@@ -1937,6 +1960,7 @@ class TestExpandFragmentTapesMC:
             qml.sample(qml.PauliZ(wires=[1]))
             qml.sample(qml.PauliX(wires=[2]))
 
+        config2 = qml.tape.QuantumScript.from_queue(q2)
         expected_configs = [config1, config2]
 
         # check first fragment configs only for brevity
@@ -4716,13 +4740,14 @@ class TestAutoCutCircuit:
         device_size = 2
         cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=device_size)
 
-        with qml.tape.QuantumTape() as tape0:
+        with qml.queuing.AnnotatedQueue() as q0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             if measure_all_wires:
                 qml.expval(qml.pauli.string_to_pauli_word("Z" * n_wires))
             else:
                 qml.expval(qml.PauliZ(wires=n_wires - 1))
 
+        tape0 = qml.tape.QuantumScript.from_queue(q0)
         tape = tape0.expand()
         graph = qcut.tape_to_graph(tape)
         cut_graph = qcut.find_and_place_cuts(

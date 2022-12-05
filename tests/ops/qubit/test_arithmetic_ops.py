@@ -389,12 +389,14 @@ class TestIntegerComparator:
 
     def test_decomposition(self):
         """Test operator's ``compute_decomposition()`` method."""
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2])
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
         assert all(isinstance(op, qml.MultiControlledX) for op in tape1.operations)
 
-        with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2], geq=False)
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qml.MultiControlledX) for op in tape2.operations)
 
         num_wires = 3
@@ -422,12 +424,14 @@ class TestIntegerComparator:
         """Test operator's ``compute_decomposition()`` method when ``value`` is such that
         decomposition is the identity matrix."""
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.IntegerComparator.compute_decomposition(10, wires=[0, 1, 2])
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
         assert all(isinstance(op, qml.Identity) for op in tape1.operations)
 
-        with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.IntegerComparator.compute_decomposition(0, wires=[0, 1, 2], geq=False)
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qml.Identity) for op in tape2.operations)
 
     def test_power(self):
