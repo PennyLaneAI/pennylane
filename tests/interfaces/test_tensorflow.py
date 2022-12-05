@@ -607,11 +607,12 @@ class TestTensorFlowExecuteIntegration:
 
         with tf.GradientTape() as tape:
 
-            with qtape:
+            with qml.queuing.AnnotatedQueue() as q_qtape:
                 qml.RX(a, wires=0)
                 U3(p[0], p[1], p[2], wires=0)
                 qml.expval(qml.PauliX(0))
 
+            qtape = qml.tape.QuantumScript.from_queue(q_qtape)
             res = execute([qtape], dev, **execute_kwargs)[0]
 
         expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (

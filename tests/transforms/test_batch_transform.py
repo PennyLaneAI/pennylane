@@ -31,8 +31,8 @@ class TestBatchTransform:
         """Generates two tapes, one with all RX replaced with RY,
         and the other with all RX replaced with RZ."""
 
-        tape1 = qml.tape.QuantumTape()
-        tape2 = qml.tape.QuantumTape()
+        q_tape1 = qml.queuing.AnnotatedQueue()
+        q_tape2 = qml.queuing.AnnotatedQueue()
 
         # loop through all operations on the input tape
         for op in tape:
@@ -40,15 +40,18 @@ class TestBatchTransform:
                 wires = op.wires
                 param = op.parameters[0]
 
-                with tape1:
+                with q_tape1:
                     qml.RY(a * qml.math.abs(param), wires=wires)
 
-                with tape2:
+                with q_tape2:
                     qml.RZ(b * qml.math.sin(param), wires=wires)
             else:
-                for t in [tape1, tape2]:
+                for t in [q_tape1, q_tape2]:
                     with t:
                         qml.apply(op)
+
+        tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
+        tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
 
         def processing_fn(results):
             return qml.math.sum(qml.math.stack(results))
@@ -503,8 +506,8 @@ class TestBatchTransformGradients:
         """Generates two tapes, one with all RX replaced with RY,
         and the other with all RX replaced with RZ."""
 
-        tape1 = qml.tape.QuantumTape()
-        tape2 = qml.tape.QuantumTape()
+        q_tape1 = qml.queuing.AnnotatedQueue()
+        q_tape2 = qml.queuing.AnnotatedQueue()
 
         # loop through all operations on the input tape
         for op in tape:
@@ -512,15 +515,18 @@ class TestBatchTransformGradients:
                 wires = op.wires
                 param = op.parameters[0]
 
-                with tape1:
+                with q_tape1:
                     qml.RY(weights[0] * qml.math.sin(param), wires=wires)
 
-                with tape2:
+                with q_tape2:
                     qml.RZ(weights[1] * qml.math.cos(param), wires=wires)
             else:
-                for t in [tape1, tape2]:
+                for t in [q_tape1, q_tape2]:
                     with t:
                         qml.apply(op)
+
+        tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
+        tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
 
         def processing_fn(results):
             return qml.math.sum(qml.math.stack(results))

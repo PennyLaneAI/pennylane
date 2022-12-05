@@ -646,11 +646,12 @@ class TestJaxExecuteIntegration:
         def cost_fn(a, p, device):
             tape = qml.tape.QuantumTape()
 
-            with tape:
+            with qml.queuing.AnnotatedQueue() as q_tape:
                 qml.RX(a, wires=0)
                 U3(*p, wires=0)
                 qml.expval(qml.PauliX(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q_tape)
             tape = tape.expand(stop_at=lambda obj: device.supports_operation(obj.name))
             return execute([tape], device, interface=interface, **execute_kwargs)[0]
 

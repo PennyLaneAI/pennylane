@@ -15,8 +15,8 @@
 import pytest
 import numpy as np
 import pennylane as qml
-import pennylane.tape
 from pennylane import numpy as pnp
+from pennylane.tape import QuantumScript
 
 """Defines the device used for all tests"""
 
@@ -24,12 +24,13 @@ dev = qml.device("default.qubit", wires=4)
 
 """Defines circuits to be used in queueing/output tests"""
 
-with pennylane.tape.QuantumTape() as tape1:
+with qml.queuing.AnnotatedQueue() as q_tape1:
     qml.PauliX(0)
     H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
     qml.expval(H1)
+tape1 = QuantumScript.from_queue(q_tape1)
 
-with pennylane.tape.QuantumTape() as tape2:
+with qml.queuing.AnnotatedQueue() as q_tape2:
     qml.Hadamard(0)
     qml.Hadamard(1)
     qml.PauliZ(1)
@@ -45,6 +46,7 @@ with pennylane.tape.QuantumTape() as tape2:
         ],
     )
     qml.expval(H2)
+tape2 = QuantumScript.from_queue(q_tape2)
 
 H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
 
@@ -53,7 +55,7 @@ with qml.queuing.AnnotatedQueue() as q3:
     qml.expval(H3)
 
 
-tape3 = qml.tape.QuantumScript.from_queue(q3)
+tape3 = QuantumScript.from_queue(q3)
 H4 = (
     qml.PauliX(0) @ qml.PauliZ(2)
     + 3 * qml.PauliZ(2)
@@ -71,7 +73,7 @@ with qml.queuing.AnnotatedQueue() as q4:
 
     qml.expval(H4)
 
-tape4 = qml.tape.QuantumScript.from_queue(q4)
+tape4 = QuantumScript.from_queue(q4)
 TAPES = [tape1, tape2, tape3, tape4]
 OUTPUTS = [-1.5, -6, -1.5, -8]
 
@@ -82,13 +84,13 @@ class TestHamiltonianExpand:
     def test_ham_with_no_terms_raises(self):
         """Tests that the hamiltonian_expand transform raises an error for a Hamiltonian with no terms."""
         mps = [qml.expval(qml.Hamiltonian([], []))]
-        tape = qml.tape.QuantumTape([], mps)
+        qscript = QuantumScript([], mps)
 
         with pytest.raises(
             ValueError,
             match="The Hamiltonian in the tape has no terms defined - cannot perform the Hamiltonian expansion.",
         ):
-            qml.transforms.hamiltonian_expand(tape)
+            qml.transforms.hamiltonian_expand(qscript)
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians(self, tape, output):
@@ -100,7 +102,7 @@ class TestHamiltonianExpand:
 
         assert np.isclose(output, expval)
 
-        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+        qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = qml.transforms.hamiltonian_expand(qs)
         results = dev.batch_execute(tapes)
         expval = fn(results)
@@ -119,7 +121,7 @@ class TestHamiltonianExpand:
 
         assert np.isclose(output, expval)
 
-        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+        qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = qml.transforms.hamiltonian_expand(qs, group=False)
         results = dev.batch_execute(tapes)
         expval = fn(results)
@@ -140,11 +142,11 @@ class TestHamiltonianExpand:
             qml.PauliX(wires=2)
             qml.expval(H)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
         tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
         assert len(tapes) == 2
 
-        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
+        qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = qml.transforms.hamiltonian_expand(qs, group=False)
         assert len(tapes) == 2
 
@@ -159,7 +161,7 @@ class TestHamiltonianExpand:
             qml.PauliX(wires=2)
             qml.expval(H)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
         tapes, fn = qml.transforms.hamiltonian_expand(tape, group=False)
         assert len(tapes) == 3
 
@@ -170,7 +172,7 @@ class TestHamiltonianExpand:
         """Tests the correct number of quantum scripts are produced."""
 
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
-        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        qs = QuantumScript(measurements=[qml.expval(H)])
 
         tapes, fn = qml.transforms.hamiltonian_expand(qs, group=False)
         assert len(tapes) == 3
@@ -179,12 +181,11 @@ class TestHamiltonianExpand:
         assert len(tapes) == 2
 
     def test_hamiltonian_error(self):
-
-        with pennylane.tape.QuantumTape() as tape:
-            qml.expval(qml.PauliZ(0))
+        """Tests that the script passed to hamiltonian_expand must end with a hamiltonian."""
+        qscript = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
 
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
-            tapes, fn = qml.transforms.hamiltonian_expand(tape)
+            tapes, fn = qml.transforms.hamiltonian_expand(qscript)
 
     @pytest.mark.autograd
     def test_hamiltonian_dif_autograd(self, tol):
@@ -219,7 +220,7 @@ class TestHamiltonianExpand:
 
             qml.expval(H)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
 
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
@@ -265,7 +266,7 @@ class TestHamiltonianExpand:
                     qml.CNOT(wires=[2, 0])
                 qml.expval(H)
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = QuantumScript.from_queue(q)
             tapes, fn = qml.transforms.hamiltonian_expand(tape)
             res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
 

@@ -59,12 +59,13 @@ class TestSimplifyOperators:
     def test_simplify_method_with_queuing(self):
         """Test the simplify method while queuing."""
         tape = QuantumTape()
-        with tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             op = build_op()
             s_op = qml.simplify(op)
+        tape = qml.tape.QuantumScript.from_queue(q_tape)
         assert len(tape.circuit) == 1
         assert tape.circuit[0] is s_op
-        assert tape.get_info(op)["owner"] is s_op
+        assert q_tape.get_info(op)["owner"] is s_op
 
     def test_simplify_unsupported_object_raises_error(self):
         """Test that an error is raised when trying to simplify an unsupported object."""
@@ -78,9 +79,10 @@ class TestSimplifyTapes:
     def test_simplify_tape(self):
         """Test the simplify method with a tape."""
         tape = QuantumTape()
-        with tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             build_op()
 
+        tape = qml.tape.QuantumScript.from_queue(q_tape)
         s_tape = qml.simplify(tape)
         assert len(s_tape) == 1
         s_op = s_tape[0]
@@ -93,10 +95,11 @@ class TestSimplifyTapes:
         """Test the execution of a simplified tape."""
         dev = qml.device("default.qubit", wires=2)
         tape = QuantumTape()
-        with tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.prod(qml.prod(qml.PauliX(0) ** 1, qml.PauliX(0)), qml.PauliZ(1))
             qml.expval(op=qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q_tape)
         simplified_tape_op = qml.PauliZ(1)
         s_tape = qml.simplify(tape)
         s_op = s_tape.operations[0]
