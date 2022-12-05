@@ -27,9 +27,11 @@ from pennylane.interfaces.jax_jit import _validate_jax_version, _numeric_type_to
 
 dtype = jnp.float64
 
+
 def _create_shape_dtype_struct(tape, device):
     """Auxiliary function for creating the shape and dtype object structure
     given a tape."""
+
     def process_single_shape(shape, tape_dtype):
         return jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
 
@@ -41,6 +43,7 @@ def _create_shape_dtype_struct(tape, device):
 
     tape_dtype = tuple(_numeric_type_to_dtype(elem) for elem in tape.numeric_type)
     return tuple(process_single_shape(s, d) for s, d in zip(shape, tape_dtype))
+
 
 def _tapes_shape_dtype_tuple(tapes, device):
     """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
@@ -215,7 +218,6 @@ def _execute_bwd_tuple(
 
         return evaluation_results, jvps
 
-
     def _grad_transform_jac_via_callback(params, device):
         """Perform a callback to compute the jacobian of tapes using a gradient transform (e.g., parameter-shift or
         finite differences grad transform).
@@ -241,7 +243,9 @@ def _execute_bwd_tuple(
             with qml.tape.Unwrap(*new_tapes):
                 all_jacs = []
                 for new_t in new_tapes:
-                    jvp_tapes, res_processing_fn = gradient_fn(new_t, shots=device.shots, **gradient_kwargs)
+                    jvp_tapes, res_processing_fn = gradient_fn(
+                        new_t, shots=device.shots, **gradient_kwargs
+                    )
                     jacs = execute_fn(jvp_tapes)[0]
                     jacs = res_processing_fn(jacs)
                     all_jacs.append(jacs)
