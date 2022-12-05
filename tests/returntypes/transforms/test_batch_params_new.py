@@ -494,7 +494,7 @@ class TestDiffMulti:
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
         batch_size = 3
-        x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
+        x = jnp.linspace(0.1, 0.5, batch_size)
 
         res = circuit(x)
         expected = (

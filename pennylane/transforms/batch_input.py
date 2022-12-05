@@ -79,10 +79,13 @@ def batch_input(
     argnum_params = [all_parameters[i] for i in argnum]
 
     if any(num in tape.trainable_params for num in argnum):
-        raise ValueError(
-            "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
-            + "'argnum' are not marked as trainable."
-        )
+        # JAX arrays can't be marked as non-trainable, so don't raise this error
+        # if the interface is JAX
+        if qml.math.get_interface(*argnum_params) != "jax":
+            raise ValueError(
+                "Batched inputs must be non-trainable. Please make sure that the parameters indexed by "
+                + "'argnum' are not marked as trainable."
+            )
 
     batch_dims = np.unique([qml.math.shape(x)[0] for x in argnum_params])
     if len(batch_dims) != 1:
