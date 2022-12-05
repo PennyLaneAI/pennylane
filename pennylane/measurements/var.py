@@ -61,6 +61,8 @@ def var(op: Operator):
 class _Variance(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the variance of the supplied observable."""
 
+    method_name = "var"
+
     @property
     def return_type(self):
         return Variance
