@@ -248,9 +248,9 @@ def _execute_bwd_tuple(
             with qml.tape.Unwrap(*new_tapes):
                 all_jacs = []
                 for new_t in new_tapes:
-                    jvp_tapes, fn = gradient_fn(new_t, shots=device.shots, **gradient_kwargs)
+                    jvp_tapes, res_processing_fn = gradient_fn(new_t, shots=device.shots, **gradient_kwargs)
                     jacs = execute_fn(jvp_tapes)[0]
-                    jacs = fn(jacs)
+                    jacs = res_processing_fn(jacs)
                     all_jacs.append(jacs)
 
             if len(all_jacs) == 1:
