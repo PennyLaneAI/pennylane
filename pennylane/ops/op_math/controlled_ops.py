@@ -41,11 +41,11 @@ class ControlledQubitUnitary(ControlledOp):
     * Gradient recipe: None
 
     Args:
-        U (array[complex]): square unitary matrix
+        U (Union[array[complex], QubitUnitary]): square unitary matrix or a QubitUnitary operation
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
-        wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on
-        control_values (str): a string of bits representing the state of the control
-            qubits to control on (default is the all 1s state)
+        wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on (optional if U is provided as a QubitUnitary)
+        control_values (List[int, bool]): a list providing the state of the control qubits to control on (default is the all 1s state)
+        unitary_check (bool): whether to check whether an array U is unitary when creating the operator (default False)
 
     **Example**
 
@@ -54,6 +54,10 @@ class ControlledQubitUnitary(ControlledOp):
 
     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1], wires=2)
+
+    Alternatively, the same operator can be constructed with a QubitUnitary:
+    >>> base = qml.QubitUnitary(U, wires=2)
+    >>> qml.ControlledQubitUnitary(base, control_wires=[0, 1])
 
     Typically controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
@@ -65,8 +69,11 @@ class ControlledQubitUnitary(ControlledOp):
     wire ``3`` conditioned on three wires where the first is in state ``0``, the
     second is in state ``1``, and the third in state ``1``, we can write:
 
-    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='011')
+    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values=[0, 1, 1])
 
+    or
+
+    >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values=[False, True, True])
     """
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
