@@ -21,7 +21,7 @@ from typing import Type, Union
 import pennylane as qml
 from pennylane import Device, apply
 from pennylane.operation import Operation
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.transforms.qfunc_transforms import qfunc_transform
 from pennylane.ops.op_math import Adjoint
 
@@ -53,12 +53,12 @@ def _check_position(position):
 
 @qfunc_transform
 def insert(
-    circuit: Union[callable, QuantumTape, Device],
+    circuit: Union[callable, QuantumScript, Device],
     op: Union[callable, Type[Operation]],
     op_args: Union[tuple, float],
     position: Union[str, list, Type[Operation]] = "all",
     before: bool = False,
-) -> Union[callable, QuantumTape]:
+) -> Union[callable, QuantumScript]:
     """Insert an operation into specified points in an input circuit.
 
     Circuits passed through this transform will be updated to have the operation, specified by the
@@ -71,7 +71,7 @@ def insert(
     for more information).
 
     Args:
-        circuit (callable or QuantumTape or Device): the input circuit to be transformed, or a
+        circuit (callable or QuantumScript or Device): the input circuit to be transformed, or a
             device
         op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
@@ -86,7 +86,7 @@ def insert(
             Default is ``False`` and the operation is inserted after.
 
     Returns:
-        callable or QuantumTape or Device: the updated version of the input circuit or an updated
+        callable or QuantumScript or Device: the updated version of the input circuit or an updated
         device which will transform circuits before execution
 
     Raises:
@@ -163,18 +163,19 @@ def insert(
 
         .. code-block:: python3
 
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(0.9, wires=0)
                 qml.RY(0.4, wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.RY(0.5, wires=0)
                 qml.RX(0.6, wires=1)
                 qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qscript = qml.tape.QuantumScript.from_queue(q)
 
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
         >>> from pennylane.transforms import insert
-        >>> noisy_tape = insert(qml.AmplitudeDamping, 0.05, position="end")(tape)
+        >>> noisy_tape = insert(qml.AmplitudeDamping, 0.05, position="end")(qscript)
         >>> print(qml.drawer.tape_text(noisy_tape, decimals=2))
         0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
         1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.05)─┤ ╰<Z@Z>

@@ -21,7 +21,7 @@ from typing import Callable, Optional, Tuple, Union
 
 import pennylane as qml
 from pennylane.measurements import Expectation
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 from pennylane.transforms.batch_transform import batch_transform
@@ -34,13 +34,13 @@ from .processing import qcut_processing_fn
 
 @batch_transform
 def cut_circuit(
-    tape: QuantumTape,
+    tape: QuantumScript,
     auto_cutter: Union[bool, Callable] = False,
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
     **kwargs,
-) -> Tuple[Tuple[QuantumTape], Callable]:
+) -> Tuple[Tuple[QuantumScript], Callable]:
     """
     Cut up a quantum circuit into smaller circuit fragments.
 
@@ -57,7 +57,7 @@ def cut_circuit(
         Only circuits that return a single expectation value are supported.
 
     Args:
-        tape (QuantumTape): the tape of the full circuit to be cut
+        tape (QuantumScript): the tape of the full circuit to be cut
         auto_cutter (Union[bool, Callable]): Toggle for enabling automatic cutting with the default
             :func:`~.kahypar_cut` partition method. Can also pass a graph partitioning function that
             takes an input graph and returns a list of edges to be cut based on a given set of
@@ -153,7 +153,7 @@ def cut_circuit(
 
         Manually placing :class:`~.WireCut` operations and decorating the QNode with the
         ``cut_circuit()`` batch transform is the suggested entrypoint into circuit cutting. However,
-        advanced users also have the option to work directly with a :class:`~.QuantumTape` and
+        advanced users also have the option to work directly with a :class:`~.QuantumScript` and
         manipulate the tape to perform circuit cutting using the below functionality:
 
         .. autosummary::
@@ -175,7 +175,7 @@ def cut_circuit(
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(0.531, wires=0)
                 qml.RY(0.9, wires=1)
                 qml.RX(0.3, wires=2)
@@ -188,6 +188,7 @@ def cut_circuit(
                 qml.CZ(wires=[1, 2])
 
                 qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
+            tape = qml.tape.QuantumScript.from_queue(q)
 
         >>> print(qml.drawer.tape_text(tape))
         0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
@@ -211,7 +212,7 @@ def cut_circuit(
 
         .. code-block:: python
 
-            with qml.tape.QuantumTape() as uncut_tape:
+            with qml.tape.QuantumScript() as q:
                 qml.RX(0.531, wires=0)
                 qml.RY(0.9, wires=1)
                 qml.RX(0.3, wires=2)
@@ -222,9 +223,10 @@ def cut_circuit(
                 qml.CZ(wires=[1, 2])
 
                 qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
+            uncut_script = qml.tape.QuantumScript.from_queue(q)
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
-                graph = qml.transforms.qcut.tape_to_graph(uncut_tape),
+                graph = qml.transforms.qcut.tape_to_graph(uncut_script),
                 cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2),
             )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
@@ -246,7 +248,7 @@ def cut_circuit(
 
         >>> fragments, communication_graph = qml.transforms.qcut.fragment_graph(graph)
 
-        We now convert the ``fragments`` back to :class:`~.QuantumTape` objects
+        We now convert the ``fragments`` back to :class:`~.QuantumScript` objects
 
         >>> fragment_tapes = [qml.transforms.qcut.graph_to_tape(f) for f in fragments]
 
@@ -387,7 +389,7 @@ def cut_circuit(
 
 
 def _cut_circuit_expand(
-    tape: QuantumTape,
+    tape: QuantumScript,
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,

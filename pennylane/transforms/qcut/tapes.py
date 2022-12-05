@@ -27,7 +27,7 @@ from pennylane.pauli import string_to_pauli_word
 from pennylane.measurements import Expectation, MeasurementProcess, Sample
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 from pennylane.operation import Operator, Tensor
 
@@ -41,7 +41,7 @@ from .qcut import (
 )
 
 
-def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
+def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
     """
     Converts a quantum tape to a directed multigraph.
 
@@ -51,7 +51,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
         Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
-        tape (QuantumTape): tape to be converted into a directed multigraph
+        tape (QuantumScript): tape to be converted into a directed multigraph
 
     Returns:
         nx.MultiDiGraph: a directed multigraph that captures the circuit structure
@@ -63,15 +63,16 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.RY(0.9, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(1))
+        qscript = qml.tape.QuantumScript.from_queue(q)
 
     Its corresponding circuit graph can be found using
 
-    >>> qml.transforms.qcut.tape_to_graph(tape)
+    >>> qml.transforms.qcut.tape_to_graph(qscript)
     <networkx.classes.multidigraph.MultiDiGraph at 0x7fe41cbd7210>
     """
     graph = MultiDiGraph()
@@ -131,7 +132,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.RY(0.5, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -139,11 +140,12 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
             qml.transforms.qcut.PrepareNode(wires=1)
             qml.CNOT(wires=[1, 0])
             qml.expval(qml.PauliZ(0))
+        qscript = qml.tape.QuantumScript.from_queue(q)
 
     This circuit contains operations that follow a :class:`~.MeasureNode`. These operations will
     subsequently act on wire ``2`` instead of wire ``1``:
 
-    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+    >>> graph = qml.transforms.qcut.tape_to_graph(qscript)
     >>> tape = qml.transforms.qcut.graph_to_tape(graph)
     >>> print(tape.draw())
     0: ──RX──────────╭●──────────────╭X─┤  <Z>
@@ -234,8 +236,8 @@ PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_i
 
 
 def expand_fragment_tape(
-    tape: QuantumTape,
-) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
+    tape: QuantumScript,
+) -> Tuple[List[QuantumScript], List[PrepareNode], List[MeasureNode]]:
     """
     Expands a fragment tape into a sequence of tapes for each configuration of the contained
     :class:`MeasureNode` and :class:`PrepareNode` operations.
@@ -246,11 +248,11 @@ def expand_fragment_tape(
         Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
-        tape (QuantumTape): the fragment tape containing :class:`MeasureNode` and
+        tape (QuantumScript): the fragment tape containing :class:`MeasureNode` and
             :class:`PrepareNode` operations to be expanded
 
     Returns:
-        Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]: the
+        Tuple[List[QuantumScript], List[PrepareNode], List[MeasureNode]]: the
         tapes corresponding to each configuration and the order of preparation nodes and
         measurement nodes used in the expansion
 
@@ -261,14 +263,15 @@ def expand_fragment_tape(
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.transforms.qcut.PrepareNode(wires=0)
             qml.RX(0.5, wires=0)
             qml.transforms.qcut.MeasureNode(wires=0)
+        qscript = qml.tape.QuantumScript.from_queue(q)
 
     We can expand over the measurement and preparation nodes using:
 
-    >>> tapes, prep, meas = qml.transforms.qcut.expand_fragment_tape(tape)
+    >>> tapes, prep, meas = qml.transforms.qcut.expand_fragment_tape(qscript)
     >>> for t in tapes:
     ...     print(qml.drawer.tape_text(t, decimals=1))
     0: ──I──RX(0.5)─┤  <I>  <Z>
@@ -373,7 +376,7 @@ def _get_measurements(
 
 
 def _qcut_expand_fn(
-    tape: QuantumTape,
+    tape: QuantumScript,
     max_depth: int = 1,
     auto_cutter: Union[bool, Callable] = False,
 ):

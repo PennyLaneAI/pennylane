@@ -19,7 +19,7 @@ from typing import Any, Dict, Optional, Sequence, Union
 from pennylane import QNode, apply, adjoint
 from pennylane.math import mean, shape, round
 from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript
 from pennylane.transforms import batch_transform
 
 import pennylane as qml
@@ -37,7 +37,7 @@ def fold_global(circuit, scale_factor):
     The purpose of folding is to artificially increase the noise for zero noise extrapolation, see :func:`~.pennylane.transforms.mitigate_with_zne`.
 
     Args:
-        circuit (callable or QuantumTape): the circuit to be folded
+        circuit (callable or QuantumScript): the circuit to be folded
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
@@ -192,7 +192,7 @@ def fold_global_tape(circuit, scale_factor):
     For the user-facing function see :func:`~.pennylane.transforms.fold_global`.
 
     Args:
-        circuit (QuantumTape): the circuit to be folded
+        circuit (QuantumScript): the circuit to be folded
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
@@ -323,7 +323,7 @@ def richardson_extrapolate(x, y):
 # pylint: disable=too-many-arguments, protected-access
 @batch_transform
 def mitigate_with_zne(
-    circuit: Union[QNode, QuantumTape],
+    circuit: Union[QNode, QuantumScript],
     scale_factors: Sequence[float],
     folding: callable,
     extrapolate: callable,
@@ -347,7 +347,7 @@ def mitigate_with_zne(
     see the example and usage details for further information.
 
     Args:
-        circuit (callable or QuantumTape): the circuit to be error-mitigated
+        circuit (callable or QuantumScript): the circuit to be error-mitigated
         scale_factors (Sequence[float]): the range of noise scale factors used
         folding (callable): a function that returns a folded circuit for a specified scale factor
         extrapolate (callable): a function that returns an extrapolated result when provided a
