@@ -588,16 +588,14 @@ class TestTensorFlowExecuteIntegration:
 
         class U3(qml.U3):
             def expand(self):
-                tape = qml.tape.QuantumTape()
                 theta, phi, lam = self.data
                 wires = self.wires
-                tape._ops += [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
-                ]
-                return tape
-
-        qtape = qml.tape.QuantumTape()
+                return qml.tape.QuantumScript(
+                    [
+                        qml.Rot(lam, theta, -lam, wires=wires),
+                        qml.PhaseShift(phi + lam, wires=wires),
+                    ]
+                )
 
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)

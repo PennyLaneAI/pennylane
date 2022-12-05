@@ -21,7 +21,7 @@ from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.transforms import (
     mitigate_with_zne,
     poly_extrapolate,
@@ -38,7 +38,7 @@ with qml.queuing.AnnotatedQueue() as q_tape:
     qml.RX(0.6, wires=1)
     qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-tape = qml.tape.QuantumScript.from_queue(q_tape)
+tape = QuantumScript.from_queue(q_tape)
 with qml.queuing.AnnotatedQueue() as q_tape_base:
     qml.RX(0.9, wires=0)
     qml.RY(0.4, wires=1)
@@ -47,7 +47,7 @@ with qml.queuing.AnnotatedQueue() as q_tape_base:
     qml.RX(0.6, wires=1)
 
 
-tape_base = qml.tape.QuantumScript.from_queue(q_tape_base)
+tape_base = QuantumScript.from_queue(q_tape_base)
 
 
 def same_tape(tape1, tape2):

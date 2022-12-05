@@ -1019,7 +1019,7 @@ class TestBatchExecution:
 
         dev = mock_device_with_paulis_and_methods(wires=2)
 
-        empty_tape = qml.tape.QuantumTape()
+        empty_tape = qml.tape.QuantumScript()
         tapes = [empty_tape] * 3
         res = dev.batch_execute(tapes)
 

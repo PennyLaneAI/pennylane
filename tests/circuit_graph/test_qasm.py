@@ -31,7 +31,7 @@ class TestToQasmUnitTests:
     def test_empty_circuit(self):
         """Test that an empty circuit graph is properly
         serialized into an empty QASM program."""
-        circuit = qml.tape.QuantumTape()
+        circuit = qml.tape.QuantumScript()
         res = circuit.to_openqasm()
         expected = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
         assert res == expected

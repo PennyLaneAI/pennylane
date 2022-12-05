@@ -155,7 +155,7 @@ class TestOperations:
             queue = [qml.QutritUnitary(U, wires=0), qml.QutritUnitary(U, wires=0)]
             observables = [qml.expval(qml.Identity(0))]
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
         call_history = []
 
         with monkeypatch.context() as m:
@@ -190,7 +190,7 @@ class TestOperations:
             ]
             observables = [qml.expval(qml.Identity(0)), qml.var(qml.Identity(1))]
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
         dev = mock_qutrit_device()
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(tape)
@@ -218,7 +218,7 @@ class TestOperations:
             for op in queue + observables:
                 op.queue()
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
         call_history = {}
 
         with monkeypatch.context() as m:
@@ -254,7 +254,7 @@ class TestObservables:
             queue = [qml.QutritUnitary(U, wires=0)]
             observables = [qml.expval(qml.Hadamard(0))]
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
         dev = mock_qutrit_device()
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(tape)
@@ -273,7 +273,7 @@ class TestObservables:
             qml.QutritUnitary(U, wires=0)
             UnsupportedMeasurement(obs=qml.Identity(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
         with monkeypatch.context() as m:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: None)
             dev = mock_qutrit_device()
@@ -379,7 +379,7 @@ class TestExtractStatistics:
             qml.state()
             qml.probs(wires=0)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
         dev = mock_qutrit_device_extract_stats()
 
         with pytest.raises(
@@ -965,12 +965,12 @@ class TestBatchExecution:
         qml.QutritUnitary(np.eye(3), wires=0)
         qml.expval(qml.Identity(0)), qml.expval(qml.Identity(1))
 
-    tape1 = qml.tape.QuantumScript.from_queue(q1)
+    tape1 = QuantumScript.from_queue(q1)
     with qml.queuing.AnnotatedQueue() as q2:
         qml.QutritUnitary(np.eye(3), wires=0)
         qml.expval(qml.Identity(0))
 
-    tape2 = qml.tape.QuantumScript.from_queue(q2)
+    tape2 = QuantumScript.from_queue(q2)
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
     def test_calls_to_execute(self, n_tapes, mocker, mock_qutrit_device):
@@ -1018,7 +1018,7 @@ class TestBatchExecution:
 
         dev = mock_qutrit_device(wires=2)
 
-        empty_tape = qml.tape.QuantumTape()
+        empty_tape = QuantumScript()
         tapes = [empty_tape] * 3
         res = dev.batch_execute(tapes)
 
@@ -1185,7 +1185,7 @@ class TestUnimplemented:
     def test_adjoint_jacobian(self, mock_qutrit_device):
         """Test that adjoint_jacobian is unimplemented"""
         dev = mock_qutrit_device()
-        tape = qml.tape.QuantumTape()
+        tape = QuantumScript()
 
         with pytest.raises(NotImplementedError):
             dev.adjoint_jacobian(tape)

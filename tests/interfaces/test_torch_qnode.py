@@ -22,7 +22,7 @@ from torch.autograd.functional import hessian, jacobian
 
 import pennylane as qml
 from pennylane import QNode, qnode
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", "backward"],
@@ -396,7 +396,7 @@ class TestQNode:
                     qml.Rot(lam, theta, -lam, wires=wires)
                     qml.PhaseShift(phi + lam, wires=wires)
 
-                tape = qml.tape.QuantumScript.from_queue(q_tape)
+                tape = QuantumScript.from_queue(q_tape)
                 return tape
 
         dev = qml.device(dev_name, wires=1)
@@ -1073,7 +1073,7 @@ class TestTapeExpansion:
             def expand(self):
                 with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
-                tape = qml.tape.QuantumScript.from_queue(q)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=2, interface="torch")
@@ -1128,7 +1128,7 @@ class TestTapeExpansion:
             def expand(self):
                 with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
-                tape = qml.tape.QuantumScript.from_queue(q)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="torch")

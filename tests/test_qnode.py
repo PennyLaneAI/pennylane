@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript
 
 
 def dummyfunc():
@@ -1247,7 +1247,7 @@ class TestShots:
             qml.RZ(0.3, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
         # no warning on the first execution
         cache = {}
         qml.execute([tape], dev, None, cache=cache)
@@ -1362,7 +1362,7 @@ class TestTapeExpansion:
             def expand(self):
                 with qml.queuing.AnnotatedQueue() as q:
                     qml.RX(3 * self.data[0], wires=self.wires)
-                tape = qml.tape.QuantumScript.from_queue(q)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode)
@@ -1398,7 +1398,7 @@ class TestTapeExpansion:
             def expand(self):
                 with qml.queuing.AnnotatedQueue() as q:
                     qml.RX(3 * self.data[0], wires=self.wires)
-                tape = qml.tape.QuantumScript.from_queue(q)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method="parameter-shift", max_diff=2)
@@ -1440,7 +1440,7 @@ class TestTapeExpansion:
             def expand(self):
                 with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
-                tape = qml.tape.QuantumScript.from_queue(q)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method="parameter-shift", max_diff=2)

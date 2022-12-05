@@ -77,7 +77,7 @@ class TestGradAnalysis:
 
     def test_finite_diff(self, monkeypatch):
         """If an op has grad_method=F, this should be respected
-        by the qml.tape.QuantumTape"""
+        by the qml.tape.QuantumScript"""
         monkeypatch.setattr(qml.Rotation, "grad_method", "F")
 
         with qml.queuing.AnnotatedQueue() as q:

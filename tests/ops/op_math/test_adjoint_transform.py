@@ -20,7 +20,7 @@ from pennylane.ops.op_math import Adjoint
 
 noncallable_objects = [
     [qml.Hadamard(1), qml.RX(-0.2, wires=1)],
-    qml.tape.QuantumTape(),
+    qml.tape.QuantumScript(),
 ]
 
 

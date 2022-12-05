@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.tape.tape import expand_tape
 from pennylane.ops.op_math import ctrl, Controlled
 
@@ -33,7 +33,7 @@ def test_control_sanity_check():
         # Execute controlled version.
         cmake_ops()
 
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     expanded_tape = tape.expand()
 
     expected = [
@@ -63,13 +63,13 @@ def test_adjoint_of_control():
         # Execute controlled and adjointed version of my_op.
         cmy_op_dagger(0.789, 0.123, c=0.456)
 
-    tape1 = qml.tape.QuantumScript.from_queue(q1)
+    tape1 = QuantumScript.from_queue(q1)
     with qml.queuing.AnnotatedQueue() as q2:
         cmy_op_dagger = ctrl(qml.adjoint(my_op), 5)
         # Execute adjointed and controlled version of my_op.
         cmy_op_dagger(0.789, 0.123, c=0.456)
 
-    tape2 = qml.tape.QuantumScript.from_queue(q2)
+    tape2 = QuantumScript.from_queue(q2)
     expected = [
         qml.CRZ(-0.456, wires=[5, 0]),
         qml.CRY(-0.123, wires=[5, 3]),
@@ -85,7 +85,7 @@ def test_nested_control():
     with qml.queuing.AnnotatedQueue() as q_tape:
         CCX = ctrl(ctrl(qml.PauliX, 7), 3)
         CCX(wires=0)
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     assert len(tape.operations) == 1
     op = tape.operations[0]
     assert isinstance(op, Controlled)
@@ -98,7 +98,7 @@ def test_multi_control():
     with qml.queuing.AnnotatedQueue() as q_tape:
         CCX = ctrl(qml.PauliX, control=[3, 7])
         CCX(wires=0)
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     assert len(tape.operations) == 1
     op = tape.operations[0]
     assert isinstance(op, Controlled)
@@ -152,7 +152,7 @@ def test_ctrl_within_ctrl():
     with qml.queuing.AnnotatedQueue() as q_tape:
         controlled_ansatz([0.123, 0.456])
 
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     tape = tape.expand(2, stop_at=lambda op: not isinstance(op, Controlled))
 
     expected = [
@@ -168,7 +168,7 @@ def test_diagonal_ctrl():
     """Test ctrl on diagonal gates."""
     with qml.queuing.AnnotatedQueue() as q_tape:
         ctrl(qml.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
     assert qml.equal(
         tape[0], qml.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])
@@ -181,7 +181,7 @@ def test_qubit_unitary():
     with qml.queuing.AnnotatedQueue() as q_tape:
         ctrl(qml.QubitUnitary, 1)(M, wires=0)
 
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
 
     expected = qml.ControlledQubitUnitary(M, control_wires=1, wires=0)
@@ -195,7 +195,7 @@ def test_controlledqubitunitary():
     with qml.queuing.AnnotatedQueue() as q_tape:
         ctrl(qml.ControlledQubitUnitary, 1)(M, control_wires=2, wires=0)
 
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
 
     expected = qml.ControlledQubitUnitary(M, control_wires=[2, 1], wires=0)
@@ -207,7 +207,7 @@ def test_no_control_defined():
     # QFT has no control rule defined.
     with qml.queuing.AnnotatedQueue() as q_tape:
         ctrl(qml.templates.QFT, 2)(wires=[0, 1])
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     tape = tape.expand(depth=3, stop_at=lambda op: not isinstance(op, Controlled))
     assert len(tape.operations) == 8
     # Check that all operations are updated to their controlled version.
@@ -222,7 +222,7 @@ def test_decomposition_defined():
     with qml.queuing.AnnotatedQueue() as q_tape:
         ctrl(qml.CY, 0)(wires=[1, 2])
 
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     tape = tape.expand()
 
     assert len(tape.operations) == 2
@@ -240,7 +240,7 @@ def test_controlled_template():
     with qml.queuing.AnnotatedQueue() as q_tape:
         ctrl(qml.templates.BasicEntanglerLayers, 0)(weights, wires=[1, 2])
 
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     tape = expand_tape(tape, depth=2)
     assert len(tape) == 9
     assert all(o.name in {"CRX", "Toffoli"} for o in tape.operations)
@@ -259,7 +259,7 @@ def test_controlled_template_and_operations():
     with qml.queuing.AnnotatedQueue() as q_tape:
         ctrl(ansatz, 0)(weights, wires=[1, 2])
 
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     tape = tape.expand(depth=2, stop_at=lambda obj: not isinstance(obj, Controlled))
     assert len(tape.operations) == 10
     assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
@@ -378,7 +378,7 @@ def test_control_values_sanity_check():
         # Execute controlled version.
         cmake_ops()
 
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     expected = [
         qml.PauliX(wires=1),
         qml.CRX(0.123, wires=[1, 0]),
@@ -416,7 +416,7 @@ def test_multi_control_values(ctrl_values):
     with qml.queuing.AnnotatedQueue() as q_tape:
         CCX = ctrl(qml.PauliX, control=[3, 7], control_values=ctrl_values)
         CCX(wires=0)
-    tape = qml.tape.QuantumScript.from_queue(q_tape)
+    tape = QuantumScript.from_queue(q_tape)
     assert len(tape.operations) == 1
     op = tape.operations[0]
     assert isinstance(op, Controlled)

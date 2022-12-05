@@ -730,17 +730,16 @@ class TestAutogradExecuteIntegration:
 
         class U3(qml.U3):
             def expand(self):
-                tape = qml.tape.QuantumTape()
                 theta, phi, lam = self.data
                 wires = self.wires
-                tape._ops += [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
-                ]
-                return tape
+                return qml.tape.QuantumScript(
+                    [
+                        qml.Rot(lam, theta, -lam, wires=wires),
+                        qml.PhaseShift(phi + lam, wires=wires),
+                    ]
+                )
 
         def cost_fn(a, p, device):
-            tape = qml.tape.QuantumTape()
 
             with qml.queuing.AnnotatedQueue() as q_tape:
                 qml.RX(a, wires=0)

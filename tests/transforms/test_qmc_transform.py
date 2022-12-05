@@ -269,7 +269,7 @@ class TestQuantumMonteCarlo:
             unexpanded = (
                 isinstance(op, qml.MultiControlledX)
                 or isinstance(op, qml.templates.QFT)
-                or isinstance(op, qml.tape.QuantumTape)
+                or isinstance(op, qml.tape.QuantumScript)
             )
             assert not unexpanded
 

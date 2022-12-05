@@ -21,7 +21,7 @@ from pennylane import numpy as np
 
 from pennylane.drawer import tape_text
 from pennylane.drawer.tape_text import _add_grouping_symbols, _add_op, _add_measurement
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 
@@ -115,12 +115,12 @@ class TestHelperFunctions:
 class TestEmptyTapes:
     def test_empty_tape(self):
         """Test using an empty tape returns a blank string"""
-        assert tape_text(QuantumTape()) == ""
+        assert tape_text(QuantumScript()) == ""
 
     def test_empty_tape_wire_order(self):
         """Test wire order and show_all_wires shows wires with empty tape."""
         expected = "a: ───┤  \nb: ───┤  "
-        out = tape_text(QuantumTape(), wire_order=["a", "b"], show_all_wires=True)
+        out = tape_text(QuantumScript(), wire_order=["a", "b"], show_all_wires=True)
         assert expected == out
 
 
