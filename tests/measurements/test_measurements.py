@@ -560,8 +560,8 @@ class TestStateMeasurement:
 
 
 @pytest.mark.parametrize("switch_return", [qml.enable_return, qml.disable_return])
-class TestCustomMeasurement:
-    """Tests for the CustomMeasurement class."""
+class TestMeasurementTransform:
+    """Tests for the MeasurementTransform class."""
 
     def test_custom_measurement(self, switch_return):
         """Test the execution of a custom measurement."""
