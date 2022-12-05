@@ -619,6 +619,16 @@ class TestWrapperFunc:
         assert sprod_class_op.wires == sprod_func_op.wires
         assert sprod_class_op.parameters == sprod_func_op.parameters
 
+    def test_s_prod_top_level_non_lazy(self):
+        """Test the lazy=False keyword."""
+        sprod_lazy = s_prod(3, s_prod(4, qml.PauliX(0)), lazy=True)
+        sprod_non_lazy = s_prod(3, s_prod(4, qml.PauliX(0)), lazy=False)
+
+        assert sprod_lazy.scalar == 3
+        assert sprod_non_lazy.scalar == 12
+        assert isinstance(sprod_lazy.base, SProd)
+        assert isinstance(sprod_non_lazy.base, qml.PauliX)
+
 
 class TestIntegration:
     """Integration tests for SProd with a QNode."""

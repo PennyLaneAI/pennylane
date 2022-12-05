@@ -707,6 +707,16 @@ class TestWrapperFunc:
         assert sum_class_op.wires == sum_func_op.wires
         assert sum_class_op.parameters == sum_func_op.parameters
 
+    def test_op_sum_top_level_non_lazy(self):
+        """Test the lazy=False keyword."""
+        sum_lazy = op_sum(qml.S(0), op_sum(qml.S(1), qml.T(1)), lazy=True)
+        sum_non_lazy = op_sum(qml.S(0), op_sum(qml.S(1), qml.T(1)), lazy=False)
+
+        assert len(sum_lazy.operands) == 3
+        assert len(sum_non_lazy.operands) == 2
+        assert isinstance(sum_lazy.operands[1], Sum)
+        assert isinstance(sum_non_lazy.operands[1], qml.S)
+
 
 class TestIntegration:
     """Integration tests for the Sum class."""
