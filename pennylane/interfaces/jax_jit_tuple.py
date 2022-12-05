@@ -193,6 +193,36 @@ def _execute_bwd_tuple(
         res = jax.pure_callback(wrapper, shape_dtype_structs, params)
         return res
 
+    @execute_wrapper.defjvp
+    def execute_wrapper_jvp(primals, tangents):
+        # pylint: disable=unused-variable
+        params = primals[0]
+        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
+        multi_params = [len(tape.trainable_params) > 1 for tape in tapes]
+
+        # Execution: execute the function first
+        evaluation_results = execute_wrapper(params)
+
+        # Backward: branch off based on the gradient function is a device method.
+        if isinstance(gradient_fn, qml.gradients.gradient_transform):
+            # Gradient function is a gradient transform
+
+            res_from_callback = _grad_transform_jac_via_callback(params, device)
+            if len(tapes) == 1:
+                res_from_callback = [res_from_callback]
+
+            jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
+        else:
+            # Gradient function is a device method
+            res_from_callback = _device_method_jac_via_callback(params, device)
+            if len(tapes) == 1:
+                res_from_callback = [res_from_callback]
+
+            jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
+
+        return evaluation_results, jvps
+
+
     def _grad_transform_jac_via_callback(params, device):
         """Perform a callback to compute the jacobian of tapes using a gradient transform (e.g., parameter-shift or
         finite differences grad transform).
@@ -242,35 +272,6 @@ def _execute_bwd_tuple(
 
         shape_dtype_structs = _jac_shape_dtype_tuple(tapes, device)
         return jax.pure_callback(wrapper, shape_dtype_structs, params)
-
-    @execute_wrapper.defjvp
-    def execute_wrapper_jvp(primals, tangents):
-        # pylint: disable=unused-variable
-        params = primals[0]
-        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-        multi_params = [len(tape.trainable_params) > 1 for tape in tapes]
-
-        # Execution: execute the function first
-        evaluation_results = execute_wrapper(params)
-
-        # Backward: branch off based on the gradient function is a device method.
-        if isinstance(gradient_fn, qml.gradients.gradient_transform):
-            # Gradient function is a gradient transform
-
-            res_from_callback = _grad_transform_jac_via_callback(params, device)
-            if len(tapes) == 1:
-                res_from_callback = [res_from_callback]
-
-            jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
-        else:
-            # Gradient function is a device method
-            res_from_callback = _device_method_jac_via_callback(params, device)
-            if len(tapes) == 1:
-                res_from_callback = [res_from_callback]
-
-            jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
-
-        return evaluation_results, jvps
 
     return execute_wrapper(params)
 
