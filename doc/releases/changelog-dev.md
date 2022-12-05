@@ -267,6 +267,10 @@
 * Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
 
+* Reorganize ``ControlledQubitUnitary`` to inherit from ``ControlledOp``. The class methods 
+  ``decomposition``, ``expand``, and ``sparse_matrix`` are now defined rather than raising an error.
+  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
+
 
 <h4>Return types project</h4>
 
@@ -448,6 +452,10 @@
 
 * The `MeasurementProcess` class is now an abstract class.
   [(#3434)](https://github.com/PennyLaneAI/pennylane/pull/3434)
+
+* The target wires of the unitary for ``ControlledQubitUnitary`` are no longer available via ``op.hyperparameters["u_wires"]``. 
+  Instead, they can be accesses via ``op.base.wires`` or ``op.target_wires``.
+  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
 <h3>Deprecations</h3>
 
