@@ -32,7 +32,7 @@ def _replace_obs(tape: QuantumScript, obs, *args, **kwargs):
     for m in tape.measurements:
         if not isinstance(m, ClassicalShadowMP):
             raise ValueError(
-                f"Tape measurement must be ClassicalShadow, got {m.__class__.__name__!r}"
+                f"Tape measurement must be ClassicalShadowMP, got {m.__class__.__name__!r}"
             )
 
     with qml.queuing.AnnotatedQueue() as q:
