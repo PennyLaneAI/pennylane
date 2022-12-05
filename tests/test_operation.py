@@ -524,7 +524,7 @@ class TestOperatorConstruction:
             r"""Dummy custom operator"""
             num_wires = 1
 
-        op = DummyOp()
+        op = DummyOp(wires=0)
         assert op._pauli_rep is None
 
 
