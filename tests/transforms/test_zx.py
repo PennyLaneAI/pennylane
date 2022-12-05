@@ -30,7 +30,6 @@ I = qml.math.eye(2)
 
 supported_operations = [
     qml.PauliX(wires=0),
-    qml.PauliY(wires=0),
     qml.PauliZ(wires=0),
     qml.Hadamard(wires=0),
     qml.S(wires=0),
@@ -43,13 +42,13 @@ supported_operations = [
 
 supported_operations_params = [
     qml.RX(0.3, wires=0),
-    qml.RY(0.3, wires=0),
     qml.RZ(0.3, wires=0),
-    qml.PhaseShift(0.3, wires=0),
     qml.CRZ(0.3, wires=[0, 1]),
 ]
 
-unsupported_operations = [[qml.CCZ(wires=[0, 1, 2]), []], [qml.Toffoli(wires=[0, 1, 2]), []]]
+expanded_operations = [qml.PauliY(wires=0), qml.PhaseShift(0.3, wires=0), qml.RY(0.3, wires=0)]
+
+non_diagram_like_operations = [qml.CCZ(wires=[0, 1, 2]), qml.Toffoli(wires=[0, 1, 2])]
 
 circuits = []
 
@@ -67,9 +66,7 @@ class TestConvertersZX:
         matrix_tape = qml.matrix(tape)
 
         zx_g = qml.transforms.to_zx(tape)
-        # pyzx.draw(zx_g)
         matrix_zx = zx_g.to_matrix()
-        print(matrix_zx)
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
         # Check whether the two matrices are each others conjugate transposes
@@ -78,8 +75,6 @@ class TestConvertersZX:
         mat_product /= mat_product[0, 0]
 
         assert qml.math.allclose(mat_product, I)
-
-        # test all attributes
 
         tape_back = qml.transforms.from_zx(zx_g)
         assert isinstance(tape_back, qml.tape.QuantumTape)
@@ -105,8 +100,6 @@ class TestConvertersZX:
         zx_g = qml.transforms.to_zx(tape)
 
         matrix_zx = zx_g.to_matrix()
-        print(matrix_tape)
-        print(matrix_zx)
 
         assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
         # Check whether the two matrices are each others conjugate transposes
@@ -115,8 +108,6 @@ class TestConvertersZX:
         mat_product /= mat_product[0, 0]
 
         assert qml.math.allclose(mat_product, I)
-
-        # test all attributes
 
         tape_back = qml.transforms.from_zx(zx_g)
         assert isinstance(tape_back, qml.tape.QuantumTape)
@@ -130,29 +121,87 @@ class TestConvertersZX:
 
         assert qml.math.allclose(mat_product, I)
 
+    @pytest.mark.parametrize("operation", expanded_operations)
+    def test_expanded_operation_params(self, operation):
+        """Test the tape to graph zx tape."""
 
-"""    
-def test_expanded_operations(self, operations, params):
+        I = qml.math.eye(2 ** len(operation.wires))
 
-        ops =
+        tape = QuantumTape([operation], [], [])
+        matrix_tape = qml.matrix(tape)
 
-        qscript = QuantumScript(ops, [], [])
+        zx_g = qml.transforms.to_zx(tape)
 
-        zx_g = qml.transforms.to_zx(qscript)
+        matrix_zx = zx_g.to_matrix()
 
-        # test all attributes
+        assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
+        # Check whether the two matrices are each others conjugate transposes
+        mat_product = qml.math.dot(matrix_tape, qml.math.conj(matrix_zx.T))
+        # Remove global phase
+        mat_product /= mat_product[0, 0]
 
+        assert qml.math.allclose(mat_product, I)
 
-def test_circuits(self, operations, params):
+        tape_back = qml.transforms.from_zx(zx_g)
+        assert isinstance(tape_back, qml.tape.QuantumTape)
 
-    ops =
+        matrix_tape_back = qml.matrix(tape_back, wire_order=[i for i in range(0, len(tape.wires))])
 
-    qscript = QuantumScript(ops, [], [])
+        # Check whether the two matrices are each others conjugate transposes
+        mat_product = qml.math.dot(matrix_tape, qml.math.conj(matrix_tape_back.T))
+        # Remove global phase
+        mat_product /= mat_product[0, 0]
 
-    zx_g = qml.transforms.to_zx(qscript)
+        assert qml.math.allclose(mat_product, I)
 
-    # test all attributes
+    @pytest.mark.parametrize("operation", non_diagram_like_operations)
+    def test_non_diagram_like_op(self, operation):
+        """Test the tape to graph zx tape."""
 
-# Test backend
+        I = qml.math.eye(2 ** len(operation.wires))
 
-"""
+        tape = QuantumTape([operation], [], [])
+        matrix_tape = qml.matrix(tape)
+
+        zx_g = qml.transforms.to_zx(tape)
+        assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
+
+        matrix_zx = zx_g.to_matrix()
+        # Check whether the two matrices are each others conjugate transposes
+        mat_product = qml.math.dot(matrix_tape, qml.math.conj(matrix_zx.T))
+        # Remove global phase
+        mat_product /= mat_product[0, 0]
+        assert qml.math.allclose(mat_product, I)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Graph doesn't seem circuit like"):
+            qml.transforms.from_zx(zx_g)
+
+    @pytest.mark.parametrize("operation", non_diagram_like_operations)
+    def test_circuit(self, operation):
+        """Test the tape to graph zx tape."""
+
+        I = qml.math.eye(2**2)
+
+        operations = [
+            qml.RX(0.1, wires=0),
+            qml.PauliZ(wires=0),
+            qml.RZ(0.3, wires=1),
+            qml.PauliX(wires=1),
+            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=[1, 0]),
+            qml.SWAP(wires=[0, 1]),
+        ]
+        # measurements = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))]
+
+        tape = QuantumTape(operations, [], [])
+        zx_g = qml.transforms.to_zx(tape)
+
+        assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
+
+        matrix_tape = qml.matrix(tape)
+        matrix_zx = zx_g.to_matrix()
+        # Check whether the two matrices are each others conjugate transposes
+        mat_product = qml.math.dot(matrix_tape, qml.math.conj(matrix_zx.T))
+        # Remove global phase
+        mat_product /= mat_product[0, 0]
+        assert qml.math.allclose(mat_product, I)

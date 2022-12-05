@@ -51,7 +51,6 @@ def to_zx(tape, backend=None):
         "RX": pyzx.circuit.gates.XPhase,
         "RZ": pyzx.circuit.gates.ZPhase,
         "PhaseShift": pyzx.circuit.gates.ZPhase,
-        "RY": pyzx.circuit.gates.YPhase,
         "SWAP": pyzx.circuit.gates.SWAP,
         "CNOT": pyzx.circuit.gates.CNOT,
         "CZ": pyzx.circuit.gates.CZ,
@@ -85,8 +84,36 @@ def to_zx(tape, backend=None):
     stop_crit = qml.BooleanFn(lambda obj: obj.name in gate_types)
     tape = qml.tape.tape.expand_tape(tape, depth=10, stop_at=stop_crit, expand_measurements=True)
 
-    # Create graph from circuit in the tape (operations, measurements)
+    expanded_tape = []
+
+    # Define specific decompositions
     for op in tape.operations:
+        if op.name == "PauliY":
+            decomp = [
+                qml.S(wires=0),
+                qml.RX(np.pi / 2, wires=0),
+                qml.RZ(np.pi + np.pi, wires=0),
+                qml.RX(np.pi / 2, wires=0),
+                qml.RZ(3 * np.pi, wires=0),
+                qml.S(wires=0),
+            ]
+            expanded_tape.extend(decomp)
+        elif op.name == "RY":
+            theta = op.data[0]
+            decomp = [
+                qml.RX(np.pi / 2, wires=0),
+                qml.RZ(theta + np.pi, wires=0),
+                qml.RX(np.pi / 2, wires=0),
+                qml.RZ(3 * np.pi, wires=0),
+            ]
+            expanded_tape.extend(decomp)
+        else:
+            expanded_tape.append(op)
+
+    expanded_tape = qml.tape.QuantumTape(expanded_tape, tape.measurements, [])
+
+    # Create graph from circuit in the tape (operations, measurements)
+    for op in expanded_tape.operations:
 
         # Check that the gate is compatible with PyZX
         name = op.name
@@ -181,14 +208,16 @@ def from_zx(graph, split_phases=True):
 
             # The graph is not diagram like.
             if len(neighbors) != 1:
-                raise TypeError(
+                raise qml.QuantumFunctionError(
                     "Graph doesn't seem circuit like: multiple parents. Use extract circuit function."
                 )
 
             neighbor_0 = neighbors[0]
 
             if qubits[neighbor_0] != qubit_1:
-                raise TypeError("Graph doesn't seem circuit like: cross qubit connections")
+                raise qml.QuantumFunctionError(
+                    "Graph doesn't seem circuit like: cross qubit connections"
+                )
 
             if graph.edge_type(graph.edge(neighbor_0, vertex)) == EdgeType.HADAMARD:
                 operations.append(qml.Hadamard(wires=qubit_1))
@@ -234,7 +263,7 @@ def from_zx(graph, split_phases=True):
                     param = np.pi * float(param)
                     operations.append(qml.RX(param, wires=qubit_1))
 
-            # Given the neighbors add two qubits gate
+            # Given the neighbors add two qubits gates
             neighbors = [
                 w for w in graph.neighbors(vertex) if graph_rows[w] == row_key and w < vertex
             ]
@@ -247,8 +276,8 @@ def from_zx(graph, split_phases=True):
                 if type_1 == type_2:
 
                     if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.HADAMARD:
-                        raise TypeError(
-                            "Invalid vertical connection between vertices of the same type"
+                        raise qml.QuantumFunctionError(
+                            "Invalid vertical connection between vertices of the same type."
                         )
 
                     if type_1 == VertexType.Z:
@@ -260,8 +289,8 @@ def from_zx(graph, split_phases=True):
 
                 else:
                     if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.SIMPLE:
-                        raise TypeError(
-                            "Invalid vertical connection between vertices of different type"
+                        raise qml.QuantumFunctionError(
+                            "Invalid vertical connection between vertices of different type."
                         )
 
                     if type_1 == VertexType.Z:
