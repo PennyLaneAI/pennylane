@@ -35,7 +35,7 @@
   [(#3408)](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Support custom measurement processes:
-  * `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
+  * `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform` classes have been added.
     They contain an abstract method to process samples/quantum state/quantum script.
     [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
@@ -69,6 +69,10 @@
 
   * Add `_ShadowExpval` class.
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+
+  * Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
+    measurement processes in `QubitDevice`.
+    [#3439](https://github.com/PennyLaneAI/pennylane/pull/3439)
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
@@ -403,7 +407,6 @@
   `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
   [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
 
-
 * File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
   [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
 
@@ -471,7 +474,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
 
-* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
+* The `observables` argument in `QubitDevice.statistics` is deprecated. Please use `circuit`
   instead.
   [(#3433)](https://github.com/PennyLaneAI/pennylane/pull/3433)
 
@@ -479,7 +482,6 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   A new argument `seed` has been added, which defaults to None and can contain an integer with the
   wanted seed.
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
-
 
 <h3>Documentation</h3>
 
