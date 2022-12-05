@@ -24,7 +24,7 @@ from pennylane.measurements.classical_shadow import _ShadowExpval
 from pennylane.measurements.mutual_info import _MutualInfo
 from pennylane.measurements.vn_entropy import _VnEntropy
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, Controlled
+from pennylane.ops import Hamiltonian, Controlled, Pow
 
 
 def equal(
@@ -205,7 +205,7 @@ def _equal_operators(
 
 
 @_equal.register
-def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
+def _(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
     # wires are ordered [control wires, operator wires, work wires]
     # comparing op.wires and op.base.wires (in return) is sufficient to compare all wires
@@ -221,6 +221,15 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
         raise NotImplementedError(
             f"Unable to compare base operators {op1.base} and {op2.base}."
         ) from e
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _(op1: Pow, op2: Pow, **kwargs):
+    """Determine whether two Pow objects are equal"""
+    if op1.z != op2.z:
+        return False
+    return qml.equal(op1.base, op2.base)
 
 
 @_equal.register
