@@ -23,7 +23,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.measurements import _Counts
+from pennylane.measurements import CountsMP
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
@@ -125,7 +125,7 @@ def _execute(
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
-        if any(isinstance(m, _Counts) for m in tapes[i].measurements):
+        if any(isinstance(m, CountsMP) for m in tapes[i].measurements):
             continue
 
         if isinstance(r, np.ndarray):

@@ -26,16 +26,16 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
+    CountsMP,
     Expectation,
+    MidMeasureMP,
     Probability,
+    ProbabilityMP,
     Sample,
+    SampleMP,
     ShadowExpval,
     State,
     Variance,
-    _Counts,
-    _MidMeasure,
-    _Probability,
-    _Sample,
 )
 from pennylane.operation import Observable, Operation, Tensor
 from pennylane.wires import WireError, Wires
@@ -754,7 +754,7 @@ class Device(abc.ABC):
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs
             and all(
-                not isinstance(m, (_Sample, _Probability, _Counts)) for m in circuit.measurements
+                not isinstance(m, (SampleMP, ProbabilityMP, CountsMP)) for m in circuit.measurements
             )
         ):
             # Check for case of non-commuting terms and that there are no Hamiltonians
@@ -956,7 +956,7 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
-            if isinstance(o, _MidMeasure) and not self.capabilities().get(
+            if isinstance(o, MidMeasureMP) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(

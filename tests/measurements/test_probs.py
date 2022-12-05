@@ -21,7 +21,7 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementShapeError,
     Probability,
-    _Probability,
+    ProbabilityMP,
 )
 from pennylane.queuing import AnnotatedQueue
 
@@ -84,7 +84,7 @@ class TestProbs:
 
         circuit()
 
-        assert isinstance(circuit.tape[0], _Probability)
+        assert isinstance(circuit.tape[0], ProbabilityMP)
 
     def test_numeric_type(self):
         """Test that the numeric type is correct."""

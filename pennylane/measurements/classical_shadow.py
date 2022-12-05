@@ -90,7 +90,7 @@ def shadow_expval(H, k=1, seed=None, seed_recipes=True):
             UserWarning,
         )
     seed = seed or np.random.randint(2**30)
-    return _ShadowExpval(H=H, seed=seed, k=k)
+    return ShadowExpvalMP(H=H, seed=seed, k=k)
 
 
 def classical_shadow(wires, seed=None, seed_recipes=True):
@@ -215,10 +215,10 @@ def classical_shadow(wires, seed=None, seed_recipes=True):
         )
     wires = Wires(wires)
     seed = seed or np.random.randint(2**30)
-    return ClassicalShadow(wires=wires, seed=seed)
+    return ClassicalShadowMP(wires=wires, seed=seed)
 
 
-class ClassicalShadow(MeasurementTransform):
+class ClassicalShadowMP(MeasurementTransform):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -333,7 +333,7 @@ class ClassicalShadow(MeasurementTransform):
         )
 
 
-class _ShadowExpval(MeasurementTransform):
+class ShadowExpvalMP(MeasurementTransform):
     """Measures the expectation value of an operator using the classical shadow measurement process.
 
     This has the same arguments as the base class MeasurementProcess, plus other additional

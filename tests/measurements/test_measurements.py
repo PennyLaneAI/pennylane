@@ -17,27 +17,27 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import (
-    ClassicalShadow,
+    ClassicalShadowMP,
     Counts,
+    CountsMP,
     Expectation,
+    ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
     MidMeasure,
+    MutualInfoMP,
     Probability,
+    ProbabilityMP,
     Sample,
     SampleMeasurement,
+    SampleMP,
+    ShadowExpvalMP,
     State,
     StateMeasurement,
+    StateMP,
     Variance,
-    _Counts,
-    _Expectation,
-    _MutualInfo,
-    _Probability,
-    _Sample,
-    _ShadowExpval,
-    _State,
-    _Variance,
-    _VnEntropy,
+    VarianceMP,
+    VnEntropyMP,
     expval,
     sample,
     var,
@@ -258,7 +258,7 @@ class TestProperties:
         obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
 
         with pytest.raises(ValueError, match="Cannot set the eigenvalues"):
-            _Expectation(obs=obs, eigvals=[0, 1])
+            ExpectationMP(obs=obs, eigvals=[0, 1])
 
     def test_error_obs_and_wires(self):
         """Test that providing both wires and an observable
@@ -266,7 +266,7 @@ class TestProperties:
         obs = qml.Hermitian(np.diag([1, 2, 3, 4]), wires=[0, 1])
 
         with pytest.raises(ValueError, match="Cannot set the wires"):
-            _Expectation(obs=obs, wires=qml.wires.Wires([0, 1]))
+            ExpectationMP(obs=obs, wires=qml.wires.Wires([0, 1]))
 
     def test_observable_with_no_eigvals(self):
         """An observable with no eigenvalues defined should cause
@@ -340,17 +340,17 @@ class TestExpansion:
         """Check that an exception is raised if the measurement to
         be expanded has no observable"""
         with pytest.raises(DecompositionUndefinedError):
-            _Probability(wires=qml.wires.Wires([0, 1])).expand()
+            ProbabilityMP(wires=qml.wires.Wires([0, 1])).expand()
 
     @pytest.mark.parametrize(
         "m",
         [
-            _Expectation(obs=qml.PauliX(0) @ qml.PauliY(1)),
-            _Variance(obs=qml.PauliX(0) @ qml.PauliY(1)),
-            _Probability(obs=qml.PauliX(0) @ qml.PauliY(1)),
-            _Expectation(obs=qml.PauliX(5)),
-            _Variance(obs=qml.PauliZ(0) @ qml.Identity(3)),
-            _Probability(obs=qml.PauliZ(0) @ qml.Identity(3)),
+            ExpectationMP(obs=qml.PauliX(0) @ qml.PauliY(1)),
+            VarianceMP(obs=qml.PauliX(0) @ qml.PauliY(1)),
+            ProbabilityMP(obs=qml.PauliX(0) @ qml.PauliY(1)),
+            ExpectationMP(obs=qml.PauliX(5)),
+            VarianceMP(obs=qml.PauliZ(0) @ qml.Identity(3)),
+            ProbabilityMP(obs=qml.PauliZ(0) @ qml.Identity(3)),
         ],
     )
     def test_has_decomposition_true_pauli(self, m):
@@ -374,26 +374,26 @@ class TestExpansion:
 
         H = np.array([[1, 2], [2, 4]])
         obs = HermitianNoDiagGates(H, wires=["a"])
-        m = _Expectation(obs=obs)
+        m = ExpectationMP(obs=obs)
         assert m.has_decomposition is False
 
     def test_has_decomposition_false_no_observable(self):
         """Check a MeasurementProcess without observable to report not having a decomposition"""
-        m = _Probability(wires=qml.wires.Wires([0, 1]))
+        m = ProbabilityMP(wires=qml.wires.Wires([0, 1]))
         assert m.has_decomposition is False
 
-        m = _Expectation(wires=qml.wires.Wires([0, 1]), eigvals=np.ones(4))
+        m = ExpectationMP(wires=qml.wires.Wires([0, 1]), eigvals=np.ones(4))
         assert m.has_decomposition is False
 
     @pytest.mark.parametrize(
         "m",
         [
-            _Sample(),
-            _Sample(wires=["a", 1]),
-            _Counts(all_outcomes=True),
-            _Counts(wires=["a", 1], all_outcomes=True),
-            _Counts(),
-            _Counts(wires=["a", 1]),
+            SampleMP(),
+            SampleMP(wires=["a", 1]),
+            CountsMP(all_outcomes=True),
+            CountsMP(wires=["a", 1], all_outcomes=True),
+            CountsMP(),
+            CountsMP(wires=["a", 1]),
         ],
     )
     def test_samples_computational_basis_true(self, m):
@@ -403,17 +403,17 @@ class TestExpansion:
     @pytest.mark.parametrize(
         "m",
         [
-            _Expectation(obs=qml.PauliX(2)),
-            _Variance(obs=qml.PauliX("a")),
-            _Probability(obs=qml.PauliX("b")),
-            _Probability(wires=["a", 1]),
-            _Sample(obs=qml.PauliX("a")),
-            _Counts(obs=qml.PauliX("a")),
-            _State(),
-            _VnEntropy(wires=["a", 1]),
-            _MutualInfo(wires=[["a", 1], ["b", 2]]),
-            ClassicalShadow(wires=[["a", 1], ["b", 2]]),
-            _ShadowExpval(H=qml.PauliX("a")),
+            ExpectationMP(obs=qml.PauliX(2)),
+            VarianceMP(obs=qml.PauliX("a")),
+            ProbabilityMP(obs=qml.PauliX("b")),
+            ProbabilityMP(wires=["a", 1]),
+            SampleMP(obs=qml.PauliX("a")),
+            CountsMP(obs=qml.PauliX("a")),
+            StateMP(),
+            VnEntropyMP(wires=["a", 1]),
+            MutualInfoMP(wires=[["a", 1], ["b", 2]]),
+            ClassicalShadowMP(wires=[["a", 1], ["b", 2]]),
+            ShadowExpvalMP(H=qml.PauliX("a")),
         ],
     )
     def test_samples_computational_basis_false(self, m):

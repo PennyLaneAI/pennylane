@@ -23,8 +23,8 @@ import tensorflow as tf
 from tensorflow.python.eager import context
 
 import pennylane as qml
-from pennylane.measurements import _Counts
 from pennylane._device import _get_num_copies
+from pennylane.measurements import CountsMP
 
 
 def _compute_vjp(dy, jacs):
@@ -193,7 +193,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     for i, tape in enumerate(tapes):
         # convert output to TensorFlow tensors
 
-        if any(isinstance(m, _Counts) for m in tape.measurements):
+        if any(isinstance(m, CountsMP) for m in tape.measurements):
             continue
 
         if isinstance(res[i], np.ndarray):
