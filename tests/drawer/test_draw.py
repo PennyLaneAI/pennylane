@@ -299,6 +299,7 @@ def test_draw_batch_transform(transform):
     assert draw(circuit, decimals=1)(np.array(0.6, requires_grad=True)) == expected
 
 
+@pytest.mark.skip("Nested tapes are being deprecated")
 def test_nested_tapes():
     """Test nested tapes inside the qnode."""
 

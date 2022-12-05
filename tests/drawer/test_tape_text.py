@@ -380,6 +380,7 @@ class TestShowMatrices:
         assert cache["matrices"][2] == [1.0, 0.0]
 
 
+@pytest.mark.skip("Nested tapes are being deprecated")
 class TestNestedTapes:
     """Test situations with nested tapes."""
 
