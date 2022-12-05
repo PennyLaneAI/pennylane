@@ -363,8 +363,8 @@ class _ShadowExpval(MeasurementTransform):
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
 
         Args:
-            tape (QuantumScript): the tape to be processed
-            device (Device): the device used to process the tape
+            qscript (QuantumScript): the quantum script to be processed
+            device (Device): the device used to process the quantum script
 
         Returns:
             float: expectation value estimate.
