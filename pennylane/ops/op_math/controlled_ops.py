@@ -18,7 +18,6 @@ This submodule contains controlled operators based on the Controlled and Control
 import warnings
 from typing import Iterable
 
-from pennylane.wires import Wires
 from pennylane.operation import AnyWires
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from .controlled_class import ControlledOp
@@ -100,16 +99,14 @@ class ControlledQubitUnitary(ControlledOp):
             base = QubitUnitary(base, wires=wires, unitary_check=unitary_check)
 
         super().__init__(base, control_wires, control_values=control_values, do_queue=do_queue)
-        self.hyperparameters["u_wires"] = Wires(base.wires)
         self._name = "ControlledQubitUnitary"
 
     def _controlled(self, wire):
         ctrl_wires = self.control_wires + wire
         values = None if self.control_values is None else self.control_values + [True]
         new_op = ControlledQubitUnitary(
-            *self.parameters,
+            self.base,
             control_wires=ctrl_wires,
-            wires=self.hyperparameters["u_wires"],
             control_values=values,
         )
         return new_op.inv() if self.inverse else new_op
