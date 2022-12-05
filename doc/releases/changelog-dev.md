@@ -40,34 +40,34 @@
     [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
-  * Add `_Expectation` class.
+  * Add `ExpectationMP` class.
     [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
 
-  * Add `_Sample` class.
+  * Add `SampleMP` class.
     [(#3288)](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
-  * Add `_Var` class.
+  * Add `VarMP` class.
     [(#3312)](https://github.com/PennyLaneAI/pennylane/pull/3312)
 
-  * Add `_Probability` class.
+  * Add `ProbabilityMP` class.
     [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
-  * Add `_Counts` class.
+  * Add `CountsMP` class.
     [(#3292)](https://github.com/PennyLaneAI/pennylane/pull/3292)
 
-  * Add `_State` class.
+  * Add `StateMP` class.
     [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
 
-  * Add `_VnEntropy` class.
+  * Add `VnEntropyMP` class.
     [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
-  * Add `_MutualInfo` class.
+  * Add `MutualInfoMP` class.
     [(#3327)](https://github.com/PennyLaneAI/pennylane/pull/3327)
 
-  * Add `ClassicalShadow` class.
+  * Add `ClassicalShadowMP` class.
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
-  * Add `_ShadowExpval` class.
+  * Add `ShadowExpvalMP` class.
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
   * Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
@@ -97,7 +97,7 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
-* Added a `pauli_decompose()` which takes a hermitian matrix and decomposes it in the 
+* Added a `pauli_decompose()` which takes a hermitian matrix and decomposes it in the
   Pauli basis, returning it either as a `Hamiltonian` or `PauliSentence` instance.
   [(#3384)](https://github.com/PennyLaneAI/pennylane/pull/3384)
 
@@ -265,7 +265,7 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
-* Add a UserWarning when creating a `Tensor` object with overlapping wires, 
+* Add a UserWarning when creating a `Tensor` object with overlapping wires,
   informing that this can in some cases lead to undefined behaviour.
   [(#3459)](https://github.com/PennyLaneAI/pennylane/pull/3459)
 
@@ -274,7 +274,6 @@
 
 * Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
-
 
 <h4>Return types project</h4>
 
@@ -412,8 +411,8 @@
 
 <h3>Breaking changes</h3>
 
-* The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
-  `_MutualInfo` classes, which inherit from `MeasurementProcess`.
+* The `log_base` attribute has been moved from `MeasurementProcess` to the new `VnEntropyMP` and
+  `MutualInfoMP` classes, which inherit from `MeasurementProcess`.
   [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
 * Python 3.7 support is no longer maintained.
