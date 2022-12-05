@@ -130,6 +130,8 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
         for t in tapes
         for m in t.measurements
     ):
+        # Obtaining information about the shape of the Counts measurements is
+        # not implemeneted and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
 
     _validate_jax_version()
