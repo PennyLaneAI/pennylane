@@ -191,10 +191,8 @@ def _execute_bwd_tuple(
 
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):
-        # pylint: disable=unused-variable
         params = primals[0]
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
-        multi_params = [len(tape.trainable_params) > 1 for tape in tapes]
 
         # Execution: execute the function first
         evaluation_results = execute_wrapper(params)
