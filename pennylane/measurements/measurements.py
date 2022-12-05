@@ -246,8 +246,11 @@ class MeasurementProcess(ABC):
     def _shape_new(self, device=None):
         """The expected output shape of the MeasurementProcess.
 
-        Note that the output shape is dependent on the device when the shot vector is defined in
-        the device.
+        Note that the output shape is dependent on the device when:
+
+        * The measurement type is either ``_Probability``, ``_State`` (from :func:`.state`) or
+          ``_Sample``;
+        * The shot vector was defined in the device.
 
         For example, assuming a device with ``shots=None``, expectation values
         and variances define ``shape=(,)``, whereas probabilities in the qubit
