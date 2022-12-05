@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* Add the controlled CZ gate: CCZ.
+* The controlled CZ gate is now available via `qml.CCZ`. This gate is the Pauli Z equivalent to the Toffoli gate.
+  [(#3408)](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
   ```pycon
   >>> ccz = qml.CCZ(wires=[0, 1, 2])
@@ -19,9 +20,8 @@
    [ 0  0  0  0  0  0  0 -1]]
   ```
 
+* The controlled Hadamard gate is now available via `qml.CH`.
   [(#3408)](https://github.com/PennyLaneAI/pennylane/pull/3408)
-
-* Add the controlled Hadamard gate.
 
   ```pycon
   >>> ch = qml.CH(wires=[0, 1])
@@ -32,10 +32,9 @@
    [ 0.          0.          0.70710678 -0.70710678]]
   ```
 
-  [(#3408)](https://github.com/PennyLaneAI/pennylane/pull/3408)
-
-* Support custom measurement processes:
-  * `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform` classes have been added.
+* Support custom measurement processes: 
+  TODO: need to expand on what these features mean for users
+  * `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
     They contain an abstract method to process samples/quantum state/quantum script.
     [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
@@ -74,17 +73,18 @@
     measurement processes in `QubitDevice`.
     [#3439](https://github.com/PennyLaneAI/pennylane/pull/3439)
 
-* Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
+* The symbols and geometry of a compound from the PubChem Database can now be access via `qchem.mol_data()`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
   [(#3378)](https://github.com/PennyLaneAI/pennylane/pull/3378)
 
   ```pycon
+  >>> import pennylane as qml
+  >>> from qml.qchem import mol_data
   >>> mol_data("BeH2")
   (['Be', 'H', 'H'],
   array([[ 4.79405604,  0.29290815,  0.        ],
          [ 3.77946   , -0.29290815,  0.        ],
          [ 5.80884105, -0.29290815,  0.        ]]))
-
   >>> mol_data(223, "CID")
   (['N', 'H', 'H', 'H', 'H'],
   array([[ 4.79404621,  0.        ,  0.        ],
@@ -94,45 +94,22 @@
          [ 5.3798613 , -1.01459396,  0.        ]]))
   ```
 
-* New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
-  [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
-
-* Added a `pauli_decompose()` which takes a hermitian matrix and decomposes it in the 
-  Pauli basis, returning it either as a `Hamiltonian` or `PauliSentence` instance.
-  [(#3384)](https://github.com/PennyLaneAI/pennylane/pull/3384)
+* Perform quantum chemistry calculations with two new basis sets: `6-311g` and `CC-PVDZ`.
+  [(#3279)](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
   ```pycon
-  >>> mat = np.array([[1, 1], [1, -1]])
-  >>> h = qml.pauli_decompose(mat)
-  >>> print(h)
-    (1.0) [X0]
-  + (1.0) [Z0]
-  >>> ps = qml.pauli_decompose(mat, pauli=True, wire_order=["a"])
-  >>> print(ps)
-  1.0 * X(a)
-  + 1.0 * Z(a)
+  >>> symbols = ["H", "He"] 
+  >>> geometry = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=False)
+  >>> charge = 1
+  >>> basis_names = ["6-311G", "CC-PVDZ"] 
+  >>> for basis_name in basis_names:
+  ...     mol = qchem.Molecule(symbols, geometry, charge=charge, basis_name=basis_name)
+  ...     print(qchem.hf_energy(mol)())
+  [-2.84429531] 
+  [-2.84061284]
   ```
 
-* New `pauli_sentence()` function which takes native `Operator` or `Hamiltonian`
-  instances representing a linear combination of Pauli words and returns
-  the equivalent `PauliSentence`.
-  [(#3389)](https://github.com/PennyLaneAI/pennylane/pull/3389)
-
-  ```pycon
-  >>> op = 1.23 * qml.prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
-  >>> op
-  1.23*(PauliX(wires=[0]) @ PauliZ(wires=[1]))
-  >>> h = qml.Hamiltonian([1.23], [qml.PauliX(wires=0) @ qml.PauliZ(wires=1)])
-  >>> print(h)
-    (1.23) [X0 Z1]
-  >>> qml.pauli.pauli_sentence(op)
-  1.23 * Z(1) @ X(0)
-  >>> qml.pauli.pauli_sentence(h)
-  1.23 * X(0) @ Z(1)
-  ```
-
-* Added two new methods `operation()`, `hamiltonian()` for both `PauliSentence` and `PauliWord` classes to generate an equivalent PennyLane
-  `Operation` or `Hamiltonian` instance from a `PauliSentence` or `PauliWord` one.
+* `Operation` or `Hamiltonian` instances can now be generated from a `qml.PauliSentence` or `qml.PauliWord` via the new `operation()` and `hamiltonian()` methods.
   [(#3391)](https://github.com/PennyLaneAI/pennylane/pull/3391)
 
   ```pycon
@@ -141,7 +118,6 @@
   PauliX(wires=[0]) @ PauliY(wires=[1])
   >>> print(pw.hamiltonian())
     (1) [X0 Y1]
-  >>>
   >>> ps = qml.pauli.PauliSentence({pw: -1.23})
   >>> print(ps.operation())
   -1.23*(PauliX(wires=[0]) @ PauliY(wires=[1]))
@@ -153,8 +129,6 @@
   representing fermionic-modes while maintaining proper anti-symmetrization.
   [(#3380)](https://github.com/PennyLaneAI/pennylane/pull/3380)
 
-  An example circuit that uses `FermionicSWAP` operation is:
-
   ```python
   dev = qml.device('default.qubit', wires=2)
 
@@ -165,33 +139,36 @@
       return qml.state()
   ```
 
-  If we run this circuit, we will get the following output
-
   ```pycon
   >>> circuit(0.1)
   array([0.+0.j, 0.9975+0.04992j, 0.0025-0.04992j, 0.+0.j])
   ```
 
-* New parametric qubit ops `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10` which perform a phaseshift, similar to `qml.ControlledPhaseShift` but on different positions of the state vector.
+* Three new parametric operators, `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10`, are now available. Each of these operators perform a phase shift akin to `qml.ControlledPhaseShift` but on different positions of the state vector.
   [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
 
-* Support for purity computation is added. The `qml.math.purity` function computes the purity from a state vector or a density matrix:
+  TODO: code example 
 
+* Calculating the purity of arbitrary quantum states is now supported.
   [(#3290)](https://github.com/PennyLaneAI/pennylane/pull/3290)
 
-  ```pycon
-  >>> x = [1, 0, 0, 1] / np.sqrt(2)
-  >>> qml.math.purity(x, [0, 1])
-  1.0
-  >>> qml.math.purity(x, [0])
-  0.5
+  The purity can be calculated in an analogous fashion to, say, the Von Neumann entropy:
 
-  >>> x = [[1 / 2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1 / 2]]
-  >>> qml.math.purity(x, [0, 1])
-  0.5
-  ```
+  - `qml.math.purity` can be used as an in-line function:
 
-  The `qml.qinfo.purity` can be used to transform a QNode returning a state to a function that returns the purity:
+    ```pycon
+    >>> x = [1, 0, 0, 1] / np.sqrt(2)
+    >>> qml.math.purity(x, [0, 1])
+    1.0
+    >>> qml.math.purity(x, [0])
+    0.5
+
+    >>> x = [[1 / 2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1 / 2]]
+    >>> qml.math.purity(x, [0, 1])
+    0.5
+    ```
+
+  - `qml.qinfo.purity` can transform a QNode returning a state to a function that returns the purity:
 
   ```python3
   dev = qml.device("default.mixed", wires=2)
@@ -209,7 +186,7 @@
   1.0
   ```
 
-  Taking the gradient is also supported:
+  As with the other methods in `qml.qinfo`, the purity is fully differentiable:
 
   ```pycon
   >>> param = np.array(np.pi / 4, requires_grad=True)
