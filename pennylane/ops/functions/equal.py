@@ -24,7 +24,7 @@ from pennylane.measurements.classical_shadow import _ShadowExpval
 from pennylane.measurements.mutual_info import _MutualInfo
 from pennylane.measurements.vn_entropy import _VnEntropy
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, Controlled, Pow
+from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd
 
 
 def equal(
@@ -228,6 +228,32 @@ def _(op1: Controlled, op2: Controlled, **kwargs):
 def _(op1: Pow, op2: Pow, **kwargs):
     """Determine whether two Pow objects are equal"""
     if op1.z != op2.z:
+        return False
+    return qml.equal(op1.base, op2.base)
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _(op1: Adjoint, op2: Adjoint, **kwargs):
+    """Determine whether two Adjoint objects are equal"""
+    # first line of top-level equal function already confirms both are Adjoint - only need to compare bases
+    return qml.equal(op1.base, op2.base)
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _(op1: Exp, op2: Exp, **kwargs):
+    """Determine whether two Exp objects are equal"""
+    if op1.coeff != op2.coeff:
+        return False
+    return qml.equal(op1.base, op2.base)
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _(op1: SProd, op2: SProd, **kwargs):
+    """Determine whether two SProd objects are equal"""
+    if op1.scalar != op2.scalar:
         return False
     return qml.equal(op1.base, op2.base)
 
