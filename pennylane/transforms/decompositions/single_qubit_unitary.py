@@ -17,6 +17,7 @@ operations into elementary gates.
 
 import pennylane as qml
 from pennylane import math
+from pennylane import numpy as np
 
 
 def _convert_to_su2(U):
@@ -29,11 +30,11 @@ def _convert_to_su2(U):
         array[complex]: A :math:`2 \times 2` matrix in :math:`SU(2)` that is
         equivalent to U up to a global phase.
     """
-    # Compute the determinant
-    det = U[0, 0] * U[1, 1] - U[0, 1] * U[1, 0]
+    # Compute the determinants
+    dets = np.linalg.det(U)
 
-    exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 2
-    return U * math.exp(exp_angle)
+    exp_angles = -1j * math.cast_like(math.angle(dets), 1j) / 2
+    return U * math.exp(exp_angles)[:, None, None]
 
 
 def zyz_decomposition(U, wire):
@@ -76,26 +77,61 @@ def zyz_decomposition(U, wire):
     >>> decomp
     [Rot(-0.24209529417800013, 1.14938178234275, 1.7330581433950871, wires=[0])]
     """
+
+    # Cast to batched format for more consistent code
+    U = np.atleast_3d(U)
+    # If single tensor, reshape to push the added dimension to the batch dim
+    if U.shape[-1] == 1:
+        U = U.transpose(2, 0, 1)
+
     U = _convert_to_su2(U)
 
     # If the value of U is not abstract, we can include a conditional statement
     # that will check if the off-diagonal elements are 0; if so, just use one RZ
-    if not math.is_abstract(U):
-        if math.allclose(U[0, 1], 0.0):
-            return [qml.RZ(2 * math.angle(U[1, 1]), wires=wire)]
+    zero_off_diagonals_mask = (
+        np.equal(U[:, 0, 1], np.zeros(len(U)))
+        if not math.is_abstract(U)
+        else np.full(len(U), False)
+    )
 
+    # Take the unitaries not conforming to our predicate
+    passing_unitaries = U[zero_off_diagonals_mask]
+    failing_unitaries = U[np.logical_not(zero_off_diagonals_mask)]
+
+    # For the passing unitaries, construct RZ decompositions
+    rz_decompositions = [
+        qml.RZ(2 * math.angle(unitary[1, 1]), wires=wire) for unitary in passing_unitaries
+    ]
+
+    # For the failing unitaries, construct Rot decompositions instead
     # Derive theta from the off-diagonal element. Clip to ensure valid arcsin input
-    element = math.clip(math.abs(U[0, 1]), 0, 1)
-    theta = 2 * math.arcsin(element)
+    off_diagonal_elements = math.clip(math.abs(failing_unitaries[:, 0, 1]), 0, 1)
+    thetas = 2 * math.arcsin(off_diagonal_elements)
 
     # Compute phi and omega from the angles of the top row; use atan2 to keep
     # the angle within -np.pi and np.pi, and add very small values to avoid the
     # undefined case of 0/0. We add a smaller value to the imaginary part than
     # the real part because it is imag / real in the definition of atan2.
-    angle_U00 = math.arctan2(math.imag(U[0, 0]) + 1e-128, math.real(U[0, 0]) + 1e-64)
-    angle_U10 = math.arctan2(math.imag(U[1, 0]) + 1e-128, math.real(U[1, 0]) + 1e-64)
+    epsilon_real, epsilon_imag = 1e-64, 1e-128
+    angles_U00 = math.arctan2(
+        math.imag(failing_unitaries[:, 0, 0]) + epsilon_imag,
+        math.real(failing_unitaries[:, 0, 0]) + epsilon_real,
+    )
+    angles_U10 = math.arctan2(
+        math.imag(failing_unitaries[:, 1, 0]) + epsilon_imag,
+        math.real(failing_unitaries[:, 1, 0]) + epsilon_real,
+    )
 
-    phi = -angle_U10 - angle_U00
-    omega = angle_U10 - angle_U00
+    phis = -angles_U10 - angles_U00
+    omegas = angles_U10 - angles_U00
 
-    return [qml.Rot(phi, theta, omega, wires=wire)]
+    rot_decompositions = [
+        qml.Rot(phi, theta, omega, wires=wire) for phi, theta, omega in zip(phis, thetas, omegas)
+    ]
+
+    decompositions = [
+        rz_decompositions.pop(0) if flag else rot_decompositions.pop(0)
+        for flag in zero_off_diagonals_mask
+    ]
+
+    return decompositions
