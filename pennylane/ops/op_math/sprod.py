@@ -29,7 +29,7 @@ from pennylane.ops.op_math.sum import Sum
 from .symbolicop import SymbolicOp
 
 
-def s_prod(scalar, operator, do_queue=True, id=None):
+def s_prod(scalar, operator, do_queue=True, id=None, lazy=True):
     r"""Construct an operator which is the scalar product of the
     given scalar and operator provided.
 
@@ -40,6 +40,7 @@ def s_prod(scalar, operator, do_queue=True, id=None):
     Keyword Args:
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
+        lazy=True (bool): If ``lazy=False`` and the operator is already a scalar product operator, the scalar provided will simply be combined with the existing scaling factor.
 
     Returns:
         ~ops.op_math.SProd: The operator representing the scalar product.
@@ -55,6 +56,9 @@ def s_prod(scalar, operator, do_queue=True, id=None):
     array([[ 0., 2.],
            [ 2., 0.]])
     """
+    if not lazy and isinstance(operator, SProd):
+        return SProd(scalar=scalar * operator.scalar, base=operator.base)
+
     return SProd(scalar, operator, do_queue=do_queue, id=id)
 
 

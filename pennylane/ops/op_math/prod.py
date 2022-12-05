@@ -39,7 +39,7 @@ MAX_NUM_WIRES_KRON_PRODUCT = 9
 computing the sparse matrix representation."""
 
 
-def prod(*ops, do_queue=True, id=None):
+def prod(*ops, do_queue=True, id=None, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -53,6 +53,7 @@ def prod(*ops, do_queue=True, id=None):
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
+        lazy=True (bool): If ``lazy=False``, a simplification will be peformed such that when any of the operators is already a product operator, its operands will be used instead.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
@@ -68,6 +69,12 @@ def prod(*ops, do_queue=True, id=None):
     array([[ 0, -1],
            [ 1,  0]])
     """
+    if not lazy:
+        ops_simp = tuple()
+        for op in ops:
+            ops_simp += op.operands if isinstance(op, Prod) else (op,)
+        return Prod(*ops_simp, do_queue=do_queue, id=id)
+
     return Prod(*ops, do_queue=do_queue, id=id)
 
 

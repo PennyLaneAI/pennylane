@@ -27,7 +27,7 @@ from pennylane.operation import Operator
 from .composite import CompositeOp
 
 
-def op_sum(*summands, do_queue=True, id=None):
+def op_sum(*summands, do_queue=True, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
@@ -37,6 +37,7 @@ def op_sum(*summands, do_queue=True, id=None):
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
             Default is True.
         id (str or None): id for the Sum operator. Default is None.
+        lazy=True (bool): If ``lazy=False``, a simplification will be peformed such that when any of the operators is already a sum operator, its operands (summands) will be used instead.
 
     Returns:
         ~ops.op_math.Sum: The operator representing the sum of summands.
@@ -52,6 +53,12 @@ def op_sum(*summands, do_queue=True, id=None):
     array([[ 1,  1],
            [ 1, -1]])
     """
+    if not lazy:
+        summands_simp = tuple()
+        for op in summands:
+            summands_simp += op.operands if isinstance(op, Sum) else (op,)
+        return Sum(*summands_simp, do_queue=do_queue, id=id)
+
     return Sum(*summands, do_queue=do_queue, id=id)
 
 
