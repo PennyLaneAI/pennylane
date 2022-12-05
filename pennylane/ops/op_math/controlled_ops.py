@@ -58,6 +58,7 @@ class ControlledQubitUnitary(ControlledOp):
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1], wires=2)
 
     Alternatively, the same operator can be constructed with a QubitUnitary:
+
     >>> base = qml.QubitUnitary(U, wires=2)
     >>> qml.ControlledQubitUnitary(base, control_wires=[0, 1])
 
