@@ -263,7 +263,22 @@ def _execute_bwd_tuple(
         return res
 
     def _device_method_jac_via_callback(params, device):
-        """Perform a callback to compute the jacobian of tapes using a device method (e.g., adjoint)."""
+        """Perform a callback to compute the jacobian of tapes using a device method (e.g., adjoint).
+
+        Note: we are not using the batch_jvp pipeline and rather split the steps of unwrapping tapes and the JVP
+        computation because:
+
+        1. Tape unwrapping has to happen in the callback: otherwise jitting is broken and Tracer objects
+        are converted to NumPy, something that raises an error;
+
+        2. Passing in the tangents as an argument to the wrapper function called by the jax.pure_callback raises an
+        error (as of jax and jaxlib 0.3.25):
+        ValueError: Pure callbacks do not support transpose. Please use jax.custom_vjp to use callbacks while
+        taking gradients.
+
+        Solution: Use the callback to compute the jacobian and then separately compute the JVP using the
+        tangent.
+        """
 
         def wrapper(params):
             new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
