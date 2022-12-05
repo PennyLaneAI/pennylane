@@ -18,7 +18,7 @@ from functools import wraps
 
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import make_qscript
 
 from .adjoint_class import Adjoint
 
@@ -122,13 +122,11 @@ def adjoint(fn, lazy=True):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        with QueuingManager.stop_recording(), QuantumTape() as tape:
-            fn(*args, **kwargs)
-
+        qscript = make_qscript(fn)(*args, **kwargs)
         if lazy:
-            adjoint_ops = [Adjoint(op) for op in reversed(tape.operations)]
+            adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
         else:
-            adjoint_ops = [_single_op_eager(op) for op in reversed(tape.operations)]
+            adjoint_ops = [_single_op_eager(op) for op in reversed(qscript.operations)]
 
         return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
 

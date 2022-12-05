@@ -1144,6 +1144,18 @@ class TestTensor:
         ):
             Tensor(T, qml.CNOT(wires=[0, 1]))
 
+    def test_warning_for_overlapping_wires(self):
+        """Test that creating a Tensor with overlapping wires raises a warning"""
+        X = qml.PauliX(0)
+        Y = qml.PauliY(0)
+        op = qml.PauliX(0) @ qml.PauliY(1)
+
+        with pytest.warns(UserWarning, match="Tensor object acts on overlapping wires"):
+            Tensor(X, Y)
+
+        with pytest.warns(UserWarning, match="Tensor object acts on overlapping wires"):
+            op @ qml.PauliZ(1)
+
     def test_queuing_defined_outside(self):
         """Test the queuing of a Tensor object."""
 
