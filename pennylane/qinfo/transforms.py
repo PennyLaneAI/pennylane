@@ -54,7 +54,8 @@ def reduced_dm(qnode, wires):
 
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
-        if len(qnode.tape.observables) != 1 or not isinstance(qnode.tape.measurements[0], _State):
+        measurements = qnode.tape.measurements
+        if len(measurements) != 1 or not isinstance(measurements[0], _State):
             raise ValueError("The qfunc measurement needs to be State.")
 
         # TODO: optimize given the wires by creating a tape with relevant operations
