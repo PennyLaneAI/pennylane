@@ -114,14 +114,12 @@ class SProd(SymbolicOp):
         self._check_scalar_is_valid()
         super().__init__(base=base, do_queue=do_queue, id=id)
 
-        try:
-            base_ps = self.base._pauli_rep  # pylint: disable=protected-access
+        if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) is not None:
             pr = {}
-            for pw, coeff in base_ps.items():
+            for pw, coeff in base_pauli_rep.items():
                 pr[pw] = coeff * self.scalar
             self._pauli_rep = qml.pauli.PauliSentence(pr)
-
-        except (AttributeError, TypeError):
+        else:
             self._pauli_rep = None
 
     def __repr__(self):
