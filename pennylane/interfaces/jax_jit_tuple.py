@@ -27,6 +27,20 @@ from pennylane.interfaces.jax_jit import _validate_jax_version, _numeric_type_to
 
 dtype = jnp.float64
 
+def _create_shape_dtype_struct(tape, device):
+    """Auxiliary function for creating the shape and dtype object structure
+    given a tape."""
+    def process_single_shape(shape, tape_dtype):
+        return jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
+
+    num_measurements = len(tape.measurements)
+    shape = tape.shape(device)
+    if num_measurements == 1:
+        tape_dtype = _numeric_type_to_dtype(tape.numeric_type)
+        return process_single_shape(shape, tape_dtype)
+
+    tape_dtype = tuple(_numeric_type_to_dtype(elem) for elem in tape.numeric_type)
+    return tuple(process_single_shape(s, d) for s, d in zip(shape, tape_dtype))
 
 def _tapes_shape_dtype_tuple(tapes, device):
     """Auxiliary function for defining the jax.ShapeDtypeStruct objects given
@@ -37,20 +51,8 @@ def _tapes_shape_dtype_tuple(tapes, device):
     """
     shape_dtypes = []
 
-    def process_single_shape(shape, tape_dtype):
-        return jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
-
     for t in tapes:
-        num_measurements = len(t.measurements)
-
-        shape = t.shape(device)
-        if num_measurements == 1:
-            tape_dtype = _numeric_type_to_dtype(t.numeric_type)
-            shape_and_dtype = process_single_shape(shape, tape_dtype)
-        else:
-            tape_dtype = tuple(_numeric_type_to_dtype(elem) for elem in t.numeric_type)
-            shape_and_dtype = tuple(process_single_shape(s, d) for s, d in zip(shape, tape_dtype))
-
+        shape_and_dtype = _create_shape_dtype_struct(t, device)
         shape_dtypes.append(shape_and_dtype)
     return shape_dtypes
 
@@ -65,21 +67,12 @@ def _jac_shape_dtype_tuple(tapes, device):
     shape_dtypes = []
 
     for t in tapes:
-        num_measurements = len(t.measurements)
-
-        shape = t.shape(device)
-        if num_measurements == 1:
-            tape_dtype = _numeric_type_to_dtype(t.numeric_type)
-            shape_and_dtype = jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
-        else:
-            tape_dtype = tuple(_numeric_type_to_dtype(elem) for elem in t.numeric_type)
-            shape_and_dtype = tuple(
-                jax.ShapeDtypeStruct(tuple(s), d) for s, d in zip(shape, tape_dtype)
-            )
+        shape_and_dtype = _create_shape_dtype_struct(t, device)
 
         if len(t.trainable_params) == 1:
             shape_dtypes.append(shape_and_dtype)
         else:
+            num_measurements = len(t.measurements)
             if num_measurements == 1:
                 s = [shape_and_dtype for _ in range(len(t.trainable_params))]
                 shape_dtypes.append(tuple(s))
