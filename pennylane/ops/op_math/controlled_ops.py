@@ -31,7 +31,9 @@ class ControlledQubitUnitary(ControlledOp):
     available for ``ControlledQubitUnitary``:
 
     * ``control_wires``: wires that act as control for the operation
-    * ``U``: unitary applied to the target wires
+    * ``control_values``: the state on which to apply the controlled operation (see below)
+    * ``target_wires``: the wires the unitary matrix will be applied to
+    * ``active_wires``: Wires modified by the operator. This is the control wires followed by the target wires.
 
     **Details:**
 
