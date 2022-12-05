@@ -101,6 +101,3 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
 
     def __setitem__(self, key, val):
         AnnotatedQueue.__setitem__(self, key, val)
-
-    def __hash__(self):
-        return QuantumScript.__hash__(self)
