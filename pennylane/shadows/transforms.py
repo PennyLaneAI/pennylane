@@ -35,13 +35,14 @@ def _replace_obs(tape: QuantumScript, obs, *args, **kwargs):
                 f"Tape measurement must be ClassicalShadow, got {m.__class__.__name__!r}"
             )
 
-    with qml.tape.QuantumTape() as new_tape:
+    with qml.queuing.AnnotatedQueue() as q:
         # queue everything from the old tape except the measurement processes
         for op in tape.operations:
             qml.apply(op)
 
         # queue the new observable
         obs(*args, **kwargs)
+    qscript = qml.tape.QuantumScript.from_queue(q)
 
     def processing_fn(res):
         if qml.active_return():
@@ -50,7 +51,7 @@ def _replace_obs(tape: QuantumScript, obs, *args, **kwargs):
 
         return qml.math.squeeze(qml.math.stack(res))
 
-    return [new_tape], processing_fn
+    return [qscript], processing_fn
 
 
 def shadow_expval(H, k=1):
@@ -98,7 +99,7 @@ def shadow_expval(H, k=1):
 
 def _shadow_state_diffable(wires):
     """Differentiable version of the shadow state transform"""
-    wires_list = [wires] if not isinstance(wires[0], list) else wires
+    wires_list = wires if isinstance(wires[0], list) else [wires]
 
     if any(len(w) >= 8 for w in wires_list):
         warnings.warn(
@@ -149,7 +150,7 @@ def _shadow_state_diffable(wires):
 
                 start += 4 ** len(w)
 
-            return states[0] if not isinstance(wires[0], list) else states
+            return states if isinstance(wires[0], list) else states[0]
 
         return wrapper
 
@@ -158,7 +159,7 @@ def _shadow_state_diffable(wires):
 
 def _shadow_state_undiffable(wires):
     """Non-differentiable version of the shadow state transform"""
-    wires_list = [wires] if not isinstance(wires[0], list) else wires
+    wires_list = wires if isinstance(wires[0], list) else [wires]
 
     def decorator(qnode):
         @wraps(qnode)
@@ -167,7 +168,7 @@ def _shadow_state_undiffable(wires):
             shadow = qml.shadows.ClassicalShadow(bits, recipes)
 
             states = [qml.math.mean(shadow.global_snapshots(wires=w), 0) for w in wires_list]
-            return states[0] if not isinstance(wires[0], list) else states
+            return states if isinstance(wires[0], list) else states[0]
 
         return wrapper
 

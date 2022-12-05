@@ -114,15 +114,16 @@ class CircuitGraph:
         self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
         for k, op in enumerate(queue):
+            meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
             if isinstance(op, _State):
                 # State measurements contain no wires by default, but wires are
                 # required for the circuit drawer, so we recreate the state
                 # measurement with all wires
-                op = _State(wires=wires)
+                op = _State(wires=meas_wires)
 
             elif isinstance(op, _Sample) and op.wires == Wires([]):
                 # Sampling without specifying wires is treated as sampling all wires
-                op = qml.sample(wires=wires)
+                op = qml.sample(wires=meas_wires)
 
             op.queue_idx = k  # store the queue index in the Operator
 

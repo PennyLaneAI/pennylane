@@ -155,9 +155,14 @@ class MeasurementProcess(ABC):
         self.obs = obs
         self.id = id
 
-        if wires is not None and obs is not None:
-            raise ValueError("Cannot set the wires if an observable is provided.")
+        if wires is not None:
+            if len(wires) == 0:
+                raise ValueError("Cannot set an empty list of wires.")
+            if obs is not None:
+                raise ValueError("Cannot set the wires if an observable is provided.")
 
+        # _wires = None indicates broadcasting across all available wires.
+        # It translates to the public property wires = Wires([])
         self._wires = wires
         self._eigvals = None
 
@@ -206,8 +211,11 @@ class MeasurementProcess(ABC):
     def shape(self, device=None):
         """The expected output shape of the MeasurementProcess.
 
-        Note that the output shape is dependent on the device when the shot vector is defined in
-        the device.
+        Note that the output shape is dependent on the device when:
+
+        * The measurement type is either ``_Probability``, ``_State`` (from :func:`.state`) or
+          ``_Sample``;
+        * The shot vector was defined in the device.
 
         For example, assuming a device with ``shots=None``, expectation values
         and variances define ``shape=(1,)``, whereas probabilities in the qubit
@@ -215,7 +223,7 @@ class MeasurementProcess(ABC):
         number of wires the measurement acts on.
 
         Note that the shapes for vector-valued measurements such as
-        ``Probability`` and ``State`` are adjusted to the output of
+        ``_Probability`` and ``_State`` are adjusted to the output of
         ``qml.execute`` and may have an extra first element that is squeezed
         when using QNodes.
 
@@ -386,7 +394,7 @@ class MeasurementProcess(ABC):
         rotation and a measurement in the computational basis.
 
         Returns:
-            .QuantumTape: a quantum tape containing the operations
+            .QuantumScript: a quantum script containing the operations
             required to diagonalize the observable
 
         **Example**
@@ -400,28 +408,28 @@ class MeasurementProcess(ABC):
 
         Expanding this out:
 
-        >>> tape = m.expand()
+        >>> qscript = m.expand()
 
-        We can see that the resulting tape has the qubit unitary applied,
+        We can see that the resulting script has the qubit unitary applied,
         and a measurement process with no observable, but the eigenvalues
         specified:
 
-        >>> print(tape.operations)
+        >>> print(qscript.operations)
         [QubitUnitary(array([[-0.89442719,  0.4472136 ],
               [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(tape.measurements[0].eigvals())
+        >>> print(qscript.measurements[0].eigvals())
         [0. 5.]
-        >>> print(tape.measurements[0].obs)
+        >>> print(qscript.measurements[0].obs)
         None
         """
         if self.obs is None:
             raise qml.operation.DecompositionUndefinedError
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             self.obs.diagonalizing_gates()
             self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
 
-        return tape
+        return qml.tape.QuantumScript.from_queue(q)
 
     def queue(self, context=qml.QueuingManager):
         """Append the measurement process to an annotated queue."""

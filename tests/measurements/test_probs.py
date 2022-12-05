@@ -132,6 +132,24 @@ class TestProbs:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == Probability
 
+    def test_probs_empty_wires(self):
+        """Test that using ``qml.probs`` with an empty wire list raises an error."""
+        with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
+            qml.probs(wires=[])
+
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_probs_no_arguments(self, shots):
+        """Test that using ``qml.probs`` with no arguments returns the probabilities of all wires."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.probs()
+
+        res = circuit()
+
+        assert qml.math.allequal(res, [1, 0, 0, 0, 0, 0, 0, 0])
+
     def test_full_prob(self, init_state, tol, mocker):
         """Test that the correct probability is returned."""
         dev = qml.device("default.qubit", wires=4)
@@ -533,24 +551,6 @@ class TestProbs:
             match="Hamiltonians are not supported for rotating probabilities.",
         ):
             circuit()
-
-    def test_probs_no_wires_obs_raises(self):
-        """Test that an informative error is raised when no wires or observables
-        are passed to qml.probs."""
-        num_wires = 1
-
-        dev = qml.device("default.qubit", wires=num_wires, shots=None)
-
-        @qml.qnode(dev)
-        def circuit_probs():
-            qml.RY(0.34, wires=0)
-            return qml.probs()
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="qml.probs requires either the wires or the observable to be passed.",
-        ):
-            circuit_probs()
 
     @pytest.mark.parametrize(
         "operation", [qml.SingleExcitation, qml.SingleExcitationPlus, qml.SingleExcitationMinus]

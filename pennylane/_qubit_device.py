@@ -1089,7 +1089,10 @@ class QubitDevice(Device):
                 )
 
             # 2. Post-process statistics results (if need be)
-            if isinstance(m, (_Expectation, _Variance, _Probability, _VnEntropy, _MutualInfo)):
+            if isinstance(
+                m, (_Expectation, _Variance, _Probability, _VnEntropy, _MutualInfo, _ShadowExpval)
+            ):
+                # Result is a float
                 result = self._asarray(result, dtype=self.R_DTYPE)
 
             if self._shot_vector is not None and isinstance(result, np.ndarray):
@@ -1560,7 +1563,7 @@ class QubitDevice(Device):
         Returns:
             array[float]: list of the probabilities
         """
-
+        wires = wires or self.wires
         if self.shots is None:
             return self.analytic_probability(wires=wires)
 
