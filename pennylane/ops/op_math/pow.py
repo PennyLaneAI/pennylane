@@ -216,6 +216,18 @@ class Pow(SymbolicOp):
 
         super().__init__(base, do_queue=do_queue, id=id)
 
+        if isinstance(self.z, int) and self.z > 0:
+            try:
+                base_ps = self.base._pauli_rep  # pylint: disable=protected-access
+                pr = qml.pauli.PauliSentence({})
+                for _ in range(self.z):
+                    pr = pr * base_ps
+                self._pauli_rep = pr
+            except (AttributeError, TypeError):
+                self._pauli_rep = None
+        else:
+            self._pauli_rep = None
+
     def __repr__(self):
         return (
             f"({self.base})**{self.z}"
@@ -344,21 +356,6 @@ class Pow(SymbolicOp):
             list[.Operator] or None: a list of operators
         """
         return self.base.diagonalizing_gates()
-
-    @property
-    def _pauli_rep(self):
-        """PauliSentence representation of the power of operations."""
-        if isinstance(self.z, int) and self.z > 0:
-            try:
-                pr = qml.pauli.PauliSentence({})
-                for _ in range(self.z):
-                    pr = pr * self.base._pauli_rep  # pylint: disable=protected-access
-                return pr
-
-            except NotImplementedError as e:
-                raise NotImplementedError(f"Pauli rep not defined for power op {self}") from e
-
-        raise NotImplementedError(f"Pauli rep not defined for power op {self}")
 
     def eigvals(self):
         base_eigvals = self.base.eigvals()

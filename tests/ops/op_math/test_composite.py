@@ -45,6 +45,9 @@ class ValidOp(CompositeOp):
     _op_symbol = "#"
     _math_op = None
 
+    def _build_pauli_rep(self):
+        return qml.pauli.PauliSentence({})
+
     @property
     def is_hermitian(self):
         return False
@@ -172,6 +175,11 @@ class TestConstruction:
         assert mapped_op.wires == Wires([5, 7])
         assert mapped_op[0].wires == Wires(5)
         assert mapped_op[1].wires == Wires(7)
+
+    def test_build_pauli_rep(self):
+        """Test the build_pauli_rep"""
+        op = ValidOp(*self.simple_operands)
+        assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
 
 
 class TestMscMethods:

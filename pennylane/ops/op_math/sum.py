@@ -219,16 +219,15 @@ class Sum(CompositeOp):
     def adjoint(self):
         return Sum(*(qml.adjoint(summand) for summand in self))
 
-    @property
-    def _pauli_rep(self):
+    def _build_pauli_rep(self):
         """PauliSentence representation of the Sum of operations."""
         try:
             return reduce(
                 lambda a, b: a + b,
                 (op._pauli_rep for op in self.operands),  # pylint: disable=protected-access
             )
-        except NotImplementedError as e:
-            raise NotImplementedError(f"Pauli rep not defined for sum {self}") from e
+        except (AttributeError, TypeError):
+            return None
 
     @classmethod
     def _simplify_summands(cls, summands: List[Operator]):

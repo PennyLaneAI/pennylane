@@ -537,12 +537,10 @@ class TestProperties:
         """Test that the pauli rep gives the expected result."""
         assert op._pauli_rep == rep
 
-    def test_pauli_rep_raises_error(self):
-        """Test that an error is raised if any of the summands don't have a
-        _pauli_rep property implemented."""
+    def test_pauli_rep_none(self):
+        """Test that None is produced if any of the summands don't have a _pauli_rep."""
         op = qml.op_sum(qml.PauliX(wires=0), qml.RX(1.23, wires=1))
-        with pytest.raises(NotImplementedError, match="Pauli rep not defined for sum"):
-            _ = op._pauli_rep
+        assert op._pauli_rep is None
 
     op_pauli_reps_nested = (
         (
@@ -635,7 +633,7 @@ class TestProperties:
     )
 
     @pytest.mark.parametrize("op, rep", op_pauli_reps_nested)
-    def test_pauli_rep(self, op, rep):
+    def test_pauli_rep_nested(self, op, rep):
         """Test that the pauli rep gives the expected result."""
         assert op._pauli_rep == rep
 

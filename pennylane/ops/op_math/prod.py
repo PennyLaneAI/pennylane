@@ -315,16 +315,15 @@ class Prod(CompositeOp):
     def arithmetic_depth(self) -> int:
         return 1 + max(factor.arithmetic_depth for factor in self)
 
-    @property
-    def _pauli_rep(self):
+    def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
         try:
             return reduce(
                 lambda a, b: a * b,
                 (op._pauli_rep for op in self.operands),  # pylint: disable=protected-access
             )
-        except NotImplementedError as e:
-            raise NotImplementedError(f"Pauli rep not defined for product {self}") from e
+        except (AttributeError, TypeError):
+            return None
 
     def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
         """Reduces the depth of nested factors and groups identical factors.

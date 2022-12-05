@@ -369,22 +369,20 @@ class TestProperties:
         op = power_method(base, exp)
         assert op._pauli_rep == rep
 
-    def test_pauli_rep_error_exponent(self, power_method):
-        """Test that an error is produced if the exponent is not positive or non integer."""
+    def test_pauli_rep_is_none_for_bad_exponents(self, power_method):
+        """Test that the _pauli_rep is None if the exponent is not positive or non integer."""
         base = qml.PauliX(wires=0)
         exponents = [1.23, -2]
 
         for exponent in exponents:
-            with pytest.raises(NotImplementedError, match="Pauli rep not defined for power op"):
-                op = power_method(base, z=exponent)
-                _ = op._pauli_rep
+            op = power_method(base, z=exponent)
+            assert op._pauli_rep is None
 
-    def test_pauli_rep_error_in_base(self, power_method):
-        """Test that an error is produced if the base op does not have a pauli rep"""
+    def test_pauli_rep_none_if_base_pauli_rep_none(self, power_method):
+        """Test that None is produced if the base op does not have a pauli rep"""
         base = qml.RX(1.23, wires=0)
-        with pytest.raises(NotImplementedError, match="Pauli rep not defined for power op"):
-            op = power_method(base, z=2)
-            _ = op._pauli_rep
+        op = power_method(base, z=2)
+        assert op._pauli_rep is None
 
 
 class TestSimplify:
