@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Utility functions used in Pauli partitioning and measurement reduction schemes utilizing the
+Utility functions used in Pauli arithmetic, partitioning, and measurement reduction schemes utilizing the
 symplectic vector-space representation of Pauli words. For information on the symplectic binary
 representation of Pauli words and applications, see:
 
@@ -20,18 +20,18 @@ representation of Pauli words and applications, see:
 * `arXiv:1701.08213 <https://arxiv.org/abs/1701.08213>`_
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
-import itertools
-from functools import reduce, lru_cache
+from itertools import product
 from typing import List
+from functools import reduce, lru_cache
 
 import numpy as np
-
 import pennylane as qml
-from pennylane.tape import OperationRecorder
-from pennylane.ops import Identity
-from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
-from pennylane.operation import Observable, Tensor
+
 from pennylane.wires import Wires
+from pennylane.tape import OperationRecorder
+from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ
+from pennylane.operation import Tensor, Observable
 
 # To make this quicker later on
 ID_MAT = np.eye(2)
@@ -55,11 +55,18 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
 
 def is_pauli_word(observable):
     """
-    Checks if an observable instance is a Pauli word.
+    Checks if an observable instance consists only of Pauli and Identity Operators.
+
+    .. Warning::
+
+        This function will only confirm that all operators are Pauli or Identity operators,
+        and not whether the Observable is mathematically a Pauli word.
+        If an Observable consists of multiple Pauli operators targeting the same wire, the
+        function will return ``True`` regardless of any complex coefficients.
+
 
     Args:
-        observable (Observable): an observable, either a :class:`~.Tensor` instance or
-            single-qubit observable.
+        observable (~.Observable): the operator to be examined
 
     Returns:
         bool: true if the input observable is a Pauli word, false otherwise.
@@ -73,13 +80,18 @@ def is_pauli_word(observable):
     >>> is_pauli_word(qml.PauliZ(0) @ qml.Hadamard(1))
     False
     """
-
     if not isinstance(observable, Observable):
         return False
 
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
         return set(observable.name).issubset(pauli_word_names)
+
+    if isinstance(observable, Hamiltonian):
+        terms_pauli_word = []
+        for _, ob in zip(*observable.terms()):
+            terms_pauli_word.append(is_pauli_word(ob))
+        return all(terms_pauli_word)
 
     return observable.name in pauli_word_names
 
@@ -1036,12 +1048,12 @@ def partition_pauli_group(n_qubits: int) -> List[List[str]]:
     # ``['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ']``, which is our first group. The
     # next element of ``string`` will be ``('F', 'F', 'X')`` which we use to generate our second
     # group ``['IIX', 'IZX', 'ZIX', 'ZZX']``.
-    for string in itertools.product("FXYZ", repeat=n_qubits):
+    for string in product("FXYZ", repeat=n_qubits):
         if string not in strings:
             num_free_slots = string.count("F")
 
             group = []
-            commuting = itertools.product("IZ", repeat=num_free_slots)
+            commuting = product("IZ", repeat=num_free_slots)
 
             for commuting_string in commuting:
                 commuting_string = list(commuting_string)
@@ -1137,7 +1149,9 @@ def diagonalize_pauli_word(pauli_word):
     return diag_term
 
 
-def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branches
+def diagonalize_qwc_pauli_words(
+    qwc_grouping,
+):  # pylint: disable=too-many-branches, isinstance-second-argument-not-valid-type
     """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
 
     Args:
@@ -1169,6 +1183,9 @@ def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branc
 
     if not are_pauli_words_qwc(qwc_grouping):
         raise ValueError("The list of Pauli words are not qubit-wise commuting.")
+
+    if not all(isinstance(op, (Tensor, PauliX, PauliY, PauliZ, Identity)) for op in qwc_grouping):
+        raise ValueError("This function only supports Tensor products of pauli ops.")
 
     pauli_operators = []
     diag_terms = []

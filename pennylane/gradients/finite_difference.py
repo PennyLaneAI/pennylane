@@ -222,7 +222,7 @@ def _finite_diff_new(
     parameters with respect to its inputs. This function is adapted to the new return system.
 
     Args:
-        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -274,7 +274,7 @@ def _finite_diff_new(
     ...     return qml.expval(qml.PauliZ(0))
     >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
     >>> qml.jacobian(circuit)(params)
-    tensor([-0.38751725, -0.18884792, -0.38355708], requires_grad=True)
+    array([-0.38751725, -0.18884792, -0.38355708])
 
     When differentiating QNodes with multiple measurements using Autograd or TensorFlow, the outputs of the QNode first
     need to be stacked. The reason is that those two frameworks only allow differentiating functions with array or
@@ -291,7 +291,8 @@ def _finite_diff_new(
     ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    (DeviceArray([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32), DeviceArray([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
+    (DeviceArray([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32),
+    DeviceArray([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
 
 
     .. details::
@@ -305,6 +306,7 @@ def _finite_diff_new(
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
         ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> qml.gradients.finite_diff(circuit)(params)
         ((tensor(-0.38751724, requires_grad=True),
           tensor(-0.18884792, requires_grad=True),
@@ -463,12 +465,12 @@ def _finite_diff_new(
             if c0 is not None:
                 if len(tape.measurements) == 1:
                     c = qml.math.convert_like(c0, r0)
-                    pre_grads = [pre_grads[0] + c * r0]
+                    pre_grads = [pre_grads[0] + r0 * c]
                 else:
                     for i in range(len(tape.measurements)):
                         r_i = r0[i]
                         c = qml.math.convert_like(c0, r_i)
-                        pre_grads[i] = pre_grads[i] + c * r_i
+                        pre_grads[i] = pre_grads[i] + r_i * c
 
             coeff_div = qml.math.cast_like(
                 qml.math.convert_like(1 / h**n, pre_grads[0]), pre_grads[0]
@@ -722,13 +724,13 @@ def finite_diff(
 
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res)
-            g = sum(c * r for c, r in zip(coeffs, res))
+            g = sum(r * c for c, r in zip(coeffs, res))
 
             if c0 is not None:
                 # add on the unshifted term
-                g = g + c0 * r0
+                g = g + r0 * c0
 
-            grads.append(g / (h**n))
+            grads.append(g * (h ** (-n)))
 
         # The following is for backwards compatibility; currently,
         # the device stacks multiple measurement arrays, even if not the same

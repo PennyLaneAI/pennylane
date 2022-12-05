@@ -199,23 +199,25 @@ def test_no_control_defined():
     with QuantumTape() as tape:
         ctrl(qml.templates.QFT, 2)(wires=[0, 1])
     tape = tape.expand(depth=3, stop_at=lambda op: not isinstance(op, Controlled))
-    assert len(tape.operations) == 12
+    assert len(tape.operations) == 8
     # Check that all operations are updated to their controlled version.
     for op in tape.operations:
-        assert type(op) in {qml.ControlledPhaseShift, qml.Toffoli, qml.CRX, qml.CSWAP}
+        assert type(op) in {qml.ControlledPhaseShift, qml.Toffoli, qml.CRX, qml.CSWAP, qml.CH}
 
 
-def test_no_decomposition_defined():
+def test_decomposition_defined():
     """Test that a controlled gate that has no control transform defined,
-    as well as no decomposition transformed defined, still works correctly"""
+    and a decomposition transformed defined, still works correctly"""
 
     with QuantumTape() as tape:
-        ctrl(qml.CZ, 0)(wires=[1, 2])
+        ctrl(qml.CY, 0)(wires=[1, 2])
 
     tape = tape.expand()
 
-    assert len(tape.operations) == 1
-    assert tape.operations[0].name == "C(CZ)"
+    assert len(tape.operations) == 2
+
+    assert tape.operations[0].name == "C(CRY)"
+    assert tape.operations[1].name == "C(S)"
 
 
 def test_controlled_template():

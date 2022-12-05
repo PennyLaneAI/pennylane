@@ -25,7 +25,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, make_qscript
 
 
 class QNode:
@@ -35,7 +35,7 @@ class QNode:
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumScript` instance representing
     the quantum circuit.
 
     Args:
@@ -513,7 +513,7 @@ class QNode:
         )
 
     @property
-    def tape(self) -> QuantumTape:
+    def tape(self) -> QuantumScript:
         """The quantum tape"""
         return self._tape
 
@@ -522,11 +522,10 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self._tape = qml.tape.QuantumTape()
-
-        with self.tape:
-            self._qfunc_output = self.func(*args, **kwargs)
-        self._tape._qfunc_output = self._qfunc_output
+        self._tape = make_qscript(self.func)(*args, **kwargs)
+        self._tape._queue_category = "_ops"
+        self._qfunc_output = self.tape._qfunc_output
+        qml.QueuingManager.append(self.tape)
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -638,18 +637,6 @@ class QNode:
 
             res = res[0]
 
-            # Autograd or tensorflow: they do not support tuple return with backpropagation
-            backprop = False
-            if not isinstance(
-                self._qfunc_output, qml.measurements.MeasurementProcess
-            ) and self.interface in ("tf", "autograd"):
-                if isinstance(res, Sequence):
-                    backprop = any(qml.math.in_backprop(x) for x in res)
-                else:
-                    # res might not be a sequence even if the qfunc output is a sequence
-                    # of length 1
-                    backprop = qml.math.in_backprop(res)
-
             if old_interface == "auto":
                 self.interface = "auto"
 
@@ -657,14 +644,8 @@ class QNode:
             if isinstance(self._qfunc_output, list) and len(self._qfunc_output) == 1:
                 return [res]
 
-            if self.gradient_fn == "backprop" and backprop:
-                res = self.device._asarray(res)
-
             # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-            if (
-                not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess))
-                and not backprop
-            ):
+            if not isinstance(self._qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
                 if self.device._shot_vector:
                     res = [type(self.tape._qfunc_output)(r) for r in res]
                     res = tuple(res)

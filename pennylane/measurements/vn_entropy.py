@@ -15,9 +15,14 @@
 """
 This module contains the qml.vn_entropy measurement.
 """
+import copy
+from typing import Sequence
+
+import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import MeasurementProcess, VnEntropy
+from .measurements import StateMeasurement, VnEntropy
 
 
 def vn_entropy(wires, log_base=None):
@@ -61,4 +66,55 @@ def vn_entropy(wires, log_base=None):
     .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
     """
     wires = Wires(wires)
-    return MeasurementProcess(VnEntropy, wires=wires, log_base=log_base)
+    return _VnEntropy(wires=wires, log_base=log_base)
+
+
+class _VnEntropy(StateMeasurement):
+    """Measurement process that returns the Von Neumann entropy."""
+
+    # pylint: disable=too-many-arguments, unused-argument
+    def __init__(
+        self,
+        obs: Operator = None,
+        wires=None,
+        eigvals=None,
+        id=None,
+        log_base=None,
+    ):
+        self.log_base = log_base
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+
+    @property
+    def return_type(self):
+        return VnEntropy
+
+    @property
+    def numeric_type(self):
+        return float
+
+    def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
+        if device is None or device.shot_vector is None:
+            return (1,)
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return (num_shot_elements,)
+
+    def _shape_new(self, device=None):
+        if device is None or device.shot_vector is None:
+            return ()
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return tuple(() for _ in range(num_shot_elements))
+
+    def process_state(self, state: Sequence[complex], wire_order: Wires):
+        return qml.math.vn_entropy(
+            state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
+        )
+
+    def __copy__(self):
+        return self.__class__(
+            obs=copy.copy(self.obs),
+            wires=self._wires,
+            eigvals=self._eigvals,
+            log_base=self.log_base,
+        )
