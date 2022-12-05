@@ -678,12 +678,7 @@ class TestProperties:
             """Dummy op with None queue category"""
 
             _queue_category = None
-
-            def __init__(self, wires):
-                self._wires = qml.wires.Wires([wires])
-
-            def num_wires(self):
-                return len(self.wires)
+            num_wires = 1
 
         prod_op = prod(qml.Identity(wires=0), DummyOp(wires=0))
         assert prod_op._queue_category is None

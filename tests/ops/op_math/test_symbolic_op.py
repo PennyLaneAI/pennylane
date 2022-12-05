@@ -161,6 +161,12 @@ class TestProperties:
         op = SymbolicOp(t)
         assert op.num_wires == 3
 
+    def test_pauli_rep(self):
+        """Test that pauli_rep is None by default"""
+        base = TempOperator("a")
+        op = SymbolicOp(base)
+        assert op._pauli_rep is None
+
 
 class TestQueuing:
     """Test that Symbolic Operators queue and update base metadata."""
