@@ -524,7 +524,9 @@ class TestControlledQubitUnitary:
 
     def test_shared_control(self):
         """Test if ControlledQubitUnitary raises an error if control wires are shared with wires"""
-        with pytest.raises(ValueError, match="The control wires must be different from the wires"):
+        with pytest.raises(
+            ValueError, match="The control wires must be different from the base operation wires"
+        ):
             qml.ControlledQubitUnitary(X, control_wires=[0, 2], wires=2)
 
     def test_wrong_shape(self):
@@ -814,7 +816,7 @@ class TestControlledQubitUnitary:
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
-        assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
+        assert pow_ops[0].target_wires == op.target_wires
         assert pow_ops[0].control_wires == op.control_wires
         assert pow_ops[0].control_values == op.control_values
 
@@ -841,7 +843,7 @@ class TestControlledQubitUnitary:
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
-        assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
+        assert pow_ops[0].target_wires == op.target_wires
         assert pow_ops[0].control_wires == op.control_wires
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)

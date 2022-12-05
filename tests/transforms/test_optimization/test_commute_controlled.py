@@ -53,7 +53,7 @@ class TestCommuteControlled:
 
         ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
-        names_expected = ["PauliX", "C(QubitUnitary)", "PauliX"]
+        names_expected = ["PauliX", "ControlledQubitUnitary", "PauliX"]
         wires_expected = [Wires(2), Wires([0, 2]), Wires(2)]
         compare_operation_lists(ops, names_expected, wires_expected)
 
