@@ -322,7 +322,7 @@ class TestHamiltonianReturn:
         gen = qml.generator(HermitianOp, format="hamiltonian")(0.5, wires=0)
         assert gen.name == "Hamiltonian"
 
-        expected = qml.Hamiltonian(*qml.utils.decompose_hamiltonian(HermitianOp.H))
+        expected = qml.pauli_decompose(HermitianOp.H, hide_identity=True)
         assert gen.compare(expected)
 
     def test_sparse_hamiltonian(self):
@@ -331,12 +331,12 @@ class TestHamiltonianReturn:
         gen = qml.generator(SparseOp, format="hamiltonian")(0.5, wires=0)
         assert gen.name == "Hamiltonian"
 
-        expected = qml.Hamiltonian(*qml.utils.decompose_hamiltonian(SparseOp.H.toarray()))
+        expected = qml.pauli_decompose(SparseOp.H.toarray(), hide_identity=True)
         assert gen.compare(expected)
 
     def test_hermitian_inverse(self):
         """Test a Hermitian inverted generator is correct"""
-        expected = qml.Hamiltonian(*qml.utils.decompose_hamiltonian(HermitianOp.H))
+        expected = qml.pauli_decompose(HermitianOp.H, hide_identity=True)
 
         gen = qml.generator(HermitianOp(0.5, wires=0).inv(), format="hamiltonian")
         assert gen.name == "Hamiltonian"
@@ -344,7 +344,7 @@ class TestHamiltonianReturn:
 
     def test_sparse_hamiltonian_inverse(self):
         """Test a SparseHamiltonian inverted generator is correct"""
-        expected = qml.Hamiltonian(*qml.utils.decompose_hamiltonian(SparseOp.H.toarray()))
+        expected = qml.pauli_decompose(SparseOp.H.toarray(), hide_identity=True)
 
         gen = qml.generator(SparseOp(0.5, wires=0).inv(), format="hamiltonian")
         assert gen.name == "Hamiltonian"
