@@ -575,7 +575,7 @@ class TestExpressionConditionals:
     def test_conditional_rotations(self, r, op):
         """Test that the quantum conditional operations match the output of
         controlled rotations. And additionally that summing measurements works as expected."""
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("lightning.qubit", wires=3)
 
         @qml.qnode(dev)
         def normal_circuit(rads):
@@ -601,7 +601,7 @@ class TestExpressionConditionals:
 
     def test_triple_measurement_condition_expression(self):
         """test that combining the results of three mid circuit measurements works as expected."""
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("lightning.qubit", wires=4)
 
         @qml.qnode(dev)
         @qml.defer_measurements
