@@ -114,6 +114,24 @@ array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
 [ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
 
 
+Matrix to Operator functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+
+    ~pennylane.pauli_decompose
+
+These functions take the matrix representation of an operator and return
+the equivalent native PennyLane operator.
+
+>>> mat = np.array([[1, 1], [1, -1]])
+>>> h = qml.pauli_decompose(mat)
+>>> type(h)
+<class 'pennylane.ops.qubit.hamiltonian.Hamiltonian'>
+>>> print(h)
+(1.0) [X0]
++ (1.0) [Z0]
+
 .. _intro_ref_ops_qubit:
 
 Qubit operators
