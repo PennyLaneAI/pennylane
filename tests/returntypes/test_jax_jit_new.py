@@ -184,7 +184,7 @@ class TestJaxExecuteUnitTests:
             )[0]
 
         a = jnp.array([0.1, 0.2])
-        cost(a)
+        jax.jit(cost)(a)
 
         # adjoint method only performs a single device execution, but gets both result and gradient
         assert dev.num_executions == 1
@@ -212,7 +212,7 @@ class TestJaxExecuteUnitTests:
             )[0]
 
         a = jnp.array([0.1, 0.2])
-        cost(a)
+        jax.jit(cost)(a)
 
         assert dev.num_executions == 1
         spy_execute.assert_called()
@@ -270,7 +270,7 @@ class TestCaching:
             )[0]
 
         params = jnp.array([0.1, 0.2])
-        jax.grad(cost)(params, cachesize=2)
+        jax.jit(jax.grad(cost), static_argnums=1)(params, cachesize=2)
         cache = spy.call_args[0][1]
 
         assert cache.maxsize == 2
@@ -479,7 +479,7 @@ class TestJaxExecuteIntegration:
                 qml.expval(qml.PauliZ(0))
             return execute([tape], dev, interface="jax-jit", **execute_kwargs)[0]
 
-        res = jax.grad(cost)(a)
+        res = jax.jit(jax.grad(cost))(a)
         assert res.shape == ()
 
         # compare to standard tape jacobian
@@ -521,7 +521,7 @@ class TestJaxExecuteIntegration:
             tape.set_parameters([a, b])
             return execute([tape], dev, interface="jax-jit", **execute_kwargs)[0]
 
-        jac_fn = jax.grad(cost)
+        jac_fn = jax.jit(jax.grad(cost))
         jac = jac_fn(a, b)
 
         a = jnp.array(0.54)
@@ -533,7 +533,7 @@ class TestJaxExecuteIntegration:
         expected = [np.cos(2 * a)]
         assert np.allclose(res2, expected, atol=tol, rtol=0)
 
-        jac_fn = jax.grad(lambda a, b: cost(2 * a, b))
+        jac_fn = jax.jit(jax.grad(lambda a, b: cost(2 * a, b)))
         jac = jac_fn(a, b)
         expected = -2 * np.sin(2 * a)
         assert np.allclose(jac, expected, atol=tol, rtol=0)
@@ -578,7 +578,7 @@ class TestJaxExecuteIntegration:
             return execute([tape], device, interface="jax-jit", **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
-        res = jax.grad(cost, argnums=(0, 1, 2))(a, b, c, device=dev)
+        res = jax.jit(jax.grad(cost, argnums=(0, 1, 2)), static_argnums=3)(a, b, c, device=dev)
         assert len(res) == 3
 
     def test_classical_processing_multiple_tapes(self, execute_kwargs, tol):
@@ -605,7 +605,7 @@ class TestJaxExecuteIntegration:
             )
             return result[0] + result[1] - 7 * result[1]
 
-        res = jax.grad(cost_fn)(params)
+        res = jax.jit(jax.grad(cost_fn))(params)
         assert res.shape == (2,)
 
     def test_multiple_tapes_output(self, execute_kwargs, tol):
@@ -628,7 +628,7 @@ class TestJaxExecuteIntegration:
 
             return execute(tapes=[tape1, tape2], device=dev, interface="jax-jit", **execute_kwargs)
 
-        res = cost_fn(params)
+        res = jax.jit(cost_fn)(params)
         assert isinstance(res, list)
         assert all(isinstance(r, jnp.ndarray) for r in res)
         assert all(r.shape == () for r in res)
@@ -649,7 +649,7 @@ class TestJaxExecuteIntegration:
             return execute([tape], device, interface="jax-jit", **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
-        res = cost(a, U, device=dev)
+        res = jax.jit(cost, static_argnums=2)(a, U, device=dev)
         assert np.allclose(res, -np.cos(a), atol=tol, rtol=0)
 
         jac_fn = jax.grad(cost, argnums=(0))
@@ -686,13 +686,13 @@ class TestJaxExecuteIntegration:
         p = jnp.array([0.1, 0.2, 0.3])
 
         dev = qml.device("default.qubit", wires=1)
-        res = cost_fn(a, p, device=dev)
+        res = jax.jit(cost_fn, static_argnums=2)(a, p, device=dev)
         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
             np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        jac_fn = jax.grad(cost_fn, argnums=(1))
+        jac_fn = jax.jit(jax.grad(cost_fn, argnums=(1)), static_argnums=2)
         res = jac_fn(a, p, device=dev)
         expected = jnp.array(
             [
@@ -726,7 +726,7 @@ class TestJaxExecuteIntegration:
             res = execute([tape], dev, cache=cache, interface="jax-jit", **execute_kwargs)
             return res[0]
 
-        res = jax.grad(cost)(params, cache=None)
+        res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)
         assert res.shape == (3,)
 
 
@@ -765,7 +765,7 @@ class TestVectorValuedJIT:
             )
             return res[0]
 
-        res = cost(params, cache=None)
+        res = jax.jit(cost)(params, cache=None)
         assert isinstance(res, expected_type)
 
         if expected_type is tuple:
@@ -775,7 +775,7 @@ class TestVectorValuedJIT:
             assert res.shape == shape
 
     def test_independent_expval(self, execute_kwargs):
-        """Tests computing an expectation value that is independent trainable
+        """Tests computing an expectation value that is independent of trainable
         parameters."""
         # TODO
         if execute_kwargs.get("mode", None) == "forward":
@@ -796,7 +796,7 @@ class TestVectorValuedJIT:
             )
             return res[0]
 
-        res = jax.grad(cost)(params, cache=None)
+        res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)
         assert res.shape == (3,)
 
     ret_and_output_dim = [
@@ -844,7 +844,7 @@ class TestVectorValuedJIT:
             )[0]
             return res
 
-        res = cost(params, cache=None)
+        res = jax.jit(cost, static_argnums=1)(params, cache=None)
 
         assert isinstance(res, expected_type)
         if expected_type is tuple:
@@ -878,7 +878,7 @@ class TestVectorValuedJIT:
             )[0]
             return res
 
-        res = cost(params, cache=None)
+        res = jax.jit(cost, static_argnums=1)(params, cache=None)
         assert res.shape == (dev.shots,)
 
     def test_multiple_expvals_grad(self, execute_kwargs):
@@ -902,7 +902,7 @@ class TestVectorValuedJIT:
             )[0]
             return res[0] + res[1]
 
-        res = jax.grad(cost)(params, cache=None)
+        res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)
         assert res.shape == (3,)
 
     def test_multi_tape_jacobian_probs_expvals(self, execute_kwargs):
