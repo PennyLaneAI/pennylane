@@ -494,11 +494,15 @@ def spsa_grad(
                 [ 0.69916862,  0.34072424,  0.69202359]], requires_grad=True)
 
         As we can see, the SPSA output is a rather coarse approximation to the true
-        gradient, and this although the parameter-shift rule for three parameters uses
-        just six circuit evaluations, much fewer than SPSA! Consequentially, SPSA is
-        not necessarily useful for small circuits with few parameters, but will pay off
-        for large circuits where other gradient estimators require unfeasibly many circuit
-        executions.
+        gradient. This means we used more circuit evaluations (namely 20) to
+        obtain a rough approximation than for the more precise parameter-shift
+        result (which only cost us six evaluations).
+        For few parameters, this will usually be the case, so that SPSA is not
+        very useful for few-parameter gradients. However, for circuits with
+        considerably more parameters, the parameter-shift gradient will require
+        many more evaluations, while the number of directions we need for a proper
+        approximation of the gradient will not grow as much. This makes SPSA
+        useful for such circuits.
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
