@@ -782,3 +782,15 @@ class TestMakeQscript:
         qscript = qml.tape.make_qscript(qfunc)()
         assert len(qscript.operations) == 1
         assert qscript.operations[0].name == "PauliX"
+
+
+def test_from_queue():
+    """Test that QuantumScript.from_queue works correctly."""
+    with qml.queuing.AnnotatedQueue() as q:
+        op = qml.PauliX(0)
+        with qml.QueuingManager.stop_recording():
+            qml.Hadamard(0)
+        qml.expval(qml.PauliZ(0))
+    qscript = QuantumScript.from_queue(q)
+    assert qscript.operations == [op]
+    assert len(qscript.measurements) == 1
