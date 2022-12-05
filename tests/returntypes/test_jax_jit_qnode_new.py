@@ -26,7 +26,8 @@ jit_qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward"],
     ["default.qubit", "parameter-shift", "backward"],
-    ["default.qubit", "adjoint", "forward"],
+    # TODO:
+    # ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
 ]
 
@@ -55,7 +56,6 @@ class TestJIT:
         if diff_method == "adjoint":
             pytest.xfail(reason="The adjoint method is not using host-callback currently")
 
-        @jax.jit
         @qnode(dev, diff_method=diff_method, interface="jax-jit", mode=mode)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -64,7 +64,7 @@ class TestJIT:
 
         x = jnp.array([1.0, 2.0])
         res = circuit(x)
-        g = jacobian(circuit)(x)
+        g = jax.jit(jacobian(circuit))(x)
 
         a, b = x
 
@@ -95,12 +95,11 @@ class TestJIT:
 
         projector = np.array(qml.matrix(qml.PauliZ(0) @ qml.PauliZ(1)))
 
-        @jax.jit
         @qml.qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circ(projector):
             return qml.expval(qml.Hermitian(projector, wires=range(2)))
 
-        assert jnp.allclose(circ(projector), 1)
+        assert jnp.allclose(jax.jit(circ)(projector), 1)
 
     @pytest.mark.filterwarnings(
         "ignore:Requested adjoint differentiation to be computed with finite shots."
@@ -131,7 +130,6 @@ class TestJIT:
 
         dev = qml.device(dev_name, wires=1)
 
-        @jax.jit
         @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -139,7 +137,7 @@ class TestJIT:
             qml.RZ(c, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        res = jacobian(circuit, argnums=[0, 1])(a, b, 0.0)
+        res = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b, 0.0)
 
         expected_res = np.cos(a) * np.cos(b)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
@@ -157,7 +155,6 @@ class TestJIT:
         if diff_method == "adjoint":
             pytest.xfail(reason="The adjoint method is not using host-callback currently")
 
-        @jax.jit
         @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -177,17 +174,37 @@ class TestJIT:
         )
 
         idx = 0
-        g0 = jacobian(cost, argnums=0)(x, y, idx)
-        g1 = jacobian(cost, argnums=1)(x, y, idx)
+        g0 = jax.jit(jacobian(cost, argnums=0))(x, y, idx)
+        g1 = jax.jit(jacobian(cost, argnums=1))(x, y, idx)
         assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
         assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
 
         idx = 1
-        g0 = jacobian(cost, argnums=0)(x, y, idx)
-        g1 = jacobian(cost, argnums=1)(x, y, idx)
+        g0 = jax.jit(jacobian(cost, argnums=0))(x, y, idx)
+        g1 = jax.jit(jacobian(cost, argnums=1))(x, y, idx)
 
         assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
         assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
+
+    def test_matrix_parameter(self, dev_name, diff_method, mode, jacobian, tol):
+        """Test that the JAX-JIT interface works correctly with a matrix
+        parameter"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
+        def circ(p, U):
+            qml.QubitUnitary(U, wires=0)
+            qml.RY(p, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        p = jnp.array(0.1)
+        U = jnp.array([[0, 1], [1, 0]])
+        res = jax.jit(circ)(p, U)
+        assert np.allclose(res, -np.cos(p), atol=tol, rtol=0)
+
+        jac_fn = jax.jit(jax.grad(circ, argnums=(0)))
+        res = jac_fn(p, U)
+        assert np.allclose(res, np.sin(p), atol=tol, rtol=0)
 
 
 qubit_device_and_diff_method_and_mode = [
@@ -212,7 +229,6 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=1, shots=shots)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(a):
             qml.RY(a, wires=0)
@@ -221,7 +237,7 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        grad = jacobian(circuit)(a)
+        grad = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == ()
@@ -235,7 +251,6 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=1, shots=shots)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -245,7 +260,7 @@ class TestReturn:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        grad = jacobian(circuit, argnums=[0, 1])(a, b)
+        grad = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b)
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
@@ -261,7 +276,6 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=1, shots=shots)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -270,7 +284,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        grad = jacobian(circuit)(a)
+        grad = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == (2,)
@@ -288,7 +302,6 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(a):
             qml.RY(a, wires=0)
@@ -297,7 +310,7 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        jac = jacobian(circuit)(a)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4,)
@@ -314,7 +327,6 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -324,7 +336,7 @@ class TestReturn:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        jac = jacobian(circuit, argnums=[0, 1])(a, b)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b)
 
         assert isinstance(jac, tuple)
 
@@ -346,7 +358,6 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -354,7 +365,7 @@ class TestReturn:
             return qml.probs(wires=[0, 1])
 
         a = jax.numpy.array([0.1, 0.2])
-        jac = jacobian(circuit)(a)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4, 2)
@@ -370,7 +381,6 @@ class TestReturn:
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -378,7 +388,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(par_0, par_1)
 
         assert isinstance(jac, tuple)
 
@@ -404,7 +414,6 @@ class TestReturn:
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -413,7 +422,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jacobian(circuit)(a)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -436,7 +445,6 @@ class TestReturn:
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -444,7 +452,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
 
-        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(par_0, par_1)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -474,7 +482,6 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -483,7 +490,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jacobian(circuit)(a)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -505,7 +512,6 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(a):
             qml.RY(a, wires=0)
@@ -514,7 +520,7 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        jac = jacobian(circuit)(a)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -536,7 +542,6 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -546,7 +551,7 @@ class TestReturn:
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        jac = jacobian(circuit, argnums=[0, 1])(a, b)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -576,7 +581,6 @@ class TestReturn:
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
-        @jax.jit
         @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -585,7 +589,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jacobian(circuit)(a)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
