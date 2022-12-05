@@ -125,6 +125,25 @@ class MeasurementProcess(ABC):
         log_base (float): Base for the logarithm.
     """
 
+    method_name = ""
+    """Devices can override the logic of a measurement process by defining a method with the
+    name ``method_name`` of the corresponding class. The method should have the following signature:
+
+    .. code-block:: python
+
+        def method_name(self, measurement: MeasurementProcess, shot_range=None, bin_size=None):
+            '''Device's custom measurement implementation.
+
+            Args:
+                measurement (MeasurementProcess): measurement to override
+                shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                    to use. If not specified, all samples are used.
+                bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                    returns the measurement statistic separately over each bin. If not
+                    provided, the entire shot range is treated as a single bin.
+            '''
+    """
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -136,9 +155,14 @@ class MeasurementProcess(ABC):
         self.obs = obs
         self.id = id
 
-        if wires is not None and obs is not None:
-            raise ValueError("Cannot set the wires if an observable is provided.")
+        if wires is not None:
+            if len(wires) == 0:
+                raise ValueError("Cannot set an empty list of wires.")
+            if obs is not None:
+                raise ValueError("Cannot set the wires if an observable is provided.")
 
+        # _wires = None indicates broadcasting across all available wires.
+        # It translates to the public property wires = Wires([])
         self._wires = wires
         self._eigvals = None
 
@@ -378,7 +402,7 @@ class MeasurementProcess(ABC):
         rotation and a measurement in the computational basis.
 
         Returns:
-            .QuantumTape: a quantum tape containing the operations
+            .QuantumScript: a quantum script containing the operations
             required to diagonalize the observable
 
         **Example**
@@ -392,28 +416,28 @@ class MeasurementProcess(ABC):
 
         Expanding this out:
 
-        >>> tape = m.expand()
+        >>> qscript = m.expand()
 
-        We can see that the resulting tape has the qubit unitary applied,
+        We can see that the resulting script has the qubit unitary applied,
         and a measurement process with no observable, but the eigenvalues
         specified:
 
-        >>> print(tape.operations)
+        >>> print(qscript.operations)
         [QubitUnitary(array([[-0.89442719,  0.4472136 ],
               [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(tape.measurements[0].eigvals())
+        >>> print(qscript.measurements[0].eigvals())
         [0. 5.]
-        >>> print(tape.measurements[0].obs)
+        >>> print(qscript.measurements[0].obs)
         None
         """
         if self.obs is None:
             raise qml.operation.DecompositionUndefinedError
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             self.obs.diagonalizing_gates()
             self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
 
-        return tape
+        return qml.tape.QuantumScript.from_queue(q)
 
     def queue(self, context=qml.QueuingManager):
         """Append the measurement process to an annotated queue."""
@@ -574,13 +598,28 @@ class StateMeasurement(MeasurementProcess):
         """
 
 
-class CustomMeasurement(MeasurementProcess):
-    """Custom measurement process.
+class MeasurementTransform(MeasurementProcess):
+    """Measurement process that applies a transform into the given quantum script. This transform
+    is carried out inside the gradient black box, thus is not tracked by the gradient transform.
 
     Any class inheriting from this class should define its own ``process`` method, which takes a
-    device instance and a tape and returns the result of the measurement process.
+    device instance and a quantum script and returns the result of the measurement process.
+    """
+
+    method_name = ""
+    """Devices can override the logic of a measurement process by defining a method with the
+    name ``method_name`` of the corresponding class. The method should have the following signature:
+
+    .. code-block:: python
+
+        def method_name(self, qscript: QuantumScript):
+            '''Device's custom measurement implementation.
+
+            Args:
+                qscript: quantum script to transform
+            '''
     """
 
     @abstractmethod
-    def process(self, tape, device):
-        """Process the given tape."""
+    def process(self, qscript, device):
+        """Process the given quantum script."""
