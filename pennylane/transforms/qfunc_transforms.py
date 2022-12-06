@@ -65,6 +65,8 @@ def make_tape(fn):
     [RY(1.0, wires=[0])]
     """
 
+    warnings.warn("``make_tape`` is deprecated in favor of ``qml.tape.make_qscript``", UserWarning)
+
     def wrapper(*args, **kwargs):
         with qml.QueuingManager.stop_recording(), qml.tape.QuantumTape() as new_tape:
             fn(*args, **kwargs)
