@@ -397,7 +397,7 @@
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
 * Thy PyTorch interface supports the new return system and users can use jacobian and hessian using custom differentiation
-  (parameter-shift, finite difference, adjoint).
+  methods (e.g., parameter-shift, finite difference or adjoint).
   [(#3416)](https://github.com/PennyLaneAI/pennylane/pull/3414)
   
   ```python
