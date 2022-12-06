@@ -475,8 +475,9 @@ def _expval_param_shift_tuple(
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing a
-            list of generated tapes, in addition to a post-processing
-            function to be applied to the results of the evaluated tapes.
+            list of generated tapes, together with a post-processing
+            function to be applied to the results of the evaluated tapes
+            in order to obtain the Jacobian matrix.
     """
     argnum = argnum or tape.trainable_params
 
@@ -623,8 +624,9 @@ def expval_param_shift(
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
-        list of generated tapes, in addition to a post-processing
-        function to be applied to the results of the evaluated tapes.
+        list of generated tapes, together with a post-processing
+        function to be applied to the results of the evaluated tapes
+        in order to obtain the Jacobian matrix.
     """
     if qml.active_return():
         return _expval_param_shift_tuple(
@@ -957,8 +959,9 @@ def _var_param_shift_tuple(
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
-        list of generated tapes, in addition to a post-processing
-        function to be applied to the results of the evaluated tapes.
+        list of generated tapes, together with a post-processing
+        function to be applied to the results of the evaluated tapes
+        in order to obtain the Jacobian matrix.
     """
     argnum = argnum or tape.trainable_params
 
@@ -1060,8 +1063,9 @@ def var_param_shift(
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
-        list of generated tapes, in addition to a post-processing
-        function to be applied to the results of the evaluated tapes.
+        list of generated tapes, together with a post-processing
+        function to be applied to the results of the evaluated tapes
+        in order to obtain the Jacobian matrix.
     """
     if qml.active_return():
         return _var_param_shift_tuple(tape, argnum, shifts, gradient_recipes, f0, broadcast, shots)
@@ -1233,15 +1237,17 @@ def _param_shift_new(
             device shots for the new return types output system.
 
     Returns:
-        tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]] or tuple[list[QuantumTape], function]:
+        function or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the output Jacobian matrix.
-          The type of the object returned is either a tensor, a tuple or a nested tuple depending on the nesting
-          structure of the output.
+        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
+          that can be executed to obtain the Jacobian matrix.
+          The type of the matrix returned is either a tensor, a tuple or a
+          nested tuple depending on the nesting structure of the original QNode output.
 
-        - If the input is a tape, a tuple containing a list of generated tapes,
-          in addition to a post-processing function to be applied to the
-          evaluated tapes.
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Jacobian matrix.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,
@@ -1657,15 +1663,16 @@ def param_shift(
             transform about the device shots and helps in determining if a shot sequence was used.
 
     Returns:
-        tensor_like or tuple[list[QuantumTape], function]:
+        function or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode, a tensor
-          representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
-          is returned.
+        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
+          that can be executed to obtain the Jacobian matrix.
+          The returned matrix is a tensor of size ``(number_outputs, number_gate_parameters)``
 
-        - If the input is a tape, a tuple containing a list of generated tapes,
-          in addition to a post-processing function to be applied to the
-          evaluated tapes.
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Jacobian matrix.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,

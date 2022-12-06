@@ -239,9 +239,10 @@ def expval_hessian_param_shift(
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        tuple[list[QuantumTape], function]: A tuple containing a list of generated tapes, in
-            addition to a post-processing function to be applied to the results of the evaluated
-            tapes.
+        tuple[list[QuantumTape], function]: A tuple containing a
+        list of generated tapes, together with a post-processing
+        function to be applied to the results of the evaluated tapes
+        in order to obtain the Hessian matrix.
     """
     # pylint: disable=too-many-arguments, too-many-statements
     h_dim = tape.num_params
@@ -357,9 +358,10 @@ def _expval_hessian_param_shift_tuple(
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        tuple[list[QuantumTape], function]: A tuple containing a list of generated tapes, in
-            addition to a post-processing function to be applied to the results of the evaluated
-            tapes.
+        tuple[list[QuantumTape], function]: A tuple containing a
+        list of generated tapes, together with a post-processing
+        function to be applied to the results of the evaluated tapes
+        in order to obtain the Hessian matrix.
     """
     # pylint: disable=too-many-arguments, too-many-statements
     h_dim = tape.num_params
@@ -516,17 +518,19 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        tensor_like or tuple[tensor_like] or tuple[list[QuantumTape], function]:
+        function or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode with a single trainable argument, a tensor representing the
-          Hessian of size ``(*QNode output dimensions, *QNode input dimensions, *QNode input dimensions)``
-          is returned.
-
-        - If the input is a QNode with multiple trainable arguments, a tuple of Hessian tensors is
+        - If the input is a QNode, an object representing the Hessian (function) of the QNode
+          that can be executed to obtain the Hessian matrix.
+          For QNodes with a single trainable argument, the returned matrix is a tensor of size
+          ``(*QNode output dimensions, *QNode input dimensions, *QNode input dimensions)``.
+          For QNodes with multiple trainable arguments, a tuple of Hessian tensors is
           returned, one for each argument.
 
-        - If the input is a tape, a tuple containing the list of parameter-shifted tapes, and a
-          post-processing function to be applied to the evaluated tapes, is returned.
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Hessian matrix.
 
         Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to
         QNode arguments, which can include classical computations on those arguments before they are
@@ -740,17 +744,19 @@ def _param_shift_hessian_tuple(
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        tensor_like or tuple[tensor_like] or tuple[list[QuantumTape], function]:
+        function or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode with a single trainable argument, a tensor representing the
-          Hessian of size ``(*QNode output dimensions, *QNode input dimensions, *QNode input dimensions)``
-          is returned.
-
-        - If the input is a QNode with multiple trainable arguments, a tuple of Hessian tensors is
+        - # TODO: If the input is a QNode, an object representing the Hessian (function) of
+          the QNode that can be executed to obtain the Hessian matrix.
+          For QNodes with a single trainable argument, the returned matrix is a tensor of size
+          ``(*QNode output dimensions, *QNode input dimensions, *QNode input dimensions)``.
+          For QNodes with multiple trainable arguments, a tuple of Hessian tensors is
           returned, one for each argument.
 
-        - If the input is a tape, a tuple containing the list of parameter-shifted tapes, and a
-          post-processing function to be applied to the evaluated tapes, is returned.
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Hessian matrix.
 
         Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to
         QNode arguments, which can include classical computations on those arguments before they are
