@@ -316,13 +316,6 @@ def _execute_fwd_tuple(
         res, jacs = jax.pure_callback(
             wrapper, (shape_dtype_structs, jac_shape_dtype_structs), params
         )
-
-        # new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
-
-        # with qml.tape.Unwrap(*new_tapes):
-
-        # res = _to_jax(res)
-
         return res, jacs
 
     @execute_wrapper.defjvp
