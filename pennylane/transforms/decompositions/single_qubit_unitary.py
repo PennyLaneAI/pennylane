@@ -34,7 +34,7 @@ def _convert_to_su2(U):
     dets = np.linalg.det(U)
 
     exp_angles = -1j * math.cast_like(math.angle(dets), 1j) / 2
-    return U * math.exp(exp_angles)[:, None, None]
+    return math.cast_like(U, dets) * math.exp(exp_angles)[:, None, None]
 
 
 def zyz_decomposition(U, wire):
@@ -89,7 +89,7 @@ def zyz_decomposition(U, wire):
     # If the value of U is not abstract, we can include a conditional statement
     # that will check if the off-diagonal elements are 0; if so, just use one RZ
     zero_off_diagonals_mask = (
-        np.equal(U[:, 0, 1], np.zeros(len(U)))
+        np.isclose(U[:, 0, 1], np.zeros(len(U)))
         if not math.is_abstract(U)
         else np.full(len(U), False)
     )
@@ -130,8 +130,9 @@ def zyz_decomposition(U, wire):
     ]
 
     decompositions = [
-        rz_decompositions.pop(0) if flag else rot_decompositions.pop(0)
+        [rz_decompositions.pop(0) if flag else rot_decompositions.pop(0)]
         for flag in zero_off_diagonals_mask
     ]
 
-    return decompositions
+    # Squeeze the batch dimension if the batch size was one
+    return decompositions[0] if len(U) == 1 else decompositions
