@@ -400,6 +400,7 @@
 * The JAX-JIT interface now supports gradient transforms and device gradient execution in `backward` mode with the new
   return types system.
   [(#3235)](https://github.com/PennyLaneAI/pennylane/pull/3235)
+  [(#3445)](https://github.com/PennyLaneAI/pennylane/pull/3445)
 
   ```python
   import pennylane as qml
