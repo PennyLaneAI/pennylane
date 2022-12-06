@@ -405,8 +405,7 @@ jobs:
       - name: Run tests
         run: |
           python -m pytest pennylane/devices/tests \
-            --device=
-          \
+            --device=${{ matrix.config.device }} \
             --shots=${{ matrix.config.shots }} \
             --cov=pennylane $COVERAGE_FLAGS
 
