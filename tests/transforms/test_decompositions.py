@@ -41,6 +41,12 @@ single_qubit_decomps = [
     (T, qml.RZ, [np.pi / 4]),
     (qml.RZ(0.3, wires=0).matrix(), qml.RZ, [0.3]),
     (qml.RZ(-0.5, wires=0).matrix(), qml.RZ, [-0.5]),
+    # Add one instance of broadcasted unitaries converted to RZ
+    (
+        qml.QubitUnitary(qml.RZ.compute_matrix(np.array([1.2, 2.3, 2.7])), wires=0).matrix(),
+        qml.RZ,
+        [1.2, 2.3, 2.7],
+    ),
     # Next set of gates are non-diagonal and decomposed as Rots
     (
         np.array(
@@ -60,6 +66,12 @@ single_qubit_decomps = [
         qml.Rot,
         [-1.0, 2.0, -3.0],
     ),
+    # Add one instance of broadcasted unitaries converted to Rot
+    (
+        qml.Rot.compute_matrix(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3])),
+        qml.Rot,
+        [[1.2, 1.2, 1.2], [2.3, 2.3, 2.3]],
+    ),
 ]
 
 
@@ -69,20 +81,30 @@ class TestQubitUnitaryZYZDecomposition:
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_zyz_decomposition(self, U, expected_gate, expected_params):
         """Test that a one-qubit matrix in isolation is correctly decomposed."""
-        obtained_gates = zyz_decomposition(U, Wires("a"))
+        obtained_decomposition = zyz_decomposition(U, Wires("a"))
 
-        assert len(obtained_gates) == 1
-        assert isinstance(obtained_gates[0], expected_gate)
-        assert obtained_gates[0].wires == Wires("a")
+        if len(obtained_decomposition) == 1:
+            obtained_decomposition = [obtained_decomposition]
+            U = [U]
+            expected_params = [expected_params]
 
-        assert qml.math.allclose(obtained_gates[0].parameters, expected_params, atol=1e-7)
+        for curr_decomposition, curr_U, curr_expected_param in zip(
+            obtained_decomposition, U, expected_params
+        ):
+            assert len(curr_decomposition) == 1
+            assert isinstance(curr_decomposition[0], expected_gate)
+            assert curr_decomposition[0].wires == Wires("a")
 
-        if obtained_gates[0].num_params == 1:
-            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).matrix()
-        else:
-            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix()
+            assert qml.math.allclose(
+                curr_decomposition[0].parameters, curr_expected_param, atol=1e-7
+            )
 
-        assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
+            if curr_decomposition[0].num_params == 1:
+                obtained_mat = qml.RZ(curr_decomposition[0].parameters[0], wires=0).matrix()
+            else:
+                obtained_mat = qml.Rot(*curr_decomposition[0].parameters, wires=0).matrix()
+
+            assert check_matrix_equivalence(obtained_mat, curr_U, atol=1e-7)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
@@ -92,22 +114,30 @@ class TestQubitUnitaryZYZDecomposition:
 
         U = torch.tensor(U, dtype=torch.complex128)
 
-        obtained_gates = zyz_decomposition(U, wire="a")
+        obtained_decomposition = zyz_decomposition(U, wire="a")
 
-        assert len(obtained_gates) == 1
-        assert isinstance(obtained_gates[0], expected_gate)
-        assert obtained_gates[0].wires == Wires("a")
+        if len(obtained_decomposition) == 1:
+            obtained_decomposition = [obtained_decomposition]
+            U = [U]
+            expected_params = [expected_params]
 
-        assert qml.math.allclose(
-            qml.math.unwrap(obtained_gates[0].parameters), expected_params, atol=1e-7
-        )
+        for curr_decomposition, curr_U, curr_expected_param in zip(
+            obtained_decomposition, U, expected_params
+        ):
+            assert len(curr_decomposition) == 1
+            assert isinstance(curr_decomposition[0], expected_gate)
+            assert curr_decomposition[0].wires == Wires("a")
 
-        if obtained_gates[0].num_params == 1:
-            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).matrix()
-        else:
-            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix()
+            assert qml.math.allclose(
+                curr_decomposition[0].parameters, curr_expected_param, atol=1e-7
+            )
 
-        assert check_matrix_equivalence(obtained_mat, qml.math.unwrap(U), atol=1e-7)
+            if curr_decomposition[0].num_params == 1:
+                obtained_mat = qml.RZ(curr_decomposition[0].parameters[0], wires=0).matrix()
+            else:
+                obtained_mat = qml.Rot(*curr_decomposition[0].parameters, wires=0).matrix()
+
+            assert check_matrix_equivalence(obtained_mat, curr_U, atol=1e-7)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
@@ -117,21 +147,30 @@ class TestQubitUnitaryZYZDecomposition:
 
         U = tf.Variable(U, dtype=tf.complex128)
 
-        obtained_gates = zyz_decomposition(U, wire="a")
+        obtained_decomposition = zyz_decomposition(U, wire="a")
 
-        assert len(obtained_gates) == 1
-        assert isinstance(obtained_gates[0], expected_gate)
-        assert obtained_gates[0].wires == Wires("a")
+        if len(obtained_decomposition) == 1:
+            obtained_decomposition = [obtained_decomposition]
+            U = [U]
+            expected_params = [expected_params]
 
-        assert qml.math.allclose(qml.math.unwrap(obtained_gates[0].parameters), expected_params)
+        for curr_decomposition, curr_U, curr_expected_param in zip(
+            obtained_decomposition, U, expected_params
+        ):
+            assert len(curr_decomposition) == 1
+            assert isinstance(curr_decomposition[0], expected_gate)
+            assert curr_decomposition[0].wires == Wires("a")
 
-        if obtained_gates[0].num_params == 1:
-            # With TF and RZ, need to cast since can't just unwrap
-            obtained_mat = qml.RZ(obtained_gates[0].parameters[0].numpy(), wires=0).matrix()
-        else:
-            obtained_mat = qml.Rot(*qml.math.unwrap(obtained_gates[0].parameters), wires=0).matrix()
+            assert qml.math.allclose(
+                curr_decomposition[0].parameters, curr_expected_param, atol=1e-7
+            )
 
-        assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
+            if curr_decomposition[0].num_params == 1:
+                obtained_mat = qml.RZ(curr_decomposition[0].parameters[0], wires=0).matrix()
+            else:
+                obtained_mat = qml.Rot(*curr_decomposition[0].parameters, wires=0).matrix()
+
+            assert check_matrix_equivalence(obtained_mat, curr_U, atol=1e-7)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
@@ -147,22 +186,30 @@ class TestQubitUnitaryZYZDecomposition:
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
-        obtained_gates = zyz_decomposition(U, wire="a")
+        obtained_decomposition = zyz_decomposition(U, wire="a")
 
-        assert len(obtained_gates) == 1
-        assert isinstance(obtained_gates[0], expected_gate)
-        assert obtained_gates[0].wires == Wires("a")
+        if len(obtained_decomposition) == 1:
+            obtained_decomposition = [obtained_decomposition]
+            U = [U]
+            expected_params = [expected_params]
 
-        assert qml.math.allclose(
-            qml.math.unwrap(obtained_gates[0].parameters), expected_params, atol=1e-7
-        )
+        for curr_decomposition, curr_U, curr_expected_param in zip(
+            obtained_decomposition, U, expected_params
+        ):
+            assert len(curr_decomposition) == 1
+            assert isinstance(curr_decomposition[0], expected_gate)
+            assert curr_decomposition[0].wires == Wires("a")
 
-        if obtained_gates[0].num_params == 1:
-            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).matrix()
-        else:
-            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix()
+            assert qml.math.allclose(
+                curr_decomposition[0].parameters, curr_expected_param, atol=1e-7
+            )
 
-        assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
+            if curr_decomposition[0].num_params == 1:
+                obtained_mat = qml.RZ(curr_decomposition[0].parameters[0], wires=0).matrix()
+            else:
+                obtained_mat = qml.Rot(*curr_decomposition[0].parameters, wires=0).matrix()
+
+            assert check_matrix_equivalence(obtained_mat, curr_U, atol=1e-7)
 
 
 # Randomly generated set (scipy.unitary_group) of five U(4) operations.
