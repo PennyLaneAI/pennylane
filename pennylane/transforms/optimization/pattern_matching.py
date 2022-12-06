@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.wires import Wires
@@ -31,19 +31,19 @@ from pennylane.wires import Wires
 
 # pylint: disable=too-many-statements
 @qfunc_transform
-def pattern_matching_optimization(tape: QuantumScript, pattern_tapes, custom_quantum_cost=None):
+def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quantum_cost=None):
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:
         qfunc (function): A quantum function to be optimized.
-        pattern_tapes(list(.QuantumScript)): List of quantum tapes that implements the identity.
+        pattern_tapes(list(.QuantumTape)): List of quantum tapes that implements the identity.
         custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionnary.
 
     Returns:
         function: the transformed quantum function
 
     Raises:
-        QuantumFunctionError: The pattern provided is not a valid QuantumScript or the pattern contains measurements or
+        QuantumFunctionError: The pattern provided is not a valid QuantumTape or the pattern contains measurements or
             the pattern does not implement identity or the circuit has less qubits than the pattern.
 
     **Example**

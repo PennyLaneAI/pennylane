@@ -21,7 +21,7 @@ from typing import Type, Union
 import pennylane as qml
 from pennylane import Device, apply
 from pennylane.operation import Operation
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.transforms.qfunc_transforms import qfunc_transform
 from pennylane.ops.op_math import Adjoint
 
@@ -53,12 +53,12 @@ def _check_position(position):
 
 @qfunc_transform
 def insert(
-    circuit: Union[callable, QuantumScript, Device],
+    circuit: Union[callable, QuantumTape, Device],
     op: Union[callable, Type[Operation]],
     op_args: Union[tuple, float],
     position: Union[str, list, Type[Operation]] = "all",
     before: bool = False,
-) -> Union[callable, QuantumScript]:
+) -> Union[callable, QuantumTape]:
     """Insert an operation into specified points in an input circuit.
 
     Circuits passed through this transform will be updated to have the operation, specified by the
@@ -71,7 +71,7 @@ def insert(
     for more information).
 
     Args:
-        circuit (callable or QuantumScript or Device): the input circuit to be transformed, or a
+        circuit (callable or QuantumTape or Device): the input circuit to be transformed, or a
             device
         op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
@@ -86,7 +86,7 @@ def insert(
             Default is ``False`` and the operation is inserted after.
 
     Returns:
-        callable or QuantumScript or Device: the updated version of the input circuit or an updated
+        callable or QuantumTape or Device: the updated version of the input circuit or an updated
         device which will transform circuits before execution
 
     Raises:

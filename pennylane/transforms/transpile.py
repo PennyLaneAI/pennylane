@@ -11,13 +11,13 @@ from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
 from pennylane.wires import Wires
 
 
 @qfunc_transform
-def transpile(tape: QuantumScript, coupling_map: Union[List, nx.Graph]):
+def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
     """Transpile a circuit according to a desired coupling map
 
     .. warning::

@@ -49,7 +49,7 @@ def append_time_evolution(tape, riemannian_gradient, t, n, exact=False):
     and append this unitary.
 
     Args:
-        tape (QuantumScript or .QNode): circuit to transform.
+        tape (QuantumTape or .QNode): circuit to transform.
         riemannian_gradient (.Hamiltonian): Hamiltonian object representing the Riemannian gradient.
         t (float): time evolution parameter.
         n (int): number of Trotter steps.
@@ -75,7 +75,7 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     (see :meth:`LieAlgebraOptimizer.get_omegas`).
 
     Args:
-        tape (.QuantumScript or .QNode): input circuit
+        tape (.QuantumTape or .QNode): input circuit
         observables (list[.Observable]): list of observables to be measured. Can be grouped.
         lie_algebra_basis_names (list[str]): List of strings corresponding to valid Pauli words.
         nqubits (int): the number of qubits.

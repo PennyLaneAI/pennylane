@@ -32,7 +32,7 @@ from typing import Callable, Sequence
 from cachetools import LRUCache
 
 import pennylane as qml
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTape
 
 from .set_shots import set_shots
 
@@ -61,7 +61,7 @@ SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 
 
 def _adjoint_jacobian_expansion(
-    tapes: Sequence[QuantumScript], mode: str, interface: str, max_expansion: int
+    tapes: Sequence[QuantumTape], mode: str, interface: str, max_expansion: int
 ):
     """Performs adjoint jacobian specific expansion.  Expands so that every
     trainable operation has a generator.
@@ -90,7 +90,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
 
-    This decorator makes use of :attr:`.QuantumScript.hash` to identify
+    This decorator makes use of :attr:`.QuantumTape.hash` to identify
     unique tapes.
 
     - If a tape does not match a hash in the cache, then the tape
@@ -126,12 +126,12 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
     if expand_fn is not None:
         original_fn = fn
 
-        def fn(tapes: Sequence[QuantumScript], **kwargs):  # pylint: disable=function-redefined
+        def fn(tapes: Sequence[QuantumTape], **kwargs):  # pylint: disable=function-redefined
             tapes = [expand_fn(tape) for tape in tapes]
             return original_fn(tapes, **kwargs)
 
     @wraps(fn)
-    def wrapper(tapes: Sequence[QuantumScript], **kwargs):
+    def wrapper(tapes: Sequence[QuantumTape], **kwargs):
 
         if not pass_kwargs:
             kwargs = {}
@@ -229,7 +229,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
 
 def _execute_new(
-    tapes: Sequence[QuantumScript],
+    tapes: Sequence[QuantumTape],
     device,
     gradient_fn: Callable = None,
     interface="autograd",
@@ -247,7 +247,7 @@ def _execute_new(
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
 
     Args:
-        tapes (Sequence[.QuantumScript]): batch of tapes to execute
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
         device (.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
@@ -275,7 +275,7 @@ def _execute_new(
             number of shots on the device is used.
         expand_fn (function): Tape expansion function to be called prior to device execution.
             Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
-            single :class:`~.QuantumScript`. If not provided, by default :meth:`Device.expand_fn`
+            single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
             is called.
         max_expansion (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
@@ -475,7 +475,7 @@ def _execute_new(
 
 
 def execute(
-    tapes: Sequence[QuantumScript],
+    tapes: Sequence[QuantumTape],
     device,
     gradient_fn: Callable = None,
     interface="autograd",
@@ -492,7 +492,7 @@ def execute(
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
     Args:
-        tapes (Sequence[.QuantumScript]): batch of tapes to execute
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
         device (.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
@@ -520,7 +520,7 @@ def execute(
             number of shots on the device is used.
         expand_fn (function): Tape expansion function to be called prior to device execution.
             Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
-            single :class:`~.QuantumScript`. If not provided, by default :meth:`Device.expand_fn`
+            single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
             is called.
         max_expansion (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
@@ -728,7 +728,7 @@ def execute(
     return batch_fn(res)
 
 
-def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumScript]):
+def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
     """Auxiliary function to determine the execute function to use with the JAX
     interface."""
 

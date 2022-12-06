@@ -27,7 +27,7 @@ from pennylane.pauli import string_to_pauli_word
 from pennylane.measurements import Expectation, MeasurementProcess, Sample
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.wires import Wires
 from pennylane.operation import Operator, Tensor
 
@@ -41,7 +41,7 @@ from .qcut import (
 )
 
 
-def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
+def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     """
     Converts a quantum tape to a directed multigraph.
 
@@ -51,7 +51,7 @@ def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
         Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
-        tape (QuantumScript): tape to be converted into a directed multigraph
+        tape (QuantumTape): tape to be converted into a directed multigraph
 
     Returns:
         nx.MultiDiGraph: a directed multigraph that captures the circuit structure
@@ -106,9 +106,9 @@ def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
 
 
 # pylint: disable=protected-access
-def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
+def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     """
-    Converts a directed multigraph to the corresponding :class:`~.QuantumScript`.
+    Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
     To account for the possibility of needing to perform mid-circuit measurements, if any operations
     follow a :class:`MeasureNode` operation on a given wire then these operations are mapped to a
@@ -123,7 +123,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
         graph (nx.MultiDiGraph): directed multigraph to be converted to a tape
 
     Returns:
-        QuantumScript: the quantum script corresponding to the input graph
+        QuantumTape: the quantum script corresponding to the input graph
 
     **Example**
 
@@ -234,8 +234,8 @@ PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_i
 
 
 def expand_fragment_tape(
-    tape: QuantumScript,
-) -> Tuple[List[QuantumScript], List[PrepareNode], List[MeasureNode]]:
+    tape: QuantumTape,
+) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
     """
     Expands a fragment tape into a sequence of tapes for each configuration of the contained
     :class:`MeasureNode` and :class:`PrepareNode` operations.
@@ -246,11 +246,11 @@ def expand_fragment_tape(
         Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
-        tape (QuantumScript): the fragment tape containing :class:`MeasureNode` and
+        tape (QuantumTape): the fragment tape containing :class:`MeasureNode` and
             :class:`PrepareNode` operations to be expanded
 
     Returns:
-        Tuple[List[QuantumScript], List[PrepareNode], List[MeasureNode]]: the
+        Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]: the
         tapes corresponding to each configuration and the order of preparation nodes and
         measurement nodes used in the expansion
 
@@ -373,7 +373,7 @@ def _get_measurements(
 
 
 def _qcut_expand_fn(
-    tape: QuantumScript,
+    tape: QuantumTape,
     max_depth: int = 1,
     auto_cutter: Union[bool, Callable] = False,
 ):

@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import Sample
 from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.wires import Wires
 
 from pennylane.transforms.batch_transform import batch_transform
@@ -50,14 +50,14 @@ from .qcut import (
 
 @batch_transform
 def cut_circuit_mc(
-    tape: QuantumScript,
+    tape: QuantumTape,
     classical_processing_fn: Optional[callable] = None,
     auto_cutter: Union[bool, Callable] = False,
     max_depth: int = 1,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     **kwargs,
-) -> Tuple[Tuple[QuantumScript], Callable]:
+) -> Tuple[Tuple[QuantumTape], Callable]:
     """
     Cut up a circuit containing sample measurements into smaller fragments using a
     Monte Carlo method.
@@ -70,7 +70,7 @@ def cut_circuit_mc(
     an expectation value will be evaluated.
 
     Args:
-        tape (QuantumScript): the tape of the full circuit to be cut
+        tape (QuantumTape): the tape of the full circuit to be cut
         classical_processing_fn (callable): A classical postprocessing function to be applied to
             the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``,
             and the output should be a single number within the interval :math:`[-1, 1]`.
@@ -455,7 +455,7 @@ def cut_circuit_mc(
 
 
 def _cut_circuit_mc_expand(
-    tape: QuantumScript,
+    tape: QuantumTape,
     classical_processing_fn: Optional[callable] = None,
     max_depth: int = 1,
     shots: Optional[int] = None,
@@ -580,8 +580,8 @@ MC_MEASUREMENTS = [
 
 
 def expand_fragment_tapes_mc(
-    tapes: Sequence[QuantumScript], communication_graph: MultiDiGraph, shots: int
-) -> Tuple[List[QuantumScript], np.ndarray]:
+    tapes: Sequence[QuantumTape], communication_graph: MultiDiGraph, shots: int
+) -> Tuple[List[QuantumTape], np.ndarray]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
     :class:`MeasureNode` and :class:`PrepareNode` operations.
@@ -599,14 +599,14 @@ def expand_fragment_tapes_mc(
         Check out the :func:`~.cut_circuit_mc` transform for more details.
 
     Args:
-        tapes (Sequence[QuantumScript]): the fragment tapes containing :class:`MeasureNode` and
+        tapes (Sequence[QuantumTape]): the fragment tapes containing :class:`MeasureNode` and
             :class:`PrepareNode` operations to be expanded
         communication_graph (nx.MultiDiGraph): the communication (quotient) graph of the fragmented
             full graph
         shots (int): number of shots
 
     Returns:
-        Tuple[List[QuantumScript], np.ndarray]: the tapes corresponding to each configuration and the
+        Tuple[List[QuantumTape], np.ndarray]: the tapes corresponding to each configuration and the
         settings that track each configuration pair
 
     **Example**

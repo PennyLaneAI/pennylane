@@ -17,15 +17,15 @@ from typing import Callable, Sequence, Tuple, Union
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.transforms.batch_transform import batch_transform
 
 
 @batch_transform
 def batch_input(
-    tape: Union[QuantumScript, qml.QNode],
+    tape: Union[QuantumTape, qml.QNode],
     argnum: Union[Sequence[int], int],
-) -> Tuple[Sequence[QuantumScript], Callable]:
+) -> Tuple[Sequence[QuantumTape], Callable]:
     """
     Transform a QNode to support an initial batch dimension for gate inputs.
 
@@ -41,12 +41,12 @@ def batch_input(
     Based on `arXiv:2202.10471 <https://arxiv.org/abs/2202.10471>`__.
 
     Args:
-        tape (.tape.QuantumScript or .QNode): Input quantum circuit to batch
+        tape (.QuantumTape or .QNode): Input quantum circuit to batch
         argnum (Sequence[int] or int): One or several index values indicating the position of the
         non-trainable batched parameters in the quantum tape.
 
     Returns:
-        Sequence[Sequence[.tape.QuantumScript], Callable]: list of tapes arranged
+        Sequence[Sequence[.QuantumTape], Callable]: list of tapes arranged
         according to unbatched inputs and a callable function to batch the results.
 
     .. seealso:: :func:`~.batch_params`

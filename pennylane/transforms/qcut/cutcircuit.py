@@ -21,7 +21,7 @@ from typing import Callable, Optional, Tuple, Union
 
 import pennylane as qml
 from pennylane.measurements import Expectation
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
 from pennylane.transforms.batch_transform import batch_transform
@@ -34,13 +34,13 @@ from .processing import qcut_processing_fn
 
 @batch_transform
 def cut_circuit(
-    tape: QuantumScript,
+    tape: QuantumTape,
     auto_cutter: Union[bool, Callable] = False,
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
     **kwargs,
-) -> Tuple[Tuple[QuantumScript], Callable]:
+) -> Tuple[Tuple[QuantumTape], Callable]:
     """
     Cut up a quantum circuit into smaller circuit fragments.
 
@@ -57,7 +57,7 @@ def cut_circuit(
         Only circuits that return a single expectation value are supported.
 
     Args:
-        tape (QuantumScript): the tape of the full circuit to be cut
+        tape (QuantumTape): the tape of the full circuit to be cut
         auto_cutter (Union[bool, Callable]): Toggle for enabling automatic cutting with the default
             :func:`~.kahypar_cut` partition method. Can also pass a graph partitioning function that
             takes an input graph and returns a list of edges to be cut based on a given set of
@@ -387,7 +387,7 @@ def cut_circuit(
 
 
 def _cut_circuit_expand(
-    tape: QuantumScript,
+    tape: QuantumTape,
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
