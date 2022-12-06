@@ -4,6 +4,31 @@
 
 <h3>New features since last release</h3>
 
+* New gradient transform `qml.gradients.spsa_grad` based on the idea of SPSA.
+  [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
+
+  This new transform allows users to compute a single estimate of a quantum gradient
+  using simultaneous perturbation of parameters and a stochastic approximation.
+  Given some QNode `circuit` that takes, say, an argument `x`, the approximate
+  gradient can be computed via
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> x = pnp.array(0.4, requires_grad=True)
+  >>> @qml.qnode(dev)
+  ... def circuit(x):
+  ...     qml.RX(x, 0)
+  ...     qml.RX(x, 1)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> grad_fn = qml.gradients.spsa_grad(circuit, h=0.1, num_directions=1)
+  >>> grad_fn(x)
+  array(-0.38876964)
+  ```
+  The argument `num_directions` determines how many directions of simultaneous
+  perturbation are used and therefore the number of circuit evaluations, up
+  to a prefactor. See the
+  [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details.
+  Note: The full SPSA optimization method is already available as `SPSAOptimizer`.
+
 * Add the controlled CZ gate: CCZ.
 
   ```pycon
@@ -35,7 +60,7 @@
   [(#3408)](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
 * Support custom measurement processes:
-  * `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
+  * `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform` classes have been added.
     They contain an abstract method to process samples/quantum state/quantum script.
     [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
@@ -69,6 +94,10 @@
 
   * Add `_ShadowExpval` class.
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+
+  * Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
+    measurement processes in `QubitDevice`.
+    [#3439](https://github.com/PennyLaneAI/pennylane/pull/3439)
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
@@ -271,6 +300,10 @@
 * Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
 
+* Adds support for devices disregarding observable grouping indices in Hamiltonians through
+  the optional `use_grouping` attribute.
+  [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
+
 * Add the optional argument lazy=True to functions qml.s_prod, qml.prod and qml.op_sum to allow simplification.
   [(#3483)](https://github.com/PennyLaneAI/pennylane/pull/3483)
 
@@ -472,7 +505,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * `qml.transforms.measurement_grouping` has been deprecated. Use `qml.transforms.hamiltonian_expand` instead.
   [(#3417)](https://github.com/PennyLaneAI/pennylane/pull/3417)
 
-* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
+* The `observables` argument in `QubitDevice.statistics` is deprecated. Please use `circuit`
   instead.
   [(#3433)](https://github.com/PennyLaneAI/pennylane/pull/3433)
 
@@ -481,6 +514,8 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   wanted seed.
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
+* `make_tape` is deprecated. Please use `qml.tape.make_qscript` instead.
+  [(#3478)](https://github.com/PennyLaneAI/pennylane/pull/3478)
 
 <h3>Documentation</h3>
 
@@ -540,11 +575,13 @@ Astral Cai
 Isaac De Vlugt
 Pieter Eendebak
 Lillian M. A. Frederiksen
+Katharine Hyatt
 Soran Jahangiri
 Edward Jiang
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Kevin Shen
 Matthew Silverman
 Jay Soni
 Antal Száva

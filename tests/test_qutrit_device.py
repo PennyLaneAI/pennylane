@@ -31,6 +31,12 @@ from pennylane.measurements import (
     Sample,
     State,
     Variance,
+    _Counts,
+    _Expectation,
+    _Probability,
+    _Sample,
+    _State,
+    _Variance,
 )
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -296,17 +302,12 @@ class TestExtractStatistics:
     """Test the statistics method"""
 
     @pytest.mark.parametrize(
-        "returntype", [Expectation, Variance, Sample, Probability, State, Counts]
+        "measurement", [_Expectation, _Variance, _Sample, _Probability, _State, _Counts]
     )
-    def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
+    def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
-        class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return returntype
-
-        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
+        qscript = QuantumScript(measurements=[measurement(obs=qml.PauliX(0))])
 
         with monkeypatch.context() as m:
             dev = mock_qutrit_device_extract_stats()
