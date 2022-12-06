@@ -271,6 +271,8 @@
 * Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
 
+* Add the optional argument lazy=True to functions qml.s_prod, qml.prod and qml.op_sum to allow simplification.
+  [(#3483)](https://github.com/PennyLaneAI/pennylane/pull/3483)
 
 <h4>Return types project</h4>
 
@@ -402,7 +404,6 @@
 * Updated `qml.transforms.metric_tensor`, `qml.transforms.adjoint_metric_tensor`,
   `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
   [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
-
 
 * File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
   [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
