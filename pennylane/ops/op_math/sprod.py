@@ -206,12 +206,9 @@ class SProd(SymbolicOp):
         return self.scalar * self.base.eigvals()
 
     def sparse_matrix(self, wire_order=None):
-        try:
-            pr = self._pauli_rep
+        if pr := self._pauli_rep:
             wires = wire_order or self.wires.tolist()
             return pr.to_mat(wire_order=wires, format="csr")
-        except NotImplementedError:
-            pass
 
         return self.scalar * self.base.sparse_matrix(wire_order=wire_order)
 
