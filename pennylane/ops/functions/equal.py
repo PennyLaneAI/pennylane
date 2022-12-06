@@ -136,6 +136,9 @@ def equal(
     if isinstance(op2, (Hamiltonian, Tensor)):
         return _equal(op2, op1)
 
+    op1 = op1.simplify()
+    op2 = op2.simplify()
+
     return _equal(
         op1,
         op2,
