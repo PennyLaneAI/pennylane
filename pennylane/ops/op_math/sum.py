@@ -245,6 +245,10 @@ class Sum(CompositeOp):
         return new_summands
 
     def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
+        if pr := self._pauli_rep:
+            pr = pr.simplify(tol=cutoff)
+            return pr.operation(wire_order=self.wires)
+
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]

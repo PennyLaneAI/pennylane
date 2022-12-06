@@ -255,6 +255,9 @@ class SProd(SymbolicOp):
         return SProd(scalar=qml.math.conjugate(self.scalar), base=qml.adjoint(self.base))
 
     def simplify(self) -> Operator:
+        if pr := self._pauli_rep:
+            return pr.operation(wire_order=self.wires)
+
         if self.scalar == 1:
             return self.base.simplify()
         if isinstance(self.base, SProd):

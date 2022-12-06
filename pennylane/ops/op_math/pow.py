@@ -362,6 +362,9 @@ class Pow(SymbolicOp):
         return Pow(base=qml.adjoint(self.base), z=self.z)
 
     def simplify(self) -> Union["Pow", Identity]:
+        if pr := self._pauli_rep:
+            return pr.operation(wire_order=self.wires)
+
         base = self.base.simplify()
         try:
             ops = base.pow(z=self.z)

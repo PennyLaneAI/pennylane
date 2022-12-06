@@ -328,6 +328,9 @@ class Prod(CompositeOp):
         return new_factors.global_phase, new_factors.factors
 
     def simplify(self) -> Union["Prod", Sum]:
+        if pr := self._pauli_rep:
+            return pr.operation(wire_order=self.wires)
+
         global_phase, factors = self._simplify_factors(factors=self.operands)
 
         factors = list(itertools.product(*factors))
