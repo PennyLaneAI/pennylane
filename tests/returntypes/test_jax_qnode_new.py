@@ -1215,7 +1215,6 @@ class TestCV:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-# TODO: add support for fwd mode to JAX-JIT
 @pytest.mark.parametrize("interface", ["jax-python"])
 def test_adjoint_reuse_device_state(mocker, interface):
     """Tests that the jax interface reuses the device state for adjoint differentiation"""
