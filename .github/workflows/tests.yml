@@ -205,14 +205,14 @@ jobs:
     strategy:
       matrix:
         config:
-          - { loc: "tests/returntypes/jax"}
-          - { loc: "tests/returntypes/tf"}
-          - { loc: "tests/returntypes/autograd"}
-          - { loc: "tests/returntypes/gradients"}
-          - { loc: "tests/returntypes/transforms"}
-          - { loc: "tests/returntypes/paramshift"}
-          - { loc: "tests/returntypes/finitediff"}
-          - { loc: "tests/returntypes/others"}
+          - { loc: "tests/returntypes/jax", suite: 'jax'}
+          - { loc: "tests/returntypes/tf", suite: 'tf'}
+          - { loc: "tests/returntypes/autograd", suite: 'autograd'}
+          - { loc: "tests/returntypes/gradients", suite: 'gradients'}
+          - { loc: "tests/returntypes/transforms", suite: 'transforms'}
+          - { loc: "tests/returntypes/paramshift", suite: 'paramshift'}
+          - { loc: "tests/returntypes/finitediff", suite: 'finitediff'}
+          - { loc: "tests/returntypes/others", suite: 'others'}
 
     steps:
       - name: Cancel Previous Runs
