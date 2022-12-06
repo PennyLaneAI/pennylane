@@ -249,7 +249,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest mat.config.loc --cov=pennylane $COVERAGE_FLAGS -n auto
+          python -m pytest matrix.config.loc --cov=pennylane $COVERAGE_FLAGS -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
