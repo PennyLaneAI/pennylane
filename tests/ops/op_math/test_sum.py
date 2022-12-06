@@ -712,8 +712,8 @@ class TestWrapperFunc:
         sum_lazy = op_sum(qml.S(0), op_sum(qml.S(1), qml.T(1)), lazy=True)
         sum_non_lazy = op_sum(qml.S(0), op_sum(qml.S(1), qml.T(1)), lazy=False)
 
-        assert len(sum_lazy.operands) == 3
-        assert len(sum_non_lazy.operands) == 2
+        assert len(sum_lazy.operands) == 2
+        assert len(sum_non_lazy.operands) == 3
         assert isinstance(sum_lazy.operands[1], Sum)
         assert isinstance(sum_non_lazy.operands[1], qml.S)
 

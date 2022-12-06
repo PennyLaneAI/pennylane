@@ -978,8 +978,8 @@ class TestWrapperFunc:
         prod_lazy = prod(qml.S(0), prod(qml.S(1), qml.T(1)), lazy=True)
         prod_non_lazy = prod(qml.S(0), prod(qml.S(1), qml.T(1)), lazy=False)
 
-        assert len(prod_lazy.operands) == 3
-        assert len(prod_non_lazy.operands) == 2
+        assert len(prod_lazy.operands) == 2
+        assert len(prod_non_lazy.operands) == 3
         assert isinstance(prod_lazy.operands[1], Prod)
         assert isinstance(prod_non_lazy.operands[1], qml.S)
 
