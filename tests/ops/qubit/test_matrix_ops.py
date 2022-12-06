@@ -269,17 +269,6 @@ class TestQubitUnitary:
         assert isinstance(decomp2[0], expected_gate)
         assert np.allclose(decomp2[0].parameters, expected_params, atol=1e-7)
 
-    def test_error_qubit_unitary_decomposition_broadcasted(self):
-        """Tests that broadcasted QubitUnitary decompositions are not supported."""
-        U = np.array(
-            [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
-        )
-        U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
-        with pytest.raises(DecompositionUndefinedError, match="QubitUnitary does not support"):
-            qml.QubitUnitary.compute_decomposition(U, wires=0)
-        with pytest.raises(DecompositionUndefinedError, match="QubitUnitary does not support"):
-            qml.QubitUnitary(U, wires=0).decomposition()
-
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
         """Test that QubitUnitary is not decomposed for more than two qubits."""
         U = qml.Toffoli(wires=[0, 1, 2]).matrix()
