@@ -384,6 +384,9 @@ class TestSpsaGradient:
             def __mul__(self, other):
                 return SpecialObject(self.val * other)
 
+            def __rmul__(self, other):
+                return self * other
+
             def __add__(self, other):
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)

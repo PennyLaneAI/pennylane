@@ -326,7 +326,7 @@ def _spsa_grad_new(
                     qml.math.tensordot(qml.math.convert_like(_coeffs, res), res, axes=[[0], [0]])
                     + grads
                 )
-            grads = grads / num_directions
+            grads = grads * (1 / num_directions)
             if num_trainable_params == 1:
                 return qml.math.convert_like(grads[0], res)
             return tuple(qml.math.convert_like(g, res) for g in grads)
