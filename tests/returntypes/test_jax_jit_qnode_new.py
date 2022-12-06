@@ -1429,6 +1429,8 @@ class TestTapeExpansion:
     #             -np.sin(d[1] + w[1]),
     #         ]
     #         assert np.allclose(grad2_w_c, expected, atol=0.1)
+
+
 jit_qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward"],
     # Jit
