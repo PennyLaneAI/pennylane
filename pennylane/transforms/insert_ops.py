@@ -163,19 +163,18 @@ def insert(
 
         .. code-block:: python3
 
-            with qml.queuing.AnnotatedQueue() as q:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(0.9, wires=0)
                 qml.RY(0.4, wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.RY(0.5, wires=0)
                 qml.RX(0.6, wires=1)
                 qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-            qscript = qml.tape.QuantumScript.from_queue(q)
 
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
         >>> from pennylane.transforms import insert
-        >>> noisy_tape = insert(qml.AmplitudeDamping, 0.05, position="end")(qscript)
+        >>> noisy_tape = insert(qml.AmplitudeDamping, 0.05, position="end")(tape)
         >>> print(qml.drawer.tape_text(noisy_tape, decimals=2))
         0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
         1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.05)─┤ ╰<Z@Z>

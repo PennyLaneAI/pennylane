@@ -68,7 +68,10 @@ def pattern_matching_optimization(tape: QuantumScript, pattern_tapes, custom_qua
 
     .. code-block:: python
 
-        pattern = qml.tape.QuantumScript([qml.S(wires=0), qml.S(wires=0), qml.PauliZ(wires=0)])
+        with qml.tape.QuantumTape() as pattern:
+            qml.S(wires=0)
+            qml.S(wires=0)
+            qml.PauliZ(wires=0)
 
     For optimizing the circuit given the given following template of CNOTs we apply the `pattern_matching`
     transform.
@@ -120,13 +123,12 @@ def pattern_matching_optimization(tape: QuantumScript, pattern_tapes, custom_qua
 
     .. code-block:: python
 
-        pattern = qml.tape.QuantumScript([
-            qml.CNOT(wires=[1, 2]),
-            qml.CNOT(wires=[0, 1]),
-            qml.CNOT(wires=[1, 2]),
-            qml.CNOT(wires=[0, 1]),
-            qml.CNOT(wires=[0, 2]),
-        ])
+        with qml.tape.QuantumTape() as pattern:
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[0, 2])
 
     For optimizing the circuit given the given following pattern of CNOTs we apply the `pattern_matching`
     transform.

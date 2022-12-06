@@ -176,7 +176,7 @@ def cut_circuit_mc(
         Manually placing :class:`~.WireCut` operations and decorating the QNode with the
         ``cut_circuit_mc()`` batch transform is the suggested entrypoint into sampling-based
         circuit cutting using the Monte Carlo method. However,
-        advanced users also have the option to work directly with a :class:`~.QuantumScript` and
+        advanced users also have the option to work directly with a :class:`~.QuantumTape` and
         manipulate the tape to perform circuit cutting using the below functionality:
 
         .. autosummary::
@@ -200,14 +200,13 @@ def cut_circuit_mc(
 
             np.random.seed(42)
 
-            with qml.queuing.AnnotatedQueue() as q:
+            with qml.tape.QuantumTape() as tape:
                 qml.Hadamard(wires=0)
                 qml.CNOT(wires=[0, 1])
                 qml.PauliX(wires=1)
                 qml.WireCut(wires=1)
                 qml.CNOT(wires=[1, 2])
                 qml.sample(wires=[0, 1, 2])
-            qscript = qml.tape.QuantumScript.from_queue(q)
 
         >>> print(tape.draw())
         0: ──H─╭●───────────┤ ╭Sample
@@ -216,7 +215,7 @@ def cut_circuit_mc(
 
         To cut the circuit, we first convert it to its graph representation:
 
-        >>> graph = qml.transforms.qcut.tape_to_graph(qscript)
+        >>> graph = qml.transforms.qcut.tape_to_graph(tape)
 
         If, however, the optimal location of the :class:`~.WireCut` is unknown, we can use
         :func:`~.find_and_place_cuts` to make attempts in automatically finding such a cut
@@ -226,16 +225,15 @@ def cut_circuit_mc(
 
         .. code-block:: python
 
-            with qml.queuing.AnnotatedQueue() as q:
+            with qml.tape.QuantumTape() as uncut_tape:
                 qml.Hadamard(wires=0)
                 qml.CNOT(wires=[0, 1])
                 qml.PauliX(wires=1)
                 qml.CNOT(wires=[1, 2])
                 qml.sample(wires=[0, 1, 2])
-            uncut_script = qml.tape.QuantumScript.from_queue(q)
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
-        ...     graph=qml.transforms.qcut.tape_to_graph(uncut_script),
+        ...     graph=qml.transforms.qcut.tape_to_graph(uncut_tape),
         ...     cut_strategy=qml.transforms.qcut.CutStrategy(max_free_wires=2),
         ... )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
@@ -257,7 +255,7 @@ def cut_circuit_mc(
 
         >>> fragments, communication_graph = qml.transforms.qcut.fragment_graph(graph)
 
-        We now convert the ``fragments`` back to :class:`~.QuantumScript` objects
+        We now convert the ``fragments`` back to :class:`~.QuantumTape` objects
 
         >>> fragment_tapes = [qml.transforms.qcut.graph_to_tape(f) for f in fragments]
 
@@ -617,17 +615,16 @@ def expand_fragment_tapes_mc(
 
     .. code-block:: python
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.WireCut(wires=1)
             qml.CNOT(wires=[1, 2])
             qml.sample(wires=[0, 1, 2])
-        qscript = qml.tape.QuantumScript.from_queue(q)
 
     We can generate the fragment tapes using the following workflow:
 
-    >>> g = qml.transforms.qcut.tape_to_graph(qscript)
+    >>> g = qml.transforms.qcut.tape_to_graph(tape)
     >>> qml.transforms.qcut.replace_wire_cut_nodes(g)
     >>> subgraphs, communication_graph = qml.transforms.qcut.fragment_graph(g)
     >>> tapes = [qml.transforms.qcut.graph_to_tape(sg) for sg in subgraphs]

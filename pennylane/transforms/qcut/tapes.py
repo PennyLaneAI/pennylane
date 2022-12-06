@@ -63,16 +63,15 @@ def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
 
     .. code-block:: python
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.4, wires=0)
             qml.RY(0.9, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(1))
-        qscript = qml.tape.QuantumScript.from_queue(q)
 
     Its corresponding circuit graph can be found using
 
-    >>> qml.transforms.qcut.tape_to_graph(qscript)
+    >>> qml.transforms.qcut.tape_to_graph(tape)
     <networkx.classes.multidigraph.MultiDiGraph at 0x7fe41cbd7210>
     """
     graph = MultiDiGraph()
@@ -132,7 +131,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
 
     .. code-block:: python
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.4, wires=0)
             qml.RY(0.5, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -140,12 +139,11 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
             qml.transforms.qcut.PrepareNode(wires=1)
             qml.CNOT(wires=[1, 0])
             qml.expval(qml.PauliZ(0))
-        qscript = qml.tape.QuantumScript.from_queue(q)
 
     This circuit contains operations that follow a :class:`~.MeasureNode`. These operations will
     subsequently act on wire ``2`` instead of wire ``1``:
 
-    >>> graph = qml.transforms.qcut.tape_to_graph(qscript)
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
     >>> tape = qml.transforms.qcut.graph_to_tape(graph)
     >>> print(tape.draw())
     0: ──RX──────────╭●──────────────╭X─┤  <Z>
@@ -263,15 +261,14 @@ def expand_fragment_tape(
 
     .. code-block:: python
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with qml.tape.QuantumTape() as tape:
             qml.transforms.qcut.PrepareNode(wires=0)
             qml.RX(0.5, wires=0)
             qml.transforms.qcut.MeasureNode(wires=0)
-        qscript = qml.tape.QuantumScript.from_queue(q)
 
     We can expand over the measurement and preparation nodes using:
 
-    >>> tapes, prep, meas = qml.transforms.qcut.expand_fragment_tape(qscript)
+    >>> tapes, prep, meas = qml.transforms.qcut.expand_fragment_tape(tape)
     >>> for t in tapes:
     ...     print(qml.drawer.tape_text(t, decimals=1))
     0: ──I──RX(0.5)─┤  <I>  <Z>

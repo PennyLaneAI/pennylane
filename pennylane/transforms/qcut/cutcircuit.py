@@ -153,7 +153,7 @@ def cut_circuit(
 
         Manually placing :class:`~.WireCut` operations and decorating the QNode with the
         ``cut_circuit()`` batch transform is the suggested entrypoint into circuit cutting. However,
-        advanced users also have the option to work directly with a :class:`~.QuantumScript` and
+        advanced users also have the option to work directly with a :class:`~.QuantumTape` and
         manipulate the tape to perform circuit cutting using the below functionality:
 
         .. autosummary::
@@ -175,7 +175,7 @@ def cut_circuit(
 
         .. code-block:: python
 
-            with qml.queuing.AnnotatedQueue() as q:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(0.531, wires=0)
                 qml.RY(0.9, wires=1)
                 qml.RX(0.3, wires=2)
@@ -188,7 +188,6 @@ def cut_circuit(
                 qml.CZ(wires=[1, 2])
 
                 qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
-            tape = qml.tape.QuantumScript.from_queue(q)
 
         >>> print(qml.drawer.tape_text(tape))
         0: ──RX─╭●──RY────┤ ╭<Z@Z@Z>
@@ -212,7 +211,7 @@ def cut_circuit(
 
         .. code-block:: python
 
-            with qml.tape.QuantumScript() as q:
+            with qml.tape.QuantumTape() as uncut_tape:
                 qml.RX(0.531, wires=0)
                 qml.RY(0.9, wires=1)
                 qml.RX(0.3, wires=2)
@@ -223,10 +222,9 @@ def cut_circuit(
                 qml.CZ(wires=[1, 2])
 
                 qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
-            uncut_script = qml.tape.QuantumScript.from_queue(q)
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
-                graph = qml.transforms.qcut.tape_to_graph(uncut_script),
+                graph = qml.transforms.qcut.tape_to_graph(uncut_tape),
                 cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2),
             )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
@@ -248,7 +246,7 @@ def cut_circuit(
 
         >>> fragments, communication_graph = qml.transforms.qcut.fragment_graph(graph)
 
-        We now convert the ``fragments`` back to :class:`~.QuantumScript` objects
+        We now convert the ``fragments`` back to :class:`~.QuantumTape` objects
 
         >>> fragment_tapes = [qml.transforms.qcut.graph_to_tape(f) for f in fragments]
 
