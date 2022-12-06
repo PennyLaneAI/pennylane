@@ -125,7 +125,7 @@ class TestMeasurementProcess:
     def test_undefined_shape_error(self):
         """Test that an error is raised for a measurement with an undefined shape"""
         measurement = qml.counts(wires=[0, 1])
-        msg = "Cannot deduce the shape of the measurement process with unrecognized return_type"
+        msg = "The shape of the measurement _Counts is not defined"
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             measurement.shape()

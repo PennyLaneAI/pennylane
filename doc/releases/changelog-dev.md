@@ -4,6 +4,31 @@
 
 <h3>New features since last release</h3>
 
+* New gradient transform `qml.gradients.spsa_grad` based on the idea of SPSA.
+  [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
+
+  This new transform allows users to compute a single estimate of a quantum gradient
+  using simultaneous perturbation of parameters and a stochastic approximation.
+  Given some QNode `circuit` that takes, say, an argument `x`, the approximate
+  gradient can be computed via
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> x = pnp.array(0.4, requires_grad=True)
+  >>> @qml.qnode(dev)
+  ... def circuit(x):
+  ...     qml.RX(x, 0)
+  ...     qml.RX(x, 1)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> grad_fn = qml.gradients.spsa_grad(circuit, h=0.1, num_directions=1)
+  >>> grad_fn(x)
+  array(-0.38876964)
+  ```
+  The argument `num_directions` determines how many directions of simultaneous
+  perturbation are used and therefore the number of circuit evaluations, up
+  to a prefactor. See the
+  [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details.
+  Note: The full SPSA optimization method is already available as `SPSAOptimizer`.
+
 * Add the controlled CZ gate: CCZ.
 
   ```pycon
