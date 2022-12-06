@@ -205,7 +205,7 @@ def _equal_operators(
 
 
 @_equal.register
-def _(op1: Controlled, op2: Controlled, **kwargs):
+def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
     # wires are ordered [control wires, operator wires, work wires]
     # comparing op.wires and op.base.wires (in return) is sufficient to compare all wires
@@ -225,7 +225,7 @@ def _(op1: Controlled, op2: Controlled, **kwargs):
 
 @_equal.register
 # pylint: disable=unused-argument
-def _(op1: Pow, op2: Pow, **kwargs):
+def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     """Determine whether two Pow objects are equal"""
     if op1.z != op2.z:
         return False
@@ -234,7 +234,7 @@ def _(op1: Pow, op2: Pow, **kwargs):
 
 @_equal.register
 # pylint: disable=unused-argument
-def _(op1: Adjoint, op2: Adjoint, **kwargs):
+def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
     """Determine whether two Adjoint objects are equal"""
     # first line of top-level equal function already confirms both are Adjoint - only need to compare bases
     return qml.equal(op1.base, op2.base)
@@ -242,7 +242,7 @@ def _(op1: Adjoint, op2: Adjoint, **kwargs):
 
 @_equal.register
 # pylint: disable=unused-argument
-def _(op1: Exp, op2: Exp, **kwargs):
+def _equal_exp(op1: Exp, op2: Exp, **kwargs):
     """Determine whether two Exp objects are equal"""
     if op1.coeff != op2.coeff:
         return False
@@ -251,7 +251,7 @@ def _(op1: Exp, op2: Exp, **kwargs):
 
 @_equal.register
 # pylint: disable=unused-argument
-def _(op1: SProd, op2: SProd, **kwargs):
+def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     """Determine whether two SProd objects are equal"""
     if op1.scalar != op2.scalar:
         return False
