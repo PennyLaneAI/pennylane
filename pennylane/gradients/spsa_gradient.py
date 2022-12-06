@@ -134,6 +134,9 @@ def _spsa_grad_new(
               This argument should be passed to some method that seeds any randomness used in
               the sampler.
 
+            Note that the circuit evaluations in the various sampled directions are *averaged*,
+            not simply summed up.
+
         sampler_seed (int or None): Seed passed to ``sampler``. The seed is passed in each
             call to the sampler, so that only one unique direction is sampled even if
             ``num_directions>1``.
