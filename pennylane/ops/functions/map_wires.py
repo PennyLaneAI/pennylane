@@ -22,7 +22,7 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, make_qscript
 
 
 def map_wires(
@@ -111,12 +111,9 @@ def map_wires(
 
         @wraps(func)
         def qfunc(*args, **kwargs):
-            tape = QuantumTape()
-            with QueuingManager.stop_recording(), tape:
-                func(*args, **kwargs)
-
-            _ = [qml.map_wires(op, wire_map=wire_map, queue=True) for op in tape.operations]
-            m = tuple(qml.map_wires(m, wire_map=wire_map, queue=True) for m in tape.measurements)
+            qscript = make_qscript(func)(*args, **kwargs)
+            _ = [qml.map_wires(op, wire_map=wire_map, queue=True) for op in qscript.operations]
+            m = tuple(qml.map_wires(m, wire_map=wire_map, queue=True) for m in qscript.measurements)
             return m[0] if len(m) == 1 else m
 
         if isinstance(input, QNode):

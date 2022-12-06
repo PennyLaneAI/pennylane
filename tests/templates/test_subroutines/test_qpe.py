@@ -20,46 +20,40 @@ from scipy.stats import unitary_group
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    def test_expected_tape(self):
-        """Tests if QuantumPhaseEstimation populates the tape as expected for a fixed example"""
+    def test_expected_qscript(self):
+        """Tests if QuantumPhaseEstimation populates the quantum script as expected for a fixed example"""
 
         m = qml.RX(0.3, wires=0).matrix()
 
         op = qml.QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
-        tape = op.expand()
+        qscript = op.expand()
 
         unitary = qml.QubitUnitary(m, wires=[0])
-        with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(1)
             qml.Hadamard(2)
             qml.ctrl(qml.pow(unitary, 2), control=[1])
             qml.ctrl(qml.pow(unitary, 1), control=[2])
             qml.adjoint(qml.QFT(wires=[1, 2]))
-
-        assert len(tape2.queue) == len(tape.queue)
+        qscript2 = qml.tape.QuantumScript.from_queue(q)
+        assert len(qscript) == len(qscript2)
         # qml.equal doesn't work for Adjoint or Pow op yet, so we stop before we get to it.
-        for op1, op2 in zip(tape.queue[:2], tape2.queue[:2]):
+        for op1, op2 in zip(qscript[:2], qscript2[:2]):
             assert qml.equal(op1, op2)
 
-        assert qml.equal(tape.queue[2].base, tape2.queue[2].base)
-        assert tape.queue[2].z == tape2.queue[2].z
+        assert qml.equal(qscript[2].base.base, qscript2[2].base.base)
+        assert qscript[2].base.z, qscript2[2].base.z
+        assert qscript[2].control_wires == qscript2[2].control_wires
 
-        assert qml.equal(tape.queue[3].base.base, tape2.queue[3].base.base)
-        assert tape.queue[3].base.z, tape2.queue[3].base.z
-        assert tape.queue[3].control_wires == tape2.queue[3].control_wires
+        assert qml.equal(qscript[3].base.base, qscript2[3].base.base)
+        assert qscript[3].base.z == qscript2[3].base.z
+        assert qscript[3].control_wires == qscript2[3].control_wires
 
-        assert qml.equal(tape.queue[4].base, tape2.queue[4].base)
-        assert tape.queue[4].z == tape2.queue[4].z
+        assert isinstance(qscript[-1], qml.ops.op_math.Adjoint)
+        assert qml.equal(qscript[-1].base, qml.QFT(wires=(1, 2)))
 
-        assert qml.equal(tape.queue[5].base.base, tape2.queue[5].base.base)
-        assert tape.queue[5].base.z == tape2.queue[5].base.z
-        assert tape.queue[5].control_wires == tape2.queue[5].control_wires
-
-        assert isinstance(tape[-1], qml.ops.op_math.Adjoint)
-        assert qml.equal(tape[-1].base, qml.QFT(wires=(1, 2)))
-
-        assert np.allclose(tape.queue[1].matrix(), tape2.queue[1].matrix())
-        assert np.allclose(tape.queue[3].matrix(), tape2.queue[3].matrix())
+        assert np.allclose(qscript[1].matrix(), qscript[1].matrix())
+        assert np.allclose(qscript[3].matrix(), qscript[3].matrix())
 
     @pytest.mark.parametrize("phase", [2, 3, 6, np.pi])
     def test_phase_estimated(self, phase):
