@@ -424,7 +424,7 @@ class TestConvertersZX:
 
         graph.set_inputs(tuple(inputs))
         graph.set_outputs(tuple(outputs))
-        pyzx.draw(graph)
+
         with pytest.raises(
             qml.QuantumFunctionError,
             match="Cross qubit connections, the graoh is not circuit-like.",
