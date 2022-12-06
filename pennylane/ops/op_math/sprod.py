@@ -207,6 +207,10 @@ class SProd(SymbolicOp):
         return self.scalar * self.base.eigvals()
 
     def sparse_matrix(self, wire_order=None):
+        if pr := self._pauli_rep:
+            wires = wire_order or self.wires.tolist()
+            return pr.to_mat(wire_order=wires, format="csr")
+
         return self.scalar * self.base.sparse_matrix(wire_order=wire_order)
 
     @property
@@ -234,6 +238,10 @@ class SProd(SymbolicOp):
         Returns:
             tensor_like: matrix representation
         """
+        if pr := self._pauli_rep:
+            wires = wire_order or self.wires.tolist()
+            return pr.to_mat(wire_order=wires)
+
         if isinstance(self.base, qml.Hamiltonian):
             return self.scalar * qml.matrix(self.base, wire_order=wire_order)
         return self.scalar * self.base.matrix(wire_order=wire_order)
