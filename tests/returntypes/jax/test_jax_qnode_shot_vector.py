@@ -22,10 +22,9 @@ from pennylane import qnode
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
-
-from jax.config import config
-
+config = pytest.importorskip("jax.config")
 config.update("jax_enable_x64", True)
+
 shots = [(1, 20, 100), (1, (20, 1), 100), ((5, 4), 1, 100)]
 
 qubit_device_and_diff_method = [

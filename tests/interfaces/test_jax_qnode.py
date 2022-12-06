@@ -43,10 +43,7 @@ qubit_device_and_diff_method = [
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
-
-
-from jax.config import config
-
+config = pytest.importorskip("jax.config")
 config.update("jax_enable_x64", True)
 
 
