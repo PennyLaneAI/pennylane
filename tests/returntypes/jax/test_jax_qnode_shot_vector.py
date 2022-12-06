@@ -23,7 +23,7 @@ pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 config = pytest.importorskip("jax.config")
-config.update("jax_enable_x64", True)
+config.config.update("jax_enable_x64", True)
 
 shots = [(1, 20, 100), (1, (20, 1), 100), ((5, 4), 1, 100)]
 
