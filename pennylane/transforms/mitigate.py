@@ -505,11 +505,7 @@ def mitigate_with_zne(
         folding = fold_global_tape
 
     tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
-
-    with AnnotatedQueue() as q_removed:
-        for op in tape._ops:
-            apply(op)
-    script_removed = QuantumScript.from_queue(q_removed)
+    script_removed = QuantumScript(tape._ops)
 
     tapes = [
         [folding(script_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
@@ -517,16 +513,7 @@ def mitigate_with_zne(
     ]
 
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
-
-    out_tapes = []
-
-    for tape_ in tapes:
-        # pylint: disable=expression-not-assigned
-        with AnnotatedQueue() as q:
-            [apply(p) for p in tape._prep]
-            [apply(op) for op in tape_.operations]
-            [apply(m) for m in tape.measurements]
-        out_tapes.append(QuantumScript.from_queue(q))
+    out_tapes = [QuantumScript(tape_.operations, tape.measurements, tape._prep) for tape_ in tapes]
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
