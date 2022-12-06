@@ -46,11 +46,11 @@ def gradient_analysis(tape, use_graph=True, grad_fn=None):
             the cached gradient analysis will be used.
     """
     # pylint:disable=protected-access
-    if grad_fn is not None and getattr(tape, "_gradient_fn", None) is grad_fn:
-        # gradient analysis has already been performed on this tape
-        return
-
     if grad_fn is not None:
+        if getattr(tape, "_gradient_fn", None) is grad_fn:
+            # gradient analysis has already been performed on this tape
+            return
+
         tape._gradient_fn = grad_fn
 
     for idx, info in enumerate(tape._par_info):
