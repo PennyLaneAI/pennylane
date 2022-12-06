@@ -99,7 +99,7 @@ class TestProperties:
     """Test of the properties of the Exp class."""
 
     def test_data(self):
-        """Test accessing and setting the data property."""
+        """Test intializaing and accessing the data property."""
 
         phi = np.array(1.234)
         coeff = np.array(2.345)
@@ -108,13 +108,6 @@ class TestProperties:
         op = Exp(base, coeff)
 
         assert op.data == [[coeff], [phi]]
-
-        new_data = [[-2.1], [-3.4]]
-        op.data = new_data
-
-        assert op.data == new_data
-        assert op.coeff == -2.1
-        assert base.data == [-3.4]
 
     def test_queue_category_ops(self):
         """Test the _queue_category property."""
@@ -631,7 +624,7 @@ class TestDifferentiation:
     def test_parameter_frequencies(self):
         """Test parameter_frequencies property"""
         op = Exp(qml.PauliZ(1), 1j)
-        assert op.parameter_frequencies == (2,)
+        assert op.parameter_frequencies == [(2,)]
 
     def test_parameter_frequencies_raises_error(self):
         """Test that parameter_frequencies raises an error if the op.generator() is undefined"""
@@ -652,7 +645,7 @@ class TestDifferentiation:
         with pytest.raises(ParameterFrequenciesUndefinedError):
             op1.parameter_frequencies()
 
-        assert op2.parameter_frequencies == (4.0,)
+        assert op2.parameter_frequencies == [(4.0,)]
 
 
 class TestEvolution:
@@ -695,7 +688,7 @@ class TestEvolution:
         assert op.num_params == 1
 
     def test_data(self):
-        """Test accessing and setting the data property."""
+        """Test initializing and accessing the data property."""
 
         param = np.array(1.234)
 
@@ -703,11 +696,6 @@ class TestEvolution:
         op = Evolution(base, param)
 
         assert op.data == [param]
-
-        new_data = [2.345]
-        op.data = new_data
-
-        assert op.data == new_data
         assert op.coeff == 1j * op.data[0]
         assert op.param == op.data[0]
 
