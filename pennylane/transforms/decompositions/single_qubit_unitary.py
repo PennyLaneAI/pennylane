@@ -83,7 +83,8 @@ def zyz_decomposition(U, wire):
     U = _convert_to_su2(U)
 
     # An explicit isclose function needed due to interface incompatibility issues
-    _faux_isclose = lambda a, b: math.abs(a - b) <= (1e-08 + 1e-05 * math.abs(b))
+    def _faux_isclose(a, b):
+        return math.abs(a - b) <= (1e-08 + 1e-05 * math.abs(b))
 
     # If the value of U is not abstract, we can include a conditional statement
     # that will check if the off-diagonal elements are 0; if so, just use one RZ
