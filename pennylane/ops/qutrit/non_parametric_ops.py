@@ -444,18 +444,17 @@ class THadamard(Operation):
     The construction of this operator is based on section 2 of
     `Di et al. (2012) <https://arxiv.org/abs/1105.5485>`_ when the subspace is specified, and
     definition 4 and equation 5 from `Yeh et al. (2022) <https://arxiv.org/abs/2204.00552>`_
-    when no subspace is specified. The operator definition of the `None` subspace case is shown
-    below:
+    when no subspace is specified. The operator definition of the ``subspace=None`` case is
 
-    .. math:: THadamard = \frac{-i}{\sqrt{3}}\begin{bmatrix}
+    .. math:: \text{THadamard} = \frac{-i}{\sqrt{3}}\begin{bmatrix}
                     1 & 1 & 1 \\
                     1 & \omega & \omega^2 \\
                     1 & \omega^2 & \omega \\
-                \end{bmatrix}.\\
-                \text{where } \omega = \exp(2 \pi i / 3)
+                \end{bmatrix}
+                
+    where :math:`\omega = \exp(2 \pi i / 3)`.
 
     **Details:**
-
     * Number of wires: 1
     * Number of parameters: 0
 
