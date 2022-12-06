@@ -278,10 +278,10 @@
 
 <h4>Return types project</h4>
 
-* The JAX-JIT interface now supports gradient transforms and device gradients
-  with the new return types system.
-  [#3235](https://github.com/PennyLaneAI/pennylane/pull/3235)
-  [#3445](https://github.com/PennyLaneAI/pennylane/pull/3445)
+* The JAX-JIT interface now supports gradient transforms and device gradient execution in `backward` mode with the new
+  return types system.
+  [(#3235)](https://github.com/PennyLaneAI/pennylane/pull/3235)
+  [(#3445)](https://github.com/PennyLaneAI/pennylane/pull/3445)
 
   ```python
   import pennylane as qml
@@ -304,7 +304,6 @@
 
   a, b = jnp.array(1.0), jnp.array(2.0)
   ```
-
   ```pycon
   >>> jax.jacobian(circuit, argnums=[0, 1])(a, b)
   ((DeviceArray(0.35017549, dtype=float64, weak_type=True),
