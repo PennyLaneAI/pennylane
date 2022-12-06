@@ -22,7 +22,6 @@ from pennylane import qnode
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
-jnp = jax.numpy
 
 from jax.config import config
 
@@ -823,8 +822,8 @@ class TestReturnShotVectorIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         dev = qml.device(dev_name, wires=2, shots=shots)
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
+        x = jax.numpy.array(0.543)
+        y = jax.numpy.array(-0.654)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
         def circuit(x, y):
@@ -860,8 +859,8 @@ class TestReturnShotVectorIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device(dev_name, wires=2, shots=shots)
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
+        x = jax.numpy.array(0.543)
+        y = jax.numpy.array(-0.654)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
         def circuit(x, y):
