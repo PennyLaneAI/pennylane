@@ -192,11 +192,11 @@ def fold_global_tape(circuit, scale_factor):
     For the user-facing function see :func:`~.pennylane.transforms.fold_global`.
 
     Args:
-        circuit (QuantumScript): the circuit to be folded
+        circuit (QuantumTape): the circuit to be folded
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
-        QuantumScript: Folded circuit
+        QuantumTape: Folded circuit
 
     """
 
