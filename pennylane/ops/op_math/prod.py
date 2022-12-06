@@ -231,12 +231,9 @@ class Prod(CompositeOp):
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        try:
-            pr = self._pauli_rep
+        if pr := self._pauli_rep:
             wires = wire_order or self.wires.tolist()
             return pr.to_mat(wire_order=wires)
-        except NotImplementedError:
-            pass
 
         def mats_gen():
             for ops in self.overlapping_ops:
@@ -265,12 +262,9 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        try:
-            pr = self._pauli_rep
+        if pr := self._pauli_rep:
             wires = wire_order or self.wires.tolist()
             return pr.to_mat(wire_order=wires, format="csr")
-        except NotImplementedError:
-            pass
 
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)

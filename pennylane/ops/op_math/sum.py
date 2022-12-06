@@ -163,12 +163,9 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
-        try:
-            pr = self._pauli_rep
+        if pr := self._pauli_rep:
             wires = wire_order or self.wires.tolist()
             return pr.to_mat(wire_order=wires)
-        except NotImplementedError:
-            pass
 
         mats_and_wires_gen = (
             (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
@@ -184,12 +181,9 @@ class Sum(CompositeOp):
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        try:
-            pr = self._pauli_rep
+        if pr := self._pauli_rep:
             wires = wire_order or self.wires.tolist()
             return pr.to_mat(wire_order=wires, format="csr")
-        except NotImplementedError:
-            pass
 
         mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 

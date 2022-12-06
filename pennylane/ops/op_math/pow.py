@@ -259,12 +259,9 @@ class Pow(SymbolicOp):
         )
 
     def matrix(self, wire_order=None):
-        try:
-            pr = self._pauli_rep
+        if pr := self._pauli_rep:
             wires = wire_order or self.wires.tolist()
             return pr.to_mat(wire_order=wires)
-        except NotImplementedError:
-            pass
 
         if isinstance(self.base, qml.Hamiltonian):
             base_matrix = qml.matrix(self.base)
@@ -290,12 +287,9 @@ class Pow(SymbolicOp):
         raise SparseMatrixUndefinedError
 
     def sparse_matrix(self, wire_order=None):
-        try:
-            pr = self._pauli_rep
+        if pr := self._pauli_rep:
             wires = wire_order or self.wires.tolist()
             return pr.to_mat(wire_order=wires, format="csr")
-        except NotImplementedError:
-            pass
 
         canonical_sparse_matrix = self.compute_sparse_matrix(
             *self.parameters, **self.hyperparameters

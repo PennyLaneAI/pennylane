@@ -240,12 +240,9 @@ class SProd(SymbolicOp):
         Returns:
             tensor_like: matrix representation
         """
-        try:
-            pr = self._pauli_rep
+        if pr := self._pauli_rep:
             wires = wire_order or self.wires.tolist()
             return pr.to_mat(wire_order=wires)
-        except NotImplementedError:
-            pass
 
         if isinstance(self.base, qml.Hamiltonian):
             return self.scalar * qml.matrix(self.base, wire_order=wire_order)
