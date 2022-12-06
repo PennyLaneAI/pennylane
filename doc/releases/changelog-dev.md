@@ -511,6 +511,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   wanted seed.
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
+* `make_tape` is deprecated. Please use `qml.tape.make_qscript` instead.
+  [(#3478)](https://github.com/PennyLaneAI/pennylane/pull/3478)
+
 <h3>Documentation</h3>
 
 * Adds developer documentation for the queuing module.
