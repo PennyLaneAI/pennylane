@@ -445,11 +445,19 @@
   >>> mats = qml.RY.compute_matrix(np.array([1.2, 2.3, 2.7]))
   >>> op = qml.QubitUnitary(mats, wires=0)
   >>> decompositions = op.decomposition()
-  >>> pprint(decompositions)
-  [[Rot(tensor(-2.98266051e-128, requires_grad=True), tensor(1.2, requires_grad=True), tensor(5.59403882e-129, requires_grad=True), wires=[0])],
-  [Rot(tensor(-3.5436292e-128, requires_grad=True), tensor(2.3, requires_grad=True), tensor(-1.35248216e-128, requires_grad=True), wires=[0])],
-  [Rot(tensor(-5.59095128e-128, requires_grad=True), tensor(2.7, requires_grad=True), tensor(-3.54118996e-128, requires_grad=True), wires=[0])]]
+  >>> print(decompositions)
+  [Rot(tensor([-0., -0., -0.], requires_grad=True), tensor([1.2, 2.3, 2.7], requires_grad=True), tensor([0., 0., 0.], requires_grad=True), wires=[0])]
   ```
+
+  Note that no RZ decompositions are returned for broadcast operators:
+
+  ```python
+  >>> mats = qml.RZ.compute_matrix(np.array([1.2, 2.3, 2.7]))
+  >>> op = qml.QubitUnitary(mats, wires=0)
+  >>> decompositions = op.decomposition()
+  >>> print(decompositions)
+  [Rot(array([0.6 , 1.15, 1.35]), array([0., 0., 0.]), array([0.6 , 1.15, 1.35]), wires=[0])]
+  ```  
 
 <h3>Breaking changes</h3>
 

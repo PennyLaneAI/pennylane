@@ -78,59 +78,37 @@ def zyz_decomposition(U, wire):
     """
 
     # Cast to batched format for more consistent code
-    U = U.reshape(-1, 2, 2)
+    U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
 
     U = _convert_to_su2(U)
 
-    # An explicit isclose function needed due to interface incompatibility issues
-    def _faux_isclose(a, b):
-        return math.abs(a - b) <= (1e-08 + 1e-05 * math.abs(b))
+    # If U is only one unitary and its value is not abstract, we can include a conditional
+    # statement that will check if the off-diagonal elements are 0; if so, just use one RZ
+    if len(U) == 1 and not math.is_abstract(U[0]):
+        if math.allclose(U[0, 0, 1], 0.0):
+            return [qml.RZ(2 * math.angle(U[0, 1, 1]), wires=wire)]
 
-    # If the value of U is not abstract, we can include a conditional statement
-    # that will check if the off-diagonal elements are 0; if so, just use one RZ
-    zero_off_diagonals_mask = (
-        _faux_isclose(U[:, 0, 1], 0) if not math.is_abstract(U) else math.full(len(U), False)
-    )
-
-    # Take the unitaries not conforming to our predicate
-    passing_unitaries = U[zero_off_diagonals_mask]
-    failing_unitaries = U[math.logical_not(zero_off_diagonals_mask)]
-
-    # For the passing unitaries, construct RZ decompositions
-    rz_decompositions = [
-        qml.RZ(2 * math.angle(unitary[1, 1]), wires=wire) for unitary in passing_unitaries
-    ]
-
-    # For the failing unitaries, construct Rot decompositions instead
-    # Derive theta from the off-diagonal element. Clip to ensure valid arcsin input
-    off_diagonal_elements = math.clip(math.abs(failing_unitaries[:, 0, 1]), 0, 1)
+    # For batched U or single U with non-zero off-diagonal, compute the
+    # Rot operator decomposition instead
+    off_diagonal_elements = math.clip(math.abs(U[:, 0, 1]), 0, 1)
     thetas = 2 * math.arcsin(off_diagonal_elements)
 
     # Compute phi and omega from the angles of the top row; use atan2 to keep
-    # the angle within -np.pi and np.pi, and add very small values to avoid the
-    # undefined case of 0/0. We add a smaller value to the imaginary part than
-    # the real part because it is imag / real in the definition of atan2.
-    epsilon_real, epsilon_imag = 1e-64, 1e-128
+    # the angle within -np.pi and np.pi, and add very small value to the real
+    # part to avoid division by zero.
+    epsilon = 1e-64
     angles_U00 = math.arctan2(
-        math.imag(failing_unitaries[:, 0, 0]) + epsilon_imag,
-        math.real(failing_unitaries[:, 0, 0]) + epsilon_real,
+        math.imag(U[:, 0, 0]),
+        math.real(U[:, 0, 0]) + epsilon,
     )
     angles_U10 = math.arctan2(
-        math.imag(failing_unitaries[:, 1, 0]) + epsilon_imag,
-        math.real(failing_unitaries[:, 1, 0]) + epsilon_real,
+        math.imag(U[:, 1, 0]),
+        math.real(U[:, 1, 0]) + epsilon,
     )
 
     phis = -angles_U10 - angles_U00
     omegas = angles_U10 - angles_U00
 
-    rot_decompositions = [
-        qml.Rot(phi, theta, omega, wires=wire) for phi, theta, omega in zip(phis, thetas, omegas)
-    ]
+    phis, thetas, omegas = map(math.squeeze, [phis, thetas, omegas])
 
-    decompositions = [
-        [rz_decompositions.pop(0) if flag else rot_decompositions.pop(0)]
-        for flag in zero_off_diagonals_mask
-    ]
-
-    # Squeeze the batch dimension if the batch size was one
-    return decompositions[0] if len(U) == 1 else decompositions
+    return [qml.Rot(phis, thetas, omegas, wires=wire)]
