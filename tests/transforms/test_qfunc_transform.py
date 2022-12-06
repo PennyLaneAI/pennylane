@@ -116,7 +116,7 @@ class TestQFuncTransforms:
         new_qfunc = my_transform(qfunc)
         x = 0.543
 
-        ops = qml.transforms.make_tape(new_qfunc)(x).operations
+        ops = qml.tape.make_qscript(new_qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -150,7 +150,7 @@ class TestQFuncTransforms:
             qml.CRX(x, wires=[0, 1])
 
         x = 0.543
-        ops = qml.transforms.make_tape(qfunc)(x).operations
+        ops = qml.tape.make_qscript(qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -188,7 +188,7 @@ class TestQFuncTransforms:
         x = 0.543
         new_qfunc = my_transform(a, b)(qfunc)
 
-        ops = qml.transforms.make_tape(new_qfunc)(x).operations
+        ops = qml.tape.make_qscript(new_qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -225,7 +225,7 @@ class TestQFuncTransforms:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
-        ops = qml.transforms.make_tape(qfunc)(x).operations
+        ops = qml.tape.make_qscript(qfunc)(x).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -265,7 +265,7 @@ class TestQFuncTransforms:
         def ansatz():
             qml.CNOT(wires=[0, 1])
 
-        ops = qml.transforms.make_tape(ansatz)().operations
+        ops = qml.tape.make_qscript(ansatz)().operations
         assert len(ops) == 2
         assert ops[0].name == "RZ"
         assert ops[0].parameters == [x]
@@ -322,6 +322,15 @@ class TestQFuncTransforms:
             decorated_transform = qml.qfunc_transform(original_fn)
 
         assert original_fn is decorated_transform
+
+    def test_make_tape_is_deprecated(self):
+        """Test that make_tape is deprecated and points users to make_qscript."""
+
+        def circuit(x):
+            qml.RX(x, wires=0)
+
+        with pytest.warns(UserWarning, match="qml.tape.make_qscript"):
+            tape = qml.transforms.make_tape(circuit)(0.1)
 
 
 ############################################

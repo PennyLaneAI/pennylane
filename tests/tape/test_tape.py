@@ -13,12 +13,10 @@
 # limitations under the License.
 """Unit tests for the QuantumTape"""
 import copy
-import warnings
 from collections import defaultdict
 
 import numpy as np
 import pytest
-from this import d
 
 import pennylane as qml
 from pennylane import CircuitGraph
@@ -27,11 +25,11 @@ from pennylane.measurements import (
     MeasurementShapeError,
     counts,
     expval,
+    probs,
     sample,
     var,
-    probs,
 )
-from pennylane.tape import QuantumTape, TapeError
+from pennylane.tape import QuantumTape
 
 
 def TestOperationMonkeypatching():
