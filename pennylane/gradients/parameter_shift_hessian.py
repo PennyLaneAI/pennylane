@@ -746,12 +746,11 @@ def _param_shift_hessian_tuple(
     Returns:
         function or tuple[list[QuantumTape], function]:
 
-        - # TODO: If the input is a QNode, an object representing the Hessian (function) of
+        - If the input is a QNode, an object representing the Hessian (function) of
           the QNode that can be executed to obtain the Hessian matrix.
-          For QNodes with a single trainable argument, the returned matrix is a tensor of size
-          ``(*QNode output dimensions, *QNode input dimensions, *QNode input dimensions)``.
-          For QNodes with multiple trainable arguments, a tuple of Hessian tensors is
-          returned, one for each argument.
+          The returned Hessian matrix is given as a tensor or nested tuples of tensors.
+          The level of nesting depends on the number of trainable QNode arguments, the output
+          shape(s) of the input QNode itself, and the usage of shot vectors in the QNode execution.
 
         - If the input is a tape, a tuple containing a
           list of generated tapes, together with a post-processing
