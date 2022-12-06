@@ -21,6 +21,7 @@ import pennylane as qml
 
 @pytest.fixture(autouse=True)
 def run_before_and_after_tests():
+
     qml.enable_return()
     yield
     qml.disable_return()
