@@ -257,14 +257,14 @@ class ClassicalShadow(MeasurementTransform):
         Pauli measurements have shape ``(T, n)``.
 
         This implementation is device-agnostic and works by executing single-shot
-        tapes containing randomized Pauli observables. Devices should override this
+        quantum scripts containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
 
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            tape (QuantumScript): the tape to be processed
-            device (Device): the device used to process the tape
+            qscript (QuantumScript): the quantum script to be processed
+            device (Device): the device used to process the quantum script
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -363,8 +363,8 @@ class _ShadowExpval(MeasurementTransform):
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
 
         Args:
-            tape (QuantumScript): the tape to be processed
-            device (Device): the device used to process the tape
+            qscript (QuantumScript): the quantum script to be processed
+            device (Device): the device used to process the quantum script
 
         Returns:
             float: expectation value estimate.
