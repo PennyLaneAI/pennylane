@@ -603,30 +603,31 @@ class TestQueuing:
 
     def test_queuing(self):
         """Test that `Controlled` is queued upon initialization and updates base metadata."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.234, 2.345, 3.456, wires=2)
             op = Controlled(base, (0, 1))
 
-        assert base not in tape.queue
-        assert tape.operations == [op]
+        assert base not in q
+        assert q[0] == op
 
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if its defined outside the recording context."""
 
         base = qml.IsingXX(1.234, wires=(0, 1))
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Controlled(base, ("a", "b"))
 
-        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
+        assert len(q) == 1
+        assert q[0] is op
 
     def test_do_queue_false(self):
         """Test that when `do_queue=False` is specified, the controlled op is not queued."""
 
         base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Controlled(base, 1, do_queue=False)
 
-        assert qml.queuing.AnnotatedQueue.__len__(tape) == 0
+        assert len(q) == 0
 
 
 base_num_control_mats = [

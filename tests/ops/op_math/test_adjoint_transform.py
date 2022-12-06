@@ -38,42 +38,47 @@ class TestPreconstructedOp:
     @pytest.mark.parametrize(
         "base", (qml.IsingXX(1.23, wires=("c", "d")), qml.QFT(wires=(0, 1, 2)))
     )
-    def test_single_op(self, base):
+    def test_single_op_queuing(self, base):
         """Test passing a single preconstructed op in a queuing context."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base.queue()
             out = adjoint(base)
 
         assert isinstance(out, Adjoint)
         assert out.base is base
-        assert len(tape) == 1
-        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
-        assert base not in tape.queue
+        assert len(q) == 1
+        assert len(q) == 1
+        assert base not in q
 
     def test_single_op_defined_outside_queue_eager(self):
         """Test if base is defined outside context and the function eagerly simplifies
         the adjoint, the base is not added to queue."""
         base = qml.RX(1.2, wires=0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             out = adjoint(base, lazy=False)
 
         assert isinstance(out, qml.RX)
         assert out.data == [-1.2]
-        assert len(tape) == 1
-        assert tape[0] is out
+        assert len(q) == 1
+        assert q[0] is out
 
-        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
+        assert len(q) == 1
 
     def test_single_observable(self):
         """Test passing a single preconstructed observable in a queuing context."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.PauliX(0) @ qml.PauliY(1)
             out = adjoint(base)
 
-        assert len(tape) == 0
+        assert len(q) == 1
         assert out.base is base
         assert isinstance(out, Adjoint)
+
+        ops, m, prep = qml.queuing.process_queue(q)
+        assert len(ops) == 0
+        assert len(m) == 0
+        assert len(prep) == 0
 
 
 class TestDifferentCallableTypes:

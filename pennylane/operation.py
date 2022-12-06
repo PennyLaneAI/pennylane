@@ -2113,7 +2113,6 @@ class Tensor(Observable):
         else:
             obs = Tensor(*self.non_identity_obs)
 
-        qml.QueuingManager.remove(self)
         obs.return_type = self.return_type
         return obs
 

@@ -564,30 +564,30 @@ class TestQueueing:
     def test_queueing(self):
         """Test queuing and metadata when both Adjoint and base defined inside a recording context."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Adjoint(base)
 
-        assert base not in tape.queue
-        assert tape.operations == [op]
+        assert base not in q.queue
+        assert len(q) == 1
 
     def test_queueing_base_defined_outside(self):
         """Test that base isn't added to queue if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base)
 
-        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
-        assert tape.operations == [op]
+        assert len(q) == 1
+        assert q[0] == op
 
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base, do_queue=False)
 
-        assert len(tape) == 0
+        assert len(q) == 0
 
 
 class TestMatrix:
