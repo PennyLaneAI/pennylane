@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Integration tests for using the jax interface and its jittable variant with
-a QNode"""
+"""Integration tests for using the JAX-Python interface with a QNode"""
 
 import pytest
 
