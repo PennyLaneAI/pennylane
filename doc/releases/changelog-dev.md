@@ -436,28 +436,9 @@
   [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
 
 * Updated `single_qubit_unitary.py` in `qml.transforms.decompositions` such that `zyz_decomposition` now supports
-  broadcast operators.
+  broadcast operators. For such decompositions, `Rot` operators are always returned (no `RZ` decompositions, as is
+  the typical non-broadcast scenario.)
   [(#3477)](https://github.com/PennyLaneAI/pennylane/pull/3477)
-
-  Example:
-
-  ```python
-  >>> mats = qml.RY.compute_matrix(np.array([1.2, 2.3, 2.7]))
-  >>> op = qml.QubitUnitary(mats, wires=0)
-  >>> decompositions = op.decomposition()
-  >>> print(decompositions)
-  [Rot(tensor([-0., -0., -0.], requires_grad=True), tensor([1.2, 2.3, 2.7], requires_grad=True), tensor([0., 0., 0.], requires_grad=True), wires=[0])]
-  ```
-
-  Note that no RZ decompositions are returned for broadcast operators:
-
-  ```python
-  >>> mats = qml.RZ.compute_matrix(np.array([1.2, 2.3, 2.7]))
-  >>> op = qml.QubitUnitary(mats, wires=0)
-  >>> decompositions = op.decomposition()
-  >>> print(decompositions)
-  [Rot(array([0.6 , 1.15, 1.35]), array([0., 0., 0.]), array([0.6 , 1.15, 1.35]), wires=[0])]
-  ```  
 
 <h3>Breaking changes</h3>
 
