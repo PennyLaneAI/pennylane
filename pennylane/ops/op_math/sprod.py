@@ -21,6 +21,7 @@ from typing import Union
 import autoray
 
 import pennylane as qml
+import pennylane.math as qnp
 from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
@@ -117,7 +118,7 @@ class SProd(SymbolicOp):
         if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) is not None:
             pr = {}
             for pw, coeff in base_pauli_rep.items():
-                pr[pw] = coeff * self.scalar
+                pr[pw] = qnp.dot(coeff, self.scalar)  # to support dispatching over interfaces
             self._pauli_rep = qml.pauli.PauliSentence(pr)
         else:
             self._pauli_rep = None
