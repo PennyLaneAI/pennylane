@@ -526,7 +526,8 @@ def param_shift_cv(
     Returns:
         function or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode, an object representing the Jacobian  (function)of the QNode
+        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
+
           that can be executed to obtain the Jacobian matrix.
           The returned matrix is a tensor of size ``(number_outputs, number_gate_parameters)``
 
