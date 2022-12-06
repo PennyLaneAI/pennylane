@@ -410,6 +410,22 @@
 * File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
   [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
 
+* Updated `single_qubit_unitary.py` in `qml.transforms.decompositions` such that `zyz_decomposition` now supports
+  broadcast operators.
+  [(#3477)](https://github.com/PennyLaneAI/pennylane/pull/3477)
+
+  Example:
+
+  ```python
+  >>> mats = qml.RY.compute_matrix(np.array([1.2, 2.3, 2.7]))
+  >>> op = qml.QubitUnitary(mats, wires=0)
+  >>> decompositions = op.decomposition()
+  >>> pprint(decompositions)
+  [[Rot(tensor(-2.98266051e-128, requires_grad=True), tensor(1.2, requires_grad=True), tensor(5.59403882e-129, requires_grad=True), wires=[0])],
+  [Rot(tensor(-3.5436292e-128, requires_grad=True), tensor(2.3, requires_grad=True), tensor(-1.35248216e-128, requires_grad=True), wires=[0])],
+  [Rot(tensor(-5.59095128e-128, requires_grad=True), tensor(2.7, requires_grad=True), tensor(-3.54118996e-128, requires_grad=True), wires=[0])]]
+  ```
+
 <h3>Breaking changes</h3>
 
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
