@@ -1106,12 +1106,16 @@ class TestEqual:
     def test_equal_with_nested_operators_raises_error(self):
         """Test that the equal method with two operators with the same arithmetic depth (>0) raises
         an error."""
+        op1 = qml.PauliY(0)
+        op2 = qml.PauliZ(1)
+        prod = qml.prod(op1, op2)
+
         with pytest.raises(
             NotImplementedError,
             match="Comparison of operators with an arithmetic"
             + " depth larger than 0 is not yet implemented.",
         ):
-            qml.equal(qml.adjoint(qml.RX(1.2, 0)), qml.adjoint(qml.RX(1.2, 0)))
+            qml.equal(prod, prod)
 
     def test_equal_same_inversion(self):
         """Test operations are equal if they are both inverted."""
