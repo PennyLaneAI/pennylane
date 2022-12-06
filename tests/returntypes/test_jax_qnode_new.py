@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Integration tests for using the jax interface and its jittable variant with
-a QNode"""
+"""Integration tests for using the JAX-Python interface with a QNode"""
 
 import pytest
 
@@ -28,11 +27,6 @@ qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", "backward", "jax-python"],
     ["default.qubit", "adjoint", "forward", "jax-python"],
     ["default.qubit", "adjoint", "backward", "jax-python"],
-    # Jit
-    ["default.qubit", "finite-diff", "backward", "jax-jit"],
-    ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-    ["default.qubit", "adjoint", "forward", "jax-jit"],
-    ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
 pytestmark = pytest.mark.jax
@@ -230,10 +224,6 @@ class TestQNode:
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
-            # No jax.jacobian support for call
-            pytest.xfail(reason="batching rules are implemented only for id_tap, not for call.")
-
         jax.jacobian(circuit)(a)
 
         for args in spy.call_args_list:
@@ -248,11 +238,6 @@ vv_qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", "backward", "jax-python"],
     ["default.qubit", "adjoint", "forward", "jax-python"],
     ["default.qubit", "adjoint", "backward", "jax-python"],
-    # Jit
-    ["default.qubit", "finite-diff", "backward", "jax-jit"],
-    ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-    ["default.qubit", "adjoint", "forward", "jax-jit"],
-    ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
 
@@ -664,7 +649,7 @@ class TestVectorValuedQNode:
         assert np.allclose(jac[1][1], expected[1][1], atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("interface", ["jax-python", "jax-jit"])
+@pytest.mark.parametrize("interface", ["jax", "jax-python"])
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
     remains differentiable."""
@@ -673,7 +658,6 @@ class TestShotsIntegration:
         """Test jax device works with diff_method=None."""
         dev = qml.device("default.qubit.jax", wires=1, shots=10)
 
-        @jax.jit
         @qml.qnode(dev, diff_method=None, interface=interface)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -810,20 +794,14 @@ class TestQubitIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliX(1))
 
-        if interface == "jax-jit":
-            with pytest.raises(
-                NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
-            ):
-                circuit()
-        else:
-            res = circuit()
+        res = circuit()
 
-            assert isinstance(res, tuple)
+        assert isinstance(res, tuple)
 
-            assert isinstance(res[0], dict)
-            assert len(res[0]) == 2
-            assert isinstance(res[1], dict)
-            assert len(res[1]) == 2
+        assert isinstance(res[0], dict)
+        assert len(res[0]) == 2
+        assert isinstance(res[1], dict)
+        assert len(res[1]) == 2
 
     def test_chained_qnodes(self, dev_name, diff_method, mode, interface):
         """Test that the gradient of chained QNodes works without error"""
@@ -873,12 +851,6 @@ hessian_qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", "backward", "jax-python"],
     ["default.qubit", "adjoint", "forward", "jax-python"],
     ["default.qubit", "adjoint", "backward", "jax-python"],
-    # TODO:
-    # Jit
-    # ["default.qubit", "finite-diff", "backward", "jax-jit"],
-    # ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-    # ["default.qubit", "adjoint", "forward", "jax-jit"],
-    # ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
 
@@ -893,9 +865,6 @@ class TestQubitIntegrationHigherOrder:
 
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not second derivative.")
-
-        if interface == "jax-jit":
-            pytest.skip("JAX-JIT doesn't yet support Hessians.")
 
         dev = qml.device(dev_name, wires=1)
 
@@ -931,9 +900,6 @@ class TestQubitIntegrationHigherOrder:
         """Test hessian calculation of a scalar-valued QNode"""
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
-
-        if interface == "jax-jit":
-            pytest.skip("JAX-JIT doesn't yet support Hessians.")
 
         dev = qml.device(dev_name, wires=1)
 
@@ -1195,7 +1161,7 @@ class TestQubitIntegrationHigherOrder:
     "diff_method,kwargs",
     [["finite-diff", {}], ("parameter-shift", {}), ("parameter-shift", {"force_order2": True})],
 )
-@pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
+@pytest.mark.parametrize("interface", ["jax", "jax-python"])
 class TestCV:
     """Tests for CV integration"""
 
@@ -1281,9 +1247,6 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff"):
             pytest.skip("Only supports gradient transforms")
 
-        if max_diff == 2 and interface == "jax-jit":
-            pytest.skip("TODO: add Hessian support to JAX-JIT.")
-
         dev = qml.device(dev_name, wires=1)
 
         class PhaseShift(qml.PhaseShift):
@@ -1325,9 +1288,6 @@ class TestTapeExpansion:
         and the first and second order gradients are correctly evaluated"""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
-
-        if max_diff == 2 and interface == "jax-jit":
-            pytest.skip("TODO: add Hessian support to JAX-JIT.")
 
         dev = qml.device(dev_name, wires=3, shots=None)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
@@ -1383,9 +1343,6 @@ class TestTapeExpansion:
         and the first and second order gradients are correctly evaluated"""
         if diff_method in ("adjoint", "backprop", "finite-diff"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
-
-        if max_diff == 2 and interface == "jax-jit":
-            pytest.skip("TODO: add Hessian support to JAX-JIT.")
 
         dev = qml.device(dev_name, wires=3, shots=50000)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
