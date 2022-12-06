@@ -485,6 +485,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Documentation</h3>
 
+* Corrects the return type statements of gradient and Hessian transforms.
+  [(#3476)](https://github.com/PennyLaneAI/pennylane/pull/3268)
+
 * Adds developer documentation for the queuing module.
   [(#3268)](https://github.com/PennyLaneAI/pennylane/pull/3268)
 
