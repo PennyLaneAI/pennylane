@@ -212,8 +212,8 @@ class QuantumPhaseEstimation(Operation):
         return new_op
 
     def queue(self, context=QueuingManager):
-        context.update_info(self.data[0], owner=self)
-        context.append(self, owns=self.data[0])
+        context.update_info(self._hyperparameters["unitary"], owner=self)
+        context.append(self, owns=self._hyperparameters["unitary"])
         return self
 
     @staticmethod
