@@ -17,16 +17,16 @@
 from collections import OrderedDict
 import numpy as np
 import pennylane as qml
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 
-def to_zx(tape, backend=None):
-    """It converts a PennyLane quantum tape to a ZX-Graph in PyZX.
+def to_zx(qscript, expand_measurements=False):
+    """It converts a PennyLane quantum script to a ZX-Graph in PyZX.
     Args:
-        tape(QuantumTape): The PennyLane quantum tape.
-        backend(str): Backend for the PyZX graph. "Simple" is default and use Python backend from PyZX. The backend
-            'igraph' is not complete but can be used for the package python-igraph.
+        qscript(QuantumScript): The PennyLane quantum script.
+        expand_measurements(bool): The expansion will be applied on measurements that are not in the Z-basis and
+            rotations will be added to the operations.
     """
     # Avoid to make PyZX a requirement for PennyLane.
     try:
@@ -61,33 +61,35 @@ def to_zx(tape, backend=None):
     }
 
     # Create the graph, a qubit mapper, the classical mapper stays empty as PennyLane do not support classical bits.
-    graph = Graph(backend)
+    graph = Graph(None)
     q_mapper = TargetMapper()
     c_mapper = TargetMapper()
 
     # Map the wires to consecutive wires
-    consecutive_wires = Wires(range(len(tape.wires)))
-    consecutive_wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
-    tape = qml.map_wires(input=tape, wire_map=consecutive_wires_map)
+    consecutive_wires = Wires(range(len(qscript.wires)))
+    consecutive_wires_map = OrderedDict(zip(qscript.wires, consecutive_wires))
+    qscript = qml.map_wires(input=qscript, wire_map=consecutive_wires_map)
 
     inputs = []
 
     # Create the qubits in the graph and the qubit mapper
-    for i in range(len(tape.wires)):
+    for i in range(len(qscript.wires)):
         vertex = graph.add_vertex(VertexType.BOUNDARY, i, 0)
         inputs.append(vertex)
         q_mapper.set_prev_vertex(i, vertex)
         q_mapper.set_next_row(i, 1)
         q_mapper.set_qubit(i, i)
 
-    # Expand the tape to be compatible with PyZX and add rotations first for measurements
+    # Expand the qscript to be compatible with PyZX and add rotations first for measurements
     stop_crit = qml.BooleanFn(lambda obj: obj.name in gate_types)
-    tape = qml.tape.tape.expand_tape(tape, depth=10, stop_at=stop_crit, expand_measurements=True)
+    qscript = qml.tape.tape.expand_tape(
+        qscript, depth=10, stop_at=stop_crit, expand_measurements=expand_measurements
+    )
 
-    expanded_tape = []
+    expanded_operations = []
 
     # Define specific decompositions
-    for op in tape.operations:
+    for op in qscript.operations:
         if op.name == "PauliY":
             decomp = [
                 qml.S(wires=0),
@@ -97,7 +99,7 @@ def to_zx(tape, backend=None):
                 qml.RZ(3 * np.pi, wires=0),
                 qml.S(wires=0),
             ]
-            expanded_tape.extend(decomp)
+            expanded_operations.extend(decomp)
         elif op.name == "RY":
             theta = op.data[0]
             decomp = [
@@ -106,35 +108,26 @@ def to_zx(tape, backend=None):
                 qml.RX(np.pi / 2, wires=0),
                 qml.RZ(3 * np.pi, wires=0),
             ]
-            expanded_tape.extend(decomp)
+            expanded_operations.extend(decomp)
         else:
-            expanded_tape.append(op)
+            expanded_operations.append(op)
 
-    expanded_tape = qml.tape.QuantumTape(expanded_tape, tape.measurements, [])
+    expanded_qscript = QuantumScript(expanded_operations, qscript.measurements, [])
 
-    # Create graph from circuit in the tape (operations, measurements)
-    for op in expanded_tape.operations:
+    # Create graph from circuit in the quantum script (operations, measurements)
+    for op in expanded_qscript.operations:
 
         # Check that the gate is compatible with PyZX
         name = op.name
         if name not in gate_types:
             raise qml.QuantumFunctionError(
-                "The expansion of the tape failed, PyZX does not support", name
+                "The expansion of the quantum script failed, PyZX does not support", name
             )
 
         # Apply wires and parameters
         map_gate = gate_types[name]
 
-        par = [param / np.pi for param in op.parameters]
-        wires = list(op.wires)
-
-        # Max number of parameter is one
-        if par:
-            args = []
-            args.extend(wires)
-            args.extend(par)
-        else:
-            args = wires
+        args = [*op.wires, *(p / np.pi for p in op.parameters)]
 
         gate = map_gate(*args)
         gate.to_graph(graph, q_mapper, c_mapper)
@@ -157,7 +150,7 @@ def to_zx(tape, backend=None):
 
 
 def from_zx(graph, split_phases=True):
-    """It converts a graph from PyZX to a PennyLane tape, if graph is diagram-like.
+    """It converts a graph from PyZX to a PennyLane qscript, if graph is diagram-like.
     Args:
         graph(Graph): ZX graph in PyZX.
         split_phases(bool): If True the phases are split.
@@ -216,52 +209,60 @@ def from_zx(graph, split_phases=True):
 
             if qubits[neighbor_0] != qubit_1:
                 raise qml.QuantumFunctionError(
-                    "Graph doesn't seem circuit like: cross qubit connections"
+                    "Cross qubit connections, the graoh is not circuit-like."
                 )
 
+            # Add Hadamard gate (written in the edge)
             if graph.edge_type(graph.edge(neighbor_0, vertex)) == EdgeType.HADAMARD:
                 operations.append(qml.Hadamard(wires=qubit_1))
 
+            # Vertex is a boundary
             if type_1 == VertexType.BOUNDARY:
                 continue
 
-            # Given the phase add a 1 qubit gate
-            if param != 0 and not split_phases:
-                if type_1 == VertexType.Z:
-                    param = np.pi * float(param)
-                    operations.append(qml.RZ(param, wires=qubit_1))
-                else:
-                    param = np.pi * float(param)
-                    operations.append(qml.RX(param, wires=qubit_1))
-            elif type_1 == VertexType.Z and param.denominator == 2:
-                if param.numerator == 3:
-                    operations.append(qml.adjoint(qml.S(wires=qubit_1)))
-                else:
-                    operations.append(qml.S(wires=qubit_1))
-            elif type_1 == VertexType.Z and param.denominator == 4:
-                if param.numerator in (1, 7):
-                    if param.numerator == 7:
-                        operations.append(qml.adjoint(qml.T(wires=qubit_1)))
-                    else:
-                        operations.append(qml.T(wires=qubit_1))
-                if param.numerator in (3, 5):
-                    operations.append(qml.PauliZ(wires=qubit_1))
-                    if param.numerator == 3:
-                        operations.append(qml.adjoint(qml.T(wires=qubit_1)))
-                    else:
-                        operations.append(qml.T(wires=qubit_1))
-            elif param == 1:
-                if type_1 == VertexType.Z:
-                    operations.append(qml.PauliZ(wires=qubit_1))
-                else:
-                    operations.append(qml.PauliX(wires=qubit_1))
-            elif param != 0:
-                if type_1 == VertexType.Z:
-                    param = np.pi * float(param)
-                    operations.append(qml.RZ(param, wires=qubit_1))
-                else:
-                    param = np.pi * float(param)
-                    operations.append(qml.RX(param, wires=qubit_1))
+            # Split phases
+            if split_phases:
+                type_z = type_1 == VertexType.Z
+                if type_z and param.denominator == 2:
+                    op = (
+                        qml.adjoint(qml.S(wires=qubit_1))
+                        if param.numerator == 3
+                        else qml.S(wires=qubit_1)
+                    )
+                    operations.append(op)
+                elif type_z and param.denominator == 4:
+                    if param.numerator in (1, 7):
+                        op = (
+                            qml.adjoint(qml.T(wires=qubit_1))
+                            if param.numerator == 7
+                            else qml.T(wires=qubit_1)
+                        )
+                        operations.append(op)
+                    if param.numerator in (3, 5):
+                        operations.append(qml.PauliZ(wires=qubit_1))
+                        op = (
+                            qml.adjoint(qml.T(wires=qubit_1))
+                            if param.numerator == 3
+                            else qml.T(wires=qubit_1)
+                        )
+                        operations.append(op)
+                elif param == 1:
+                    op = (
+                        qml.adjoint(qml.PauliZ(wires=qubit_1))
+                        if type_1 == VertexType.Z
+                        else qml.PauliX(wires=qubit_1)
+                    )
+                    operations.append(op)
+                elif param != 0:
+                    scaled_param = np.pi * float(param)
+                    op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
+                    operations.append(op_class(scaled_param, wires=qubit_1))
+            # Phases are not split
+            else:
+                if param != 0:
+                    scaled_param = np.pi * float(param)
+                    op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
+                    operations.append(op_class(scaled_param, wires=qubit_1))
 
             # Given the neighbors add two qubits gates
             neighbors = [
@@ -277,7 +278,8 @@ def from_zx(graph, split_phases=True):
 
                     if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.HADAMARD:
                         raise qml.QuantumFunctionError(
-                            "Invalid vertical connection between vertices of the same type."
+                            "Two green or respectively two red nodes connected by a simple edge does not have a "
+                            "circuit representation."
                         )
 
                     if type_1 == VertexType.Z:
@@ -290,7 +292,7 @@ def from_zx(graph, split_phases=True):
                 else:
                     if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.SIMPLE:
                         raise qml.QuantumFunctionError(
-                            "Invalid vertical connection between vertices of different type."
+                            "A green and red node connected by a Hadamard edge does not have a circuit representation."
                         )
 
                     if type_1 == VertexType.Z:
@@ -298,5 +300,5 @@ def from_zx(graph, split_phases=True):
                     else:
                         operations.append(qml.CNOT(wires=[qubit_2, qubit_1]))
 
-    tape = QuantumTape(operations, [], prep=[])
-    return tape
+    qscript = QuantumScript(operations, [], prep=[])
+    return qscript
