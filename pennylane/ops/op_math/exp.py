@@ -165,7 +165,7 @@ class Exp(SymbolicOp, Operation):
 
     @property
     def hash(self):
-        return hash((str(self.name), self.base.hash, tuple(self.data)))
+        return hash((str(self.name), self.base.hash, self.coeff))
 
     @property
     def data(self):
