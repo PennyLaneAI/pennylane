@@ -376,7 +376,48 @@ class TestConvertersZX:
         mat_product /= mat_product[0, 0]
         assert qml.math.allclose(mat_product, I)
 
-    def test_cross_qubit_connection_invalid_circuit(self):
+    def test_embeddings(self):
+        """Test with expansion of prep."""
+        I = qml.math.eye(2**2)
+
+        prep = [qml.AngleEmbedding(features=[1, 2], wires=range(2), rotation="Z")]
+
+        operations = [
+            qml.RX(0.1, wires=0),
+            qml.PauliZ(wires=0),
+            qml.RZ(0.3, wires=1),
+            qml.PauliX(wires=1),
+            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=[1, 0]),
+            qml.SWAP(wires=[0, 1]),
+        ]
+
+        qscript = QuantumScript(operations, [], prep)
+        zx_g = qml.transforms.to_zx(qscript)
+
+        assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
+
+        matrix_qscript = qml.matrix(qscript)
+        matrix_zx = zx_g.to_matrix()
+        # Check whether the two matrices are each others conjugate transposes
+        mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
+        # Remove global phase
+        mat_product /= mat_product[0, 0]
+        assert qml.math.allclose(mat_product, I)
+
+        qscript_back = qml.transforms.from_zx(zx_g)
+        assert isinstance(qscript_back, qml.tape.QuantumScript)
+
+        matrix_qscript_back = qml.matrix(
+            qscript_back, wire_order=[i for i in range(0, len(qscript.wires))]
+        )
+        # Check whether the two matrices are each others conjugate transposes
+        mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_qscript_back.T))
+        # Remove global phase
+        mat_product /= mat_product[0, 0]
+        assert qml.math.allclose(mat_product, I)
+
+    def test_no_decomposition(self):
         """Cross qubit connections is not diagram-like."""
         graph = pyzx.Graph(None)
         q_mapper = pyzx.circuit.gates.TargetMapper()
@@ -431,58 +472,17 @@ class TestConvertersZX:
         ):
             qml.transforms.from_zx(graph)
 
-    def test_not_same_type_edge_not_simple(self):
-        """Test that a Green-Red gate with Hadamard edge has no corresponding circuit."""
-        graph = pyzx.Graph(None)
-        q_mapper = pyzx.circuit.gates.TargetMapper()
-        c_mapper = pyzx.circuit.gates.TargetMapper()
+    def test_no_suitable_decomposition(self):
+        """Test that an error is raised when no suitable decomposition is found."""
 
-        inputs = []
+        operations = [qml.op_sum(qml.PauliX(0), qml.PauliZ(0))]
 
-        # Create the qubits in the graph and the qubit mapper
-        for i in range(2):
-            vertex = graph.add_vertex(pyzx.VertexType.BOUNDARY, i, 0)
-            inputs.append(vertex)
-            q_mapper.set_prev_vertex(i, vertex)
-            q_mapper.set_next_row(i, 1)
-            q_mapper.set_qubit(i, i)
-
-        # Create Green Red with Hadamard Edge
-        r = max(q_mapper.next_row(1), q_mapper.next_row(0))
-
-        v1 = graph.add_vertex(pyzx.VertexType.X, q_mapper.to_qubit(1), r)
-        graph.add_edge(graph.edge(q_mapper.prev_vertex(1), v1), pyzx.EdgeType.SIMPLE)
-        q_mapper.set_prev_vertex(1, v1)
-
-        v2 = graph.add_vertex(pyzx.VertexType.Z, q_mapper.to_qubit(0), r)
-        graph.add_edge(graph.edge(q_mapper.prev_vertex(0), v2), pyzx.EdgeType.SIMPLE)
-        q_mapper.set_prev_vertex(0, v2)
-
-        graph.add_edge((v1, v2), edgetype=pyzx.EdgeType.HADAMARD)
-
-        q_mapper.set_next_row(1, r + 1)
-        q_mapper.set_next_row(0, r + 1)
-        graph.scalar.add_power(1)
-
-        row = max(q_mapper.max_row(), c_mapper.max_row())
-
-        outputs = []
-        for mapper in (q_mapper, c_mapper):
-            for label in mapper.labels():
-                qubit = mapper.to_qubit(label)
-                vertex = graph.add_vertex(pyzx.VertexType.BOUNDARY, qubit, row)
-                outputs.append(vertex)
-                pre_vertex = mapper.prev_vertex(label)
-                graph.add_edge(graph.edge(pre_vertex, vertex))
-
-        graph.set_inputs(tuple(inputs))
-        graph.set_outputs(tuple(outputs))
-
+        qscript = QuantumScript(operations, [], [])
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="A green and red node connected by a Hadamard edge does not ",
+            match="The expansion of the quantum script failed, PyZX does not support",
         ):
-            qml.transforms.from_zx(graph)
+            qml.transforms.to_zx(qscript)
 
     def test_same_type_edge_simple(self):
         """Test that a Green-Green gate with simple edge has no corresponding circuit."""
