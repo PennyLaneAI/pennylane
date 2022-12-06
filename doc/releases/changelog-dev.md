@@ -300,6 +300,9 @@
 * Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
 
+* Adds support for devices disregarding observable grouping indices in Hamiltonians through
+  the optional `use_grouping` attribute.
+  [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
 
 <h4>Return types project</h4>
 
@@ -541,6 +544,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   wanted seed.
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
+* `make_tape` is deprecated. Please use `qml.tape.make_qscript` instead.
+  [(#3478)](https://github.com/PennyLaneAI/pennylane/pull/3478)
+
 <h3>Documentation</h3>
 
 * Adds developer documentation for the queuing module.
@@ -599,6 +605,7 @@ Astral Cai
 Isaac De Vlugt
 Pieter Eendebak
 Lillian M. A. Frederiksen
+Katharine Hyatt
 Soran Jahangiri
 Edward Jiang
 Christina Lee
