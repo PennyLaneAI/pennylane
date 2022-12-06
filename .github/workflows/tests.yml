@@ -210,6 +210,8 @@ jobs:
           - { loc: "tests/returntypes/autograd"}
           - { loc: "tests/returntypes/gradients"}
           - { loc: "tests/returntypes/transforms"}
+          - { loc: "tests/returntypes/paramshift"}
+          - { loc: "tests/returntypes/finitediff"}
           - { loc: "tests/returntypes/others"}
 
     steps:
