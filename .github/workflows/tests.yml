@@ -202,6 +202,16 @@ jobs:
   return-tests:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        config:
+          - { loc: "tests/returntypes/jax"}
+          - { loc: "tests/returntypes/tf"}
+          - { loc: "tests/returntypes/autograd"}
+          - { loc: "tests/returntypes/gradients"}
+          - { loc: "tests/returntypes/transforms"}
+          - { loc: "tests/returntypes/others"}
+
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.4.1
@@ -239,7 +249,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/returntypes --cov=pennylane $COVERAGE_FLAGS -n auto
+          python -m pytest mat.config.loc --cov=pennylane $COVERAGE_FLAGS -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
