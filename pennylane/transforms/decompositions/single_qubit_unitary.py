@@ -17,7 +17,6 @@ operations into elementary gates.
 
 import pennylane as qml
 from pennylane import math
-from pennylane import numpy as np
 
 
 def _convert_to_su2(U):
@@ -31,7 +30,7 @@ def _convert_to_su2(U):
         equivalent to U up to a global phase.
     """
     # Compute the determinants
-    dets = np.linalg.det(U)
+    dets = math.linalg.det(U)
 
     exp_angles = -1j * math.cast_like(math.angle(dets), 1j) / 2
     return math.cast_like(U, dets) * math.exp(exp_angles)[:, None, None]
@@ -79,24 +78,22 @@ def zyz_decomposition(U, wire):
     """
 
     # Cast to batched format for more consistent code
-    U = np.atleast_3d(U)
-    # If single tensor, reshape to push the added dimension to the batch dim
-    if U.shape[-1] == 1:
-        U = U.transpose(2, 0, 1)
+    U = U.reshape(-1, 2, 2)
 
     U = _convert_to_su2(U)
+
+    # An explicit isclose function needed due to interface incompatibility issues
+    _faux_isclose = lambda a, b: math.abs(a - b) <= (1e-08 + 1e-05 * math.abs(b))
 
     # If the value of U is not abstract, we can include a conditional statement
     # that will check if the off-diagonal elements are 0; if so, just use one RZ
     zero_off_diagonals_mask = (
-        np.isclose(U[:, 0, 1], np.zeros(len(U)))
-        if not math.is_abstract(U)
-        else np.full(len(U), False)
+        _faux_isclose(U[:, 0, 1], 0) if not math.is_abstract(U) else math.full(len(U), False)
     )
 
     # Take the unitaries not conforming to our predicate
     passing_unitaries = U[zero_off_diagonals_mask]
-    failing_unitaries = U[np.logical_not(zero_off_diagonals_mask)]
+    failing_unitaries = U[math.logical_not(zero_off_diagonals_mask)]
 
     # For the passing unitaries, construct RZ decompositions
     rz_decompositions = [
