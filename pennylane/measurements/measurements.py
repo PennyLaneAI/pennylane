@@ -205,8 +205,7 @@ class MeasurementProcess(ABC):
                 unrecognized and cannot deduce the numeric type
         """
         raise qml.QuantumFunctionError(
-            "Cannot deduce the numeric type of the measurement process with unrecognized "
-            + f"return_type {self.return_type}."
+            f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
     def shape(self, device=None):
@@ -214,8 +213,8 @@ class MeasurementProcess(ABC):
 
         Note that the output shape is dependent on the device when:
 
-        * The ``return_type`` is either ``Probability``, ``State`` (from :func:`.state`) or
-          ``Sample``;
+        * The measurement type is either ``_Probability``, ``_State`` (from :func:`.state`) or
+          ``_Sample``;
         * The shot vector was defined in the device.
 
         For example, assuming a device with ``shots=None``, expectation values
@@ -223,14 +222,13 @@ class MeasurementProcess(ABC):
         model define ``shape=(1, 2**num_wires)`` where ``num_wires`` is the
         number of wires the measurement acts on.
 
-        Note that the shapes for vector-valued return types such as
-        ``Probability`` and ``State`` are adjusted to the output of
+        Note that the shapes for vector-valued measurements such as
+        ``_Probability`` and ``_State`` are adjusted to the output of
         ``qml.execute`` and may have an extra first element that is squeezed
         when using QNodes.
 
         Args:
-            device (.Device): a PennyLane device to use for determining the
-                shape
+            device (.Device): a PennyLane device to use for determining the shape
 
         Returns:
             tuple: the output shape
@@ -242,8 +240,7 @@ class MeasurementProcess(ABC):
         if qml.active_return():
             return self._shape_new(device=device)
         raise qml.QuantumFunctionError(
-            "Cannot deduce the shape of the measurement process with unrecognized return_type "
-            + f"{self.return_type}."
+            f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
     def _shape_new(self, device=None):
@@ -251,8 +248,8 @@ class MeasurementProcess(ABC):
 
         Note that the output shape is dependent on the device when:
 
-        * The ``return_type`` is either ``Probability``, ``State`` (from :func:`.state`) or
-          ``Sample``;
+        * The measurement type is either ``_Probability``, ``_State`` (from :func:`.state`) or
+          ``_Sample``;
         * The shot vector was defined in the device.
 
         For example, assuming a device with ``shots=None``, expectation values
@@ -261,8 +258,7 @@ class MeasurementProcess(ABC):
         number of wires the measurement acts on.
 
         Args:
-            device (.Device): a PennyLane device to use for determining the
-                shape
+            device (.Device): a PennyLane device to use for determining the shape
 
         Returns:
             tuple: the output shape
@@ -272,8 +268,7 @@ class MeasurementProcess(ABC):
                 unrecognized and cannot deduce the numeric type
         """
         raise qml.QuantumFunctionError(
-            "Cannot deduce the shape of the measurement process with unrecognized return_type "
-            + f"{self.return_type}."
+            f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
     @staticmethod
@@ -468,14 +463,14 @@ class MeasurementProcess(ABC):
                 str(self.name),
                 tuple(self.wires.tolist()),
                 str(self.data),
-                self.return_type,
+                self.__class__.__name__,
             )
         else:
             fingerprint = (
                 str(self.obs.name),
                 tuple(self.wires.tolist()),
                 str(self.obs.data),
-                self.return_type,
+                self.__class__.__name__,
             )
 
         return hash(fingerprint)
@@ -604,6 +599,20 @@ class MeasurementTransform(MeasurementProcess):
 
     Any class inheriting from this class should define its own ``process`` method, which takes a
     device instance and a quantum script and returns the result of the measurement process.
+    """
+
+    method_name = ""
+    """Devices can override the logic of a measurement process by defining a method with the
+    name ``method_name`` of the corresponding class. The method should have the following signature:
+
+    .. code-block:: python
+
+        def method_name(self, qscript: QuantumScript):
+            '''Device's custom measurement implementation.
+
+            Args:
+                qscript: quantum script to transform
+            '''
     """
 
     method_name = ""
