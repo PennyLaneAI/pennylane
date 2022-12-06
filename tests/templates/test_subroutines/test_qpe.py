@@ -163,16 +163,11 @@ class TestDecomposition:
             estimation_wires = range(1, wires - 1)
             target_wires = [0]
 
-            with qml.tape.QuantumTape() as tape:
-
-                # Prepare the eigenstate of the circuit
-                qml.QubitStateVector(eig_vec, wires=target_wires)
-
-                # Perform QPE, using default target wires defined in the operator
-                qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
-
-                # Find probabilities
-                qml.probs(estimation_wires)
+            tape = qml.tape.QuantumScript(
+                [qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)],
+                [qml.probs(estimation_wires)],
+                prep=[qml.QubitStateVector(eig_vec, wires=target_wires)],
+            )
 
             tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
             res = dev.execute(tape).flatten()
@@ -206,20 +201,15 @@ class TestDecomposition:
 
             dev = qml.device("default.qubit", wires=wires)
 
-            # Offset the index of target wires to test the wire map
+            # Offset the index of target wires to test the wire maÏp
             estimation_wires = range(2, wires)
             target_wires = [0, 1]
 
-            with qml.tape.QuantumTape() as tape:
-
-                # Prepare the eigenstate of the circuit
-                qml.QubitStateVector(eig_vec, wires=target_wires)
-
-                # Perform QPE
-                qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
-
-                # Find probabilities
-                qml.probs(estimation_wires)
+            tape = qml.tape.QuantumScript(
+                [qml.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)],
+                [qml.probs(estimation_wires)],
+                prep=[qml.QubitStateVector(eig_vec, wires=target_wires)],
+            )
 
             tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
             res = dev.execute(tape).flatten()
@@ -279,7 +269,7 @@ class TestDecomposition:
         assert list(new_qpe.wires) == [2, 3, 4, 5]
         assert list(new_qpe._hyperparameters["target_wires"]) == [2, 3]
         assert list(new_qpe._hyperparameters["estimation_wires"]) == [4, 5]
-        assert list(new_qpe.data[0].wires) == [2, 3]
+        assert list(new_qpe._hyperparameters["unitary"].wires) == [2, 3]
 
     def test_adjoint(self):
         """Test that the QPE adjoint works."""

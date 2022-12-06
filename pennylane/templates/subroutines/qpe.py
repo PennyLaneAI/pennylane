@@ -174,11 +174,12 @@ class QuantumPhaseEstimation(Operation):
             )
 
         self._hyperparameters = {
+            "unitary": unitary,
             "target_wires": target_wires,
             "estimation_wires": estimation_wires,
         }
 
-        super().__init__(unitary, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(None, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -197,7 +198,9 @@ class QuantumPhaseEstimation(Operation):
     # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
         new_op = super().map_wires(wire_map)
-        new_op.data[0] = qml.map_wires(new_op.data[0], wire_map)
+        new_op._hyperparameters["unitary"] = qml.map_wires(
+            new_op._hyperparameters["unitary"], wire_map
+        )
 
         new_op._hyperparameters["estimation_wires"] = [
             wire_map.get(wire, wire) for wire in self.estimation_wires
@@ -215,7 +218,7 @@ class QuantumPhaseEstimation(Operation):
 
     @staticmethod
     def compute_decomposition(
-        unitary, wires, target_wires, estimation_wires
+        data, wires, unitary, target_wires, estimation_wires
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the QPE circuit as a product of other operators.
 
@@ -225,8 +228,9 @@ class QuantumPhaseEstimation(Operation):
         .. seealso:: :meth:`~.QuantumPhaseEstimation.decomposition`.
 
         Args:
-            unitary (Operator): the phase estimation unitary, specified as an operator
+            data (None): this should just be `None`.
             wires (Any or Iterable[Any]): wires that the QPE circuit acts on
+            unitary (Operator): the phase estimation unitary, specified as an operator
             target_wires (Any or Iterable[Any]): the target wires to apply the unitary
             estimation_wires (Any or Iterable[Any]): the wires to be used for phase estimation
 
