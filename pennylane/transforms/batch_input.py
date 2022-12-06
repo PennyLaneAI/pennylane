@@ -43,7 +43,7 @@ def batch_input(
     Args:
         tape (.QuantumTape or .QNode): Input quantum circuit to batch
         argnum (Sequence[int] or int): One or several index values indicating the position of the
-        non-trainable batched parameters in the quantum tape.
+            non-trainable batched parameters in the quantum tape.
 
     Returns:
         Sequence[Sequence[.QuantumTape], Callable]: list of tapes arranged
