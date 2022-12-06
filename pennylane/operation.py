@@ -1335,7 +1335,7 @@ class Operation(Operator):
                 eigvals = qml.eigvals(gen)
 
             eigvals = tuple(np.round(eigvals, 8))
-            return qml.gradients.eigvals_to_frequencies(eigvals)
+            return [qml.gradients.eigvals_to_frequencies(eigvals)]
 
         raise ParameterFrequenciesUndefinedError(
             f"Operation {self.name} does not have parameter frequencies defined, "

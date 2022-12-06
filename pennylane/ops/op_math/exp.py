@@ -14,6 +14,7 @@
 """
 This submodule defines the symbolic operation that stands for an exponential of an operator.
 """
+from copy import copy
 from warnings import warn
 from scipy.sparse.linalg import expm as sparse_expm
 import numpy as np
@@ -130,15 +131,13 @@ class Exp(SymbolicOp, Operation):
 
     """
 
-    coeff = 1
-    """The numerical coefficient of the operator in the exponent."""
-
     control_wires = Wires([])
 
     def __init__(self, base=None, coeff=1, do_queue=True, id=None):
-        self.coeff = coeff
         super().__init__(base, do_queue=do_queue, id=id)
         self._name = "Exp"
+        self._data = [[coeff], self.base.data]
+        self.grad_recipe = [None]
 
     def __repr__(self):
         return (
@@ -147,14 +146,35 @@ class Exp(SymbolicOp, Operation):
             else f"Exp({self.coeff} {self.base.name})"
         )
 
+    # pylint: disable=attribute-defined-outside-init
+    def __copy__(self):
+        # this method needs to be overwritten because the base must be copied too.
+        copied_op = object.__new__(type(self))
+        # copied_op must maintain inheritance structure of self
+        # Relevant for symbolic ops that mix in operation-specific components.
+
+        for attr, value in vars(self).items():
+            if attr not in {"_hyperparameters"}:
+                setattr(copied_op, attr, value)
+
+        copied_op._hyperparameters = copy(self.hyperparameters)
+        copied_op.hyperparameters["base"] = copy(self.base)
+        copied_op._data = copy(self._data)
+
+        return copied_op
+
+    @property
+    def hash(self):
+        return hash((str(self.name), self.base.hash, tuple(self.data)))
+
     @property
     def data(self):
-        return [[self.coeff], self.base.data]
+        return self._data
 
-    @data.setter
-    def data(self, new_data):
-        self.coeff = new_data[0][0]
-        self.base.data = new_data[1]
+    @property
+    def coeff(self):
+        """The numerical coefficient of the operator in the exponent."""
+        return self.data[0][0]
 
     @property
     def num_params(self):
@@ -392,16 +412,16 @@ class Evolution(Exp):
     def __init__(self, generator, param, do_queue=True, id=None):
         super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
         self._name = "Evolution"
-        self.param = param
+        self._data = [param]
 
     @property
-    def data(self):
-        return [self.param]
+    def param(self):
+        """A real coefficient with ``1j`` factored out."""
+        return self.data[0]
 
-    @data.setter
-    def data(self, new_data):
-        self.coeff = 1j * new_data[0]
-        self.param = new_data[0]
+    @property
+    def coeff(self):
+        return 1j * self.data[0]
 
     @property
     def num_params(self):
@@ -414,3 +434,8 @@ class Evolution(Exp):
             else format(math.toarray(self.data[0]), f".{decimals}f")
         )
         return base_label or f"Exp({param}j {self.base.label(decimals=decimals, cache=cache)})"
+
+    def simplify(self):
+        if isinstance(self.base, qml.ops.op_math.SProd):  # pylint: disable=no-member
+            return Evolution(self.base.base.simplify(), self.param * self.base.scalar)
+        return Evolution(self.base.simplify(), self.param)
