@@ -143,6 +143,7 @@ class TestExpval:
     def test_projector_expval(self, shots, mocker):
         """Tests that the expectation of a ``Projector`` object is computed correctly."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
+        np.random.seed(42)
 
         basis_state = np.array([0, 0, 0])
 
