@@ -90,6 +90,8 @@
   [-2.84061284]
   ```
 
+<h4>Gradient stuff</h4>
+
 * A new gradient transform, `qml.gradients.spsa_grad`, that is based on the idea of SPSA is now available.
   [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
 
@@ -114,13 +116,13 @@
 
 * Support custom measurement processes: 
   TODO: need to expand on what these features mean for users
-  * `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
+  - `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
     They contain an abstract method to process samples/quantum state/quantum script.
 
-  * Add `ExpectationMP`, `SampleMP`, `VarianceMP`, `ProbabilityMP`, `CountsMP`, `StateMP`,
+  - Add `ExpectationMP`, `SampleMP`, `VarianceMP`, `ProbabilityMP`, `CountsMP`, `StateMP`,
     `VnEntropyMP`, `MutualInfoMP`, `ClassicalShadowMP` and `ShadowExpvalMP` classes.
 
-  * Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
+  - Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
     measurement processes in `QubitDevice`.
     [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
