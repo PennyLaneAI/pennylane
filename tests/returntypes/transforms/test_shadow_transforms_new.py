@@ -15,11 +15,12 @@
 """Unit tests for the classical shadows transforms"""
 
 import builtins
+
 import pytest
 
 import pennylane as qml
-from pennylane.measurements.classical_shadow import _ShadowExpval
 from pennylane import numpy as np
+from pennylane.measurements.classical_shadow import _ShadowExpval
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
@@ -381,6 +382,6 @@ class TestExpvalTransform:
             qml.Hadamard(0)
             return qml.expval(qml.PauliZ(0))
 
-        msg = "Tape measurement must be shadow, got expval"
+        msg = "Tape measurement must be ClassicalShadow, got '_Expectation'"
         with pytest.raises(ValueError, match=msg):
             circuit()

@@ -37,7 +37,7 @@ from .measurements import (
     Variance,
     VnEntropy,
 )
-from .mid_measure import MeasurementValue, MeasurementValueError, measure
+from .mid_measure import MeasurementValue, MeasurementValueError, _MidMeasure, measure
 from .mutual_info import _MutualInfo, mutual_info
 from .probs import _Probability, probs
 from .sample import _Sample, sample
