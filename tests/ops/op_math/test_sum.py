@@ -707,15 +707,29 @@ class TestWrapperFunc:
         assert sum_class_op.wires == sum_func_op.wires
         assert sum_class_op.parameters == sum_func_op.parameters
 
-    def test_op_sum_top_level_non_lazy(self):
-        """Test the lazy=False keyword."""
-        sum_lazy = op_sum(qml.S(0), op_sum(qml.S(1), qml.T(1)), lazy=True)
-        sum_non_lazy = op_sum(qml.S(0), op_sum(qml.S(1), qml.T(1)), lazy=False)
+    def test_lazy_mode(self):
+        """Test that by default, the operator is simply wrapped in `Sum`, even if a simplification exists."""
+        op = op_sum(qml.S(0), Sum(qml.S(1), qml.T(1)))
 
-        assert len(sum_lazy.operands) == 2
-        assert len(sum_non_lazy.operands) == 3
-        assert isinstance(sum_lazy.operands[1], Sum)
-        assert isinstance(sum_non_lazy.operands[1], qml.S)
+        assert isinstance(op, Sum)
+        assert list(op) == [qml.S(0), Sum(qml.S(1), qml.T(1))]
+
+    def test_non_lazy_mode(self):
+        """Test the lazy=False keyword."""
+        op = op_sum(qml.S(0), Sum(qml.S(1), qml.T(1)), lazy=False)
+
+        assert isinstance(op, Sum)
+        assert list(op) == [qml.S(0), qml.S(1), qml.T(1)]
+
+    def test_non_lazy_mode_queueing(self):
+        """Test that if a simpification is accomplished, the metadata for the original op
+        and the new simplified op is updated."""
+        with qml.queuing.AnnotatedQueue() as q:
+            sum1 = op_sum(qml.S(1), qml.T(1))
+            sum2 = op_sum(qml.S(0), sum1, lazy=False)
+
+        assert q[sum1]["owner"] is sum2
+        assert q[sum2]["owns"] is sum1
 
 
 class TestIntegration:

@@ -619,15 +619,31 @@ class TestWrapperFunc:
         assert sprod_class_op.wires == sprod_func_op.wires
         assert sprod_class_op.parameters == sprod_func_op.parameters
 
-    def test_s_prod_top_level_non_lazy(self):
-        """Test the lazy=False keyword."""
-        sprod_lazy = s_prod(3, s_prod(4, qml.PauliX(0)), lazy=True)
-        sprod_non_lazy = s_prod(3, s_prod(4, qml.PauliX(0)), lazy=False)
+    def test_lazy_mode(self):
+        """Test that by default, the operator is simply wrapped in `SProd`, even if a simplification exists."""
+        op = s_prod(3, s_prod(4, qml.PauliX(0)))
 
-        assert sprod_lazy.scalar == 3
-        assert sprod_non_lazy.scalar == 12
-        assert isinstance(sprod_lazy.base, SProd)
-        assert isinstance(sprod_non_lazy.base, qml.PauliX)
+        assert isinstance(op, SProd)
+        assert op.scalar == 3
+        assert qml.equal(op.base, s_prod(4, qml.PauliX(0)))
+
+    def test_non_lazy_mode(self):
+        """Test the lazy=False keyword."""
+        op = s_prod(3, s_prod(4, qml.PauliX(0)), lazy=False)
+
+        assert isinstance(op, SProd)
+        assert op.scalar == 12
+        assert qml.equal(op.base, qml.PauliX(0))
+
+    def test_non_lazy_mode_queueing(self):
+        """Test that if a simpification is accomplished, the metadata for the original op
+        and the new simplified op is updated."""
+        with qml.queuing.AnnotatedQueue() as q:
+            sprod1 = s_prod(4, qml.PauliX(0))
+            sprod2 = s_prod(3, sprod1, lazy=False)
+
+        assert q[sprod1]["owner"] is sprod2
+        assert q[sprod2]["owns"] is sprod1
 
 
 class TestIntegration:
