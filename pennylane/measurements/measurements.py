@@ -397,7 +397,7 @@ class MeasurementProcess(ABC):
             .QuantumScript: a quantum script containing the operations
             required to diagonalize the observable
 
-        **Example**
+        **Example:**
 
         Consider a measurement process consisting of the expectation
         value of an Hermitian observable:
@@ -554,7 +554,28 @@ class MeasurementProcess(ABC):
 
 
 class SampleMeasurement(MeasurementProcess):
-    """Sample-based measurement process."""
+    """Sample-based measurement process.
+
+    Any class inheriting from this class should define its own ``process_samples`` method.
+
+    **Example:**
+
+    Let's create a measurement that returns the sum of all samples of the given wires.
+
+    >>> class MyMeasurement(SampleMeasurement):
+    ...     def process_samples(self, samples, wire_order, shot_range, bin_size):
+    ...         return qml.math.sum(samples[..., self.wires])
+
+    We can now execute it in a QNode:
+
+    >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     qml.PauliX(0)
+    ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+    >>> circuit()
+    tensor([1000,    0], requires_grad=True)
+    """
 
     @abstractmethod
     def process_samples(
@@ -578,7 +599,32 @@ class SampleMeasurement(MeasurementProcess):
 
 
 class StateMeasurement(MeasurementProcess):
-    """State-based measurement process."""
+    """State-based measurement process.
+
+    Any class inheriting from this class should define its own ``process_state`` method.
+
+    **Example:**
+
+    Let's create a measurement that returns the diagonal of the reduced density matrix.
+
+    >>> class MyMeasurement(StateMeasurement):
+    ...     def process_state(self, state, wire_order):
+    ...         # use the already defined `qml.density_matrix` measurement to compute the
+    ...         # reduced density matrix from the given state
+    ...         density_matrix = qml.density_matrix(wires=self.wires).process_state(state, wire_order)
+    ...         return qml.math.diagonal(density_matrix)
+
+    We can now execute it in a QNode:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     qml.Hadamard(0)
+    ...     qml.CNOT([0, 1])
+    ...     return MyMeasurement(wires=[0])
+    >>> circuit()
+    tensor([0.5, 0. , 0. , 0.5], requires_grad=True)
+    """
 
     @abstractmethod
     def process_state(self, state: Sequence[complex], wire_order: Wires):
