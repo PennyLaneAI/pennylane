@@ -366,7 +366,14 @@ def is_abstract(tensor, like=None):
         import jax
         from jax.interpreters.partial_eval import DynamicJaxprTracer
 
-        if isinstance(tensor, (jax.ad.JVPTracer, jax.interpreters.batching.BatchTracer)):
+        if isinstance(
+            tensor,
+            (
+                jax.ad.JVPTracer,
+                jax.interpreters.batching.BatchTracer,
+                jax.interpreters.partial_eval.JaxprTracer,
+            ),
+        ):
             # Tracer objects will be used when computing gradients or applying transforms.
             # If the value of the tracer is known, it will contain a ConcreteArray.
             # Otherwise, it will be abstract.

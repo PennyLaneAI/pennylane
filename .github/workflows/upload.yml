@@ -248,6 +248,19 @@ jobs:
   return-tests:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        config:
+          - { loc: "tests/returntypes/jax"}
+          - { loc: "tests/returntypes/tf"}
+          - { loc: "tests/returntypes/autograd"}
+          - { loc: "tests/returntypes/gradients"}
+          - { loc: "tests/returntypes/transforms"}
+          - { loc: "tests/returntypes/paramshift"}
+          - { loc: "tests/returntypes/finitediff"}
+          - { loc: "tests/returntypes/core"}
+          - { loc: "tests/returntypes/optimizers"}
+
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.4.1
@@ -285,7 +298,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/returntypes -n auto
+          python -m pytest ${{ matrix.config.loc }} -n auto
 
   device-tests:
     runs-on: ubuntu-latest

@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
 from pennylane.measurements import MutualInfo
-from pennylane.measurements.mutual_info import _MutualInfo
+from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.wires import Wires
 
 
@@ -66,7 +66,7 @@ class TestMutualInfo:
 
         circuit()
 
-        assert isinstance(circuit.tape[0], _MutualInfo)
+        assert isinstance(circuit.tape[0], MutualInfoMP)
 
     @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ([1, 10], (2,))])
     def test_shape(self, shots, shape):

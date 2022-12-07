@@ -83,7 +83,7 @@ def measure(wires):  # TODO: Change name to mid_measure
 T = TypeVar("T")
 
 
-class _MidMeasure(MeasurementProcess):
+class MidMeasureMP(MeasurementProcess):
     """Mid-circuit measurement."""
 
     @property
