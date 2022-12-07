@@ -328,9 +328,10 @@ class Exp(SymbolicOp, Operation):
         return Exp(self.base, self.coeff * z)
 
     def simplify(self):
-        if isinstance(self.base, qml.ops.op_math.SProd):  # pylint: disable=no-member
-            return Exp(self.base.base.simplify(), self.coeff * self.base.scalar)
-        return Exp(self.base.simplify(), self.coeff)
+        new_base = self.base.simplify()
+        if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
+            return Exp(new_base.base, self.coeff * new_base.scalar)
+        return Exp(new_base, self.coeff)
 
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
@@ -436,6 +437,7 @@ class Evolution(Exp):
         return base_label or f"Exp({param}j {self.base.label(decimals=decimals, cache=cache)})"
 
     def simplify(self):
-        if isinstance(self.base, qml.ops.op_math.SProd):  # pylint: disable=no-member
-            return Evolution(self.base.base.simplify(), self.param * self.base.scalar)
-        return Evolution(self.base.simplify(), self.param)
+        new_base = self.base.simplify()
+        if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
+            return Evolution(new_base.base, self.param * new_base.scalar)
+        return Evolution(new_base, self.param)
