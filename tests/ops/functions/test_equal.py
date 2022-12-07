@@ -1204,6 +1204,8 @@ class TestObservablesComparisons:
 
 
 class TestSymbolicOpComparison:
+    """Test comparison for subclasses of SymbolicOp"""
+
     WIRES = [(5, 5, True), (6, 7, False)]
 
     BASES = [
@@ -1300,6 +1302,7 @@ class TestSymbolicOpComparison:
 
     @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
     def test_adjoint_comparison(self, base):
+        """Test that equal compares two objects of the Adjoint class"""
         op1 = qml.adjoint(base)
         op2 = qml.adjoint(base)
         op3 = qml.adjoint(qml.PauliX(15))
@@ -1310,6 +1313,7 @@ class TestSymbolicOpComparison:
     @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
     @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
     def test_pow_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+        """Test that equal compares two objects of the Pow class"""
         op1 = qml.pow(base1, param1)
         op2 = qml.pow(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
@@ -1317,6 +1321,7 @@ class TestSymbolicOpComparison:
     @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
     @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
     def test_exp_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+        """Test that equal compares two objects of the Exp class"""
         op1 = qml.exp(base1, param1)
         op2 = qml.exp(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
@@ -1324,6 +1329,7 @@ class TestSymbolicOpComparison:
     @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
     @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
     def test_s_prod_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+        """Test that equal compares two objects of the SProd class"""
         op1 = qml.s_prod(param1, base1)
         op2 = qml.s_prod(param2, base2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
