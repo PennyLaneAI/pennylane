@@ -629,3 +629,25 @@ class TestConvertersZX:
         tape = qml.transforms.from_zx(graph)
         expected_op = [qml.Hadamard(wires=[1]), qml.CNOT(wires=[1, 0]), qml.Hadamard(wires=[1])]
         assert np.all([qml.equal(op, op_ex) for op, op_ex in zip(tape.operations, expected_op)])
+
+    def test_qnode_decorator(self):
+        """Test the QNode decorator."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.transforms.to_zx(expand_measurements=True)
+        def circuit(p):
+            qml.RZ(p[0], wires=1),
+            qml.RZ(p[1], wires=1),
+            qml.RX(p[2], wires=0),
+            qml.PauliZ(wires=0),
+            qml.RZ(p[3], wires=1),
+            qml.PauliX(wires=1),
+            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=[1, 0]),
+            qml.SWAP(wires=[0, 1]),
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
+        g = circuit(params)
+
+        assert isinstance(g, pyzx.graph.graph_s.GraphS)
