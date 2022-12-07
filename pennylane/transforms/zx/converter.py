@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transforms for interacting with PyZX, framework for ZX calculus."""
-# pylint: disable=too-many-statements, too-many-branches, too-many-return-statements, too-many-arguments, too-few-public-methods
+# pylint: disable=too-many-statements, too-many-branches, too-many-return-statements, too-many-arguments
 
 from collections import OrderedDict
 import numpy as np
@@ -21,7 +21,7 @@ from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 
-class VertexType:
+class VertexType:  # pylint: disable=too-few-public-methods
     """Type of a vertex in the graph."""
 
     BOUNDARY = 0
@@ -30,7 +30,7 @@ class VertexType:
     H_BOX = 3
 
 
-class EdgeType:
+class EdgeType:  # pylint: disable=too-few-public-methods
     """Type of an edge in the graph."""
 
     SIMPLE = 1
