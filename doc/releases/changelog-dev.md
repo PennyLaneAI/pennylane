@@ -300,6 +300,10 @@
 * Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
 
+* Updated `zyz_decomposition` function such that it now supports broadcast operators. This
+  means that single-qubit `QubitUnitary` operators, instantiated from a batch of unitaries,
+  can now be decomposed.
+  [(#3477)](https://github.com/PennyLaneAI/pennylane/pull/3477)
 
 <h4>Return types project</h4>
 
@@ -435,10 +439,6 @@
 * File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
   [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
 
-* Updated `single_qubit_unitary.py` in `qml.transforms.decompositions` such that `zyz_decomposition` now supports
-  broadcast operators. For such decompositions, `Rot` operators are always returned (no `RZ` decompositions, as is
-  the typical non-broadcast scenario.)
-  [(#3477)](https://github.com/PennyLaneAI/pennylane/pull/3477)
 
 <h3>Breaking changes</h3>
 
@@ -581,3 +581,4 @@ Jay Soni
 Antal Száva
 David Wierichs
 Moritz Willmann
+Ahmed Darwish

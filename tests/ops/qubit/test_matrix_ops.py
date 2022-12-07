@@ -16,6 +16,7 @@ Unit tests for the qubit matrix-based operations.
 """
 import numpy as np
 import pytest
+from unittest.mock import patch
 from gate_data import H, I, S, T, X, Z
 from scipy.stats import unitary_group
 
@@ -256,6 +257,15 @@ class TestQubitUnitary:
                 qml.Rot,
                 [-1.0, 2.0, -3.0],
             ),
+            # An instance of a broadcast unitary
+            (
+                np.exp(1j * 0.02)
+                * qml.Rot(
+                    np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0
+                ).matrix(),
+                qml.Rot,
+                [[1.2, 2.3], [1.2, 2.3], [1.2, 2.3]],
+            ),
         ],
     )
     def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
@@ -268,6 +278,31 @@ class TestQubitUnitary:
         assert np.allclose(decomp[0].parameters, expected_params, atol=1e-7)
         assert isinstance(decomp2[0], expected_gate)
         assert np.allclose(decomp2[0].parameters, expected_params, atol=1e-7)
+
+    def test_qubit_unitary_decomposition_calls_zyz_decomposition(self):
+        """Tests that single-qubit QubitUnitary decompositions call zyz_decomposition."""
+
+        with patch.object(
+            qml.transforms.decompositions, "zyz_decomposition"
+        ) as mocked_zyz_decomposition:
+            decomp = qml.QubitUnitary.compute_decomposition(H, wires=0)
+            np.testing.assert_equal(mocked_zyz_decomposition.call_args.args[0], H)
+            assert mocked_zyz_decomposition.call_args.args[1] == 0
+
+            decomp2 = qml.QubitUnitary(X, wires=1).decomposition()
+            np.testing.assert_equal(mocked_zyz_decomposition.call_args.args[0], X)
+            assert mocked_zyz_decomposition.call_args.args[1] == 1
+
+            assert mocked_zyz_decomposition.call_count == 2
+
+    def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
+        """Tests that broadcasted QubitUnitary decompositions are not supported."""
+        U = qml.IsingYY.compute_matrix(np.array([1.2, 2.3, 3.4]))
+
+        with pytest.raises(DecompositionUndefinedError, match="QubitUnitary does not support"):
+            qml.QubitUnitary.compute_decomposition(U, wires=[0, 1])
+        with pytest.raises(DecompositionUndefinedError, match="QubitUnitary does not support"):
+            qml.QubitUnitary(U, wires=[0, 1]).decomposition()
 
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
         """Test that QubitUnitary is not decomposed for more than two qubits."""
