@@ -134,7 +134,9 @@ class TestClassicalShadow:
         assert res.shape(device=dev) == (1, 2, shots, wires)
 
         # test an error is raised when device is None
-        msg = "The device argument is required to obtain the shape of a classical shadow measurement process"
+        msg = (
+            "The device argument is required to obtain the shape of a classical shadow measurement"
+        )
         with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
             res.shape(device=None)
 

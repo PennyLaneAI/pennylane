@@ -116,7 +116,7 @@ class TestProbs:
         the shape of certain measurements."""
         with pytest.raises(
             MeasurementShapeError,
-            match="The device argument is required to obtain the shape of the measurement process",
+            match="The device argument is required to obtain the shape of the measurement",
         ):
             measurement.shape()
 
