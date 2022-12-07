@@ -1,5 +1,5 @@
 qml.measurements
-=============
+================
 
 .. currentmodule:: pennylane.measurements
 
