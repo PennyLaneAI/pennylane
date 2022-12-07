@@ -298,6 +298,8 @@
 
 * Reduce usage of `MeasurementProcess.return_type`. Use `isinstance` checks instead.
   [(#3399)](https://github.com/PennyLaneAI/pennylane/pull/3399)
+
+* Improved the performance of executing circuits under the `jax.vmap` transformation, which can now leverage the batch-execution capabilities of some devices. [(#3452)](https://github.com/PennyLaneAI/pennylane/pull/3452)
   
 
 <h4>Return types project</h4>
@@ -614,3 +616,4 @@ Jay Soni
 Antal Száva
 David Wierichs
 Moritz Willmann
+Filippo Vicentini

@@ -178,15 +178,28 @@ def _execute_bwd_tuple(
 
     @jax.custom_jvp
     def execute_wrapper(params):
+        shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
+
         def wrapper(p):
             """Compute the forward pass."""
             new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, p)]
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
+
+            # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
+            # the shape without the vmap dimensions, while the function here will be
+            # executed with objects containing the vmap dimensions. So res[i].ndim
+            # will have an extra dimension for every `jax.vmap` wrapping this execution.
+            #
+            # The execute_fn will return an object with shape `(n_observables, batches)`
+            # but the default behaviour for `jax.pure_callback` is to add the extra
+            # dimension at the beginning, so `(batches, n_observables)`. So in here
+            # we detect with the heuristic above if we are executing under vmap and we
+            # swap the order in that case.
+            res = jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
             return res
 
-        shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
-        res = jax.pure_callback(wrapper, shape_dtype_structs, params)
+        res = jax.pure_callback(wrapper, shape_dtype_structs, params, vectorized=True)
         return res
 
     @execute_wrapper.defjvp
