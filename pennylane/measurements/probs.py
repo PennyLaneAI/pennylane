@@ -39,6 +39,14 @@ def probs(wires=None, op=None):
     .. Note::
         If no wires or observable are given, the probability of all wires is returned.
 
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+        op (Observable): Observable (with a diagonalizing_gates attribute) that rotates
+            the computational basis
+
+    Returns:
+        ProbabilityMP: measurement process instance
+
     **Example:**
 
     .. code-block:: python3
@@ -81,11 +89,6 @@ def probs(wires=None, op=None):
 
     Note that the output shape of this measurement process depends on whether
     the device simulates qubit or continuous variable quantum systems.
-
-    Args:
-        wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable): Observable (with a diagonalizing_gates attribute) that rotates
-         the computational basis
     """
 
     if isinstance(op, qml.Hamiltonian):

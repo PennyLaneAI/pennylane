@@ -58,6 +58,9 @@ def measure(wires):  # TODO: Change name to mid_measure
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
 
+    Returns:
+        MidMeasureMP: measurement process instance
+
     Raises:
         QuantumFunctionError: if multiple wires were specified
     """

@@ -43,6 +43,9 @@ def mutual_info(wires0, wires1, log_base=None):
         wires1 (Sequence[int] or int): the wires of the second subsystem
         log_base (float): Base for the logarithm.
 
+    Returns:
+        MutualInfoMP: measurement process instance
+
     **Example:**
 
     .. code-block:: python3

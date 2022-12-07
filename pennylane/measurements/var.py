@@ -29,6 +29,15 @@ from .measurements import SampleMeasurement, StateMeasurement, Variance
 def var(op: Operator):
     r"""Variance of the supplied observable.
 
+    Args:
+        op (Observable): a quantum observable object
+
+    Returns:
+        VarianceMP: measurement process instance
+
+    Raises:
+        Warning: `op` might not be hermitian
+
     **Example:**
 
     .. code-block:: python3
@@ -46,12 +55,6 @@ def var(op: Operator):
 
     >>> circuit(0.5)
     0.7701511529340698
-
-    Args:
-        op (Observable): a quantum observable object
-
-    Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")

@@ -39,8 +39,11 @@ def sample(op: Union[Observable, None] = None, wires=None):
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is ``None``
 
+    Returns:
+        SampleMP: measurement process instance
+
     Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
+        Warning: `op` might not be hermitian
         ValueError: Cannot set wires if an observable is provided
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.

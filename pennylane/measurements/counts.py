@@ -41,8 +41,11 @@ def counts(op=None, wires=None, all_outcomes=False):
         all_outcomes(bool): determines whether the returned dict will contain only the observed
             outcomes (default), or whether it will display all possible outcomes for the system
 
+    Returns:
+        CountsMP: measurement process instance
+
     Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
+        Warning: `op` might not be hermitian
         ValueError: Cannot set wires if an observable is provided
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.

@@ -32,6 +32,9 @@ def state():
     Note that the output shape of this measurement process depends on the
     number of wires defined for the device.
 
+    Returns:
+        StateMP: measurement process instance
+
     **Example:**
 
     .. code-block:: python3
@@ -60,7 +63,7 @@ def state():
     .. details::
         :title: Usage Details
 
-        A QNode with the ``qml.state`` output can be used in a cost function with
+        A QNode with the ``qml.state`` output can be used in a cost function which
         is then differentiated:
 
         >>> dev = qml.device('default.qubit', wires=2)
@@ -86,6 +89,12 @@ def density_matrix(wires):
     to trace out a part of the system. It can result in obtaining a mixed state, which can be
     only represented by the reduced density matrix.
 
+    Args:
+        wires (Sequence[int] or int): the wires of the subsystem
+
+    Returns:
+        StateMP: measurement process instance
+
     **Example:**
 
     .. code-block:: python3
@@ -105,9 +114,6 @@ def density_matrix(wires):
         [0.+0.j 1.+0.j]])
 
     The returned matrix is the reduced density matrix, where system 1 is traced out.
-
-    Args:
-        wires (Sequence[int] or int): the wires of the subsystem
 
     .. note::
 

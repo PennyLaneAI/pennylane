@@ -35,6 +35,9 @@ def vn_entropy(wires, log_base=None):
         wires (Sequence[int] or int): The wires of the subsystem
         log_base (float): Base for the logarithm.
 
+    Returns:
+        VnEntropyMP: measurement process instance
+
     **Example:**
 
     .. code-block:: python3

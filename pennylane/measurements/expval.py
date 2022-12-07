@@ -49,8 +49,11 @@ def expval(op: Operator):
     Args:
         op (Observable): a quantum observable object
 
+    Returns:
+        ExpectationMP: measurement process instance
+
     Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
+        Warning: `op` might not be hermitian
     """
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
