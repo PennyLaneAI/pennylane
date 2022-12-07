@@ -14,10 +14,11 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
-import pennylane as qml
 
-from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
+import pennylane as qml
 from pennylane.devices import DefaultQubit
+from pennylane.measurements import StateMP
+from pennylane.transforms import adjoint_metric_tensor, batch_transform, metric_tensor
 
 
 def reduced_dm(qnode, wires):
@@ -53,9 +54,9 @@ def reduced_dm(qnode, wires):
 
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
-        return_type = qnode.tape.observables[0].return_type
-        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
-            raise ValueError("The qfunc return type needs to be a state.")
+        measurements = qnode.tape.measurements
+        if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
+            raise ValueError("The qfunc measurement needs to be State.")
 
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
@@ -121,9 +122,9 @@ def purity(qnode, wires):
         # Construct tape
         qnode.construct(args, kwargs)
 
-        # Check return type
-        return_type = qnode.tape.observables[0].return_type
-        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+        # Check measurement
+        measurements = qnode.tape.measurements
+        if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
             raise ValueError("The qfunc return type needs to be a state.")
 
         state_built = qnode(*args, **kwargs)
@@ -176,8 +177,8 @@ def vn_entropy(qnode, wires, base=None):
         # If pure state directly return 0.
         if len(wires) == len(qnode.device.wires):
             qnode.construct(args, kwargs)
-            return_type = qnode.tape.observables[0].return_type
-            if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+            measurements = qnode.tape.measurements
+            if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
                 raise ValueError("The qfunc return type needs to be a state.")
             density_matrix = qnode(*args, **kwargs)
             if density_matrix.shape == (density_matrix.shape[0],):
@@ -303,13 +304,7 @@ def _compute_cfim(p, dp):
 @batch_transform
 def _make_probs(tape, wires=None, post_processing_fn=None):
     """Ignores the return types of any qnode and creates a new one that outputs probabilities"""
-    if wires is None:
-        wires = tape.wires
-
-    with qml.tape.QuantumTape() as new_tape:
-        for op in tape.operations:
-            qml.apply(op)
-        qml.probs(wires=wires)
+    qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(wires=wires or tape.wires)])
 
     if post_processing_fn is None:
 
@@ -320,7 +315,7 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
 
             return qml.math.squeeze(qml.math.stack(res))
 
-    return [new_tape], post_processing_fn
+    return [qscript], post_processing_fn
 
 
 def classical_fisher(qnode, argnums=0):

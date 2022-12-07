@@ -574,9 +574,8 @@ def _build_generator(operation, wire_order, op_gen=None):
     if op_gen is None:
         if operation.num_params < 1:  # Non-parameterized gates
             gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
-            op_gen = qml.Hamiltonian(
-                *qml.utils.decompose_hamiltonian(gen_mat, wire_order=wire_order, hide_identity=True)
-            )
+            op_gen = qml.pauli_decompose(gen_mat, wire_order=wire_order, hide_identity=True)
+
             qml.simplify(op_gen)
             if op_gen.ops[0].label() == qml.Identity(wires=[wire_order[0]]).label():
                 op_gen -= qml.Hamiltonian([op_gen.coeffs[0]], [qml.Identity(wires=wire_order[0])])

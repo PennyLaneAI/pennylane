@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import AllCounts, Counts, _Counts
+from pennylane.measurements import AllCounts, Counts, CountsMP
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -71,7 +71,7 @@ class TestCounts:
 
         circuit()
 
-        assert isinstance(circuit.tape[0], _Counts)
+        assert isinstance(circuit.tape[0], CountsMP)
 
     def test_copy(self):
         """Test that the ``__copy__`` method also copies the ``all_outcomes`` information."""
