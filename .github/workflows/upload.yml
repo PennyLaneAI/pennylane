@@ -259,6 +259,7 @@ jobs:
           - { loc: "tests/returntypes/paramshift"}
           - { loc: "tests/returntypes/finitediff"}
           - { loc: "tests/returntypes/core"}
+          - { loc: "tests/returntypes/optimizers"}
 
     steps:
       - name: Cancel Previous Runs
