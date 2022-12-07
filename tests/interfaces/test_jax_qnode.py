@@ -1666,7 +1666,8 @@ class TestJIT:
 
     def test_vmap_compared_param_broadcasting_multi_output(self, dev_name, diff_method, mode, tol):
         """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
-        vectorized=True is specified for the callback when caching is disabled."""
+        vectorized=True is specified for the callback when caching is disabled and when multiple output values
+        are returned."""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
 
@@ -1693,6 +1694,8 @@ class TestJIT:
             res = _measure_operator()
             return res
 
+        # Jax and Pennylane have a different convention on how they return expectation values.
+        # This will no longer be an issue in the new return types interface.
         assert np.allclose(
             jax.jit(minimal_circ)(pars_q), jax.jit(jax.vmap(minimal_circ))(pars_q).T, tol
         )

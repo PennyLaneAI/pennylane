@@ -1465,7 +1465,8 @@ class TestTapeExpansion:
         self, dev_name, diff_method, mode, interface, tol
     ):
         """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
-        vectorized=True is specified for the callback when caching is disabled."""
+        vectorized=True is specified for the callback when caching is disabled and when multiple output values
+        are returned."""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
 

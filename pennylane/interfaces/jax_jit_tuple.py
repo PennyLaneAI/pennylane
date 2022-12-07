@@ -199,7 +199,7 @@ def _execute_bwd_tuple(
             res = jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
             return res
 
-        res = jax.pure_callback(wrapper, shape_dtype_structs, params)
+        res = jax.pure_callback(wrapper, shape_dtype_structs, params, vectorized=True)
         return res
 
     @execute_wrapper.defjvp
