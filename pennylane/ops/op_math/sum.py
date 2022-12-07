@@ -15,6 +15,7 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+import itertools
 from copy import copy
 from typing import List
 
@@ -23,6 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
 
@@ -53,13 +55,19 @@ def op_sum(*summands, do_queue=True, id=None, lazy=True):
     array([[ 1,  1],
            [ 1, -1]])
     """
-    if not lazy:
-        summands_simp = tuple()
-        for op in summands:
-            summands_simp += op.operands if isinstance(op, Sum) else (op,)
-        return Sum(*summands_simp, do_queue=do_queue, id=id)
+    if lazy:
+        return Sum(*summands, do_queue=do_queue, id=id)
 
-    return Sum(*summands, do_queue=do_queue, id=id)
+    summands_simp = Sum(
+        *itertools.chain.from_iterable([op if isinstance(op, Sum) else [op] for op in summands])
+    )
+
+    if do_queue:
+        for op in summands:
+            QueuingManager.update_info(op, owner=summands_simp)
+        QueuingManager.update_info(summands_simp, owns=summands)
+
+    return summands_simp
 
 
 class Sum(CompositeOp):

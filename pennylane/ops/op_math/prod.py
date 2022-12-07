@@ -30,6 +30,7 @@ from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .composite import CompositeOp
@@ -69,13 +70,19 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     array([[ 0, -1],
            [ 1,  0]])
     """
-    if not lazy:
-        ops_simp = tuple()
-        for op in ops:
-            ops_simp += op.operands if isinstance(op, Prod) else (op,)
-        return Prod(*ops_simp, do_queue=do_queue, id=id)
+    if lazy:
+        return Prod(*ops, do_queue=do_queue, id=id)
 
-    return Prod(*ops, do_queue=do_queue, id=id)
+    ops_simp = Prod(
+        *itertools.chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops])
+    )
+
+    if do_queue:
+        for op in ops:
+            QueuingManager.update_info(op, owner=ops_simp)
+        QueuingManager.update_info(ops_simp, owns=ops)
+
+    return ops_simp
 
 
 class Prod(CompositeOp):
