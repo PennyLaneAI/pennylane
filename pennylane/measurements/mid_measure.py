@@ -77,7 +77,7 @@ def measure(wires):  # TODO: Change name to mid_measure
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
     _MidMeasure(wires=wire, id=measurement_id)
-    return MeasurementValue([measurement_id], fn=lambda v: v)
+    return MeasurementValue([measurement_id], processing_fn=lambda v: v)
 
 
 T = TypeVar("T")
@@ -106,18 +106,26 @@ class MeasurementValue(Generic[T]):
 
     Args:
         measurement_ids (list of str): The id of the measurement that this object depends on.
-        fn (callable): A transformation applied to the measurements.
+        processing_fn (callable): A lazily transformation applied to the measurement values.
     """
 
-    def __init__(self, measurement_ids, fn):
+    def __init__(self, measurement_ids, processing_fn):
         self.measurement_ids = measurement_ids
-        self.fn = fn
+        self.processing_fn = processing_fn
 
     def _items(self):
         """A generator representing all the possible outcomes of the MeasurementValue."""
         for i in range(2 ** len(self.measurement_ids)):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
-            yield branch, self.fn(*branch)
+            yield branch, self.processing_fn(*branch)
+
+    def branches(self):
+        """A dictionary representing all possible outcomes of the MeasurementValue."""
+        ret_dict = {}
+        for i in range(2 ** len(self.measurement_ids)):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+            ret_dict[branch] = self.processing_fn(*branch)
+        return ret_dict
 
     def __invert__(self):
         """Return a copy of the measurement value with an inverted control
@@ -193,10 +201,10 @@ class MeasurementValue(Generic[T]):
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
-        return MeasurementValue(self.measurement_ids, lambda *x: fn(self.fn(*x)))
+        return MeasurementValue(self.measurement_ids, lambda *x: fn(self.processing_fn(*x)))
 
     def _merge(self, other: "MeasurementValue"):
-        """merge two measurement values"""
+        """Merge two measurement values"""
 
         # create a new merged list with no duplicates and in lexical ordering
         merged_measurement_ids = list(set(self.measurement_ids).union(set(other.measurement_ids)))
@@ -207,12 +215,12 @@ class MeasurementValue(Generic[T]):
             sub_args_1 = (
                 x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]
             )
-            out_1 = self.fn(*sub_args_1)
+            out_1 = self.processing_fn(*sub_args_1)
 
             sub_args_2 = (
                 x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]
             )
-            out_2 = other.fn(*sub_args_2)
+            out_2 = other.processing_fn(*sub_args_2)
 
             return out_1, out_2
 
@@ -220,16 +228,16 @@ class MeasurementValue(Generic[T]):
 
     def __getitem__(self, i):
         branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
-        return self.fn(*branch)
+        return self.processing_fn(*branch)
 
     def __str__(self):
         lines = []
         for i in range(2 ** (len(self.measurement_ids))):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+            id_branch_mapping = [
+                f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))
+            ]
             lines.append(
-                "if "
-                + ",".join([f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))])
-                + " => "
-                + str(self.fn(*branch))
+                "if " + ",".join(id_branch_mapping) + " => " + str(self.processing_fn(*branch))
             )
         return "\n".join(lines)

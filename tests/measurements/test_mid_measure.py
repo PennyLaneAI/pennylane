@@ -34,10 +34,10 @@ class TestMeasure:
 
 
 class TestMeasurementValueManipulation:
-    """test all the dunder methods associated with the MeasurementValue class"""
+    """Test all the dunder methods associated with the MeasurementValue class"""
 
     def test_apply_function_to_measurement(self):
-        """test the general _apply method that can apply an arbitrary function to a measurement."""
+        """Test the general _apply method that can apply an arbitrary function to a measurement."""
 
         m = MeasurementValue(["m"], lambda v: v)
 
@@ -46,14 +46,14 @@ class TestMeasurementValueManipulation:
         assert sin_of_m[1] == np.sin(1)
 
     def test_and_with_bool(self):
-        """test the __add__ dunder method between MeasurementValue and scalar."""
+        """Test the __add__ dunder method between MeasurementValue and scalar."""
         m = MeasurementValue(["m"], lambda v: v)
         m_add = m & False
         assert not m_add[0]
         assert not m_add[1]
 
     def test_and_to_measurements(self):
-        """test the __add__ dunder method between two MeasurementValues."""
+        """Test the __add__ dunder method between two MeasurementValues."""
         m0 = MeasurementValue(["m0"], lambda v: v)
         m1 = MeasurementValue(["m1"], lambda v: v)
         sum_of_measurements = m0 & m1
@@ -63,14 +63,14 @@ class TestMeasurementValueManipulation:
         assert sum_of_measurements[3]
 
     def test_or_with_bool(self):
-        """test the __or__ dunder method between MeasurementValue and scalar."""
+        """Test the __or__ dunder method between MeasurementValue and scalar."""
         m = MeasurementValue(["m"], lambda v: v)
         m_add = m | False
         assert not m_add[0]
         assert m_add[1]
 
     def test_or_to_measurements(self):
-        """test the __or__ dunder method between two MeasurementValues."""
+        """Test the __or__ dunder method between two MeasurementValues."""
         m0 = MeasurementValue(["m0"], lambda v: v)
         m1 = MeasurementValue(["m1"], lambda v: v)
         sum_of_measurements = m0 | m1
@@ -80,14 +80,14 @@ class TestMeasurementValueManipulation:
         assert sum_of_measurements[3]
 
     def test_add_with_scalar(self):
-        """test the __add__ dunder method between MeasurementValue and scalar."""
+        """Test the __add__ dunder method between MeasurementValue and scalar."""
         m = MeasurementValue(["m"], lambda v: v)
         m_add = m + 5
         assert m_add[0] == 5
         assert m_add[1] == 6
 
     def test_add_to_measurements(self):
-        """test the __add__ dunder method between two MeasurementValues."""
+        """Test the __add__ dunder method between two MeasurementValues."""
         m0 = MeasurementValue(["m0"], lambda v: v)
         m1 = MeasurementValue(["m1"], lambda v: v)
         sum_of_measurements = m0 + m1
@@ -97,21 +97,21 @@ class TestMeasurementValueManipulation:
         assert sum_of_measurements[3] == 2
 
     def test_radd_with_scalar(self):
-        """test the __radd__ dunder method between a scalar and a MeasurementValue."""
+        """Test the __radd__ dunder method between a scalar and a MeasurementValue."""
         m = MeasurementValue(["m"], lambda v: v)
         m_add = 5 + m
         assert m_add[0] == 5
         assert m_add[1] == 6
 
     def test_sub_with_scalar(self):
-        """test the __sub__ dunder method between MeasurementValue and scalar."""
+        """Test the __sub__ dunder method between MeasurementValue and scalar."""
         m = MeasurementValue(["m"], lambda v: v)
         m_add = m - 5
         assert m_add[0] == -5
         assert m_add[1] == -4
 
     def test_sub_to_measurements(self):
-        """test the __sub__ dunder method between two MeasurementValues."""
+        """Test the __sub__ dunder method between two MeasurementValues."""
         m0 = MeasurementValue(["m0"], lambda v: v)
         m1 = MeasurementValue(["m1"], lambda v: v)
         sum_of_measurements = m0 - m1
@@ -121,21 +121,21 @@ class TestMeasurementValueManipulation:
         assert sum_of_measurements[3] == 0
 
     def test_rsub_with_scalar(self):
-        """test the __rsub__ dunder method between a scalar and a MeasurementValue."""
+        """Test the __rsub__ dunder method between a scalar and a MeasurementValue."""
         m = MeasurementValue(["m"], lambda v: v)
         m_add = 5 - m
         assert m_add[0] == 5
         assert m_add[1] == 4
 
     def test_mul_with_scalar(self):
-        """test the __mul__ dunder method between a MeasurementValue and a scalar"""
+        """Test the __mul__ dunder method between a MeasurementValue and a scalar"""
         m = MeasurementValue(["m"], lambda v: v)
         m_mul = m * 5
         assert m_mul[0] == 0
         assert m_mul[1] == 5
 
     def test_mul_with_measurement(self):
-        """test the __mul__ dunder method between two MeasurementValues."""
+        """Test the __mul__ dunder method between two MeasurementValues."""
         m0 = MeasurementValue(["m0"], lambda v: v)
         m1 = MeasurementValue(["m1"], lambda v: v)
         mul_of_measurements = m0 * m1
@@ -145,21 +145,21 @@ class TestMeasurementValueManipulation:
         assert mul_of_measurements[3] == 1
 
     def test_rmul_with_scalar(self):
-        """test the __rmul__ dunder method between a scalar and a MeasurementValue."""
+        """Test the __rmul__ dunder method between a scalar and a MeasurementValue."""
         m = MeasurementValue(["m"], lambda v: v)
         m_mul = 5 * m
         assert m_mul[0] == 0
         assert m_mul[1] == 5
 
     def test_truediv_with_scalar(self):
-        """test the __truediv__ dunder method between a MeasurementValue and a scalar"""
+        """Test the __truediv__ dunder method between a MeasurementValue and a scalar"""
         m = MeasurementValue(["m"], lambda v: v)
         m_mul = m / 5.0
         assert m_mul[0] == 0
         assert m_mul[1] == 1 / 5.0
 
     def test_truediv_with_measurement(self):
-        """test the __truediv__ dunder method between two MeasurementValues."""
+        """Test the __truediv__ dunder method between two MeasurementValues."""
         m0 = MeasurementValue(["m0"], lambda v: v) + 3.0
         m1 = MeasurementValue(["m1"], lambda v: v) + 5.0
         mul_of_measurements = m0 / m1
@@ -169,28 +169,28 @@ class TestMeasurementValueManipulation:
         assert mul_of_measurements[3] == 4.0 / 6.0
 
     def test_rtruediv_with_scalar(self):
-        """test the __rtruediv__ dunder method between a scalar and a MeasurementValue."""
+        """Test the __rtruediv__ dunder method between a scalar and a MeasurementValue."""
         m = MeasurementValue(["m"], lambda v: v) + 3.0
         m_mul = 5 / m
         assert m_mul[0] == 5 / 3.0
         assert m_mul[1] == 5 / 4.0
 
     def test_inversion(self):
-        """test the __inv__ dunder method."""
+        """Test the __inv__ dunder method."""
         m = MeasurementValue(["m"], lambda v: v)
         m_inversion = ~m
         assert m_inversion[0] is True
         assert m_inversion[1] is False
 
     def test_lt(self):
-        """test the __lt__ dunder method between a MeasurementValue and a float."""
+        """Test the __lt__ dunder method between a MeasurementValue and a float."""
         m = MeasurementValue(["m"], lambda v: v)
         m_inversion = m < 0.5
         assert m_inversion[0] is True
         assert m_inversion[1] is False
 
     def test_lt_with_other_measurement_value(self):
-        """test the __lt__ dunder method between a two MeasurementValues"""
+        """Test the __lt__ dunder method between a two MeasurementValues"""
         m1 = MeasurementValue(["m1"], lambda v: v)
         m2 = MeasurementValue(["m2"], lambda v: v)
         compared = m1 < m2
@@ -200,14 +200,14 @@ class TestMeasurementValueManipulation:
         assert compared[3] is False
 
     def test_gt(self):
-        """test the __gt__ dunder method between a MeasurementValue and a flaot."""
+        """Test the __gt__ dunder method between a MeasurementValue and a flaot."""
         m = MeasurementValue(["m"], lambda v: v)
         m_inversion = m > 0.5
         assert m_inversion[0] is False
         assert m_inversion[1] is True
 
     def test_gt_with_other_measurement_value(self):
-        """test the __gt__ dunder method between two MeasurementValues."""
+        """Test the __gt__ dunder method between two MeasurementValues."""
         m1 = MeasurementValue(["m1"], lambda v: v)
         m2 = MeasurementValue(["m2"], lambda v: v)
         compared = m1 > m2
@@ -217,14 +217,14 @@ class TestMeasurementValueManipulation:
         assert compared[3] is False
 
     def test_le(self):
-        """test the __le__ dunder method between a MeasurementValue and a float."""
+        """Test the __le__ dunder method between a MeasurementValue and a float."""
         m = MeasurementValue(["m"], lambda v: v)
         m_inversion = m <= 0.5
         assert m_inversion[0] is True
         assert m_inversion[1] is False
 
     def test_le_with_other_measurement_value(self):
-        """test the __le__ dunder method between a two MeasurementValues"""
+        """Test the __le__ dunder method between a two MeasurementValues"""
         m1 = MeasurementValue(["m1"], lambda v: v)
         m2 = MeasurementValue(["m2"], lambda v: v)
         compared = m1 <= m2
@@ -234,14 +234,14 @@ class TestMeasurementValueManipulation:
         assert compared[3] is True
 
     def test_ge(self):
-        """test the __ge__ dunder method between a MeasurementValue and a flaot."""
+        """Test the __ge__ dunder method between a MeasurementValue and a flaot."""
         m = MeasurementValue(["m"], lambda v: v)
         m_inversion = m >= 0.5
         assert m_inversion[0] is False
         assert m_inversion[1] is True
 
     def test_ge_with_other_measurement_value(self):
-        """test the __ge__ dunder method between two MeasurementValues."""
+        """Test the __ge__ dunder method between two MeasurementValues."""
         m1 = MeasurementValue(["m1"], lambda v: v)
         m2 = MeasurementValue(["m2"], lambda v: v)
         compared = m1 >= m2
@@ -251,21 +251,21 @@ class TestMeasurementValueManipulation:
         assert compared[3] is True
 
     def test_equality_with_scalar(self):
-        """test the __eq__ dunder method between a MeasurementValue and an integer."""
+        """Test the __eq__ dunder method between a MeasurementValue and an integer."""
         m = MeasurementValue(["m"], lambda v: v)
         m_eq = m == 0
         assert m_eq[0] is True  # confirming value is actually eq to True, not just truthy
         assert m_eq[1] is False
 
     def test_equality_with_scalar_opposite(self):
-        """test the __eq__ dunder method between a MeasurementValue and an integer."""
+        """Test the __eq__ dunder method between a MeasurementValue and an integer."""
         m = MeasurementValue(["m"], lambda v: v)
         m_eq = m == 1
         assert m_eq[0] is False
         assert m_eq[1] is True
 
     def test_eq_with_other_measurement_value(self):
-        """test the __eq__ dunder method between two MeasurementValues."""
+        """Test the __eq__ dunder method between two MeasurementValues."""
         m1 = MeasurementValue(["m1"], lambda v: v)
         m2 = MeasurementValue(["m2"], lambda v: v)
         compared = m1 == m2
@@ -275,7 +275,7 @@ class TestMeasurementValueManipulation:
         assert compared[3] is True
 
     def test_merge_measurements_values_dependant_on_same_measurement(self):
-        """test that the _merge operation does not create more than 2 branches when combining two MeasurementValues
+        """Test that the _merge operation does not create more than 2 branches when combining two MeasurementValues
         that are based on the same measurement."""
         m0 = MeasurementValue(["m"], lambda v: v)
         m1 = MeasurementValue(["m"], lambda v: v)
@@ -284,7 +284,7 @@ class TestMeasurementValueManipulation:
         assert combined[1] == 2
 
     def test_combine_measurement_value_with_non_measurement(self):
-        """test that we can use dunder methods to combine a MeasurementValue with the underlying "primitive"
+        """Test that we can use dunder methods to combine a MeasurementValue with the underlying "primitive"
         of that measurement value."""
         m0 = MeasurementValue(["m"], lambda v: v)
         out = m0 + 10
@@ -292,12 +292,12 @@ class TestMeasurementValueManipulation:
         assert out[1] == 11
 
     def test_str(self):
-        """test that the output of the __str__ dunder method is as expected"""
+        """Test that the output of the __str__ dunder method is as expected"""
         m = MeasurementValue(["m"], lambda v: v)
         assert str(m) == "if m=0 => 0\nif m=1 => 1"
 
     def test_complex_str(self):
-        """test that the output of the __str__ dunder method is as expected
+        """Test that the output of the __str__ dunder method is as expected
         w.r.t a more complicated MeasurementValue"""
         a = MeasurementValue(["a"], lambda v: v)
         b = MeasurementValue(["b"], lambda v: v)
