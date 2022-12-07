@@ -57,7 +57,7 @@ def test_import_pyzx(monkeypatch):
         m.setitem(sys.modules, "pyzx", None)
 
         with pytest.raises(ImportError, match="This feature requires PyZX."):
-            qml.transforms.to_zx(qscript=QuantumScript())
+            qml.transforms.to_zx(QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]))
 
         with pytest.raises(ImportError, match="This feature requires PyZX."):
             qml.transforms.from_zx(graph=[])

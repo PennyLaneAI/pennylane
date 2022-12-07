@@ -17,6 +17,7 @@
 from collections import OrderedDict
 import numpy as np
 import pennylane as qml
+from pennylane.transforms.op_transforms import op_transform
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
@@ -37,13 +38,23 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
-def to_zx(qscript, expand_measurements=False):
-    """It converts a PennyLane quantum script to a ZX-Graph in PyZX.
+@op_transform
+def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
+    """It converts a PennyLane quantum script to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
+    The graph can be optimized and transformed by well-known ZX-calculus reductions.
+
     Args:
         qscript(QuantumScript): The PennyLane quantum script.
         expand_measurements(bool): The expansion will be applied on measurements that are not in the Z-basis and
             rotations will be added to the operations.
+
+    **Example**
     """
+    return None
+
+
+@to_zx.tape_transform
+def _to_zx(qscript, expand_measurements=False):
     # Avoid to make PyZX a requirement for PennyLane.
     try:
         # pylint: disable=import-outside-toplevel
