@@ -53,7 +53,9 @@ ops = {
     "SX",
     "CNOT",
     "CZ",
+    "CCZ",
     "CY",
+    "CH",
     "SWAP",
     "ISWAP",
     "SISWAP",
@@ -100,6 +102,7 @@ ops = {
     "QubitCarry",
     "QubitSum",
     "OrbitalRotation",
+    "FermionicSWAP",
     "Barrier",
     "WireCut",
 }

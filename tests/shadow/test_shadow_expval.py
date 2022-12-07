@@ -13,11 +13,13 @@
 # limitations under the License.
 """Unit tests for the classical shadows expval measurement process"""
 
-import pytest
 import copy
+
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.measurements.classical_shadow import _ShadowExpval
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
@@ -102,7 +104,7 @@ class TestExpvalMeasurement:
         copied_res = copy.copy(res)
         assert type(copied_res) == type(res)
         assert copied_res.return_type == res.return_type
-        assert copied_res.H == res.H
+        assert qml.equal(copied_res.H, res.H)
         assert copied_res.k == res.k
         assert copied_res.seed == res.seed
 
@@ -140,7 +142,15 @@ class TestExpvalMeasurement:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "PauliY"
         assert len(tape.measurements) == 1
-        assert isinstance(tape.measurements[0], qml.measurements.ShadowMeasurementProcess)
+        assert isinstance(tape.measurements[0], _ShadowExpval)
+
+    def test_seed_recipes_deprecated(self):
+        """Test that using the ``seed_recipes`` argument is deprecated."""
+        with pytest.warns(
+            UserWarning,
+            match="Using ``seed_recipes`` is deprecated. Please use ``seed`` instead",
+        ):
+            qml.shadow_expval(H=qml.PauliX(0), seed_recipes=False)
 
 
 obs_hadamard = [
@@ -201,10 +211,12 @@ class TestExpvalForward:
         superposition of qubits"""
         circuit = hadamard_circuit(3, shots=100000)
         actual = circuit(obs, k=k)
+        new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device)
 
         assert actual.shape == (len(obs_hadamard),)
         assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(new_actual, expected, atol=1e-1)
 
     def test_max_entangled_expval(
         self, k=1, obs=obs_max_entangled, expected=expected_max_entangled
@@ -213,10 +225,12 @@ class TestExpvalForward:
         entangled state"""
         circuit = max_entangled_circuit(3, shots=100000)
         actual = circuit(obs, k=k)
+        new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device)
 
         assert actual.shape == (len(obs_max_entangled),)
         assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(new_actual, expected, atol=1e-1)
 
     def test_non_pauli_error(self):
         """Test that an error is raised when a non-Pauli observable is passed"""
@@ -236,10 +250,12 @@ class TestExpvalForwardInterfaces:
 
         circuit = qft_circuit(3, shots=100000, interface=interface)
         actual = circuit(obs, k=k)
+        new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device)
 
         assert actual.shape == (len(obs_qft),)
         assert actual.dtype == torch.float64 if interface == "torch" else np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(new_actual, expected, atol=1e-1)
 
 
 obs_strongly_entangled = [

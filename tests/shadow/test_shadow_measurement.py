@@ -14,10 +14,12 @@
 """Unit tests for the classical shadows measurement process"""
 # pylint:disable=no-self-use, import-outside-toplevel, redefined-outer-name, unpacking-non-sequence, too-few-public-methods, not-an-iterable, inconsistent-return-statements
 import copy
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.measurements import ClassicalShadow
 
 
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):
@@ -40,7 +42,7 @@ def get_circuit(wires, shots, seed_recipes, interface="autograd", device="defaul
         for target in range(1, wires):
             qml.CNOT(wires=[0, target])
 
-        return qml.classical_shadow(wires=range(wires), seed_recipes=seed_recipes)
+        return qml.classical_shadow(wires=range(wires), seed=seed_recipes)
 
     return circuit
 
@@ -111,16 +113,16 @@ wires_list = [1, 3]
 
 
 @pytest.mark.parametrize("wires", wires_list)
-class TestShadowMeasurement:
+class TestClassicalShadow:
     """Unit tests for classical_shadow measurement"""
 
     shots_list = [1, 100]
-    seed_recipes_list = [True, False]
+    seed_recipes_list = [None, 74]  # random seed
 
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_measurement_process_numeric_type(self, wires, seed):
         """Test that the numeric type of the MeasurementProcess instance is correct"""
-        res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
+        res = qml.classical_shadow(wires=range(wires), seed=seed)
         assert res.numeric_type == int
 
     @pytest.mark.parametrize("shots", shots_list)
@@ -128,7 +130,7 @@ class TestShadowMeasurement:
     def test_measurement_process_shape(self, wires, shots, seed):
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
-        res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
+        res = qml.classical_shadow(wires=range(wires), seed=seed)
         assert res.shape(device=dev) == (1, 2, shots, wires)
 
         # test an error is raised when device is None
@@ -153,10 +155,10 @@ class TestShadowMeasurement:
     def test_measurement_process_copy(self, wires, seed):
         """Test that the attributes of the MeasurementProcess instance are
         correctly copied"""
-        res = qml.classical_shadow(wires=range(wires), seed_recipes=seed)
+        res = qml.classical_shadow(wires=range(wires), seed=seed)
 
         copied_res = copy.copy(res)
-        assert type(copied_res) == type(res)
+        assert isinstance(copied_res, ClassicalShadow)
         assert copied_res.return_type == res.return_type
         assert copied_res.wires == res.wires
         assert copied_res.seed == res.seed
@@ -208,22 +210,33 @@ class TestShadowMeasurement:
 
         circuit = circuit_fn(wires, shots=shots, interface=interface, device=device)
         bits, recipes = circuit()
+        new_bits, new_recipes = circuit.tape.measurements[0].process(circuit.tape, circuit.device)
 
         # test that the recipes follow a rough uniform distribution
         ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
         assert np.allclose(ratios, 1 / 3, atol=1e-1)
+        new_ratios = np.unique(new_recipes, return_counts=True)[1] / (wires * shots)
+        assert np.allclose(new_ratios, 1 / 3, atol=1e-1)
 
         # test that the bit is 0 for all X measurements
         assert qml.math.allequal(bits[recipes == basis_recipe], 0)
+        assert qml.math.allequal(new_bits[new_recipes == basis_recipe], 0)
 
         # test that the bits are uniformly distributed for all Y and Z measurements
         bits1 = bits[recipes == (basis_recipe + 1) % 3]
         ratios1 = np.unique(bits1, return_counts=True)[1] / bits1.shape[0]
         assert np.allclose(ratios1, 1 / 2, atol=1e-1)
+        new_bits1 = new_bits[new_recipes == (basis_recipe + 1) % 3]
+        new_ratios1 = np.unique(new_bits1, return_counts=True)[1] / new_bits1.shape[0]
+        assert np.allclose(new_ratios1, 1 / 2, atol=1e-1)
 
         bits2 = bits[recipes == (basis_recipe + 2) % 3]
         ratios2 = np.unique(bits2, return_counts=True)[1] / bits2.shape[0]
         assert np.allclose(ratios2, 1 / 2, atol=1e-1)
+
+        new_bits2 = new_bits[new_recipes == (basis_recipe + 2) % 3]
+        new_ratios2 = np.unique(new_bits2, return_counts=True)[1] / new_bits2.shape[0]
+        assert np.allclose(new_ratios2, 1 / 2, atol=1e-1)
 
     @pytest.mark.parametrize("seed", seed_recipes_list)
     def test_shots_none_error(self, wires, seed):
@@ -233,7 +246,7 @@ class TestShadowMeasurement:
 
         msg = "The number of shots has to be explicitly set on the device when using sample-based measurements"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            shadow = circuit()
+            circuit()
 
     @pytest.mark.parametrize("shots", shots_list)
     def test_multi_measurement_error(self, wires, shots):
@@ -252,4 +265,12 @@ class TestShadowMeasurement:
 
         msg = "Classical shadows cannot be returned in combination with other return types"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            shadow = circuit()
+            circuit()
+
+    def test_seed_recipes_deprecated(self, wires):
+        """Test that using the ``seed_recipes`` argument is deprecated."""
+        with pytest.warns(
+            UserWarning,
+            match="Using ``seed_recipes`` is deprecated. Please use ``seed`` instead",
+        ):
+            qml.classical_shadow(wires=wires, seed_recipes=False)

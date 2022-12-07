@@ -21,7 +21,8 @@ from pennylane import qnode
 
 pytestmark = pytest.mark.autograd
 
-shots = [((5, 2), 1, 10), (1, 10, (5, 2))]
+shots_and_num_copies = [(((5, 2), 1, 10), 4), ((1, 10, (5, 2)), 4)]
+shots_and_num_copies_hess = [(((5, 1), 10), 2), ((10, (5, 1)), 2)]
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 10e-2}],
@@ -29,12 +30,14 @@ qubit_device_and_diff_method = [
 ]
 
 
-@pytest.mark.parametrize("shots", shots)
+@pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
 @pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
 class TestReturnWithShotVectors:
-    """Class to test the shape of the Grad/Jacobian/Hessian with different return types and shot vectors."""
+    """Class to test the shape of the Jacobian/Hessian with different return types and shot vectors."""
 
-    def test_jac_single_measurement_param(self, dev_name, diff_method, gradient_kwargs, shots):
+    def test_jac_single_measurement_param(
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
+    ):
         """For one measurement and one param, the gradient is a float."""
         dev = qml.device(dev_name, wires=1, shots=shots)
 
@@ -52,13 +55,10 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert jac.shape == (num_copies,)
 
     def test_jac_single_measurement_multiple_param(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
         dev = qml.device(dev_name, wires=1, shots=shots)
@@ -78,16 +78,13 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost, argnum=[0, 1])(a, b)
 
         assert isinstance(jac, tuple)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert len(jac) == 2
         for j in jac:
             assert isinstance(j, np.ndarray)
             assert j.shape == (num_copies,)
 
     def test_jacobian_single_measurement_multiple_param_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
         dev = qml.device(dev_name, wires=1, shots=shots)
@@ -106,13 +103,10 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert jac.shape == (num_copies, 2)
 
     def test_jacobian_single_measurement_param_probs(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
@@ -132,13 +126,10 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert jac.shape == (num_copies, 4)
 
     def test_jacobian_single_measurement_probs_multiple_param(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
@@ -159,16 +150,13 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost, argnum=[0, 1])(a, b)
 
         assert isinstance(jac, tuple)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert len(jac) == 2
         for j in jac:
             assert isinstance(j, np.ndarray)
             assert j.shape == (num_copies, 4)
 
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
@@ -188,13 +176,10 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert jac.shape == (num_copies, 4, 2)
 
     def test_jacobian_expval_expval_multiple_params(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The gradient of multiple measurements with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2, shots=shots)
@@ -216,16 +201,13 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost, argnum=[0, 1])(par_0, par_1)
 
         assert isinstance(jac, tuple)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert len(jac) == 2
         for j in jac:
             assert isinstance(j, np.ndarray)
             assert j.shape == (num_copies, 2)
 
     def test_jacobian_expval_expval_multiple_params_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         dev = qml.device(dev_name, wires=2, shots=shots)
@@ -246,12 +228,11 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert jac.shape == (num_copies, 2, 3)
 
-    def test_jacobian_var_var_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
+    def test_jacobian_var_var_multiple_params(
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
+    ):
         """The jacobian of multiple measurements with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2, shots=shots)
 
@@ -272,16 +253,13 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost, argnum=[0, 1])(par_0, par_1)
 
         assert isinstance(jac, tuple)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert len(jac) == 2
         for j in jac:
             assert isinstance(j, np.ndarray)
             assert j.shape == (num_copies, 2)
 
     def test_jacobian_var_var_multiple_params_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         dev = qml.device(dev_name, wires=2, shots=shots)
@@ -302,13 +280,10 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert jac.shape == (num_copies, 2, 3)
 
     def test_jacobian_multiple_measurement_single_param(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The jacobian of multiple measurements with a single params return an array."""
         dev = qml.device(dev_name, wires=2, shots=shots)
@@ -328,13 +303,10 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert jac.shape == (num_copies, 5)
 
     def test_jacobian_multiple_measurement_multiple_param(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2, shots=shots)
@@ -355,16 +327,13 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost, argnum=[0, 1])(a, b)
 
         assert isinstance(jac, tuple)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert len(jac) == 2
         for j in jac:
             assert isinstance(j, np.ndarray)
             assert j.shape == (num_copies, 5)
 
     def test_jacobian_multiple_measurement_multiple_param_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         dev = qml.device(dev_name, wires=2, shots=shots)
@@ -384,12 +353,18 @@ class TestReturnWithShotVectors:
         jac = qml.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert jac.shape == (num_copies, 5, 2)
 
-    def test_hessian_expval_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
+
+@pytest.mark.slow
+@pytest.mark.parametrize("shots,num_copies", shots_and_num_copies_hess)
+@pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
+class TestReturnShotVectorHessian:
+    """Class to test the shape of the Hessian with different return types and shot vectors."""
+
+    def test_hessian_expval_multiple_params(
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
+    ):
         """The hessian of a single measurement with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2, shots=shots)
 
@@ -413,16 +388,13 @@ class TestReturnWithShotVectors:
         hess = qml.jacobian(cost, argnum=[0, 1])(par_0, par_1)
 
         assert isinstance(hess, tuple)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert len(hess) == 2
         for h in hess:
             assert isinstance(h, np.ndarray)
             assert h.shape == (2, num_copies)
 
     def test_hessian_expval_multiple_param_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The hessian of single measurement with a multiple params array return a single array."""
         dev = qml.device(dev_name, wires=2, shots=shots)
@@ -446,12 +418,11 @@ class TestReturnWithShotVectors:
         hess = qml.jacobian(cost)(params)
 
         assert isinstance(hess, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert hess.shape == (num_copies, 2, 2)
 
-    def test_hessian_var_multiple_params(self, dev_name, diff_method, gradient_kwargs, shots):
+    def test_hessian_var_multiple_params(
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
+    ):
         """The hessian of a single measurement with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2, shots=shots)
 
@@ -475,15 +446,14 @@ class TestReturnWithShotVectors:
         hess = qml.jacobian(cost, argnum=[0, 1])(par_0, par_1)
 
         assert isinstance(hess, tuple)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert len(hess) == 2
         for h in hess:
             assert isinstance(h, np.ndarray)
             assert h.shape == (2, num_copies)
 
-    def test_hessian_var_multiple_param_array(self, dev_name, diff_method, gradient_kwargs, shots):
+    def test_hessian_var_multiple_param_array(
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
+    ):
         """The hessian of single measurement with a multiple params array return a single array."""
         dev = qml.device(dev_name, wires=2, shots=shots)
 
@@ -506,19 +476,12 @@ class TestReturnWithShotVectors:
         hess = qml.jacobian(cost)(params)
 
         assert isinstance(hess, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert hess.shape == (num_copies, 2, 2)
 
     def test_hessian_probs_expval_multiple_params(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-
-        # override shots to speed up the test
-        shots = (5, 10)
-
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = np.array(0.1)
@@ -541,21 +504,15 @@ class TestReturnWithShotVectors:
         hess = qml.jacobian(cost, argnum=[0, 1])(par_0, par_1)
 
         assert isinstance(hess, tuple)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert len(hess) == 2
         for h in hess:
             assert isinstance(h, np.ndarray)
             assert h.shape == (2, num_copies, 5)
 
     def test_hessian_expval_probs_multiple_param_array(
-        self, dev_name, diff_method, gradient_kwargs, shots
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
-
-        # override shots to speed up the test
-        shots = (5, 10)
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
@@ -578,29 +535,23 @@ class TestReturnWithShotVectors:
         hess = qml.jacobian(cost)(params)
 
         assert isinstance(hess, np.ndarray)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert hess.shape == (num_copies, 5, 2, 2)
 
-
-qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", {"h": 10e-2}],
-    ["default.qubit", "parameter-shift", {}],
-]
 
 finite_diff_shot_vec_tol = 0.3
 param_shift_shot_vec_tol = 10e-3
 
-shots = [(1000000, 900000, 800000), (1000000, (900000, 2))]
+shots_and_num_copies = [((1000000, 900000, 800000), 3), ((1000000, (900000, 2)), 3)]
 
 
-@pytest.mark.parametrize("shots", shots)
+@pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
 @pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
 class TestReturnShotVectorIntegration:
     """Tests for the integration of shots with the autograd interface."""
 
-    def test_single_expectation_value(self, dev_name, diff_method, gradient_kwargs, shots):
+    def test_single_expectation_value(
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
+    ):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         dev = qml.device(dev_name, wires=2, shots=shots)
@@ -621,9 +572,6 @@ class TestReturnShotVectorIntegration:
         all_res = qml.jacobian(cost, argnum=[0, 1])(x, y)
 
         assert isinstance(all_res, tuple)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert len(all_res) == 2
 
         expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
@@ -634,7 +582,9 @@ class TestReturnShotVectorIntegration:
             assert res.shape == (num_copies,)
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
-    def test_prob_expectation_values(self, dev_name, diff_method, gradient_kwargs, shots):
+    def test_prob_expectation_values(
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies
+    ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device(dev_name, wires=2, shots=shots)
@@ -655,9 +605,6 @@ class TestReturnShotVectorIntegration:
         all_res = qml.jacobian(cost, argnum=[0, 1])(x, y)
 
         assert isinstance(all_res, tuple)
-        num_copies = sum(
-            [1 for x in shots if isinstance(x, int)] + [x[1] for x in shots if isinstance(x, tuple)]
-        )
         assert len(all_res) == 2
 
         expected = np.array(
