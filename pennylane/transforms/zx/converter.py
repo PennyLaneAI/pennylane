@@ -66,6 +66,7 @@ def to_zx(qscript, expand_measurements=False):
     c_mapper = TargetMapper()
 
     # Map the wires to consecutive wires
+
     consecutive_wires = Wires(range(len(qscript.wires)))
     consecutive_wires_map = OrderedDict(zip(qscript.wires, consecutive_wires))
     qscript = qml.map_wires(input=qscript, wire_map=consecutive_wires_map)
@@ -90,17 +91,7 @@ def to_zx(qscript, expand_measurements=False):
 
     # Define specific decompositions
     for op in qscript.operations:
-        if op.name == "PauliY":
-            decomp = [
-                qml.S(wires=0),
-                qml.RX(np.pi / 2, wires=0),
-                qml.RZ(np.pi + np.pi, wires=0),
-                qml.RX(np.pi / 2, wires=0),
-                qml.RZ(3 * np.pi, wires=0),
-                qml.S(wires=0),
-            ]
-            expanded_operations.extend(decomp)
-        elif op.name == "RY":
+        if op.name == "RY":
             theta = op.data[0]
             decomp = [
                 qml.RX(np.pi / 2, wires=0),
@@ -197,6 +188,7 @@ def from_zx(graph, split_phases=True):
             qubit_1 = qubits[vertex]
             param = params[vertex]
             type_1 = types[vertex]
+
             neighbors = [w for w in graph.neighbors(vertex) if graph_rows[w] < row_key]
 
             # The graph is not diagram like.
@@ -248,7 +240,7 @@ def from_zx(graph, split_phases=True):
                         operations.append(op)
                 elif param == 1:
                     op = (
-                        qml.adjoint(qml.PauliZ(wires=qubit_1))
+                        qml.PauliZ(wires=qubit_1)
                         if type_1 == VertexType.Z
                         else qml.PauliX(wires=qubit_1)
                     )
@@ -270,7 +262,6 @@ def from_zx(graph, split_phases=True):
             ]
 
             for neighbor in neighbors:
-
                 type_2 = types[neighbor]
                 qubit_2 = qubits[neighbor]
 
@@ -294,11 +285,8 @@ def from_zx(graph, split_phases=True):
                         raise qml.QuantumFunctionError(
                             "A green and red node connected by a Hadamard edge does not have a circuit representation."
                         )
-
-                    if type_1 == VertexType.Z:
-                        operations.append(qml.CNOT(wires=[qubit_1, qubit_2]))
-                    else:
-                        operations.append(qml.CNOT(wires=[qubit_2, qubit_1]))
+                    # Type1 is always of type Z therefore the qubits are already ordered.
+                    operations.append(qml.CNOT(wires=[qubit_1, qubit_2]))
 
     qscript = QuantumScript(operations, [], prep=[])
     return qscript

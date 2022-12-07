@@ -14,14 +14,14 @@
 """
 Unit tests for the `pennylane.transforms.zx` folder.
 """
+import sys
+
 import numpy as np
 import pytest
 import pennylane as qml
 from pennylane.tape import QuantumScript
 
 pyzx = pytest.importorskip("pyzx")
-
-import pennylane as qml
 
 pytestmark = pytest.mark.zx
 
@@ -47,7 +47,20 @@ expanded_operations = [qml.PauliY(wires=0), qml.PhaseShift(0.3, wires=0), qml.RY
 
 non_diagram_like_operations = [qml.CCZ(wires=[0, 1, 2]), qml.Toffoli(wires=[0, 1, 2])]
 
-circuits = []
+split = [True, False]
+
+
+def test_import_pyzx(monkeypatch):
+    """Test if an ImportError is raised by to_zx function."""
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "pyzx", None)
+
+        with pytest.raises(ImportError, match="This feature requires PyZX."):
+            qml.transforms.to_zx(qscript=QuantumScript())
+
+        with pytest.raises(ImportError, match="This feature requires PyZX."):
+            qml.transforms.from_zx(graph=[])
 
 
 class TestConvertersZX:
@@ -179,13 +192,16 @@ class TestConvertersZX:
         with pytest.raises(qml.QuantumFunctionError, match="Graph doesn't seem circuit like"):
             qml.transforms.from_zx(zx_g)
 
+    @pytest.mark.parametrize("split", split)
     @pytest.mark.parametrize("operation", non_diagram_like_operations)
-    def test_circuit(self, operation):
+    def test_circuit(self, operation, split):
         """Test a simple circuit."""
 
         I = qml.math.eye(2**2)
 
         operations = [
+            qml.RZ(5 / 4, wires=1),
+            qml.RZ(3 / 4, wires=1),
             qml.RX(0.1, wires=0),
             qml.PauliZ(wires=0),
             qml.RZ(0.3, wires=1),
@@ -206,6 +222,20 @@ class TestConvertersZX:
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
         # Remove global phase
         mat_product /= mat_product[0, 0]
+        assert qml.math.allclose(mat_product, I)
+
+        qscript_back = qml.transforms.from_zx(zx_g, split_phases=split)
+        assert isinstance(qscript_back, qml.tape.QuantumScript)
+
+        matrix_qscript_back = qml.matrix(
+            qscript_back, wire_order=[i for i in range(0, len(qscript.wires))]
+        )
+
+        # Check whether the two matrices are each others conjugate transposes
+        mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_qscript_back.T))
+        # Remove global phase
+        mat_product /= mat_product[0, 0]
+
         assert qml.math.allclose(mat_product, I)
 
     def test_circuit_mod_5_4(self):
@@ -376,47 +406,6 @@ class TestConvertersZX:
         mat_product /= mat_product[0, 0]
         assert qml.math.allclose(mat_product, I)
 
-    def test_embeddings(self):
-        """Test with expansion of prep."""
-        I = qml.math.eye(2**2)
-
-        prep = [qml.AngleEmbedding(features=[1, 2], wires=range(2), rotation="Z")]
-
-        operations = [
-            qml.RX(0.1, wires=0),
-            qml.PauliZ(wires=0),
-            qml.RZ(0.3, wires=1),
-            qml.PauliX(wires=1),
-            qml.CNOT(wires=[0, 1]),
-            qml.CNOT(wires=[1, 0]),
-            qml.SWAP(wires=[0, 1]),
-        ]
-
-        qscript = QuantumScript(operations, [], prep)
-        zx_g = qml.transforms.to_zx(qscript)
-
-        assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
-
-        matrix_qscript = qml.matrix(qscript)
-        matrix_zx = zx_g.to_matrix()
-        # Check whether the two matrices are each others conjugate transposes
-        mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
-        # Remove global phase
-        mat_product /= mat_product[0, 0]
-        assert qml.math.allclose(mat_product, I)
-
-        qscript_back = qml.transforms.from_zx(zx_g)
-        assert isinstance(qscript_back, qml.tape.QuantumScript)
-
-        matrix_qscript_back = qml.matrix(
-            qscript_back, wire_order=[i for i in range(0, len(qscript.wires))]
-        )
-        # Check whether the two matrices are each others conjugate transposes
-        mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_qscript_back.T))
-        # Remove global phase
-        mat_product /= mat_product[0, 0]
-        assert qml.math.allclose(mat_product, I)
-
     def test_no_decomposition(self):
         """Cross qubit connections is not diagram-like."""
         graph = pyzx.Graph(None)
@@ -484,8 +473,8 @@ class TestConvertersZX:
         ):
             qml.transforms.to_zx(qscript)
 
-    def test_same_type_edge_simple(self):
-        """Test that a Green-Green gate with simple edge has no corresponding circuit."""
+    def test_same_type_nodes_simple_edge(self):
+        """Test that a Green-Green nodes with simple edge has no corresponding circuit."""
         graph = pyzx.Graph(None)
         q_mapper = pyzx.circuit.gates.TargetMapper()
         c_mapper = pyzx.circuit.gates.TargetMapper()
@@ -500,7 +489,7 @@ class TestConvertersZX:
             q_mapper.set_next_row(i, 1)
             q_mapper.set_qubit(i, i)
 
-        # Create Green Red with Hadamard Edge
+        # Create Green Green with simple Edge
         r = max(q_mapper.next_row(1), q_mapper.next_row(0))
 
         v1 = graph.add_vertex(pyzx.VertexType.Z, q_mapper.to_qubit(1), r)
@@ -536,3 +525,107 @@ class TestConvertersZX:
             match="Two green or respectively two red nodes connected by a ",
         ):
             qml.transforms.from_zx(graph)
+
+    def test_different_type_node_hadamard_edge(self):
+        """Test that a Green-Red nodes with Hadamard edge has no corresponding circuit."""
+        graph = pyzx.Graph(None)
+        q_mapper = pyzx.circuit.gates.TargetMapper()
+        c_mapper = pyzx.circuit.gates.TargetMapper()
+
+        inputs = []
+
+        # Create the qubits in the graph and the qubit mapper
+        for i in range(2):
+            vertex = graph.add_vertex(pyzx.VertexType.BOUNDARY, i, 0)
+            inputs.append(vertex)
+            q_mapper.set_prev_vertex(i, vertex)
+            q_mapper.set_next_row(i, 1)
+            q_mapper.set_qubit(i, i)
+
+        # Create Green Red with Hadamard Edge
+        r = max(q_mapper.next_row(1), q_mapper.next_row(0))
+
+        v1 = graph.add_vertex(pyzx.VertexType.Z, q_mapper.to_qubit(1), r)
+        graph.add_edge(graph.edge(q_mapper.prev_vertex(1), v1), pyzx.EdgeType.SIMPLE)
+        q_mapper.set_prev_vertex(1, v1)
+
+        v2 = graph.add_vertex(pyzx.VertexType.X, q_mapper.to_qubit(0), r)
+        graph.add_edge(graph.edge(q_mapper.prev_vertex(0), v2), pyzx.EdgeType.SIMPLE)
+        q_mapper.set_prev_vertex(0, v2)
+
+        graph.add_edge((v1, v2), edgetype=pyzx.EdgeType.HADAMARD)
+
+        q_mapper.set_next_row(1, r + 1)
+        q_mapper.set_next_row(0, r + 1)
+        graph.scalar.add_power(1)
+
+        row = max(q_mapper.max_row(), c_mapper.max_row())
+
+        outputs = []
+        for mapper in (q_mapper, c_mapper):
+            for label in mapper.labels():
+                qubit = mapper.to_qubit(label)
+                vertex = graph.add_vertex(pyzx.VertexType.BOUNDARY, qubit, row)
+                outputs.append(vertex)
+                pre_vertex = mapper.prev_vertex(label)
+                graph.add_edge(graph.edge(pre_vertex, vertex))
+
+        graph.set_inputs(tuple(inputs))
+        graph.set_outputs(tuple(outputs))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="A green and red node connected by a Hadamard edge ",
+        ):
+            qml.transforms.from_zx(graph)
+
+    def test_cx_gate(self):
+        """Test that CX node is converted to the right tape"""
+        graph = pyzx.Graph(None)
+        q_mapper = pyzx.circuit.gates.TargetMapper()
+        c_mapper = pyzx.circuit.gates.TargetMapper()
+
+        inputs = []
+
+        # Create the qubits in the graph and the qubit mapper
+        for i in range(2):
+            vertex = graph.add_vertex(pyzx.VertexType.BOUNDARY, i, 0)
+            inputs.append(vertex)
+            q_mapper.set_prev_vertex(i, vertex)
+            q_mapper.set_next_row(i, 1)
+            q_mapper.set_qubit(i, i)
+
+        # Create Green Red with Hadamard Edge
+        r = max(q_mapper.next_row(1), q_mapper.next_row(0))
+
+        v1 = graph.add_vertex(pyzx.VertexType.X, q_mapper.to_qubit(1), r)
+        graph.add_edge(graph.edge(q_mapper.prev_vertex(1), v1), pyzx.EdgeType.SIMPLE)
+        q_mapper.set_prev_vertex(1, v1)
+
+        v2 = graph.add_vertex(pyzx.VertexType.X, q_mapper.to_qubit(0), r)
+        graph.add_edge(graph.edge(q_mapper.prev_vertex(0), v2), pyzx.EdgeType.SIMPLE)
+        q_mapper.set_prev_vertex(0, v2)
+
+        graph.add_edge((v1, v2), edgetype=pyzx.EdgeType.HADAMARD)
+
+        q_mapper.set_next_row(1, r + 1)
+        q_mapper.set_next_row(0, r + 1)
+        graph.scalar.add_power(1)
+
+        row = max(q_mapper.max_row(), c_mapper.max_row())
+
+        outputs = []
+        for mapper in (q_mapper, c_mapper):
+            for label in mapper.labels():
+                qubit = mapper.to_qubit(label)
+                vertex = graph.add_vertex(pyzx.VertexType.BOUNDARY, qubit, row)
+                outputs.append(vertex)
+                pre_vertex = mapper.prev_vertex(label)
+                graph.add_edge(graph.edge(pre_vertex, vertex))
+
+        graph.set_inputs(tuple(inputs))
+        graph.set_outputs(tuple(outputs))
+
+        tape = qml.transforms.from_zx(graph)
+        expected_op = [qml.Hadamard(wires=[1]), qml.CNOT(wires=[1, 0]), qml.Hadamard(wires=[1])]
+        assert np.all([qml.equal(op, op_ex) for op, op_ex in zip(tape.operations, expected_op)])
