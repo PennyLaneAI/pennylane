@@ -91,7 +91,8 @@ class OperationRecorder(QuantumScript, AnnotatedQueue):
 
     def __getitem__(self, key):
         """
-        Overrides the default because QuantumTape is both a QuantumScript and an AnnotatedQueue.
+        Overrides the default because OperationRecorder is both a QuantumScript and an AnnotatedQueue.
+
         If key is an int, the caller is likely indexing the backing QuantumScript. Otherwise, the
         caller is likely indexing the backing AnnotatedQueue.
         """
