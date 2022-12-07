@@ -1300,7 +1300,6 @@ class TestSymbolicOpComparison:
         op2 = Controlled(base2, control_wires=2, work_wires=wire2)
         assert qml.equal(op1, op2) == res
 
-
     @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
     def test_adjoint_comparison(self, base):
         """Test that equal compares two objects of the Adjoint class"""
