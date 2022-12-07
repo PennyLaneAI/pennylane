@@ -5,7 +5,7 @@ Overview
 --------
 
 This module provides a collection of methods to return quantum information quantities from :class:`~.QNode`
-returning :func:`~.state`.
+returning :func:`~pennylane.state`.
 
 .. currentmodule:: pennylane.qinfo
 

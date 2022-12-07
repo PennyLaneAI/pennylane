@@ -262,7 +262,7 @@ class ClassicalShadowMP(MeasurementTransform):
         quantum scripts containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
 
-        .. seealso:: :func:`~.classical_shadow`
+        .. seealso:: :func:`~pennylane.classical_shadow`
 
         Args:
             qscript (QuantumScript): the quantum script to be processed

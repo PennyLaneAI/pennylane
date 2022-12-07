@@ -56,7 +56,7 @@ def state():
 
     .. note::
 
-        Differentiating :func:`~.state` is currently only supported when using the
+        Differentiating :func:`~pennylane.state` is currently only supported when using the
         classical backpropagation differentiation method (``diff_method="backprop"``) with a
         compatible device.
 
@@ -117,7 +117,7 @@ def density_matrix(wires):
 
     .. note::
 
-        Calculating the derivative of :func:`~.density_matrix` is currently only supported when
+        Calculating the derivative of :func:`~pennylane.density_matrix` is currently only supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device.
     """
