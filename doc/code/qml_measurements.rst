@@ -9,4 +9,6 @@ qml.measurements
     :no-inheritance-diagram:
     :skip: MeasurementShapeError, MeasurementValueError
 
-.. inheritance-diagram:: pennylane.measurements.MeasurementProcess
+.. inheritance-diagram:: 
+    :top-classes: pennylane.measurements.MeasurementProcess
+    :parts: 1
