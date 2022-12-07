@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as npp
-from pennylane.measurements import _Expectation
+from pennylane.measurements import ExpectationMP
 from pennylane.ops.op_math.controlled_class import Controlled
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -151,8 +151,8 @@ PARAMETRIZED_MEASUREMENTS = [
             [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         )
     ),
-    _Expectation(eigvals=[1, -1]),
-    _Expectation(eigvals=[1, 2]),
+    ExpectationMP(eigvals=[1, -1]),
+    ExpectationMP(eigvals=[1, 2]),
 ]
 PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
     itertools.combinations(
@@ -1299,6 +1299,7 @@ class TestSymbolicOpComparison:
         op1 = Controlled(base1, control_wires=2, work_wires=wire1)
         op2 = Controlled(base2, control_wires=2, work_wires=wire2)
         assert qml.equal(op1, op2) == res
+
 
     @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
     def test_adjoint_comparison(self, base):

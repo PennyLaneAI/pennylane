@@ -20,16 +20,16 @@ from functools import partial
 from typing import Callable, Optional, Tuple, Union
 
 import pennylane as qml
-from pennylane.measurements import Expectation
+from pennylane.measurements import ExpectationMP
 from pennylane.tape import QuantumTape
+from pennylane.transforms.batch_transform import batch_transform
 from pennylane.wires import Wires
 
-from pennylane.transforms.batch_transform import batch_transform
-from .kahypar import kahypar_cut
-from .tapes import graph_to_tape, tape_to_graph, _qcut_expand_fn, expand_fragment_tape
-from .utils import replace_wire_cut_nodes, fragment_graph, find_and_place_cuts
 from .cutstrategy import CutStrategy
+from .kahypar import kahypar_cut
 from .processing import qcut_processing_fn
+from .tapes import _qcut_expand_fn, expand_fragment_tape, graph_to_tape, tape_to_graph
+from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
 @batch_transform
@@ -330,7 +330,7 @@ def cut_circuit(
             "measurement"
         )
 
-    if not all(m.return_type is Expectation for m in tape.measurements):
+    if not all(isinstance(m, ExpectationMP) for m in tape.measurements):
         raise ValueError(
             "The circuit cutting workflow only supports circuits with expectation "
             "value measurements"
