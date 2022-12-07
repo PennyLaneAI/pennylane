@@ -1660,5 +1660,39 @@ class TestJIT:
             res = _measure_operator()
             return res
 
-        jcirc = jax.jit(minimal_circ)
-        assert np.allclose(jax.jit(jcirc)(pars_q), jax.jit(jax.vmap(jcirc))(pars_q), tol)
+        assert np.allclose(
+            jax.jit(minimal_circ)(pars_q), jax.jit(jax.vmap(minimal_circ))(pars_q), tol
+        )
+
+    def test_vmap_compared_param_broadcasting_multi_output(self, dev_name, diff_method, mode, tol):
+        """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
+        vectorized=True is specified for the callback when caching is disabled."""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not yet support Hamiltonians")
+
+        if diff_method == "backprop":
+            pytest.skip(
+                "The backprop method does not yet support parameter-broadcasting with Hamiltonians"
+            )
+
+        phys_qubits = 2
+        n_configs = 5
+        pars_q = np.random.rand(n_configs, 2)
+
+        dev = qml.device(dev_name, wires=tuple(range(phys_qubits)), shots=None)
+
+        def minimal_circ(params):
+            @qml.qnode(dev, interface="jax-jit", diff_method=diff_method, mode=mode, cache=None)
+            def _measure_operator():
+                qml.RY(params[..., 0], wires=0)
+                qml.RY(params[..., 1], wires=1)
+                op1 = qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)])
+                op2 = qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliX(1)])
+                return qml.expval(op1), qml.expval(op2)
+
+            res = _measure_operator()
+            return res
+
+        assert np.allclose(
+            jax.jit(minimal_circ)(pars_q), jax.jit(jax.vmap(minimal_circ))(pars_q).T, tol
+        )
