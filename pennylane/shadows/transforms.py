@@ -13,24 +13,26 @@
 # limitations under the License.
 """Classical shadow transforms"""
 
-from itertools import product
-from functools import reduce, wraps
 import warnings
+from functools import reduce, wraps
+from itertools import product
 
 import pennylane as qml
 import pennylane.numpy as np
+from pennylane.measurements import ClassicalShadow
+from pennylane.tape import QuantumScript
 
 
 @qml.batch_transform
-def _replace_obs(tape, obs, *args, **kwargs):
+def _replace_obs(tape: QuantumScript, obs, *args, **kwargs):
     """
     Tape transform to replace the measurement processes with the given one
     """
     # check if the measurement process of the tape is qml.classical_shadow
-    for o in tape.observables:
-        if o.return_type is not qml.measurements.Shadow:
+    for m in tape.measurements:
+        if not isinstance(m, ClassicalShadow):
             raise ValueError(
-                f"Tape measurement must be {qml.measurements.Shadow!r}, got {o.return_type!r}"
+                f"Tape measurement must be ClassicalShadow, got {m.__class__.__name__!r}"
             )
 
     with qml.queuing.AnnotatedQueue() as q:

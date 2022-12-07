@@ -18,7 +18,9 @@ Contains the tape transform that splits non-commuting terms
 from functools import reduce
 
 import numpy as np
+
 import pennylane as qml
+from pennylane.measurements import _Probability, _Sample
 
 from .batch_transform import batch_transform
 
@@ -145,16 +147,14 @@ def split_non_commuting(tape):
         dtype=object, requires_grad=True)
 
     """
+
     # TODO: allow for samples and probs
-    obs_fn = {qml.measurements.Expectation: qml.expval, qml.measurements.Variance: qml.var}
-
-    obs_list = tape.observables
-    return_types = [m.return_type for m in obs_list]
-
-    if qml.measurements.Sample in return_types or qml.measurements.Probability in return_types:
+    if any(isinstance(m, (_Sample, _Probability)) for m in tape.measurements):
         raise NotImplementedError(
             "When non-commuting observables are used, only `qml.expval` and `qml.var` are supported."
         )
+
+    obs_list = tape.observables
 
     # If there is more than one group of commuting observables, split tapes
     groups, group_coeffs = qml.pauli.group_observables(obs_list, range(len(obs_list)))
@@ -163,7 +163,9 @@ def split_non_commuting(tape):
         tapes = []
         for group in groups:
             new_tape = tape.__class__(
-                tape._ops, (obs_fn[type](o) for type, o in zip(return_types, group)), tape._prep
+                tape._ops,
+                (m.__class__(obs=o) for m, o in zip(tape.measurements, group)),
+                tape._prep,
             )
 
             tapes.append(new_tape)

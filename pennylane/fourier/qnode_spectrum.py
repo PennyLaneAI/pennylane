@@ -19,6 +19,7 @@ from inspect import signature
 from itertools import product
 
 import numpy as np
+
 import pennylane as qml
 
 from .utils import get_spectrum, join_spectra
@@ -395,9 +396,9 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         # After construction, check whether invalid operations (for a spectrum)
         # are present in the QNode
         for m in qnode.qtape.measurements:
-            if m.return_type not in {qml.measurements.Expectation, qml.measurements.Probability}:
+            if not isinstance(m, (qml.measurements._Expectation, qml.measurements._Probability)):
                 raise ValueError(
-                    f"The return_type {m.return_type.value} is not supported as it likely does "
+                    f"The measurement {m.__class__.__name__} is not supported as it likely does "
                     "not admit a Fourier spectrum."
                 )
         cjacs = jac_fn(*args, **kwargs)

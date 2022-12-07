@@ -1775,11 +1775,11 @@ class QubitDevice(Device):
 
         outcomes = []
 
-        if isinstance(obs, MeasurementProcess):
+        if isinstance(obs, _Counts):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
 
-            if obs.return_type is AllCounts:
+            if obs.all_outcomes:
                 outcomes = self.generate_basis_states(num_wires)
                 outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
         elif obs.return_type is AllCounts:

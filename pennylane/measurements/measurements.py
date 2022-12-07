@@ -629,6 +629,20 @@ class MeasurementTransform(MeasurementProcess):
             '''
     """
 
+    method_name = ""
+    """Devices can override the logic of a measurement process by defining a method with the
+    name ``method_name`` of the corresponding class. The method should have the following signature:
+
+    .. code-block:: python
+
+        def method_name(self, qscript: QuantumScript):
+            '''Device's custom measurement implementation.
+
+            Args:
+                qscript: quantum script to transform
+            '''
+    """
+
     @abstractmethod
     def process(self, qscript, device):
         """Process the given quantum script."""

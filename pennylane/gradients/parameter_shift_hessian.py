@@ -15,24 +15,22 @@
 This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
-import warnings
 import itertools as it
+import warnings
 from collections.abc import Sequence
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.measurements import _Probability, _State, _Variance
 
-from .gradient_transform import (
-    gradient_analysis,
-    grad_method_validation,
-)
-from .hessian_transform import hessian_transform
-from .parameter_shift import _get_operation_recipe
 from .general_shift_rules import (
     _combine_shift_rules,
-    generate_shifted_tapes,
     generate_multishifted_tapes,
+    generate_shifted_tapes,
 )
+from .gradient_transform import grad_method_validation, gradient_analysis
+from .hessian_transform import hessian_transform
+from .parameter_shift import _get_operation_recipe
 
 
 def _process_argnum(argnum, tape):
@@ -193,7 +191,7 @@ def _all_zero_grad_new(tape):
 
     zeros_list = []
     for m in tape.measurements:
-        shape = 2 ** len(m.wires) if m.return_type is qml.measurements.Probability else ()
+        shape = 2 ** len(m.wires) if isinstance(m, _Probability) else ()
 
         zeros = tuple(
             tuple(qml.math.zeros(shape) for _ in range(num_params)) for _ in range(num_params)
@@ -632,14 +630,14 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         )
 
     # Perform input validation before generating tapes.
-    if any(m.return_type is qml.measurements.State for m in tape.measurements):
+    if any(isinstance(m, _State) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return the state is not supported."
         )
 
     # The parameter-shift Hessian implementation currently doesn't support variance measurements.
     # TODO: Support variances similar to how param_shift does it
-    if any(m.return_type is qml.measurements.Variance for m in tape.measurements):
+    if any(isinstance(m, _Variance) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return variances is currently not supported."
         )
@@ -847,14 +845,14 @@ def _param_shift_hessian_tuple(
     """
 
     # Perform input validation before generating tapes.
-    if any(m.return_type is qml.measurements.State for m in tape.measurements):
+    if any(isinstance(m, _State) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return the state is not supported."
         )
 
     # The parameter-shift Hessian implementation currently doesn't support variance measurements.
     # TODO: Support variances similar to how param_shift does it
-    if any(m.return_type is qml.measurements.Variance for m in tape.measurements):
+    if any(isinstance(m, _Variance) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return variances is currently not supported."
         )

@@ -25,22 +25,20 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
+    Expectation,
+    Probability,
     Sample,
     State,
     Variance,
-    Expectation,
-    Probability,
-    MidMeasure,
-    ShadowExpval,
+    _Counts,
+    _MidMeasure,
+    _Probability,
+    _Sample,
+    _ShadowExpval,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -736,9 +734,8 @@ class Device(abc.ABC):
 
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
 
-        return_types = [m.return_type for m in circuit.observables]
+        is_shadow = any(isinstance(m, _ShadowExpval) for m in circuit.measurements)
 
-        is_shadow = ShadowExpval in return_types
         hamiltonian_unusable = not supports_hamiltonian or (finite_shots and not is_shadow)
 
         if hamiltonian_in_obs and (hamiltonian_unusable or (use_grouping and grouping_known)):
@@ -757,13 +754,7 @@ class Device(abc.ABC):
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs
             and all(
-                t not in return_types
-                for t in [
-                    qml.measurements.Sample,
-                    qml.measurements.Probability,
-                    qml.measurements.Counts,
-                    qml.measurements.AllCounts,
-                ]
+                not isinstance(m, (_Sample, _Probability, _Counts)) for m in circuit.measurements
             )
         ):
             # Check for case of non-commuting terms and that there are no Hamiltonians
@@ -965,7 +956,7 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
-            if getattr(o, "return_type", None) == MidMeasure and not self.capabilities().get(
+            if isinstance(o, _MidMeasure) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(
