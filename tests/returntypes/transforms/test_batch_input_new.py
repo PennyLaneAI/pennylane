@@ -309,6 +309,45 @@ class TestDiffSingle:
         expected = -np.sin(0.1) * sum(np.sin(input))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "diff_method",
+        [
+            # TODO: add this once forward mode is implemented
+            # "adjoint",
+            "parameter-shift"
+        ],
+    )
+    def test_jax_jit(self, diff_method, tol):
+        """Test derivatives when using JAX"""
+        import jax
+        import jax.numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @jax.jit
+        @qml.batch_input(argnum=0)
+        @qml.qnode(dev, diff_method=diff_method, interface="jax-jit")
+        def circuit(input, x):
+            qml.RY(input, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        batch_size = 3
+
+        def cost(input, x):
+            return jnp.sum(circuit(input, x))
+
+        input = jnp.linspace(0.1, 0.5, batch_size)
+        x = jnp.array(0.1)
+
+        res = jax.grad(cost, argnums=1)(input, x)
+        expected = -np.sin(0.1) * sum(np.sin(input))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
     def test_torch(self, diff_method, tol):
@@ -393,11 +432,6 @@ class TestDiffSingle:
 
         res = tape.gradient(loss, x)
         expected = -np.sin(0.1) * tf.reduce_sum(tf.sin(input))
-        print(circuit(input, x))
-        print(np.cos(0.1) * tf.sin(input))
-        print(loss)
-        print(res)
-        print(expected)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
@@ -490,6 +524,7 @@ class TestDiffMulti:
             ),
         )
 
+        assert isinstance(res, tuple)
         assert len(res) == 2
         for r, exp in zip(res, expected):
             assert qml.math.allclose(r, exp, atol=tol)
@@ -509,6 +544,71 @@ class TestDiffMulti:
             ),
         )
 
+        assert isinstance(grad, tuple)
+        assert len(grad) == 2
+        for g, exp in zip(grad, expected):
+            assert qml.math.allclose(g, exp, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("diff_method", ["parameter-shift"])
+    def test_jax_jit(self, diff_method, tol):
+        """Test derivatives when using JAX and jitting"""
+        import jax
+        import jax.numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @jax.jit
+        @qml.batch_input(argnum=0)
+        @qml.qnode(dev, diff_method=diff_method, interface="jax-jit")
+        def circuit(input, x):
+            qml.RY(input, wires=0)
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        batch_size = 3
+        input = jnp.linspace(0.1, 0.5, batch_size)
+        x = jnp.array(0.1)
+
+        res = circuit(input, x)
+        expected = (
+            jnp.cos(input + x),
+            qml.math.transpose(
+                qml.math.stack(
+                    [
+                        np.cos((input + x) / 2) ** 2,
+                        np.zeros_like(input),
+                        np.zeros_like(input),
+                        np.sin((input + x) / 2) ** 2,
+                    ]
+                )
+            ),
+        )
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        for r, exp in zip(res, expected):
+            assert qml.math.allclose(r, exp, atol=tol)
+
+        grad = jax.jacobian(circuit, argnums=1)(input, x)
+        expected = (
+            -jnp.sin(input + x),
+            qml.math.transpose(
+                qml.math.stack(
+                    [
+                        -jnp.sin(input + x) / 2,
+                        jnp.zeros_like(input),
+                        jnp.zeros_like(input),
+                        jnp.sin(input + x) / 2,
+                    ]
+                )
+            ),
+        )
+
+        assert isinstance(grad, tuple)
         assert len(grad) == 2
         for g, exp in zip(grad, expected):
             assert qml.math.allclose(g, exp, atol=tol, rtol=0)

@@ -315,15 +315,23 @@ class TestDiffSingle:
         expected = -np.sin(0.1) * np.sin(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="Jax jit interface for new returns")
     @pytest.mark.jax
-    @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
+    @pytest.mark.parametrize(
+        "diff_method",
+        [
+            # TODO: comment this in once forward mode is implemented
+            # "adjoint",
+            "parameter-shift"
+        ],
+    )
     @pytest.mark.parametrize("interface", ["jax", "jax-jit"])
     def test_jax_jit(self, diff_method, interface, tol):
         """Test derivatives when using JAX and JIT."""
         import jax
+        import jax.numpy as jnp
 
-        jnp = jax.numpy
+        jax.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.batch_params
@@ -506,6 +514,7 @@ class TestDiffMulti:
             ),
         )
 
+        assert isinstance(res, tuple)
         assert len(res) == 2
         for r, exp in zip(res, expected):
             assert qml.math.allclose(r, exp, atol=tol)
@@ -517,6 +526,56 @@ class TestDiffMulti:
             * qml.math.expand_dims(np.eye(batch_size), 1),
         )
 
+        assert isinstance(grad, tuple)
+        assert len(grad) == 2
+        for g, exp in zip(grad, expected):
+            assert qml.math.allclose(g, exp, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("diff_method", ["parameter-shift"])
+    def test_jax_jit(self, diff_method, tol):
+        """Test derivatives when using JAX"""
+        import jax
+        import jax.numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @jax.jit
+        @qml.batch_params
+        @qml.qnode(dev, diff_method=diff_method, interface="jax-jit")
+        def circuit(x):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        batch_size = 3
+        x = jnp.linspace(0.1, 0.5, batch_size)
+
+        res = circuit(x)
+        expected = (
+            jnp.cos(x),
+            qml.math.transpose(
+                qml.math.stack(
+                    [jnp.cos(x / 2) ** 2, jnp.zeros_like(x), jnp.zeros_like(x), jnp.sin(x / 2) ** 2]
+                )
+            ),
+        )
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        for r, exp in zip(res, expected):
+            assert qml.math.allclose(r, exp, atol=tol)
+
+        grad = jax.jacobian(circuit)(x)
+        expected = (
+            -np.sin(x) * np.eye(batch_size),
+            qml.math.stack([-np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2])
+            * qml.math.expand_dims(np.eye(batch_size), 1),
+        )
+
+        assert isinstance(grad, tuple)
         assert len(grad) == 2
         for g, exp in zip(grad, expected):
             assert qml.math.allclose(g, exp, atol=tol, rtol=0)
