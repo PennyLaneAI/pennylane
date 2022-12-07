@@ -16,7 +16,7 @@ Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
 import pennylane as qml
-from pennylane.measurements import _Expectation
+from pennylane.measurements import ExpectationMP
 
 
 def hamiltonian_expand(tape, group=True):
@@ -122,7 +122,7 @@ def hamiltonian_expand(tape, group=True):
     if (
         len(tape.measurements) != 1
         or not isinstance(hamiltonian := tape.measurements[0].obs, qml.Hamiltonian)
-        or not isinstance(tape.measurements[0], _Expectation)
+        or not isinstance(tape.measurements[0], ExpectationMP)
     ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"

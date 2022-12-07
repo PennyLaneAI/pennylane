@@ -11,6 +11,7 @@
   using simultaneous perturbation of parameters and a stochastic approximation.
   Given some QNode `circuit` that takes, say, an argument `x`, the approximate
   gradient can be computed via
+
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2)
   >>> x = pnp.array(0.4, requires_grad=True)
@@ -23,6 +24,7 @@
   >>> grad_fn(x)
   array(-0.38876964)
   ```
+
   The argument `num_directions` determines how many directions of simultaneous
   perturbation are used and therefore the number of circuit evaluations, up
   to a prefactor. See the
@@ -62,42 +64,26 @@
 * Support custom measurement processes:
   * `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform` classes have been added.
     They contain an abstract method to process samples/quantum state/quantum script.
-    [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
-    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
-  * Add `_Expectation` class.
-    [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
-
-  * Add `_Sample` class.
-    [(#3288)](https://github.com/PennyLaneAI/pennylane/pull/3288)
-
-  * Add `_Var` class.
-    [(#3312)](https://github.com/PennyLaneAI/pennylane/pull/3312)
-
-  * Add `_Probability` class.
-    [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
-
-  * Add `_Counts` class.
-    [(#3292)](https://github.com/PennyLaneAI/pennylane/pull/3292)
-
-  * Add `_State` class.
-    [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
-
-  * Add `_VnEntropy` class.
-    [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
-
-  * Add `_MutualInfo` class.
-    [(#3327)](https://github.com/PennyLaneAI/pennylane/pull/3327)
-
-  * Add `ClassicalShadow` class.
-    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
-
-  * Add `_ShadowExpval` class.
-    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+  * Add `ExpectationMP`, `SampleMP`, `VarianceMP`, `ProbabilityMP`, `CountsMP`, `StateMP`,
+    `VnEntropyMP`, `MutualInfoMP`, `ClassicalShadowMP` and `ShadowExpvalMP` classes.
 
   * Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
     measurement processes in `QubitDevice`.
-    [#3439](https://github.com/PennyLaneAI/pennylane/pull/3439)
+    [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
+    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+    [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
+    [(#3288)](https://github.com/PennyLaneAI/pennylane/pull/3288)
+    [(#3312)](https://github.com/PennyLaneAI/pennylane/pull/3312)
+    [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
+    [(#3292)](https://github.com/PennyLaneAI/pennylane/pull/3292)
+    [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
+    [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
+    [(#3327)](https://github.com/PennyLaneAI/pennylane/pull/3327)
+    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+    [(#3439)](https://github.com/PennyLaneAI/pennylane/pull/3439)
+    [(#3466)](https://github.com/PennyLaneAI/pennylane/pull/3466)
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
@@ -304,6 +290,9 @@
   the optional `use_grouping` attribute.
   [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
 
+* Reduce usage of `MeasurementProcess.return_type`. Use `isinstance` checks instead.
+  [(#3399)](https://github.com/PennyLaneAI/pennylane/pull/3399)
+  
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
@@ -473,8 +462,8 @@
 
 <h3>Breaking changes</h3>
 
-* The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
-  `_MutualInfo` classes, which inherit from `MeasurementProcess`.
+* The `log_base` attribute has been moved from `MeasurementProcess` to the new `VnEntropyMP` and
+  `MutualInfoMP` classes, which inherit from `MeasurementProcess`.
   [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
 * Python 3.7 support is no longer maintained.

@@ -19,7 +19,7 @@ import copy
 from threading import RLock
 
 import pennylane as qml
-from pennylane.measurements import _Counts, _Probability, _Sample
+from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
@@ -159,7 +159,7 @@ def expand_tape(qscript, depth=1, stop_at=None, expand_measurements=False):
                 qscript._obs_sharing_wires = diag_obs
             except (TypeError, ValueError) as e:
                 if any(
-                    isinstance(m, (_Probability, _Sample, _Counts)) for m in qscript.measurements
+                    isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in qscript.measurements
                 ):
                     raise qml.QuantumFunctionError(
                         "Only observables that are qubit-wise commuting "

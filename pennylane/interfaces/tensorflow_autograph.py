@@ -22,8 +22,8 @@ import numpy as np
 import tensorflow as tf
 
 import pennylane as qml
-from pennylane.measurements import _Sample, _State
 from pennylane._device import _get_num_copies
+from pennylane.measurements import SampleMP, StateMP
 
 from .tensorflow import (
     _compute_vjp,
@@ -103,7 +103,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
         if tape.all_sampled:
             output_types.append(tf.int64)
-        elif isinstance(tape.measurements[0], _State):
+        elif isinstance(tape.measurements[0], StateMP):
             output_types.append(tf.complex128)
         else:
             output_types.append(tf.float64)
@@ -320,9 +320,9 @@ def _execute_new(
 
         o_types = []
         for m in tape.measurements:
-            if isinstance(m, _Sample):
+            if isinstance(m, SampleMP):
                 o_types.append(tf.int64)
-            elif isinstance(m, _State):
+            elif isinstance(m, StateMP):
                 o_types.append(tf.complex128)
             else:
                 o_types.append(tf.float64)

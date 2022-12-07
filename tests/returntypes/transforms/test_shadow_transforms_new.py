@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.measurements.classical_shadow import _ShadowExpval
+from pennylane.measurements.classical_shadow import ShadowExpvalMP
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
@@ -320,7 +320,7 @@ class TestExpvalTransform:
 
         assert all(qml.equal(qml.Hadamard(i), tape.operations[i]) for i in range(3))
         assert len(tape.observables) == 1
-        assert isinstance(tape.observables[0], _ShadowExpval)
+        assert isinstance(tape.observables[0], ShadowExpvalMP)
         assert tape.observables[0].H == obs
 
     def test_hadamard_forward(self):
@@ -382,6 +382,6 @@ class TestExpvalTransform:
             qml.Hadamard(0)
             return qml.expval(qml.PauliZ(0))
 
-        msg = "Tape measurement must be ClassicalShadow, got '_Expectation'"
+        msg = "Tape measurement must be ClassicalShadowMP, got 'ExpectationMP'"
         with pytest.raises(ValueError, match=msg):
             circuit()
