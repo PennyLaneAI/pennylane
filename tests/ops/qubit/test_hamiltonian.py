@@ -39,7 +39,7 @@ except ImportError:
     pass
 
 try:
-    import tf
+    import tensorflow as tf
 
     COEFFS_PARAM_INTERFACE.append(
         (tf.Variable([-0.05, 0.17], dtype=tf.double), tf.Variable(1.7, dtype=tf.double), "tf")
