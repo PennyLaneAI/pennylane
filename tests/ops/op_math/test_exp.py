@@ -405,6 +405,34 @@ class TestMiscMethods:
         assert qml.equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 0.2
 
+    def test_simplify_s_prod(self):
+        """Tests that when simplification of the base results in an SProd,
+        the scalar is included in the coeff rather than the base"""
+        base = qml.s_prod(2, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        op = Exp(base, 3)
+        new_op = op.simplify()
+
+        assert qml.equal(new_op.base, qml.PauliX(0))
+        assert new_op.coeff == 12
+
+    def test_copy(self):
+        """Tests making a copy."""
+        op = Exp(qml.CNOT([0, 1]), 2)
+        copied_op = op.__copy__()
+
+        assert qml.equal(op.base, copied_op.base)
+        assert op.wires == copied_op.wires
+        assert op.data == copied_op.data
+        assert op.hyperparameters.keys() == copied_op.hyperparameters.keys()
+
+        for attr, value in vars(copied_op).items():
+            if (
+                not attr == "_hyperparameters"
+            ):  # hyperparameters contains base, which can't be compared via ==
+                assert vars(op)[attr] == value
+
+        assert len(vars(op).items()) == len(vars(copied_op).items())
+
 
 class TestIntegration:
     """Test Exp with gradients in qnodes."""
@@ -478,6 +506,24 @@ class TestIntegration:
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
+        def circuit(phi):
+            Exp(qml.PauliX(0), -0.5j * phi)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit(phi)
+        assert qml.math.allclose(res, qml.numpy.cos(phi))
+
+        grad = qml.grad(circuit)(phi)
+        assert qml.math.allclose(grad, -qml.numpy.sin(phi))
+
+    @pytest.mark.autograd
+    def test_autograd_param_shift_qnode(self):
+        """Test execution and gradient with pennylane numpy array."""
+        phi = qml.numpy.array(1.2)
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
         def circuit(phi):
             Exp(qml.PauliX(0), -0.5j * phi)
             return qml.expval(qml.PauliZ(0))
@@ -713,3 +759,45 @@ class TestEvolution:
     def test_label(self, op, decimals, expected):
         """Test that the label is informative and uses decimals."""
         assert op.label(decimals=decimals) == expected
+
+    def test_simplify(self):
+        """Test that the simplify method simplifies the base."""
+        orig_base = qml.adjoint(qml.adjoint(qml.PauliX(0)))
+
+        op = Exp(orig_base, coeff=0.2)
+        new_op = op.simplify()
+        assert qml.equal(new_op.base, qml.PauliX(0))
+        assert new_op.coeff == 0.2
+
+    def test_simplify_s_prod(self):
+        """Tests that when simplification of the base results in an SProd,
+        the scalar is included in the coeff rather than the base"""
+        base = qml.s_prod(2, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        op = Evolution(base, 3)
+        new_op = op.simplify()
+
+        assert qml.equal(new_op.base, qml.PauliX(0))
+        assert new_op.coeff == 12j
+
+    @pytest.mark.jax
+    def test_parameter_shift_gradient_matches_jax(self):
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+        base = qml.PauliX(0)
+        x = np.array(1.234)
+
+        @qml.qnode(dev, diff_method=qml.gradients.param_shift)
+        def circ_param_shift(x):
+            Evolution(base, -0.5 * x)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(qml.device("default.qubit.jax", wires=1), interface="jax")
+        def circ(x):
+            Evolution(qml.PauliX(0), -0.5 * x)
+            return qml.expval(qml.PauliZ(0))
+
+        grad_param_shift = qml.grad(circ_param_shift)(x)
+        grad = jax.grad(circ)(x)
+
+        assert qml.math.allclose(grad, grad_param_shift)
