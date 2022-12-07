@@ -276,6 +276,9 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
+* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
+  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
+
 * Add a UserWarning when creating a `Tensor` object with overlapping wires,
   informing that this can in some cases lead to undefined behaviour.
   [(#3459)](https://github.com/PennyLaneAI/pennylane/pull/3459)
@@ -286,6 +289,9 @@
 * Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
 
+* Extended the `qml.equal` function to `Pow`, `SProd`, `Exp` and `Adjoint` objects.
+  [(#3471)](https://github.com/PennyLaneAI/pennylane/pull/3471)
+
 * Adds support for devices disregarding observable grouping indices in Hamiltonians through
   the optional `use_grouping` attribute.
   [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
@@ -293,6 +299,7 @@
 * Reduce usage of `MeasurementProcess.return_type`. Use `isinstance` checks instead.
   [(#3399)](https://github.com/PennyLaneAI/pennylane/pull/3399)
   
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
@@ -458,8 +465,10 @@
   `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
   [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
 
-* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
-  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
+* Updated `qml.transforms.cut_circuit` and `qml.transforms.cut_circuit_mc` to
+  support the new return types.
+  [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
+
 
 <h3>Breaking changes</h3>
 
