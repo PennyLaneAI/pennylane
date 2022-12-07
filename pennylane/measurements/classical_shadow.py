@@ -224,8 +224,8 @@ class ClassicalShadowMP(MeasurementTransform):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
-    This has the same arguments as the base class MeasurementProcess, plus other additional
-    arguments specific to the classical shadow protocol.
+    Please refer to :func:`classical_shadow` for detailed documentation.
+
 
     Args:
         args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
