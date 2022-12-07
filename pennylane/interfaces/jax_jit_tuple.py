@@ -299,7 +299,7 @@ def _execute_fwd_tuple(
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
     provided. This function does not allow multiple derivatives. It currently does not support shot vectors
-    because adjoint jacobian for default qubit does not support it.."""
+    because adjoint jacobian for default qubit does not support it."""
 
     # pylint: disable=unused-variable
     @jax.custom_jvp
