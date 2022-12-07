@@ -27,7 +27,6 @@ from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd
 
 
-
 def equal(
     op1: Union[Operator, MeasurementProcess],
     op2: Union[Operator, MeasurementProcess],
@@ -100,8 +99,6 @@ def equal(
     False
     >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]) )
     True
-
-
 
     .. details::
         :title: Usage Details
