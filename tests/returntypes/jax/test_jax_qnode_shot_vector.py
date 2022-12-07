@@ -22,11 +22,9 @@ from pennylane import qnode
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
-jnp = jax.numpy
+config = pytest.importorskip("jax.config")
+config.config.update("jax_enable_x64", True)
 
-from jax.config import config
-
-config.update("jax_enable_x64", True)
 shots = [(1, 20, 100), (1, (20, 1), 100), ((5, 4), 1, 100)]
 
 qubit_device_and_diff_method = [
@@ -823,8 +821,8 @@ class TestReturnShotVectorIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         dev = qml.device(dev_name, wires=2, shots=shots)
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
+        x = jax.numpy.array(0.543)
+        y = jax.numpy.array(-0.654)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
         def circuit(x, y):
@@ -860,8 +858,8 @@ class TestReturnShotVectorIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device(dev_name, wires=2, shots=shots)
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
+        x = jax.numpy.array(0.543)
+        y = jax.numpy.array(-0.654)
 
         @qnode(dev, interface="jax", diff_method=diff_method, **gradient_kwargs)
         def circuit(x, y):
