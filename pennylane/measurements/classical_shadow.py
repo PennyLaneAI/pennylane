@@ -43,7 +43,7 @@ def shadow_expval(H, k=1, seed=None, seed_recipes=True):
             Different seeds are still generated for different constructed tapes.
 
     Returns:
-        float: expectation value estimate.
+        ShadowExpvalMP: measurement process instance
 
     .. note::
 
@@ -117,6 +117,9 @@ def classical_shadow(wires, seed=None, seed_recipes=True):
             classical shadows protocol. If None, a random seed will be generated. If a tape with
             a ``classical_shadow`` measurement is copied, the seed will also be copied.
             Different seeds are still generated for different constructed tapes.
+
+    Returns:
+        ClassicalShadowMP: measurement process instance
 
     **Example**
 

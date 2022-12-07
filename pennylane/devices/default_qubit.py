@@ -944,7 +944,7 @@ class DefaultQubit(QubitDevice):
         .. seealso:: :func:`~.classical_shadow`
 
         Args:
-            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow measurement process
+            obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
         Returns:
