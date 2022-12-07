@@ -25,14 +25,15 @@ from scipy.special import factorial
 
 import pennylane as qml
 from pennylane._device import _get_num_copies
+from pennylane.measurements import _Probability
 
-from .gradient_transform import (
-    gradient_transform,
-    grad_method_validation,
-    choose_grad_methods,
-    gradient_analysis,
-)
 from .general_shift_rules import generate_shifted_tapes
+from .gradient_transform import (
+    choose_grad_methods,
+    grad_method_validation,
+    gradient_analysis,
+    gradient_transform,
+)
 
 
 @functools.lru_cache(maxsize=None)
@@ -181,7 +182,7 @@ def _all_zero_grad_new(tape, shots=None):
 
     for m in tape.measurements:
         # TODO: Update shape for CV variables
-        if m.return_type is qml.measurements.Probability:
+        if isinstance(m, _Probability):
             shape = 2 ** len(m.wires)
         else:
             shape = ()
@@ -421,7 +422,7 @@ def _finite_diff_new(
         output_dims = []
         # TODO: Update shape for CV variables
         for m in tape.measurements:
-            if m.return_type is qml.measurements.Probability:
+            if isinstance(m, _Probability):
                 output_dims.append(2 ** len(m.wires))
             else:
                 output_dims.append(1)
@@ -465,12 +466,12 @@ def _finite_diff_new(
             if c0 is not None:
                 if len(tape.measurements) == 1:
                     c = qml.math.convert_like(c0, r0)
-                    pre_grads = [pre_grads[0] + c * r0]
+                    pre_grads = [pre_grads[0] + r0 * c]
                 else:
                     for i in range(len(tape.measurements)):
                         r_i = r0[i]
                         c = qml.math.convert_like(c0, r_i)
-                        pre_grads[i] = pre_grads[i] + c * r_i
+                        pre_grads[i] = pre_grads[i] + r_i * c
 
             coeff_div = qml.math.cast_like(
                 qml.math.convert_like(1 / h**n, pre_grads[0]), pre_grads[0]
@@ -724,13 +725,13 @@ def finite_diff(
 
             # compute the linear combination of results and coefficients
             res = qml.math.stack(res)
-            g = sum(c * r for c, r in zip(coeffs, res))
+            g = sum(r * c for c, r in zip(coeffs, res))
 
             if c0 is not None:
                 # add on the unshifted term
-                g = g + c0 * r0
+                g = g + r0 * c0
 
-            grads.append(g / (h**n))
+            grads.append(g * (h ** (-n)))
 
         # The following is for backwards compatibility; currently,
         # the device stacks multiple measurement arrays, even if not the same

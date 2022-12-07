@@ -19,12 +19,13 @@ to a PennyLane Device class.
 # pylint: disable=too-many-arguments
 import jax
 import jax.numpy as jnp
-
 import numpy as np
 import semantic_version
+
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
+from pennylane.measurements import _Probability
 
 dtype = jnp.float64
 
@@ -175,8 +176,8 @@ def _execute(
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             for t in tapes:
                 multi_probs = (
-                    any(o.return_type is qml.measurements.Probability for o in t.observables)
-                    and len(t.observables) > 1
+                    any(isinstance(m, _Probability) for m in t.measurements)
+                    and len(t.measurements) > 1
                 )
 
                 if multi_probs:

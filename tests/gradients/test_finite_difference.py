@@ -282,7 +282,7 @@ class TestFiniteDiff:
         f0 = dev.execute(tape)
         tapes, fn = finite_diff(tape, approx_order=1, f0=f0)
 
-        # one tape per parameter, plus one global call
+        # one tape per parameter, the unshifted one already was evaluated above
         assert len(tapes) == tape.num_params
 
     def test_independent_parameters(self):
@@ -373,8 +373,11 @@ class TestFiniteDiff:
                 return SpecialObject(self.val * other)
 
             def __add__(self, other):
-                new = self.val + other.val if isinstance(other, self.__class__) else other
+                new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
+
+            def __radd__(self, other):
+                return self + other
 
         class SpecialObservable(Observable):
             """SpecialObservable"""
@@ -392,7 +395,7 @@ class TestFiniteDiff:
 
             @staticmethod
             def _asarray(arr, dtype=None):
-                return arr
+                return np.asarray(arr)
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
@@ -407,12 +410,12 @@ class TestFiniteDiff:
 
         dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="finite-diff")
         def qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(SpecialObservable(wires=0))
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="finite-diff")
         def reference_qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))

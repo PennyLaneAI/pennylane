@@ -20,6 +20,7 @@ import numpy as np
 import torch
 
 import pennylane as qml
+from pennylane.measurements import _Counts
 
 
 def _compute_vjp(dy, jacs, device=None):
@@ -97,10 +98,7 @@ class ExecuteTapes(torch.autograd.Function):
                 # For backwards compatibility, we flatten ragged tape outputs
                 r = np.hstack(r)
 
-            if any(
-                m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-                for m in ctx.tapes[i].measurements
-            ):
+            if any(isinstance(m, _Counts) for m in ctx.tapes[i].measurements):
                 continue
 
             if isinstance(r, (list, tuple)):

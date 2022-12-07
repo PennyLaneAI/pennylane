@@ -15,11 +15,14 @@
 Tests for the Fourier spectrum transform.
 """
 from collections import OrderedDict
-import pytest
+
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.fourier.qnode_spectrum import qnode_spectrum, _process_ids
+from pennylane.fourier.qnode_spectrum import _process_ids, qnode_spectrum
+from pennylane.measurements import _Sample, _State, _Variance
 
 
 def circuit_0(a):
@@ -354,10 +357,10 @@ class TestCircuits:
             qnode_spectrum(circuit)(1.5)
 
     @pytest.mark.parametrize(
-        "measure_fn, measure_args",
-        [(qml.state, ()), (qml.sample, (qml.PauliZ(0),)), (qml.var, (qml.PauliZ(0),))],
+        "measurement",
+        [_State(), _Sample(obs=qml.PauliZ(0)), _Variance(obs=qml.PauliZ(0))],
     )
-    def test_wrong_return_type_error(self, measure_fn, measure_args):
+    def test_wrong_return_type_error(self, measurement):
         """Test that an error is thrown if the QNode has a ``MeasurementProcess``
         with an inadmissable ``return_type``."""
         dev = qml.device("default.qubit", wires=2)
@@ -365,9 +368,9 @@ class TestCircuits:
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
-            return [qml.expval(qml.PauliX(1)), measure_fn(*measure_args)]
+            return [qml.expval(qml.PauliX(1)), qml.apply(measurement)]
 
-        with pytest.raises(ValueError, match=f"{measure_fn.__name__} is not supported"):
+        with pytest.raises(ValueError, match=f"{measurement.__class__.__name__} is not supported"):
             qnode_spectrum(circuit)(1.5)
 
 

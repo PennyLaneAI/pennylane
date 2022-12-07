@@ -14,10 +14,11 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
-import pennylane as qml
 
-from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
+import pennylane as qml
 from pennylane.devices import DefaultQubit
+from pennylane.measurements import _State
+from pennylane.transforms import adjoint_metric_tensor, batch_transform, metric_tensor
 
 
 def reduced_dm(qnode, wires):
@@ -53,9 +54,9 @@ def reduced_dm(qnode, wires):
 
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
-        return_type = qnode.tape.observables[0].return_type
-        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
-            raise ValueError("The qfunc return type needs to be a state.")
+        measurements = qnode.tape.measurements
+        if len(measurements) != 1 or not isinstance(measurements[0], _State):
+            raise ValueError("The qfunc measurement needs to be State.")
 
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
@@ -63,6 +64,71 @@ def reduced_dm(qnode, wires):
             state_built, indices=wires, c_dtype=qnode.device.C_DTYPE
         )
         return density_matrix
+
+    return wrapper
+
+
+def purity(qnode, wires):
+    r"""Compute the purity of a :class:`~.QNode` returning :func:`~.state`.
+
+    .. math::
+        \gamma = \text{Tr}(\rho^2)
+
+    where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
+    :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
+    A pure state has a purity of 1.
+
+    It is possible to compute the purity of a sub-system from a given state. To find the purity of
+    the overall state, include all wires in the ``wires`` argument.
+
+    Args:
+        qnode (pennylane.QNode): A :class:`.QNode` objeect returning a :func:`~.state`.
+        wires (Sequence(int)): List of wires in the considered subsystem.
+
+    Returns:
+        A function that computes the purity of the wrapped circuit.
+
+    **Example**
+
+    .. code-block:: python
+
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev)
+        def noisy_circuit(p):
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.BitFlip(p, wires=0)
+            qml.BitFlip(p, wires=1)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+    >>> purity(noisy_circuit, wires=[0, 1])(0.2)
+    0.5648000000000398
+    >>> purity(circuit, wires=[0])(np.pi / 2)
+    0.5
+    >>> purity(circuit, wires=[0, 1])(np.pi / 2)
+    1.0
+
+    .. seealso:: :func:`pennylane.math.purity`
+    """
+
+    def wrapper(*args, **kwargs):
+
+        # Construct tape
+        qnode.construct(args, kwargs)
+
+        # Check measurement
+        measurements = qnode.tape.measurements
+        if len(measurements) != 1 or not isinstance(measurements[0], _State):
+            raise ValueError("The qfunc return type needs to be a state.")
+
+        state_built = qnode(*args, **kwargs)
+        return qml.math.purity(state_built, wires, c_dtype=qnode.device.C_DTYPE)
 
     return wrapper
 
@@ -111,8 +177,8 @@ def vn_entropy(qnode, wires, base=None):
         # If pure state directly return 0.
         if len(wires) == len(qnode.device.wires):
             qnode.construct(args, kwargs)
-            return_type = qnode.tape.observables[0].return_type
-            if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+            measurements = qnode.tape.measurements
+            if len(measurements) != 1 or not isinstance(measurements[0], _State):
                 raise ValueError("The qfunc return type needs to be a state.")
             density_matrix = qnode(*args, **kwargs)
             if density_matrix.shape == (density_matrix.shape[0],):
@@ -238,20 +304,18 @@ def _compute_cfim(p, dp):
 @batch_transform
 def _make_probs(tape, wires=None, post_processing_fn=None):
     """Ignores the return types of any qnode and creates a new one that outputs probabilities"""
-    if wires is None:
-        wires = tape.wires
-
-    with qml.tape.QuantumTape() as new_tape:
-        for op in tape.operations:
-            qml.apply(op)
-        qml.probs(wires=wires)
+    qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(wires=wires or tape.wires)])
 
     if post_processing_fn is None:
 
-        def post_processing_fn(x):
-            return qml.math.squeeze(qml.math.stack(x))
+        def post_processing_fn(res):
+            if qml.active_return():
+                # only a single probs measurement, so no stacking needed
+                return res[0]
 
-    return [new_tape], post_processing_fn
+            return qml.math.squeeze(qml.math.stack(res))
+
+    return [qscript], post_processing_fn
 
 
 def classical_fisher(qnode, argnums=0):
@@ -397,7 +461,7 @@ def classical_fisher(qnode, argnums=0):
             [2.16840434e-18, 2.81967252e-01]]]))
 
     """
-    new_qnode = _make_probs(qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.stack(x)))
+    new_qnode = _make_probs(qnode)
 
     interface = qnode.interface
 
