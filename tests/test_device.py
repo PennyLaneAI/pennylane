@@ -1022,3 +1022,40 @@ class TestBatchExecution:
         assert np.allclose(
             res[0], dev.execute(empty_tape.operations, empty_tape.observables), rtol=tol, atol=0
         )
+
+
+class TestGrouping:
+    """Tests for the use_grouping option for devices."""
+
+    @pytest.mark.parametrize("use_grouping", (True, False))
+    def test_batch_transform_checks_use_grouping_property(self, use_grouping):
+        """If the device specifies `use_grouping=False`, the batch transform
+        method won't expand the hamiltonian when the measured hamiltonian has
+        grouping indices.
+        """
+
+        class TestDevice(qml.Device):
+            name = ""
+            short_name = ""
+            pennylane_requires = ""
+            version = ""
+            author = ""
+            operations = ""
+            observables = ""
+            apply = lambda *args, **kwargs: 0
+            expval = lambda *args, **kwargs: 0
+            reset = lambda *args, **kwargs: 0
+            supports_observable = lambda *args, **kwargs: True
+
+        H = qml.Hamiltonian([1.0, 1.0], [qml.PauliX(0), qml.PauliY(0)], grouping_type="qwc")
+        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+
+        dev = TestDevice()
+        dev.shots = None
+        dev.use_grouping = use_grouping
+        new_qscripts, post_proc_fn = dev.batch_transform(qs)
+
+        if use_grouping:
+            assert len(new_qscripts) == 2
+        else:
+            assert len(new_qscripts) == 1

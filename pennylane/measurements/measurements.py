@@ -213,8 +213,8 @@ class MeasurementProcess(ABC):
 
         Note that the output shape is dependent on the device when:
 
-        * The measurement type is either ``_Probability``, ``_State`` (from :func:`.state`) or
-          ``_Sample``;
+        * The measurement type is either ``ProbabilityMP``, ``StateMP`` (from :func:`.state`) or
+          ``SampleMP``;
         * The shot vector was defined in the device.
 
         For example, assuming a device with ``shots=None``, expectation values
@@ -223,7 +223,7 @@ class MeasurementProcess(ABC):
         number of wires the measurement acts on.
 
         Note that the shapes for vector-valued measurements such as
-        ``_Probability`` and ``_State`` are adjusted to the output of
+        ``ProbabilityMP`` and ``StateMP`` are adjusted to the output of
         ``qml.execute`` and may have an extra first element that is squeezed
         when using QNodes.
 
@@ -599,6 +599,20 @@ class MeasurementTransform(MeasurementProcess):
 
     Any class inheriting from this class should define its own ``process`` method, which takes a
     device instance and a quantum script and returns the result of the measurement process.
+    """
+
+    method_name = ""
+    """Devices can override the logic of a measurement process by defining a method with the
+    name ``method_name`` of the corresponding class. The method should have the following signature:
+
+    .. code-block:: python
+
+        def method_name(self, qscript: QuantumScript):
+            '''Device's custom measurement implementation.
+
+            Args:
+                qscript: quantum script to transform
+            '''
     """
 
     method_name = ""
