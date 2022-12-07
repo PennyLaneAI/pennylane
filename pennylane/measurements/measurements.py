@@ -623,7 +623,7 @@ class StateMeasurement(MeasurementProcess):
     ...     qml.CNOT([0, 1])
     ...     return MyMeasurement(wires=[0])
     >>> circuit()
-    tensor([0.5, 0. , 0. , 0.5], requires_grad=True)
+    tensor([0.5, 0.5], requires_grad=True)
     """
 
     @abstractmethod
