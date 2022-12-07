@@ -16,7 +16,6 @@ Unit tests for the qubit matrix-based operations.
 """
 import numpy as np
 import pytest
-from unittest.mock import patch
 from gate_data import H, I, S, T, X, Z
 from scipy.stats import unitary_group
 
