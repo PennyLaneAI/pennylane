@@ -84,6 +84,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.set_decomposition
     ~transforms.pattern_matching
     ~transforms.to_zx
+    ~transforms.from_zx
 
 There are also utility functions that take a circuit and return a DAG.
 

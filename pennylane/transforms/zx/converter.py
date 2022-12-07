@@ -52,61 +52,57 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
 
     You can use the transform decorator directly on your `QNode`, by executing then you will get the PyZX graph.
 
-    ```python
-    import pyzx
-    dev = qml.device('default.qubit', wires=2)
+    .. code-block:: python
 
-    @qml.transforms.to_zx
-    def circuit(p):
-        qml.RZ(p[0], wires=1),
-        qml.RZ(p[1], wires=1),
-        qml.RX(p[2], wires=0),
-        qml.PauliZ(wires=0),
-        qml.RZ(p[3], wires=1),
-        qml.PauliX(wires=1),
-        qml.CNOT(wires=[0, 1]),
-        qml.CNOT(wires=[1, 0]),
-        qml.SWAP(wires=[0, 1]),
-        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(2))
+        import pyzx
+        dev = qml.device('default.qubit', wires=2)
 
-    params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
-    g = circuit(params)
-    ```
-
-    ```pycon
-    >>> g
-    Graph(22 vertices, 24 edges)
-    ```
-
-    It is now a PyZX graph and can apply function from the framework on your Graph, for example you can draw it:
-
-    ```
-    >>> pyzx.draw(g)
-    <Figure size 800x200 with 1 Axes>
-    ```
-
-    Alternatively you can use the transform directly on a quantum script and get PyZX graph.
-
-    ```python
-    operations = [
-            qml.RZ(5 / 4 * np.pi, wires=1),
-            qml.RZ(3 / 4 * np.pi, wires=1),
-            qml.RX(0.1, wires=0),
+        @qml.transforms.to_zx
+        def circuit(p):
+            qml.RZ(p[0], wires=1),
+            qml.RZ(p[1], wires=1),
+            qml.RX(p[2], wires=0),
             qml.PauliZ(wires=0),
-            qml.RZ(0.3, wires=1),
+            qml.RZ(p[3], wires=1),
             qml.PauliX(wires=1),
             qml.CNOT(wires=[0, 1]),
             qml.CNOT(wires=[1, 0]),
             qml.SWAP(wires=[0, 1]),
-        ]
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-    qscript = QuantumScript(operations, [], [])
-    g = qml.transforms.to_zx(qscript)
-    ```
-    ```pycon
+        params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
+        g = circuit(params)
+
     >>> g
     Graph(22 vertices, 24 edges)
-    ```
+
+    It is now a PyZX graph and can apply function from the framework on your Graph, for example you can draw it:
+
+    >>> pyzx.draw(g)
+    <Figure size 800x200 with 1 Axes>
+
+    Alternatively you can use the transform directly on a quantum script and get PyZX graph.
+
+    .. code-block:: python
+
+        operations = [
+                qml.RZ(5 / 4 * np.pi, wires=1),
+                qml.RZ(3 / 4 * np.pi, wires=1),
+                qml.RX(0.1, wires=0),
+                qml.PauliZ(wires=0),
+                qml.RZ(0.3, wires=1),
+                qml.PauliX(wires=1),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 0]),
+                qml.SWAP(wires=[0, 1]),
+            ]
+
+        qscript = QuantumScript(operations, [], [])
+        g = qml.transforms.to_zx(qscript)
+
+    >>> g
+    Graph(22 vertices, 24 edges)
+
     """
     return None  # pragma: no cover
 
@@ -231,9 +227,63 @@ def _add_operations_to_graph(qscript, graph, gate_types, q_mapper, c_mapper):
 
 def from_zx(graph, split_phases=True):
     """It converts a graph from PyZX to a PennyLane qscript, if graph is diagram-like.
+
     Args:
         graph(Graph): ZX graph in PyZX.
-        split_phases(bool): If True the phases are split.
+        split_phases(bool): If True the phases are decomposed, meaning that :func:`qml.RZ` and :func:`qml.RX` are
+            simplified into other gates (e.g. :func:`qml.T`, :func:`qml.S`, ...).
+
+    **Example**
+
+    From the example for the :func:`~.to_zx` function, one can convert back the PyZX graph to a PennyLane by using the
+    function :func:`~.from_zx`.
+
+    .. code-block:: python
+
+        import pyzx
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.transforms.to_zx
+        def circuit(p):
+            qml.RZ(p[0], wires=0),
+            qml.RZ(p[1], wires=0),
+            qml.RX(p[2], wires=1),
+            qml.PauliZ(wires=1),
+            qml.RZ(p[3], wires=0),
+            qml.PauliX(wires=0),
+            qml.CNOT(wires=[1, 0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.SWAP(wires=[1, 0]),
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
+        g = circuit(params)
+
+        pennylane_script = qml.transforms.from_zx(g)
+
+    You can check that the operations are similar but some were decomposed in the process.
+
+    >>> pennylane_script.operations
+    [PauliZ(wires=[0]),
+     T(wires=[0]),
+     RX(0.1, wires=[1]),
+     PauliZ(wires=[0]),
+     Adjoint(T(wires=[0])),
+     PauliZ(wires=[1]),
+     RZ(0.3, wires=[0]),
+     PauliX(wires=[0]),
+     CNOT(wires=[1, 0]),
+     CNOT(wires=[0, 1]),
+     CNOT(wires=[1, 0]),
+     CNOT(wires=[0, 1]),
+     CNOT(wires=[1, 0])]
+
+    .. warning::
+
+        Be careful because not all graph are circuit-like, so the process might not be successful
+        after you apply some optimization on your PyZX graph. You can extract a circuit by using the dedicated
+        PyZX function.
+
     """
 
     # Avoid to make PyZX a requirement for PennyLane.
