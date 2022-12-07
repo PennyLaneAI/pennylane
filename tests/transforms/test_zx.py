@@ -635,6 +635,7 @@ class TestConvertersZX:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.transforms.to_zx(expand_measurements=True)
+        @qml.qnode(device=dev)
         def circuit(p):
             qml.RZ(p[0], wires=1),
             qml.RZ(p[1], wires=1),
