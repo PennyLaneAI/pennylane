@@ -337,7 +337,7 @@ def _execute_fwd_tuple(
         if len(tape.measurements) == 1:
             tracing.append(isinstance(res[i], jax.interpreters.ad.JVPTracer))
         else:
-            tracing.extend([isinstance(r, jax.interpreters.ad.JVPTracer) for r in res[i]])
+            tracing.append(any(isinstance(r, jax.interpreters.ad.JVPTracer) for r in res[i]))
 
     tracing = any(tracing)
 
