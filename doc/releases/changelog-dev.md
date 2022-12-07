@@ -4,6 +4,31 @@
 
 <h3>New features since last release</h3>
 
+* New gradient transform `qml.gradients.spsa_grad` based on the idea of SPSA.
+  [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
+
+  This new transform allows users to compute a single estimate of a quantum gradient
+  using simultaneous perturbation of parameters and a stochastic approximation.
+  Given some QNode `circuit` that takes, say, an argument `x`, the approximate
+  gradient can be computed via
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> x = pnp.array(0.4, requires_grad=True)
+  >>> @qml.qnode(dev)
+  ... def circuit(x):
+  ...     qml.RX(x, 0)
+  ...     qml.RX(x, 1)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> grad_fn = qml.gradients.spsa_grad(circuit, h=0.1, num_directions=1)
+  >>> grad_fn(x)
+  array(-0.38876964)
+  ```
+  The argument `num_directions` determines how many directions of simultaneous
+  perturbation are used and therefore the number of circuit evaluations, up
+  to a prefactor. See the
+  [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details.
+  Note: The full SPSA optimization method is already available as `SPSAOptimizer`.
+
 * Add the controlled CZ gate: CCZ.
 
   ```pycon
@@ -275,6 +300,10 @@
 * Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
 
+* Adds support for devices disregarding observable grouping indices in Hamiltonians through
+  the optional `use_grouping` attribute.
+  [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
@@ -396,6 +425,39 @@
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
 
+* The JAX-JIT interface now supports gradient transforms and device gradient execution in `backward` mode with the new
+  return types system.
+  [(#3235)](https://github.com/PennyLaneAI/pennylane/pull/3235)
+
+  ```python
+  import pennylane as qml
+  import jax
+  from jax import numpy as jnp
+
+  jax.config.update("jax_enable_x64", True)
+
+  qml.enable_return()
+
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @jax.jit
+  @qml.qnode(dev, interface="jax-jit", diff_method="parameter-shift")
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=0)
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+  a, b = jnp.array(1.0), jnp.array(2.0)
+  ```
+
+  ```pycon
+  >>> jax.jacobian(circuit, argnums=[0, 1])(a, b)
+  ((DeviceArray(0.35017549, dtype=float64, weak_type=True),
+  DeviceArray(-0.4912955, dtype=float64, weak_type=True)),
+  (DeviceArray(5.55111512e-17, dtype=float64, weak_type=True),
+  DeviceArray(0., dtype=float64, weak_type=True)))
+  ```
+
 * Updated `qml.transforms.split_non_commuting` to support the new return types.
   [(#3414)](https://github.com/PennyLaneAI/pennylane/pull/3414)
 
@@ -482,6 +544,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   wanted seed.
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
+* `make_tape` is deprecated. Please use `qml.tape.make_qscript` instead.
+  [(#3478)](https://github.com/PennyLaneAI/pennylane/pull/3478)
+
 <h3>Documentation</h3>
 
 * Adds developer documentation for the queuing module.
@@ -540,6 +605,7 @@ Astral Cai
 Isaac De Vlugt
 Pieter Eendebak
 Lillian M. A. Frederiksen
+Katharine Hyatt
 Soran Jahangiri
 Edward Jiang
 Christina Lee
