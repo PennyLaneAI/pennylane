@@ -90,13 +90,10 @@
   [-2.84061284]
   ```
 
-* New gradient transform `qml.gradients.spsa_grad` based on the idea of SPSA.
+* A new gradient transform, `qml.gradients.spsa_grad`, that is based on the idea of SPSA is now available.
   [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
 
-  This new transform allows users to compute a single estimate of a quantum gradient
-  using simultaneous perturbation of parameters and a stochastic approximation.
-  Given some QNode `circuit` that takes, say, an argument `x`, the approximate
-  gradient can be computed via
+  This new transform allows users to compute a single estimate of a quantum gradient using simultaneous perturbation of parameters and a stochastic approximation. A QNode that takes, say, an argument `x`, the approximate gradient can be computed as follows.
 
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2)
@@ -111,11 +108,7 @@
   array(-0.38876964)
   ```
 
-  The argument `num_directions` determines how many directions of simultaneous
-  perturbation are used and therefore the number of circuit evaluations, up
-  to a prefactor. See the
-  [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details.
-  Note: The full SPSA optimization method is already available as `SPSAOptimizer`.
+  The argument `num_directions` determines how many directions of simultaneous perturbation and, therefore, the number of circuit evaluations are used up to a prefactor. See the [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details. Note: The full SPSA optimizer is already available as `qml.SPSAOptimizer`.
 
 <h4>Custom measurement processes</h4>
 
