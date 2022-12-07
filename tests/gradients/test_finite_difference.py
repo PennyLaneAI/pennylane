@@ -282,7 +282,7 @@ class TestFiniteDiff:
         f0 = dev.execute(tape)
         tapes, fn = finite_diff(tape, approx_order=1, f0=f0)
 
-        # one tape per parameter, plus one global call
+        # one tape per parameter, the unshifted one already was evaluated above
         assert len(tapes) == tape.num_params
 
     def test_independent_parameters(self):

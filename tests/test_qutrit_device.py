@@ -25,12 +25,18 @@ from pennylane import DeviceError, QubitDevice, QutritDevice
 from pennylane import numpy as pnp
 from pennylane.measurements import (
     Counts,
+    CountsMP,
     Expectation,
+    ExpectationMP,
     MeasurementProcess,
     Probability,
+    ProbabilityMP,
     Sample,
+    SampleMP,
     State,
+    StateMP,
     Variance,
+    VarianceMP,
 )
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -296,17 +302,12 @@ class TestExtractStatistics:
     """Test the statistics method"""
 
     @pytest.mark.parametrize(
-        "returntype", [Expectation, Variance, Sample, Probability, State, Counts]
+        "measurement", [ExpectationMP, VarianceMP, SampleMP, ProbabilityMP, StateMP, CountsMP]
     )
-    def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
+    def test_results_created(self, mock_qutrit_device_extract_stats, monkeypatch, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
-        class UnsupportedMeasurement(MeasurementProcess):
-            @property
-            def return_type(self):
-                return returntype
-
-        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
+        qscript = QuantumScript(measurements=[measurement(obs=qml.PauliX(0))])
 
         with monkeypatch.context() as m:
             dev = mock_qutrit_device_extract_stats()
