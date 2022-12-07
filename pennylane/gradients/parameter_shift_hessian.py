@@ -21,7 +21,7 @@ from collections.abc import Sequence
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.measurements import _Probability, _State, _Variance
+from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
 
 from .general_shift_rules import (
     _combine_shift_rules,
@@ -191,7 +191,7 @@ def _all_zero_grad_new(tape):
 
     zeros_list = []
     for m in tape.measurements:
-        shape = 2 ** len(m.wires) if isinstance(m, _Probability) else ()
+        shape = 2 ** len(m.wires) if isinstance(m, ProbabilityMP) else ()
 
         zeros = tuple(
             tuple(qml.math.zeros(shape) for _ in range(num_params)) for _ in range(num_params)
@@ -630,14 +630,14 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         )
 
     # Perform input validation before generating tapes.
-    if any(isinstance(m, _State) for m in tape.measurements):
+    if any(isinstance(m, StateMP) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return the state is not supported."
         )
 
     # The parameter-shift Hessian implementation currently doesn't support variance measurements.
     # TODO: Support variances similar to how param_shift does it
-    if any(isinstance(m, _Variance) for m in tape.measurements):
+    if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return variances is currently not supported."
         )
@@ -845,14 +845,14 @@ def _param_shift_hessian_tuple(
     """
 
     # Perform input validation before generating tapes.
-    if any(isinstance(m, _State) for m in tape.measurements):
+    if any(isinstance(m, StateMP) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return the state is not supported."
         )
 
     # The parameter-shift Hessian implementation currently doesn't support variance measurements.
     # TODO: Support variances similar to how param_shift does it
-    if any(isinstance(m, _Variance) for m in tape.measurements):
+    if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return variances is currently not supported."
         )

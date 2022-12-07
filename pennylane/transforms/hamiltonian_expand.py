@@ -18,7 +18,7 @@ Contains the hamiltonian expand tape transform
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import _Expectation, MeasurementProcess
+from pennylane.measurements import ExpectationMP, MeasurementProcess
 from pennylane.ops import SProd, Sum
 from pennylane.tape import QuantumScript
 
@@ -126,7 +126,7 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
     if (
         len(tape.measurements) != 1
         or not isinstance(hamiltonian := tape.measurements[0].obs, qml.Hamiltonian)
-        or not isinstance(tape.measurements[0], _Expectation)
+        or not isinstance(tape.measurements[0], ExpectationMP)
     ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"

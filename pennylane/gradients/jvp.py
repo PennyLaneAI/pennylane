@@ -21,7 +21,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane._device import _get_num_copies
-from pennylane.measurements import _Probability
+from pennylane.measurements import ProbabilityMP
 
 
 def _convert(jac, tangent):
@@ -405,7 +405,7 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
 
 def _single_measurement_zero(m, tangent):
     """Aux function to create a zero tensor from a measurement."""
-    dim = 2 ** len(m.wires) if isinstance(m, _Probability) else ()
+    dim = 2 ** len(m.wires) if isinstance(m, ProbabilityMP) else ()
     res = qml.math.convert_like(np.zeros(dim), tangent)
     res = qml.math.cast_like(res, tangent)
     return res

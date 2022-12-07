@@ -26,16 +26,16 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import (
+    CountsMP,
     Expectation,
+    MidMeasureMP,
     Probability,
+    ProbabilityMP,
     Sample,
+    SampleMP,
+    ShadowExpvalMP,
     State,
     Variance,
-    _Counts,
-    _MidMeasure,
-    _Probability,
-    _Sample,
-    _ShadowExpval,
 )
 from pennylane.operation import Observable, Operation, Tensor
 from pennylane.ops import Hamiltonian, Sum
@@ -739,7 +739,7 @@ class Device(abc.ABC):
             isinstance(m.obs, Sum) and m.return_type is Expectation for m in circuit.measurements
         )
 
-        is_shadow = any(isinstance(m, _ShadowExpval) for m in circuit.measurements)
+        is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
 
         hamiltonian_unusable = not supports_hamiltonian or (finite_shots and not is_shadow)
 
@@ -761,7 +761,7 @@ class Device(abc.ABC):
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs
             and all(
-                not isinstance(m, (_Sample, _Probability, _Counts)) for m in circuit.measurements
+                not isinstance(m, (SampleMP, ProbabilityMP, CountsMP)) for m in circuit.measurements
             )
         ):
             # Check for case of non-commuting terms and that there are no Hamiltonians
@@ -963,7 +963,7 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
-            if isinstance(o, _MidMeasure) and not self.capabilities().get(
+            if isinstance(o, MidMeasureMP) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(

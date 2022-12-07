@@ -19,7 +19,7 @@ from itertools import product
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.measurements import ClassicalShadow
+from pennylane.measurements import ClassicalShadowMP
 from pennylane.tape import QuantumScript
 
 
@@ -30,9 +30,9 @@ def _replace_obs(tape: QuantumScript, obs, *args, **kwargs):
     """
     # check if the measurement process of the tape is qml.classical_shadow
     for m in tape.measurements:
-        if not isinstance(m, ClassicalShadow):
+        if not isinstance(m, ClassicalShadowMP):
             raise ValueError(
-                f"Tape measurement must be ClassicalShadow, got {m.__class__.__name__!r}"
+                f"Tape measurement must be ClassicalShadowMP, got {m.__class__.__name__!r}"
             )
 
     with qml.queuing.AnnotatedQueue() as q:

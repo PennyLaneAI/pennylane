@@ -20,7 +20,7 @@ from functools import reduce
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import _Probability, _Sample
+from pennylane.measurements import ProbabilityMP, SampleMP
 
 from .batch_transform import batch_transform
 
@@ -149,7 +149,7 @@ def split_non_commuting(tape):
     """
 
     # TODO: allow for samples and probs
-    if any(isinstance(m, (_Sample, _Probability)) for m in tape.measurements):
+    if any(isinstance(m, (SampleMP, ProbabilityMP)) for m in tape.measurements):
         raise NotImplementedError(
             "When non-commuting observables are used, only `qml.expval` and `qml.var` are supported."
         )
