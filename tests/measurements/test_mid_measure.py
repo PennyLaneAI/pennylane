@@ -319,3 +319,98 @@ if a=0,b=1 => 1
 if a=1,b=0 => 1
 if a=1,b=1 => 2"""
         )
+
+
+unary_dunders = ["__invert__"]
+
+
+measurement_value_binary_dunders = [
+    "__add__",
+    "__mul__",
+    "__radd__",
+    "__rmul__",
+    "__rsub__",
+    "__sub__",
+]
+
+# TODO: the __ne__ attribute is available on MV, but results in a boolean, should it be redefined?
+boolean_binary_dunders = ["__and__", "__eq__", "__ge__", "__gt__", "__le__", "__lt__", "__or__"]
+
+binary_dunders = measurement_value_binary_dunders + boolean_binary_dunders
+
+divisions = ["__rtruediv__", "__truediv__"]
+
+from itertools import product
+
+
+class TestMeasurementCompositeValueManipulation:
+    """Test composite application of dunder methods associated with the MeasurementValue class"""
+
+    @pytest.mark.parametrize("unary_name", unary_dunders)
+    @pytest.mark.parametrize("binary1_name, binary2_name", product(binary_dunders, binary_dunders))
+    def test_composition_between_measurement_values(self, unary_name, binary1_name, binary2_name):
+        """Test the composition of dunder methods."""
+        m0 = MeasurementValue(["m0"], lambda v: v)
+        m1 = MeasurementValue(["m1"], lambda v: v)
+
+        # 1. Apply a unary dunder method
+        unary = getattr(m0, unary_name)
+        m0 = unary()
+        assert isinstance(m0, MeasurementValue)
+
+        # 2. Apply first binary dunder method
+        binary_dunder1 = getattr(m0, binary1_name)
+        sum_of_measurements = binary_dunder1(m1)
+        assert isinstance(sum_of_measurements, MeasurementValue)
+
+        # 3. Apply a unary dunder method on the new MV
+        unary = getattr(sum_of_measurements, unary_name)
+        m0 = unary()
+        assert isinstance(m0, MeasurementValue)
+
+        # 4. Apply second binary dunder method
+        binary_dunder2 = getattr(m0, binary2_name)
+
+        m2 = MeasurementValue(["m2"], lambda v: v)
+        boolean_of_measurements = binary_dunder2(m2)
+
+        assert isinstance(boolean_of_measurements, MeasurementValue)
+
+    @pytest.mark.parametrize("unary_name", unary_dunders)
+    @pytest.mark.parametrize("mv_dunder_name", measurement_value_binary_dunders)
+    @pytest.mark.parametrize("boolean_dunder_name", boolean_binary_dunders)
+    @pytest.mark.parametrize("scalar", [MeasurementValue(["m1"], lambda v: v), 0, 1.0, 1.0 + 0j])
+    @pytest.mark.parametrize("boolean", [MeasurementValue(["m2"], lambda v: v), True, False, None])
+    def test_composition_measurement_values_and_boolean(
+        self, unary_name, mv_dunder_name, boolean_dunder_name, scalar, boolean
+    ):
+        """Test the composition of dunder methods, applying one whose argument is scalar and one whose argument
+        is a boolean."""
+        m0 = MeasurementValue(["m0"], lambda v: v)
+
+        # 1. Apply first binary dunder method between m0 and scalar
+        binary_dunder1 = getattr(m0, mv_dunder_name)
+        sum_of_measurements = binary_dunder1(scalar)
+        assert isinstance(sum_of_measurements, MeasurementValue)
+
+        # 2. Apply second binary dunder method between m0 and boolean
+        binary_dunder2 = getattr(m0, boolean_dunder_name)
+        boolean_of_measurements = binary_dunder2(boolean)
+        assert isinstance(boolean_of_measurements, MeasurementValue)
+
+    @pytest.mark.parametrize("div", divisions)
+    @pytest.mark.parametrize("other", [MeasurementValue(["m2"], lambda v: v) + 5, np.pi])
+    @pytest.mark.parametrize("binary", binary_dunders)
+    def test_composition_with_division(self, binary, div, other):
+        """Test the composition of dunder methods with division."""
+        # 1. Apply a binary dundar
+        m0 = MeasurementValue(["m0"], lambda v: v)
+        m1 = MeasurementValue(["m1"], lambda v: v)
+
+        binary_dunder = getattr(m0, binary)
+        m0 = binary_dunder(m1)
+
+        # 2. Apply a division method
+        division_dunder = getattr(m0, div)
+        res = division_dunder(other)
+        assert isinstance(res, MeasurementValue)
