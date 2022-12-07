@@ -122,7 +122,7 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
-* Added a `pauli_decompose()` which takes a hermitian matrix and decomposes it in the 
+* Added a `pauli_decompose()` which takes a hermitian matrix and decomposes it in the
   Pauli basis, returning it either as a `Hamiltonian` or `PauliSentence` instance.
   [(#3384)](https://github.com/PennyLaneAI/pennylane/pull/3384)
 
@@ -290,7 +290,7 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
-* Add a UserWarning when creating a `Tensor` object with overlapping wires, 
+* Add a UserWarning when creating a `Tensor` object with overlapping wires,
   informing that this can in some cases lead to undefined behaviour.
   [(#3459)](https://github.com/PennyLaneAI/pennylane/pull/3459)
 
@@ -299,6 +299,10 @@
 
 * Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
+
+* Adds support for devices disregarding observable grouping indices in Hamiltonians through
+  the optional `use_grouping` attribute.
+  [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
 
 * Updated `zyz_decomposition` function such that it now supports broadcast operators. This
   means that single-qubit `QubitUnitary` operators, instantiated from a batch of unitaries,
@@ -426,6 +430,39 @@
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
 
+* The JAX-JIT interface now supports gradient transforms and device gradient execution in `backward` mode with the new
+  return types system.
+  [(#3235)](https://github.com/PennyLaneAI/pennylane/pull/3235)
+
+  ```python
+  import pennylane as qml
+  import jax
+  from jax import numpy as jnp
+
+  jax.config.update("jax_enable_x64", True)
+
+  qml.enable_return()
+
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @jax.jit
+  @qml.qnode(dev, interface="jax-jit", diff_method="parameter-shift")
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=0)
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+  a, b = jnp.array(1.0), jnp.array(2.0)
+  ```
+
+  ```pycon
+  >>> jax.jacobian(circuit, argnums=[0, 1])(a, b)
+  ((DeviceArray(0.35017549, dtype=float64, weak_type=True),
+  DeviceArray(-0.4912955, dtype=float64, weak_type=True)),
+  (DeviceArray(5.55111512e-17, dtype=float64, weak_type=True),
+  DeviceArray(0., dtype=float64, weak_type=True)))
+  ```
+
 * Updated `qml.transforms.split_non_commuting` to support the new return types.
   [(#3414)](https://github.com/PennyLaneAI/pennylane/pull/3414)
 
@@ -513,6 +550,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   wanted seed.
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
+* `make_tape` is deprecated. Please use `qml.tape.make_qscript` instead.
+  [(#3478)](https://github.com/PennyLaneAI/pennylane/pull/3478)
+
 <h3>Documentation</h3>
 
 * Adds developer documentation for the queuing module.
@@ -571,6 +611,7 @@ Astral Cai
 Isaac De Vlugt
 Pieter Eendebak
 Lillian M. A. Frederiksen
+Katharine Hyatt
 Soran Jahangiri
 Edward Jiang
 Christina Lee
