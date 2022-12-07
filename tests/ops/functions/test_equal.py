@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as npp
-from pennylane.measurements import _Expectation
+from pennylane.measurements import ExpectationMP
 from pennylane.ops.op_math.controlled_class import Controlled
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -151,8 +151,8 @@ PARAMETRIZED_MEASUREMENTS = [
             [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         )
     ),
-    _Expectation(eigvals=[1, -1]),
-    _Expectation(eigvals=[1, 2]),
+    ExpectationMP(eigvals=[1, -1]),
+    ExpectationMP(eigvals=[1, 2]),
 ]
 PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
     itertools.combinations(
@@ -1270,8 +1270,8 @@ class TestControlledComparisons:
     @pytest.mark.jax
     def test_kwargs_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the base operators"""
-        import torch
         import jax
+        import torch
 
         base1 = qml.RX(torch.tensor(1.2), wires=0)
         base2 = qml.RX(jax.numpy.array(1.2), wires=0)
