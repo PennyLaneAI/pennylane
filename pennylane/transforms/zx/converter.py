@@ -12,13 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transforms for interacting with PyZX, framework for ZX calculus."""
-# pylint: disable=too-many-statements, too-many-branches
+# pylint: disable=too-many-statements, too-many-branches, too-many-return-statements, too-many-arguments, too-few-public-methods
 
 from collections import OrderedDict
 import numpy as np
 import pennylane as qml
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
+
+
+class VertexType:
+    """Type of a vertex in the graph."""
+
+    BOUNDARY = 0
+    Z = 1
+    X = 2
+    H_BOX = 3
+
+
+class EdgeType:
+    """Type of an edge in the graph."""
+
+    SIMPLE = 1
+    HADAMARD = 2
 
 
 def to_zx(qscript, expand_measurements=False):
@@ -32,7 +48,6 @@ def to_zx(qscript, expand_measurements=False):
     try:
         # pylint: disable=import-outside-toplevel
         import pyzx
-        from pyzx.utils import VertexType
         from pyzx.circuit.gates import TargetMapper
         from pyzx.graph import Graph
 
@@ -156,7 +171,6 @@ def from_zx(graph, split_phases=True):
     try:
         # pylint: disable=import-outside-toplevel, unused-import
         import pyzx
-        from pyzx.utils import EdgeType, VertexType, FloatInt
         from pyzx.graph.base import VT
 
     except ImportError as Error:
@@ -217,51 +231,10 @@ def from_zx(graph, split_phases=True):
             if type_1 == VertexType.BOUNDARY:
                 continue
 
-            # Split phases
-            if split_phases:
-                type_z = type_1 == VertexType.Z
-                if type_z and param.denominator == 2:
-                    op = (
-                        qml.adjoint(qml.S(wires=qubit_1))
-                        if param.numerator == 3
-                        else qml.S(wires=qubit_1)
-                    )
-                    operations.append(op)
-                elif type_z and param.denominator == 4:
-                    if param.numerator in (1, 7):
-                        op = (
-                            qml.adjoint(qml.T(wires=qubit_1))
-                            if param.numerator == 7
-                            else qml.T(wires=qubit_1)
-                        )
-                        operations.append(op)
-                    if param.numerator in (3, 5):
-                        operations.append(qml.PauliZ(wires=qubit_1))
-                        op = (
-                            qml.adjoint(qml.T(wires=qubit_1))
-                            if param.numerator == 3
-                            else qml.T(wires=qubit_1)
-                        )
-                        operations.append(op)
-                elif param == 1:
-                    op = (
-                        qml.PauliZ(wires=qubit_1)
-                        if type_1 == VertexType.Z
-                        else qml.PauliX(wires=qubit_1)
-                    )
-                    operations.append(op)
-                elif param != 0:
-                    scaled_param = np.pi * float(param)
-                    op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
-                    operations.append(op_class(scaled_param, wires=qubit_1))
-            # Phases are not split
-            else:
-                if param != 0:
-                    scaled_param = np.pi * float(param)
-                    op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
-                    operations.append(op_class(scaled_param, wires=qubit_1))
+            # Add the one qubits gate
+            operations.extend(_add_one_qubit_gate(param, type_1, qubit_1, split_phases))
 
-            # Given the neighbors add two qubits gates
+            # Given the neighbors on the same rowadd two qubits gates
             neighbors = [
                 w for w in graph.neighbors(vertex) if graph_rows[w] == row_key and w < vertex
             ]
@@ -270,28 +243,77 @@ def from_zx(graph, split_phases=True):
                 type_2 = types[neighbor]
                 qubit_2 = qubits[neighbor]
 
-                if type_1 == type_2:
-
-                    if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.HADAMARD:
-                        raise qml.QuantumFunctionError(
-                            "Two green or respectively two red nodes connected by a simple edge does not have a "
-                            "circuit representation."
-                        )
-
-                    if type_1 == VertexType.Z:
-                        operations.append(qml.CZ(wires=[qubit_2, qubit_1]))
-                    else:
-                        operations.append(qml.Hadamard(wires=qubit_2))
-                        operations.append(qml.CNOT(wires=[qubit_2, qubit_1]))
-                        operations.append(qml.Hadamard(wires=qubit_2))
-
-                else:
-                    if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.SIMPLE:
-                        raise qml.QuantumFunctionError(
-                            "A green and red node connected by a Hadamard edge does not have a circuit representation."
-                        )
-                    # Type1 is always of type Z therefore the qubits are already ordered.
-                    operations.append(qml.CNOT(wires=[qubit_1, qubit_2]))
+                operations.extend(
+                    _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit_2)
+                )
 
     qscript = QuantumScript(operations, [], prep=[])
     return qscript
+
+
+def _add_one_qubit_gate(param, type_1, qubit_1, split_phases):
+    """Return the list of one qubit gates, that will be added to the tape."""
+    if split_phases:
+        type_z = type_1 == VertexType.Z
+        if type_z and param.denominator == 2:
+            op = qml.adjoint(qml.S(wires=qubit_1)) if param.numerator == 3 else qml.S(wires=qubit_1)
+            return [op]
+        if type_z and param.denominator == 4:
+            if param.numerator in (1, 7):
+                op = (
+                    qml.adjoint(qml.T(wires=qubit_1))
+                    if param.numerator == 7
+                    else qml.T(wires=qubit_1)
+                )
+                return [op]
+            if param.numerator in (3, 5):
+                op1 = qml.PauliZ(wires=qubit_1)
+                op2 = (
+                    qml.adjoint(qml.T(wires=qubit_1))
+                    if param.numerator == 3
+                    else qml.T(wires=qubit_1)
+                )
+                return [op1, op2]
+        if param == 1:
+            op = qml.PauliZ(wires=qubit_1) if type_1 == VertexType.Z else qml.PauliX(wires=qubit_1)
+            return [op]
+        if param != 0:
+            scaled_param = np.pi * float(param)
+            op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
+            return [op_class(scaled_param, wires=qubit_1)]
+    # Phases are not split
+    else:
+        if param != 0:
+            scaled_param = np.pi * float(param)
+            op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
+            return [op_class(scaled_param, wires=qubit_1)]
+    # No gate is added
+    return []
+
+
+def _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit_2):
+    """Return the list of two qubit gates giveeen the vertex and its neighbor."""
+    if type_1 == type_2:
+
+        if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.HADAMARD:
+            raise qml.QuantumFunctionError(
+                "Two green or respectively two red nodes connected by a simple edge does not have a "
+                "circuit representation."
+            )
+
+        if type_1 == VertexType.Z:
+            op = qml.CZ(wires=[qubit_2, qubit_1])
+            return [op]
+
+        op_1 = qml.Hadamard(wires=qubit_2)
+        op_2 = qml.CNOT(wires=[qubit_2, qubit_1])
+        op_3 = qml.Hadamard(wires=qubit_2)
+        return [op_1, op_2, op_3]
+
+    if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.SIMPLE:
+        raise qml.QuantumFunctionError(
+            "A green and red node connected by a Hadamard edge does not have a circuit representation."
+        )
+    # Type1 is always of type Z therefore the qubits are already ordered.
+    op = qml.CNOT(wires=[qubit_1, qubit_2])
+    return [op]
