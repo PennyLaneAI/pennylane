@@ -117,7 +117,7 @@ class TestMeasurementProcess:
     def test_no_device_error(self, measurement):
         """Test that an error is raised when a measurement that requires a device
         is called without a device"""
-        msg = "The device argument is required to obtain the shape of the measurement process"
+        msg = "The device argument is required to obtain the shape of the measurement"
 
         with pytest.raises(MeasurementShapeError, match=msg):
             measurement.shape()
@@ -125,7 +125,7 @@ class TestMeasurementProcess:
     def test_undefined_shape_error(self):
         """Test that an error is raised for a measurement with an undefined shape"""
         measurement = qml.counts(wires=[0, 1])
-        msg = "The shape of the measurement _Counts is not defined"
+        msg = "The shape of the measurement CountsMP is not defined"
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             measurement.shape()
