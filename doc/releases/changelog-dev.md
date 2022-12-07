@@ -276,6 +276,9 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
+* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
+  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
+
 * Add a UserWarning when creating a `Tensor` object with overlapping wires,
   informing that this can in some cases lead to undefined behaviour.
   [(#3459)](https://github.com/PennyLaneAI/pennylane/pull/3459)
@@ -461,8 +464,10 @@
   `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
   [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
 
-* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
-  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
+* Updated `qml.transforms.cut_circuit` and `qml.transforms.cut_circuit_mc` to
+  support the new return types.
+  [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
+
 
 <h3>Breaking changes</h3>
 
