@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.probs measurement.
 """
 from typing import Sequence, Tuple
 
 import pennylane as qml
+from pennylane.ops import Prod, SProd, Sum
 from pennylane.wires import Wires
 
 from .measurements import MeasurementShapeError, Probability, SampleMeasurement, StateMeasurement
@@ -88,12 +88,11 @@ def probs(wires=None, op=None):
         op (Observable): Observable (with a diagonalizing_gates attribute) that rotates
          the computational basis
     """
-    # pylint: disable=protected-access
 
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if isinstance(op, (qml.ops.Sum, qml.ops.SProd, qml.ops.Prod)):  # pylint: disable=no-member
+    if isinstance(op, (Sum, SProd, Prod)):
         raise qml.QuantumFunctionError(
             "Symbolic Operations are not supported for rotating probabilities yet."
         )
@@ -114,7 +113,10 @@ def probs(wires=None, op=None):
 
 
 class ProbabilityMP(SampleMeasurement, StateMeasurement):
-    """Measurement process that computes the probability of each computational basis state."""
+    """Measurement process that computes the probability of each computational basis state.
+
+    Please refer to :func:`probs` for detailed documentation.
+    """
 
     method_name = "probability"
 

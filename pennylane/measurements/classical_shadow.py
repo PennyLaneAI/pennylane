@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.classical_shadow measurement.
 """
@@ -336,14 +335,13 @@ class ClassicalShadowMP(MeasurementTransform):
 class ShadowExpvalMP(MeasurementTransform):
     """Measures the expectation value of an operator using the classical shadow measurement process.
 
-    This has the same arguments as the base class MeasurementProcess, plus other additional
-    arguments specific to the classical shadow protocol.
+    Please refer to :func:`shadow_expval` for detailed documentation.
 
     Args:
         args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
-        seed (Union[int, None]): The seed used to generate the random measurements
         H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
             to compute the expectation value over.
+        seed (Union[int, None]): The seed used to generate the random measurements
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
             ``k=1`` corresponds to simply taking the mean over all measurements.
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
@@ -358,17 +356,6 @@ class ShadowExpvalMP(MeasurementTransform):
         super().__init__(*args, **kwargs)
 
     def process(self, qscript, device):
-        """Compute expectation values using classical shadows in a differentiable manner.
-
-        Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
-
-        Args:
-            qscript (QuantumScript): the quantum script to be processed
-            device (Device): the device used to process the quantum script
-
-        Returns:
-            float: expectation value estimate.
-        """
         bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(
             qscript, device
         )

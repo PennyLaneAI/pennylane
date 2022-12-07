@@ -59,7 +59,10 @@ def var(op: Operator):
 
 
 class VarianceMP(SampleMeasurement, StateMeasurement):
-    """Measurement process that computes the variance of the supplied observable."""
+    """Measurement process that computes the variance of the supplied observable.
+
+    Please refer to :func:`var` for detailed documentation.
+    """
 
     method_name = "var"
 

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.measure measurement.
 """
@@ -78,7 +77,10 @@ T = TypeVar("T")
 
 
 class MidMeasureMP(MeasurementProcess):
-    """Mid-circuit measurement."""
+    """Mid-circuit measurement.
+
+    Please refer to :func:`measure` for detailed documentation.
+    """
 
     @property
     def return_type(self):

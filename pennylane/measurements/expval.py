@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.expval measurement.
 """
@@ -60,7 +59,10 @@ def expval(op: Operator):
 
 
 class ExpectationMP(SampleMeasurement, StateMeasurement):
-    """Measurement process that computes the expectation value of the given operator."""
+    """Measurement process that computes the expectation value of the supplied observable.
+
+    Please refer to :func:`expval` for detailed documentation.
+    """
 
     method_name = "expval"
 

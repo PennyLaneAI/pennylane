@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.state measurement.
 """
@@ -76,7 +75,6 @@ def state():
         >>> qml.grad(cost)(x)
         -0.07471906623679961
     """
-    # pylint: disable=protected-access
     return StateMP()
 
 
@@ -117,13 +115,15 @@ def density_matrix(wires):
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device.
     """
-    # pylint: disable=protected-access
     wires = Wires(wires)
     return StateMP(wires=wires)
 
 
 class StateMP(StateMeasurement):
-    """Measurement process that returns the quantum state."""
+    """Measurement process that returns the quantum state in the computational basis.
+
+    Please refer to :func:`state` and :func:`density_matrix` for detailed documentation.
+    """
 
     method_name = "state"
 

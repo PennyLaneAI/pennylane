@@ -70,7 +70,10 @@ def vn_entropy(wires, log_base=None):
 
 
 class VnEntropyMP(StateMeasurement):
-    """Measurement process that returns the Von Neumann entropy of the system prior to measurement."""
+    """Measurement process that computes the Von Neumann entropy of the system prior to measurement.
+
+    Please refer to :func:`vn_entropy` for detailed documentation.
+    """
 
     method_name = "vn_entropy"
 

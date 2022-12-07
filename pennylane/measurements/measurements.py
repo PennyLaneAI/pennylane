@@ -11,13 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
-# pylint: disable=too-many-instance-attributes
 import contextlib
 import copy
 import functools
@@ -122,7 +120,6 @@ class MeasurementProcess(ABC):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
-        log_base (float): Base for the logarithm.
     """
 
     method_name = ""
@@ -483,6 +480,7 @@ class MeasurementProcess(ABC):
         """
         return self if self.obs is None else self.__class__(obs=self.obs.simplify())
 
+    # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
         the given wire map.
@@ -615,34 +613,11 @@ class MeasurementTransform(MeasurementProcess):
             '''
     """
 
-    method_name = ""
-    """Devices can override the logic of a measurement process by defining a method with the
-    name ``method_name`` of the corresponding class. The method should have the following signature:
-
-    .. code-block:: python
-
-        def method_name(self, qscript: QuantumScript):
-            '''Device's custom measurement implementation.
-
-            Args:
-                qscript: quantum script to transform
-            '''
-    """
-
-    method_name = ""
-    """Devices can override the logic of a measurement process by defining a method with the
-    name ``method_name`` of the corresponding class. The method should have the following signature:
-
-    .. code-block:: python
-
-        def method_name(self, qscript: QuantumScript):
-            '''Device's custom measurement implementation.
-
-            Args:
-                qscript: quantum script to transform
-            '''
-    """
-
     @abstractmethod
     def process(self, qscript, device):
-        """Process the given quantum script."""
+        """Process the given quantum script.
+
+        Args:
+            qscript (QuantumScript): quantum script to transform
+            device (Device): device used to transform the quantum script
+        """
