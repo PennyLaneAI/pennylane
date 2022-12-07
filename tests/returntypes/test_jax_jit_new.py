@@ -716,25 +716,21 @@ class TestJaxExecuteIntegration:
 
         class U3(qml.U3):
             def expand(self):
-                tape = qml.tape.QuantumTape()
                 theta, phi, lam = self.data
                 wires = self.wires
-                tape._ops += [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
-                ]
-                return tape
+                return qml.tape.QuantumScript(
+                    [
+                        qml.Rot(lam, theta, -lam, wires=wires),
+                        qml.PhaseShift(phi + lam, wires=wires),
+                    ]
+                )
 
         def cost_fn(a, p, device):
-            tape = qml.tape.QuantumTape()
-
-            with tape:
-                qml.RX(a, wires=0)
-                U3(*p, wires=0)
-                qml.expval(qml.PauliX(0))
-
-            tape = tape.expand(stop_at=lambda obj: device.supports_operation(obj.name))
-            return execute([tape], device, interface="jax-jit", **execute_kwargs)[0]
+            qscript = qml.tape.QuantumScript(
+                [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
+            )
+            qscript = qscript.expand(stop_at=lambda obj: device.supports_operation(obj.name))
+            return execute([qscript], device, interface="jax-jit", **execute_kwargs)[0]
 
         a = jnp.array(0.1)
         p = jnp.array([0.1, 0.2, 0.3])
