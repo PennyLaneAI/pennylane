@@ -246,8 +246,11 @@ class MeasurementProcess(ABC):
     def _shape_new(self, device=None):
         """The expected output shape of the MeasurementProcess.
 
-        Note that the output shape is dependent on the device when the shot vector is defined in
-        the device.
+        Note that the output shape is dependent on the device when:
+
+        * The measurement type is either ``_Probability``, ``_State`` (from :func:`.state`) or
+          ``_Sample``;
+        * The shot vector was defined in the device.
 
         For example, assuming a device with ``shots=None``, expectation values
         and variances define ``shape=(,)``, whereas probabilities in the qubit
@@ -595,7 +598,35 @@ class MeasurementTransform(MeasurementProcess):
     is carried out inside the gradient black box, thus is not tracked by the gradient transform.
 
     Any class inheriting from this class should define its own ``process`` method, which takes a
-    device instance and a tape and returns the result of the measurement process.
+    device instance and a quantum script and returns the result of the measurement process.
+    """
+
+    method_name = ""
+    """Devices can override the logic of a measurement process by defining a method with the
+    name ``method_name`` of the corresponding class. The method should have the following signature:
+
+    .. code-block:: python
+
+        def method_name(self, qscript: QuantumScript):
+            '''Device's custom measurement implementation.
+
+            Args:
+                qscript: quantum script to transform
+            '''
+    """
+
+    method_name = ""
+    """Devices can override the logic of a measurement process by defining a method with the
+    name ``method_name`` of the corresponding class. The method should have the following signature:
+
+    .. code-block:: python
+
+        def method_name(self, qscript: QuantumScript):
+            '''Device's custom measurement implementation.
+
+            Args:
+                qscript: quantum script to transform
+            '''
     """
 
     method_name = ""
@@ -614,4 +645,4 @@ class MeasurementTransform(MeasurementProcess):
 
     @abstractmethod
     def process(self, qscript, device):
-        """Process the given tape."""
+        """Process the given quantum script."""

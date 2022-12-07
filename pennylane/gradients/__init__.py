@@ -46,6 +46,7 @@ Gradient transforms
     param_shift
     param_shift_cv
     param_shift_hessian
+    spsa_grad
 
 Custom gradients
 ^^^^^^^^^^^^^^^^
@@ -315,6 +316,7 @@ from . import parameter_shift
 from . import parameter_shift_cv
 from . import parameter_shift_hessian
 from . import finite_difference
+from . import spsa_gradient
 
 from .gradient_transform import gradient_transform
 from .hessian_transform import hessian_transform
@@ -324,6 +326,7 @@ from .parameter_shift_cv import param_shift_cv
 from .parameter_shift_hessian import param_shift_hessian
 from .vjp import compute_vjp, batch_vjp, vjp, compute_vjp_multi_new, compute_vjp_single_new
 from .jvp import batch_jvp, jvp, compute_jvp_multi, compute_jvp_single
+from .spsa_gradient import spsa_grad
 
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (

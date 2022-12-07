@@ -729,14 +729,16 @@ class Device(abc.ABC):
             for obs in circuit.observables
             if obs.name == "Hamiltonian"
         )
+        # device property present in braket plugin
+        use_grouping = getattr(self, "use_grouping", True)
 
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
 
         is_shadow = any(isinstance(m, _ShadowExpval) for m in circuit.measurements)
 
-        if hamiltonian_in_obs and (
-            (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known
-        ):
+        hamiltonian_unusable = not supports_hamiltonian or (finite_shots and not is_shadow)
+
+        if hamiltonian_in_obs and (hamiltonian_unusable or (use_grouping and grouping_known)):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
