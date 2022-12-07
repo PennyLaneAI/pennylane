@@ -25,8 +25,7 @@ qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-    # TODO:
-    # ["default.qubit", "adjoint", "forward", "jax-jit"],
+    ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
@@ -238,8 +237,7 @@ vv_qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-    # TODO:
-    # ["default.qubit", "adjoint", "forward", "jax-jit"],
+    ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
@@ -1500,8 +1498,7 @@ jit_qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward"],
     ["default.qubit", "parameter-shift", "backward"],
-    # TODO:
-    # ["default.qubit", "adjoint", "forward"],
+    ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
 ]
 
@@ -1676,8 +1673,7 @@ qubit_device_and_diff_method_and_mode = [
     ["default.qubit", "backprop", "forward"],
     ["default.qubit", "finite-diff", "backward"],
     ["default.qubit", "parameter-shift", "backward"],
-    # TODO: forward mode
-    # ["default.qubit", "adjoint", "forward"],
+    ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
 ]
 

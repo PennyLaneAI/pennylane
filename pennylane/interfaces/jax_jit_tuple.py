@@ -28,6 +28,13 @@ from pennylane.interfaces.jax_jit import _validate_jax_version, _numeric_type_to
 dtype = jnp.float64
 
 
+def _copy_tape(t, a):
+    """Copy a given tape with operations and set parameters"""
+    tc = t.copy(copy_operations=True)
+    tc.set_parameters(a)
+    return tc
+
+
 def _create_shape_dtype_struct(tape, device):
     """Auxiliary function for creating the shape and dtype object structure
     given a tape."""
@@ -169,13 +176,6 @@ def _execute_bwd_tuple(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    # Copy a given tape with operations and set parameters
-    def _copy_tape(t, a):
-        tc = t.copy(copy_operations=True)
-        tc.set_parameters(a)
-        return tc
-
     @jax.custom_jvp
     def execute_wrapper(params):
         shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
@@ -309,4 +309,55 @@ def _execute_fwd_tuple(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-    raise NotImplementedError("Forward mode execution for device gradients is not yet implemented.")
+    """The auxiliary execute function for cases when the user requested
+    jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
+    provided. This function does not allow multiple derivatives. It currently does not support shot vectors
+    because adjoint jacobian for default qubit does not support it."""
+
+    # pylint: disable=unused-variable
+    @jax.custom_jvp
+    def execute_wrapper(params):
+        def wrapper(p):
+            """Compute the forward pass."""
+            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, p)]
+            with qml.tape.Unwrap(*new_tapes):
+                res, jacs = execute_fn(new_tapes, **gradient_kwargs)
+            return res, jacs
+
+        shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
+        jac_shape_dtype_structs = _jac_shape_dtype_tuple(tapes, device)
+        res, jacs = jax.pure_callback(
+            wrapper, (shape_dtype_structs, jac_shape_dtype_structs), params
+        )
+        return res, jacs
+
+    @execute_wrapper.defjvp
+    def execute_wrapper_jvp(primal, tangents):
+        """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
+        res, jacs = execute_wrapper(primal[0])
+        multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
+
+        if len(tapes) == 1:
+            jacs = [jacs]
+
+        jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
+        return res, jvps
+
+    res = execute_wrapper(params)
+
+    tracing = []
+    for i, tape in enumerate(tapes):
+        if len(tape.measurements) == 1:
+            tracing.append(isinstance(res[i], jax.interpreters.ad.JVPTracer))
+        else:
+            tracing.append(any(isinstance(r, jax.interpreters.ad.JVPTracer) for r in res[i]))
+
+    tracing = any(tracing)
+
+    # When there are no tracers (not differentiating), we have the result of
+    # the forward pass and the jacobian, but only need the result of the
+    # forward pass
+    if len(res) == 2 and not tracing:
+        res = res[0]
+
+    return res
