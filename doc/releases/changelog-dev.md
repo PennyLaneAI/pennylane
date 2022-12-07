@@ -46,7 +46,7 @@
   * Add `SampleMP` class.
     [(#3288)](https://github.com/PennyLaneAI/pennylane/pull/3288)
 
-  * Add `VarMP` class.
+  * Add `VarianceMP` class.
     [(#3312)](https://github.com/PennyLaneAI/pennylane/pull/3312)
 
   * Add `ProbabilityMP` class.
