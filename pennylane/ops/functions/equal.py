@@ -51,9 +51,10 @@ def equal(
     .. Warning::
 
         The kwargs ``check_interface`` and ``check_trainability`` can only be set when
-        comparing ``Operation`` objects. Comparisons of ``MeasurementProcess``, ``SymbolicOp``
+        comparing ``Operation`` objects. Comparisons of ``MeasurementProcess``
         or ``Observable`` objects will use the defualt value of ``True`` for both, regardless
-        of what the user specifies when calling the function.
+        of what the user specifies when calling the function. For subclasses of ``SymbolicOp``
+        with an ``Operation`` as a base, the kwargs will be applied to the base comparison.
 
     Args:
         op1 (.Operator or .MeasurementProcess): First object to compare
@@ -104,9 +105,10 @@ def equal(
     .. details::
         :title: Usage Details
 
-        You can use the optional arguments to get more specific results. These arguments are, however, not used
-        for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects. Additionally, they are
-        applied only to the base operator of `Controlled` operators.
+        You can use the optional arguments to get more specific results. Additionally, they are
+        applied when comparing the base of ``SymbolicOp`` operators such as ``Controlled``, ``Pow``,
+        ``SProd``, etc., if the base is an ``Operation``. These arguments are, however, not used
+        for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
 
         Consider the following comparisons:
 
