@@ -83,6 +83,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.pattern_matching
+    ~transforms.to_zx
 
 There are also utility functions that take a circuit and return a DAG.
 

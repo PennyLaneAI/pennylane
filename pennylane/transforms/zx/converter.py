@@ -49,8 +49,66 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
             rotations will be added to the operations.
 
     **Example**
+
+    You can use the transform decorator directly on your `QNode`, by executing then you will get the PyZX graph.
+
+    ```python
+    import pyzx
+    dev = qml.device('default.qubit', wires=2)
+
+    @qml.transforms.to_zx
+    def circuit(p):
+        qml.RZ(p[0], wires=1),
+        qml.RZ(p[1], wires=1),
+        qml.RX(p[2], wires=0),
+        qml.PauliZ(wires=0),
+        qml.RZ(p[3], wires=1),
+        qml.PauliX(wires=1),
+        qml.CNOT(wires=[0, 1]),
+        qml.CNOT(wires=[1, 0]),
+        qml.SWAP(wires=[0, 1]),
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(2))
+
+    params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
+    g = circuit(params)
+    ```
+
+    ```pycon
+    >>> g
+    Graph(22 vertices, 24 edges)
+    ```
+
+    It is now a PyZX graph and can apply function from the framework on your Graph, for example you can draw it:
+
+    ```
+    >>> pyzx.draw(g)
+    <Figure size 800x200 with 1 Axes>
+    ```
+
+    Alternatively you can use the transform directly on a quantum script and get PyZX graph.
+
+    ```python
+    operations = [
+            qml.RZ(5 / 4 * np.pi, wires=1),
+            qml.RZ(3 / 4 * np.pi, wires=1),
+            qml.RX(0.1, wires=0),
+            qml.PauliZ(wires=0),
+            qml.RZ(0.3, wires=1),
+            qml.PauliX(wires=1),
+            qml.CNOT(wires=[0, 1]),
+            qml.CNOT(wires=[1, 0]),
+            qml.SWAP(wires=[0, 1]),
+        ]
+
+    qscript = QuantumScript(operations, [], [])
+    g = qml.transforms.to_zx(qscript)
+    ```
+    ```pycon
+    >>> g
+    Graph(22 vertices, 24 edges)
+    ```
     """
-    return None
+    return None  # pragma: no cover
 
 
 @to_zx.tape_transform
