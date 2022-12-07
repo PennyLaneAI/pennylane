@@ -212,7 +212,7 @@ jobs:
           - { loc: "tests/returntypes/transforms", suite: 'transforms'}
           - { loc: "tests/returntypes/paramshift", suite: 'paramshift'}
           - { loc: "tests/returntypes/finitediff", suite: 'finitediff'}
-          - { loc: "tests/returntypes/others", suite: 'others'}
+          - { loc: "tests/returntypes/core", suite: 'core'}
 
     steps:
       - name: Cancel Previous Runs
