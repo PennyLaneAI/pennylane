@@ -818,7 +818,7 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     rgp = (alpha * ra[:, np.newaxis, np.newaxis] + beta * rb[:, np.newaxis, np.newaxis]) / (
         alpha + beta
     )
-    dr = rgp - np.array(r)[:, np.newaxis, np.newaxis]
+    dr = rgp - r[:, np.newaxis, np.newaxis]
 
     a = 0.0
     for t, u, v in it.product(*[range(l) for l in [l1 + l2 + 1, m1 + m2 + 1, n1 + n2 + 1]]):

@@ -136,7 +136,7 @@ def scf(mol, n_steps=50, tol=1e-8):
         s = s + qml.math.diag(qml.math.random.rand(len(s)) * 1.0e-12)
 
         w, v = qml.math.linalg.eigh(s)
-        x = v @ qml.math.diag(np.array([1 / qml.math.sqrt(i) for i in w])) @ v.T
+        x = v @ qml.math.diag(1.0 / qml.math.sqrt(w)) @ v.T
 
         eigvals, w_fock = qml.math.linalg.eigh(
             x.T @ h_core @ x
@@ -257,6 +257,7 @@ def hf_energy(mol):
         e_elec = qml.math.einsum(
             "pq,qp", fock_matrix + h_core, mol_density_matrix(mol.n_electrons, coeffs)
         )
-        return e_elec + e_rep
+        energy = e_elec + e_rep
+        return energy.reshape(())
 
     return _hf_energy
