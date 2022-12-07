@@ -77,7 +77,7 @@ def state():
         -0.07471906623679961
     """
     # pylint: disable=protected-access
-    return _State()
+    return StateMP()
 
 
 def density_matrix(wires):
@@ -119,10 +119,10 @@ def density_matrix(wires):
     """
     # pylint: disable=protected-access
     wires = Wires(wires)
-    return _State(wires=wires)
+    return StateMP(wires=wires)
 
 
-class _State(StateMeasurement):
+class StateMP(StateMeasurement):
     """Measurement process that returns the quantum state."""
 
     method_name = "state"
@@ -151,8 +151,8 @@ class _State(StateMeasurement):
 
         if device is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
         # qml.state()
         dim = 2 ** len(device.wires)
@@ -177,8 +177,8 @@ class _State(StateMeasurement):
         # qml.state()
         if device is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
 
         dim = 2 ** len(device.wires)
