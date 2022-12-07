@@ -532,9 +532,8 @@ class TestJaxExecuteIntegration:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            
-            return execute([tape], device, interface="jax-python", **execute_kwargs)[0]
 
+            return execute([tape], device, interface="jax-python", **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         res = jax.grad(cost, argnums=(0, 1, 2))(a, b, c, device=dev)
@@ -587,7 +586,7 @@ class TestJaxExecuteIntegration:
                 qml.CRX(2 * x[0] * x[1], wires=[0, 1])
                 qml.RX(2 * x[1], wires=[1])
                 qml.expval(qml.PauliZ(0))
-                
+
             tape2 = qml.tape.QuantumScript.from_queue(q2)
 
             return execute(
