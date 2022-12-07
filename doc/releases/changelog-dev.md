@@ -253,7 +253,7 @@
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
 
 
-<h4>Return types project</h4>
+<h4>(Experimental) Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
   [(#3374)](https://github.com/PennyLaneAI/pennylane/pull/3374)
@@ -389,12 +389,12 @@
 
 <h3>Breaking changes</h3>
 
+* Python 3.7 support is no longer maintained. PennyLane will be maintained for versions 3.8 and up.
+  [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
+
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `_VnEntropy` and
   `_MutualInfo` classes, which inherit from `MeasurementProcess`.
   [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
-
-* Python 3.7 support is no longer maintained.
-  [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
 
 * Removed `qml.utils.decompose_hamiltonian()`, please use `qml.pauli_decompose()` instead.
   [(#3384)](https://github.com/PennyLaneAI/pennylane/pull/3384)
