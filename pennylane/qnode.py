@@ -25,6 +25,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
+from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
 from pennylane.tape import QuantumScript, make_qscript
 
 
@@ -731,7 +732,7 @@ class QNode:
             )
 
         terminal_measurements = [
-            m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
+            m for m in self.tape.measurements if not isinstance(m, MidMeasureMP)
         ]
         if any(ret != m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
@@ -761,10 +762,7 @@ class QNode:
         # operations
         # 2. Move this expansion to Device (e.g., default_expand_fn or
         # batch_transform method)
-        if any(
-            getattr(obs, "return_type", None) == qml.measurements.MidMeasure
-            for obs in self.tape.operations
-        ):
+        if any(isinstance(m, MidMeasureMP) for m in self.tape.operations):
             self._tape = qml.defer_measurements(self._tape)
 
         if self.expansion_strategy == "device":
@@ -873,9 +871,8 @@ class QNode:
 
             res = res[0]
 
-        if not isinstance(self._qfunc_output, Sequence) and self._qfunc_output.return_type in (
-            qml.measurements.Counts,
-            qml.measurements.AllCounts,
+        if not isinstance(self._qfunc_output, Sequence) and isinstance(
+            self._qfunc_output, CountsMP
         ):
             if self.device._has_partitioned_shots():
                 return tuple(res)
@@ -884,8 +881,7 @@ class QNode:
             return res[0]
 
         if isinstance(self._qfunc_output, Sequence) and any(
-            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-            for m in self._qfunc_output
+            isinstance(m, CountsMP) for m in self._qfunc_output
         ):
 
             # If Counts was returned with other measurements, then apply the
@@ -904,7 +900,7 @@ class QNode:
         ):
             return res
 
-        if self._qfunc_output.return_type is qml.measurements.Shadow:
+        if isinstance(self._qfunc_output, ClassicalShadowMP):
             # if classical shadows is returned, then don't squeeze the
             # last axis corresponding to the number of qubits
             return qml.math.squeeze(res, axis=0)

@@ -66,11 +66,13 @@ def vn_entropy(wires, log_base=None):
     .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
     """
     wires = Wires(wires)
-    return _VnEntropy(wires=wires, log_base=log_base)
+    return VnEntropyMP(wires=wires, log_base=log_base)
 
 
-class _VnEntropy(StateMeasurement):
-    """Measurement process that returns the Von Neumann entropy."""
+class VnEntropyMP(StateMeasurement):
+    """Measurement process that returns the Von Neumann entropy of the system prior to measurement."""
+
+    method_name = "vn_entropy"
 
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(
