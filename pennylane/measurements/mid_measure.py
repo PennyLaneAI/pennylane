@@ -76,7 +76,7 @@ def measure(wires):  # TODO: Change name to mid_measure
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    _MidMeasure(wires=wire, id=measurement_id)
+    MidMeasureMP(wires=wire, id=measurement_id)
     return MeasurementValue([measurement_id], processing_fn=lambda v: v)
 
 
