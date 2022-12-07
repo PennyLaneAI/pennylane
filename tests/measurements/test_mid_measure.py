@@ -296,7 +296,7 @@ class TestMeasurementValueManipulation:
         m1 = MeasurementValue(["m1"], lambda v: v)
         m2 = MeasurementValue(["m2"], lambda v: v)
         compared = m1 == m2
-        branches = compared.branches()
+        branches = compared.branches
         assert branches[(0, 0)] is True
         assert branches[(0, 1)] is False
         assert branches[(1, 0)] is False

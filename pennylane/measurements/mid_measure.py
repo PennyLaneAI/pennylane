@@ -128,77 +128,65 @@ class MeasurementValue(Generic[T]):
             ret_dict[branch] = self.processing_fn(*branch)
         return ret_dict
 
+    def _transform_bin_op(self, base_bin, other):
+        """helper function for defining dunder binary operations"""
+        if isinstance(other, MeasurementValue):
+            return self._merge(other)._apply(lambda t: base_bin(t[0], t[1]))
+        # if `other` is not a MeasurementValue then apply it to each branch
+        return self._apply(lambda v: base_bin(v, other))
+
     def __invert__(self):
         """Return a copy of the measurement value with an inverted control
         value."""
         return self._apply(lambda v: not v)
 
     def __eq__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(lambda v: v[0] == v[1])
-        return self._apply(lambda v: v == other)
+        return self._transform_bin_op(lambda a, b: a == b, other)
+
+    def __ne__(self, other):
+        return self._transform_bin_op(lambda a, b: a != b, other)
 
     def __add__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(lambda v: v[0] + v[1])
-        return self._apply(lambda v: v + other)
+        return self._transform_bin_op(lambda a, b: a + b, other)
 
     def __radd__(self, other):
         return self._apply(lambda v: other + v)
 
     def __sub__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(lambda v: v[0] - v[1])
-        return self._apply(lambda v: v - other)
+        return self._transform_bin_op(lambda a, b: a - b, other)
 
     def __rsub__(self, other):
         return self._apply(lambda v: other - v)
 
     def __mul__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(lambda v: v[0] * v[1])
-        return self._apply(lambda v: v * other)
+        return self._transform_bin_op(lambda a, b: a * b, other)
 
     def __rmul__(self, other):
         return self._apply(lambda v: other * v)
 
     def __truediv__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(lambda v: v[0] / v[1])
-        return self._apply(lambda v: v / other)
+        return self._transform_bin_op(lambda a, b: a / b, other)
 
     def __rtruediv__(self, other):
         return self._apply(lambda v: other / v)
 
     def __lt__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(lambda v: v[0] < v[1])
-        return self._apply(lambda v: v < other)
+        return self._transform_bin_op(lambda a, b: a < b, other)
 
     def __le__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(lambda v: v[0] <= v[1])
-        return self._apply(lambda v: v <= other)
+        return self._transform_bin_op(lambda a, b: a <= b, other)
 
     def __gt__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(lambda v: v[0] > v[1])
-        return self._apply(lambda v: v > other)
+        return self._transform_bin_op(lambda a, b: a > b, other)
 
     def __ge__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(lambda v: v[0] >= v[1])
-        return self._apply(lambda v: v >= other)
+        return self._transform_bin_op(lambda a, b: a >= b, other)
 
     def __and__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(lambda v: v[0] and v[1])
-        return self._apply(lambda v: v and other)
+        return self._transform_bin_op(lambda a, b: a and b, other)
 
     def __or__(self, other):
-        if isinstance(other, MeasurementValue):
-            return self._merge(other)._apply(lambda v: v[0] or v[1])
-        return self._apply(lambda v: v or other)
+        return self._transform_bin_op(lambda a, b: a or b, other)
 
     def _apply(self, fn):
         """Apply a post computation to this measurement"""
