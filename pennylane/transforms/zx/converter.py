@@ -105,23 +105,7 @@ def to_zx(qscript, expand_measurements=False):
 
     expanded_qscript = QuantumScript(expanded_operations, qscript.measurements, [])
 
-    # Create graph from circuit in the quantum script (operations, measurements)
-    for op in expanded_qscript.operations:
-
-        # Check that the gate is compatible with PyZX
-        name = op.name
-        if name not in gate_types:
-            raise qml.QuantumFunctionError(
-                "The expansion of the quantum script failed, PyZX does not support", name
-            )
-
-        # Apply wires and parameters
-        map_gate = gate_types[name]
-
-        args = [*op.wires, *(p / np.pi for p in op.parameters)]
-
-        gate = map_gate(*args)
-        gate.to_graph(graph, q_mapper, c_mapper)
+    _add_operations_to_graph(expanded_qscript, graph, gate_types, q_mapper, c_mapper)
 
     row = max(q_mapper.max_row(), c_mapper.max_row())
 
@@ -138,6 +122,27 @@ def to_zx(qscript, expand_measurements=False):
     graph.set_outputs(tuple(outputs))
 
     return graph
+
+
+def _add_operations_to_graph(qscript, graph, gate_types, q_mapper, c_mapper):
+    """Add the qscript operation to the PyZX graph."""
+    # Create graph from circuit in the quantum script (operations, measurements)
+    for op in qscript.operations:
+
+        # Check that the gate is compatible with PyZX
+        name = op.name
+        if name not in gate_types:
+            raise qml.QuantumFunctionError(
+                "The expansion of the quantum script failed, PyZX does not support", name
+            )
+
+        # Apply wires and parameters
+        map_gate = gate_types[name]
+
+        args = [*op.wires, *(p / np.pi for p in op.parameters)]
+
+        gate = map_gate(*args)
+        gate.to_graph(graph, q_mapper, c_mapper)
 
 
 def from_zx(graph, split_phases=True):

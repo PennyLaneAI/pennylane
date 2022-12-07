@@ -200,8 +200,8 @@ class TestConvertersZX:
         I = qml.math.eye(2**2)
 
         operations = [
-            qml.RZ(5 / 4, wires=1),
-            qml.RZ(3 / 4, wires=1),
+            qml.RZ(5 / 4 * np.pi, wires=1),
+            qml.RZ(3 / 4 * np.pi, wires=1),
             qml.RX(0.1, wires=0),
             qml.PauliZ(wires=0),
             qml.RZ(0.3, wires=1),
