@@ -131,8 +131,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             return self._shape_new(device)
         if device is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
         num_shot_elements = (
             1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
@@ -145,8 +145,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     def _shape_new(self, device=None):
         if device is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
         num_shot_elements = (
             1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)

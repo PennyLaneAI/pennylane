@@ -137,11 +137,11 @@ def _validate_tapes(tapes):
     for t in tapes:
 
         measurement_types = [type(m) for m in t.measurements]
-        set_of_return_types = set(measurement_types)
+        set_of_measurement_types = set(measurement_types)
         probs_or_sample_measure = (
             SampleMP in measurement_types or ProbabilityMP in measurement_types
         )
-        if probs_or_sample_measure and len(set_of_return_types) > 1:
+        if probs_or_sample_measure and len(set_of_measurement_types) > 1:
             raise InterfaceUnsupportedError(
                 "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
             )

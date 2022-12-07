@@ -151,8 +151,8 @@ class StateMP(StateMeasurement):
 
         if device is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
         # qml.state()
         dim = 2 ** len(device.wires)
@@ -177,8 +177,8 @@ class StateMP(StateMeasurement):
         # qml.state()
         if device is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
 
         dim = 2 ** len(device.wires)
