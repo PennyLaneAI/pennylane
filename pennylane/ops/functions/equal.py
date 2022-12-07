@@ -39,17 +39,21 @@ def equal(
 
     .. Warning::
 
-        The equal function does **not** check if the matrix representation
-        of a :class:`~.Hermitian` observable is equal to an equivalent
-        observable expressed in terms of Pauli matrices, or as a
-        linear combination of Hermitians.
-        To do so would require the matrix form of Hamiltonians and Tensors
-        be calculated, which may drastically increase runtime.
+        The ``qml.equal`` function is based on a comparison of the type and attributes
+        of the measurement or operator, not a mathematical representation. While
+        comparisons between some classes, such as ``Tensor`` and ``Hamiltonian``, are
+        supported, mathematically equivalent operators defined via different classes
+        may return False when compared via ``qml.equal``.
+
+        To be more thorough would require the matrix forms to be calculated, which may
+        drastically increase runtime.
+
+    .. Warning::
 
         The kwargs ``check_interface`` and ``check_trainability`` can only be set when
-        comparing ``Operation`` objects. Comparisons of ``MeasurementProcess`` or ``Observable``
-        objects will use the defualt value of ``True`` for both, regardless of what the user
-        specifies when calling the function.
+        comparing ``Operation`` objects. Comparisons of ``MeasurementProcess``, ``SymbolicOp``
+        or ``Observable`` objects will use the defualt value of ``True`` for both, regardless
+        of what the user specifies when calling the function.
 
     Args:
         op1 (.Operator or .MeasurementProcess): First object to compare
