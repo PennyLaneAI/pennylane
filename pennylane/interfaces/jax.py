@@ -22,7 +22,7 @@ import jax.numpy as jnp
 
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
-from pennylane.measurements import _Counts, _Probability, _Sample
+from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 
 dtype = jnp.float64
 
@@ -137,14 +137,16 @@ def _validate_tapes(tapes):
     for t in tapes:
 
         measurement_types = [type(m) for m in t.measurements]
-        set_of_return_types = set(measurement_types)
-        probs_or_sample_measure = _Sample in measurement_types or _Probability in measurement_types
-        if probs_or_sample_measure and len(set_of_return_types) > 1:
+        set_of_measurement_types = set(measurement_types)
+        probs_or_sample_measure = (
+            SampleMP in measurement_types or ProbabilityMP in measurement_types
+        )
+        if probs_or_sample_measure and len(set_of_measurement_types) > 1:
             raise InterfaceUnsupportedError(
                 "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
             )
 
-        if _Probability in measurement_types:
+        if ProbabilityMP in measurement_types:
             set_len_wires = {len(m.wires) for m in t.measurements}
             if len(set_len_wires) > 1:
                 raise InterfaceUnsupportedError(
@@ -174,7 +176,7 @@ def _execute(
         """Auxiliary function to convert the result of a tape to an array,
         unless the tape had Counts measurements that are represented with
         dictionaries. JAX NumPy arrays don't support dictionaries."""
-        return jnp.array(r) if not any(isinstance(m, _Counts) for m in tape.measurements) else r
+        return jnp.array(r) if not any(isinstance(m, CountsMP) for m in tape.measurements) else r
 
     @jax.custom_vjp
     def wrapped_exec(params):
@@ -214,7 +216,7 @@ def _execute(
 
             for t in tapes:
                 multi_probs = (
-                    any(isinstance(m, _Probability) for m in t.measurements)
+                    any(isinstance(m, ProbabilityMP) for m in t.measurements)
                     and len(t.measurements) > 1
                 )
 

@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.fourier.qnode_spectrum import _process_ids, qnode_spectrum
-from pennylane.measurements import _Sample, _State, _Variance
+from pennylane.measurements import SampleMP, StateMP, VarianceMP
 
 
 def circuit_0(a):
@@ -358,7 +358,7 @@ class TestCircuits:
 
     @pytest.mark.parametrize(
         "measurement",
-        [_State(), _Sample(obs=qml.PauliZ(0)), _Variance(obs=qml.PauliZ(0))],
+        [StateMP(), SampleMP(obs=qml.PauliZ(0)), VarianceMP(obs=qml.PauliZ(0))],
     )
     def test_wrong_return_type_error(self, measurement):
         """Test that an error is thrown if the QNode has a ``MeasurementProcess``

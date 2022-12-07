@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane._device import _get_num_copies
-from pennylane.measurements import _MutualInfo, _State, _Variance, _VnEntropy
+from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP
 
 from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new, finite_diff
 from .general_shift_rules import (
@@ -963,7 +963,7 @@ def _var_param_shift_tuple(
     argnum = argnum or tape.trainable_params
 
     # Determine the locations of any variance measurements in the measurement queue.
-    var_mask = [isinstance(m, _Variance) for m in tape.measurements]
+    var_mask = [isinstance(m, VarianceMP) for m in tape.measurements]
     var_indices = np.where(var_mask)[0]
 
     # Get <A>, the expectation value of the tape with unshifted parameters.
@@ -1069,7 +1069,7 @@ def var_param_shift(
     argnum = argnum or tape.trainable_params
 
     # Determine the locations of any variance measurements in the measurement queue.
-    var_mask = [isinstance(m, _Variance) for m in tape.measurements]
+    var_mask = [isinstance(m, VarianceMP) for m in tape.measurements]
     var_idx = np.where(var_mask)[0]
 
     # Get <A>, the expectation value of the tape with unshifted parameters.
@@ -1478,7 +1478,7 @@ def _param_shift_new(
         batch_size of the created tapes.
     """
 
-    if any(isinstance(m, (_State, _VnEntropy, _MutualInfo)) for m in tape.measurements):
+    if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."
         )
@@ -1525,7 +1525,7 @@ def _param_shift_new(
     if gradient_recipes is None:
         gradient_recipes = [None] * len(argnum)
 
-    if any(isinstance(m, _Variance) for m in tape.measurements):
+    if any(isinstance(m, VarianceMP) for m in tape.measurements):
         g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast, shots)
     else:
         g_tapes, fn = expval_param_shift(
@@ -1871,7 +1871,7 @@ def param_shift(
             shots=shots,
         )
 
-    if any(isinstance(m, (_State, _VnEntropy, _MutualInfo)) for m in tape.measurements):
+    if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."
         )
@@ -1920,7 +1920,7 @@ def param_shift(
     if gradient_recipes is None:
         gradient_recipes = [None] * len(argnum)
 
-    if any(isinstance(m, _Variance) for m in tape.measurements):
+    if any(isinstance(m, VarianceMP) for m in tape.measurements):
         g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
     else:
         g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)

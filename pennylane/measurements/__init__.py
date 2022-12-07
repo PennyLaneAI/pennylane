@@ -14,9 +14,9 @@
 """
 This module contains measurements supported by PennyLane.
 """
-from .classical_shadow import ClassicalShadow, _ShadowExpval, classical_shadow, shadow_expval
-from .counts import _Counts, counts
-from .expval import _Expectation, expval
+from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
+from .counts import CountsMP, counts
+from .expval import ExpectationMP, expval
 from .measurements import (
     AllCounts,
     Counts,
@@ -37,10 +37,10 @@ from .measurements import (
     Variance,
     VnEntropy,
 )
-from .mid_measure import MeasurementValue, MeasurementValueError, _MidMeasure, measure
-from .mutual_info import _MutualInfo, mutual_info
-from .probs import _Probability, probs
-from .sample import _Sample, sample
-from .state import _State, density_matrix, state
-from .var import _Variance, var
-from .vn_entropy import _VnEntropy, vn_entropy
+from .mid_measure import MeasurementValue, MeasurementValueError, MidMeasureMP, measure
+from .mutual_info import MutualInfoMP, mutual_info
+from .probs import ProbabilityMP, probs
+from .sample import SampleMP, sample
+from .state import StateMP, density_matrix, state
+from .var import VarianceMP, var
+from .vn_entropy import VnEntropyMP, vn_entropy
