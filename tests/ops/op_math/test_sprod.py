@@ -625,7 +625,7 @@ class TestWrapperFunc:
 
         assert isinstance(op, SProd)
         assert op.scalar == 3
-        assert qml.equal(op.base, s_prod(4, qml.PauliX(0)))
+        assert qml.equal(op.base, SProd(4, qml.PauliX(0)))
 
     def test_non_lazy_mode(self):
         """Test the lazy=False keyword."""
