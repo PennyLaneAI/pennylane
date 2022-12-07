@@ -261,10 +261,10 @@ class TestQubitUnitary:
             (
                 np.exp(1j * 0.02)
                 * qml.Rot(
-                    np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0
+                    np.array([1.2, 2.3]), np.array([0.12, 0.5]), np.array([0.98, 0.567]), wires=0
                 ).matrix(),
                 qml.Rot,
-                [[1.2, 2.3], [1.2, 2.3], [1.2, 2.3]],
+                [[1.2, 2.3], [0.12, 0.5], [0.98, 0.567]],
             ),
         ],
     )
