@@ -18,7 +18,7 @@ import pytest
 pytestmark = pytest.mark.torch
 
 torch = pytest.importorskip("torch")
-from torch.autograd.functional import jacobian
+torch_functional = pytest.importorskip("torch.autograd.functional")
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
@@ -219,13 +219,13 @@ class TestCaching:
         # Without caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
         params = torch.tensor([0.1, 0.2], requires_grad=True)
-        torch.autograd.functional.jacobian(lambda p: cost(p, cache=None), params)
+        torch_functional.jacobian(lambda p: cost(p, cache=None), params)
         assert dev.num_executions == 5
 
         # With caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
         dev._num_executions = 0
-        torch.autograd.functional.jacobian(lambda p: cost(p, cache=True), params)
+        torch_functional.jacobian(lambda p: cost(p, cache=True), params)
         assert dev.num_executions == 5
 
     @pytest.mark.parametrize("num_params", [2, 3])
@@ -312,13 +312,13 @@ class TestCaching:
         # Without caching, 3 evaluations are required.
         # 1 for the forward pass, and one per output dimension
         # on the backward pass.
-        torch.autograd.functional.jacobian(lambda x: cost(x, cache=None), params)
+        torch_functional.jacobian(lambda x: cost(x, cache=None), params)
         assert dev.num_executions == 3
 
         # With caching, only 2 evaluations are required. One
         # for the forward pass, and one for the backward pass.
         dev._num_executions = 0
-        torch.autograd.functional.jacobian(lambda x: cost(x, cache=True), params)
+        torch_functional.jacobian(lambda x: cost(x, cache=True), params)
         assert dev.num_executions == 2
 
 
@@ -757,7 +757,7 @@ class TestTorchExecuteIntegration:
         assert torch.allclose(res[0], expected_0, atol=tol, rtol=0)
         assert torch.allclose(res[1], expected_1, atol=tol, rtol=0)
 
-        jac = jacobian(circuit, (x, y))
+        jac = torch_functional.jacobian(circuit, (x, y))
         dtype_jac = jac[0][0].dtype
 
         res_0 = torch.tensor(
@@ -817,7 +817,7 @@ class TestTorchExecuteIntegration:
         assert torch.allclose(res[0], res_0, atol=tol, rtol=0)
         assert torch.allclose(res[1], res_1, atol=tol, rtol=0)
 
-        jac = jacobian(circuit, (x, y))
+        jac = torch_functional.jacobian(circuit, (x, y))
         dtype_jac = jac[0][0].dtype
 
         res_0 = torch.tensor(
@@ -1021,11 +1021,11 @@ class TestHigherOrderDerivatives:
         )
         assert torch.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
-        jac_fn = lambda x: torch.autograd.functional.jacobian(circuit, x, create_graph=True)
+        jac_fn = lambda x: torch_functional.jacobian(circuit, x, create_graph=True)
 
         g = jac_fn(x)
 
-        hess = torch.autograd.functional.jacobian(jac_fn, x)
+        hess = torch_functional.jacobian(jac_fn, x)
 
         expected_g = torch.tensor(
             [
@@ -1195,9 +1195,7 @@ class TestHamiltonianWorkflows:
         assert np.allclose(res[1].detach(), expected[1], atol=tol, rtol=0)
 
         res = torch.hstack(
-            torch.autograd.functional.jacobian(
-                lambda *x: cost_fn(*x, dev=dev), (weights, coeffs1, coeffs2)
-            )
+            torch_functional.jacobian(lambda *x: cost_fn(*x, dev=dev), (weights, coeffs1, coeffs2))
         )
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
@@ -1214,9 +1212,7 @@ class TestHamiltonianWorkflows:
         assert np.allclose(res[1].detach(), expected[1], atol=tol, rtol=0)
 
         res = torch.hstack(
-            torch.autograd.functional.jacobian(
-                lambda *x: cost_fn(*x, dev=dev), (weights, coeffs1, coeffs2)
-            )
+            torch_functional.jacobian(lambda *x: cost_fn(*x, dev=dev), (weights, coeffs1, coeffs2))
         )
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         assert np.allclose(res.detach(), expected, atol=tol, rtol=0)

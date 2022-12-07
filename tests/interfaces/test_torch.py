@@ -323,7 +323,9 @@ class TestCaching:
 
 torch_devices = [None]
 
-if torch.cuda.is_available():
+torch_cuda = pytest.importorskip("torch.cuda")
+
+if torch_cuda.is_available():
     torch_devices.append(torch.device("cuda"))
 
 

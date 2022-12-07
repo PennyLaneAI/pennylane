@@ -89,7 +89,7 @@ class TestDtypePreserved:
     evaluation"""
 
     @pytest.mark.parametrize(
-        "r_dtype, r_dtype_torch", [(np.float32, torch.float32), (np.float64, torch.float64)]
+        "r_dtype, r_dtype_torch", [(np.float32, "torch32"), (np.float64, "torch64")]
     )
     @pytest.mark.parametrize(
         "measurement",
@@ -104,6 +104,11 @@ class TestDtypePreserved:
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
         p = torch.tensor(0.543)
+
+        if r_dtype_torch == "torch32":
+            r_dtype_torch = torch.float32
+        else:
+            r_dtype_torch = torch.float64
 
         dev = qml.device("default.mixed", wires=3, r_dtype=r_dtype)
 
