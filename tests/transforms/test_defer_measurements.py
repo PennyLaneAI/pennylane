@@ -599,7 +599,8 @@ class TestExpressionConditionals:
 
         assert np.allclose(normal_probs, cond_probs)
 
-    def test_triple_measurement_condition_expression(self):
+    @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
+    def test_triple_measurement_condition_expression(self, r):
         """test that combining the results of three mid-circuit measurements works as expected."""
         dev = qml.device("default.qubit", wires=4)
 
@@ -634,8 +635,8 @@ class TestExpressionConditionals:
             qml.cond(expression == 3, qml.RX)(rads, wires=3)
             return qml.probs(wires=3)
 
-        normal_probs = normal_circuit(1.0)
-        cond_probs = quantum_control_circuit(1.0)
+        normal_probs = normal_circuit(r)
+        cond_probs = quantum_control_circuit(r)
 
         assert np.allclose(normal_probs, cond_probs)
 
