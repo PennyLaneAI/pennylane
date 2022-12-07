@@ -33,7 +33,7 @@ from pennylane.measurements import (
     ProbabilityMP,
     Sample,
     SampleMP,
-    ShadowExpval,
+    ShadowExpvalMP,
     State,
     Variance,
 )
@@ -732,9 +732,7 @@ class Device(abc.ABC):
 
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
 
-        return_types = [m.return_type for m in circuit.observables]
-
-        is_shadow = ShadowExpval in return_types
+        is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
 
         if hamiltonian_in_obs and (
             (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known
