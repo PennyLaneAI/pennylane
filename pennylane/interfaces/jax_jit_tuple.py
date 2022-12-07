@@ -207,7 +207,6 @@ def _execute_bwd_tuple(
                     res_from_callback = [res_from_callback]
 
                 jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
-                print("_n = 2", jvps)
             else:
 
                 new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
@@ -217,41 +216,14 @@ def _execute_bwd_tuple(
                     jvp_tapes, res_processing_fn = gradient_fn(
                         new_t, shots=device.shots, **gradient_kwargs
                     )
-                    print("JVP tapes: ", jvp_tapes)
-                    jacs = execute_tuple(jvp_tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=_n+1, max_diff=max_diff)[0]
-                    print(jacs)
-                    #jacs = res_processing_fn(jacs)
+                    jacs = execute_tuple(jvp_tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=_n+1, max_diff=max_diff)
+                    jacs = res_processing_fn(jacs)
                     all_jacs.append(jacs)
 
                 if len(all_jacs) == 1:
                     all_jacs = all_jacs[0]
 
-                print("_n = 1", all_jacs)
                 jvps = _compute_jvps([all_jacs], tangents[0], multi_measurements)
-
-                #jvps = all_jacs
-                """
-                jvp_tapes, processing_fn = qml.gradients.batch_jvp(
-                    new_tapes,
-                    tangents[0],
-                    gradient_fn,
-                    device.shot_vector,
-                    reduction="append",
-                    gradient_kwargs=gradient_kwargs,
-                )
-
-                jvps = processing_fn(
-                    execute_new(
-                        jvp_tapes,
-                        device,
-                        execute_fn,
-                        gradient_fn,
-                        gradient_kwargs,
-                        _n=_n + 1,
-                        max_diff=max_diff,
-                    )
-                )
-                """
         else:
             # Gradient function is a device method
             res_from_callback = _device_method_jac_via_callback(params, device)
