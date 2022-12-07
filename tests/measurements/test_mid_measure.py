@@ -291,6 +291,17 @@ class TestMeasurementValueManipulation:
         assert out[0] == 10
         assert out[1] == 11
 
+    def test_branches_method(self):
+        """Test the __eq__ dunder method between two MeasurementValues."""
+        m1 = MeasurementValue(["m1"], lambda v: v)
+        m2 = MeasurementValue(["m2"], lambda v: v)
+        compared = m1 == m2
+        branches = compared.branches()
+        assert branches[(0, 0)] is True
+        assert branches[(0, 1)] is False
+        assert branches[(1, 0)] is False
+        assert branches[(1, 1)] is True
+
     def test_str(self):
         """Test that the output of the __str__ dunder method is as expected"""
         m = MeasurementValue(["m"], lambda v: v)

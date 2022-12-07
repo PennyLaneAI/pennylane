@@ -15,7 +15,10 @@
       qml.cond(combined == 2, qml.RX)(1.3, wires=2)
       return qml.probs(wires=2)
   ```
-  
+  ```pycon 
+  >>> circuit()
+  [0.90843735 0.09156265]  
+  ```
   [#3159](https://github.com/PennyLaneAI/pennylane/pull/3159)
 
 * Add the controlled CZ gate: CCZ.

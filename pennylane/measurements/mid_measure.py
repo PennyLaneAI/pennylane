@@ -119,6 +119,7 @@ class MeasurementValue(Generic[T]):
             branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
             yield branch, self.processing_fn(*branch)
 
+    @property
     def branches(self):
         """A dictionary representing all possible outcomes of the MeasurementValue."""
         ret_dict = {}
