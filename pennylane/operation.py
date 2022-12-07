@@ -412,6 +412,9 @@ class Operator(abc.ABC):
         #. For proper registration, add the name of the operator to
            :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting` in the file
            ``pennylane/ops/qubit/attributes.py``.
+        #. Make sure that the operator's ``_check_batching`` method is called in all
+           places required. This is typically done automatically but needs to be assured.
+           See further below for details.
 
         **Examples**
 
@@ -482,6 +485,32 @@ class Operator(abc.ABC):
                 or the second axis without and with broadcasting, respectively.'''
                 decomp_ops = [qml.RX(x, wires=w) for x, w in zip(qml.math.T(theta), wires)]
                 return decomp_ops
+
+        **The ``_check_batching`` method**
+
+        Each operator determines whether it is used with a batch of parameters within
+        the ``_check_batching`` method, by comparing the shape of the input data to
+        the expected shape. Therefore, it is necessary to call ``_check_batching`` on
+        any new input parameters passed to the operator. By default, any class inheriting
+        from :class:`~.operation.Operator` will do so within its ``__init__`` method, and
+        other objects may do so when updating the data of the ``Operator``.
+
+        ``_check_batching`` modifies the following class attributes:
+
+        - ``_ndim_params``: The number of dimensions of the parameters passed to
+          ``_check_batching``. For an ``Operator`` that does _not_ set the ``ndim_params``
+          attribute, ``_ndim_params`` is used as a surrogate, interpreting any parameters
+          as "not broadcasted". This attribute should be understood as temporary and likely
+          should not be used in other contexts.
+
+        - ``_batch_size``: If the ``Operator`` is broadcasted: The batch size/size of the
+          broadcasting axis. If it is not broadcasted: ``None``. An ``Operator`` that does
+          not support broadcasting will report to not be broadcasted independently of the
+          input.
+
+        Both attributes are not defined if ``_check_batching`` is not called. Therefore it
+        *needs to be called* within custom ``__init__`` implementations, either directly
+        or by calling ``Operator.__init__``.
     """
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
