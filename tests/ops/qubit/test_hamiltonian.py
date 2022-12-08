@@ -727,7 +727,7 @@ class TestHamiltonian:
         """Tests that simplifying a Hamiltonian in a tape context
         queues the simplified Hamiltonian."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             a = qml.PauliX(wires=0)
             b = qml.PauliY(wires=1)
             c = qml.Identity(wires=2)
@@ -738,7 +738,7 @@ class TestHamiltonian:
         # check that H is simplified
         assert H.ops == [a, b]
         # check that the simplified Hamiltonian is in the queue
-        assert tape.get_info(H) is not None
+        assert q.get_info(H) is not None
 
     def test_data(self):
         """Tests the obs_data method"""
@@ -887,16 +887,16 @@ class TestHamiltonian:
 
         H = qml.PauliX(1) + 3 * qml.PauliZ(0) @ qml.PauliZ(2) + qml.PauliZ(1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
             qml.expval(H)
 
-        assert len(tape.queue) == 3
-        assert isinstance(tape.queue[0], qml.Hadamard)
-        assert isinstance(tape.queue[1], qml.PauliX)
-        assert isinstance(tape.queue[2], qml.measurements.MeasurementProcess)
-        assert H.compare(tape.queue[2].obs)
+        assert len(q.queue) == 3
+        assert isinstance(q.queue[0], qml.Hadamard)
+        assert isinstance(q.queue[1], qml.PauliX)
+        assert isinstance(q.queue[2], qml.measurements.MeasurementProcess)
+        assert H.compare(q.queue[2].obs)
 
     def test_hamiltonian_queue_inside(self):
         """Tests that Hamiltonian are queued correctly when components are instantiated inside the recording context."""
@@ -914,7 +914,7 @@ class TestHamiltonian:
             ),
         ]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
             qml.expval(
@@ -923,7 +923,7 @@ class TestHamiltonian:
                 )
             )
 
-        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
+        assert np.all([q1.compare(q2) for q1, q2 in zip(q.queue, queue)])
 
     def test_terms(self):
         """Tests that the terms representation is returned correctly."""
@@ -1388,10 +1388,10 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
 
-        assert tape.queue == [H]
+        assert q.queue == [H]
 
     def test_grouping_method_can_be_set(self):
         r"""Tests that the grouping method can be controlled by kwargs.
