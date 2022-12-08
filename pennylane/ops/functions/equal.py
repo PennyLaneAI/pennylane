@@ -17,14 +17,14 @@ This module contains the qml.equal function.
 # pylint: disable=too-many-arguments,too-many-return-statements
 from functools import singledispatch
 from typing import Union
-
+import numpy as np
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd
+from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, Prod
 
 
 def equal(
@@ -206,6 +206,24 @@ def _equal_operators(
                 return False
 
     return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
+
+
+@_equal.register
+# pylint: disable=unused-argument, protected-access
+def _equal_prod(op1: Prod, op2: Prod, **kwargs):
+    """Determine whether two Prod objects are equal"""
+
+    # organizes into groups of operators acting on overlapping wires,
+    # then sorts by wire indicies while respecting commutivity
+    sorted_ops1 = [op1._sort(ops_list) for ops_list in op1.overlapping_ops]
+    sorted_ops2 = [op2._sort(ops_list) for ops_list in op2.overlapping_ops]
+
+    # compare each wire group
+    for wire_ops1, wire_ops2 in zip(sorted_ops1, sorted_ops2):
+        if not np.all([qml.equal(op1, op2) for op1, op2 in zip(wire_ops1, wire_ops2)]):
+            return False
+
+    return True
 
 
 @_equal.register
