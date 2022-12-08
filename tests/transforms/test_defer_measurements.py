@@ -685,6 +685,53 @@ class TestExpressionConditionals:
 
         assert np.allclose(normal_probs, cond_probs)
 
+    def test_composed_conditions(self):
+        """test that a complex nested expression gets resolved correctly to the corresponding correct control gates"""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def normal_circuit(rads):
+            qml.RX(2.4, wires=0)
+            qml.RY(1.3, wires=1)
+            qml.RX(1.7, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 2])
+
+            qml.ctrl(qml.RX, (0, 1, 2), [False, False, False])(rads, wires=3)
+            qml.ctrl(qml.RX, (0, 1, 2), [False, False, True])(rads, wires=3)
+            qml.ctrl(qml.RX, (0, 1, 2), [True, False, True])(rads, wires=3)
+            qml.ctrl(qml.RX, (0, 1, 2), [False, True, False])(rads, wires=3)
+            qml.ctrl(qml.RX, (0, 1, 2), [False, True, True])(rads, wires=3)
+
+            return qml.probs(wires=3)
+
+        #
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def quantum_control_circuit(rads):
+            qml.RX(2.4, wires=0)
+            qml.RY(1.3, wires=1)
+            qml.RX(1.7, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 2])
+            m_0 = qml.measure(0)
+            expr1 = 2 * m_0
+            m_1 = qml.measure(1)
+            expr2 = (3 * m_1 + 2) * (4 * expr1 + 2)
+            m_2 = qml.measure(2)
+            expr3 = expr2 / (m_2 + 3)
+            print(expr3)
+            qml.cond(expr3 <= 6, qml.RX)(rads, wires=3)
+            return qml.probs(wires=3)
+
+        normal_probs = normal_circuit(1.0)
+        cond_probs = quantum_control_circuit(1.0)
+
+        assert np.allclose(normal_probs, cond_probs)
+
 
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
