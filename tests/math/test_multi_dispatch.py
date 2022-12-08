@@ -25,7 +25,7 @@ pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
-jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 test_multi_dispatch_stack_data = [
     [[1.0, 0.0], [2.0, 3.0]],
@@ -33,7 +33,7 @@ test_multi_dispatch_stack_data = [
     onp.array([[1.0, 0.0], [2.0, 3.0]]),
     anp.array([[1.0, 0.0], [2.0, 3.0]]),
     np.array([[1.0, 0.0], [2.0, 3.0]]),
-    jax.numpy.array([[1.0, 0.0], [2.0, 3.0]]),
+    jnp.array([[1.0, 0.0], [2.0, 3.0]]),
     tf.constant([[1.0, 0.0], [2.0, 3.0]]),
 ]
 
