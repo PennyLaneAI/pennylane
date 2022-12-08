@@ -70,6 +70,7 @@ from .quantum import (
 
 from .utils import (
     allclose,
+    isclose,
     allequal,
     cast,
     cast_like,
