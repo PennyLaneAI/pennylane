@@ -41,12 +41,12 @@ def batch_input(
     Based on `arXiv:2202.10471 <https://arxiv.org/abs/2202.10471>`__.
 
     Args:
-        tape (.tape.QuantumTape or .QNode): Input quantum circuit to batch
+        tape (.QuantumTape or .QNode): Input quantum circuit to batch
         argnum (Sequence[int] or int): One or several index values indicating the position of the
-        non-trainable batched parameters in the quantum tape.
+            non-trainable batched parameters in the quantum tape.
 
     Returns:
-        Sequence[Sequence[.tape.QuantumTape], Callable]: list of tapes arranged
+        Sequence[Sequence[.QuantumTape], Callable]: list of tapes arranged
         according to unbatched inputs and a callable function to batch the results.
 
     .. seealso:: :func:`~.batch_params`
