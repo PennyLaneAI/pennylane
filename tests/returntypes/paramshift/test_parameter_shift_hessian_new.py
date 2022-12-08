@@ -29,10 +29,11 @@ from pennylane.gradients.parameter_shift_hessian import (
 class TestProcessArgnum:
     """Tests for the helper method _process_argnum."""
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RX(0.2, wires=0)
         qml.CRZ(0.9, wires=[1, 0])
         qml.RX(0.2, wires=0)
+    tape = qml.tape.QuantumScript.from_queue(q)
     tape.trainable_params = {0, 1, 2}
 
     def test_none(self):
@@ -116,11 +117,13 @@ class TestCollectRecipes:
     """Test that gradient recipes are collected/generated correctly based
     on provided shift values, hard-coded recipes of operations, and argnum."""
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RX(0.4, wires=0)
         qml.CRZ(-0.9, wires=[1, 0])
         qml.Hadamard(wires=0)
         qml.SingleExcitation(-1.2, wires=[1, 3])
+
+    tape = qml.tape.QuantumScript.from_queue(q)
 
     def test_with_custom_recipes(self):
         dummy_recipe = [(-0.3, 1.0, 0.0), (0.3, 1.0, 0.4)]
@@ -131,10 +134,11 @@ class TestCollectRecipes:
         class DummyOp(qml.RX):
             grad_recipe = (dummy_recipe,)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.DepolarizingChannel(0.2, wires=0)
             DummyOp(0.3, wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         argnum = qml.math.ones((tape.num_params, tape.num_params), dtype=bool)
         diag, offdiag = _collect_recipes(tape, argnum, ("A", "A"), None, None)
         assert qml.math.allclose(diag[0], channel_recipe_2nd_order)
@@ -195,10 +199,11 @@ class TestGenerateOffDiagTapes:
 
     @pytest.mark.parametrize("add_unshifted", [True, False])
     def test_with_zero_shifts(self, add_unshifted):
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(np.array(0.2), wires=[0])
             qml.RY(np.array(0.9), wires=[0])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         recipe_0 = np.array([[-0.5, 1.0, 0.0], [0.5, 1.0, np.pi]])
         recipe_1 = np.array([[-0.25, 1.0, 0.0], [0.25, 1.0, np.pi]])
         t, c = [], []
@@ -232,11 +237,12 @@ class TestParameterShiftHessian:
 
         x = np.array(0.1, requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = -np.cos(x)
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
@@ -253,11 +259,12 @@ class TestParameterShiftHessian:
 
         x = np.array(0.1, requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = 0.5 * np.cos(x) * np.array([-1, 0, 0, 1])
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
@@ -274,12 +281,13 @@ class TestParameterShiftHessian:
 
         x = np.array(0.1, requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.Hadamard(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = (-np.cos(x), -np.cos(x) / np.sqrt(2))
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
@@ -300,12 +308,13 @@ class TestParameterShiftHessian:
 
         x = np.array(0.1, requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = (-np.cos(x), 0.5 * np.cos(x) * np.array([-1, 0, 0, 1]))
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
@@ -326,12 +335,13 @@ class TestParameterShiftHessian:
 
         x = np.array(0.1, requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0])
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = (0.5 * np.cos(x) * np.array([-1, 1]), 0.5 * np.cos(x) * np.array([-1, 0, 0, 1]))
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
@@ -352,12 +362,13 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.4], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x[0], wires=0)
             qml.RY(x[1], wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = ((-np.cos(x[0]), 0), (0, 0))
 
         tapes, fn = qml.gradients.param_shift_hessian(tape)
@@ -380,12 +391,13 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.4], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x[0], wires=0)
             qml.RY(x[1], wires=1)
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         a = [
             np.cos(x[0] / 2) ** 2,
             np.sin(x[0] / 2) ** 2,
@@ -423,13 +435,14 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.4], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x[0], wires=0)
             qml.RY(x[1], wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.Hadamard(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = (
             ((-np.cos(x[0]), 0), (0, 0)),
             (
@@ -465,13 +478,14 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.4], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x[0], wires=0)
             qml.RY(x[1], wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         a = [
             np.cos(x[0] / 2) ** 2,
             np.sin(x[0] / 2) ** 2,
@@ -516,13 +530,14 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.4], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x[0], wires=0)
             qml.RY(x[1], wires=1)
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[1])
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         a = [
             np.cos(x[0] / 2) ** 2,
             np.sin(x[0] / 2) ** 2,
@@ -576,13 +591,14 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.4, 0.7], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x[0], wires=0)
             qml.RY(x[1], wires=1)
             qml.RY(x[2], wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = ((0, 0, 0), (0, 0, 0), (0, 0, -np.cos(x[2] + x[0])))
 
         tapes, fn = qml.gradients.param_shift_hessian(tape, argnum=(1, 2))
@@ -605,11 +621,12 @@ class TestParameterShiftHessian:
 
         x = np.array(0.1, requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.state()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         msg = "Computing the Hessian of circuits that return the state is not supported"
         with pytest.raises(ValueError, match=msg):
             tapes, fn = qml.gradients.param_shift_hessian(tape)
@@ -621,11 +638,12 @@ class TestParameterShiftHessian:
 
         x = np.array(0.1, requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.var(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         msg = "Computing the Hessian of circuits that return variances is currently not supported"
         with pytest.raises(ValueError, match=msg):
             tapes, fn = qml.gradients.param_shift_hessian(tape)
@@ -637,12 +655,13 @@ class TestParameterShiftHessian:
         dev = qml.device("default.qubit", wires=2)
 
         weights = [0.1, 0.2]
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
             for _ in range(num_measurements):
                 qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = []
 
         msg = "Attempted to compute the hessian of a tape with no trainable parameters"
@@ -670,11 +689,12 @@ class TestParameterShiftHessian:
 
         x = np.array(0.1, requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             DummyOp(x, wires=[0, 1])
             for _ in range(num_measurements):
                 qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = qml.gradients.param_shift_hessian(tape)
         res = fn(qml.execute(tapes, dev, None))
 
@@ -698,12 +718,13 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
             DummyOp(x[2], wires=[0, 1])
             qml.probs(wires=1)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         msg = "The parameter-shift Hessian currently does not support the operations"
         with pytest.raises(ValueError, match=msg):
             qml.gradients.param_shift_hessian(tape, argnum=[0, 1, 2])(x)
@@ -713,10 +734,11 @@ class TestParameterShiftHessian:
         """Test that an error is raised if the number of diagonal shifts does
         not match the required number (`len(trainable_params)` or `len(argnum)`)."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.CRY(0.9, wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="sets of shift values for diagonal entries"):
             qml.gradients.param_shift_hessian(tape, argnum=argnum, diagonal_shifts=[])
 
@@ -725,11 +747,12 @@ class TestParameterShiftHessian:
         """Test that an error is raised if the number of offdiagonal shifts does
         not match the required number (`len(trainable_params)` or `len(argnum)`)."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.CRY(0.9, wires=[0, 1])
             qml.RX(-0.4, wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="sets of shift values for off-diagonal entries"):
             qml.gradients.param_shift_hessian(tape, argnum=argnum, off_diagonal_shifts=[])
 

@@ -110,10 +110,11 @@ class TestQNode:
         tensor observables in the tape."""
         dev = qml.device("default.qubit", wires=[mid_measure_wire] + tp_wires)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.measure(mid_measure_wire)
             qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = qml.defer_measurements(tape)
 
         # Check the operations and measurements in the tape
@@ -209,7 +210,7 @@ class TestConditionalOperations:
         first_par = 0.1
         sec_par = 0.3
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(4)
             qml.cond(m_0, qml.RY)(first_par, wires=1)
 
@@ -217,6 +218,7 @@ class TestConditionalOperations:
             qml.cond(m_0, qml.RZ)(sec_par, wires=1)
             qml.apply(terminal_measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = qml.defer_measurements(tape)
 
         assert len(tape.operations) == 2
@@ -233,6 +235,83 @@ class TestConditionalOperations:
 
         assert tape.measurements[0] is terminal_measurement
 
+    def test_correct_ops_in_tape_inversion(self):
+        """Test that the underlying tape contains the correct operations if a
+        measurement value was inverted."""
+        dev = qml.device("default.qubit", wires=3)
+
+        first_par = 0.1
+        sec_par = 0.3
+
+        terminal_measurement = qml.expval(qml.PauliZ(1))
+
+        with qml.queuing.AnnotatedQueue() as q:
+            m_0 = qml.measure(0)
+            qml.cond(~m_0, qml.RY)(first_par, wires=1)
+            qml.apply(terminal_measurement)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.defer_measurements(tape)
+
+        # Conditioned on 0 as the control value, PauliX is applied before and after
+        assert len(tape.operations) == 3
+        assert len(tape.measurements) == 1
+
+        # We flip the control qubit
+        first_x = tape.operations[0]
+        assert isinstance(first_x, qml.PauliX)
+        assert first_x.wires == qml.wires.Wires(0)
+
+        # Check the two underlying Controlled instance
+        ctrl_op = tape.operations[1]
+        assert isinstance(ctrl_op, qml.ops.op_math.Controlled)
+        assert qml.equal(ctrl_op.base, qml.RY(first_par, 1))
+
+        assert ctrl_op.wires == qml.wires.Wires([0, 1])
+
+        # We flip the control qubit back
+        sec_x = tape.operations[2]
+        assert isinstance(sec_x, qml.PauliX)
+        assert sec_x.wires == qml.wires.Wires(0)
+
+    def test_correct_ops_in_tape_assert_zero_state(self):
+        """Test that the underlying tape contains the correct operations if a
+        conditional operation was applied in the zero state case.
+
+        Note: this case is the same as inverting right after obtaining a
+        measurement value."""
+        dev = qml.device("default.qubit", wires=3)
+
+        first_par = 0.1
+        sec_par = 0.3
+
+        with qml.queuing.AnnotatedQueue() as q:
+            m_0 = qml.measure(0)
+            qml.cond(m_0 == 0, qml.RY)(first_par, wires=1)
+            qml.expval(qml.PauliZ(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.defer_measurements(tape)
+
+        # Conditioned on 0 as the control value, PauliX is applied before and after
+        assert len(tape.operations) == 3
+        assert len(tape.measurements) == 1
+
+        # We flip the control qubit
+        first_x = tape.operations[0]
+        assert isinstance(first_x, qml.PauliX)
+        assert first_x.wires == qml.wires.Wires(0)
+
+        # Check the underlying Controlled instance
+        ctrl_op = tape.operations[1]
+        assert isinstance(ctrl_op, qml.ops.op_math.Controlled)
+        assert qml.equal(ctrl_op.base, qml.RY(first_par, 1))
+
+        # We flip the control qubit back
+        sec_x = tape.operations[2]
+        assert isinstance(sec_x, qml.PauliX)
+        assert sec_x.wires == qml.wires.Wires(0)
+
     @pytest.mark.parametrize("rads", np.linspace(0.0, np.pi, 3))
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_quantum_teleportation(self, device, rads):
@@ -241,7 +320,7 @@ class TestConditionalOperations:
 
         terminal_measurement = qml.probs(wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
 
             # Create Alice's secret qubit state
             qml.RY(rads, wires=0)
@@ -267,6 +346,7 @@ class TestConditionalOperations:
 
             qml.apply(terminal_measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = qml.defer_measurements(tape)
         assert len(tape.operations) == 5 + 2  # 5 regular ops + 2 conditional ops
         assert len(tape.measurements) == 1
@@ -343,11 +423,12 @@ class TestConditionalOperations:
         mat = np.eye(8)
         measurement = qml.expval(qml.Hermitian(mat, wires=[3, 1, 2]))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.RY)(rads, wires=4)
             qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = qml.defer_measurements(tape)
 
         assert len(tape.operations) == 1
@@ -373,11 +454,12 @@ class TestConditionalOperations:
 
         H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.RY)(rads, wires=4)
             qml.expval(H)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = qml.defer_measurements(tape)
 
         assert len(tape.operations) == 1
