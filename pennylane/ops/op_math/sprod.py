@@ -59,7 +59,7 @@ def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
     if lazy or not isinstance(operator, SProd):
         return SProd(scalar, operator, do_queue=do_queue, id=id)
 
-    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base)
+    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, do_queue=do_queue, id=id)
 
     if do_queue:
         QueuingManager.update_info(operator, owner=sprod_op)
