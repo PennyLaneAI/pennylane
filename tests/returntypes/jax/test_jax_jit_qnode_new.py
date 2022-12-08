@@ -866,6 +866,8 @@ hessian_qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
+# TODO: double-check: every test case has jax.jit transformation?
+
 
 @pytest.mark.parametrize(
     "dev_name,diff_method,mode,interface", hessian_qubit_device_and_diff_method
@@ -1261,9 +1263,6 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff"):
             pytest.skip("Only supports gradient transforms")
 
-        if max_diff == 2 and interface == "jax-jit":
-            pytest.skip("TODO: add Hessian support to JAX-JIT.")
-
         dev = qml.device(dev_name, wires=1)
 
         class PhaseShift(qml.PhaseShift):
@@ -1303,9 +1302,6 @@ class TestTapeExpansion:
         and the first and second order gradients are correctly evaluated"""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
-
-        if max_diff == 2 and interface == "jax-jit":
-            pytest.skip("TODO: add Hessian support to JAX-JIT.")
 
         dev = qml.device(dev_name, wires=3, shots=None)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
@@ -1361,9 +1357,6 @@ class TestTapeExpansion:
         and the first and second order gradients are correctly evaluated"""
         if diff_method in ("adjoint", "backprop", "finite-diff"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
-
-        if max_diff == 2 and interface == "jax-jit":
-            pytest.skip("TODO: add Hessian support to JAX-JIT.")
 
         dev = qml.device(dev_name, wires=3, shots=50000)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
@@ -1670,7 +1663,7 @@ qubit_device_and_diff_method_and_mode = [
 @pytest.mark.parametrize("shots", [None, 10000])
 @pytest.mark.parametrize("jacobian", jacobian_fn)
 class TestReturn:
-    """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
+    """Class to test the shape of the Grad/Jacobian with different return types."""
 
     def test_grad_single_measurement_param(self, dev_name, diff_method, mode, jacobian, shots):
         """For one measurement and one param, the gradient is a float."""
@@ -2051,7 +2044,11 @@ class TestReturn:
         assert jac[1].shape == (4, 2)
 
 
-hessian_fn = [jax.hessian, jax.jacrev(jax.jacfwd), jax.jacfwd(jax.jacfwd)]
+hessian_fn = [
+    jax.hessian,
+    lambda fn, argnums=0: jax.jacrev(jax.jacfwd(fn, argnums=argnums), argnums=argnums),
+    lambda fn, argnums=0: jax.jacfwd(jax.jacrev(fn, argnums=argnums), argnums=argnums),
+]
 
 
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method_and_mode)
@@ -2082,7 +2079,6 @@ class TestReturnHessian:
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
-        print(hess)
 
         assert isinstance(hess[0], tuple)
         assert len(hess[0]) == 2
@@ -2137,16 +2133,24 @@ class TestReturnHessian:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = jax.jit(hessian(circuit))((par_0, par_1))
+        hess = jax.jit(hessian(circuit, argnums=[0, 1]))(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 
-        assert isinstance(hess[0], jax.numpy.ndarray)
-        assert hess[0].shape == (2,)
+        assert isinstance(hess[0], tuple)
+        assert len(hess[0]) == 2
+        assert isinstance(hess[0][0], jax.numpy.ndarray)
+        assert isinstance(hess[0][1], jax.numpy.ndarray)
+        assert hess[0][0].shape == ()
+        assert hess[0][1].shape == ()
 
-        assert isinstance(hess[1], jax.numpy.ndarray)
-        assert hess[1].shape == (2,)
+        assert isinstance(hess[1], tuple)
+        assert len(hess[1]) == 2
+        assert isinstance(hess[1][0], jax.numpy.ndarray)
+        assert isinstance(hess[1][1], jax.numpy.ndarray)
+        assert hess[1][0].shape == ()
+        assert hess[1][1].shape == ()
 
     def test_hessian_var_multiple_param_array(self, dev_name, diff_method, hessian, mode):
         """The hessian of single measurement with a multiple params array return a single array."""
@@ -2164,13 +2168,7 @@ class TestReturnHessian:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        with tf.GradientTape() as tape1:
-            with tf.GradientTape() as tape2:
-                res = circuit(params)
-
-            grad = tape2.gradient(res, params)
-
-        hess = tape1.jacobian(grad, params)
+        hess = jax.jit(hessian(circuit))(params)
 
         assert isinstance(hess, jax.numpy.ndarray)
         assert hess.shape == (2, 2)
@@ -2192,15 +2190,7 @@ class TestReturnHessian:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        with tf.GradientTape() as tape1:
-            with tf.GradientTape(persistent=True) as tape2:
-                res = circuit(par_0, par_1)
-                res = tf.experimental.numpy.hstack(res)
-
-            grad = tape2.jacobian(res, (par_0, par_1), experimental_use_pfor=False)
-            grad = tf.concat(grad, 0)
-
-        hess = tape1.jacobian(grad, (par_0, par_1))
+        hess = jax.jit(hessian(circuit))(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
