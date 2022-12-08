@@ -79,7 +79,7 @@ test_data0 = [
     anp.array([1, 2, 3]),
     np.array([1, 2, 3]),
     torch.tensor([1, 2, 3]),
-    jax.numpy.array([1, 2, 3]),
+    jnp.array([1, 2, 3]),
     tf.constant([1, 2, 3]),
 ]
 
@@ -104,7 +104,7 @@ test_data_values = [
     [onp.array([1, 2, 3]) for _ in range(5)],
     [anp.array([1, 2, 3]) for _ in range(5)],
     [torch.tensor([1, 2, 3]) for _ in range(5)],
-    [jax.numpy.array([1, 2, 3]) for _ in range(5)],
+    [jnp.array([1, 2, 3]) for _ in range(5)],
     [tf.constant([1, 2, 3]) for _ in range(5)],
 ]
 
