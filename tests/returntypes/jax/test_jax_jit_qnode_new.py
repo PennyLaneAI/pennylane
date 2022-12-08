@@ -890,7 +890,7 @@ class TestQubitIntegrationHigherOrder:
         x = jax.numpy.array([1.0, 2.0])
         res = circuit(x)
         g = jax.jit(jax.grad(circuit)(x))
-        g2 = jax.jit(jax.grad(lambda x: jnp.sum(jax.grad(circuit)(x))))(x)
+        g2 = jax.jit(jax.grad(lambda x: jax.numpy.sum(jax.grad(circuit)(x))))(x)
 
         a, b = x
 
@@ -1126,7 +1126,7 @@ class TestQubitIntegrationHigherOrder:
         def cost_fn(x, y):
             res = circuit(x, y)
             assert res.dtype is np.dtype("complex128")
-            probs = jnp.abs(res) ** 2
+            probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
         res = jax.jit(cost_fn(x, y))
@@ -2084,11 +2084,19 @@ class TestReturnHessian:
         assert len(hess) == 2
         print(hess)
 
-        assert isinstance(hess[0], jnp.ndarray)
-        assert hess[0].shape == (2,)
+        assert isinstance(hess[0], tuple)
+        assert len(hess[0]) == 2
+        assert isinstance(hess[0][0], jax.numpy.ndarray)
+        assert isinstance(hess[0][1], jax.numpy.ndarray)
+        assert hess[0][0].shape == ()
+        assert hess[0][1].shape == ()
 
-        assert isinstance(hess[1], jnp.ndarray)
-        assert hess[1].shape == (2,)
+        assert isinstance(hess[1], tuple)
+        assert len(hess[1]) == 2
+        assert isinstance(hess[1][0], jax.numpy.ndarray)
+        assert isinstance(hess[1][1], jax.numpy.ndarray)
+        assert hess[1][0].shape == ()
+        assert hess[1][1].shape == ()
 
     def test_hessian_expval_multiple_param_array(self, dev_name, diff_method, hessian, mode):
         """The hessian of single measurement with a multiple params array return a single array."""
@@ -2098,7 +2106,7 @@ class TestReturnHessian:
 
         dev = qml.device(dev_name, wires=2)
 
-        params = jax.numpy.array([0.1, 0.2], dtype=jnp.float64)
+        params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
         @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
         def circuit(x):
@@ -2109,7 +2117,7 @@ class TestReturnHessian:
 
         hess = jax.jit(hessian(circuit))(params)
 
-        assert isinstance(hess, jnp.ndarray)
+        assert isinstance(hess, jax.numpy.ndarray)
         assert hess.shape == (2, 2)
 
     def test_hessian_var_multiple_params(self, dev_name, diff_method, hessian, mode):
@@ -2119,8 +2127,8 @@ class TestReturnHessian:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
-        par_0 = jax.numpy.array(0.1, dtype=jnp.float64)
-        par_1 = jax.numpy.array(0.2, dtype=jnp.float64)
+        par_0 = jax.numpy.array(0.1, dtype=jax.numpy.float64)
+        par_1 = jax.numpy.array(0.2, dtype=jax.numpy.float64)
 
         @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
         def circuit(x, y):
@@ -2134,10 +2142,10 @@ class TestReturnHessian:
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 
-        assert isinstance(hess[0], jnp.ndarray)
+        assert isinstance(hess[0], jax.numpy.ndarray)
         assert hess[0].shape == (2,)
 
-        assert isinstance(hess[1], jnp.ndarray)
+        assert isinstance(hess[1], jax.numpy.ndarray)
         assert hess[1].shape == (2,)
 
     def test_hessian_var_multiple_param_array(self, dev_name, diff_method, hessian, mode):
@@ -2147,7 +2155,7 @@ class TestReturnHessian:
 
         dev = qml.device(dev_name, wires=2)
 
-        params = jax.numpy.array([0.1, 0.2], dtype=jnp.float64)
+        params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
         @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
         def circuit(x):
@@ -2164,7 +2172,7 @@ class TestReturnHessian:
 
         hess = tape1.jacobian(grad, params)
 
-        assert isinstance(hess, jnp.ndarray)
+        assert isinstance(hess, jax.numpy.ndarray)
         assert hess.shape == (2, 2)
 
     def test_hessian_probs_expval_multiple_params(self, dev_name, diff_method, hessian, mode):
@@ -2174,8 +2182,8 @@ class TestReturnHessian:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
-        par_0 = jax.numpy.array(0.1, dtype=jnp.float64)
-        par_1 = jax.numpy.array(0.2, dtype=jnp.float64)
+        par_0 = jax.numpy.array(0.1, dtype=jax.numpy.float64)
+        par_1 = jax.numpy.array(0.2, dtype=jax.numpy.float64)
 
         @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
         def circuit(x, y):
@@ -2197,10 +2205,10 @@ class TestReturnHessian:
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 
-        assert isinstance(hess[0], jnp.ndarray)
+        assert isinstance(hess[0], jax.numpy.ndarray)
         assert hess[0].shape == (10,)
 
-        assert isinstance(hess[1], jnp.ndarray)
+        assert isinstance(hess[1], jax.numpy.ndarray)
         assert hess[1].shape == (10,)
 
     def test_hessian_probs_expval_multiple_param_array(self, dev_name, diff_method, hessian, mode):
@@ -2211,7 +2219,7 @@ class TestReturnHessian:
 
         dev = qml.device(dev_name, wires=2)
 
-        params = jax.numpy.array([0.1, 0.2], dtype=jnp.float64)
+        params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
         @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
         def circuit(x):
@@ -2222,7 +2230,7 @@ class TestReturnHessian:
 
         hess = jax.jit(hessian(circuit))(params)
 
-        assert isinstance(hess, jnp.ndarray)
+        assert isinstance(hess, jax.numpy.ndarray)
         assert hess.shape == (5, 2, 2)
 
     def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, hessian, mode):
@@ -2232,8 +2240,8 @@ class TestReturnHessian:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
-        par_0 = jax.numpy.array(0.1, dtype=jnp.float64)
-        par_1 = jax.numpy.array(0.2, dtype=jnp.float64)
+        par_0 = jax.numpy.array(0.1, dtype=jax.numpy.float64)
+        par_1 = jax.numpy.array(0.2, dtype=jax.numpy.float64)
 
         @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
         def circuit(x, y):
@@ -2247,10 +2255,10 @@ class TestReturnHessian:
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 
-        assert isinstance(hess[0], jnp.ndarray)
+        assert isinstance(hess[0], jax.numpy.ndarray)
         assert hess[0].shape == (10,)
 
-        assert isinstance(hess[1], jnp.ndarray)
+        assert isinstance(hess[1], jax.numpy.ndarray)
         assert hess[1].shape == (10,)
 
     def test_hessian_probs_var_multiple_param_array(self, dev_name, diff_method, hessian, mode):
@@ -2260,7 +2268,7 @@ class TestReturnHessian:
 
         dev = qml.device(dev_name, wires=2)
 
-        params = jax.numpy.array([0.1, 0.2], dtype=jnp.float64)
+        params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
         @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2)
         def circuit(x):
@@ -2271,5 +2279,5 @@ class TestReturnHessian:
 
         hess = jax.jit(hessian(circuit))(params)
 
-        assert isinstance(hess, jnp.ndarray)
+        assert isinstance(hess, jax.numpy.ndarray)
         assert hess.shape == (5, 2, 2)
