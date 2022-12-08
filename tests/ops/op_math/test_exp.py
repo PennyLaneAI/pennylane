@@ -571,9 +571,10 @@ class TestIntegration:
 
         phi = qml.numpy.array(1.2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             Exp(qml.PauliX(0), -0.5j * phi)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         qml.drawer.tape_text(tape)
 
         assert "0: ──Exp─┤  "

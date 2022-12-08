@@ -1106,12 +1106,16 @@ class TestEqual:
     def test_equal_with_nested_operators_raises_error(self):
         """Test that the equal method with two operators with the same arithmetic depth (>0) raises
         an error."""
+        op1 = qml.PauliY(0)
+        op2 = qml.PauliZ(1)
+        prod = qml.prod(op1, op2)
+
         with pytest.raises(
             NotImplementedError,
             match="Comparison of operators with an arithmetic"
             + " depth larger than 0 is not yet implemented.",
         ):
-            qml.equal(qml.adjoint(qml.RX(1.2, 0)), qml.adjoint(qml.RX(1.2, 0)))
+            qml.equal(prod, prod)
 
     def test_equal_same_inversion(self):
         """Test operations are equal if they are both inverted."""
@@ -1199,31 +1203,81 @@ class TestObservablesComparisons:
             qml.equal(dev, dev)
 
 
-class TestControlledComparisons:
+class TestSymbolicOpComparison:
+    """Test comparison for subclasses of SymbolicOp"""
+
     WIRES = [(5, 5, True), (6, 7, False)]
+
+    BASES = [
+        (qml.PauliX(0), qml.PauliX(0), True),
+        (qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1), True),
+        (qml.CRX(1.23, [0, 1]), qml.CRX(1.23, [0, 1]), True),
+        (qml.CRX(1.23, [1, 0]), qml.CRX(1.23, [0, 1]), False),
+        (qml.PauliY(1), qml.PauliY(0), False),
+        (qml.PauliX(1), qml.PauliY(1), False),
+        (qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(1) @ qml.PauliY(0), False),
+    ]
+
+    PARAMS = [(1.23, 1.23, True), (5, 5, True), (2, -2, False), (1.2, 1, False)]
+
+    def test_mismatched_arithmetic_depth(self):
+        """Test that comparing SymoblicOp operators of mismatched arithmetic depth returns False"""
+        base1 = qml.PauliX(0)
+        base2 = qml.prod(qml.PauliX(0), qml.PauliY(1))
+        op1 = Controlled(base1, control_wires=2)
+        op2 = Controlled(base2, control_wires=2)
+
+        assert op1.arithmetic_depth == 1
+        assert op2.arithmetic_depth == 2
+        assert qml.equal(op1, op2) == False
+
+    def test_comparison_of_base_not_implemented_error(self):
+        """Test that comparing SymbolicOps of base operators whose comparison is not yet implemented raises an error"""
+        base = qml.prod(qml.RX(1.2, 0), qml.RY(1.3, 1))
+        op1 = Controlled(base, control_wires=2)
+        op2 = Controlled(base, control_wires=2)
+
+        with pytest.raises(NotImplementedError, match="Unable to compare base operators "):
+            qml.equal(op1, op2)
+
+    @pytest.mark.torch
+    @pytest.mark.jax
+    def test_kwargs_for_base_operator_comparison(self):
+        """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
+        import torch
+        import jax
+
+        base1 = qml.RX(torch.tensor(1.2), wires=0)
+        base2 = qml.RX(jax.numpy.array(1.2), wires=0)
+
+        op1 = Controlled(base1, control_wires=1)
+        op2 = Controlled(base2, control_wires=1)
+
+        assert not qml.equal(op1, op2)
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
 
     @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
     def test_controlled_comparison(self, base):
         """Test that Controlled operators can be compared"""
         op1 = Controlled(base, control_wires=7, control_values=0)
         op2 = Controlled(base, control_wires=7, control_values=0)
-        assert qml.equal(op1, op2) == True
+        assert qml.equal(op1, op2)
+
+    @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
+    def test_controlled_base_operator_wire_comparison(self, wire1, wire2, res):
+        """Test that equal compares operator wires for Controlled operators"""
+        base1 = qml.PauliX(wire1)
+        base2 = qml.PauliX(wire2)
+        op1 = Controlled(base1, control_wires=1)
+        op2 = Controlled(base2, control_wires=1)
+        assert qml.equal(op1, op2) == res
 
     @pytest.mark.parametrize(
         ("base1", "base2", "res"),
         [(qml.PauliX(0), qml.PauliX(0), True), (qml.PauliX(0), qml.PauliY(0), False)],
     )
-    def test_base_operator_comparison(self, base1, base2, res):
+    def test_controlled_base_operator_comparison(self, base1, base2, res):
         """Test that equal compares base operators for Controlled operators"""
-        op1 = Controlled(base1, control_wires=1)
-        op2 = Controlled(base2, control_wires=1)
-        assert qml.equal(op1, op2) == res
-
-    @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
-    def test_base_operator_wire_comparison(self, wire1, wire2, res):
-        """Test that equal compares operator wires for Controlled operators"""
-        base1 = qml.PauliX(wire1)
-        base2 = qml.PauliX(wire2)
         op1 = Controlled(base1, control_wires=1)
         op2 = Controlled(base2, control_wires=1)
         assert qml.equal(op1, op2) == res
@@ -1238,7 +1292,7 @@ class TestControlledComparisons:
         assert qml.equal(op1, op2) == res
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
-    def test_work_wires_comparison(self, wire1, wire2, res):
+    def test_controlled_work_wires_comparison(self, wire1, wire2, res):
         """Test that equal compares work_wires for Controlled operators"""
         base1 = qml.MultiRZ(1.23, [0, 1])
         base2 = qml.MultiRZ(1.23, [0, 1])
@@ -1246,38 +1300,36 @@ class TestControlledComparisons:
         op2 = Controlled(base2, control_wires=2, work_wires=wire2)
         assert qml.equal(op1, op2) == res
 
-    def test_mismatched_arithmetic_depth(self):
-        """Test that comparing Controlled operators of mismatched arithmetic depth returns False"""
-        base1 = qml.PauliX(0)
-        base2 = qml.prod(qml.PauliX(0), qml.PauliY(1))
-        op1 = Controlled(base1, control_wires=2)
-        op2 = Controlled(base2, control_wires=2)
+    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
+    def test_adjoint_comparison(self, base):
+        """Test that equal compares two objects of the Adjoint class"""
+        op1 = qml.adjoint(base)
+        op2 = qml.adjoint(base)
+        op3 = qml.adjoint(qml.PauliX(15))
 
-        assert op1.arithmetic_depth == 1
-        assert op2.arithmetic_depth == 2
-        assert qml.equal(op1, op2) == False
+        assert qml.equal(op1, op2)
+        assert not qml.equal(op1, op3)
 
-    def test_comparison_of_base_not_implemented_error(self):
-        """Test that comparing Controlled operators of base operators whose comparison is not yet implemented raises an error"""
-        base = qml.prod(qml.RX(1.2, 0), qml.RY(1.3, 1))
-        op1 = Controlled(base, control_wires=2)
-        op2 = Controlled(base, control_wires=2)
+    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
+    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
+    def test_pow_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+        """Test that equal compares two objects of the Pow class"""
+        op1 = qml.pow(base1, param1)
+        op2 = qml.pow(base2, param2)
+        assert qml.equal(op1, op2) == (bases_match and params_match)
 
-        with pytest.raises(NotImplementedError, match="Unable to compare base operators "):
-            qml.equal(op1, op2)
+    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
+    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
+    def test_exp_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+        """Test that equal compares two objects of the Exp class"""
+        op1 = qml.exp(base1, param1)
+        op2 = qml.exp(base2, param2)
+        assert qml.equal(op1, op2) == (bases_match and params_match)
 
-    @pytest.mark.torch
-    @pytest.mark.jax
-    def test_kwargs_for_base_operator_comparison(self):
-        """Test that setting kwargs check_interface and check_trainability are applied when comparing the base operators"""
-        import jax
-        import torch
-
-        base1 = qml.RX(torch.tensor(1.2), wires=0)
-        base2 = qml.RX(jax.numpy.array(1.2), wires=0)
-
-        op1 = Controlled(base1, control_wires=1)
-        op2 = Controlled(base2, control_wires=1)
-
-        assert qml.equal(op1, op2) == False
-        assert qml.equal(op1, op2, check_interface=False, check_trainability=False) == True
+    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
+    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
+    def test_s_prod_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+        """Test that equal compares two objects of the SProd class"""
+        op1 = qml.s_prod(param1, base1)
+        op2 = qml.s_prod(param2, base2)
+        assert qml.equal(op1, op2) == (bases_match and params_match)
