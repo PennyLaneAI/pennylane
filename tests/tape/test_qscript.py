@@ -794,3 +794,9 @@ def test_from_queue():
     qscript = QuantumScript.from_queue(q)
     assert qscript.operations == [op]
     assert len(qscript.measurements) == 1
+
+    class MyScript(QuantumScript):
+        pass
+
+    my_qscript = MyScript.from_queue(q)
+    assert type(my_qscript) == MyScript
