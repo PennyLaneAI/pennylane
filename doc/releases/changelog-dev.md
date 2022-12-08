@@ -302,7 +302,7 @@
 * Improved the performance of executing circuits under the `jax.vmap` transformation, which can now leverage the batch-execution capabilities of some devices. [(#3452)](https://github.com/PennyLaneAI/pennylane/pull/3452)
 
 * Child classes of `QuantumScript` now return their own type when using `SomeChildClass.from_queue`.
-  [(#3502)](https://github.com/PennyLaneAI/pennylane/pull/3502)
+  [(#3501)](https://github.com/PennyLaneAI/pennylane/pull/3501)
   
 
 <h4>Return types project</h4>
