@@ -457,7 +457,7 @@ class TestConvertersZX:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="Cross qubit connections, the graoh is not circuit-like.",
+            match="Cross qubit connections, the graph is not circuit-like.",
         ):
             qml.transforms.from_zx(graph)
 
