@@ -108,8 +108,7 @@ class TestTensor:
         assert x[0, 0].item() == 0
 
     def test_numpy_to_arraybox(self):
-        """Test that you can instantiate the Tensor class with the
-        requires_grad argument"""
+        """Test converting a PennyLane NumPy array to an ArrayBox object"""
         x = onp.array(0)
         res = tensor_to_arraybox(x, None, None)
         assert isinstance(res, ArrayBox)
