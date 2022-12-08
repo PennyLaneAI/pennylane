@@ -190,7 +190,7 @@ class TestMeasurementValueManipulation:
         assert m_inversion[1] is False
 
     def test_lt_with_other_measurement_value(self):
-        """Test the __lt__ dunder method between a two MeasurementValues"""
+        """Test the __lt__ dunder method between two MeasurementValues"""
         m1 = MeasurementValue(["m1"], lambda v: v)
         m2 = MeasurementValue(["m2"], lambda v: v)
         compared = m1 < m2
