@@ -310,7 +310,7 @@ def tape_text(
             layer_str = [filler] * n_wires
 
             for op in layer:
-                if isinstance(op, qml.tape.QuantumTape):
+                if isinstance(op, qml.tape.QuantumScript):
                     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
                     label = f"Tape:{cache['tape_offset']+len(tape_cache)}"
                     for w in op.wires:

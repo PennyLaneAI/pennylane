@@ -8,7 +8,6 @@ of circuits.
 
 .. automodapi:: pennylane.drawer
     :no-heading:
-    :no-inheritance-diagram:
     :no-inherited-members:
     :skip: available_styles
     :skip: use_style

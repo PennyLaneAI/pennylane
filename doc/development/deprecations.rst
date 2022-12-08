@@ -100,8 +100,20 @@ Pending deprecations
 
     tapes, fn = qml.transforms.hamiltonian_expand(tape)
 
+* ``qml.transforms.make_tape`` has been deprecated, and usage will now raise a warning.
+  Instead, use ``qml.tape.make_qscript``.
+
+  - Deprecated in v0.28
+  - Will be removed in v0.29
+
 Completed deprecation cycles
 ----------------------------
+
+* The ``qml.utils.decompose_hamiltonian()`` method is removed. Please
+  use ``qml.pauli_decompose()``.
+
+  - Still accessible in v0.27
+  - Removed in v0.28
 
 * ``qml.tape.get_active_tape`` is deprecated. Please use ``qml.QueuingManager.active_context()`` instead.
 

@@ -75,10 +75,11 @@ class TestCommutationDAG:
 
     def test_dag_transform_simple_dag_tape(self):
         """Test a simple DAG on 1 wire with a quantum tape."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliZ(wires=0)
             qml.PauliX(wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         dag = qml.transforms.commutation_dag(tape)()
 
         a = qml.PauliZ(wires=0)

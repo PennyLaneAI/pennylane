@@ -21,6 +21,7 @@ import torch
 import torch.utils._pytree as pytree
 
 import pennylane as qml
+from pennylane.measurements import CountsMP
 
 
 def _compute_vjp(dy, jacs, device=None):
@@ -98,10 +99,7 @@ class ExecuteTapes(torch.autograd.Function):
                 # For backwards compatibility, we flatten ragged tape outputs
                 r = np.hstack(r)
 
-            if any(
-                m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-                for m in ctx.tapes[i].measurements
-            ):
+            if any(isinstance(m, CountsMP) for m in ctx.tapes[i].measurements):
                 continue
 
             if isinstance(r, (list, tuple)):
@@ -261,7 +259,12 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
 
 def pytreeify(cls):
-    """Pytree class"""
+    """Pytrees refer to a tree-like structure built out of container-like Python objects. The pytreeify class is used
+    to bypass some PyTorch limitation of `autograd.Function`. The forward pass can only return tuple of tensors but
+    not any other nested structure. This class apply flatten to the forward pass and unflatten the results in the
+    apply function. In this way, it is possible to treat multiple tapes with multiple measurements.
+    """
+
     orig_fw = cls.forward
     orig_bw = cls.backward
     orig_apply = cls.apply
@@ -282,6 +285,7 @@ def pytreeify(cls):
     def new_backward(ctx, *flat_grad_outputs):
         grad_outputs = pytree.tree_unflatten(flat_grad_outputs, ctx._out_struct)
         grad_inputs = orig_bw(ctx, *grad_outputs)
+        # None corresponds to the diff of out_struct_holder
         return (None,) + tuple(grad_inputs)
 
     cls.apply = new_apply
@@ -360,9 +364,9 @@ class ExecuteTapesNew(torch.autograd.Function):
                 break
 
         for i, r in enumerate(res):
+            res[i] = _res_to_torch(r, ctx)
 
-            res[i] = _res_to_torch(r, i, ctx)
-
+            # In place change of the numpy array Jacobians to Torch objects
             _jac_to_torch(i, ctx)
 
         return res
@@ -442,8 +446,9 @@ class ExecuteTapesNew(torch.autograd.Function):
 
                 vjps = _compute_vjps_new(dy, jacs, multi_measurements)
 
-        # Remove empty vjps
-        vjps = [vjp for vjp in vjps if not isinstance(vjp, np.ndarray)]
+        # Remove empty vjps (from tape with non trainable params)
+        vjps = [vjp for vjp in vjps if list(vjp.shape) != [0]]
+
         # The output of backward must match the input of forward.
         # Therefore, we return `None` for the gradient of `kwargs`.
         return (None,) + tuple(vjps)
@@ -497,25 +502,16 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
     return ExecuteTapesNew.apply(kwargs, *parameters)
 
 
-def _res_to_torch(r, i, ctx):
+def _res_to_torch(r, ctx):
     """Convert results from unwrapped execution to torch."""
-    counts = False
-    if any(
-        m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-        for m in ctx.tapes[i].measurements
-    ):
-        counts = True
-
     if isinstance(r, (list, tuple)):
-        if counts:
-            res = []
-            for t in r:
-                if isinstance(t, dict):
-                    res.append(t)
-                else:
-                    res.append(torch.as_tensor(t, device=ctx.torch_device))
-        else:
-            res = [torch.as_tensor(t, device=ctx.torch_device) for t in r]
+        res = []
+        for t in r:
+            if isinstance(t, dict):
+                res.append(t)
+            else:
+                res.append(torch.as_tensor(t, device=ctx.torch_device))
+
         if isinstance(r, tuple):
             res = tuple(res)
     else:
@@ -546,5 +542,5 @@ def _jac_to_torch(i, ctx):
             ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
         # Multiple measurements or multiple parameters: Jacobian is a tuple
         else:
-            jacobian = [torch.as_tensor(t, device=ctx.torch_device) for t in ctx.jacs[i]]
+            jacobian = [torch.as_tensor(jac, device=ctx.torch_device) for jac in ctx.jacs[i]]
             ctx.jacs[i] = tuple(jacobian)
