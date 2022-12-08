@@ -267,9 +267,10 @@ class TestQuantumMonteCarlo:
 
         Q = make_Q(A, R)
 
-        with qml.tape.QuantumTape() as qpe_tape:
+        with qml.queuing.AnnotatedQueue() as q_qpe_tape:
             qml.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
 
+        qpe_tape = qml.tape.QuantumScript.from_queue(q_qpe_tape)
         qpe_tape = qpe_tape.expand()
 
         assert len(queue_after_qpe) == len(qpe_tape.operations)

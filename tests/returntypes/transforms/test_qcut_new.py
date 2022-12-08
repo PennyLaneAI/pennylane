@@ -32,7 +32,10 @@ from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
 
-pytestmark = pytest.mark.qcut
+# TODO: comment this back once new return types system is fully integrated
+# these tests are already being run without this marker, but having this marker causes
+# intermittent failures in the CI checks for some reason
+# pytestmark = pytest.mark.qcut
 
 I, X, Y, Z = (
     np.eye(2),

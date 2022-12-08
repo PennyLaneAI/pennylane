@@ -1216,10 +1216,11 @@ class TestQubitDeviceNewUnits:
             def return_type(self):
                 return "SomeUnsupportedReturnType"
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)
             DummyMeasurement(obs=qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=3)
         with pytest.raises(
             qml.QuantumFunctionError, match="Unsupported return type specified for observable"
@@ -1232,11 +1233,12 @@ class TestQubitDeviceNewUnits:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)
             qml.state()
             qml.expval(qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             qml.QuantumFunctionError,
             match="The state or density matrix cannot be returned in combination with other return types",
@@ -1248,10 +1250,11 @@ class TestQubitDeviceNewUnits:
 
         dev = qml.device("default.qubit", wires=["a", 1])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")
             qml.vn_entropy(wires=["a"])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             qml.QuantumFunctionError,
             match="Returning the Von Neumann entropy is not supported when using custom wire labels",
@@ -1263,10 +1266,11 @@ class TestQubitDeviceNewUnits:
         with custom wire labels"""
         dev = qml.device("default.qubit", wires=["a", "b"])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")
             qml.mutual_info(wires0=["a"], wires1=["b"])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         msg = "Returning the mutual information is not supported when using custom wire labels"
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             qml.execute(tapes=[tape], device=dev, gradient_fn=None)

@@ -106,9 +106,9 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
 
 # pylint: disable=protected-access
-def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
+def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     """
-    Converts a directed multigraph to the corresponding :class:`~.QuantumScript`.
+    Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
     To account for the possibility of needing to perform mid-circuit measurements, if any operations
     follow a :class:`MeasureNode` operation on a given wire then these operations are mapped to a
@@ -123,7 +123,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
         graph (nx.MultiDiGraph): directed multigraph to be converted to a tape
 
     Returns:
-        QuantumScript: the quantum script corresponding to the input graph
+        QuantumTape: the quantum script corresponding to the input graph
 
     **Example**
 
