@@ -122,7 +122,7 @@ class TestDtypePreserved:
 
     @pytest.mark.parametrize(
         "c_dtype, c_dtype_torch",
-        [(np.complex64, torch.complex64), (np.complex128, torch.complex128)],
+        [(np.complex64, "torchc64"), (np.complex128, "torchc128")],
     )
     @pytest.mark.parametrize(
         "measurement",
@@ -131,6 +131,11 @@ class TestDtypePreserved:
     def test_complex_dtype(self, c_dtype, c_dtype_torch, measurement, tol):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
+        if c_dtype_torch == "torchc64":
+            c_dtype_torch = torch.complex64
+        else:
+            c_dtype_torch = torch.complex128
+
         p = torch.tensor(0.543)
 
         dev = qml.device("default.mixed", wires=3, c_dtype=c_dtype)
