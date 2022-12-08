@@ -298,6 +298,8 @@
 
 * Reduce usage of `MeasurementProcess.return_type`. Use `isinstance` checks instead.
   [(#3399)](https://github.com/PennyLaneAI/pennylane/pull/3399)
+
+* Improved the performance of executing circuits under the `jax.vmap` transformation, which can now leverage the batch-execution capabilities of some devices. [(#3452)](https://github.com/PennyLaneAI/pennylane/pull/3452)
   
 
 <h4>Return types project</h4>
@@ -421,9 +423,9 @@
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
 
-* The JAX-JIT interface now supports gradient transforms and device gradient execution in `backward` mode with the new
-  return types system.
+* The JAX-JIT interface now supports first-order gradient computation with the new return types system.
   [(#3235)](https://github.com/PennyLaneAI/pennylane/pull/3235)
+  [(#3445)](https://github.com/PennyLaneAI/pennylane/pull/3445)
 
   ```python
   import pennylane as qml
@@ -547,6 +549,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Documentation</h3>
 
+* Corrects the return type statements of gradient and Hessian transforms, as well as a series
+  of other functions that are a `batch_transform`.
+  [(#3476)](https://github.com/PennyLaneAI/pennylane/pull/3476)
+
 * Adds developer documentation for the queuing module.
   [(#3268)](https://github.com/PennyLaneAI/pennylane/pull/3268)
 
@@ -614,3 +620,4 @@ Jay Soni
 Antal Száva
 David Wierichs
 Moritz Willmann
+Filippo Vicentini

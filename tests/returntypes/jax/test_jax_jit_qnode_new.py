@@ -25,8 +25,7 @@ qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-    # TODO:
-    # ["default.qubit", "adjoint", "forward", "jax-jit"],
+    ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
@@ -235,8 +234,7 @@ vv_qubit_device_and_diff_method = [
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
-    # TODO:
-    # ["default.qubit", "adjoint", "forward", "jax-jit"],
+    ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
@@ -1422,14 +1420,80 @@ class TestTapeExpansion:
     #         ]
     #         assert np.allclose(grad2_w_c, expected, atol=0.1)
 
+    def test_vmap_compared_param_broadcasting(self, dev_name, diff_method, mode, interface, tol):
+        """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
+        vectorized=True is specified for the callback when caching is disabled."""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not yet support Hamiltonians")
+
+        if diff_method == "backprop":
+            pytest.skip(
+                "The backprop method does not yet support parameter-broadcasting with Hamiltonians"
+            )
+
+        phys_qubits = 2
+        n_configs = 5
+        pars_q = np.random.rand(n_configs, 2)
+        dev = qml.device(dev_name, wires=tuple(range(phys_qubits)), shots=None)
+
+        def minimal_circ(params):
+            @qml.qnode(dev, interface=interface, diff_method=diff_method, mode=mode, cache=None)
+            def _measure_operator():
+                qml.RY(params[..., 0], wires=0)
+                qml.RY(params[..., 1], wires=1)
+                op = qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)])
+                return qml.expval(op)
+
+            res = _measure_operator()
+            return res
+
+        assert np.allclose(
+            jax.jit(minimal_circ)(pars_q), jax.jit(jax.vmap(minimal_circ))(pars_q), tol
+        )
+
+    def test_vmap_compared_param_broadcasting_multi_output(
+        self, dev_name, diff_method, mode, interface, tol
+    ):
+        """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
+        vectorized=True is specified for the callback when caching is disabled and when multiple output values
+        are returned."""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not yet support Hamiltonians")
+
+        if diff_method == "backprop":
+            pytest.skip(
+                "The backprop method does not yet support parameter-broadcasting with Hamiltonians"
+            )
+
+        phys_qubits = 2
+        n_configs = 5
+        pars_q = np.random.rand(n_configs, 2)
+        dev = qml.device(dev_name, wires=tuple(range(phys_qubits)), shots=None)
+
+        def minimal_circ(params):
+            @qml.qnode(dev, interface=interface, diff_method=diff_method, mode=mode, cache=None)
+            def _measure_operator():
+                qml.RY(params[..., 0], wires=0)
+                qml.RY(params[..., 1], wires=1)
+                op1 = qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)])
+                op2 = qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliX(1)])
+                return qml.expval(op1), qml.expval(op2)
+
+            res = _measure_operator()
+            return res
+
+        res1, res2 = jax.jit(minimal_circ)(pars_q)
+        vres1, vres2 = jax.jit(jax.vmap(minimal_circ))(pars_q)
+        assert np.allclose(res1, vres1, tol)
+        assert np.allclose(res2, vres2, tol)
+
 
 jit_qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward"],
     # Jit
     ["default.qubit", "finite-diff", "backward"],
     ["default.qubit", "parameter-shift", "backward"],
-    # TODO:
-    # ["default.qubit", "adjoint", "forward"],
+    ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
 ]
 
@@ -1604,8 +1668,7 @@ qubit_device_and_diff_method_and_mode = [
     ["default.qubit", "backprop", "forward"],
     ["default.qubit", "finite-diff", "backward"],
     ["default.qubit", "parameter-shift", "backward"],
-    # TODO: forward mode
-    # ["default.qubit", "adjoint", "forward"],
+    ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
 ]
 

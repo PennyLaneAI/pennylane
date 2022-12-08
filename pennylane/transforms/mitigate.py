@@ -41,7 +41,14 @@ def fold_global(circuit, scale_factor):
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
-        QuantumScript: Folded circuit
+        function or tuple[list[QuantumScript], function]:
+
+        - If the input is a QNode, an object representing the folded QNode that can be executed
+          with the same arguments as the QNode to obtain the result of the folded circuit.
+
+        - If the input is a tape, a tuple containing a (single-entry) list of generated
+          circuits, together with a post-processing function that extracts the single tape result
+          from the evaluated tape list in order to obtain the result of the folded circuit.
 
     .. seealso:: :func:`~.pennylane.transforms.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
