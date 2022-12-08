@@ -86,6 +86,19 @@ q_one_cnot = (1 / np.sqrt(2)) * np.array(
 )
 
 
+def _batched_kron_product(A, B):
+    # Einsum representation of a batched kronecker product
+    batch_size_A, mat_A_dim_1, mat_A_dim_2 = A.shape
+    batch_size_B, mat_B_dim_1, mat_B_dim_2 = B.shape
+
+    assert batch_size_A == batch_size_B
+
+    return math.reshape(
+        math.einsum("...jk,...lm->...jlkm", A, B),
+        (batch_size_A, mat_A_dim_1 * mat_B_dim_1, mat_A_dim_2 * mat_B_dim_2),
+    )
+
+
 def _convert_to_su4(U):
     r"""Convert a 4x4 matrix to :math:`SU(4)`.
 
@@ -115,12 +128,11 @@ def _compute_num_cnots(U):
     """
     u = Edag[None, :, :] @ U @ E[None, :, :]
     gammaU = u @ math.T(u, axes=(0, 2, 1))
-    try:
-        traces = math.trace(gammaU, axis1=1, axis2=2)
-    except TypeError:
-        traces = math.sum(math.diagonal(gammaU, dim1=1, dim2=2), axis=1)
+    # Given the different arguments of the `.trace()` function for
+    # the different interfaces, the slower `einsum()` is preferred here
+    traces = math.einsum("...ii", gammaU)
 
-    num_cnots = np.full(len(U), -1)
+    num_cnots = math.full(len(U), -1)
     # Case: 0 CNOTs (tensor product), the trace is +/- 4
     # We need a tolerance of around 1e-7 here in order to work with the case where U
     # is specified with 8 decimal places.
@@ -137,17 +149,16 @@ def _compute_num_cnots(U):
     # Checking the eigenvalues is needed because of some special 2-CNOT cases that yield
     # a trace 0.
     # Since reduce is not supported for all interfaces, we use a more manual approach here
-    evs_check = math.sum(math.isclose(sorted_evs, [-1, -1, 1, 1]), axis=1) == 4
+    evs_check = math.sum(math.cast(math.isclose(sorted_evs, [-1, -1, 1, 1]), int), axis=1) == 4
     one_cnot_mask = math.logical_and(math.isclose(traces, 0j, atol=1e-7), evs_check)
-    one_cnot_mask = math.logical_xor(one_cnot_mask, math.logical_and(zero_cnot_mask, one_cnot_mask))
+    # Disallow any increase in number of CNOTs for already set values
+    one_cnot_mask = math.logical_and(one_cnot_mask, num_cnots == -1)
     num_cnots[one_cnot_mask] = 1
 
     # Case: 2 CNOTs, the trace has only a real part (or is 0)
     two_cnot_mask = math.isclose(math.imag(traces), 0.0, atol=1e-7)
-    two_cnot_mask = math.logical_xor(
-        two_cnot_mask,
-        math.logical_and(two_cnot_mask, math.logical_or(zero_cnot_mask, one_cnot_mask)),
-    )
+    # Disallow any increase in number of CNOTs for already set values
+    two_cnot_mask = math.logical_and(two_cnot_mask, num_cnots == -1)
     num_cnots[two_cnot_mask] = 2
 
     # For the case with 3 CNOTs, the trace is a non-zero complex number
@@ -205,7 +216,7 @@ def _su2su2_to_tensor_products(U):
     # case one of the elements of A is 0.
     mask = math.isclose(A[:, 0, 0], 0.0, atol=1e-6)
     B = math.where(
-        mask,
+        math.convert_like(mask, C1),
         C2 / math.cast_like(A[:, 0, 1], 1j),
         C1 / math.cast_like(A[:, 0, 0], 1j),
     )
@@ -317,7 +328,7 @@ def _decomposition_1_cnot(U, wires):
     # -╭U-╭SWAP- = -C--╭C-╭SWAP--B-
     # -╰U-╰SWAP- = -D--╰X-╰SWAP--A-
     # This ensures that the internal part of the decomposition has determinant 1.
-    swap_U = np.exp(1j * np.pi / 4) * math.cast_like(SWAP, U) @ U
+    swap_U = math.exp(1j * np.pi / 4) * math.cast_like(SWAP, U) @ U
 
     # First let's compute gamma(u). For the one-CNOT case, uuT is always real.
     u = math.cast_like(Edag, U)[None, :, :] @ swap_U @ math.cast_like(E, U)[None, :, :]
@@ -339,7 +350,7 @@ def _decomposition_1_cnot(U, wires):
 
     # Once we have p and q properly in SO(4), we compute G and H in SO(4) such
     # that U = G V H
-    G = p @ q_one_cnot.T[None, :, :]
+    G = math.cast_like(p @ math.T(q_one_cnot)[None, :, :], u)
     H = math.conj(math.T(v_one_cnot))[None, :, :] @ math.T(G, axes=(0, 2, 1)) @ u
 
     # We now use the magic basis to convert G, H to SU(2) x SU(2)
@@ -391,7 +402,7 @@ def _decomposition_2_cnots(U, wires):
 
     sorted_evs = math.sort(math.real(evs))
 
-    evs_check = math.sum(math.isclose(sorted_evs, [-1, -1, 1, 1]), axis=1) == 4
+    evs_check = math.sum(math.cast(math.isclose(sorted_evs, [-1, -1, 1, 1]), int), axis=1) == 4
 
     # Only go for the special case if all checks evaluate to True
     # Otherwise, fall back to the generalized case
@@ -429,13 +440,13 @@ def _decomposition_2_cnots(U, wires):
 
         RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).matrix()
         RXp = qml.RX(phi, wires=0).matrix()
-        inner_matrix = math.kron(RZd, RXp)
+        inner_matrix = _batched_kron_product(RZd, RXp)
 
     # We need the matrix representation of this interior part, V, in order to
     # decompose U = (A \otimes B) V (C \otimes D)
     V = math.cast_like(CNOT10, U) @ inner_matrix @ math.cast_like(CNOT10, U)
     # Now we find the A, B, C, D in SU(2), and return the decomposition
-    A, B, C, D = _extract_su2su2_prefactors(U, V.reshape(-1, 4, 4))
+    A, B, C, D = _extract_su2su2_prefactors(U, math.reshape(V, (-1, 4, 4)))
 
     A_ops = zyz_decomposition(A, wires[0])
     B_ops = zyz_decomposition(B, wires[1])
@@ -454,7 +465,7 @@ def _decomposition_3_cnots(U, wires):
     # First we add a SWAP as per v1 of arXiv:0308033, which helps with some
     # rearranging of gates in the decomposition (it will cancel out the fact
     # that we need to add a SWAP to fix the determinant in another part later).
-    swap_U = np.exp(1j * np.pi / 4) * math.cast_like(SWAP, U)[None, :, :] @ U
+    swap_U = math.exp(1j * np.pi / 4) * math.cast_like(SWAP, U)[None, :, :] @ U
 
     # Choose the rotation angles of RZ, RY in the two-qubit decomposition.
     # They are chosen as per Proposition V.1 in quant-ph/0308033 and are based
@@ -502,12 +513,18 @@ def _decomposition_3_cnots(U, wires):
     RYb = qml.RY(beta, wires=wires[0]).matrix()
     RYa = qml.RY(alpha, wires=wires[0]).matrix()
 
-    V_mats = [CNOT10, math.kron(RZd, RYb), CNOT01, math.kron(math.eye(2), RYa), CNOT10, SWAP]
+    V_mats = [
+        CNOT10,
+        _batched_kron_product(RZd, RYb),
+        CNOT01,
+        _batched_kron_product(math.eye(2)[None, :, :], RYa),
+        CNOT10,
+        SWAP,
+    ]
 
     V = math.cast_like(math.convert_like(math.eye(4), U), U)[None, :, :]
     for mat in V_mats:
-        batched_mat = math.cast_like(math.convert_like(mat, U), U).reshape(-1, 4, 4)
-        V = batched_mat @ V
+        V = math.cast_like(mat, U) @ V
 
     # Now we need to find the four SU(2) operations A, B, C, D
     A, B, C, D = _extract_su2su2_prefactors(swap_U, V)
