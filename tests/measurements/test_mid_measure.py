@@ -200,7 +200,7 @@ class TestMeasurementValueManipulation:
         assert compared[3] is False
 
     def test_gt(self):
-        """Test the __gt__ dunder method between a MeasurementValue and a flaot."""
+        """Test the __gt__ dunder method between a MeasurementValue and a float."""
         m = MeasurementValue(["m"], lambda v: v)
         m_inversion = m > 0.5
         assert m_inversion[0] is False
