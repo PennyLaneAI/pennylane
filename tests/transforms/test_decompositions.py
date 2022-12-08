@@ -781,9 +781,10 @@ samples_su2_su2 = [
 
 
 def _assert_unitary_batches_equal(obtained_decomposition, original_unitary, wires, atol=1e-7):
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         for op in obtained_decomposition:
             qml.apply(op)
+    tape = qml.tape.QuantumScript.from_queue(q)
 
     original_unitary = qml.math.reshape(
         original_unitary, (-1, original_unitary.shape[-1], original_unitary.shape[-1])
@@ -939,16 +940,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.tape.QuantumTape() as tape:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        obtained_matrices = qml.math.reshape(qml.matrix(tape, wire_order=wires), (-1, 4, 4))
-
-        assert all(
-            check_matrix_equivalence(curr_U, curr_matrix, atol=1e-7)
-            for curr_U, curr_matrix in zip(qml.math.reshape(U, (-1, 4, 4)), obtained_matrices)
-        )
+        _assert_unitary_batches_equal(obtained_decomposition, U, wires)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
@@ -963,16 +955,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.tape.QuantumTape() as tape:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        obtained_matrices = qml.math.reshape(qml.matrix(tape, wire_order=wires), (-1, 4, 4))
-
-        assert all(
-            check_matrix_equivalence(curr_U, curr_matrix, atol=1e-7)
-            for curr_U, curr_matrix in zip(qml.math.reshape(U, (-1, 4, 4)), obtained_matrices)
-        )
+        _assert_unitary_batches_equal(obtained_decomposition, U, wires)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
