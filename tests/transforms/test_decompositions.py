@@ -29,6 +29,8 @@ from pennylane.transforms.decompositions.two_qubit_unitary import (
     _su2su2_to_tensor_products,
     _compute_num_cnots,
 )
+from pennylane.operation import DecompositionUndefinedError
+
 
 from test_optimization.utils import check_matrix_equivalence
 from gate_data import I, Z, S, T, H, X, CNOT, SWAP
@@ -292,6 +294,18 @@ samples_3_cnots = [
             -0.4168424055846296 + 0.3576772276508062j,
         ],
     ],
+    # Batch case
+    [
+        # Special case
+        SWAP,
+        # Unitary from the QMC subroutine
+        [
+            [0.5, 0.5, 0.5, 0.5],
+            [0.5, -0.83333333, 0.16666667, 0.16666667],
+            [0.5, 0.16666667, -0.83333333, 0.16666667],
+            [0.5, 0.16666667, 0.16666667, -0.83333333],
+        ],
+    ],
 ]
 
 samples_2_cnots = [
@@ -380,6 +394,65 @@ samples_2_cnots = [
             -0.1994479499053229 + 0.2310173648263156j,
         ],
     ],
+    # Batch case
+    # CNOT01 (A \otimes B) CNOT01 (C \otimes D)
+    [
+        [
+            [
+                0.4952546422732242 - 0.3874950570842591j,
+                -0.565120684005787 - 0.0812920957189095j,
+                0.0599739067738637 - 0.3382684721070105j,
+                0.2002937293624679 - 0.3470743738556477j,
+            ],
+            [
+                0.3076748055295139 + 0.1668987026621435j,
+                0.1113148363873911 - 0.355244639751341j,
+                -0.5552367793191325 + 0.2360956317049145j,
+                -0.4402702690966316 - 0.4254695664213973j,
+            ],
+            [
+                -0.0570544619126448 - 0.5997099301388422j,
+                0.3690979468442732 - 0.489643527399396j,
+                -0.2915922328649661 - 0.1955865908229054j,
+                0.1605581200806802 + 0.3347381888568993j,
+            ],
+            [
+                0.3161801218120408 - 0.1384715702727579j,
+                0.1624040016253136 + 0.3648031287938079j,
+                -0.2674750917123022 + 0.5684412664492574j,
+                0.5714177142050261 - 0.0145866404362501j,
+            ],
+        ],
+        # (A \otimes B) CNOT10 (C \otimes D) CNOT01 (E \otimes F)
+        [
+            [
+                -0.5032838832977308 + 0.008462334360567j,
+                -0.1994567215589622 + 0.4166138291684532j,
+                -0.2927933889967656 + 0.3307978265454508j,
+                0.0980847185817039 - 0.5731560630175854j,
+            ],
+            [
+                0.429674866329586 + 0.1517854863780976j,
+                -0.260061924207509 - 0.0913938324295813j,
+                0.4678474940708733 + 0.4691638242216676j,
+                0.4693562225846957 - 0.238881566880469j,
+            ],
+            [
+                -0.3407683276656533 - 0.1781416508017804j,
+                0.648130427328909 + 0.1856223456906182j,
+                0.3247150132557211 - 0.0284712498269712j,
+                0.5276154053566222 + 0.1139531710411058j,
+            ],
+            [
+                -0.6092485765643428 - 0.1411845180727529j,
+                -0.3732001418286821 - 0.3418447668630915j,
+                0.4811869468078607 + 0.1675038147841858j,
+                -0.1994479499053229 + 0.2310173648263156j,
+            ],
+        ],
+    ],
+    # Broadcast case
+    qml.IsingXX(phi=np.array([1.2, 2.3]), wires=[0, 1]).matrix().tolist(),
 ]
 
 # These are randomly generated matrices that involve a single CNOT
@@ -548,6 +621,63 @@ samples_1_cnot = [
             0.2406649865130532 - 0.4376672321481798j,
         ],
     ],
+    # Batch case
+    # (A \otimes B) CNOT10 (C \otimes D)
+    [
+        [
+            [
+                0.2211933286892437 + 0.0021586412960177j,
+                0.38444713219383 - 0.0581554847392023j,
+                -0.170894684604903 + 0.1031928176859452j,
+                -0.1036775219695835 - 0.8656121616196758j,
+            ],
+            [
+                0.3442924845446644 + 0.260151125836039j,
+                -0.1914328218155123 - 0.0746552589054714j,
+                -0.5744657965166804 - 0.6284808877028109j,
+                -0.2036000102332332 + 0.071498266549486j,
+            ],
+            [
+                -0.1048402095394854 + 0.5447532602544797j,
+                0.7011096884305793 - 0.024182937133914j,
+                -0.1624036601402791 + 0.1839401392571305j,
+                -0.1162941782466869 + 0.3554990108217186j,
+            ],
+            [
+                -0.6743897607764879 + 0.0479978633805106j,
+                -0.167244245931061 - 0.5352458890411946j,
+                -0.4128361178667754 + 0.06711548036308j,
+                0.1819390859257292 - 0.1428141352633625j,
+            ],
+        ],
+        # (A \otimes B) CNOT01 (C \otimes D)
+        [
+            [
+                -0.384175417575186 + 0.3923608184977355j,
+                0.1002767236561732 - 0.5802482358089508j,
+                -0.4052191818361661 + 0.4207032744597814j,
+                -0.1025417468296731 + 0.0031874535396264j,
+            ],
+            [
+                -0.4577221128473338 + 0.0586197038286386j,
+                -0.0937187062570979 + 0.6742419194459858j,
+                -0.0414783182526488 + 0.3776270025012934j,
+                -0.2437968467006254 + 0.3462792652304717j,
+            ],
+            [
+                0.3423554335462237 + 0.4267199288134111j,
+                0.1796472451791323 + 0.1419455069613175j,
+                -0.1490674637388668 - 0.2557411476563918j,
+                -0.7409292809972994 - 0.1080757005000481j,
+            ],
+            [
+                0.4279595694962425 - 0.0554066848293549j,
+                0.185704890878562 + 0.3208788487100644j,
+                -0.4049260830288736 + 0.5127316935400166j,
+                0.2406649865130532 - 0.4376672321481798j,
+            ],
+        ],
+    ],
 ]
 
 # Randomly-generated SU(2) x SU(2) matrices. These can be used to test
@@ -612,11 +742,73 @@ samples_su2_su2 = [
             [-1j, 0],
         ],
     ),
+    # Batch test case
+    (
+        (
+            [
+                [0, -1j],
+                [-1j, 0],
+            ],
+            [
+                [
+                    -0.6429551068755086 - 0.2344852807169338j,
+                    0.348170308379626 + 0.6406268961202303j,
+                ],
+                [
+                    -0.0720224467655562 + 0.7255605769552991j,
+                    -0.5014071443907067 + 0.4657955472996208j,
+                ],
+            ],
+        ),
+        (
+            [
+                [
+                    0.7192114465877868 + 0.4233015158437373j,
+                    0.5404227760496959 + 0.1072098172194949j,
+                ],
+                [
+                    0.5300962072416202 + 0.1501623549680364j,
+                    -0.8330292881813453 + 0.0501147009427765j,
+                ],
+            ],
+            [
+                [0, -1j],
+                [-1j, 0],
+            ],
+        ),
+    ),
 ]
+
+
+def _assert_unitary_batches_equal(obtained_decomposition, original_unitary, wires, atol=1e-7):
+    with qml.tape.QuantumTape() as tape:
+        for op in obtained_decomposition:
+            qml.apply(op)
+
+    original_unitary = qml.math.reshape(
+        original_unitary, (-1, original_unitary.shape[-1], original_unitary.shape[-1])
+    )
+    # If the reshape here fails, then they are obviously unequal
+    actual_unitary = qml.math.reshape(
+        qml.matrix(tape, wire_order=wires),
+        (-1, original_unitary.shape[-1], original_unitary.shape[-1]),
+    )
+
+    assert all(
+        check_matrix_equivalence(curr_actual, curr_expected, atol=atol)
+        for curr_actual, curr_expected in zip(actual_unitary, original_unitary)
+    )
 
 
 class TestTwoQubitUnitaryDecomposition:
     """Test that two-qubit unitary operations are correctly decomposed."""
+
+    def test_decomposition_fails_if_different_number_of_cnots_needed(self):
+        # IsingXX(pi) requires no CNOTs for its decomposition, while
+        # IsingXX(pi / 2) requires at least 1 CNOT, thus this should raise
+        # an error
+        with pytest.raises(DecompositionUndefinedError):
+            _compute_num_cnots(qml.IsingXX(phi=np.array([np.pi, np.pi / 2]), wires=[0, 1]).matrix())
 
     @pytest.mark.parametrize("U", samples_3_cnots)
     def test_convert_to_su4(self, U):
@@ -635,93 +827,74 @@ class TestTwoQubitUnitaryDecomposition:
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_su2su2_to_tensor_products(self, U_pair):
         """Test SU(2) x SU(2) can be correctly factored into tensor products."""
-        true_matrix = qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))[None, :, :]
+        lhs, rhs = U_pair
+        lhs, rhs = np.array(lhs).reshape(-1, 2, 2), np.array(rhs).reshape(-1, 2, 2)
+        expected_true_matrix = qml.math.einsum("...jk,...lm->...jlkm", lhs, rhs).reshape(
+            len(lhs), 4, 4
+        )
 
-        A, B = _su2su2_to_tensor_products(true_matrix)
+        A, B = _su2su2_to_tensor_products(expected_true_matrix)
 
+        actual_true_matrix = qml.math.einsum("...jk,...lm->...jlkm", A, B).reshape(len(A), 4, 4)
         assert all(
-            check_matrix_equivalence(qml.math.kron(curr_A, curr_B), curr_true_matrix)
-            for curr_A, curr_B, curr_true_matrix in zip(A, B, true_matrix)
+            check_matrix_equivalence(curr_actual, curr_expected)
+            for curr_actual, curr_expected in zip(actual_true_matrix, expected_true_matrix)
         )
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_3_cnots)
     def test_two_qubit_decomposition_3_cnots(self, U, wires):
         """Test that a two-qubit matrix using 3 CNOTs is correctly decomposed."""
-        U = _convert_to_su4(np.array(U)[None, :, :])
+        U = _convert_to_su4(np.array(U).reshape(-1, 4, 4))
 
         assert _compute_num_cnots(U) == 3
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 10
 
-        with qml.tape.QuantumTape() as tape:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
-
-        # We check with a slightly great tolerance threshold here simply because the
-        # test matrices were copied in here with reduced precision.
-        assert all(check_matrix_equivalence(curr_U, obtained_matrix, atol=1e-7) for curr_U in U)
+        _assert_unitary_batches_equal(obtained_decomposition, U, wires)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
-    @pytest.mark.parametrize("U", samples_2_cnots)
+    @pytest.mark.parametrize("U", samples_2_cnots[-1:])
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
-        U = _convert_to_su4(np.array(U)[None, :, :])
+        U = _convert_to_su4(np.array(U).reshape(-1, 4, 4))
 
         assert _compute_num_cnots(U) == 2
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 8
 
-        with qml.tape.QuantumTape() as tape:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
-
-        assert all(check_matrix_equivalence(curr_U, obtained_matrix, atol=1e-7) for curr_U in U)
+        _assert_unitary_batches_equal(obtained_decomposition, U, wires)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_1_cnot)
     def test_two_qubit_decomposition_1_cnot(self, U, wires):
         """Test that a two-qubit matrix using one CNOT is correctly decomposed."""
-        U = _convert_to_su4(np.array(U)[None, :, :])
+        U = _convert_to_su4(np.array(U).reshape(-1, 4, 4))
 
         assert _compute_num_cnots(U) == 1
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 5
 
-        with qml.tape.QuantumTape() as tape:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
-
-        assert all(check_matrix_equivalence(curr_U, obtained_matrix, atol=1e-7) for curr_U in U)
+        _assert_unitary_batches_equal(obtained_decomposition, U, wires)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
         """Test that a two-qubit tensor product matrix is correctly decomposed."""
-        U = _convert_to_su4(qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))[None, :, :])
+        lhs, rhs = U_pair
+        lhs, rhs = np.array(lhs).reshape(-1, 2, 2), np.array(rhs).reshape(-1, 2, 2)
+        U = qml.math.einsum("...jk,...lm->...jlkm", lhs, rhs).reshape(len(lhs), 4, 4)
+        U = _convert_to_su4(U)
 
         assert _compute_num_cnots(U) == 0
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
         assert len(obtained_decomposition) == 2
 
-        with qml.tape.QuantumTape() as tape:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        # TODO modify this such that
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
-
-        assert all(check_matrix_equivalence(curr_U, obtained_matrix, atol=1e-7) for curr_U in U)
+        _assert_unitary_batches_equal(obtained_decomposition, U, wires)
 
 
 class TestTwoQubitUnitaryDecompositionInterfaces:
@@ -738,13 +911,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.tape.QuantumTape() as tape:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
-
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+        _assert_unitary_batches_equal(obtained_decomposition, U, wires)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
@@ -753,19 +920,13 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         """Test that a two-qubit tensor product in Torch is correctly decomposed."""
         import torch
 
-        U1 = torch.tensor(U_pair[0], dtype=torch.complex128)
-        U2 = torch.tensor(U_pair[1], dtype=torch.complex128)
-        U = qml.math.kron(U1, U2)
+        U1 = torch.tensor(U_pair[0], dtype=torch.complex128).reshape(-1, 2, 2)
+        U2 = torch.tensor(U_pair[1], dtype=torch.complex128).reshape(-1, 2, 2)
+        U = qml.math.einsum("...jk,...lm->...jlkm", U1, U2).reshape(len(U1), 4, 4)
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.tape.QuantumTape() as tape:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
-
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+        _assert_unitary_batches_equal(obtained_decomposition, U, wires)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
@@ -782,9 +943,12 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
+        obtained_matrices = qml.math.reshape(qml.matrix(tape, wire_order=wires), (-1, 4, 4))
 
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+        assert all(
+            check_matrix_equivalence(curr_U, curr_matrix, atol=1e-7)
+            for curr_U, curr_matrix in zip(qml.math.reshape(U, (-1, 4, 4)), obtained_matrices)
+        )
 
     @pytest.mark.tf
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
@@ -793,9 +957,9 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         """Test that a two-qubit tensor product in Tensorflow is correctly decomposed."""
         import tensorflow as tf
 
-        U1 = tf.Variable(U_pair[0], dtype=tf.complex128)
-        U2 = tf.Variable(U_pair[1], dtype=tf.complex128)
-        U = qml.math.kron(U1, U2)
+        U1 = qml.math.reshape(tf.Variable(U_pair[0], dtype=tf.complex128), (-1, 2, 2))
+        U2 = qml.math.reshape(tf.Variable(U_pair[1], dtype=tf.complex128), (-1, 2, 2))
+        U = qml.math.reshape(qml.math.einsum("...jk,...lm->...jlkm", U1, U2), (len(U1), 4, 4))
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
@@ -803,9 +967,12 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
+        obtained_matrices = qml.math.reshape(qml.matrix(tape, wire_order=wires), (-1, 4, 4))
 
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+        assert all(
+            check_matrix_equivalence(curr_U, curr_matrix, atol=1e-7)
+            for curr_U, curr_matrix in zip(qml.math.reshape(U, (-1, 4, 4)), obtained_matrices)
+        )
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
@@ -822,13 +989,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.tape.QuantumTape() as tape:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
-
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+        _assert_unitary_batches_equal(obtained_decomposition, U, wires)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
@@ -841,16 +1002,10 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
-        U2 = jax.numpy.array(U_pair[1], dtype=jax.numpy.complex128)
-        U = qml.math.kron(U1, U2)
+        U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128).reshape(-1, 2, 2)
+        U2 = jax.numpy.array(U_pair[1], dtype=jax.numpy.complex128).reshape(-1, 2, 2)
+        U = qml.math.einsum("...jk,...lm->...jlkm", U1, U2).reshape(len(U1), 4, 4)
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        with qml.tape.QuantumTape() as tape:
-            for op in obtained_decomposition:
-                qml.apply(op)
-
-        obtained_matrix = qml.matrix(tape, wire_order=wires)
-
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+        _assert_unitary_batches_equal(obtained_decomposition, U, wires)

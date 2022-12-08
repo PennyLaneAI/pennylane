@@ -215,11 +215,13 @@ def _su2su2_to_tensor_products(U):
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
     mask = math.isclose(A[:, 0, 0], 0.0, atol=1e-6)
-    B = math.where(
-        math.convert_like(mask, C1),
-        C2 / math.cast_like(A[:, 0, 1], 1j),
-        C1 / math.cast_like(A[:, 0, 0], 1j),
-    )
+    mask = math.convert_like(mask, C1)
+    mask = math.tile(math.reshape(mask, (-1, 1, 1)), (1, len(mask), len(mask)))
+
+    C1_normalized = C1 / math.cast_like(math.reshape(A[:, 0, 0], (-1, 1, 1)), 1j)
+    C2_normalized = C2 / math.cast_like(math.reshape(A[:, 0, 1], (-1, 1, 1)), 1j)
+
+    B = math.where(mask, C2_normalized, C1_normalized)
 
     return math.convert_like(A, U), math.convert_like(B, U)
 
@@ -517,7 +519,7 @@ def _decomposition_3_cnots(U, wires):
         CNOT10,
         _batched_kron_product(RZd, RYb),
         CNOT01,
-        _batched_kron_product(math.eye(2)[None, :, :], RYa),
+        _batched_kron_product(math.tile(math.eye(2), (len(U), 1, 1)), RYa),
         CNOT10,
         SWAP,
     ]
