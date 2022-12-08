@@ -129,7 +129,7 @@ class MeasurementValue(Generic[T]):
         return ret_dict
 
     def _transform_bin_op(self, base_bin, other):
-        """helper function for defining dunder binary operations"""
+        """Helper function for defining dunder binary operations."""
         if isinstance(other, MeasurementValue):
             return self._merge(other)._apply(lambda t: base_bin(t[0], t[1]))
         # if `other` is not a MeasurementValue then apply it to each branch
