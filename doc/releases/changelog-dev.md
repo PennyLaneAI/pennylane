@@ -466,6 +466,9 @@
   `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
   [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
 
+* Updated `qml.transforms.batch_params` and `qml.transforms.batch_input` to support the new return types
+  [(#3431)](https://github.com/PennyLaneAI/pennylane/pull/3431)
+
 * Updated `qml.transforms.cut_circuit` and `qml.transforms.cut_circuit_mc` to
   support the new return types.
   [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)

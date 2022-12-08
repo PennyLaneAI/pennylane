@@ -20,7 +20,7 @@ from pennylane.ops.op_math import Adjoint
 
 noncallable_objects = [
     [qml.Hadamard(1), qml.RX(-0.2, wires=1)],
-    qml.tape.QuantumTape(),
+    qml.tape.QuantumScript(),
 ]
 
 
@@ -40,39 +40,42 @@ class TestPreconstructedOp:
     )
     def test_single_op(self, base):
         """Test passing a single preconstructed op in a queuing context."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base.queue()
             out = adjoint(base)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert isinstance(out, Adjoint)
         assert out.base is base
         assert len(tape) == 1
-        assert qml.queuing.AnnotatedQueue.__len__(tape) == 2
-        assert tape.get_info(base) == {"owner": out}
-        assert tape.get_info(out) == {"owns": base}
+        assert len(q) == 2
+        assert q.get_info(base) == {"owner": out}
+        assert q.get_info(out) == {"owns": base}
 
     def test_single_op_defined_outside_queue_eager(self):
         """Test if base is defined outside context and the function eagerly simplifies
         the adjoint, the base is not added to queue."""
         base = qml.RX(1.2, wires=0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             out = adjoint(base, lazy=False)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert isinstance(out, qml.RX)
         assert out.data == [-1.2]
         assert len(tape) == 1
         assert tape[0] is out
 
-        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
-        assert tape.get_info(out) == {"owns": base}
+        assert len(q) == 1
+        assert q.get_info(out) == {"owns": base}
 
     def test_single_observable(self):
         """Test passing a single preconstructed observable in a queuing context."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.PauliX(0) @ qml.PauliY(1)
             out = adjoint(base)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 0
         assert out.base is base
         assert isinstance(out, Adjoint)
@@ -84,9 +87,10 @@ class TestDifferentCallableTypes:
     def test_adjoint_single_op_function(self):
         """Test the adjoint transform on a single operation."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             out = adjoint(qml.RX)(1.234, wires="a")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert out == tape[0]
         assert isinstance(out, Adjoint)
         assert out.base.__class__ is qml.RX
@@ -96,9 +100,10 @@ class TestDifferentCallableTypes:
     def test_adjoint_template(self):
         """Test the adjoint transform on a template."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             out = adjoint(qml.QFT)(wires=(0, 1, 2))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 1
         assert out == tape[0]
         assert isinstance(out, Adjoint)
@@ -116,9 +121,10 @@ class TestDifferentCallableTypes:
         x = 1.23
         y = 2.34
         z = 3.45
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             out = adjoint(func)(x, y, z)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert out == tape.circuit
 
         for op in tape:
@@ -137,9 +143,10 @@ class TestDifferentCallableTypes:
     def test_nested_adjoint(self):
         """Test the adjoint transform on an adjoint transform."""
         x = 4.321
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             out = adjoint(adjoint(qml.RX))(x, wires="b")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert out is tape[0]
         assert isinstance(out, Adjoint)
         assert isinstance(out.base, Adjoint)
@@ -155,29 +162,31 @@ class TestNonLazyExecution:
         """Test lazy=False for a single op that gets decomposed."""
 
         x = 1.23
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.RX(x, wires="b")
             out = adjoint(base, lazy=False)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 1
         assert out is tape[0]
-        assert tape.get_info(base) == {"owner": out}
-        assert tape.get_info(out) == {"owns": base}
+        assert q.get_info(base) == {"owner": out}
+        assert q.get_info(out) == {"owns": base}
 
         assert isinstance(out, qml.RX)
         assert out.data == [-1.23]
 
     def test_single_nondecomposable_op(self):
         """Test lazy=false for a single op that can't be decomposed."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.S(0)
             out = adjoint(base, lazy=False)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 1
         assert out is tape[0]
-        assert qml.queuing.AnnotatedQueue.__len__(tape) == 2
-        assert tape.get_info(base) == {"owner": out}
-        assert tape.get_info(out) == {"owns": base}
+        assert len(q) == 2
+        assert q.get_info(base) == {"owner": out}
+        assert q.get_info(out) == {"owns": base}
 
         assert isinstance(out, Adjoint)
         assert isinstance(out.base, qml.S)
@@ -185,9 +194,10 @@ class TestNonLazyExecution:
     def test_single_decomposable_op_function(self):
         """Test lazy=False for a single op callable that gets decomposed."""
         x = 1.23
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             out = adjoint(qml.RX, lazy=False)(x, wires="b")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert out is tape[0]
         assert not isinstance(out, Adjoint)
         assert isinstance(out, qml.RX)
@@ -195,9 +205,10 @@ class TestNonLazyExecution:
 
     def test_single_nondecomposable_op_function(self):
         """Test lazy=False for a single op function that can't be decomposed."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             out = adjoint(qml.S, lazy=False)(0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert out is tape[0]
         assert isinstance(out, Adjoint)
         assert isinstance(out.base, qml.S)
@@ -210,9 +221,10 @@ class TestNonLazyExecution:
             qml.RZ(x, wires="b")
             qml.T("b")
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             out = adjoint(qfunc, lazy=False)(x)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == len(out) == 2
         assert isinstance(tape[0], Adjoint)
         assert isinstance(tape[0].base, qml.T)

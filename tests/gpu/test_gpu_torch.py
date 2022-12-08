@@ -30,10 +30,11 @@ class TestTorchDevice:
 
         x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
 
         assert res.is_cuda
@@ -50,11 +51,12 @@ class TestTorchDevice:
         x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
         y = torch.tensor(0.2, requires_grad=True, device=torch.device("cpu"))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.RY(y, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
 
         assert res.is_cuda
@@ -72,10 +74,11 @@ class TestTorchDevice:
 
         U = torch.eye(2, requires_grad=False, device=torch.device("cuda"))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QubitUnitary(U, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
         assert res.is_cuda
         assert "cuda" in dev._torch_device
@@ -88,18 +91,20 @@ class TestTorchDevice:
         x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
         y = torch.tensor(0.2, requires_grad=True, device=torch.device("cpu"))
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(x, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
         res1 = dev.execute(tape1)
         assert "cuda" in dev._torch_device
         assert res1.is_cuda
 
-        with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RY(y, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         res2 = dev.execute(tape2)
         assert dev._torch_device == "cpu"
         assert not res2.is_cuda

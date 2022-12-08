@@ -315,10 +315,11 @@ class TestApplyOp:
     def test_default_queue_operation_inside(self):
         """Test applying an operation instantiated within the queuing
         context to the existing active queue"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.PauliZ(0)
             op2 = qml.apply(op1)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.operations == [op1, op2]
 
     def test_default_queue_operation_outside(self):
@@ -326,9 +327,10 @@ class TestApplyOp:
         to an existing active queue"""
         op = qml.PauliZ(0)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.apply(op)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.operations == [op]
 
     @pytest.mark.parametrize("obs", test_observables)
@@ -337,9 +339,10 @@ class TestApplyOp:
         to an existing active queue"""
         op = qml.expval(obs)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.apply(op)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.measurements == [op]
 
     @pytest.mark.parametrize("obs", test_observables)
@@ -347,21 +350,24 @@ class TestApplyOp:
         """Test applying a measurement instantiated inside a queuing context
         to an existing active queue"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.expval(obs)
             op2 = qml.apply(op1)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.measurements == [op1, op2]
 
     def test_different_queue_operation_inside(self):
         """Test applying an operation instantiated within the queuing
         context to a specfied queuing context"""
-        with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q1:
+            with qml.queuing.AnnotatedQueue() as q2:
                 op1 = qml.PauliZ(0)
-                op2 = qml.apply(op1, tape1)
+                op2 = qml.apply(op1, q1)
 
-        assert tape1.operations == [tape2, op2]
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        assert tape1.operations == [op2]
         assert tape2.operations == [op1]
 
     def test_different_queue_operation_outside(self):
@@ -369,11 +375,13 @@ class TestApplyOp:
         to a specfied queuing context"""
         op = qml.PauliZ(0)
 
-        with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape() as tape2:
-                qml.apply(op, tape1)
+        with qml.queuing.AnnotatedQueue() as q1:
+            with qml.queuing.AnnotatedQueue() as q2:
+                qml.apply(op, q1)
 
-        assert tape1.operations == [tape2, op]
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        assert tape1.operations == [op]
         assert tape2.operations == []
 
     @pytest.mark.parametrize("obs", test_observables)
@@ -382,10 +390,12 @@ class TestApplyOp:
         to a specfied queuing context"""
         op = qml.expval(obs)
 
-        with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape() as tape2:
-                qml.apply(op, tape1)
+        with qml.queuing.AnnotatedQueue() as q1:
+            with qml.queuing.AnnotatedQueue() as q2:
+                qml.apply(op, q1)
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
         assert tape1.measurements == [op]
         assert tape2.measurements == []
 
@@ -394,26 +404,30 @@ class TestApplyOp:
         """Test applying a measurement instantiated inside a queuing context
         to a specfied queuing context"""
 
-        with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q1:
+            with qml.queuing.AnnotatedQueue() as q2:
                 op1 = qml.expval(obs)
-                op2 = qml.apply(op1, tape1)
+                op2 = qml.apply(op1, q1)
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
         assert tape1.measurements == [op2]
         assert tape2.measurements == [op1]
 
     def test_apply_no_queue_method(self):
         """Test that an object with no queue method is still
         added to the queuing context"""
-        with qml.tape.QuantumTape() as tape1:
-            with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q1:
+            with qml.queuing.AnnotatedQueue() as q2:
                 op1 = qml.apply(5)
-                op2 = qml.apply(6, tape1)
+                op2 = qml.apply(6, q1)
 
-        assert tape1.queue == [tape2, op2]
-        assert tape2.queue == [op1]
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        assert q1.queue == [op2]
+        assert q2.queue == [op1]
 
         # note that tapes don't know how to process integers,
         # so they are not included after queue processing
-        assert tape1.operations == [tape2]
+        assert tape1.operations == []
         assert tape2.operations == []
