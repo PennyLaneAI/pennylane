@@ -202,6 +202,19 @@ jobs:
   return-tests:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        config:
+          - { loc: "tests/returntypes/jax", suite: 'jax'}
+          - { loc: "tests/returntypes/tf", suite: 'tf'}
+          - { loc: "tests/returntypes/autograd", suite: 'autograd'}
+          - { loc: "tests/returntypes/gradients", suite: 'gradients'}
+          - { loc: "tests/returntypes/transforms", suite: 'transforms'}
+          - { loc: "tests/returntypes/paramshift", suite: 'paramshift'}
+          - { loc: "tests/returntypes/finitediff", suite: 'finitediff'}
+          - { loc: "tests/returntypes/core", suite: 'core'}
+          - { loc: "tests/returntypes/optimizers", suite: 'optimizers'}
+
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.4.1
@@ -239,14 +252,14 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/returntypes --cov=pennylane $COVERAGE_FLAGS -n auto
+          python -m pytest ${{ matrix.config.loc }} --cov=pennylane $COVERAGE_FLAGS -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - uses: actions/upload-artifact@v2
         with:
-          name: return-coverage
+          name: return-coverage-${{ matrix.config.suite }}
           path: ./coverage.xml
 
   qchem-tests:

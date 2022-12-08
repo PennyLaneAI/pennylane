@@ -23,7 +23,7 @@ from pytest_mock import mocker
 import pennylane as qml
 
 from pennylane.drawer import tape_mpl
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")
@@ -32,7 +32,7 @@ plt = pytest.importorskip("matplotlib.pyplot")
 def test_empty_tape():
     """Edge case where the tape is empty. Use this to test return types."""
 
-    fig, ax = tape_mpl(QuantumTape())
+    fig, ax = tape_mpl(QuantumScript())
 
     assert isinstance(fig, mpl.figure.Figure)
     assert isinstance(ax, mpl.axes._axes.Axes)
@@ -41,10 +41,13 @@ def test_empty_tape():
     plt.close()
 
 
-with QuantumTape() as tape1:
+with qml.queuing.AnnotatedQueue() as q1:
     qml.PauliX(0)
     qml.PauliX("a")
     qml.PauliX(1.234)
+
+
+tape1 = QuantumScript.from_queue(q1)
 
 
 def test_fontsize():
@@ -110,7 +113,7 @@ class TestWires:
         """Test situation with empty tape but specified wires and show_all_wires
         still draws wires."""
 
-        _, ax = tape_mpl(QuantumTape(), wire_order=[0, 1, 2], show_all_wires=True)
+        _, ax = tape_mpl(QuantumScript(), wire_order=[0, 1, 2], show_all_wires=True)
 
         assert len(ax.lines) == 3
         for wire, line in enumerate(ax.lines):
@@ -123,11 +126,12 @@ class TestWires:
         """Test a single layer with multiple wires. Check that the expected number
         of wires are drawn, and they are in the correct location."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.PauliX(0)
             qml.PauliY(1)
             qml.PauliZ(2)
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
 
         assert len(ax.lines) == 3
@@ -140,11 +144,12 @@ class TestWires:
     def test_three_layers(self):
         """Test wire length when circuit has three layers."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.PauliX(0)
             qml.PauliX(0)
             qml.PauliX(0)
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
 
         assert len(ax.lines) == 1
@@ -156,10 +161,11 @@ class TestWires:
     def test_wire_options(self):
         """Test wires are formatted by providing a wire_options dictionary."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.PauliX(0)
             qml.PauliX(1)
 
+        tape = QuantumScript.from_queue(q_tape)
         rgba_red = (1, 0, 0, 1)
         _, ax = tape_mpl(tape, wire_options={"linewidth": 5, "color": rgba_red})
 
@@ -176,9 +182,10 @@ class TestSpecialGates:
     def test_SWAP(self):
         """Test SWAP gate special call"""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.SWAP(wires=(0, 1))
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
         layer = 0
 
@@ -205,9 +212,10 @@ class TestSpecialGates:
     def test_CSWAP(self):
         """Test CSWAP special call"""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.CSWAP(wires=(0, 1, 2))
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
         layer = 0
 
@@ -235,9 +243,10 @@ class TestSpecialGates:
     def test_CNOT(self):
         """Test CNOT gets a special call"""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.CNOT(wires=(0, 1))
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
         layer = 0
 
@@ -254,9 +263,10 @@ class TestSpecialGates:
     def test_Toffoli(self):
         """Test Toffoli gets a special call."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.Toffoli(wires=(0, 1, 2))
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
         layer = 0
 
@@ -275,9 +285,10 @@ class TestSpecialGates:
     def test_MultiControlledX_no_control_values(self):
         """Test MultiControlledX gets a special call."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.MultiControlledX(wires=[0, 1, 2, 3, 4])
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
         layer = 0
 
@@ -295,9 +306,10 @@ class TestSpecialGates:
     def test_MultiControlledX_control_values(self):
         """Test MultiControlledX special call with provided control values."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.MultiControlledX(wires=[0, 1, 2, 3, 4], control_values="0101")
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
 
         assert ax.patches[0].get_facecolor() == (1.0, 1.0, 1.0, 1.0)  # white
@@ -310,9 +322,10 @@ class TestSpecialGates:
     def test_CZ(self):
         """Test CZ gets correct special call."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.CZ(wires=(0, 1))
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
         layer = 0
 
@@ -331,9 +344,10 @@ class TestSpecialGates:
     def test_Barrier(self):
         """Test Barrier gets correct special call."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.Barrier(wires=(0, 1, 2))
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
         layer = 0
 
@@ -345,9 +359,10 @@ class TestSpecialGates:
     def test_WireCut(self):
         """Test WireCut gets correct special call."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.WireCut(wires=(0, 1))
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
         layer = 0
 
@@ -358,9 +373,10 @@ class TestSpecialGates:
         plt.close()
 
     def test_Prod(self):
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.S(0) @ qml.T(0)
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
         layer = 0
 
@@ -387,9 +403,10 @@ class TestControlledGates:
         """Test a variety of non-special gates. Checks control wires are drawn, and
         that a box is drawn over the target wires."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.apply(op)
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
         layer = 0
 
@@ -416,9 +433,10 @@ class TestControlledGates:
     def test_CRX_decimals(self):
         """Test a controlled parametric operation with specified decimals."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.CRX(1.234, wires=(0, 1))
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape, decimals=2)
 
         # two wire labels, so CRX is third text object
@@ -428,7 +446,7 @@ class TestControlledGates:
     def test_control_values_str(self):
         """Test control values get displayed correctly when they are provided as a string."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.ControlledQubitUnitary(
                 qml.matrix(qml.RX)(0, 0),
                 control_wires=[0, 1, 2, 3],
@@ -436,15 +454,17 @@ class TestControlledGates:
                 control_values="1010",
             )
 
+        tape = QuantumScript.from_queue(q_tape)
         self.check_tape_controlled_qubit_unitary(tape)
 
     def test_control_values_bool(self):
         """Test control_values get displayed correctly when they are provided as a list of bools."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qubit_unitary = qml.QubitUnitary(qml.matrix(qml.RX)(0, 0), wires=4)
             qml.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
 
+        tape = QuantumScript.from_queue(q_tape)
         self.check_tape_controlled_qubit_unitary(tape)
 
     def check_tape_controlled_qubit_unitary(self, tape):
@@ -502,9 +522,10 @@ class TestGeneralOperations:
         """Test that a variety of operations produce a rectangle across relevant wires
         and a correct label text."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.apply(op)
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
 
         num_wires = len(op.wires)
@@ -522,9 +543,10 @@ class TestGeneralOperations:
     def test_general_operations_decimals(self, op):
         """Check that the decimals argument affects text strings when applicable."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.apply(op)
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape, decimals=2)
 
         num_wires = len(op.wires)
@@ -536,9 +558,10 @@ class TestGeneralOperations:
     def test_notches(self, wires, n):
         """Test notches are included when non-active wires exist."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.QFT(wires=wires)
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape, show_all_wires=True, wire_order=[0, 1, 2])
         assert len(ax.patches) == (n + 1)
         plt.close()
@@ -546,9 +569,10 @@ class TestGeneralOperations:
     def test_active_wire_notches_False(self):
         """Test active wire notches are disable with active_wire_notches=False."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.QFT(wires=(0, 3))
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(
             tape, show_all_wires=True, wire_order=[0, 1, 2, 3], active_wire_notches=False
         )
@@ -574,10 +598,11 @@ class TestMeasurements:
     def test_measurements(self, measurements, wires):
         """Tests a variety of measurements draw measurement boxes on the correct wires."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             for m in measurements:
                 qml.apply(m)
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
 
         assert len(ax.patches) == 3 * len(wires)
@@ -593,9 +618,10 @@ class TestMeasurements:
     def test_state(self):
         """Test state produces measurements on all wires."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.state()
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape, wire_order=[0, 1, 2], show_all_wires=True)
 
         assert len(ax.patches) == 9  # three measure boxes with 3 patches each
@@ -618,11 +644,12 @@ class TestLayering:
     def test_single_layer_multiple_wires(self):
         """Tests positions when multiple gates are all in the same layer."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.PauliX(0)
             qml.PauliX(1)
             qml.PauliX(2)
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
 
         # As layers are stored in sets, we don't know the
@@ -642,11 +669,12 @@ class TestLayering:
     def test_three_layers_one_wire(self):
         """Tests the positions when multiple gates are all on the same wire."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.PauliX(0)
             qml.PauliX(0)
             qml.PauliX(0)
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
 
         for layer, box in enumerate(ax.patches):
@@ -660,11 +688,12 @@ class TestLayering:
     def test_blocking_IsingXX(self):
         """Tests the position of layers when a multiwire gate is blocking another gate on its empty wire."""
 
-        with QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             qml.PauliX(0)
             qml.IsingXX(1.234, wires=(0, 2))
             qml.PauliX(1)
 
+        tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape, wire_order=[0, 1, 2], active_wire_notches=False)
 
         # layer=0, wire=0
