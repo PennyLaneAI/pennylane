@@ -14,6 +14,7 @@
 """
 Unit tests for Hartree-Fock functions.
 """
+import jax
 import pytest
 
 import pennylane as qml
@@ -241,16 +242,15 @@ def test_nuclear_energy_gradient(symbols, geometry, g_ref):
     assert np.allclose(g, g_ref)
 
 
-import jax
 class TestJax:
     @pytest.mark.parametrize(
         ("symbols", "geometry", "g_ref"),
         [
             (
-                    ["H", "H"],
-                    np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-                    # HF gradient computed with pyscf using rnuc_grad_method().kernel()
-                    jax.numpy.array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]]),
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+                # HF gradient computed with pyscf using rnuc_grad_method().kernel()
+                jax.numpy.array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]]),
             ),
         ],
     )
