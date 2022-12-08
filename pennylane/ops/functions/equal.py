@@ -17,14 +17,14 @@ This module contains the qml.equal function.
 # pylint: disable=too-many-arguments,too-many-return-statements
 from functools import singledispatch
 from typing import Union
-
+import numpy as np
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd
+from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, Sum
 
 
 def equal(
@@ -225,6 +225,20 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
         raise NotImplementedError(
             f"Unable to compare base operators {op1.base} and {op2.base}."
         ) from e
+
+
+@_equal.register
+# pylint: disable=unused-argument, protected-access
+def _equal_sum(op1: Sum, op2: Sum, **kwargs):
+    sorted_ops1 = op1._sort(op1.operands)
+    sorted_ops2 = op2._sort(op2.operands)
+
+    simplified_op1 = qml.op_sum(*sorted_ops1).simplify()
+    simplified_op2 = qml.op_sum(*sorted_ops2).simplify()
+
+    return np.all(
+        [qml.equal(o1, o2) for o1, o2 in zip(simplified_op1.operands, simplified_op2.operands)]
+    )
 
 
 @_equal.register
