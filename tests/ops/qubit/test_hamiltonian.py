@@ -48,9 +48,9 @@ except ImportError:
     pass
 
 try:
-    import torch as t
+    from torch import tensor
 
-    COEFFS_PARAM_INTERFACE.append((t.tensor([-0.05, 0.17]), t.tensor(1.7), "torch"))
+    COEFFS_PARAM_INTERFACE.append((tensor([-0.05, 0.17]), tensor(1.7), "torch"))
 except ImportError:
     pass
 
