@@ -789,7 +789,6 @@ class TestExpressionConditionals:
 
             return qml.probs(wires=3)
 
-        #
         @qml.qnode(dev)
         @qml.defer_measurements
         def quantum_control_circuit(rads):
