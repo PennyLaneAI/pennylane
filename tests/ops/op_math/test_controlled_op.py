@@ -14,10 +14,10 @@
 
 from copy import copy
 
+import numpy as onp
 import pytest
 from gate_data import CNOT, CSWAP, CZ, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
-import numpy as onp
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -317,37 +317,19 @@ class TestProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.is_hermitian is value
 
-    def test_private_wires_getter_setter(self):
+    def test_map_wires(self):
         """Test that we can get and set private wires."""
 
         base = qml.IsingXX(1.234, wires=(0, 1))
         op = Controlled(base, (3, 4), work_wires="aux")
 
-        assert op._wires == Wires((3, 4, 0, 1, "aux"))
+        assert op.wires == Wires((3, 4, 0, 1, "aux"))
 
-        op._wires = ("a", "b", "c", "d", "extra")
+        op = op.map_wires(wire_map={3: "a", 4: "b", 0: "c", 1: "d", "aux": "extra"})
 
-        assert base.wires == Wires(("c", "d"))
+        assert op.base.wires == Wires(("c", "d"))
         assert op.control_wires == Wires(("a", "b"))
         assert op.work_wires == Wires(("extra"))
-
-    def test_private_wires_setter_too_few_wires(self):
-        """Test that an assertionerror is raised if wires are set with fewer active wires
-        than the operation originally had."""
-        base = qml.IsingXX(1.234, wires=(0, 1))
-        op = Controlled(base, (3, 4), work_wires="aux")
-
-        with pytest.raises(AssertionError, match=r"C\(IsingXX\) needs at least 4 wires."):
-            op._wires = ("a", "b")
-
-    def test_private_wires_setter_no_work_wires(self):
-        """Test work wires made empty if no left over wires provided to private setter."""
-        base = TempOperator(1)
-        op = Controlled(base, 2, work_wires="aux")
-
-        op._wires = [3, 4]
-        assert len(op.work_wires) == 0
-        assert isinstance(op.work_wires, qml.wires.Wires)
 
 
 class TestMiscMethods:
@@ -621,33 +603,35 @@ class TestQueuing:
 
     def test_queuing(self):
         """Test that `Controlled` is queued upon initialization and updates base metadata."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.234, 2.345, 3.456, wires=2)
             op = Controlled(base, (0, 1))
 
-        assert tape._queue[base]["owner"] is op
-        assert tape._queue[op]["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert q.get_info(base)["owner"] is op
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if its defined outside the recording context."""
 
         base = qml.IsingXX(1.234, wires=(0, 1))
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Controlled(base, ("a", "b"))
 
-        assert len(tape._queue) == 1
-        assert tape._queue[op]["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert len(q) == 1
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_false(self):
         """Test that when `do_queue=False` is specified, the controlled op is not queued."""
 
         base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Controlled(base, 1, do_queue=False)
 
-        assert len(tape._queue) == 0
+        assert len(q) == 0
 
 
 base_num_control_mats = [
@@ -712,10 +696,11 @@ class TestMatrix:
         op = Controlled(base, control_wires, control_values=control_values)
 
         mat = op.matrix()
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             [qml.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
             Controlled(base, control_wires, control_values=[1, 1, 1])
             [qml.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
+        tape = qml.tape.QuantumScript.from_queue(q)
         decomp_mat = qml.matrix(tape, wire_order=op.wires)
 
         assert qml.math.allclose(mat, decomp_mat)

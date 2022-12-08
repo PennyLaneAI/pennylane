@@ -14,9 +14,10 @@
 """
 This module contains the :class:`OperationRecorder`.
 """
+# pylint: disable=too-many-arguments
 from pennylane.queuing import QueuingManager
 
-from .tape import QuantumTape
+from .tape import QuantumTape, QuantumScript
 
 
 class OperationRecorder(QuantumTape):
@@ -42,22 +43,22 @@ class OperationRecorder(QuantumTape):
     objects.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(
+        self, ops=None, measurements=None, prep=None, name=None, do_queue=False, _update=True
+    ):
+        super().__init__(
+            ops, measurements, prep=prep, name=name, do_queue=do_queue, _update=_update
+        )
         self.ops = None
         self.obs = None
 
     def _process_queue(self):
         super()._process_queue()
 
-        for obj, info in self._queue.items():
+        for obj, info in self.items():
             QueuingManager.append(obj, **info)
 
-        # remove the operation recorder from the queuing
-        # context
-        QueuingManager.remove(self)
-
-        new_tape = self.expand(depth=5, stop_at=lambda obj: not isinstance(obj, QuantumTape))
+        new_tape = self.expand(depth=5, stop_at=lambda obj: not isinstance(obj, QuantumScript))
         self.ops = new_tape.operations
         self.obs = new_tape.observables
 

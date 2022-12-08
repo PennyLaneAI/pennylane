@@ -25,22 +25,20 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
+    CountsMP,
+    Expectation,
+    MidMeasureMP,
+    Probability,
+    ProbabilityMP,
     Sample,
+    SampleMP,
+    ShadowExpvalMP,
     State,
     Variance,
-    Expectation,
-    Probability,
-    MidMeasure,
-    ShadowExpval,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -96,6 +94,15 @@ def _process_shot_sequence(shot_list):
 
     total_shots = int(np.sum(np.prod(shot_vector, axis=1)))
     return total_shots, shot_vector
+
+
+def _get_num_copies(shot_vector):
+    """Helper function to determine the number of copies from a shot vector Sequence(int) or Sequence(ShotTuple)."""
+    if any(isinstance(shot_comp, ShotTuple) for shot_comp in shot_vector):
+        len_shot_vec = sum(shot_v.copies for shot_v in shot_vector)
+    else:
+        len_shot_vec = len(shot_vector)
+    return len_shot_vec
 
 
 class DeviceError(Exception):
@@ -215,9 +222,7 @@ class Device(abc.ABC):
     @property
     def analytic(self):
         """Whether shots is None or not. Kept for backwards compatability."""
-        if self._shots is None:
-            return True
-        return False
+        return self._shots is None
 
     @property
     def wires(self):
@@ -490,7 +495,7 @@ class Device(abc.ABC):
             self._num_executions += 1
 
             if self.tracker.active:
-                self.tracker.update(executions=1, shots=self._shots)
+                self.tracker.update(executions=1, shots=self._shots, results=self._asarray(results))
                 self.tracker.record()
 
             # Ensures that a combination with sample does not put
@@ -596,7 +601,7 @@ class Device(abc.ABC):
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
         return qml.BooleanFn(
-            lambda obj: not isinstance(obj, qml.tape.QuantumTape)
+            lambda obj: not isinstance(obj, qml.tape.QuantumScript)
             and self.supports_operation(obj.name)
         )
 
@@ -652,7 +657,11 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
-        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0
+
+        comp_basis_sampled_multi_measure = (
+            len(circuit.measurements) > 1 and circuit.samples_computational_basis
+        )
+        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
         obs_on_same_wire &= not any(
             isinstance(o, qml.Hamiltonian) for o in circuit._obs_sharing_wires
         )
@@ -720,16 +729,16 @@ class Device(abc.ABC):
             for obs in circuit.observables
             if obs.name == "Hamiltonian"
         )
+        # device property present in braket plugin
+        use_grouping = getattr(self, "use_grouping", True)
 
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
 
-        return_types = [m.return_type for m in circuit.observables]
+        is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
 
-        is_shadow = ShadowExpval in return_types
+        hamiltonian_unusable = not supports_hamiltonian or (finite_shots and not is_shadow)
 
-        if hamiltonian_in_obs and (
-            (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known
-        ):
+        if hamiltonian_in_obs and (hamiltonian_unusable or (use_grouping and grouping_known)):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
@@ -745,13 +754,7 @@ class Device(abc.ABC):
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs
             and all(
-                t not in return_types
-                for t in [
-                    qml.measurements.Sample,
-                    qml.measurements.Probability,
-                    qml.measurements.Counts,
-                    qml.measurements.AllCounts,
-                ]
+                not isinstance(m, (SampleMP, ProbabilityMP, CountsMP)) for m in circuit.measurements
             )
         ):
             # Check for case of non-commuting terms and that there are no Hamiltonians
@@ -887,7 +890,7 @@ class Device(abc.ABC):
             ValueError: if `operation` is not a :class:`~.Operation` class or string
 
         Returns:
-            bool: ``True`` iff supplied operation is supported
+            bool: ``True`` if supplied operation is supported
         """
         if isinstance(operation, type) and issubclass(operation, Operation):
             return operation.__name__ in self.operations
@@ -953,7 +956,7 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
-            if getattr(o, "return_type", None) == MidMeasure and not self.capabilities().get(
+            if isinstance(o, MidMeasureMP) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(

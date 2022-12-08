@@ -16,6 +16,7 @@ Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
 import pennylane as qml
+from pennylane.measurements import ExpectationMP
 
 
 def hamiltonian_expand(tape, group=True):
@@ -118,15 +119,18 @@ def hamiltonian_expand(tape, group=True):
     2
     """
 
-    hamiltonian = tape.measurements[0].obs
-
     if (
-        not isinstance(hamiltonian, qml.Hamiltonian)
-        or len(tape.measurements) > 1
-        or tape.measurements[0].return_type != qml.measurements.Expectation
+        len(tape.measurements) != 1
+        or not isinstance(hamiltonian := tape.measurements[0].obs, qml.Hamiltonian)
+        or not isinstance(tape.measurements[0], ExpectationMP)
     ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)`, where H is of type `qml.Hamiltonian`"
+        )
+
+    if qml.math.shape(hamiltonian.coeffs) == (0,) and qml.math.shape(hamiltonian.ops) == (0,):
+        raise ValueError(
+            "The Hamiltonian in the tape has no terms defined - cannot perform the Hamiltonian expansion."
         )
 
     # note: for backward passes of some frameworks
@@ -151,23 +155,29 @@ def hamiltonian_expand(tape, group=True):
         # observables in that grouping
         tapes = []
         for obs in obs_groupings:
-
-            with tape.__class__() as new_tape:
-                for op in tape.operations:
-                    op.queue()
-
-                for o in obs:
-                    qml.expval(o)
+            new_tape = tape.__class__(tape._ops, (qml.expval(o) for o in obs), tape._prep)
 
             new_tape = new_tape.expand(stop_at=lambda obj: True)
             tapes.append(new_tape)
 
         def processing_fn(res_groupings):
-            dot_products = [
-                qml.math.dot(r_group, c_group)
-                for c_group, r_group in zip(coeff_groupings, res_groupings)
-            ]
-            return qml.math.sum(qml.math.stack(dot_products), axis=0)
+            if qml.active_return():
+                dot_products = [
+                    qml.math.dot(
+                        qml.math.reshape(
+                            qml.math.convert_like(r_group, c_group), qml.math.shape(c_group)
+                        ),
+                        c_group,
+                    )
+                    for c_group, r_group in zip(coeff_groupings, res_groupings)
+                ]
+            else:
+                dot_products = [
+                    qml.math.dot(r_group, c_group)
+                    for c_group, r_group in zip(coeff_groupings, res_groupings)
+                ]
+            summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+            return qml.math.convert_like(summed_dot_products, res_groupings[0])
 
         return tapes, processing_fn
 
@@ -176,16 +186,14 @@ def hamiltonian_expand(tape, group=True):
     # make one tape per observable
     tapes = []
     for o in hamiltonian.ops:
-        with tape.__class__() as new_tape:
-            for op in tape.operations:
-                op.queue()
-            qml.expval(o)
-
+        # pylint: disable=protected-access
+        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep)
         tapes.append(new_tape)
 
     # pylint: disable=function-redefined
     def processing_fn(res):
         dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
-        return qml.math.sum(qml.math.stack(dot_products), axis=0)
+        summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+        return qml.math.convert_like(summed_dot_products, res[0])
 
     return tapes, processing_fn

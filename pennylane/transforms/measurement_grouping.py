@@ -14,6 +14,7 @@
 """
 Contains the measurement grouping transform
 """
+import warnings
 import pennylane as qml
 
 
@@ -73,18 +74,25 @@ def measurement_grouping(tape, obs_list, coeffs_list):
     >>> print(res)
     2.0007186031172046
     """
-    obs_groupings, coeffs_groupings = qml.grouping.group_observables(obs_list, coeffs_list)
+
+    warnings.warn(
+        "qml.transforms.measurement_grouping is deprecated. Instead, use qml.transforms.hamiltonian_expand",
+        UserWarning,
+    )
+
+    obs_groupings, coeffs_groupings = qml.pauli.group_observables(obs_list, coeffs_list)
     tapes = []
 
     for obs in obs_groupings:
 
-        with tape.__class__() as new_tape:
+        with qml.queuing.AnnotatedQueue() as q:
             for op in tape.operations:
                 op.queue()
 
             for o in obs:
                 qml.expval(o)
 
+        new_tape = qml.tape.QuantumScript.from_queue(q)
         new_tape = new_tape.expand(stop_at=lambda obj: True)
         tapes.append(new_tape)
 

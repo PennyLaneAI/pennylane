@@ -73,7 +73,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test that the transform works in the autograd interface."""
         transformed_qfunc = unitary_to_rot(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)(U).operations
+        ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
         assert len(ops) == 3
 
@@ -99,7 +99,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         transformed_qfunc = unitary_to_rot(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == 2
 
@@ -119,7 +119,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         transformed_qfunc = unitary_to_rot(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)(U).operations
+        ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
         assert len(ops) == 3
 
@@ -143,7 +143,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         transformed_qfunc = unitary_to_rot(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)(U).operations
+        ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
         assert len(ops) == 3
 
@@ -173,7 +173,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         transformed_qfunc = unitary_to_rot(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)(U).operations
+        ops = qml.tape.make_qscript(transformed_qfunc)(U).operations
 
         assert len(ops) == 3
 
@@ -265,11 +265,11 @@ class TestQubitUnitaryDifferentiability:
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
         transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method=diff_method)
 
-        input = np.array(rot_angles, requires_grad=True)
-        assert qml.math.allclose(original_qnode(input), transformed_qnode(input), atol=1e-7)
+        angles = np.array(rot_angles, requires_grad=True)
+        assert qml.math.allclose(original_qnode(angles), transformed_qnode(angles), atol=1e-7)
 
-        original_grad = qml.grad(original_qnode)(input)
-        transformed_grad = qml.grad(transformed_qnode)(input)
+        original_grad = qml.grad(original_qnode)(angles)
+        transformed_grad = qml.grad(transformed_qnode)(angles)
 
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
@@ -408,29 +408,29 @@ class TestQubitUnitaryDifferentiability:
             return qml.expval(qml.PauliX(wires="a"))
 
         # Setting the dtype to complex64 causes the gradients to be complex...
-        input = jnp.array(rot_angles, dtype=jnp.float64)
+        angles = jnp.array(rot_angles, dtype=jnp.float64)
 
         dev = qml.device("default.qubit", wires=["a", "b"])
 
         original_qnode = qml.QNode(
             original_qfunc_for_grad, dev, interface="jax", diff_method=diff_method
         )
-        original_result = original_qnode(input)
+        original_result = original_qnode(angles)
 
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
         transformed_qnode = qml.QNode(
             transformed_qfunc, dev, interface="jax", diff_method=diff_method
         )
-        transformed_result = transformed_qnode(input)
+        transformed_result = transformed_qnode(angles)
         assert qml.math.allclose(original_result, transformed_result)
 
-        original_grad = jax.grad(original_qnode)(input)
-        transformed_grad = jax.grad(transformed_qnode)(input)
+        original_grad = jax.grad(original_qnode)(angles)
+        transformed_grad = jax.grad(transformed_qnode)(angles)
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
         # Check that we can also JIT
-        grad_of_jit = jax.grad(jax.jit(transformed_qnode))(input)
-        jit_of_grad = jax.jit(jax.grad(transformed_qnode))(input)
+        grad_of_jit = jax.grad(jax.jit(transformed_qnode))(angles)
+        jit_of_grad = jax.jit(jax.grad(transformed_qnode))(angles)
         assert np.allclose(original_grad, jit_of_grad, atol=1e-7)
         assert np.allclose(original_grad, grad_of_jit, atol=1e-7)
 
@@ -660,7 +660,8 @@ class TestTwoQubitUnitaryDifferentiability:
         assert qml.math.allclose(original_grad, transformed_grad, atol=1e-7)
 
     @pytest.mark.jax
-    def test_gradient_unitary_to_rot_two_qubit_jax(self):
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    def test_gradient_unitary_to_rot_two_qubit_jax(self, diff_method):
         """Tests differentiability in jax interface."""
         import jax
         from jax import numpy as jnp
@@ -684,12 +685,12 @@ class TestTwoQubitUnitaryDifferentiability:
         dev = qml.device("default.qubit", wires=3)
 
         original_qnode = qml.QNode(
-            two_qubit_decomp_qnode, device=dev, interface="jax", diff_method="backprop"
+            two_qubit_decomp_qnode, device=dev, interface="jax", diff_method=diff_method
         )
 
         transformed_qfunc = unitary_to_rot(two_qubit_decomp_qnode)
         transformed_qnode = qml.QNode(
-            transformed_qfunc, dev, interface="jax", diff_method="backprop"
+            transformed_qfunc, dev, interface="jax", diff_method=diff_method
         )
 
         assert qml.math.allclose(original_qnode(x), transformed_qnode(x))

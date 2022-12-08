@@ -79,8 +79,6 @@ U_cswap = np.array(
     ]
 )
 
-H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
-
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
@@ -117,10 +115,11 @@ def test_custom_op_with_matrix():
         def compute_matrix(self):
             return np.eye(2)
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         DummyOp(0)
         qml.state()
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     dev = qml.device("default.qubit", wires=1)
     assert qml.math.allclose(dev.execute(tape), np.array([1, 0]))
 
@@ -1128,7 +1127,7 @@ class TestSample:
         s3 = dev.sample(qml.PauliX(0) @ qml.PauliZ(1))
         assert np.array_equal(s3.shape, (17,))
 
-    def test_sample_values(self, qubit_device_2_wires, tol):
+    def test_sample_values(self, tol):
         """Tests if the samples returned by sample have
         the correct values
         """
@@ -1914,6 +1913,7 @@ class TestDtypePreserved:
             qml.DoubleExcitationPlus,
             qml.DoubleExcitationMinus,
             qml.OrbitalRotation,
+            qml.FermionicSWAP,
             qml.QubitSum,
             qml.QubitCarry,
         ],
@@ -2071,9 +2071,10 @@ class TestWiresIntegration:
         """Tests that an exception is raised when wires not present on the device are adressed."""
         dev = qml.device("default.qubit", wires=["a", "b"])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.5, wires="c")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(WireError, match="Did not find some of the wires"):
             dev.execute(tape)
 
@@ -2546,6 +2547,17 @@ class TestHamiltonianSupport:
         with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
             dev.expval(H)
 
+    def test_error_hamiltonian_expval_wrong_wires(self):
+        """Tests that expval fails if Hamiltonian uses non-device wires."""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+        H = qml.Hamiltonian([0.1, 0.2, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)])
+
+        with pytest.raises(
+            WireError,
+            match=r"Did not find some of the wires \(0, 1, 2\) on device with wires \(0, 1\).",
+        ):
+            dev.expval(H)
+
 
 class TestGetBatchSize:
     """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""
@@ -2577,3 +2589,22 @@ class TestGetBatchSize:
         dev = qml.device("default.qubit", wires=1)
         with pytest.raises(ValueError, match="could not broadcast"):
             dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2), 8)
+
+
+class TestDenseMatrixDecompositionThreshold:
+    """Tests for QFT and Grover operators the automatic transition from dense matrix to decomposition
+    on calculations."""
+
+    input = [
+        (qml.QFT, 4, True),
+        (qml.QFT, 6, False),
+        (qml.GroverOperator, 4, True),
+        (qml.GroverOperator, 13, False),
+    ]
+
+    @pytest.mark.parametrize("op, n_wires, condition", input)
+    def test_threshold(self, op, n_wires, condition):
+
+        wires = np.linspace(0, n_wires - 1, n_wires, dtype=int)
+        op = op(wires=wires)
+        assert DefaultQubit.stopping_condition.__get__(op)(op) == condition

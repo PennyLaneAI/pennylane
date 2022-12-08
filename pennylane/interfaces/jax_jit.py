@@ -16,17 +16,29 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, no-member
 import jax
 import jax.numpy as jnp
-from jax.experimental import host_callback
-
 import numpy as np
+import semantic_version
+
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
+from pennylane.measurements import ProbabilityMP
 
 dtype = jnp.float64
+
+
+def _validate_jax_version():
+    if semantic_version.match("<0.3.17", jax.__version__) or semantic_version.match(
+        "<0.3.15", jax.lib.__version__
+    ):
+        msg = (
+            "The JAX JIT interface of PennyLane requires version 0.3.17 or higher for JAX "
+            "and 0.3.15 or higher JAX lib. Please upgrade these packages."
+        )
+        raise InterfaceUnsupportedError(msg)
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
@@ -67,6 +79,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
+
+    _validate_jax_version()
 
     if gradient_fn is None:
         return _execute_with_fwd(
@@ -143,15 +157,32 @@ def _execute(
 
     @jax.custom_vjp
     def wrapped_exec(params):
+        result_shapes_dtypes = _extract_shape_dtype_structs(tapes, device)
+
         def wrapper(p):
             """Compute the forward pass."""
             new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
+
+            # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
+            # the shape without the vmap dimensions, while the function here will be
+            # executed with objects containing the vmap dimensions. So res[i].ndim
+            # will have an extra dimension for every `jax.vmap` wrapping this execution.
+            #
+            # The execute_fn will return an object with shape `(n_observables, batches)`
+            # but the default behaviour for `jax.pure_callback` is to add the extra
+            # dimension at the beginning, so `(batches, n_observables)`. So in here
+            # we detect with the heuristic above if we are executing under vmap and we
+            # swap the order in that case.
+
+            # pylint: disable=consider-using-enumerate
+            for i in range(len(res)):
+                if res[i].ndim > result_shapes_dtypes[i].ndim:
+                    res[i] = res[i].T
             return res
 
-        shape_dtype_structs = _extract_shape_dtype_structs(tapes, device)
-        res = host_callback.call(wrapper, params, result_shape=shape_dtype_structs)
+        res = jax.pure_callback(wrapper, result_shapes_dtypes, params, vectorized=True)
         return res
 
     def wrapped_exec_fwd(params):
@@ -160,6 +191,17 @@ def _execute(
     def wrapped_exec_bwd(params, g):
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
+            for t in tapes:
+                multi_probs = (
+                    any(isinstance(m, ProbabilityMP) for m in t.measurements)
+                    and len(t.measurements) > 1
+                )
+
+                if multi_probs:
+                    raise InterfaceUnsupportedError(
+                        "The JAX-JIT interface doesn't support differentiating QNodes that "
+                        "return multiple probabilities."
+                    )
 
             def non_diff_wrapper(args):
                 """Compute the VJP in a non-differentiable manner."""
@@ -180,10 +222,10 @@ def _execute(
                 return np.concatenate(res)
 
             args = tuple(params) + (g,)
-            vjps = host_callback.call(
+            vjps = jax.pure_callback(
                 non_diff_wrapper,
+                jax.ShapeDtypeStruct((total_params,), dtype),
                 args,
-                result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
             )
 
             param_idx = 0
@@ -220,7 +262,7 @@ def _execute(
             jax.ShapeDtypeStruct((len(t.measurements), len(p)), dtype)
             for t, p in zip(tapes, params)
         ]
-        jacs = host_callback.call(jacs_wrapper, params, result_shape=shapes)
+        jacs = jax.pure_callback(jacs_wrapper, shapes, params)
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
         res = [[jnp.array(p) for p in v] for v in vjps]
         return (tuple(res),)
@@ -267,10 +309,8 @@ def _execute_with_fwd(
             o = jax.ShapeDtypeStruct(tuple(shape), _dtype)
             jacobian_shape.append(o)
 
-        res, jacs = host_callback.call(
-            wrapper,
-            params,
-            result_shape=tuple([fwd_shape_dtype_struct, jacobian_shape]),
+        res, jacs = jax.pure_callback(
+            wrapper, tuple([fwd_shape_dtype_struct, jacobian_shape]), params
         )
         return res, jacs
 

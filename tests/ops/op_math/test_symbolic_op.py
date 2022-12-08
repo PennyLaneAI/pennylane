@@ -13,11 +13,13 @@
 # limitations under the License.
 
 from copy import copy
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.op_math import SymbolicOp
+from pennylane.wires import Wires
 
 
 class TempOperator(qml.operation.Operator):
@@ -51,6 +53,18 @@ def test_copy():
 
     copied_op.data = [6.54]
     assert op.data == [param1]
+
+
+def test_map_wires():
+    """Test the map_wires method."""
+    base = TempOperator("a")
+    op = SymbolicOp(base, id="something")
+    wire_map = {"a": 5}
+    mapped_op = op.map_wires(wire_map=wire_map)
+    assert op.wires == Wires("a")
+    assert op.base.wires == Wires("a")
+    assert mapped_op.wires == Wires(5)
+    assert mapped_op.base.wires == Wires(5)
 
 
 class TestProperties:
@@ -126,23 +140,15 @@ class TestProperties:
         op = SymbolicOp(DummyOp("b"))
         assert op._queue_category == queue_cat
 
-    def test_private_wires_getter(self):
-        """Test that wires can be accessed via the private `_wires` property."""
-        w = qml.wires.Wires("a")
-        base = TempOperator(w)
-        op = SymbolicOp(base)
-        assert op._wires == base._wires == w
-
-    def test_private_wires_setter(self):
+    def test_map_wires(self):
         """Test that base wires can be set through the operator's private `_wires` property."""
         w = qml.wires.Wires("a")
         base = TempOperator(w)
         op = SymbolicOp(base)
 
-        w2 = qml.wires.Wires("c")
-        op._wires = w2
+        new_op = op.map_wires(wire_map={"a": "c"})
 
-        assert op._wires == base._wires == w2
+        assert new_op.wires == Wires("c")
 
     def test_num_wires(self):
         """Test that the number of wires is the length of the `wires` property, rather
@@ -161,30 +167,32 @@ class TestQueuing:
 
     def test_queuing(self):
         """Test symbolic op queues and updates base metadata."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = TempOperator("a")
             op = SymbolicOp(base)
 
-        assert tape._queue[base]["owner"] is op
-        assert tape._queue[op]["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert q.get_info(base)["owner"] is op
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_queuing_base_defined_outside(self):
         """Test symbolic op queues without adding base to the queue if it isn't already in the queue."""
 
         base = TempOperator("b")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = SymbolicOp(base)
 
-        assert len(tape._queue) == 1
-        assert tape._queue[op]["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert len(q) == 1
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_false(self):
         """Test that queuing can be avoided if `do_queue=False`."""
 
         base = TempOperator("c")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = SymbolicOp(base, do_queue=False)
 
-        assert len(tape.queue) == 0
+        assert len(q.queue) == 0

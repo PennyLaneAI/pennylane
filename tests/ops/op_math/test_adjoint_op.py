@@ -285,18 +285,6 @@ class TestProperties:
         op = Adjoint(qml.PauliX(0) @ qml.PauliY(1))
         assert op._queue_category is None
 
-    def test_private_wires(self):
-        """Test that we can get and set the wires via the private property `_wires`."""
-        wire0 = qml.wires.Wires("a")
-        base = qml.PauliZ(wire0)
-        op = Adjoint(base)
-
-        assert op._wires == base._wires == wire0
-
-        wire1 = qml.wires.Wires(0)
-        op._wires = wire1
-        assert op._wires == base._wires == wire1
-
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):
         """Test `is_hermitian` property mirrors that of the base."""
@@ -307,6 +295,17 @@ class TestProperties:
 
         op = Adjoint(DummyOp(0))
         assert op.is_hermitian == value
+
+    def test_batching_properties(self):
+        """Test the batching properties and methods."""
+
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = Adjoint(base)
+        assert op.batch_size == 3
+        assert op.ndim_params == (0,)
+
+        op._check_batching([np.array([1.2, 2.3])])
+        assert op.batch_size == base.batch_size == 2
 
 
 class TestSimplify:
@@ -550,12 +549,6 @@ class TestAdjointOperationDiffInfo:
         """Test that the grad_recipe of the Adjoint is the same as the grad_recipe of the base."""
         assert Adjoint(base).grad_recipe == base.grad_recipe
 
-    def test_get_parameter_shift(self):
-        """Test `get_parameter_shift` for an operation where it still doesn't raise warnings and errors."""
-        base = qml.Rotation(1.234, wires=0)
-        with pytest.warns(UserWarning, match=r"get_parameter_shift is deprecated."):
-            assert Adjoint(base).get_parameter_shift(0) == base.get_parameter_shift(0)
-
     @pytest.mark.parametrize(
         "base",
         (qml.RX(1.23, wires=0), qml.Rot(1.23, 2.345, 3.456, wires=0), qml.CRX(1.234, wires=(0, 1))),
@@ -571,45 +564,50 @@ class TestQueueing:
     def test_queueing(self):
         """Test queuing and metadata when both Adjoint and base defined inside a recording context."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Adjoint(base)
 
-        assert tape._queue[base]["owner"] is op
-        assert tape._queue[op]["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert q.get_info(base)["owner"] is op
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
         """Test that base isn't added to queue if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base)
 
-        assert len(tape._queue) == 1
-        assert tape._queue[op]["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert len(tape) == 1
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base, do_queue=False)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 0
 
 
 class TestMatrix:
     """Test the matrix method for a variety of interfaces."""
 
-    def test_batching_error(self):
-        """Test that a MatrixUndefinedError is raised if the base is batched."""
+    def test_batching_support(self):
+        """Test that adjoint matrix has batching support."""
         x = qml.numpy.array([0.1, 0.2, 0.3])
         base = qml.RX(x, wires=0)
         op = Adjoint(base)
+        mat = op.matrix()
+        compare = qml.RX(-x, wires=0)
 
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            op.matrix()
+        assert qml.math.allclose(mat, compare.matrix())
+        assert mat.shape == (3, 2, 2)
 
     def check_matrix(self, x, interface):
         """Compares matrices in a interface independent manner."""
@@ -671,7 +669,7 @@ class TestMatrix:
 
 def test_sparse_matrix():
     """Test that the spare_matrix method returns the adjoint of the base sparse matrix."""
-    from scipy.sparse import csr_matrix
+    from scipy.sparse import coo_matrix, csr_matrix
 
     H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
     H = csr_matrix(H)
@@ -684,6 +682,7 @@ def test_sparse_matrix():
     op_sparse_mat = op.sparse_matrix()
 
     assert isinstance(op_sparse_mat, csr_matrix)
+    assert isinstance(op.sparse_matrix(format="coo"), coo_matrix)
 
     assert qml.math.allclose(base_conj_T.toarray(), op_sparse_mat.toarray())
 
@@ -708,6 +707,15 @@ class TestEigvals:
         adj_eigvals = Adjoint(base).eigvals()
 
         assert qml.math.allclose(qml.math.conj(base_eigvals), adj_eigvals)
+
+    def test_batching_eigvals(self):
+        """Test that eigenvalues work with batched parameters."""
+        x = np.array([1.2, 2.3, 3.4])
+        base = qml.RX(x, 0)
+        adj = Adjoint(base)
+        compare = qml.RX(-x, 0)
+
+        assert qml.math.allclose(base.eigvals(), compare.eigvals())
 
     def test_no_matrix_defined_eigvals(self):
         """Test that if the base does not define eigvals, The Adjoint raises the same error."""

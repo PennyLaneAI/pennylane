@@ -569,10 +569,11 @@ class TestInternalFunctions:
         dev = mock_device_with_paulis_and_methods(wires=2)
 
         # mid-circuit measurements are part of the queue (for now)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.measure(1)
             qml.PauliZ(0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # Raises an error for device that doesn't support mid-circuit measurements natively
         with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
             dev.check_validity(tape.operations, tape.observables)
@@ -584,10 +585,11 @@ class TestInternalFunctions:
         mid-circuit measurements are not supported natively"""
         dev = mock_device_with_paulis_and_methods(wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.cond(0, qml.RY)(0.3, wires=0)
             qml.PauliZ(0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # Raises an error for device that doesn't support conditional
         # operations natively
         with pytest.raises(DeviceError, match="Gate Conditional not supported on device"):
@@ -1009,13 +1011,16 @@ class TestDeviceInit:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
-    with qml.tape.QuantumTape() as tape1:
+    with qml.queuing.AnnotatedQueue() as q1:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-    with qml.tape.QuantumTape() as tape2:
+    tape1 = qml.tape.QuantumScript.from_queue(q1)
+    with qml.queuing.AnnotatedQueue() as q2:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0))
+
+    tape2 = qml.tape.QuantumScript.from_queue(q2)
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
     def test_calls_to_execute(self, n_tapes, mocker, mock_device_with_paulis_and_methods):
@@ -1062,7 +1067,7 @@ class TestBatchExecution:
 
         dev = mock_device_with_paulis_and_methods(wires=2)
 
-        empty_tape = qml.tape.QuantumTape()
+        empty_tape = qml.tape.QuantumScript()
         tapes = [empty_tape] * 3
         res = dev.batch_execute(tapes)
 
@@ -1070,3 +1075,40 @@ class TestBatchExecution:
         assert np.allclose(
             res[0], dev.execute(empty_tape.operations, empty_tape.observables), rtol=tol, atol=0
         )
+
+
+class TestGrouping:
+    """Tests for the use_grouping option for devices."""
+
+    @pytest.mark.parametrize("use_grouping", (True, False))
+    def test_batch_transform_checks_use_grouping_property(self, use_grouping):
+        """If the device specifies `use_grouping=False`, the batch transform
+        method won't expand the hamiltonian when the measured hamiltonian has
+        grouping indices.
+        """
+
+        class TestDevice(qml.Device):
+            name = ""
+            short_name = ""
+            pennylane_requires = ""
+            version = ""
+            author = ""
+            operations = ""
+            observables = ""
+            apply = lambda *args, **kwargs: 0
+            expval = lambda *args, **kwargs: 0
+            reset = lambda *args, **kwargs: 0
+            supports_observable = lambda *args, **kwargs: True
+
+        H = qml.Hamiltonian([1.0, 1.0], [qml.PauliX(0), qml.PauliY(0)], grouping_type="qwc")
+        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+
+        dev = TestDevice()
+        dev.shots = None
+        dev.use_grouping = use_grouping
+        new_qscripts, post_proc_fn = dev.batch_transform(qs)
+
+        if use_grouping:
+            assert len(new_qscripts) == 2
+        else:
+            assert len(new_qscripts) == 1

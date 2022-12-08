@@ -12,19 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the autograd interface"""
-import functools
-import importlib
 import sys
 
 import autograd
 import pytest
-from pennylane import numpy as np
-from pennylane.operation import Observable, AnyWires
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces import execute
+from pennylane.operation import AnyWires, Observable
 
 pytestmark = pytest.mark.autograd
 
@@ -45,9 +43,10 @@ class TestAutogradExecuteUnitTests:
 
         dev = qml.device("default.qubit", wires=2, shots=None)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.expval(qml.PauliY(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             qml.QuantumFunctionError,
             match="autograd not found. Please install the latest version "
@@ -55,7 +54,8 @@ class TestAutogradExecuteUnitTests:
         ):
             qml.execute([tape], dev, gradient_fn=param_shift, interface="autograd")
 
-    def test_jacobian_options(self, mocker, tol):
+    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    def test_jacobian_options(self, interface, mocker, tol):
         """Test setting jacobian options"""
         spy = mocker.spy(qml.gradients, "param_shift")
 
@@ -64,16 +64,18 @@ class TestAutogradExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
                 [tape],
                 device,
                 gradient_fn=param_shift,
                 gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
+                interface=interface,
             )[0]
 
         res = qml.jacobian(cost)(a, device=dev)
@@ -81,7 +83,8 @@ class TestAutogradExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shifts"] == [(np.pi / 4,)] * 2
 
-    def test_incorrect_mode(self):
+    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    def test_incorrect_mode(self, interface):
         """Test that an error is raised if a gradient transform
         is used with mode=forward"""
         a = np.array([0.1, 0.2], requires_grad=True)
@@ -89,12 +92,15 @@ class TestAutogradExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], device, gradient_fn=param_shift, mode="forward")[0]
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return execute(
+                [tape], device, gradient_fn=param_shift, mode="forward", interface=interface
+            )[0]
 
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with mode='forward'"
@@ -108,32 +114,36 @@ class TestAutogradExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute([tape], device, gradient_fn=param_shift, interface="None")[0]
 
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
 
-    def test_forward_mode(self, mocker):
+    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    def test_forward_mode(self, interface, mocker):
         """Test that forward mode uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
 
         def cost(a):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
                 [tape],
                 dev,
                 gradient_fn="device",
                 gradient_kwargs={"method": "adjoint_jacobian", "use_device_state": True},
+                interface=interface,
             )[0]
 
         a = np.array([0.1, 0.2], requires_grad=True)
@@ -143,24 +153,27 @@ class TestAutogradExecuteUnitTests:
         assert dev.num_executions == 1
         spy.assert_called()
 
-    def test_backward_mode(self, mocker):
+    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    def test_backward_mode(self, interface, mocker):
         """Test that backward mode uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
         spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
 
         def cost(a):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
                 [tape],
                 dev,
                 gradient_fn="device",
                 mode="backward",
                 gradient_kwargs={"method": "adjoint_jacobian"},
+                interface=interface,
             )[0]
 
         a = np.array([0.1, 0.2], requires_grad=True)
@@ -186,12 +199,13 @@ class TestBatchTransformExecution:
         x = 0.6
         y = 0.2
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(H)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(dev, "batch_transform")
 
         with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
@@ -203,6 +217,15 @@ class TestBatchTransformExecution:
         spy.assert_called()
         assert np.allclose(res[0], np.cos(y), atol=0.1)
 
+    def test_batch_transform_dynamic_shots(self):
+        """Tests that the batch transform considers the number of shots for the execution, not those
+        statically on the device."""
+        dev = qml.device("default.qubit", wires=1)
+        H = 2.0 * qml.PauliZ(0)
+        qscript = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        res = qml.execute([qscript], dev, interface=None, override_shots=10)
+        assert res == [2.0]
+
 
 class TestCaching:
     """Test for caching behaviour"""
@@ -213,11 +236,12 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces, "cache_execute")
 
         def cost(a, cachesize):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute([tape], dev, gradient_fn=param_shift, cachesize=cachesize)[0]
 
         params = np.array([0.1, 0.2])
@@ -234,11 +258,12 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces, "cache_execute")
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
 
         custom_cache = {}
@@ -254,11 +279,12 @@ class TestCaching:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
 
         # Without caching, 9 evaluations would be required to compute
@@ -301,7 +327,7 @@ class TestCaching:
         N = len(params)
 
         def cost(x, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
 
@@ -311,6 +337,7 @@ class TestCaching:
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute([tape], dev, gradient_fn=param_shift, cache=cache, max_diff=2)[0]
 
         # No caching: number of executions is not ideal
@@ -361,13 +388,14 @@ class TestCaching:
         params = np.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
                 [tape],
                 dev,
@@ -407,26 +435,29 @@ execute_kwargs = [
 
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+@pytest.mark.parametrize("interface", ["autograd", "auto"])
 class TestAutogradExecuteIntegration:
     """Test the autograd interface execute function
     integrates well for both forward and backward execution"""
 
-    def test_execution(self, execute_kwargs):
+    def test_execution(self, interface, execute_kwargs):
         """Test execution"""
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, b):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape1, tape2], dev, **execute_kwargs)
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+            return execute([tape1, tape2], dev, interface=interface, **execute_kwargs)
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
@@ -436,25 +467,27 @@ class TestAutogradExecuteIntegration:
         assert res[0].shape == (1,)
         assert res[1].shape == (1,)
 
-    def test_scalar_jacobian(self, execute_kwargs, tol):
+    def test_scalar_jacobian(self, interface, execute_kwargs, tol):
         """Test scalar jacobian calculation"""
         a = np.array(0.1, requires_grad=True)
         dev = qml.device("default.qubit", wires=2)
 
         def cost(a):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
-            return execute([tape], dev, **execute_kwargs)[0]
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return execute([tape], dev, interface=interface, **execute_kwargs)[0]
 
         res = qml.jacobian(cost)(a)
         assert res.shape == (1,)
 
         # compare to standard tape jacobian
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = [0]
         tapes, fn = param_shift(tape)
         expected = fn(dev.batch_execute(tapes))
@@ -462,19 +495,20 @@ class TestAutogradExecuteIntegration:
         assert expected.shape == (1, 1)
         assert np.allclose(res, np.squeeze(expected), atol=tol, rtol=0)
 
-    def test_jacobian(self, execute_kwargs, tol):
+    def test_jacobian(self, interface, execute_kwargs, tol):
         """Test jacobian calculation"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
         def cost(a, b, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliY(1))
-            return execute([tape], device, **execute_kwargs)[0]
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -490,26 +524,29 @@ class TestAutogradExecuteIntegration:
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
-    def test_tape_no_parameters(self, execute_kwargs, tol):
+    def test_tape_no_parameters(self, interface, execute_kwargs, tol):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
         dev = qml.device("default.qubit", wires=1)
 
         def cost(params):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.Hadamard(0)
                 qml.expval(qml.PauliX(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RY(np.array(0.5, requires_grad=False), wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape3:
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
+            with qml.queuing.AnnotatedQueue() as q3:
                 qml.RY(params[0], wires=0)
                 qml.RX(params[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
+            tape3 = qml.tape.QuantumScript.from_queue(q3)
+            return sum(execute([tape1, tape2, tape3], dev, interface=interface, **execute_kwargs))
 
         params = np.array([0.1, 0.2], requires_grad=True)
         x, y = params
@@ -522,25 +559,26 @@ class TestAutogradExecuteIntegration:
         expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_reusing_quantum_tape(self, execute_kwargs, tol):
+    def test_reusing_quantum_tape(self, interface, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
             tape.set_parameters([a, b])
-            return execute([tape], dev, **execute_kwargs)[0]
+            return execute([tape], dev, interface=interface, **execute_kwargs)[0]
 
         jac_fn = qml.jacobian(cost)
         jac = jac_fn(a, b)
@@ -563,20 +601,21 @@ class TestAutogradExecuteIntegration:
         assert isinstance(jac, tuple) and len(jac) == 2
         assert all(np.allclose(_j, _e, atol=tol, rtol=0) for _j, _e in zip(jac, expected))
 
-    def test_classical_processing(self, execute_kwargs, tol):
+    def test_classical_processing(self, interface, execute_kwargs, tol):
         """Test classical processing within the quantum tape"""
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=False)
         c = np.array(0.3, requires_grad=True)
 
         def cost(a, b, c, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
                 qml.RX(c + c**2 + np.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], device, **execute_kwargs)[0]
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         res = qml.jacobian(cost)(a, b, c, device=dev)
@@ -585,19 +624,20 @@ class TestAutogradExecuteIntegration:
         assert res[0].shape == (1,)
         assert res[1].shape == (1,)
 
-    def test_no_trainable_parameters(self, execute_kwargs, tol):
+    def test_no_trainable_parameters(self, interface, execute_kwargs, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
         a = np.array(0.1, requires_grad=False)
         b = np.array(0.2, requires_grad=False)
 
         def cost(a, b, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
-            return execute([tape], device, **execute_kwargs)[0]
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         res = cost(a, b, device=dev)
@@ -615,18 +655,19 @@ class TestAutogradExecuteIntegration:
 
         assert np.allclose(res, 0)
 
-    def test_matrix_parameter(self, execute_kwargs, tol):
+    def test_matrix_parameter(self, interface, execute_kwargs, tol):
         """Test that the autograd interface works correctly
         with a matrix parameter"""
         U = np.array([[0, 1], [1, 0]], requires_grad=False)
         a = np.array(0.1, requires_grad=True)
 
         def cost(a, U, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
-            return execute([tape], device, **execute_kwargs)[0]
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         res = cost(a, U, device=dev)
@@ -636,31 +677,30 @@ class TestAutogradExecuteIntegration:
         res = jac_fn(a, U, device=dev)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
-    def test_differentiable_expand(self, execute_kwargs, tol):
+    def test_differentiable_expand(self, interface, execute_kwargs, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
 
         class U3(qml.U3):
             def expand(self):
-                tape = qml.tape.QuantumTape()
                 theta, phi, lam = self.data
                 wires = self.wires
-                tape._ops += [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
-                ]
-                return tape
+                return qml.tape.QuantumScript(
+                    [
+                        qml.Rot(lam, theta, -lam, wires=wires),
+                        qml.PhaseShift(phi + lam, wires=wires),
+                    ]
+                )
 
         def cost_fn(a, p, device):
-            tape = qml.tape.QuantumTape()
-
-            with tape:
+            with qml.queuing.AnnotatedQueue() as q_tape:
                 qml.RX(a, wires=0)
                 U3(*p, wires=0)
                 qml.expval(qml.PauliX(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q_tape)
             tape = tape.expand(stop_at=lambda obj: device.supports_operation(obj.name))
-            return execute([tape], device, **execute_kwargs)[0]
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         a = np.array(0.1, requires_grad=False)
         p = np.array([0.1, 0.2, 0.3], requires_grad=True)
@@ -686,7 +726,7 @@ class TestAutogradExecuteIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_probability_differentiation(self, execute_kwargs, tol):
+    def test_probability_differentiation(self, interface, execute_kwargs, tol):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
@@ -694,14 +734,15 @@ class TestAutogradExecuteIntegration:
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=[0])
                 qml.probs(wires=[1])
 
-            return execute([tape], device, **execute_kwargs)[0]
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         x = np.array(0.543, requires_grad=True)
@@ -740,21 +781,22 @@ class TestAutogradExecuteIntegration:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_ragged_differentiation(self, execute_kwargs, tol):
+    def test_ragged_differentiation(self, interface, execute_kwargs, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         if execute_kwargs["gradient_fn"] == "device":
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.probs(wires=[1])
 
-            return execute([tape], device, **execute_kwargs)[0]
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         x = np.array(0.543, requires_grad=True)
@@ -779,19 +821,20 @@ class TestAutogradExecuteIntegration:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_sampling(self, execute_kwargs):
+    def test_sampling(self, interface, execute_kwargs):
         """Test sampling works as expected"""
         if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
             pytest.skip("Adjoint differentiation does not support samples")
 
         def cost(x, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.sample(qml.PauliZ(0))
                 qml.sample(qml.PauliX(1))
 
-            return execute([tape], device, **execute_kwargs)[0]
+            tape = qml.tape.QuantumScript.from_queue(q)
+            return execute([tape], device, interface=interface, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2, shots=10)
         x = np.array(0.543, requires_grad=True)
@@ -817,18 +860,20 @@ class TestHigherOrderDerivatives:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RX(x[0], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=1)
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=2)
             return result[0] + result[1][0, 0]
 
@@ -859,12 +904,13 @@ class TestHigherOrderDerivatives:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
                 [tape],
                 dev,
@@ -884,18 +930,20 @@ class TestHigherOrderDerivatives:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RX(x[0], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=1)
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=1)
             return result[0] + result[1][0, 0]
 
@@ -925,12 +973,13 @@ class TestOverridingShots:
         dev = qml.device("default.qubit", wires=2, shots=None)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliY(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(dev, "sample")
 
         # execute with device default shots (None)
@@ -940,27 +989,27 @@ class TestOverridingShots:
 
         # execute with shots=100
         res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)
-        spy.assert_called()
+        spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
         assert dev.shots is None
-        spy = mocker.spy(dev, "sample")
         res = execute([tape], dev, gradient_fn=param_shift)
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
-        spy.assert_not_called()
+        spy.assert_called_once()  # still the single call from above
 
     def test_overriding_shots_with_same_value(self, mocker):
         """Overriding shots with the same value as the device will have no effect"""
         dev = qml.device("default.qubit", wires=2, shots=123)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliY(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.Mock(wraps=qml.Device.shots.fset)
         mock_property = qml.Device.shots.setter(spy)
         mocker.patch.object(qml.Device, "shots", mock_property)
@@ -988,12 +1037,13 @@ class TestOverridingShots:
 
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliY(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)[0]
         assert len(res) == 1
 
@@ -1011,12 +1061,13 @@ class TestOverridingShots:
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(a, b, shots):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliY(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute([tape], dev, gradient_fn=param_shift, override_shots=shots)[0]
 
         res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
@@ -1053,13 +1104,14 @@ class TestHamiltonianWorkflows:
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
 
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(H1)
                 qml.expval(H2)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute([tape], dev, **execute_kwargs)[0]
 
         return _cost_fn

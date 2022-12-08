@@ -21,6 +21,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.wires import Wires
+from collections.abc import Iterable
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -37,7 +39,7 @@ except ImportError:
     pass
 
 try:
-    import tf
+    import tensorflow as tf
 
     COEFFS_PARAM_INTERFACE.append(
         (tf.Variable([-0.05, 0.17], dtype=tf.double), tf.Variable(1.7, dtype=tf.double), "tf")
@@ -725,7 +727,7 @@ class TestHamiltonian:
         """Tests that simplifying a Hamiltonian in a tape context
         queues the simplified Hamiltonian."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             a = qml.PauliX(wires=0)
             b = qml.PauliY(wires=1)
             c = qml.Identity(wires=2)
@@ -736,7 +738,7 @@ class TestHamiltonian:
         # check that H is simplified
         assert H.ops == [a, b]
         # check that the simplified Hamiltonian is in the queue
-        assert H in tape._queue
+        assert q.get_info(H) is not None
 
     def test_data(self):
         """Tests the obs_data method"""
@@ -885,16 +887,16 @@ class TestHamiltonian:
 
         H = qml.PauliX(1) + 3 * qml.PauliZ(0) @ qml.PauliZ(2) + qml.PauliZ(1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
             qml.expval(H)
 
-        assert len(tape.queue) == 3
-        assert isinstance(tape.queue[0], qml.Hadamard)
-        assert isinstance(tape.queue[1], qml.PauliX)
-        assert isinstance(tape.queue[2], qml.measurements.MeasurementProcess)
-        assert H.compare(tape.queue[2].obs)
+        assert len(q.queue) == 3
+        assert isinstance(q.queue[0], qml.Hadamard)
+        assert isinstance(q.queue[1], qml.PauliX)
+        assert isinstance(q.queue[2], qml.measurements.MeasurementProcess)
+        assert H.compare(q.queue[2].obs)
 
     def test_hamiltonian_queue_inside(self):
         """Tests that Hamiltonian are queued correctly when components are instantiated inside the recording context."""
@@ -912,7 +914,7 @@ class TestHamiltonian:
             ),
         ]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
             qml.expval(
@@ -921,7 +923,7 @@ class TestHamiltonian:
                 )
             )
 
-        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
+        assert np.all([q1.compare(q2) for q1, q2 in zip(q.queue, queue)])
 
     def test_terms(self):
         """Tests that the terms representation is returned correctly."""
@@ -929,7 +931,7 @@ class TestHamiltonian:
         ops = [qml.PauliX(0), qml.PauliZ(1)]
         h = qml.Hamiltonian(coeffs, ops)
         c, o = h.terms()
-        assert isinstance(c, tuple)
+        assert isinstance(c, Iterable)
         assert isinstance(o, list)
         assert all(isinstance(item, np.ndarray) for item in c)
         assert all(item.requires_grad for item in c)
@@ -939,6 +941,30 @@ class TestHamiltonian:
         """Test that empty Hamiltonian does not raise an empty wire error."""
         hamiltonian = qml.Hamiltonian([], [])
         assert isinstance(hamiltonian, qml.Hamiltonian)
+
+    def test_map_wires(self):
+        """Test the map_wires method."""
+        coeffs = pnp.array([1.0, 2.0, -3.0], requires_grad=True)
+        ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)]
+        h = qml.Hamiltonian(coeffs, ops)
+        wire_map = {0: 10, 1: 11, 2: 12}
+        mapped_h = h.map_wires(wire_map=wire_map)
+        final_obs = [qml.PauliX(10), qml.PauliZ(11), qml.PauliY(12)]
+        assert h is not mapped_h
+        assert h.wires == Wires([0, 1, 2])
+        assert mapped_h.wires == Wires([10, 11, 12])
+        for obs1, obs2 in zip(mapped_h.ops, final_obs):
+            assert qml.equal(obs1, obs2)
+        for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
+            assert coeff1 == coeff2
+
+    def test_hermitian_tensor_prod(self):
+        """Test that the tensor product of a Hamiltonian with Hermitian observable works."""
+        tensor = qml.PauliX(0) @ qml.PauliX(1)
+        herm = qml.Hermitian([[1, 0], [0, 1]], wires=4)
+
+        ham = qml.Hamiltonian([1.0, 1.0], [tensor, qml.PauliX(2)]) @ qml.Hamiltonian([1.0], [herm])
+        assert isinstance(ham, qml.Hamiltonian)
 
 
 class TestHamiltonianCoefficients:
@@ -1362,10 +1388,10 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
 
-        assert tape.queue == [H]
+        assert q.queue == [H]
 
     def test_grouping_method_can_be_set(self):
         r"""Tests that the grouping method can be controlled by kwargs.

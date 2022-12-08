@@ -211,14 +211,8 @@ class AmplitudeEmbedding(Operation):
                 # pad
                 if n_features < dim:
                     padding = [pad_with] * (dim - n_features)
-                    if (
-                        hasattr(feature_set, "device") and feature_set.device.type == "cuda"
-                    ):  # pragma: no cover
-                        ## Torch tensor, send to same GPU
-                        dat_type = type(feature_set)
-                        padding = dat_type(padding).to(feature_set.device)
-
-                    feature_set = qml.math.concatenate([feature_set, padding], axis=0)
+                    padding = qml.math.convert_like(padding, feature_set)
+                    feature_set = qml.math.hstack([feature_set, padding])
 
             # normalize
             norm = qml.math.sum(qml.math.abs(feature_set) ** 2)

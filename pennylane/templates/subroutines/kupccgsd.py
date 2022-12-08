@@ -115,8 +115,8 @@ class kUpCCGSD(Operation):
 
         .. code-block:: python
 
-            import numpy as np
             import pennylane as qml
+            from pennylane import numpy as np
 
             # Build the electronic Hamiltonian
             symbols = ["H", "H"]
@@ -171,18 +171,17 @@ class kUpCCGSD(Operation):
 
         .. code-block:: none
 
-            Step = 0,  Energy = 0.18046117 Ha
-            Step = 4,  Energy = -1.06545723 Ha
-            Step = 8,  Energy = -1.13028734 Ha
-            Step = 12,  Energy = -1.13528393 Ha
-            Step = 16,  Energy = -1.13604954 Ha
-            Step = 20,  Energy = -1.13616762 Ha
-            Step = 24,  Energy = -1.13618584 Ha
+            Step = 0,  Energy = -1.08949110 Ha
+            Step = 4,  Energy = -1.13370605 Ha
+            Step = 8,  Energy = -1.13581648 Ha
+            Step = 12,  Energy = -1.13613171 Ha
+            Step = 16,  Energy = -1.13618030 Ha
+            Step = 20,  Energy = -1.13618779 Ha
 
-            Final value of the ground-state energy = -1.13618786 Ha
+            Final value of the ground-state energy = -1.13618779 Ha
 
-            Optimal value of the circuit parameters = [[ 0.97882258  0.46090942  0.98106201
-            0.45866993 -0.91548184  2.01637919]]
+            Optimal value of the circuit parameters = [[0.97879636 0.46093583 0.98108824
+            0.45864352 0.65531446 0.44558289]]
 
 
         **Parameter shape**
@@ -269,10 +268,9 @@ class kUpCCGSD(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        init_state_flipped = np.flip(init_state)
         op_list = []
 
-        op_list.append(qml.BasisEmbedding(init_state_flipped, wires=wires))
+        op_list.append(qml.BasisEmbedding(init_state, wires=wires))
 
         for layer in range(k):
             for i, (w1, w2) in enumerate(d_wires):

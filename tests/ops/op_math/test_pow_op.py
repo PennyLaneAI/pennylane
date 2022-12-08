@@ -85,8 +85,8 @@ class TestConstructor:
             original_op = qml.PauliX(0)
             new_op = qml.pow(original_op, 0.5, lazy=False)
 
-        assert q._queue[original_op]["owner"] is new_op
-        assert q._queue[new_op]["owns"] is original_op
+        assert q[original_op]["owner"] is new_op
+        assert q[new_op]["owns"] is original_op
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
@@ -267,18 +267,6 @@ class TestProperties:
         base.data = [x_new2]
         assert op.data == [x_new2]
 
-    def test_private_wires_getter_setter(self, power_method):
-        """Test that we can get and set the private _wires."""
-        wires0 = qml.wires.Wires("a")
-        base = qml.PauliZ(wires0)
-        op: Pow = power_method(base=base, z=-2.1)
-
-        assert op._wires == base._wires == wires0
-
-        wires1 = qml.wires.Wires(1)
-        op._wires = wires1
-        assert op._wires == base._wires == wires1
-
     def test_has_matrix_true(self, power_method):
         """Test `has_matrix` property carries over when base op defines matrix."""
         base = qml.PauliX(0)
@@ -381,10 +369,10 @@ class TestSimplify:
     def test_simplify_nested_pow_ops(self):
         """Test the simplify method with nested pow operations."""
         pow_op = Pow(base=Pow(base=qml.adjoint(Pow(base=qml.CNOT([1, 0]), z=1.2)), z=2), z=5)
-        final_op = qml.prod(qml.Identity(1), qml.Identity(0))
+        final_op = qml.Identity([1, 0])
         simplified_op = pow_op.simplify()
 
-        assert isinstance(simplified_op, qml.ops.Prod)
+        assert isinstance(simplified_op, qml.Identity)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -397,12 +385,12 @@ class TestSimplify:
         """Test that simplifying a multi-wire operator raised to the power of 0 returns a product
         of Identity matrices."""
         pow_op = Pow(base=qml.CNOT([0, 1]), z=0)
-        final_op = qml.prod(qml.Identity(0), qml.Identity(1))
+        final_op = qml.Identity([0, 1])
         simplified_op = pow_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
 
-        assert isinstance(simplified_op, qml.ops.Prod)
+        assert isinstance(simplified_op, qml.Identity)
         assert final_op.data == simplified_op.data
         assert final_op.wires == simplified_op.wires
         assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -542,31 +530,34 @@ class TestQueueing:
     def test_queueing(self):
         """Test queuing and metadata when both Pow and base defined inside a recording context."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Pow(base, 1.2)
 
-        assert tape._queue[base]["owner"] is op
-        assert tape._queue[op]["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert q.get_info(base)["owner"] is op
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
         """Test that base is added to queue even if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Pow(base, 3.4)
 
-        assert len(tape.queue) == 1
-        assert tape._queue[op]["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert len(q.queue) == 1
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Pow(base, 4.5, do_queue=False)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 0
 
 
@@ -617,7 +608,7 @@ class TestMatrix:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
-    def test_matrix_against_shortcut_jax(self, z):
+    def test_matrix_against_shortcut_tf(self, z):
         """Test the matrix using a tf variable parameter."""
         import tensorflow as tf
 

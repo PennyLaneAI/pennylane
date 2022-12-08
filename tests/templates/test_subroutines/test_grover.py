@@ -47,9 +47,10 @@ def test_single_wire_error(bad_wires):
 def test_do_queue():
     """Assert do_queue=False is not queued"""
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.GroverOperator(wires=(0, 1), do_queue=False)
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     assert len(tape.operations) == 0
 
 
@@ -183,9 +184,10 @@ def test_expand(wires):
         assert actual_op.wires == qml.wires.Wires(expected_wires)
 
 
-def test_findstate():
-    """Asserts can find state marked by oracle."""
-    wires = list(range(6))
+@pytest.mark.parametrize("n_wires", [6, 13])
+def test_findstate(n_wires):
+    """Asserts can find state marked by oracle, with operation full matrix and decomposition."""
+    wires = list(range(n_wires))
 
     dev = qml.device("default.qubit", wires=wires)
 
@@ -194,7 +196,7 @@ def test_findstate():
         for wire in wires:
             qml.Hadamard(wire)
 
-        for _ in range(5):
+        for _ in range(2):
             qml.Hadamard(wires[0])
             qml.MultiControlledX(wires=wires[1:] + wires[0:1])
             qml.Hadamard(wires[0])

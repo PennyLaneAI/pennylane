@@ -15,12 +15,14 @@
 A transform to obtain the commutation DAG of a quantum circuit.
 """
 import heapq
-from functools import wraps
 from collections import OrderedDict
-from networkx.drawing.nx_pydot import to_pydot
+from functools import wraps
 
 import networkx as nx
+from networkx.drawing.nx_pydot import to_pydot
+
 import pennylane as qml
+from pennylane.tape import QuantumScript, make_qscript
 from pennylane.wires import Wires
 
 
@@ -99,13 +101,13 @@ def commutation_dag(circuit):
             circuit.construct(args, kwargs)
             tape = circuit.qtape
 
-        elif isinstance(circuit, qml.tape.QuantumTape):
+        elif isinstance(circuit, QuantumScript):
             # user passed a tape
             tape = circuit
 
         elif callable(circuit):
             # user passed something that is callable but not a tape or qnode.
-            tape = qml.transforms.make_tape(circuit)(*args, **kwargs)
+            tape = make_qscript(circuit)(*args, **kwargs)
             # raise exception if it is not a quantum function
             if len(tape.operations) == 0:
                 raise ValueError("Function contains no quantum operation")
@@ -210,7 +212,7 @@ class CommutationDAG:
 
     """
 
-    def __init__(self, tape):
+    def __init__(self, tape: QuantumScript):
 
         self.num_wires = len(tape.wires)
         self.node_id = -1
@@ -220,15 +222,12 @@ class CommutationDAG:
         wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
 
         for operation in tape.operations:
-            operation._wires = Wires([wires_map[wire] for wire in operation.wires.tolist()])
+            operation = qml.map_wires(operation, wire_map=wires_map)
             self.add_node(operation)
 
         self._add_successors()
 
-        for obs in tape.observables:
-            obs._wires = Wires([wires_map[wire] for wire in obs.wires.tolist()])
-
-        self.observables = tape.observables if tape.observables is not None else []
+        self.observables = [qml.map_wires(obs, wire_map=wires_map) for obs in tape.observables]
 
     def _add_node(self, node):
         self.node_id += 1

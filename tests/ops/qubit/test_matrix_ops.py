@@ -359,8 +359,9 @@ class TestDiagonalQubitUnitary:
         """Test that the correct controlled operation is created when controlling a qml.DiagonalQubitUnitary."""
         D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
         op = qml.DiagonalQubitUnitary(D, wires=[1, 2, 3])
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op._controlled(control=0)
+        tape = qml.tape.QuantumScript.from_queue(q)
         mat = qml.matrix(tape)
         assert qml.math.allclose(
             mat, qml.math.diag(qml.math.append(qml.math.ones(8, dtype=complex), D))
@@ -371,8 +372,9 @@ class TestDiagonalQubitUnitary:
         controlling a qml.DiagonalQubitUnitary with a broadcasted diagonal."""
         D = np.array([[1j, 1, -1j, 1], [1, -1, 1j, -1]])
         op = qml.DiagonalQubitUnitary(D, wires=[1, 2])
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op._controlled(control=0)
+        tape = qml.tape.QuantumScript.from_queue(q)
         mat = qml.matrix(tape)
         expected = np.array(
             [np.diag([1, 1, 1, 1, 1j, 1, -1j, 1]), np.diag([1, 1, 1, 1, 1, -1, 1j, -1])]
@@ -817,13 +819,16 @@ class TestControlledQubitUnitary:
             ]
         )
 
-        op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
+        op = qml.ControlledQubitUnitary(
+            U1, control_wires=("b", "c"), wires="a", control_values="01"
+        )
 
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
         assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert pow_ops[0].control_wires == op.control_wires
+        assert pow_ops[0].control_values == op.control_values
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
