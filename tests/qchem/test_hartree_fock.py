@@ -14,7 +14,6 @@
 """
 Unit tests for Hartree-Fock functions.
 """
-import jax
 import pytest
 
 import pennylane as qml
@@ -250,7 +249,7 @@ class TestJax:
                 ["H", "H"],
                 np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
                 # HF gradient computed with pyscf using rnuc_grad_method().kernel()
-                jax.numpy.array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]]),
+                np.array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]]),
             ),
         ],
     )
@@ -258,8 +257,11 @@ class TestJax:
     def test_hf_energy_gradient(self, symbols, geometry, g_ref):
         r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
         correct."""
+        import jax
+
         mol = qchem.Molecule(symbols, geometry)
         args = [jax.numpy.array(mol.coordinates)]
         g = jax.grad(qchem.hf_energy(mol))(*args)
+        g_ref = jax.numpy.array(g_ref)
 
         assert np.allclose(g, g_ref)
