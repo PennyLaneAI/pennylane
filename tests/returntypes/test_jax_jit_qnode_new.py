@@ -1983,11 +1983,12 @@ class TestReturn:
         assert jac[1].shape == (4, 2)
 
 
-
 hessian_fn = [jax.hessian, jax.jacrev(jax.jacfwd), jax.jacfwd(jax.jacfwd)]
 
+
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method_and_mode)
-@pytest.mark.parametrize("shots", [None, 10000])
+# TODO
+# @pytest.mark.parametrize("shots", [None, 10000])
 @pytest.mark.parametrize("hessian", hessian_fn)
 class TestReturnHessian:
     """Class to test the shape of the Hessian with different return types."""
@@ -2009,10 +2010,11 @@ class TestReturnHessian:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = jax.jit(hessian(circuit))((par_0, par_1))
+        hess = jax.jit(hessian(circuit, argnums=[0, 1]))(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
+        print(hess)
 
         assert isinstance(hess[0], jnp.ndarray)
         assert hess[0].shape == (2,)
@@ -2173,7 +2175,6 @@ class TestReturnHessian:
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
         hess = jax.jit(hessian(circuit))((par_0, par_1))
-
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
