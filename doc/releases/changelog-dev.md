@@ -470,9 +470,8 @@
   support the new return types.
   [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
 
-
 * Update `OperationRecorder` to inherit from `AnnotatedQueue` and `QuantumScript` instead of `QuantumTape`.
-  [(#3467)](https://github.com/PennyLaneAI/pennylane/pull/3467)
+  [(#3496)](https://github.com/PennyLaneAI/pennylane/pull/3496)
 
 <h3>Breaking changes</h3>
 
