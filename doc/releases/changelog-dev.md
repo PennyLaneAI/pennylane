@@ -290,7 +290,7 @@
   the optional `use_grouping` attribute.
   [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
 
-* Add the optional argument lazy=True to functions qml.s_prod, qml.prod and qml.op_sum to allow simplification.
+* Add the optional argument lazy=True to functions `qml.s_prod`, `qml.prod` and `qml.op_sum` to allow simplification.
   [(#3483)](https://github.com/PennyLaneAI/pennylane/pull/3483)
 
 * Reduce usage of `MeasurementProcess.return_type`. Use `isinstance` checks instead.
