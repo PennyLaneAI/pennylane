@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.interfaces import InterfaceUnsupportedError
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 
 qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],
@@ -178,12 +178,9 @@ class TestQNode:
             def expand(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-
-                with QuantumTape() as tape:
-                    qml.Rot(lam, theta, -lam, wires=wires)
-                    qml.PhaseShift(phi + lam, wires=wires)
-
-                return tape
+                return QuantumScript(
+                    [qml.Rot(lam, theta, -lam, wires=wires), qml.PhaseShift(phi + lam, wires=wires)]
+                )
 
         dev = qml.device(dev_name, wires=1)
         a = jax.numpy.array(0.1)
@@ -715,9 +712,9 @@ class TestQubitIntegration:
 
         class Template(qml.templates.StronglyEntanglingLayers):
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
-                    qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)
-                return tape
+                return QuantumScript(
+                    [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
+                )
 
         @qnode(dev, interface=interface, diff_method=diff_method)
         def circuit1(weights):
@@ -1243,9 +1240,7 @@ class TestTapeExpansion:
             grad_method = None
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
-                    qml.RY(3 * self.data[0], wires=self.wires)
-                return tape
+                return QuantumScript([qml.RY(3 * self.data[0], wires=self.wires)])
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface=interface)
         def circuit(x, y):

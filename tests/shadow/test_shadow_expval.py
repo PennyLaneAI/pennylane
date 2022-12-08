@@ -135,10 +135,11 @@ class TestExpvalMeasurement:
 
     def test_obs_not_queued(self):
         """Test that the observable passed to qml.shadow_expval is not queued"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliY(0)
             qml.shadow_expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "PauliY"
         assert len(tape.measurements) == 1

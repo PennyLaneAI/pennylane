@@ -177,9 +177,10 @@ class TestInitialization:
         of the provided factors on a tape."""
         prod_op = prod(*ops_lst)
         true_decomposition = list(ops_lst[::-1])  # reversed list of factors
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             prod_op.decomposition()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         for op1, op2 in zip(tape.operations, true_decomposition):
             assert qml.equal(op1, op2)
 

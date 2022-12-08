@@ -54,11 +54,12 @@ class TestCond:
             qml.RY(x, wires=1)
             qml.PauliZ(1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(0)
             qml.cond(m_0, f)(r)
             qml.apply(terminal_measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         ops = tape.operations
         target_wire = qml.wires.Wires(1)
 
@@ -83,22 +84,24 @@ class TestCond:
 
     def tape_with_else(f, g, r, meas):
         """Tape that uses cond by passing both a true and false func."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(0)
             qml.cond(m_0, f, g)(r)
             qml.apply(meas)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         return tape
 
     def tape_uses_cond_twice(f, g, r, meas):
         """Tape that uses cond twice such that it's equivalent to using cond
         with two functions being passed (tape_with_else)."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(0)
             qml.cond(m_0, f)(r)
             qml.cond(~m_0, g)(r)
             qml.apply(meas)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         return tape
 
     @pytest.mark.parametrize("tape", [tape_with_else, tape_uses_cond_twice])
@@ -210,11 +213,12 @@ class TestOtherTransforms:
         qml.adjoint."""
         r = 1.234
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.adjoint(qml.RX), qml.RX)(r, wires=1)
             qml.apply(terminal_measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         ops = tape.operations
         target_wire = qml.wires.Wires(1)
 
@@ -239,11 +243,12 @@ class TestOtherTransforms:
         qml.ctrl."""
         r = 1.234
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.ctrl(qml.RX, 1), qml.ctrl(qml.RY, 1))(r, wires=2)
             qml.apply(terminal_measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         ops = tape.operations
         target_wire = qml.wires.Wires(2)
 
@@ -266,11 +271,12 @@ class TestOtherTransforms:
         qml.ctrl."""
         r = 1.234
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(0)
             qml.ctrl(qml.cond(m_0, qml.RX, qml.RY), 1)(r, wires=0)
             qml.apply(terminal_measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         ops = tape.operations
         target_wire = qml.wires.Wires(2)
 
