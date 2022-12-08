@@ -711,11 +711,11 @@ def _boys(n, t):
     Returns:
         (array[float]): value of the Boys function
     """
-    return np.where(
+    return qml.math.where(
         t == 0.0,
         1 / (2 * n + 1),
-        asp.special.gammainc(n + 0.5, t + (t == 0.0))
-        * asp.special.gamma(n + 0.5)
+        qml.math.gammainc(n + 0.5, t + (t == 0.0))
+        * qml.math.gamma(n + 0.5)
         / (2 * (t + (t == 0.0)) ** (n + 0.5)),
     )  # (t == 0.0) is added to avoid divide by zero
 
