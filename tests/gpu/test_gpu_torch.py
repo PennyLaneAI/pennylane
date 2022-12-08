@@ -19,10 +19,13 @@ pytestmark = pytest.mark.gpu
 pytestmark = pytest.mark.torch
 
 torch = pytest.importorskip("torch")
+torch_cuda = pytest.importorskip("torch.cuda")
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
+@pytest.mark.skipif(not torch_cuda.is_available(), reason="no cuda support")
 class TestTorchDevice:
+    """Test GPU with cuda for Torch device."""
+
     def test_device_to_cuda(self):
         """Checks device executes with cuda is input data is cuda"""
 
@@ -172,7 +175,7 @@ class TestTorchDevice:
         assert res2.is_cuda
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
+@pytest.mark.skipif(not torch_cuda.is_available(), reason="no cuda support")
 class TestqnnTorchLayer:
     def test_torch_device_cuda_if_tensors_on_cuda(self):
         """Test that if any tensor passed to operators is on the GPU then CUDA
