@@ -107,7 +107,7 @@ class Sum(CompositeOp):
             sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
             dev = qml.device("default.qubit", wires=2)
 
-            @qml.qnode(dev, grad_method="best")
+            @qml.qnode(dev, diff_method="best")
             def circuit(weights):
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
