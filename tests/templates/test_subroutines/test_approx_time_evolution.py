@@ -379,10 +379,11 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     def create_tape(coeffs, t):
         H = qml.Hamiltonian(coeffs, obs)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.templates.ApproxTimeEvolution(H, t, 2)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         return tape
 
     def cost(coeffs, t):
