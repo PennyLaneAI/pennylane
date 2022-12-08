@@ -586,7 +586,7 @@ def finite_diff(
     to use during autodifferentiation:
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
+    >>> @qml.qnode(dev, diff_method=qml.gradients.finite_diff)
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
