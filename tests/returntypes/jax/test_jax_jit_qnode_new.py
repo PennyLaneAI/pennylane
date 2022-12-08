@@ -1437,7 +1437,7 @@ class TestTapeExpansion:
             )
 
         phys_qubits = 2
-        n_configs = 5
+        n_configs = 12
         pars_q = np.random.rand(n_configs, 2)
         dev = qml.device(dev_name, wires=tuple(range(phys_qubits)), shots=None)
 
@@ -1455,6 +1455,14 @@ class TestTapeExpansion:
         assert np.allclose(
             jax.jit(minimal_circ)(pars_q), jax.jit(jax.vmap(minimal_circ))(pars_q), tol
         )
+        assert np.allclose(minimal_circ(pars_q), jax.jit(jax.vmap(minimal_circ))(pars_q), tol)
+
+        pars_q_r = pars_q.reshape(n_configs // 3, 3, 2)
+        res_r = jax.jit(minimal_circ)(pars_q).reshape(n_configs // 3, 3)
+        # vmap + implicit broadcast
+        assert np.allclose(res_r, jax.jit(jax.vmap(minimal_circ))(pars_q_r), tol)
+        # vmap + vmap
+        assert np.allclose(res_r, jax.jit(jax.vmap(jax.vmap(minimal_circ)))(pars_q_r), tol)
 
     def test_vmap_compared_param_broadcasting_multi_output(
         self, dev_name, diff_method, mode, interface, tol
@@ -1471,7 +1479,7 @@ class TestTapeExpansion:
             )
 
         phys_qubits = 2
-        n_configs = 5
+        n_configs = 12
         pars_q = np.random.rand(n_configs, 2)
         dev = qml.device(dev_name, wires=tuple(range(phys_qubits)), shots=None)
 
@@ -1482,15 +1490,33 @@ class TestTapeExpansion:
                 qml.RY(params[..., 1], wires=1)
                 op1 = qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)])
                 op2 = qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliX(1)])
-                return qml.expval(op1), qml.expval(op2)
+                return qml.expval(op1), qml.expval(op2), qml.probs(wires=[0, 1])
 
             res = _measure_operator()
             return res
 
-        res1, res2 = jax.jit(minimal_circ)(pars_q)
-        vres1, vres2 = jax.jit(jax.vmap(minimal_circ))(pars_q)
+        res1, res2, prob = jax.jit(minimal_circ)(pars_q)
+        vres1, vres2, vprob = jax.jit(jax.vmap(minimal_circ))(pars_q)
         assert np.allclose(res1, vres1, tol)
         assert np.allclose(res2, vres2, tol)
+        assert np.allclose(prob, vprob, tol)
+
+        pars_q_r = pars_q.reshape(n_configs // 3, 3, 2)
+        res1_r = res1.reshape(n_configs // 3, 3)
+        res2_r = res2.reshape(n_configs // 3, 3)
+        prob_r = prob.reshape(n_configs // 3, 3, -1)
+
+        vbres1, vbres2, vbprob = jax.jit(jax.vmap(minimal_circ))(pars_q_r)
+        vvres1, vvres2, vvprob = jax.jit(jax.vmap(jax.vmap(minimal_circ)))(pars_q_r)
+
+        # vmap + implicit broadcast
+        assert np.allclose(vbres1, res1_r, tol)
+        assert np.allclose(vbres2, res2_r, tol)
+        assert np.allclose(vbprob, prob_r, tol)
+        # vmap + vmap
+        assert np.allclose(vvres1, res1_r, tol)
+        assert np.allclose(vvres2, res2_r, tol)
+        assert np.allclose(vvprob, prob_r, tol)
 
 
 jit_qubit_device_and_diff_method = [

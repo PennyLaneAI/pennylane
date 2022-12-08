@@ -180,23 +180,42 @@ def _execute_bwd_tuple(
     def execute_wrapper(params):
         shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
 
+        # Brutally estimate the number of implicitly broadcasted dims
+        # Note: this assumes that all non-broadcasted params are scalars
+        # (is this correct?)
+        leaves = jax.tree_util.tree_leaves(params)
+        n_broadcast_dims = leaves[0].ndim if len(leaves) > 0 else 0
+
         def wrapper(p):
             """Compute the forward pass."""
+
+            # compute number of explicitly broadcasted dims
+            leaves = jax.tree_util.tree_leaves(p)
+            if len(leaves) > 0:
+                # extract the vmapped dims. But this also includes
+                # the eventually implicitly broadcasted dimension
+                vmap_dims = jax.tree_util.tree_leaves(p)[0].shape
+
+                # remove implicit broadcast dimension if any
+                if n_broadcast_dims > 0:
+                    vmap_dims = vmap_dims[:-n_broadcast_dims]
+
+                # flatten the parameters: devices do not support implicit broadcast
+                # along more than 1 dimension
+                p = jax.tree_map(lambda x: x.reshape(-1), p)
+            else:
+                vmap_dims = None
+
             new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, p)]
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
-            # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
-            # the shape without the vmap dimensions, while the function here will be
-            # executed with objects containing the vmap dimensions. So res[i].ndim
-            # will have an extra dimension for every `jax.vmap` wrapping this execution.
-            #
-            # The execute_fn will return an object with shape `(n_observables, batches)`
-            # but the default behaviour for `jax.pure_callback` is to add the extra
-            # dimension at the beginning, so `(batches, n_observables)`. So in here
-            # we detect with the heuristic above if we are executing under vmap and we
-            # swap the order in that case.
-            res = jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
+            # reshape to target output: first vmap dimensions then the others.
+            if vmap_dims is not None:
+                res = jax.tree_map(
+                    lambda x, y: x.reshape(*vmap_dims, *y.shape), res, shape_dtype_structs
+                )
+
             return res
 
         res = jax.pure_callback(wrapper, shape_dtype_structs, params, vectorized=True)
