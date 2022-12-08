@@ -110,11 +110,10 @@ def probs(wires=None, op=None):
                 "provided. The wires for probs will be determined directly from the observable."
             )
         wires = qml.wires.Wires(wires)
-    return _Probability(obs=op, wires=wires)
+    return ProbabilityMP(obs=op, wires=wires)
 
 
-# TODO: Make public when removing the ObservableReturnTypes enum
-class _Probability(SampleMeasurement, StateMeasurement):
+class ProbabilityMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
 
     method_name = "probability"
@@ -132,8 +131,8 @@ class _Probability(SampleMeasurement, StateMeasurement):
             return self._shape_new(device)
         if device is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
         num_shot_elements = (
             1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
@@ -146,8 +145,8 @@ class _Probability(SampleMeasurement, StateMeasurement):
     def _shape_new(self, device=None):
         if device is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
         num_shot_elements = (
             1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
