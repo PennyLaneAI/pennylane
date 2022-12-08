@@ -192,8 +192,10 @@ ar.register_function(
 ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
 ar.register_function("autograd", "cond", _cond)
 
-ar.register_function("autograd", "gammainc", lambda x, y: _i("scipy").special.gammainc(x, y))
-ar.register_function("autograd", "gamma", lambda x: _i("scipy").special.gamma(x))
+ar.register_function(
+    "autograd", "gammainc", lambda x, y: _i("autograd").scipy.special.gammainc(x, y)
+)
+ar.register_function("autograd", "gamma", lambda x: _i("autograd").scipy.special.gamma(x))
 
 
 # -------------------------------- TensorFlow --------------------------------- #
