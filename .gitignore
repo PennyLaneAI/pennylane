@@ -23,3 +23,4 @@ tmp/*
 benchmark/revisions/
 venv
 config.toml
+.envrc

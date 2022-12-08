@@ -46,8 +46,10 @@ def test_raise_version_error(package, version, should_raise, monkeypatch):
 
     dev = qml.device("default.qubit", wires=1)
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.expval(qml.PauliZ(0))
+
+    tape = qml.tape.QuantumScript.from_queue(q)
 
     with monkeypatch.context() as m:
         m.setattr(package, "__version__", version)
@@ -71,8 +73,10 @@ class TestJaxExecuteUnitTests:
 
         dev = qml.device("default.qubit", wires=2, shots=None)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.expval(qml.PauliY(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
 
         with pytest.raises(
             qml.QuantumFunctionError,
@@ -90,10 +94,12 @@ class TestJaxExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             return execute(
                 [tape],
@@ -116,10 +122,12 @@ class TestJaxExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             return execute(
                 [tape],
@@ -141,10 +149,12 @@ class TestJaxExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             return execute(
                 [tape],
@@ -156,18 +166,18 @@ class TestJaxExecuteUnitTests:
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
 
-    # TODO
-    @pytest.mark.skip()
     def test_forward_mode(self, mocker):
         """Test that forward mode uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
 
         def cost(a):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             return execute(
                 [tape],
@@ -194,10 +204,12 @@ class TestJaxExecuteUnitTests:
         spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
 
         def cost(a):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             return execute(
                 [tape],
@@ -229,10 +241,12 @@ class TestJaxExecuteUnitTests:
             InterfaceUnsupportedError,
             match="The JAX-JIT interface only supports first order derivatives.",
         ):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             execute(
                 [tape],
@@ -253,10 +267,12 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces, "cache_execute")
 
         def cost(a, cachesize):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             return execute(
                 [tape],
@@ -280,10 +296,12 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces, "cache_execute")
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             return execute(
                 [tape],
@@ -309,15 +327,19 @@ class TestCaching:
         b = jax.numpy.array(0.2)
 
         def cost(a, b, cache):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
 
             res = execute(
                 [tape1, tape2],
@@ -340,10 +362,12 @@ class TestCaching:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             return execute(
                 [tape],
@@ -386,11 +410,13 @@ class TestCaching:
         params = jax.numpy.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             return execute(
                 [tape],
@@ -418,12 +444,11 @@ class TestCaching:
 
 execute_kwargs = [
     {"gradient_fn": param_shift},
-    # TODO: add forward implementation
-    # {
-    #     "gradient_fn": "device",
-    #     "mode": "forward",
-    #     "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
-    # },
+    {
+        "gradient_fn": "device",
+        "mode": "forward",
+        "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
+    },
     {
         "gradient_fn": "device",
         "mode": "backward",
@@ -439,21 +464,22 @@ class TestJaxExecuteIntegration:
 
     def test_execution(self, execute_kwargs):
         """Test execution"""
-        # TODO
-        if execute_kwargs.get("mode", None) == "forward":
-            pytest.skip("TODO")
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, b):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
 
             return execute([tape1, tape2], dev, interface="jax-jit", **execute_kwargs)
 
@@ -471,18 +497,23 @@ class TestJaxExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         def cost(a):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+
             return execute([tape], dev, interface="jax-jit", **execute_kwargs)[0]
 
         res = jax.jit(jax.grad(cost))(a)
         assert res.shape == ()
 
         # compare to standard tape jacobian
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
 
         tape.trainable_params = [0]
         tapes, fn = param_shift(tape)
@@ -498,11 +529,13 @@ class TestJaxExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
 
         assert tape.trainable_params == [0, 1]
 
@@ -542,11 +575,13 @@ class TestJaxExecuteIntegration:
         expected_results = jax.numpy.array([-0.3875172, -0.18884787, -0.38355705])
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
@@ -566,11 +601,13 @@ class TestJaxExecuteIntegration:
         c = jax.numpy.array(0.3)
 
         def cost(a, b, c, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
                 qml.RX(c + c**2 + jax.numpy.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             return execute([tape], device, interface="jax-jit", **execute_kwargs)[0]
 
@@ -585,17 +622,22 @@ class TestJaxExecuteIntegration:
         params = jax.numpy.array([0.3, 0.2])
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape1:
+
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.Hadamard(0)
                 qml.RY(x[0], wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.Hadamard(0)
                 qml.CRX(2 * x[0] * x[1], wires=[0, 1])
                 qml.RX(2 * x[1], wires=[1])
                 qml.expval(qml.PauliZ(0))
+
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
 
             result = execute(
                 tapes=[tape1, tape2], device=dev, interface="jax-jit", **execute_kwargs
@@ -611,17 +653,21 @@ class TestJaxExecuteIntegration:
         params = jax.numpy.array([0.3, 0.2])
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.Hadamard(0)
                 qml.RY(x[0], wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.Hadamard(0)
                 qml.CRX(2 * x[0] * x[1], wires=[0, 1])
                 qml.RX(2 * x[1], wires=[1])
                 qml.expval(qml.PauliZ(0))
+
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
 
             return execute(tapes=[tape1, tape2], device=dev, interface="jax-jit", **execute_kwargs)
 
@@ -637,10 +683,12 @@ class TestJaxExecuteIntegration:
         U = jax.numpy.array([[0, 1], [1, 0]])
 
         def cost(a, U, device):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             tape.trainable_params = [0]
             return execute([tape], device, interface="jax-jit", **execute_kwargs)[0]
@@ -659,25 +707,21 @@ class TestJaxExecuteIntegration:
 
         class U3(qml.U3):
             def expand(self):
-                tape = qml.tape.QuantumTape()
                 theta, phi, lam = self.data
                 wires = self.wires
-                tape._ops += [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
-                ]
-                return tape
+                return qml.tape.QuantumScript(
+                    [
+                        qml.Rot(lam, theta, -lam, wires=wires),
+                        qml.PhaseShift(phi + lam, wires=wires),
+                    ]
+                )
 
         def cost_fn(a, p, device):
-            tape = qml.tape.QuantumTape()
-
-            with tape:
-                qml.RX(a, wires=0)
-                U3(*p, wires=0)
-                qml.expval(qml.PauliX(0))
-
-            tape = tape.expand(stop_at=lambda obj: device.supports_operation(obj.name))
-            return execute([tape], device, interface="jax-jit", **execute_kwargs)[0]
+            qscript = qml.tape.QuantumScript(
+                [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
+            )
+            qscript = qscript.expand(stop_at=lambda obj: device.supports_operation(obj.name))
+            return execute([qscript], device, interface="jax-jit", **execute_kwargs)[0]
 
         a = jax.numpy.array(0.1)
         p = jax.numpy.array([0.1, 0.2, 0.3])
@@ -706,19 +750,17 @@ class TestJaxExecuteIntegration:
     def test_independent_expval(self, execute_kwargs):
         """Tests computing an expectation value that is independent of trainable
         parameters."""
-        # TODO
-        if execute_kwargs.get("mode", None) == "forward":
-            pytest.skip("TODO")
-
         dev = qml.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
                 qml.expval(qml.PauliZ(1))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             res = execute([tape], dev, cache=cache, interface="jax-jit", **execute_kwargs)
             return res[0]
@@ -750,12 +792,14 @@ class TestVectorValuedJIT:
         idx = 0
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
                 for r in ret_type:
                     qml.apply(r)
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
@@ -774,19 +818,17 @@ class TestVectorValuedJIT:
     def test_independent_expval(self, execute_kwargs):
         """Tests computing an expectation value that is independent of trainable
         parameters."""
-        # TODO
-        if execute_kwargs.get("mode", None) == "forward":
-            pytest.skip("TODO")
-
         dev = qml.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
                 qml.expval(qml.PauliZ(1))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
@@ -812,9 +854,6 @@ class TestVectorValuedJIT:
 
         dev = qml.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
-        if execute_kwargs.get("mode", None) == "forward":
-            pytest.skip("TODO")
-
         grad_meth = (
             execute_kwargs["gradient_kwargs"]["method"]
             if "gradient_kwargs" in execute_kwargs
@@ -828,13 +867,15 @@ class TestVectorValuedJIT:
             pytest.skip("Adjoint does not support probs")
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
 
                 for r in ret:
                     qml.apply(r)
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
@@ -864,11 +905,13 @@ class TestVectorValuedJIT:
             pytest.skip("Adjoint does not support probs")
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
                 qml.sample(qml.PauliZ(0))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
@@ -882,17 +925,16 @@ class TestVectorValuedJIT:
         """Tests computing multiple expectation values in a tape."""
         dev = qml.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
-        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        if fwd_mode:
-            pytest.skip("The forward mode is tested separately as it should raise an error.")
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
 
             res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
@@ -905,28 +947,29 @@ class TestVectorValuedJIT:
     def test_multi_tape_jacobian_probs_expvals(self, execute_kwargs):
         """Test the jacobian computation with multiple tapes with probability
         and expectation value computations."""
-        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        if fwd_mode:
-            pytest.skip("The forward mode is tested separately as it should raise an error.")
-
         adjoint = execute_kwargs.get("gradient_kwargs", {}).get("method", "") == "adjoint_jacobian"
         if adjoint:
             pytest.skip("The adjoint diff method doesn't support probabilities.")
 
         def cost(x, y, device, interface, ek):
-            with qml.tape.QuantumTape() as tape1:
+
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=[0])
                 qml.probs(wires=[1])
+
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
 
             return qml.execute([tape1, tape2], device, **ek, interface=interface)[0]
 
@@ -944,38 +987,6 @@ class TestVectorValuedJIT:
         for r, e in zip(res, exp):
             assert jax.numpy.allclose(r, e, atol=1e-7)
 
-    # TODO: update when fwd mode is implemented
-    def test_multiple_expvals_raises_fwd_device_grad(self, execute_kwargs):
-        """Tests computing multiple expectation values in a tape."""
-        execute_kwargs = {
-            "gradient_fn": "device",
-            "mode": "forward",
-            "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
-        }
-        # fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        # if not fwd_mode:
-        #     pytest.skip("Forward mode is not turned on.")
-
-        dev = qml.device("default.qubit", wires=2)
-        params = jax.numpy.array([0.1, 0.2, 0.3])
-
-        def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.RY(a[2], wires=0)
-                qml.expval(qml.PauliZ(0))
-                qml.expval(qml.PauliZ(1))
-
-            res = qml.interfaces.execute(
-                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
-            )
-            return res[0]
-
-        with pytest.raises(NotImplementedError):
-            # with pytest.raises(InterfaceUnsupportedError):
-            jax.jacobian(cost)(params, cache=None)
-
     def test_assertion_error_fwd(self, execute_kwargs):
         """Test that an assertion is raised if by chance there is a difference
         in the number of tapes and the number of parameters sequences passed
@@ -983,10 +994,12 @@ class TestVectorValuedJIT:
         a = 0.3
         b = 0.3
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RY(b, wires=0)
             qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
 
         device = qml.device("default.qubit", wires=2)
 
@@ -1014,9 +1027,11 @@ def test_diff_method_None_jit():
 
     @jax.jit
     def wrapper(x):
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
 
         return qml.execute([tape], dev, gradient_fn=None)
 
