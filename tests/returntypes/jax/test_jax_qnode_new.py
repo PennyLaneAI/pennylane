@@ -32,11 +32,8 @@ qubit_device_and_diff_method = [
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
-jnp = jax.numpy
-
-from jax.config import config
-
-config.update("jax_enable_x64", True)
+config = pytest.importorskip("jax.config")
+config.config.update("jax_enable_x64", True)
 
 
 @pytest.mark.parametrize("dev_name,diff_method,mode,interface", qubit_device_and_diff_method)
@@ -67,7 +64,7 @@ class TestQNode:
 
         # gradients should work
         grad = jax.grad(circuit)(a)
-        assert isinstance(grad, jnp.DeviceArray)
+        assert isinstance(grad, jax.numpy.DeviceArray)
         assert grad.shape == ()
 
     def test_changing_trainability(self, dev_name, diff_method, mode, interface, mocker, tol):
@@ -76,8 +73,8 @@ class TestQNode:
         if diff_method != "parameter-shift":
             pytest.skip("Test only supports parameter-shift")
 
-        a = jnp.array(0.1)
-        b = jnp.array(0.2)
+        a = jax.numpy.array(0.1)
+        b = jax.numpy.array(0.2)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -123,9 +120,9 @@ class TestQNode:
     def test_classical_processing(self, dev_name, diff_method, mode, interface, tol):
         """Test classical processing within the quantum tape"""
         qml.disable_return()
-        a = jnp.array(0.1)
-        b = jnp.array(0.2)
-        c = jnp.array(0.3)
+        a = jax.numpy.array(0.1)
+        b = jax.numpy.array(0.2)
+        c = jax.numpy.array(0.3)
 
         dev = qml.device(dev_name, wires=1)
 
@@ -133,7 +130,7 @@ class TestQNode:
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
-            qml.RX(c + c**2 + jnp.sin(a), wires=0)
+            qml.RX(c + c**2 + jax.numpy.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = jax.grad(circuit, argnums=[0, 2])(a, b, c)
@@ -146,8 +143,8 @@ class TestQNode:
     def test_matrix_parameter(self, dev_name, diff_method, mode, interface, tol):
         """Test that the jax interface works correctly
         with a matrix parameter"""
-        U = jnp.array([[0, 1], [1, 0]])
-        a = jnp.array(0.1)
+        U = jax.numpy.array([[0, 1], [1, 0]])
+        a = jax.numpy.array(0.1)
 
         dev = qml.device(dev_name, wires=2)
 
@@ -179,8 +176,8 @@ class TestQNode:
                 return tape
 
         dev = qml.device(dev_name, wires=1)
-        a = jnp.array(0.1)
-        p = jnp.array([0.1, 0.2, 0.3])
+        a = jax.numpy.array(0.1)
+        p = jax.numpy.array([0.1, 0.2, 0.3])
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(a, p):
@@ -380,8 +377,8 @@ class TestVectorValuedQNode:
             pytest.skip("Adjoint does not support probs")
 
         dev = qml.device(dev_name, wires=2)
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
+        x = jax.numpy.array(0.543)
+        y = jax.numpy.array(-0.654)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(x, y):
@@ -418,8 +415,8 @@ class TestVectorValuedQNode:
             pytest.skip("Adjoint does not support probs")
 
         dev = qml.device(dev_name, wires=3)
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
+        x = jax.numpy.array(0.543)
+        y = jax.numpy.array(-0.654)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(x, y):
@@ -491,8 +488,8 @@ class TestVectorValuedQNode:
             pytest.skip("Adjoint does not support probs")
 
         dev = qml.device(dev_name, wires=2)
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
+        x = jax.numpy.array(0.543)
+        y = jax.numpy.array(-0.654)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(x, y):
@@ -553,8 +550,8 @@ class TestVectorValuedQNode:
             pytest.skip("Adjoint does not support probs")
 
         dev = qml.device(dev_name, wires=2)
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
+        x = jax.numpy.array(0.543)
+        y = jax.numpy.array(-0.654)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(x, y):
@@ -594,8 +591,8 @@ class TestVectorValuedQNode:
             pytest.skip("Adjoint does not support probs")
 
         dev = qml.device(dev_name, wires=2)
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
+        x = jax.numpy.array(0.543)
+        y = jax.numpy.array(-0.654)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(x, y):
@@ -663,12 +660,12 @@ class TestShotsIntegration:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert jnp.allclose(circuit(jnp.array(0.0)), 1)
+        assert jax.numpy.allclose(circuit(jax.numpy.array(0.0)), 1)
 
     def test_changing_shots(self, interface, mocker, tol):
         """Test that changing shots works on execution"""
         dev = qml.device("default.qubit", wires=2, shots=None)
-        a, b = jnp.array([0.543, -0.654])
+        a, b = jax.numpy.array([0.543, -0.654])
 
         @qnode(dev, diff_method=qml.gradients.param_shift, interface=interface)
         def circuit(a, b):
@@ -699,7 +696,7 @@ class TestShotsIntegration:
         """Test that temporarily setting the shots works
         for gradient computations"""
         dev = qml.device("default.qubit", wires=2, shots=1)
-        a, b = jnp.array([0.543, -0.654])
+        a, b = jax.numpy.array([0.543, -0.654])
 
         spy = mocker.spy(dev, "batch_execute")
 
@@ -719,7 +716,7 @@ class TestShotsIntegration:
     def test_update_diff_method(self, mocker, interface, tol):
         """Test that temporarily setting the shots updates the diff method"""
         dev = qml.device("default.qubit", wires=2, shots=100)
-        a, b = jnp.array([0.543, -0.654])
+        a, b = jax.numpy.array([0.543, -0.654])
 
         spy = mocker.spy(qml, "execute")
 
@@ -773,9 +770,9 @@ class TestQubitIntegration:
 
         assert isinstance(res, tuple)
 
-        assert isinstance(res[0], jnp.DeviceArray)
+        assert isinstance(res[0], jax.numpy.DeviceArray)
         assert res[0].shape == (10,)
-        assert isinstance(res[1], jnp.DeviceArray)
+        assert isinstance(res[1], jax.numpy.DeviceArray)
         assert res[1].shape == (10,)
 
     def test_counts(self, dev_name, diff_method, mode, interface):
@@ -820,7 +817,7 @@ class TestQubitIntegration:
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit2(data, weights):
-            qml.templates.AngleEmbedding(jnp.stack([data, 0.7]), wires=[0, 1])
+            qml.templates.AngleEmbedding(jax.numpy.stack([data, 0.7]), wires=[0, 1])
             Template(weights, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
@@ -828,14 +825,14 @@ class TestQubitIntegration:
             w1, w2 = weights
             c1 = circuit1(w1)
             c2 = circuit2(c1, w2)
-            return jnp.sum(c2) ** 2
+            return jax.numpy.sum(c2) ** 2
 
         w1 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=3)
         w2 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
 
         weights = [
-            jnp.array(np.random.random(w1)),
-            jnp.array(np.random.random(w2)),
+            jax.numpy.array(np.random.random(w1)),
+            jax.numpy.array(np.random.random(w2)),
         ]
 
         grad_fn = jax.grad(cost)
@@ -874,10 +871,10 @@ class TestQubitIntegrationHigherOrder:
             qml.RX(x[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        x = jnp.array([1.0, 2.0])
+        x = jax.numpy.array([1.0, 2.0])
         res = circuit(x)
         g = jax.grad(circuit)(x)
-        g2 = jax.grad(lambda x: jnp.sum(jax.grad(circuit)(x)))(x)
+        g2 = jax.grad(lambda x: jax.numpy.sum(jax.grad(circuit)(x)))(x)
 
         a, b = x
 
@@ -909,7 +906,7 @@ class TestQubitIntegrationHigherOrder:
             qml.RX(x[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        x = jnp.array([1.0, 2.0])
+        x = jax.numpy.array([1.0, 2.0])
         res = circuit(x)
 
         a, b = x
@@ -947,7 +944,7 @@ class TestQubitIntegrationHigherOrder:
             qml.RX(x[1], wires=0)
             return qml.probs(wires=0)
 
-        x = jnp.array([1.0, 2.0])
+        x = jax.numpy.array([1.0, 2.0])
         res = circuit(x)
 
         a, b = x
@@ -999,14 +996,14 @@ class TestQubitIntegrationHigherOrder:
         def cost_fn(x):
             return x @ jax.numpy.array(circuit(x))
 
-        x = jnp.array(
+        x = jax.numpy.array(
             [0.76, -0.87],
         )
         res = cost_fn(x)
 
         a, b = x
 
-        expected_res = x @ jnp.array([np.cos(a) * np.cos(b), np.cos(a) * np.cos(b)])
+        expected_res = x @ jax.numpy.array([np.cos(a) * np.cos(b), np.cos(a) * np.cos(b)])
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         grad_fn = jax.grad(cost_fn)
@@ -1050,8 +1047,8 @@ class TestQubitIntegrationHigherOrder:
             qml.RX(b, wires=0)
             return qml.probs(wires=0)
 
-        a = jnp.array(1.0)
-        b = jnp.array(2.0)
+        a = jax.numpy.array(1.0)
+        b = jax.numpy.array(2.0)
         res = circuit(a, b)
 
         expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
@@ -1100,8 +1097,8 @@ class TestQubitIntegrationHigherOrder:
 
         dev = qml.device(dev_name, wires=2)
 
-        x = jnp.array(0.543)
-        y = jnp.array(-0.654)
+        x = jax.numpy.array(0.543)
+        y = jax.numpy.array(-0.654)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(x, y):
@@ -1113,7 +1110,7 @@ class TestQubitIntegrationHigherOrder:
         def cost_fn(x, y):
             res = circuit(x, y)
             assert res.dtype is np.dtype("complex128")
-            probs = jnp.abs(res) ** 2
+            probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
         res = cost_fn(x, y)
@@ -1131,7 +1128,7 @@ class TestQubitIntegrationHigherOrder:
             pytest.skip("Adjoint does not support projectors")
 
         dev = qml.device(dev_name, wires=2)
-        P = jnp.array([1])
+        P = jax.numpy.array([1])
         x, y = 0.765, -0.654
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
@@ -1215,7 +1212,7 @@ class TestCV:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("interface", ["jax-python"])
+@pytest.mark.parametrize("interface", ["jax", "jax-python"])
 def test_adjoint_reuse_device_state(mocker, interface):
     """Tests that the jax interface reuses the device state for adjoint differentiation"""
     dev = qml.device("default.qubit", wires=1)
@@ -1265,8 +1262,8 @@ class TestTapeExpansion:
             return qml.expval(qml.PauliX(0))
 
         spy = mocker.spy(circuit.device, "batch_execute")
-        x = jnp.array(0.5)
-        y = jnp.array(0.7)
+        x = jax.numpy.array(0.5)
+        y = jax.numpy.array(0.7)
         circuit(x, y)
 
         spy = mocker.spy(circuit.gradient_fn, "transform_fn")
@@ -1300,9 +1297,9 @@ class TestTapeExpansion:
             qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
             return qml.expval(qml.Hamiltonian(coeffs, obs))
 
-        d = jnp.array([0.1, 0.2])
-        w = jnp.array([0.654, -0.734])
-        c = jnp.array([-0.6543, 0.24, 0.54])
+        d = jax.numpy.array([0.1, 0.2])
+        w = jax.numpy.array([0.654, -0.734])
+        c = jax.numpy.array([-0.6543, 0.24, 0.54])
 
         # test output
         res = circuit(d, w, c)
@@ -1357,9 +1354,9 @@ class TestTapeExpansion:
             H.compute_grouping()
             return qml.expval(H)
 
-        d = jnp.array([0.1, 0.2])
-        w = jnp.array([0.654, -0.734])
-        c = jnp.array([-0.6543, 0.24, 0.54])
+        d = jax.numpy.array([0.1, 0.2])
+        w = jax.numpy.array([0.654, -0.734])
+        c = jax.numpy.array([-0.6543, 0.24, 0.54])
 
         # test output
         res = circuit(d, w, c)
@@ -1391,3 +1388,687 @@ class TestTapeExpansion:
     #             -np.sin(d[1] + w[1]),
     #         ]
     #         assert np.allclose(grad2_w_c, expected, atol=0.1)
+
+
+qubit_device_and_diff_method_and_mode = [
+    ["default.qubit", "backprop", "forward"],
+    ["default.qubit", "finite-diff", "backward"],
+    ["default.qubit", "parameter-shift", "backward"],
+    ["default.qubit", "adjoint", "forward"],
+    ["default.qubit", "adjoint", "backward"],
+]
+
+jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
+
+
+@pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method_and_mode)
+@pytest.mark.parametrize("shots", [None, 10000])
+class TestReturn:
+    """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
+
+    def test_grad_single_measurement_param(self, dev_name, diff_method, mode, shots):
+        """For one measurement and one param, the gradient is a float."""
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=1, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = jax.numpy.array(0.1)
+
+        grad = jax.grad(circuit)(a)
+
+        assert isinstance(grad, jax.numpy.ndarray)
+        assert grad.shape == ()
+
+    def test_grad_single_measurement_multiple_param(self, dev_name, diff_method, mode, shots):
+        """For one measurement and multiple param, the gradient is a tuple of arrays."""
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=1, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = jax.numpy.array(0.1)
+        b = jax.numpy.array(0.2)
+
+        grad = jax.grad(circuit, argnums=[0, 1])(a, b)
+
+        assert isinstance(grad, tuple)
+        assert len(grad) == 2
+        assert grad[0].shape == ()
+        assert grad[1].shape == ()
+
+    def test_grad_single_measurement_multiple_param_array(self, dev_name, diff_method, mode, shots):
+        """For one measurement and multiple param as a single array params, the gradient is an array."""
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=1, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = jax.numpy.array([0.1, 0.2])
+
+        grad = jax.grad(circuit)(a)
+
+        assert isinstance(grad, jax.numpy.ndarray)
+        assert grad.shape == (2,)
+
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jacobian_single_measurement_param_probs(
+        self, dev_name, diff_method, mode, jacobian, shots
+    ):
+        """For a multi dimensional measurement (probs), check that a single array is returned with the correct
+        dimension"""
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.probs(wires=[0, 1])
+
+        a = jax.numpy.array(0.1)
+
+        jac = jacobian(circuit)(a)
+
+        assert isinstance(jac, jax.numpy.ndarray)
+        assert jac.shape == (4,)
+
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jacobian_single_measurement_probs_multiple_param(
+        self, dev_name, diff_method, mode, jacobian, shots
+    ):
+        """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
+        the correct dimension"""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.probs(wires=[0, 1])
+
+        a = jax.numpy.array(0.1)
+        b = jax.numpy.array(0.2)
+
+        jac = jacobian(circuit, argnums=[0, 1])(a, b)
+
+        assert isinstance(jac, tuple)
+
+        assert isinstance(jac[0], jax.numpy.ndarray)
+        assert jac[0].shape == (4,)
+
+        assert isinstance(jac[1], jax.numpy.ndarray)
+        assert jac[1].shape == (4,)
+
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jacobian_single_measurement_probs_multiple_param_single_array(
+        self, dev_name, diff_method, mode, jacobian, shots
+    ):
+        """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
+        the correct dimension"""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.probs(wires=[0, 1])
+
+        a = jax.numpy.array([0.1, 0.2])
+        jac = jacobian(circuit)(a)
+
+        assert isinstance(jac, jax.numpy.ndarray)
+        assert jac.shape == (4, 2)
+
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jacobian_expval_expval_multiple_params(
+        self, dev_name, diff_method, mode, jacobian, shots
+    ):
+        """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        par_0 = jax.numpy.array(0.1)
+        par_1 = jax.numpy.array(0.2)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2, mode=mode)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+
+        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
+
+        assert isinstance(jac, tuple)
+
+        assert isinstance(jac[0], tuple)
+        assert len(jac[0]) == 2
+        assert isinstance(jac[0][0], jax.numpy.ndarray)
+        assert jac[0][0].shape == ()
+        assert isinstance(jac[0][1], jax.numpy.ndarray)
+        assert jac[0][1].shape == ()
+
+        assert isinstance(jac[1], tuple)
+        assert len(jac[1]) == 2
+        assert isinstance(jac[1][0], jax.numpy.ndarray)
+        assert jac[1][0].shape == ()
+        assert isinstance(jac[1][1], jax.numpy.ndarray)
+        assert jac[1][1].shape == ()
+
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jacobian_expval_expval_multiple_params_array(
+        self, dev_name, diff_method, mode, jacobian, shots
+    ):
+        """The jacobian of multiple measurements with a multiple params array return a single array."""
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+
+        a = jax.numpy.array([0.1, 0.2])
+
+        jac = jacobian(circuit)(a)
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2  # measurements
+
+        assert isinstance(jac[0], jax.numpy.ndarray)
+        assert jac[0].shape == (2,)
+
+        assert isinstance(jac[1], jax.numpy.ndarray)
+        assert jac[1].shape == (2,)
+
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jacobian_var_var_multiple_params(self, dev_name, diff_method, mode, jacobian, shots):
+        """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of var.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        par_0 = jax.numpy.array(0.1)
+        par_1 = jax.numpy.array(0.2)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2, mode=mode)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
+
+        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2
+
+        assert isinstance(jac[0], tuple)
+        assert len(jac[0]) == 2
+        assert isinstance(jac[0][0], jax.numpy.ndarray)
+        assert jac[0][0].shape == ()
+        assert isinstance(jac[0][1], jax.numpy.ndarray)
+        assert jac[0][1].shape == ()
+
+        assert isinstance(jac[1], tuple)
+        assert len(jac[1]) == 2
+        assert isinstance(jac[1][0], jax.numpy.ndarray)
+        assert jac[1][0].shape == ()
+        assert isinstance(jac[1][1], jax.numpy.ndarray)
+        assert jac[1][1].shape == ()
+
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jacobian_var_var_multiple_params_array(
+        self, dev_name, diff_method, mode, jacobian, shots
+    ):
+        """The jacobian of multiple measurements with a multiple params array return a single array."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of var.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
+
+        a = jax.numpy.array([0.1, 0.2])
+
+        jac = jacobian(circuit)(a)
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2  # measurements
+
+        assert isinstance(jac[0], jax.numpy.ndarray)
+        assert jac[0].shape == (2,)
+
+        assert isinstance(jac[1], jax.numpy.ndarray)
+        assert jac[1].shape == (2,)
+
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jacobian_multiple_measurement_single_param(
+        self, dev_name, diff_method, mode, jacobian, shots
+    ):
+        """The jacobian of multiple measurements with a single params return an array."""
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        a = jax.numpy.array(0.1)
+
+        jac = jacobian(circuit)(a)
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2
+
+        assert isinstance(jac[0], jax.numpy.ndarray)
+        assert jac[0].shape == ()
+
+        assert isinstance(jac[1], jax.numpy.ndarray)
+        assert jac[1].shape == (4,)
+
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jacobian_multiple_measurement_multiple_param(
+        self, dev_name, diff_method, mode, jacobian, shots
+    ):
+        """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        a = np.array(0.1, requires_grad=True)
+        b = np.array(0.2, requires_grad=True)
+
+        jac = jacobian(circuit, argnums=[0, 1])(a, b)
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2
+
+        assert isinstance(jac[0], tuple)
+        assert len(jac[0]) == 2
+        assert isinstance(jac[0][0], jax.numpy.ndarray)
+        assert jac[0][0].shape == ()
+        assert isinstance(jac[0][1], jax.numpy.ndarray)
+        assert jac[0][1].shape == ()
+
+        assert isinstance(jac[1], tuple)
+        assert len(jac[1]) == 2
+        assert isinstance(jac[1][0], jax.numpy.ndarray)
+        assert jac[1][0].shape == (4,)
+        assert isinstance(jac[1][1], jax.numpy.ndarray)
+        assert jac[1][1].shape == (4,)
+
+    @pytest.mark.parametrize("jacobian", jacobian_fn)
+    def test_jacobian_multiple_measurement_multiple_param_array(
+        self, dev_name, diff_method, mode, jacobian, shots
+    ):
+        """The jacobian of multiple measurements with a multiple params array return a single array."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a):
+            qml.RY(a[0], wires=0)
+            qml.RX(a[1], wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        a = jax.numpy.array([0.1, 0.2])
+
+        jac = jacobian(circuit)(a)
+
+        assert isinstance(jac, tuple)
+        assert len(jac) == 2  # measurements
+
+        assert isinstance(jac[0], jax.numpy.ndarray)
+        assert jac[0].shape == (2,)
+
+        assert isinstance(jac[1], jax.numpy.ndarray)
+        assert jac[1].shape == (4, 2)
+
+    def test_hessian_expval_multiple_params(self, dev_name, diff_method, mode, shots):
+        """The hessian of single a measurement with multiple params return a tuple of arrays."""
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        par_0 = jax.numpy.array(0.1)
+        par_1 = jax.numpy.array(0.2)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2, mode=mode)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+
+        assert isinstance(hess[0], tuple)
+        assert len(hess[0]) == 2
+        assert isinstance(hess[0][0], jax.numpy.ndarray)
+        assert hess[0][0].shape == ()
+        assert hess[0][1].shape == ()
+
+        assert isinstance(hess[1], tuple)
+        assert len(hess[1]) == 2
+        assert isinstance(hess[1][0], jax.numpy.ndarray)
+        assert hess[1][0].shape == ()
+        assert hess[1][1].shape == ()
+
+    def test_hessian_expval_multiple_param_array(self, dev_name, diff_method, mode, shots):
+        """The hessian of single measurement with a multiple params array return a single array."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        params = jax.numpy.array([0.1, 0.2])
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2, mode=mode)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        hess = jax.hessian(circuit)(params)
+
+        assert isinstance(hess, jax.numpy.ndarray)
+        assert hess.shape == (2, 2)
+
+    def test_hessian_var_multiple_params(self, dev_name, diff_method, mode, shots):
+        """The hessian of single a measurement with multiple params return a tuple of arrays."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        par_0 = jax.numpy.array(0.1)
+        par_1 = jax.numpy.array(0.2)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2, mode=mode)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+
+        assert isinstance(hess[0], tuple)
+        assert len(hess[0]) == 2
+        assert isinstance(hess[0][0], jax.numpy.ndarray)
+        assert hess[0][0].shape == ()
+        assert hess[0][1].shape == ()
+
+        assert isinstance(hess[1], tuple)
+        assert len(hess[1]) == 2
+        assert isinstance(hess[1][0], jax.numpy.ndarray)
+        assert hess[1][0].shape == ()
+        assert hess[1][1].shape == ()
+
+    def test_hessian_var_multiple_param_array(self, dev_name, diff_method, mode, shots):
+        """The hessian of single measurement with a multiple params array return a single array."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        params = jax.numpy.array([0.1, 0.2])
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2, mode=mode)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+        hess = jax.hessian(circuit)(params)
+
+        assert isinstance(hess, jax.numpy.ndarray)
+        assert hess.shape == (2, 2)
+
+    def test_hessian_probs_expval_multiple_params(self, dev_name, diff_method, mode, shots):
+        """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+        dev = qml.device(dev_name, wires=2, shots=shots)
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        par_0 = jax.numpy.array(0.1)
+        par_1 = jax.numpy.array(0.2)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2, mode=mode)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+
+        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+
+        assert isinstance(hess[0], tuple)
+        assert len(hess[0]) == 2
+        assert isinstance(hess[0][0], tuple)
+        assert len(hess[0][0]) == 2
+        assert isinstance(hess[0][0][0], jax.numpy.ndarray)
+        assert hess[0][0][0].shape == ()
+        assert isinstance(hess[0][0][1], jax.numpy.ndarray)
+        assert hess[0][0][1].shape == ()
+        assert isinstance(hess[0][1], tuple)
+        assert len(hess[0][1]) == 2
+        assert isinstance(hess[0][1][0], jax.numpy.ndarray)
+        assert hess[0][1][0].shape == ()
+        assert isinstance(hess[0][1][1], jax.numpy.ndarray)
+        assert hess[0][1][1].shape == ()
+
+        assert isinstance(hess[1], tuple)
+        assert len(hess[1]) == 2
+        assert isinstance(hess[1][0], tuple)
+        assert len(hess[1][0]) == 2
+        assert isinstance(hess[1][0][0], jax.numpy.ndarray)
+        assert hess[1][0][0].shape == (4,)
+        assert isinstance(hess[1][0][1], jax.numpy.ndarray)
+        assert hess[1][0][1].shape == (4,)
+        assert isinstance(hess[1][1], tuple)
+        assert len(hess[1][1]) == 2
+        assert isinstance(hess[1][1][0], jax.numpy.ndarray)
+        assert hess[1][1][0].shape == (4,)
+        assert isinstance(hess[1][1][1], jax.numpy.ndarray)
+        assert hess[1][1][1].shape == (4,)
+
+    def test_hessian_expval_probs_multiple_param_array(self, dev_name, diff_method, mode, shots):
+        """The hessian of multiple measurements with a multiple param array return a single array."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        params = jax.numpy.array([0.1, 0.2])
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2, mode=mode)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+
+        hess = jax.hessian(circuit)(params)
+
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+
+        assert isinstance(hess[0], jax.numpy.ndarray)
+        assert hess[0].shape == (2, 2)
+
+        assert isinstance(hess[1], jax.numpy.ndarray)
+        assert hess[1].shape == (4, 2, 2)
+
+    def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, mode, shots):
+        """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        par_0 = qml.numpy.array(0.1)
+        par_1 = qml.numpy.array(0.2)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2, mode=mode)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+
+        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+
+        assert isinstance(hess[0], tuple)
+        assert len(hess[0]) == 2
+        assert isinstance(hess[0][0], tuple)
+        assert len(hess[0][0]) == 2
+        assert isinstance(hess[0][0][0], jax.numpy.ndarray)
+        assert hess[0][0][0].shape == ()
+        assert isinstance(hess[0][0][1], jax.numpy.ndarray)
+        assert hess[0][0][1].shape == ()
+        assert isinstance(hess[0][1], tuple)
+        assert len(hess[0][1]) == 2
+        assert isinstance(hess[0][1][0], jax.numpy.ndarray)
+        assert hess[0][1][0].shape == ()
+        assert isinstance(hess[0][1][1], jax.numpy.ndarray)
+        assert hess[0][1][1].shape == ()
+
+        assert isinstance(hess[1], tuple)
+        assert len(hess[1]) == 2
+        assert isinstance(hess[1][0], tuple)
+        assert len(hess[1][0]) == 2
+        assert isinstance(hess[1][0][0], jax.numpy.ndarray)
+        assert hess[1][0][0].shape == (4,)
+        assert isinstance(hess[1][0][1], jax.numpy.ndarray)
+        assert hess[1][0][1].shape == (4,)
+        assert isinstance(hess[1][1], tuple)
+        assert len(hess[1][1]) == 2
+        assert isinstance(hess[1][1][0], jax.numpy.ndarray)
+        assert hess[1][1][0].shape == (4,)
+        assert isinstance(hess[1][1][1], jax.numpy.ndarray)
+        assert hess[1][1][1].shape == (4,)
+
+    def test_hessian_var_probs_multiple_param_array(self, dev_name, diff_method, mode, shots):
+        """The hessian of multiple measurements with a multiple param array return a single array."""
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because second order diff.")
+        if shots is not None and diff_method in ("backprop", "adjoint"):
+            pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        params = jax.numpy.array([0.1, 0.2])
+
+        @qnode(dev, interface="jax", diff_method=diff_method, max_diff=2, mode=mode)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+
+        hess = jax.hessian(circuit)(params)
+
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+
+        assert isinstance(hess[0], jax.numpy.ndarray)
+        assert hess[0].shape == (2, 2)
+
+        assert isinstance(hess[1], jax.numpy.ndarray)
+        assert hess[1].shape == (4, 2, 2)
