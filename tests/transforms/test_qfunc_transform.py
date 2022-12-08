@@ -323,6 +323,15 @@ class TestQFuncTransforms:
 
         assert original_fn is decorated_transform
 
+    def test_make_tape_is_deprecated(self):
+        """Test that make_tape is deprecated and points users to make_qscript."""
+
+        def circuit(x):
+            qml.RX(x, wires=0)
+
+        with pytest.warns(UserWarning, match="qml.tape.make_qscript"):
+            tape = qml.transforms.make_tape(circuit)(0.1)
+
 
 ############################################
 # Test transform, ansatz, and qfunc function

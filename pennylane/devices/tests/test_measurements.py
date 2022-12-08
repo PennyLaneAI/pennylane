@@ -19,6 +19,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.measurements import MeasurementTransform, SampleMeasurement, StateMeasurement
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -1476,3 +1477,175 @@ class TestTensorVar:
             - (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
         ) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
+
+
+class TestSampleMeasurement:
+    """Tests for the SampleMeasurement class."""
+
+    def test_custom_sample_measurement(self, device):
+        """Test the execution of a custom sampled measurement."""
+
+        dev = device(2)
+
+        if dev.shots is None:
+            pytest.skip("Shots must be specified in the device to compute a sampled measurement.")
+
+        class MyMeasurement(SampleMeasurement):
+            """Dummy sampled measurement."""
+
+            def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
+                return qml.math.sum(samples[..., self.wires])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+
+        assert qml.math.allequal(circuit(), [dev.shots, 0])
+
+    def test_sample_measurement_without_shots(self, device):
+        """Test that executing a sampled measurement with ``shots=None`` raises an error."""
+        dev = device(2)
+
+        if dev.shots is not None:
+            pytest.skip("If shots!=None no error is raised.")
+
+        class MyMeasurement(SampleMeasurement):
+            """Dummy sampled measurement."""
+
+            def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
+                return qml.math.sum(samples[..., self.wires])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+
+        with pytest.raises(
+            ValueError, match="Shots must be specified in the device to compute the measurement "
+        ):
+            circuit()
+
+    def test_method_overriden_by_device(self, device):
+        """Test that the device can override a measurement process."""
+        dev = device(2)
+
+        class MyMeasurement(SampleMeasurement):
+            """Dummy sampled measurement."""
+
+            method_name = "test_method"
+
+            def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
+                return qml.math.sum(samples[..., self.wires])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+
+        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
+
+        assert qml.math.allequal(circuit(), [2, 2])
+
+
+class TestStateMeasurement:
+    """Tests for the SampleMeasurement class."""
+
+    def test_custom_state_measurement(self, device):
+        """Test the execution of a custom state measurement."""
+        dev = device(2)
+
+        class MyMeasurement(StateMeasurement):
+            """Dummy state measurement."""
+
+            def process_state(self, state, wire_order):
+                return qml.math.sum(state)
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        assert circuit() == 1
+
+    def test_sample_measurement_with_shots(self, device):
+        """Test that executing a state measurement with shots raises a warning."""
+        dev = device(2)
+
+        if dev.shots is None:
+            pytest.skip("If shots=None no warning is raised.")
+
+        class MyMeasurement(StateMeasurement):
+            """Dummy state measurement."""
+
+            def process_state(self, state, wire_order):
+                return qml.math.sum(state)
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        with pytest.warns(
+            UserWarning,
+            match="Requested measurement MyMeasurement with finite shots",
+        ):
+            circuit()
+
+    def test_method_overriden_by_device(self, device):
+        """Test that the device can override a measurement process."""
+        dev = device(2)
+
+        class MyMeasurement(StateMeasurement):
+            """Dummy state measurement."""
+
+            method_name = "test_method"
+
+            def process_state(self, state, wire_order):
+                return qml.math.sum(state)
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
+
+        assert circuit() == 2
+
+
+class TestCustomMeasurement:
+    """Tests for the CustomMeasurement class."""
+
+    def test_custom_measurement(self, device):
+        """Test the execution of a custom measurement."""
+        dev = device(2)
+
+        class MyMeasurement(MeasurementTransform):
+            """Dummy measurement transform."""
+
+            def process(self, qscript, device):
+                return {device.shots: len(qscript)}
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        assert circuit() == {dev.shots: len(circuit.tape)}
+
+    def test_method_overriden_by_device(self, device):
+        """Test that the device can override a measurement process."""
+        dev = device(2)
+
+        class MyMeasurement(MeasurementTransform):
+            """Dummy measurement transform."""
+
+            method_name = "test_method"
+
+            def process(self, qscript, device):
+                return {device.shots: len(qscript)}
+
+        @qml.qnode(dev)
+        def circuit():
+            return MyMeasurement()
+
+        circuit.device.test_method = lambda qscript: 2
+
+        assert circuit() == 2
