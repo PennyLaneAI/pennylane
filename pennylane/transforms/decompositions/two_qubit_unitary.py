@@ -292,9 +292,9 @@ def _decomposition_0_cnots(U, wires):
      -╰U- = -B-
     """
     A, B = _su2su2_to_tensor_products(U)
-    # TODO remove the indexing
-    A_ops = zyz_decomposition(A[0], wires[0])
-    B_ops = zyz_decomposition(B[0], wires[1])
+
+    A_ops = zyz_decomposition(A, wires[0])
+    B_ops = zyz_decomposition(B, wires[1])
     return A_ops + B_ops
 
 
@@ -352,10 +352,10 @@ def _decomposition_1_cnot(U, wires):
 
     # Recover the operators in the decomposition; note that because of the
     # initial SWAP, we exchange the order of A and B
-    A_ops = zyz_decomposition(A[0], wires[1])
-    B_ops = zyz_decomposition(B[0], wires[0])
-    C_ops = zyz_decomposition(C[0], wires[0])
-    D_ops = zyz_decomposition(D[0], wires[1])
+    A_ops = zyz_decomposition(A, wires[1])
+    B_ops = zyz_decomposition(B, wires[0])
+    C_ops = zyz_decomposition(C, wires[0])
+    D_ops = zyz_decomposition(D, wires[1])
 
     return C_ops + D_ops + [qml.CNOT(wires=wires)] + A_ops + B_ops
 
@@ -437,11 +437,10 @@ def _decomposition_2_cnots(U, wires):
     # Now we find the A, B, C, D in SU(2), and return the decomposition
     A, B, C, D = _extract_su2su2_prefactors(U, V.reshape(-1, 4, 4))
 
-    # TODO
-    A_ops = zyz_decomposition(A[0], wires[0])
-    B_ops = zyz_decomposition(B[0], wires[1])
-    C_ops = zyz_decomposition(C[0], wires[0])
-    D_ops = zyz_decomposition(D[0], wires[1])
+    A_ops = zyz_decomposition(A, wires[0])
+    B_ops = zyz_decomposition(B, wires[1])
+    C_ops = zyz_decomposition(C, wires[0])
+    D_ops = zyz_decomposition(D, wires[1])
 
     return C_ops + D_ops + interior_decomp + A_ops + B_ops
 
@@ -467,7 +466,8 @@ def _decomposition_3_cnots(U, wires):
     evs, _ = math.linalg.eig(gammaU)
 
     # We will sort the angles so that results are consistent across interfaces.
-    angles = math.sort([math.angle(ev) for ev in evs])
+    # angles = math.sort([math.angle(ev) for ev in evs])
+    angles = math.sort(math.angle(evs))
 
     x, y, z = angles[:, 0], angles[:, 1], angles[:, 2]
 
@@ -504,9 +504,9 @@ def _decomposition_3_cnots(U, wires):
 
     V_mats = [CNOT10, math.kron(RZd, RYb), CNOT01, math.kron(math.eye(2), RYa), CNOT10, SWAP]
 
-    V = math.convert_like(math.eye(4), U)[None, :, :]
+    V = math.cast_like(math.convert_like(math.eye(4), U), U)[None, :, :]
     for mat in V_mats:
-        batched_mat = math.cast_like(mat, U).reshape(-1, 4, 4)
+        batched_mat = math.cast_like(math.convert_like(mat, U), U).reshape(-1, 4, 4)
         V = batched_mat @ V
 
     # Now we need to find the four SU(2) operations A, B, C, D
@@ -525,10 +525,10 @@ def _decomposition_3_cnots(U, wires):
     # -╭U- = --C--╭X-RZ(d)-╭C-------╭X--B--
     # -╰U- = --D--╰C-RZ(b)-╰X-RY(a)-╰C--A--
 
-    A_ops = zyz_decomposition(A[0], wires[1])
-    B_ops = zyz_decomposition(B[0], wires[0])
-    C_ops = zyz_decomposition(C[0], wires[0])
-    D_ops = zyz_decomposition(D[0], wires[1])
+    A_ops = zyz_decomposition(A, wires[1])
+    B_ops = zyz_decomposition(B, wires[0])
+    C_ops = zyz_decomposition(C, wires[0])
+    D_ops = zyz_decomposition(D, wires[1])
 
     # Return the full decomposition
     return C_ops + D_ops + interior_decomp + A_ops + B_ops

@@ -171,12 +171,6 @@ class QubitUnitary(Operation):
             return qml.transforms.decompositions.zyz_decomposition(U, Wires(wires)[0])
 
         if shape_without_batch_dim == (4, 4):
-            # TODO[dwierichs]: Implement decomposition of broadcasted unitary
-            if is_batched:
-                raise DecompositionUndefinedError(
-                    "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
-                )
-
             return qml.transforms.two_qubit_decomposition(U, Wires(wires))
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
