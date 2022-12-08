@@ -59,7 +59,7 @@ try:  # Validate if MPI is available
         return tuple(results)
 
     _BACKENDS["mpi"] = _mpi_execution
-except:
+except ImportError:
     pass
 
 try:  # Validate if Ray is available
@@ -76,7 +76,7 @@ try:  # Validate if Ray is available
         return tuple(ray.get(futures))
 
     _BACKENDS["ray"] = _ray_execution
-except:
+except ImportError:
     pass
 
 
@@ -111,9 +111,9 @@ class PythonDevice(AbstractDevice):
 
         if self.backend == "serial":
             return tuple(self.execute(qs) for qs in qscripts)
-        else:
-            executor = _BACKENDS[self.backend]
-            return executor(qscripts)
+
+        executor = _BACKENDS[self.backend]
+        return executor(qscripts)
 
     def preprocess(
         self, qscript: Union[QuantumScript, Sequence[QuantumScript]], execution_config=None
