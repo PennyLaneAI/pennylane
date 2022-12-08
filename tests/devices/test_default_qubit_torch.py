@@ -198,16 +198,6 @@ def test_analytic_deprecation():
         qml.device("default.qubit.torch", wires=1, shots=1, analytic=True)
 
 
-@pytest.mark.torch
-@pytest.mark.parametrize("torch_device", torch_devices)
-def test_conj_tensor(device, torch_device):
-    """Test the conj method of the device."""
-    dev = device(wires=4, torch_device=torch_device)
-    tensor = torch.tensor([0.3j], dtype=torch.complex128)
-    exp = -1 * tensor
-    assert torch.allclose(dev._conj(tensor), exp)
-
-
 #####################################################
 # Helper Method Test
 #####################################################
@@ -327,7 +317,7 @@ class TestApply:
         dev = device(wires=2, torch_device=torch_device)
         state = torch.tensor([0, 1])
 
-        with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires"):
+        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
             dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
 
     @pytest.mark.parametrize(
@@ -499,16 +489,10 @@ class TestApply:
         state = init_state(1, torch_device=torch_device)
 
         diag = torch.tensor(
-            [-1.0 + 1j, 1.0 + 1j],
-            requires_grad=True,
-            dtype=torch.complex128,
-            device=torch_device,
+            [-1.0 + 1j, 1.0 + 1j], requires_grad=True, dtype=torch.complex128, device=torch_device
         ) / math.sqrt(2)
 
-        queue = [
-            qml.QubitStateVector(state, wires=0),
-            qml.DiagonalQubitUnitary(diag, wires=0),
-        ]
+        queue = [qml.QubitStateVector(state, wires=0), qml.DiagonalQubitUnitary(diag, wires=0)]
         dev.apply(queue)
 
         res = dev.state
@@ -521,10 +505,7 @@ class TestApply:
         state = init_state(1, torch_device=torch_device)
 
         diag = torch.tensor(
-            [-1.0 + 1j, 1.0 + 1j],
-            requires_grad=True,
-            dtype=torch.complex128,
-            device=torch_device,
+            [-1.0 + 1j, 1.0 + 1j], requires_grad=True, dtype=torch.complex128, device=torch_device
         ) / math.sqrt(2)
 
         queue = [
@@ -1106,10 +1087,7 @@ class TestExpval:
         dev = device(wires=2, torch_device=torch_device)
 
         Hermitian_mat = torch.tensor(
-            [
-                [1.02789352, 1.61296440 - 0.3498192j],
-                [1.61296440 + 0.3498192j, 1.23920938 + 0j],
-            ],
+            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]],
             dtype=torch.complex128,
             device=torch_device,
         )
@@ -1383,10 +1361,7 @@ class TestExpval:
         phi = phi.to(device=torch_device)
 
         A = torch.tensor(
-            [
-                [1.02789352, 1.61296440 - 0.3498192j],
-                [1.61296440 + 0.3498192j, 1.23920938 + 0j],
-            ],
+            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]],
             dtype=torch.complex128,
         )
         A = A.to(device=torch_device)
@@ -1418,10 +1393,7 @@ class TestExpval:
         phi = phi.to(device=torch_device)
 
         A = torch.tensor(
-            [
-                [1.02789352, 1.61296440 - 0.3498192j],
-                [1.61296440 + 0.3498192j, 1.23920938 + 0j],
-            ],
+            [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]],
             dtype=torch.complex128,
         )
         A = A.to(device=torch_device)
@@ -2254,10 +2226,7 @@ class TestPassthruIntegration:
         lam = torch.tensor(0.654, dtype=torch.float64, device=torch_device)
 
         params = torch.tensor(
-            [theta, phi, lam],
-            dtype=torch.float64,
-            requires_grad=True,
-            device=torch_device,
+            [theta, phi, lam], dtype=torch.float64, requires_grad=True, device=torch_device
         )
 
         res = cost(params)
@@ -2345,8 +2314,7 @@ class TestSamples:
         assert torch.is_tensor(res)
         assert res.shape == (shots,)
         assert torch.allclose(
-            torch.unique(res),
-            torch.tensor([-1, 1], dtype=torch.int64, device=torch_device),
+            torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64, device=torch_device)
         )
 
     def test_estimating_marginal_probability(self, device, torch_device, tol):
@@ -2508,11 +2476,7 @@ class TestHighLevelIntegration:
         """Test that a PassthruQNode default.qubit.torch works with QNodeCollections."""
         dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
 
-        obs_list = [
-            qml.PauliX(0) @ qml.PauliY(1),
-            qml.PauliZ(0),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-        ]
+        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
         qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
 
         assert qnodes.interface == "torch"
