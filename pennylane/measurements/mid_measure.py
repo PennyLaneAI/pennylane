@@ -105,7 +105,7 @@ class MeasurementValue(Generic[T]):
     Measurements on a single qubit in the computational basis are assumed.
 
     Args:
-        measurement_ids (list of str): The id of the measurement that this object depends on.
+        measurement_ids (list[str]): The id of the measurement that this object depends on.
         processing_fn (callable): A lazily transformation applied to the measurement values.
     """
 
