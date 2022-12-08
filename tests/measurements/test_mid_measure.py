@@ -274,6 +274,30 @@ class TestMeasurementValueManipulation:
         assert compared[2] is False
         assert compared[3] is True
 
+    def test_non_equality_with_scalar(self):
+        """Test the __ne__ dunder method between a MeasurementValue and an integer."""
+        m = MeasurementValue(["m"], lambda v: v)
+        m_eq = m != 0
+        assert m_eq[0] is False  # confirming value is actually eq to True, not just truthy
+        assert m_eq[1] is True
+
+    def test_non_equality_with_scalar_opposite(self):
+        """Test the __ne__ dunder method between a MeasurementValue and an integer."""
+        m = MeasurementValue(["m"], lambda v: v)
+        m_eq = m != 1
+        assert m_eq[0] is True
+        assert m_eq[1] is False
+
+    def test_non_eq_with_other_measurement_value(self):
+        """Test the __ne__ dunder method between two MeasurementValues."""
+        m1 = MeasurementValue(["m1"], lambda v: v)
+        m2 = MeasurementValue(["m2"], lambda v: v)
+        compared = m1 != m2
+        assert compared[0] is False
+        assert compared[1] is True
+        assert compared[2] is True
+        assert compared[3] is False
+
     def test_merge_measurements_values_dependant_on_same_measurement(self):
         """Test that the _merge operation does not create more than 2 branches when combining two MeasurementValues
         that are based on the same measurement."""
