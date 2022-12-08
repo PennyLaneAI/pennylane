@@ -768,7 +768,7 @@ class TestExpressionConditionals:
         assert np.allclose(normal_probs, cond_probs)
 
     def test_composed_conditions(self):
-        """test that a complex nested expression gets resolved correctly to the corresponding correct control gates"""
+        """Test that a complex nested expression gets resolved correctly to the corresponding correct control gates."""
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
