@@ -14,6 +14,5 @@ Overview
 .. automodapi:: pennylane.queuing
     :no-heading:
     :include-all-objects:
-    :no-inheritance-diagram:
     :no-inherited-members:
     :skip: contextmanager, OrderedDict

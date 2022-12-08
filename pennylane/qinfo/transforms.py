@@ -14,10 +14,11 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
-import pennylane as qml
 
-from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
+import pennylane as qml
 from pennylane.devices import DefaultQubit
+from pennylane.measurements import StateMP
+from pennylane.transforms import adjoint_metric_tensor, batch_transform, metric_tensor
 
 
 def reduced_dm(qnode, wires):
@@ -29,8 +30,8 @@ def reduced_dm(qnode, wires):
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        func: Function which wraps the QNode and accepts the same arguments. When called, this function will
-        return the density matrix.
+        func: Function which wraps the QNode and accepts the same arguments. When called,
+        this function will return the density matrix.
 
     **Example**
 
@@ -53,9 +54,9 @@ def reduced_dm(qnode, wires):
 
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
-        return_type = qnode.tape.observables[0].return_type
-        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
-            raise ValueError("The qfunc return type needs to be a state.")
+        measurements = qnode.tape.measurements
+        if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
+            raise ValueError("The qfunc measurement needs to be State.")
 
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
@@ -85,7 +86,8 @@ def purity(qnode, wires):
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        A function that computes the purity of the wrapped circuit.
+        function: A function that computes the purity of the wrapped circuit and accepts the same
+        arguments.
 
     **Example**
 
@@ -121,9 +123,9 @@ def purity(qnode, wires):
         # Construct tape
         qnode.construct(args, kwargs)
 
-        # Check return type
-        return_type = qnode.tape.observables[0].return_type
-        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+        # Check measurement
+        measurements = qnode.tape.measurements
+        if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
             raise ValueError("The qfunc return type needs to be a state.")
 
         state_built = qnode(*args, **kwargs)
@@ -144,7 +146,8 @@ def vn_entropy(qnode, wires, base=None):
         base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
     Returns:
-        float: Von Neumann entropy of the considered subsystem.
+        function: A function that computes the Von Neumann entropy of the considered subsystem
+        for the wrapped circuit and accepts the same arguments.
 
     **Example**
 
@@ -176,8 +179,8 @@ def vn_entropy(qnode, wires, base=None):
         # If pure state directly return 0.
         if len(wires) == len(qnode.device.wires):
             qnode.construct(args, kwargs)
-            return_type = qnode.tape.observables[0].return_type
-            if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+            measurements = qnode.tape.measurements
+            if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
                 raise ValueError("The qfunc return type needs to be a state.")
             density_matrix = qnode(*args, **kwargs)
             if density_matrix.shape == (density_matrix.shape[0],):
@@ -212,8 +215,8 @@ def mutual_info(qnode, wires0, wires1, base=None):
         base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
-        func: A function with the same arguments as the QNode that returns
-        the mutual information from its output state.
+        function: A function that computes the mutual information from the output state
+        of the QNode and accepts the same arguments.
 
     **Example**
 
@@ -302,7 +305,8 @@ def _compute_cfim(p, dp):
 
 @batch_transform
 def _make_probs(tape, wires=None, post_processing_fn=None):
-    """Ignores the return types of any qnode and creates a new one that outputs probabilities"""
+    """Ignores the return types of the provided circuit and creates a new one
+    that outputs probabilities"""
     qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(wires=wires or tape.wires)])
 
     if post_processing_fn is None:
@@ -520,7 +524,7 @@ def quantum_fisher(qnode, *args, **kwargs):
         *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
 
     Returns:
-        func: The function that computes the quantum fisher information matrix.
+        func: A function that computes the quantum fisher information matrix.
 
     .. note::
 

@@ -67,7 +67,7 @@ class TestDecomposition:
             target_wires = [0]
             estimation_wires = range(1, wires)
 
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 # We want to prepare an eigenstate of RX, in this case |+>
                 qml.Hadamard(wires=target_wires)
 
@@ -76,6 +76,7 @@ class TestDecomposition:
                 )
                 qml.probs(estimation_wires)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
 
             res = dev.execute(tape).flatten()
@@ -116,7 +117,7 @@ class TestDecomposition:
             target_wires = [0, 1]
             estimation_wires = range(2, wires)
 
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 # We want to prepare an eigenstate of RX, in this case |+>
                 qml.QubitStateVector(state, wires=target_wires)
 
@@ -125,6 +126,7 @@ class TestDecomposition:
                 )
                 qml.probs(estimation_wires)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
             res = dev.execute(tape).flatten()
 

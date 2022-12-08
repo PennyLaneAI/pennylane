@@ -115,10 +115,11 @@ def test_custom_op_with_matrix():
         def compute_matrix(self):
             return np.eye(2)
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         DummyOp(0)
         qml.state()
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     dev = qml.device("default.qubit", wires=1)
     assert qml.math.allclose(dev.execute(tape), np.array([1, 0]))
 
@@ -2070,9 +2071,10 @@ class TestWiresIntegration:
         """Tests that an exception is raised when wires not present on the device are adressed."""
         dev = qml.device("default.qubit", wires=["a", "b"])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.5, wires="c")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(WireError, match="Did not find some of the wires"):
             dev.execute(tape)
 

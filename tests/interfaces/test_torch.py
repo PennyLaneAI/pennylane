@@ -36,11 +36,12 @@ class TestTorchExecuteUnitTests:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute(
             [tape],
             dev,
@@ -61,11 +62,12 @@ class TestTorchExecuteUnitTests:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with mode='forward'"
         ):
@@ -79,11 +81,12 @@ class TestTorchExecuteUnitTests:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute(
             [tape],
             dev,
@@ -103,11 +106,12 @@ class TestTorchExecuteUnitTests:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute(
             [tape],
             dev,
@@ -128,11 +132,12 @@ class TestTorchExecuteUnitTests:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute(
             [tape],
             dev,
@@ -159,11 +164,12 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces, "cache_execute")
 
         def cost(a, cachesize):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
                 [tape], dev, gradient_fn=param_shift, cachesize=cachesize, interface="torch"
             )[0][0, 0]
@@ -183,11 +189,12 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces, "cache_execute")
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="torch")[0][
                 0, 0
             ]
@@ -206,11 +213,12 @@ class TestCaching:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="torch")[0][
                 0, 0
             ]
@@ -238,7 +246,7 @@ class TestCaching:
         N = len(params)
 
         def cost(x, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
 
@@ -248,6 +256,7 @@ class TestCaching:
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
                 [tape], dev, gradient_fn=param_shift, cache=cache, interface="torch", max_diff=2
             )[0]
@@ -291,13 +300,14 @@ class TestCaching:
         params = torch.tensor([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
                 [tape],
                 dev,
@@ -382,16 +392,18 @@ class TestTorchExecuteIntegration:
         a = torch.tensor(0.1, requires_grad=True, device=torch_device)
         b = torch.tensor(0.2, requires_grad=False, device=torch_device)
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         res = execute([tape1, tape2], dev, **execute_kwargs)
 
         assert len(res) == 2
@@ -403,19 +415,21 @@ class TestTorchExecuteIntegration:
         a = torch.tensor(0.1, requires_grad=True, dtype=torch.float64, device=torch_device)
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, **execute_kwargs)[0]
         res.backward()
 
         # compare to backprop gradient
         def cost(a):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             dev = qml.device("default.qubit.autograd", wires=2)
             return dev.batch_execute([tape])[0]
 
@@ -432,7 +446,7 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RZ(torch.tensor(0.543, device=torch_device), wires=0)
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -440,6 +454,7 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, **execute_kwargs)[0]
         assert tape.trainable_params == [1, 2]
 
@@ -469,19 +484,22 @@ class TestTorchExecuteIntegration:
         params = torch.tensor([0.1, 0.2], requires_grad=True, device=torch_device)
         x, y = params.detach()
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.Hadamard(0)
             qml.expval(qml.PauliX(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RY(0.5, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape3:
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        with qml.queuing.AnnotatedQueue() as q3:
             qml.RY(params[0], wires=0)
             qml.RX(params[1], wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape3 = qml.tape.QuantumScript.from_queue(q3)
         res = sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
         expected = torch.tensor(1 + np.cos(0.5), dtype=res.dtype) + torch.cos(x) * torch.cos(y)
         expected = expected.to(device=res.device)
@@ -504,13 +522,14 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.trainable_params == [0, 1]
 
         res = execute([tape], dev, **execute_kwargs)[0]
@@ -554,12 +573,13 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(params[0] * params[1], wires=0)
             qml.RZ(0.2, wires=0)
             qml.RX(params[1] + params[1] ** 2 + torch.sin(params[0]), wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, **execute_kwargs)[0]
 
         assert tape.trainable_params == [0, 2]
@@ -587,13 +607,14 @@ class TestTorchExecuteIntegration:
         """Test evaluation and Jacobian if there are no trainable parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(0.2, wires=0)
             qml.RX(torch.tensor(0.1, device=torch_device), wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, **execute_kwargs)[0]
         assert tape.trainable_params == []
 
@@ -620,11 +641,12 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QubitUnitary(U, wires=0)
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, **execute_kwargs)[0]
         assert tape.trainable_params == [1]
 
@@ -641,25 +663,26 @@ class TestTorchExecuteIntegration:
 
         class U3(qml.U3):
             def expand(self):
-                tape = qml.tape.QuantumTape()
                 theta, phi, lam = self.data
                 wires = self.wires
-                tape._ops += [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
-                ]
-                return tape
+                return qml.tape.QuantumScript(
+                    [
+                        qml.Rot(lam, theta, -lam, wires=wires),
+                        qml.PhaseShift(phi + lam, wires=wires),
+                    ]
+                )
 
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)
         p_val = [0.1, 0.2, 0.3]
         p = torch.tensor(p_val, requires_grad=True, device=torch_device)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, **execute_kwargs)[0]
 
         expected = torch.tensor(
@@ -706,13 +729,14 @@ class TestTorchExecuteIntegration:
         x = torch.tensor(x_val, requires_grad=True, device=torch_device)
         y = torch.tensor(y_val, requires_grad=True, device=torch_device)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0])
             qml.probs(wires=[1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, **execute_kwargs)[0]
 
         expected = torch.tensor(
@@ -753,13 +777,14 @@ class TestTorchExecuteIntegration:
         x = torch.tensor(x_val, requires_grad=True, device=torch_device)
         y = torch.tensor(y_val, requires_grad=True, device=torch_device)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, **execute_kwargs)[0]
 
         expected = torch.tensor(
@@ -797,12 +822,13 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2, shots=10)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             qml.sample(qml.PauliZ(0))
             qml.sample(qml.PauliX(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, **execute_kwargs)[0]
 
         assert res.shape == (2, 10)
@@ -817,12 +843,13 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2, shots=10)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             qml.sample(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, **execute_kwargs)[0]
 
         assert len(res) == 2
@@ -840,10 +867,11 @@ class TestTorchExecuteIntegration:
 
         x = torch.tensor(0.65, requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.sample(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = execute([tape], dev, **execute_kwargs)[0]
 
         with pytest.raises(
@@ -860,10 +888,11 @@ class TestTorchExecuteIntegration:
 
         weights = torch.ones((3,))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.U3(*weights, wires=0)
             qml.expval(qml.PauliZ(wires=0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand()
         res1 = execute([tape], dev, **execute_kwargs)[0]
 
@@ -887,18 +916,20 @@ class TestHigherOrderDerivatives:
         params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RX(x[0], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=1)
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             result = execute(
                 [tape1, tape2], dev, gradient_fn=param_shift, interface="torch", max_diff=2
             )
@@ -929,11 +960,12 @@ class TestHigherOrderDerivatives:
         dev = qml.device("default.qubit", wires=1)
 
         def circuit(x):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RY(x[0], wires=0)
                 qml.RX(x[1], wires=0)
                 qml.probs(wires=0)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return torch.stack(
                 execute([tape], dev, gradient_fn=param_shift, interface="torch", max_diff=2)
             )
@@ -997,12 +1029,13 @@ class TestHigherOrderDerivatives:
         )
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
                 [tape],
                 dev,
@@ -1022,18 +1055,20 @@ class TestHigherOrderDerivatives:
         params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.RX(x[0], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=1)
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             result = execute(
                 [tape1, tape2], dev, gradient_fn=param_shift, max_diff=1, interface="torch"
             )
@@ -1079,13 +1114,14 @@ class TestHamiltonianWorkflows:
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
 
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(H1)
                 qml.expval(H2)
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             return execute([tape], dev, **execute_kwargs)[0]
 
         return _cost_fn

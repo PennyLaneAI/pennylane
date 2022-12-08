@@ -50,10 +50,11 @@ class TestSingleTapeTransform:
         b = np.array([0.2, 0.3])
         x = 0.543
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         ops = my_transform(tape, a, b).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
