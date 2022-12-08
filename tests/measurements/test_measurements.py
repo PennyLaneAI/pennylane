@@ -285,12 +285,6 @@ class TestProperties:
         expected = "probs(PauliZ(wires=['a']))"
         assert str(m) == expected
 
-        obs = qml.PauliZ(wires="a")
-        obs.return_type = Expectation
-        m = MeasurementProcess(Expectation, obs=obs)
-        expected = "expval(PauliZ(wires=['a']))"
-        assert str(m) == expected
-
 
 class TestExpansion:
     """Test for measurement expansion"""
