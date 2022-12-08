@@ -710,6 +710,7 @@ def _boys(n, t):
     Returns:
         (array[float]): value of the Boys function
     """
+    n = qml.math.convert_like(n, t)
     return qml.math.where(
         t == 0.0,
         1 / (2 * n + 1),
