@@ -81,9 +81,16 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
         nqubits (int): the number of qubits.
 
     Returns:
-         func: Function which accepts the same arguments as the QNode. When called, this
-         function will return the Lie algebra commutator.
+        function or tuple[list[QuantumTape], function]:
 
+        - If the input is a QNode, an object representing the Riemannian gradient function
+          of the QNode that can be executed with the same arguments as the QNode to obtain
+          the Lie algebra commutator.
+
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Lie algebra commutator.
     """
     tapes_plus_total = []
     tapes_min_total = []
@@ -340,7 +347,6 @@ class LieAlgebraOptimizer:
 
         Returns:
             array: array of omegas for each direction in the Lie algebra.
-
         """
 
         obs_groupings, _ = qml.pauli.group_observables(self.observables, self.coeffs)
