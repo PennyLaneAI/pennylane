@@ -540,6 +540,54 @@ def enable_return():
                 [[-0.81      , -0.39      ,  0.385     ,  0.02      , -0.015     ],
                  [-0.77      , -0.375     ,  0.355     ,  0.03      , -0.01      ],
                  [-0.82666667, -0.40166667,  0.4       ,  0.01333333, -0.01166667]]])>)
+
+    .. details::
+        :title: Usage Details for PyTorch
+
+        PyTorch supports differentiation of Torch tensors or tuple of Torch tensors. It makes it easy to get the
+        Jacobian of functions returning any mix of measurements.
+
+        .. code-block:: python
+
+            def func(a, b):
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="torch")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+        >>> a = torch.tensor(0.1, requires_grad=True)
+        >>> b = torch.tensor(0.2, requires_grad=True)
+        >>> torch.autograd.functional.jacobian(circuit, (a, b))
+        ((tensor(-0.0998), tensor(0.)), (tensor([-0.0494, -0.0005,  0.0005,  0.0494]), tensor([-0.0991,  0.0991,  0.0002, -0.0002])))
+
+        An issue arises when one requires higher order differentation with multiple measurements, the Jacobian returns
+        a tuple of tuple which is not consider as differentiable by PyTorch. This issue can be overcome by stacking
+        the original results:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="torch", max_diff=2)
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+            a = torch.tensor(0.1, requires_grad=True)
+            b = torch.tensor(0.2, requires_grad=True)
+
+            def circuit_stack(a, b):
+                return torch.hstack(circuit(a, b))
+
+        >>> jac_fn = lambda a, b: torch.autograd.functional.jacobian(circuit_stack, (a, b), create_graph=True)
+        >>> torch.autograd.functional.jacobian(jac_fn, (a, b))
+        ((tensor([-0.9950, -0.4925, -0.0050,  0.0050,  0.4925]), tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050])),
+        (tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050]), tensor([ 0.0000, -0.4888,  0.4888,  0.0012, -0.0012])))
+
     """
 
     global __activated
