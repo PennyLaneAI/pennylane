@@ -126,7 +126,11 @@ def _compute_num_cnots(U):
 
     and follows the arguments of this paper: https://arxiv.org/abs/quant-ph/0308045.
     """
-    u = Edag[None, :, :] @ U @ E[None, :, :]
+    # Need to convert the E to type of the interface for all the functions
+    E_converted = math.convert_like(E, U)
+    Edag_converted = math.convert_like(Edag, U)
+
+    u = Edag_converted[None, :, :] @ U @ E_converted[None, :, :]
     gammaU = u @ math.T(u, axes=(0, 2, 1))
     # Given the different arguments of the `.trace()` function for
     # the different interfaces, the slower `einsum()` is preferred here
@@ -252,8 +256,11 @@ def _extract_su2su2_prefactors(U, V):
     # There is some math in the paper explaining how when we define U in this way,
     # we can simultaneously diagonalize functions of U and V to ensure they are
     # in the same coset and recover the decomposition.
-    u = math.cast_like(Edag, V) @ U @ math.cast_like(E, V)
-    v = math.cast_like(Edag, V) @ V @ math.cast_like(E, V)
+    E_converted = math.convert_like(E, U)
+    Edag_converted = math.convert_like(Edag, U)
+
+    u = math.cast_like(Edag_converted, V) @ U @ math.cast_like(E_converted, V)
+    v = math.cast_like(Edag_converted, V) @ V @ math.cast_like(E_converted, V)
 
     uuT = u @ math.T(u, axes=(0, 2, 1))
     vvT = v @ math.T(v, axes=(0, 2, 1))
@@ -288,8 +295,8 @@ def _extract_su2su2_prefactors(U, V):
     # are the target matrices, we can reshuffle as in the docstring above,
     #     U = (E G E^\dagger) V (E H E^\dagger) = (A \otimes B) V (C \otimes D)
     # where A, B, C, D are in SU(2) x SU(2).
-    AB = math.cast_like(E, G) @ G @ math.cast_like(Edag, G)
-    CD = math.cast_like(E, H) @ H @ math.cast_like(Edag, H)
+    AB = math.cast_like(E_converted, G) @ G @ math.cast_like(Edag_converted, G)
+    CD = math.cast_like(E_converted, H) @ H @ math.cast_like(Edag_converted, H)
 
     # Now, we just need to extract the constituent tensor products.
     A, B = _su2su2_to_tensor_products(AB)
@@ -330,10 +337,18 @@ def _decomposition_1_cnot(U, wires):
     # -╭U-╭SWAP- = -C--╭C-╭SWAP--B-
     # -╰U-╰SWAP- = -D--╰X-╰SWAP--A-
     # This ensures that the internal part of the decomposition has determinant 1.
-    swap_U = math.exp(1j * np.pi / 4) * math.cast_like(SWAP, U) @ U
+    SWAP_converted = math.convert_like(SWAP, U)
+    E_converted = math.convert_like(E, U)
+    Edag_converted = math.convert_like(Edag, U)
+
+    swap_U = math.exp(1j * np.pi / 4) * math.cast_like(SWAP_converted, U) @ U
 
     # First let's compute gamma(u). For the one-CNOT case, uuT is always real.
-    u = math.cast_like(Edag, U)[None, :, :] @ swap_U @ math.cast_like(E, U)[None, :, :]
+    u = (
+        math.cast_like(Edag_converted, U)[None, :, :]
+        @ swap_U
+        @ math.cast_like(E_converted, U)[None, :, :]
+    )
     uuT = u @ math.T(u, axes=(0, 2, 1))
 
     # Since uuT is real, we can use eigh of its real part. eigh also orders the
@@ -352,12 +367,13 @@ def _decomposition_1_cnot(U, wires):
 
     # Once we have p and q properly in SO(4), we compute G and H in SO(4) such
     # that U = G V H
+    v_one_cnot_converted = math.convert_like(v_one_cnot, u)
     G = math.cast_like(p @ math.T(q_one_cnot)[None, :, :], u)
-    H = math.conj(math.T(v_one_cnot))[None, :, :] @ math.T(G, axes=(0, 2, 1)) @ u
+    H = math.conj(math.T(v_one_cnot_converted))[None, :, :] @ math.T(G, axes=(0, 2, 1)) @ u
 
     # We now use the magic basis to convert G, H to SU(2) x SU(2)
-    AB = E[None, :, :] @ G @ Edag[None, :, :]
-    CD = E[None, :, :] @ H @ Edag[None, :, :]
+    AB = E_converted[None, :, :] @ G @ Edag_converted[None, :, :]
+    CD = E_converted[None, :, :] @ H @ Edag_converted[None, :, :]
 
     # Extract the tensor prodcts to SU(2) x SU(2)
     A, B = _su2su2_to_tensor_products(AB)
@@ -380,8 +396,11 @@ def _decomposition_2_cnots(U, wires):
     We need to find the angles for the Z and X rotations such that the inner
     part has the same spectrum as U, and then we can recover A, B, C, D.
     """
+    E_converted = math.convert_like(E, U)
+    Edag_converted = math.convert_like(Edag, U)
+
     # Compute the rotation angles
-    u = Edag[None, :, :] @ U @ E[None, :, :]
+    u = Edag_converted[None, :, :] @ U @ E_converted[None, :, :]
     gammaU = u @ math.T(u, axes=(0, 2, 1))
     evs, _ = math.linalg.eig(gammaU)
 
@@ -419,7 +438,7 @@ def _decomposition_2_cnots(U, wires):
         ]
 
         # S \otimes SX
-        inner_matrix = S_SX
+        inner_matrix = math.convert_like(S_SX, U)
     else:
         # For the non-special case, the eigenvalues come in conjugate pairs.
         # We need to find two non-conjugate eigenvalues to extract the angles.
@@ -446,7 +465,8 @@ def _decomposition_2_cnots(U, wires):
 
     # We need the matrix representation of this interior part, V, in order to
     # decompose U = (A \otimes B) V (C \otimes D)
-    V = math.cast_like(CNOT10, U) @ inner_matrix @ math.cast_like(CNOT10, U)
+    CNOT10_converted = math.cast_like(math.convert_like(CNOT10, U), U)
+    V = CNOT10_converted @ inner_matrix @ CNOT10_converted
     # Now we find the A, B, C, D in SU(2), and return the decomposition
     A, B, C, D = _extract_su2su2_prefactors(U, math.reshape(V, (-1, 4, 4)))
 
@@ -467,14 +487,18 @@ def _decomposition_3_cnots(U, wires):
     # First we add a SWAP as per v1 of arXiv:0308033, which helps with some
     # rearranging of gates in the decomposition (it will cancel out the fact
     # that we need to add a SWAP to fix the determinant in another part later).
-    swap_U = math.exp(1j * np.pi / 4) * math.cast_like(SWAP, U)[None, :, :] @ U
+    SWAP_converted = math.convert_like(SWAP, U)
+    E_converted = math.convert_like(E, U)
+    Edag_converted = math.convert_like(Edag, U)
+
+    swap_U = math.exp(1j * np.pi / 4) * math.cast_like(SWAP_converted, U)[None, :, :] @ U
 
     # Choose the rotation angles of RZ, RY in the two-qubit decomposition.
     # They are chosen as per Proposition V.1 in quant-ph/0308033 and are based
     # on the phases of the eigenvalues of :math:`E^\dagger \gamma(U) E`, where
     #    \gamma(U) = (E^\dag U E) (E^\dag U E)^T.
     # The rotation angles can be computed as follows (any three eigenvalues can be used)
-    u = Edag[None, :, :] @ swap_U @ E[None, :, :]
+    u = Edag_converted[None, :, :] @ swap_U @ E_converted[None, :, :]
     gammaU = u @ math.T(u, axes=(0, 2, 1))
     evs, _ = math.linalg.eig(gammaU)
 
@@ -526,7 +550,8 @@ def _decomposition_3_cnots(U, wires):
 
     V = math.cast_like(math.convert_like(math.eye(4), U), U)[None, :, :]
     for mat in V_mats:
-        V = math.cast_like(mat, U) @ V
+        mat = math.cast_like(math.convert_like(mat, U), U)
+        V = mat @ V
 
     # Now we need to find the four SU(2) operations A, B, C, D
     A, B, C, D = _extract_su2su2_prefactors(swap_U, V)
@@ -644,17 +669,6 @@ def two_qubit_decomposition(U, wires):
     # we need to rescale the matrix by its determinant.
     # Cast to batched format for more consistent code
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
-
-    # Need to convert the E to type of the interface for all the functions
-    global E, Edag, CNOT01, CNOT10, SWAP, S_SX, v_one_cnot, q_one_cnot
-    E = math.convert_like(E, U)
-    Edag = math.convert_like(Edag, U)
-    CNOT01 = math.convert_like(CNOT01, U)
-    CNOT10 = math.convert_like(CNOT10, U)
-    SWAP = math.convert_like(SWAP, U)
-    S_SX = math.convert_like(S_SX, U)
-    v_one_cnot = math.convert_like(v_one_cnot, U)
-    q_one_cnot = math.convert_like(q_one_cnot, U)
 
     U = _convert_to_su4(U)
 
