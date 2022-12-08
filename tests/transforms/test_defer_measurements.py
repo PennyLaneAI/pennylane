@@ -683,7 +683,7 @@ class TestExpressionConditionals:
 
     @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
     def test_triple_measurement_condition_expression(self, r):
-        """test that combining the results of three mid-circuit measurements works as expected."""
+        """Test that combining the results of three mid-circuit measurements works as expected."""
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
