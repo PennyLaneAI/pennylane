@@ -19,6 +19,7 @@ pytestmark = pytest.mark.torch
 
 torch = pytest.importorskip("torch")
 torch_functional = pytest.importorskip("torch.autograd.functional")
+torch_cuda = pytest.importorskip("torch.cuda")
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
@@ -344,7 +345,7 @@ class TestCaching:
 
 torch_devices = [None]
 
-if torch.cuda.is_available():
+if torch_cuda.is_available():
     torch_devices.append(torch.device("cuda"))
 
 
@@ -910,6 +911,8 @@ class TestTorchExecuteIntegration:
             qml.CNOT(wires=[0, 1])
             qml.sample(qml.PauliZ(0))
             qml.sample(qml.PauliX(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
 
         res = execute([tape], dev, **execute_kwargs)[0]
 
