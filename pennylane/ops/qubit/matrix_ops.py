@@ -163,17 +163,14 @@ class QubitUnitary(Operation):
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
         # or a single RZ for diagonal matrices.
         shape = qml.math.shape(U)
-        if shape == (2, 2):
+
+        shape_without_batch_dim = shape[1:] if len(shape) == 3 else shape
+
+        if shape_without_batch_dim == (2, 2):
             return qml.transforms.decompositions.zyz_decomposition(U, Wires(wires)[0])
 
-        if shape == (4, 4):
+        if shape_without_batch_dim == (4, 4):
             return qml.transforms.two_qubit_decomposition(U, Wires(wires))
-
-        # TODO[dwierichs]: Implement decomposition of broadcasted unitary
-        if len(shape) == 3:
-            raise DecompositionUndefinedError(
-                "The decomposition of QubitUnitary does not support broadcasting."
-            )
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 

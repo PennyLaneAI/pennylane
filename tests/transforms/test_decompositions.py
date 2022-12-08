@@ -636,26 +636,34 @@ class TestTwoQubitUnitaryDecomposition:
     @pytest.mark.parametrize("U", samples_3_cnots)
     def test_convert_to_su4(self, U):
         """Test a matrix in U(4) is correct converted to SU(4)."""
-        U_su4 = _convert_to_su4(np.array(U))
+        U = np.array(U).reshape(-1, 4, 4)
+
+        U_su4 = _convert_to_su4(U)
 
         # Ensure the determinant is correct and the mats are equivalent up to a phase
-        assert qml.math.isclose(qml.math.linalg.det(U_su4), 1.0)
-        assert check_matrix_equivalence(np.array(U), U_su4)
+        assert qml.math.allclose(qml.math.linalg.det(U_su4), 1.0)
+
+        assert all(
+            check_matrix_equivalence(curr_U, curr_U_su4) for curr_U, curr_U_su4 in zip(U, U_su4)
+        )
 
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_su2su2_to_tensor_products(self, U_pair):
         """Test SU(2) x SU(2) can be correctly factored into tensor products."""
-        true_matrix = qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))
+        true_matrix = qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))[None, :, :]
 
         A, B = _su2su2_to_tensor_products(true_matrix)
 
-        assert check_matrix_equivalence(qml.math.kron(A, B), true_matrix)
+        assert all(
+            check_matrix_equivalence(qml.math.kron(curr_A, curr_B), curr_true_matrix)
+            for curr_A, curr_B, curr_true_matrix in zip(A, B, true_matrix)
+        )
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_3_cnots)
     def test_two_qubit_decomposition_3_cnots(self, U, wires):
         """Test that a two-qubit matrix using 3 CNOTs is correctly decomposed."""
-        U = _convert_to_su4(np.array(U))
+        U = _convert_to_su4(np.array(U)[None, :, :])
 
         assert _compute_num_cnots(U) == 3
 
@@ -670,13 +678,13 @@ class TestTwoQubitUnitaryDecomposition:
 
         # We check with a slightly great tolerance threshold here simply because the
         # test matrices were copied in here with reduced precision.
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+        assert all(check_matrix_equivalence(curr_U, obtained_matrix, atol=1e-7) for curr_U in U)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_2_cnots)
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
-        U = _convert_to_su4(np.array(U))
+        U = _convert_to_su4(np.array(U)[None, :, :])
 
         assert _compute_num_cnots(U) == 2
 
@@ -689,13 +697,13 @@ class TestTwoQubitUnitaryDecomposition:
 
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+        assert all(check_matrix_equivalence(curr_U, obtained_matrix, atol=1e-7) for curr_U in U)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_1_cnot)
     def test_two_qubit_decomposition_1_cnot(self, U, wires):
         """Test that a two-qubit matrix using one CNOT is correctly decomposed."""
-        U = _convert_to_su4(np.array(U))
+        U = _convert_to_su4(np.array(U)[None, :, :])
 
         assert _compute_num_cnots(U) == 1
 
@@ -708,13 +716,13 @@ class TestTwoQubitUnitaryDecomposition:
 
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+        assert all(check_matrix_equivalence(curr_U, obtained_matrix, atol=1e-7) for curr_U in U)
 
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
         """Test that a two-qubit tensor product matrix is correctly decomposed."""
-        U = _convert_to_su4(qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
+        U = _convert_to_su4(qml.math.kron(np.array(U_pair[0]), np.array(U_pair[1]))[None, :, :])
 
         assert _compute_num_cnots(U) == 0
 
@@ -725,9 +733,10 @@ class TestTwoQubitUnitaryDecomposition:
             for op in obtained_decomposition:
                 qml.apply(op)
 
+        # TODO modify this such that
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+        assert all(check_matrix_equivalence(curr_U, obtained_matrix, atol=1e-7) for curr_U in U)
 
 
 class TestTwoQubitUnitaryDecompositionInterfaces:
