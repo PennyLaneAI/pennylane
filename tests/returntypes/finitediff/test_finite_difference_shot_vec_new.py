@@ -41,13 +41,14 @@ class TestFiniteDiff:
         respect to a non-differentiable argument"""
         psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QubitStateVector(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # by default all parameters are assumed to be trainable
         with pytest.raises(
             ValueError, match=r"Cannot differentiate with respect to parameter\(s\) {0}"
@@ -78,11 +79,12 @@ class TestFiniteDiff:
         during the Jacobian computation."""
         spy = mocker.spy(qml.gradients.finite_difference, "generate_shifted_tapes")
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
         tapes, fn = finite_diff(tape, h=h_val, shots=default_shot_vector)
         all_res = fn(dev.batch_execute(tapes))
@@ -108,11 +110,12 @@ class TestFiniteDiff:
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
 
         weights = [0.1, 0.2]
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
@@ -133,12 +136,13 @@ class TestFiniteDiff:
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
 
         weights = [0.1, 0.2]
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = []
         with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = qml.gradients.finite_diff(
@@ -316,11 +320,12 @@ class TestFiniteDiff:
         values."""
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = finite_diff(tape, approx_order=1, h=h_val, shots=default_shot_vector)
 
         # one tape per parameter, plus one global call
@@ -330,11 +335,12 @@ class TestFiniteDiff:
         """Test that by providing y0 the number of tapes is equal the number of parameters."""
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         f0 = dev.execute(tape)
         tapes, fn = finite_diff(tape, approx_order=1, f0=f0, h=h_val, shots=default_shot_vector)
 
@@ -345,16 +351,18 @@ class TestFiniteDiff:
         parameters, the gradient should be evaluated to zero without executing the device."""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(1.0, wires=[0])
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(1.0, wires=[0])
             qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         tapes, fn = finite_diff(tape1, approx_order=1, h=h_val, shots=many_shots_shot_vector)
         j1 = fn(dev.batch_execute(tapes))
 
@@ -499,7 +507,7 @@ class TestFiniteDiffIntegration:
         dev = qml.device("default.qubit", wires=3, shots=many_shots_shot_vector)
         params = [1.0, 1.0, 1.0]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(params[0], wires=[0])
             qml.RY(params[1], wires=[1])
             qml.RZ(params[2], wires=[2])
@@ -507,6 +515,7 @@ class TestFiniteDiffIntegration:
             qml.probs(wires=0)
             qml.probs(wires=[1, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = finite_diff(
             tape,
             approx_order=approx_order,
@@ -540,12 +549,13 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = finite_diff(
             tape,
             approx_order=approx_order,
@@ -580,12 +590,13 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # we choose both trainable parameters
         tapes, fn = finite_diff(
             tape,
@@ -626,12 +637,13 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # we choose only 1 trainable parameter
         tapes, fn = finite_diff(
             tape,
@@ -675,13 +687,14 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # we choose only 1 trainable parameter
         tapes, fn = finite_diff(
             tape,
@@ -715,13 +728,14 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = finite_diff(
             tape,
             approx_order=approx_order,
@@ -759,13 +773,14 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.var(qml.PauliX(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = finite_diff(
             tape,
             approx_order=approx_order,
@@ -805,13 +820,14 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = finite_diff(
             tape,
             approx_order=approx_order,
@@ -879,12 +895,13 @@ class TestFiniteDiffGradients:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(
                 tape,
@@ -921,13 +938,14 @@ class TestFiniteDiffGradients:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.probs(wires=[1])
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(
                 tape,
@@ -961,12 +979,13 @@ class TestFiniteDiffGradients:
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape(persistent=True) as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(
                 tape,
@@ -1001,13 +1020,14 @@ class TestFiniteDiffGradients:
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape(persistent=True) as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.probs(wires=[1])
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(
                 tape,
@@ -1038,12 +1058,13 @@ class TestFiniteDiffGradients:
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
         def cost_fn(params):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             tapes, fn = finite_diff(
                 tape,
                 n=1,
@@ -1087,12 +1108,13 @@ class TestFiniteDiffGradients:
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(
                 tape,
@@ -1163,12 +1185,13 @@ class TestReturn:
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
         x = 0.543
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(
                 x, wires=[op_wires]
             )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
             qml.apply(meas)  # Measurements act on wires 0 and 1
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # One trainable param
         tape.trainable_params = {0}
 
@@ -1189,7 +1212,7 @@ class TestReturn:
         dev = qml.device("default.qubit", wires=6, shots=shot_vec)
         x = 0.543
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(
                 x, wires=[op_wire]
             )  # Op acts either on wire 0 (non-zero grad) or wire 1 (zero grad)
@@ -1202,6 +1225,7 @@ class TestReturn:
             qml.var(qml.Projector([1], wires=4))
             qml.var(qml.Hermitian(A, wires=5))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # Multiple trainable params
         tape.trainable_params = {0}
 
@@ -1226,7 +1250,7 @@ class TestReturn:
         x = 0.543
         y = 0.213
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(
                 x, wires=[op_wires]
             )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
@@ -1235,6 +1259,7 @@ class TestReturn:
             )  # Op acts either on wire 0 (non-zero grad) or wire 2 (zero grad)
             qml.apply(meas)  # Measurements act on wires 0 and 1
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # Multiple trainable params
         tape.trainable_params = {0, 1}
 
@@ -1258,7 +1283,7 @@ class TestReturn:
         params = np.random.random(6)
 
         A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             for idx, w in enumerate(op_wires):
                 qml.RY(
                     params[idx], wires=[w]
@@ -1275,6 +1300,7 @@ class TestReturn:
             qml.var(qml.Projector([1], wires=3))
             qml.var(qml.Hermitian(A, wires=4))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # Multiple trainable params
         tape.trainable_params = {0, 1, 2, 3, 4}
 

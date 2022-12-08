@@ -1070,10 +1070,11 @@ class TestExpval:
 
         par1 = theta.to(device=torch_device)
         par2 = phi.to(device=torch_device)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [gate(par1, wires=0), gate(par2, wires=1), qml.CNOT(wires=[0, 1])]
             observables = [qml.expval(obs(wires=[i])) for i in range(2)]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
 
         expected_res = expected(theta, phi, torch_device)
@@ -1093,10 +1094,11 @@ class TestExpval:
 
         par1 = theta.to(device=torch_device)
         par2 = phi.to(device=torch_device)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.RY(par1, wires=0), qml.RY(par2, wires=1), qml.CNOT(wires=[0, 1])]
             observables = [qml.expval(qml.Hermitian(Hermitian_mat, wires=[i])) for i in range(2)]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
 
         a = Hermitian_mat[0, 0]
@@ -1146,10 +1148,11 @@ class TestExpval:
 
         theta = theta.to(device=torch_device)
         phi = phi.to(device=torch_device)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
             observables = [qml.expval(qml.Hermitian(Hermit_mat2, wires=[0, 1]))]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
 
         # below is the analytic expectation value for this circuit with arbitrary
@@ -1437,10 +1440,11 @@ class TestVar:
         phi = phi.to(device=torch_device)
 
         # test correct variance for <Z> of a rotated state
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.RX(theta, wires=0), qml.RY(phi, wires=0)]
             observables = [qml.var(qml.PauliZ(wires=[0]))]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
         expected = 0.25 * (
             3 - torch.cos(2 * theta) - 2 * torch.cos(theta) ** 2 * torch.cos(2 * phi)
@@ -1457,10 +1461,11 @@ class TestVar:
         # test correct variance for <H> of a rotated state
         H = torch.tensor([[4, -1 + 6j], [-1 - 6j, 2]], dtype=torch.complex128, device=torch_device)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
             observables = [qml.var(qml.Hermitian(H, wires=[0]))]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
         expected = 0.5 * (
             2 * torch.sin(2 * theta) * torch.cos(phi) ** 2
