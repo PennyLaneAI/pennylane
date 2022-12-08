@@ -310,14 +310,7 @@ class TestDiffSingle:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "diff_method",
-        [
-            # TODO: add this once forward mode is implemented
-            # "adjoint",
-            "parameter-shift"
-        ],
-    )
+    @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
     def test_jax_jit(self, diff_method, tol):
         """Test derivatives when using JAX"""
         import jax
