@@ -422,6 +422,26 @@
          [-0.383     , -0.1915    ,  0.        ,  0.        ,  0.1915    ],
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
+* Thy PyTorch interface supports the new return system and users can use jacobian and hessian using custom differentiation
+  methods (e.g., parameter-shift, finite difference or adjoint).
+  [(#3416)](https://github.com/PennyLaneAI/pennylane/pull/3414)
+  
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev, diff_method="parameter-shift", interface="torch")
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=1)
+      qml.CNOT(wires=[0, 1])>
+      return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+  ```
+  ```pycon
+  >>> a = torch.tensor(0.1, requires_grad=True)
+  >>> b = torch.tensor(0.2, requires_grad=True)
+  >>> torch.autograd.functional.jacobian(circuit, (a, b))
+  ((tensor(-0.0998), tensor(0.)), (tensor([-0.0494, -0.0005,  0.0005,  0.0494]), tensor([-0.0991,  0.0991,  0.0002, -0.0002])))
+  ```
 
 * The JAX-JIT interface now supports first-order gradient computation with the new return types system.
   [(#3235)](https://github.com/PennyLaneAI/pennylane/pull/3235)
@@ -455,7 +475,6 @@
   (DeviceArray(5.55111512e-17, dtype=float64, weak_type=True),
   DeviceArray(0., dtype=float64, weak_type=True)))
   ```
-
 * Updated `qml.transforms.split_non_commuting` to support the new return types.
   [(#3414)](https://github.com/PennyLaneAI/pennylane/pull/3414)
 
