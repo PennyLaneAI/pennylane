@@ -723,7 +723,7 @@ class TestExpressionConditionals:
         assert np.allclose(normal_probs, cond_probs)
 
     def test_multiple_conditions(self):
-        """test that when multiple "branches" of the mid-circuit measurements all satisfy the criteria then
+        """Test that when multiple "branches" of the mid-circuit measurements all satisfy the criteria then
         this translates to multiple control gates.
         """
         dev = qml.device("default.qubit", wires=4)
