@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript
 
 
 def dummyfunc():
@@ -1243,10 +1243,11 @@ class TestShots:
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = qml.device("default.qubit", wires=1, shots=5)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RZ(0.3, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = QuantumScript.from_queue(q)
         # no warning on the first execution
         cache = {}
         qml.execute([tape], dev, None, cache=cache)
@@ -1359,8 +1360,9 @@ class TestTapeExpansion:
             num_wires = 1
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RX(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode)
@@ -1394,8 +1396,9 @@ class TestTapeExpansion:
             grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RX(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method="parameter-shift", max_diff=2)
@@ -1435,8 +1438,9 @@ class TestTapeExpansion:
             grad_method = None
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method="parameter-shift", max_diff=2)
