@@ -168,6 +168,7 @@ class DefaultQubit(QubitDevice):
         "SProd",
         "Prod",
         "Exp",
+        "Evolution",
     }
 
     def __init__(
