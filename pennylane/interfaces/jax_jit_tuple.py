@@ -21,7 +21,6 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _compute_jvps
 from pennylane.interfaces.jax_jit import _validate_jax_version, _numeric_type_to_dtype
 
@@ -96,7 +95,7 @@ def _jac_shape_dtype_tuple(tapes, device):
     return tuple(shape_dtypes)
 
 
-def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -176,15 +175,28 @@ def _execute_bwd_tuple(
 ):  # pylint: disable=dangerous-default-value,unused-argument
     @jax.custom_jvp
     def execute_wrapper(params):
+        shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
+
         def wrapper(p):
             """Compute the forward pass."""
             new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, p)]
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
+
+            # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
+            # the shape without the vmap dimensions, while the function here will be
+            # executed with objects containing the vmap dimensions. So res[i].ndim
+            # will have an extra dimension for every `jax.vmap` wrapping this execution.
+            #
+            # The execute_fn will return an object with shape `(n_observables, batches)`
+            # but the default behaviour for `jax.pure_callback` is to add the extra
+            # dimension at the beginning, so `(batches, n_observables)`. So in here
+            # we detect with the heuristic above if we are executing under vmap and we
+            # swap the order in that case.
+            res = jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
             return res
 
-        shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
-        res = jax.pure_callback(wrapper, shape_dtype_structs, params)
+        res = jax.pure_callback(wrapper, shape_dtype_structs, params, vectorized=True)
         print("Evaluation result: ", res)
         return res
 
@@ -216,7 +228,15 @@ def _execute_bwd_tuple(
                     jvp_tapes, res_processing_fn = gradient_fn(
                         new_t, shots=device.shots, **gradient_kwargs
                     )
-                    jacs = execute_tuple(jvp_tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=_n+1, max_diff=max_diff)
+                    jacs = execute_tuple(
+                        jvp_tapes,
+                        device,
+                        execute_fn,
+                        gradient_fn,
+                        gradient_kwargs,
+                        _n=_n + 1,
+                        max_diff=max_diff,
+                    )
                     jacs = res_processing_fn(jacs)
                     all_jacs.append(jacs)
 
@@ -317,7 +337,7 @@ def _execute_fwd_tuple(
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
     provided. This function does not allow multiple derivatives. It currently does not support shot vectors
-    because adjoint jacobian for default qubit does not support it.."""
+    because adjoint jacobian for default qubit does not support it."""
 
     # pylint: disable=unused-variable
     @jax.custom_jvp
@@ -355,7 +375,7 @@ def _execute_fwd_tuple(
         if len(tape.measurements) == 1:
             tracing.append(isinstance(res[i], jax.interpreters.ad.JVPTracer))
         else:
-            tracing.extend([isinstance(r, jax.interpreters.ad.JVPTracer) for r in res[i]])
+            tracing.append(any(isinstance(r, jax.interpreters.ad.JVPTracer) for r in res[i]))
 
     tracing = any(tracing)
 
