@@ -135,8 +135,10 @@
     new subclasses of `MeasurementProcess` to implement the well known quantities. These will become the default 
     once we deprecate the old approach. 
 
-  - Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
-    measurement processes in `QubitDevice`. This integrates the new classes to be executed on device.
+  * Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
+    measurement processes in `QubitDevice`. Also allow devices to override measurement processes by
+    adding a `measurement_map` attribute, which should contain the measurement class as key and
+    the method name as value.
     [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
     [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
@@ -153,6 +155,10 @@
     [(#3466)](https://github.com/PennyLaneAI/pennylane/pull/3466)
   
 <h4>Pauli stuff</h4>
+
+* Add `sum_expand` function, which splits a tape measuring a `Sum` expectation into mutliple tapes
+  of summand expectations, and provides a function to recombine the results.
+  [#3230](https://github.com/PennyLaneAI/pennylane/pull/3230)
 
 * Added a `pauli_decompose()` which takes a hermitian matrix and decomposes it in the
   Pauli basis, returning it either as a `Hamiltonian` or `PauliSentence` instance.
@@ -341,6 +347,7 @@
          [-0.383     , -0.1915    ,  0.        ,  0.        ,  0.1915    ],
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
+
 * Thy PyTorch interface supports the new return system and users can use jacobian and hessian using custom differentiation
   methods (e.g., parameter-shift, finite difference or adjoint).
   [(#3416)](https://github.com/PennyLaneAI/pennylane/pull/3414)
@@ -355,6 +362,7 @@
       qml.CNOT(wires=[0, 1])>
       return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
   ```
+
   ```pycon
   >>> a = torch.tensor(0.1, requires_grad=True)
   >>> b = torch.tensor(0.2, requires_grad=True)
@@ -394,6 +402,7 @@
   (DeviceArray(5.55111512e-17, dtype=float64, weak_type=True),
   DeviceArray(0., dtype=float64, weak_type=True)))
   ```
+
 * Updated `qml.transforms.split_non_commuting` to support the new return types.
   [(#3414)](https://github.com/PennyLaneAI/pennylane/pull/3414)
 
@@ -443,20 +452,14 @@
 * `QuantumTape._process_queue` has been moved to `qml.queuing.process_queue` to disentangle its functionality from the `QuantumTape` class.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
+* Remove private `_wires` setter from the `Controlled.map_wires` method.
+  [(#3405)](https://github.com/PennyLaneAI/pennylane/pull/3405)
+
+* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
+  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
+
 * A new function called `qml.tape.make_qscript` has been created for converting a quantum function into a quantum script. This replaces `qml.transforms.make_tape`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
-
-* A warning now appears when creating a `Tensor` object with overlapping wires, informing that this can lead to undefined behaviour.
-  [(#3459)](https://github.com/PennyLaneAI/pennylane/pull/3459)
-
-* Extended the `qml.equal` function to `qml.ops.op_math.Controlled` and `qml.ops.op_math.ControlledOp` objects.
-  [(#3463)](https://github.com/PennyLaneAI/pennylane/pull/3463)
-
-* Nearly every instance of `with QuantumTape()` has been replaced with `QuantumScript` construction.
-  [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
-
-* Devices can now disregard observable grouping indices in Hamiltonians through the optional `use_grouping` attribute.
-  [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
 
 * Updated `qml.transforms.batch_params` and `qml.transforms.batch_input` to support the new return types
   [(#3431)](https://github.com/PennyLaneAI/pennylane/pull/3431)
@@ -464,6 +467,29 @@
 * Updated `qml.transforms.cut_circuit` and `qml.transforms.cut_circuit_mc` to
   support the new return types.
   [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
+
+* Improved the performance of executing circuits under the `jax.vmap` transformation, which can now leverage the batch-execution capabilities of some devices. 
+  [(#3452)](https://github.com/PennyLaneAI/pennylane/pull/3452)
+
+* Nearly every instance of `with QuantumTape()` has been replaced with `QuantumScript` construction.
+  [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
+
+* Devices can now disregard observable grouping indices in Hamiltonians through the optional `use_grouping` attribute.
+  [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
+
+* A warning now appears when creating a `Tensor` object with overlapping wires, informing that this can lead to undefined behaviour.
+  [(#3459)](https://github.com/PennyLaneAI/pennylane/pull/3459)
+
+* Extended the `qml.equal` function to `qml.ops.op_math.Controlled` and `qml.ops.op_math.ControlledOp` objects.
+  [(#3463)](https://github.com/PennyLaneAI/pennylane/pull/3463)
+
+* Extended the `qml.equal` function to `Pow`, `SProd`, `Exp` and `Adjoint` objects.
+  [(#3471)](https://github.com/PennyLaneAI/pennylane/pull/3471)
+
+* Updated `zyz_decomposition` function such that it now supports broadcast operators. This
+  means that single-qubit `QubitUnitary` operators, instantiated from a batch of unitaries,
+  can now be decomposed.
+  [(#3477)](https://github.com/PennyLaneAI/pennylane/pull/3477)
 
 <h3>Breaking changes</h3>
 
@@ -485,8 +511,7 @@
   class which inherits from `AnnotatedQueue`.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
-* Change class name `ShadowMeasurementProcess` to `ClassicalShadow`, to be consistent with the
-  `qml.classical_shadow` function name.
+* Change class name `ShadowMeasurementProcess` to `ClassicalShadowMP`
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 * The method `qml.Operation.get_parameter_shift` is removed. The `gradients` module should be used
@@ -516,9 +541,6 @@
 
 * The `MeasurementProcess` class is now an abstract class.
   [(#3434)](https://github.com/PennyLaneAI/pennylane/pull/3434)
-
-* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
-  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
 
 <h3>Deprecations</h3>
 
@@ -586,6 +608,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * Fixed a bug where a QNode returning `qml.sample` would produce incorrect results when run on a device defined with a shot vector.
   [(#3422)](https://github.com/PennyLaneAI/pennylane/pull/3422)
 
+* The `qml.data` module now works as expected on Windows.
+  [(#3504)](https://github.com/PennyLaneAI/pennylane/pull/3504)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -593,6 +618,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Utkarsh Azad
 Astral Cai
+Ahmed Darwish
 Isaac De Vlugt
 Pieter Eendebak
 Lillian M. A. Frederiksen
