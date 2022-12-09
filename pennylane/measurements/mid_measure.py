@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.measure measurement.
 """
@@ -59,6 +58,9 @@ def measure(wires):  # TODO: Change name to mid_measure
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
 
+    Returns:
+        MidMeasureMP: measurement process instance
+
     Raises:
         QuantumFunctionError: if multiple wires were specified
     """
@@ -70,15 +72,29 @@ def measure(wires):  # TODO: Change name to mid_measure
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    _MidMeasure(wires=wire, id=measurement_id)
+    MidMeasureMP(wires=wire, id=measurement_id)
     return MeasurementValue(measurement_id)
 
 
 T = TypeVar("T")
 
 
-class _MidMeasure(MeasurementProcess):
-    """Mid-circuit measurement."""
+class MidMeasureMP(MeasurementProcess):
+    """Mid-circuit measurement.
+
+    Please refer to :func:`measure` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
 
     @property
     def return_type(self):

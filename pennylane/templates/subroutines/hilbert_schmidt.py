@@ -100,7 +100,7 @@ class HilbertSchmidt(Operation):
 
         self._num_params = len(params)
 
-        if not isinstance(u_tape, qml.tape.QuantumTape):
+        if not isinstance(u_tape, qml.tape.QuantumScript):
             raise qml.QuantumFunctionError("The argument u_tape must be a QuantumTape.")
 
         u_wires = u_tape.wires

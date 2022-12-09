@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops import Prod, Sum
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 
@@ -60,34 +60,34 @@ class TestMapWiresOperators:
 
     def test_map_wires_without_queuing(self):
         """Test the map_wires method while queuing with `queue = False`."""
-        tape = QuantumTape()
-        with tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             op = build_op()
             _ = qml.map_wires(op, wire_map=wire_map, queue=False)
+        tape = QuantumScript.from_queue(q_tape)
         assert len(tape.circuit) == 1
         assert tape.circuit[0] is op
-        assert tape.get_info(op).get("owner", None) is None
+        assert q_tape.get_info(op).get("owner", None) is None
 
     def test_map_wires_with_queuing_and_without_replacing(self):
         """Test the map_wires method while queuing with `queue=True` and `replace=False`."""
-        tape = QuantumTape()
-        with tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             op = build_op()
             m_op = qml.map_wires(op, wire_map=wire_map, queue=True, replace=False)
+        tape = QuantumScript.from_queue(q_tape)
         assert len(tape.circuit) == 2
         assert tape.circuit[0] is op
         assert tape.circuit[1] is m_op
-        assert tape.get_info(op).get("owner", None) is None
+        assert q_tape.get_info(op).get("owner", None) is None
 
     def test_map_wires_with_queuing_and_with_replacing(self):
         """Test the map_wires method while queuing with `queue = True` and `replace=True`."""
-        tape = QuantumTape()
-        with tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             op = build_op()
             m_op = qml.map_wires(op, wire_map=wire_map, queue=True, replace=True)
+        tape = QuantumScript.from_queue(q_tape)
         assert len(tape.circuit) == 1
         assert tape.circuit[0] is m_op
-        assert tape.get_info(op).get("owner", None) is m_op
+        assert q_tape.get_info(op).get("owner", None) is m_op
 
     def test_map_wires_unsupported_object_raises_error(self):
         """Test that an error is raised when trying to map the wires of an unsupported object."""
@@ -100,10 +100,10 @@ class TestMapWiresTapes:
 
     def test_map_wires_tape(self):
         """Test the map_wires method with a tape."""
-        tape = QuantumTape()
-        with tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             build_op()
 
+        tape = QuantumScript.from_queue(q_tape)
         # TODO: Use qml.equal when supported
 
         s_tape = qml.map_wires(tape, wire_map=wire_map)
@@ -117,11 +117,11 @@ class TestMapWiresTapes:
     def test_execute_mapped_tape(self):
         """Test the execution of a mapped tape."""
         dev = qml.device("default.qubit", wires=5)
-        tape = QuantumTape()
-        with tape:
+        with qml.queuing.AnnotatedQueue() as q_tape:
             build_op()
             qml.expval(op=qml.PauliZ(1))
 
+        tape = QuantumScript.from_queue(q_tape)
         # TODO: Use qml.equal when supported
 
         m_tape = qml.map_wires(tape, wire_map=wire_map)
