@@ -14,12 +14,12 @@
 """
 This module contains the qml.measure measurement.
 """
-import copy
 import uuid
 from typing import Generic, TypeVar
 
 import pennylane as qml
-from pennylane.wires import Wires
+import pennylane.numpy as np
+from pennylane.operation import Wires
 
 from .measurements import MeasurementProcess, MidMeasure
 
@@ -55,6 +55,12 @@ def measure(wires):  # TODO: Change name to mid_measure
     >>> func(*pars)
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
+    Mid circuit measurements can be manipulated using the following dunder methods
+    `+`, `-`, `*`, `/`, `~` (not), `&` (and), `|` (or), `==`, `<=`, `>=`, `<`, `>`. With other mid-circuit measurements or scalars.
+
+    Note:
+        python `not`, `and`, `or`, do not work since these do not have dunder methods. Instead use `~`, `&`, `|`.
+
     Args:
         wires (Wires): The wire of the qubit the measurement process applies to.
 
@@ -73,7 +79,7 @@ def measure(wires):  # TODO: Change name to mid_measure
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
     MidMeasureMP(wires=wire, id=measurement_id)
-    return MeasurementValue(measurement_id)
+    return MeasurementValue([measurement_id], processing_fn=lambda v: v)
 
 
 T = TypeVar("T")
@@ -115,68 +121,129 @@ class MeasurementValue(Generic[T]):
     Measurements on a single qubit in the computational basis are assumed.
 
     Args:
-        measurement_id (str): The id of the measurement that this object depends on.
-        zero_case (float): the first measurement outcome value
-        one_case (float): the second measurement outcome value
+        measurement_ids (list[str]): The id of the measurement that this object depends on.
+        processing_fn (callable): A lazily transformation applied to the measurement values.
     """
 
-    __slots__ = ("_depends_on", "_zero_case", "_one_case", "_control_value")
+    def __init__(self, measurement_ids, processing_fn):
+        self.measurement_ids = measurement_ids
+        self.processing_fn = processing_fn
 
-    def __init__(
-        self,
-        measurement_id: str,
-        zero_case: float = 0,
-        one_case: float = 1,
-    ):
-        self._depends_on = measurement_id
-        self._zero_case = zero_case
-        self._one_case = one_case
-        self._control_value = one_case  # By default, control on the one case
+    def _items(self):
+        """A generator representing all the possible outcomes of the MeasurementValue."""
+        for i in range(2 ** len(self.measurement_ids)):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+            yield branch, self.processing_fn(*branch)
 
     @property
     def branches(self):
-        """A dictionary representing all the possible outcomes of the MeasurementValue."""
-        branch_dict = {}
-        branch_dict[(0,)] = self._zero_case
-        branch_dict[(1,)] = self._one_case
-        return branch_dict
+        """A dictionary representing all possible outcomes of the MeasurementValue."""
+        ret_dict = {}
+        for i in range(2 ** len(self.measurement_ids)):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+            ret_dict[branch] = self.processing_fn(*branch)
+        return ret_dict
+
+    def _transform_bin_op(self, base_bin, other):
+        """Helper function for defining dunder binary operations."""
+        if isinstance(other, MeasurementValue):
+            # pylint: disable=protected-access
+            return self._merge(other)._apply(lambda t: base_bin(t[0], t[1]))
+        # if `other` is not a MeasurementValue then apply it to each branch
+        return self._apply(lambda v: base_bin(v, other))
 
     def __invert__(self):
         """Return a copy of the measurement value with an inverted control
         value."""
-        inverted_self = copy.copy(self)
-        zero = self._zero_case
-        one = self._one_case
+        return self._apply(lambda v: not v)
 
-        inverted_self._control_value = one if self._control_value == zero else zero
+    def __eq__(self, other):
+        return self._transform_bin_op(lambda a, b: a == b, other)
 
-        return inverted_self
+    def __ne__(self, other):
+        return self._transform_bin_op(lambda a, b: a != b, other)
 
-    def __eq__(self, control_value):
-        """Allow asserting measurement values."""
-        measurement_outcomes = {self._zero_case, self._one_case}
+    def __add__(self, other):
+        return self._transform_bin_op(lambda a, b: a + b, other)
 
-        if not isinstance(control_value, tuple(type(val) for val in measurement_outcomes)):
-            raise MeasurementValueError(
-                "The equality operator is used to assert measurement outcomes, but got a value "
-                + f"with type {type(control_value)}."
+    def __radd__(self, other):
+        return self._apply(lambda v: other + v)
+
+    def __sub__(self, other):
+        return self._transform_bin_op(lambda a, b: a - b, other)
+
+    def __rsub__(self, other):
+        return self._apply(lambda v: other - v)
+
+    def __mul__(self, other):
+        return self._transform_bin_op(lambda a, b: a * b, other)
+
+    def __rmul__(self, other):
+        return self._apply(lambda v: other * v)
+
+    def __truediv__(self, other):
+        return self._transform_bin_op(lambda a, b: a / b, other)
+
+    def __rtruediv__(self, other):
+        return self._apply(lambda v: other / v)
+
+    def __lt__(self, other):
+        return self._transform_bin_op(lambda a, b: a < b, other)
+
+    def __le__(self, other):
+        return self._transform_bin_op(lambda a, b: a <= b, other)
+
+    def __gt__(self, other):
+        return self._transform_bin_op(lambda a, b: a > b, other)
+
+    def __ge__(self, other):
+        return self._transform_bin_op(lambda a, b: a >= b, other)
+
+    def __and__(self, other):
+        return self._transform_bin_op(lambda a, b: a and b, other)
+
+    def __or__(self, other):
+        return self._transform_bin_op(lambda a, b: a or b, other)
+
+    def _apply(self, fn):
+        """Apply a post computation to this measurement"""
+        return MeasurementValue(self.measurement_ids, lambda *x: fn(self.processing_fn(*x)))
+
+    def _merge(self, other: "MeasurementValue"):
+        """Merge two measurement values"""
+
+        # create a new merged list with no duplicates and in lexical ordering
+        merged_measurement_ids = list(set(self.measurement_ids).union(set(other.measurement_ids)))
+        merged_measurement_ids.sort()
+
+        # create a new function that selects the correct indices for each sub function
+        def merged_fn(*x):
+            sub_args_1 = (
+                x[i] for i in [merged_measurement_ids.index(m) for m in self.measurement_ids]
             )
+            out_1 = self.processing_fn(*sub_args_1)
 
-        if control_value not in measurement_outcomes:
-            raise MeasurementValueError(
-                "Unknown measurement value asserted; the set of possible measurement outcomes is: "
-                + f"{measurement_outcomes}."
+            sub_args_2 = (
+                x[i] for i in [merged_measurement_ids.index(m) for m in other.measurement_ids]
             )
+            out_2 = other.processing_fn(*sub_args_2)
 
-        self._control_value = control_value
-        return self
+            return out_1, out_2
 
-    @property
-    def control_value(self):
-        """The control value to consider for the measurement outcome."""
-        return self._control_value
+        return MeasurementValue(merged_measurement_ids, merged_fn)
 
-    @property
-    def measurements(self):
-        """List of all measurements this MeasurementValue depends on."""
-        return [self._depends_on]
+    def __getitem__(self, i):
+        branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+        return self.processing_fn(*branch)
+
+    def __str__(self):
+        lines = []
+        for i in range(2 ** (len(self.measurement_ids))):
+            branch = tuple(int(b) for b in np.binary_repr(i, width=len(self.measurement_ids)))
+            id_branch_mapping = [
+                f"{self.measurement_ids[j]}={branch[j]}" for j in range(len(branch))
+            ]
+            lines.append(
+                "if " + ",".join(id_branch_mapping) + " => " + str(self.processing_fn(*branch))
+            )
+        return "\n".join(lines)
