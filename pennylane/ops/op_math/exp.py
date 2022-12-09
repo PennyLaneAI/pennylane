@@ -381,23 +381,17 @@ class Evolution(Exp):
 
     **Example**
     This symbolic operator can be used to make general rotation operators:
+
     >>> theta = np.array(1.23)
     >>> op = Evolution(qml.PauliX(0), -0.5 * theta)
     >>> qml.math.allclose(op.matrix(), qml.RX(theta, wires=0).matrix())
     True
 
     Or to define a time evolution operator for a time-independent Hamiltonian:
+
     >>> H = qml.Hamiltonian([1, 1], [qml.PauliY(0), qml.PauliX(1)])
     >>> t = 10e-6
     >>> U = Evolution(H, -1 * t)
-
-    Even for more complicated generators, this operator is defined to have a single parameter,
-    allowing it to be differentiated with respect to that parameter (base operator parameters are
-    treated as constants):
-    >>> base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
-    >>> op = Evolution(base_op, 1.23)
-    >>> op.num_params
-    1
 
     If the base operator is Hermitian, then the gate can be used in a circuit,
     though it may not be supported by the device and may not be differentiable.
