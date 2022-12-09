@@ -40,7 +40,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Observable, Operation, Tensor
 from pennylane.ops import Hamiltonian, Sum
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
@@ -699,7 +699,7 @@ class Device(abc.ABC):
 
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
-    def batch_transform(self, circuit: QuantumTape):
+    def batch_transform(self, circuit: QuantumScript):
         """Apply a differentiable batch transform for preprocessing a circuit
         prior to execution. This method is called directly by the QNode, and
         should be overwritten if the device requires a transform that
