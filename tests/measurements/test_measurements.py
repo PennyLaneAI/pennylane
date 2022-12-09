@@ -547,9 +547,9 @@ class TestStateMeasurement:
 
         @qml.qnode(dev)
         def circuit():
-            return qml.expval(op=qml.PauliX(0))
+            return qml.state()
 
-        circuit.device.measurement_map[ExpectationMP] = "test_method"
+        circuit.device.measurement_map[StateMP] = "test_method"
         circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert circuit() == 2

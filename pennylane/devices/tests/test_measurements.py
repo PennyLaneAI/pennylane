@@ -20,10 +20,12 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import (
+    ClassicalShadowMP,
     MeasurementTransform,
     SampleMeasurement,
     SampleMP,
     StateMeasurement,
+    StateMP,
 )
 
 pytestmark = pytest.mark.skip_unsupported
@@ -1535,6 +1537,12 @@ class TestSampleMeasurement:
         """Test that the device can override a measurement process."""
         dev = device(2)
 
+        if dev.shots is None:
+            pytest.skip(
+                "The number of shots has to be explicitly set on the device when using "
+                "sample-based measurements."
+            )
+
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(0)
@@ -1595,9 +1603,9 @@ class TestStateMeasurement:
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(0)
-            return qml.sample(wires=0)
+            return qml.state()
 
-        circuit.device.measurement_map[SampleMP] = "test_method"
+        circuit.device.measurement_map[StateMP] = "test_method"
         circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert circuit() == 2
@@ -1626,11 +1634,17 @@ class TestCustomMeasurement:
         """Test that the device can override a measurement process."""
         dev = device(2)
 
+        if dev.shots is None:
+            pytest.skip(
+                "The number of shots has to be explicitly set on the device when using "
+                "sample-based measurements."
+            )
+
         @qml.qnode(dev)
         def circuit():
-            return qml.sample()
+            return qml.classical_shadow(wires=0)
 
-        circuit.device.measurement_map[SampleMP] = "test_method"
+        circuit.device.measurement_map[ClassicalShadowMP] = "test_method"
         circuit.device.test_method = lambda qscript: 2
 
         assert circuit() == 2
