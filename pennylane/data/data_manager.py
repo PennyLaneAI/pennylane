@@ -227,13 +227,11 @@ def load(
 
     .. warning::
 
-        PennyLane datasets use the ``pickle`` module to compress, store, and read data. Here, we
-        reproduce an important warning from the ``pickle`` module: it is possible
-        to construct malicious pickle data which will execute arbitrary code during unpickling.
-        Never unpickle data that could have come from an untrusted source, or that could have been
-        tampered with.
-
-
+        PennyLane datasets use the ``dill`` module to compress, store, and read data. Since ``dill``
+        is built on the ``pickle`` module, we reproduce an important warning from the ``pickle``
+        module: it is possible to construct malicious pickle data which will execute arbitrary code
+        during unpickling. Never unpickle data that could have come from an untrusted source, or
+        that could have been tampered with.
     """
 
     _ = lazy
