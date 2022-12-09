@@ -132,8 +132,6 @@ class SampleMP(SampleMeasurement):
             where the instance has to be identified
     """
 
-    method_name = "sample"
-
     @property
     def return_type(self):
         return Sample

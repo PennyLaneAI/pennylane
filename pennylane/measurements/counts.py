@@ -163,8 +163,6 @@ class CountsMP(SampleMeasurement):
             outcomes (default), or whether it will display all possible outcomes for the system
     """
 
-    method_name = "counts"
-
     # pylint: disable=too-many-arguments
     def __init__(
         self,
