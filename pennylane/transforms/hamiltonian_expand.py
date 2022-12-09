@@ -236,8 +236,8 @@ def sum_expand(qscript: QuantumScript, group=True):
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
 
-            qml.expval(qml.PauliZ(0))
             qml.expval(S)
+            qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
             qml.expval(qml.PauliZ(2))
 
@@ -247,13 +247,15 @@ def sum_expand(qscript: QuantumScript, group=True):
     >>> tapes, fn = qml.transforms.sum_expand(tape, group=False)
     >>> for tape in tapes:
     ...     print(tape.measurements)
+    [expval(PauliZ(wires=[0]))]
     [expval(PauliY(wires=[2]) @ PauliZ(wires=[1]))]
-    [expval(0.5*(PauliZ(wires=[2])))]
+    [expval(PauliZ(wires=[2]))]
     [expval(PauliZ(wires=[1]))]
-    [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1])), expval(PauliZ(wires=[2]))]
+    [expval(PauliX(wires=[1]))]
 
-    Four tapes are generated: the first three contain the summands of the `Sum` operator,
-    and the last tape contains the remaining observables.
+    Five tapes are generated: the first three contain the summands of the `Sum` operator,
+    and the last two contain the remaining observables. Note that the scalars of the scalar products
+    have been removed. These values will be multiplied by the result obtained from the execution.
 
     We can evaluate these tapes on a device:
 
@@ -263,7 +265,7 @@ def sum_expand(qscript: QuantumScript, group=True):
     Applying the processing function results in the expectation value of the Hamiltonian:
 
         >>> fn(res)
-    [0.0, -0.5, 0.0, -0.9999999999999996]
+    [-0.5, 0.0, 0.0, -0.9999999999999996]
 
     Fewer tapes can be constructed by grouping commuting observables. This can be achieved
     by the ``group`` keyword argument:
@@ -284,8 +286,8 @@ def sum_expand(qscript: QuantumScript, group=True):
     >>> tapes, fn = qml.transforms.sum_expand(tape, group=True)
     >>> for tape in tapes:
     ...     print(tape.measurements)
-    [expval(PauliZ(wires=[0])), expval(2*(PauliX(wires=[1])))]
-    [expval(3*(PauliX(wires=[0])))]
+    [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]
+    [expval(PauliX(wires=[0]))]
     """
     # Populate these 2 dictionaries with the unique measurement objects, the index of the
     # initial measurement on the qscript and the coefficient
