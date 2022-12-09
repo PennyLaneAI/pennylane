@@ -206,9 +206,9 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
         28
 
         PyZX gives multiple options for optimizing ZX graphs (:func:`pyzx.full_reduce`, :func:`pyzx.teleport_reduce`, ...).
-        The :func:`pyzx.full_reduce` applies all optimizations passes but it is almost certain that the reduced graph at
-        the end will be no circuit-like and it is necessary to extract the circuit. Therefore we will use :func:`pyzx.teleport_reduce`
-        which preserves the circuit structure of the graph.
+        The :func:`pyzx.full_reduce` applies all optimization passes, but the final result may not be circuit-like.
+        Converting back to a quantum circuit from a fully reduced graph may be difficult to impossible.
+        Therefore we instead recommend using :func:`pyzx.teleport_reduce`, as it preserves the circuit structure.
 
         >>> g = pyzx.simplify.teleport_reduce(g)
         >>> pyzx.tcount(g)
@@ -218,7 +218,7 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
         1 :func:`qml.PauliX` and 10 :func:`qml.S`. We successfully reduced the T-count by 20 and have ten additional
         S gates. The number of CNOT gates remained the same.
 
-        It is possible now possible to use the optimized circuit in PennyLane:
+        The :func:`from_zx` transform can now convert the optimized circuit back into PennyLane operations:
 
         .. code-block:: python
 
@@ -367,7 +367,7 @@ def _add_operations_to_graph(qscript, graph, gate_types, q_mapper, c_mapper):
 
 
 def from_zx(graph, decompose_phases=True):
-    """It converts a graph from `PyZX <https://pyzx.readthedocs.io/en/latest/>`_ to a PennyLane qscript, if graph is
+    """Converts a graph from `PyZX <https://pyzx.readthedocs.io/en/latest/>`_ to a PennyLane qscript, if the graph is
     diagram-like.
 
     Args:
