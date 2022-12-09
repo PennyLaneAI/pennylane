@@ -114,10 +114,16 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
     .. details::
         :title: Usage Details
 
-            Here we give an example of how to use optimization techniques from ZX calculus and get back a PennyLane
-            circuit. With this example we also show how to draw the circuit and the drawing.
+        Here we give an example of how to use optimization techniques from ZX calculus to reduce the T count of a
+        quantum circuit and get back a PennyLane circuit. With this example we also show how to draw the circuit
+        and the save the drawing.
+
+        Let's start by starting with the mod 5 4 circuit from a known benchmark `library <https://github.com/njross/optimizer>`_
+        the expanded circuit before optimization is the following QNode:
 
         .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=5)
 
             @qml.transforms.to_zx
             @qml.qnode(device=dev)
@@ -187,12 +193,50 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
                 qml.CNOT(wires=[0, 4]),
                 return qml.expval(qml.PauliZ(wires=0))
 
-        64 gates,  after 53 gates, t count 8
-        >>> g = circuit()
+        The circuit contains 63 gates; 28 :func:`qml.T` gates, 28 :func:`qml.CNOT`, 6 :func:`qml.Hadmard` and
+        1 :func:`qml.PauliX`. We applied the `qml.transforms.to_zx` decorator in order to transform our circuit to
+        a ZX graph.
+
+        You can get the PyZX graph by simply calling the QNode:
+
+        >>> g = mod_5_4()
         >>> pyzx.tcount(g)
         28
 
-        >>>
+        PyZX gives multiple options for optimizing ZX graphs (:func:`pyzx.full_reduce`, :func:`pyzx.teleport_reduce`, ...).
+        The :func:`pyzx.full_reduce` applies all optimizations passes but it is almost certain that the reduced graph at
+        the end will be no circuit-like and it is necessary to extract the circuit. Therefore we will use :func:`pyzx.teleport_reduce`
+        which preserves the circuit structure of the graph.
+
+        >>> g = pyzx.simplify.teleport_reduce(g)
+        >>> pyzx.tcount(g)
+        8
+
+        If you give a closer look, the circuit contains now 53 gates; 8 :func:`qml.T` gates, 28 :func:`qml.CNOT`, 6 :func:`qml.Hadmard` and
+        1 :func:`qml.PauliX` and 10 :func:`qml.PauliX`. We successfully reduced the T-count by 20 and have ten additional
+        S gates and also notice that the number of CNOT remains the same.
+
+        It is possible now possible to use the optimized circuit in PennyLane:
+
+        >>> qscript =
+
+        .. code-block:: python
+
+            qscript_opt = qml.transforms.from_zx(g)
+
+            wires = qml.wires.Wires([4, 3, 0, 2, 1])
+            wires_map = OrderedDict(zip(qscript.wires, wires))
+            qscript_opt_reorder = qml.map_wires(input=qscript_opt, wire_map=wires_map)
+
+            @qml.qnode(device=dev)
+            def mod_5_4():
+                for g in qscript_opt_reorder:
+                    qml.apply(g)
+                return qml.expval(qml.PauliZ(wires=0))
+
+        >>> mod_5_4_opt()
+        -0.9999999999999989
+
     .. note::
 
         It is a PennyLane adapted and reworked `circuit_to_graph <https://github.com/Quantomatic/pyzx/blob/master/pyzx/circuit/graphparser.py>`_
