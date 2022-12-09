@@ -375,13 +375,13 @@ def sum_expand(tape: QuantumScript, group=True):
 
 
 def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[MeasurementProcess]]:
-    """Group observables of measurements list into qubit-wise commuting groups.
+    """Group observables of ``measurements`` into groups with non overlapping wires.
 
     Args:
         measurements (List[MeasurementProcess]): list of measurement processes
 
     Returns:
-        List[List[MeasurementProcess]]: list of qubit-wise commuting measurement groups
+        List[List[MeasurementProcess]]: list of groups of observables with non overlapping wires
     """
     qwc_groups = []
     for m in measurements:
