@@ -621,6 +621,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis.
   [(#3409)](https://github.com/PennyLaneAI/pennylane/pull/3409)
 
+* Adds warnings about using ``dill`` to pickle and unpickle datasets. 
+  [#3505](https://github.com/PennyLaneAI/pennylane/pull/3505)
+
 <h3>Bug fixes</h3>
 
 * Fixed a bug where `hamiltonian_expand` didn't preserve the type of the inputted results in its output.
