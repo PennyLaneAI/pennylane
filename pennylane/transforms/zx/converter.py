@@ -117,8 +117,7 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
         :title: Usage Details
 
         Here we give an example of how to use optimization techniques from ZX calculus to reduce the T count of a
-        quantum circuit and get back a PennyLane circuit. With this example we also show how to draw the circuit
-        and the save the drawing.
+        quantum circuit and get back a PennyLane circuit.
 
         Let's start by starting with the mod 5 4 circuit from a known benchmark `library <https://github.com/njross/optimizer>`_
         the expanded circuit before optimization is the following QNode:
