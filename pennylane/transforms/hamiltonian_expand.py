@@ -204,20 +204,20 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
 
 
 # pylint: disable=too-many-branches, too-many-statements
-def sum_expand(tape: QuantumScript, group=True):
-    """Splits a tape measuring a Sum expectation into mutliple tapes of summand expectations,
-    and provides a function to recombine the results.
+def sum_expand(qscript: QuantumScript, group=True):
+    """Splits a quantum script measuring a Sum expectation into multiple scripts of summand
+    expectations, and provides a function to recombine the results.
 
     Args:
-        tape (.QuantumTape): the tape used when calculating the expectation value
+        qscript (.QuantumScript): the quantum script used when calculating the expectation value
             of the Hamiltonian
         group (bool): Whether to compute disjoint groups of commuting Pauli observables, leading to fewer tapes.
             If grouping information can be found in the Hamiltonian, it will be used even if group=False.
 
     Returns:
-        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
-        quantum tapes to be evaluated, and a function to be applied to these
-        tape executions to compute the expectation value.
+        tuple[list[.QuantumScript], function]: Returns a tuple containing a list of
+        quantum scripts to be evaluated, and a function to be applied to these
+        script executions to compute the expectation value.
 
     **Example**
 
@@ -288,12 +288,12 @@ def sum_expand(tape: QuantumScript, group=True):
     [expval(3*(PauliX(wires=[0])))]
     """
     # Populate these 2 dictionaries with the unique measurement objects, the index of the
-    # initial measurement on the tape and the coefficient
+    # initial measurement on the qscript and the coefficient
     # NOTE: expval(Sum) is expanded into the expectation of each summand
     # NOTE: expval(SProd) is transformed into expval(SProd.base) and the coeff is updated
     measurements_dict = {}  # {m_hash: measurement}
     idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
-    for idx, m in enumerate(tape.measurements):
+    for idx, m in enumerate(qscript.measurements):
         obs = m.obs
         if isinstance(obs, Sum) and isinstance(m, ExpectationMP):
             for summand in obs.operands:
@@ -324,7 +324,7 @@ def sum_expand(tape: QuantumScript, group=True):
     measurements = list(measurements_dict.values())
     idxs_coeffs = list(idxs_coeffs_dict.values())
 
-    # Create the tapes, group observables if group==True
+    # Create the qscripts, group observables if group==True
     if group:
         m_groups = _group_measurements(measurements)
         # Update ``idxs_coeffs`` list such that it tracks the new ``m_groups`` list of lists
@@ -335,26 +335,27 @@ def sum_expand(tape: QuantumScript, group=True):
             else:
                 tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
         idxs_coeffs = tmp_idxs
-        tapes = [
-            QuantumScript(ops=tape._ops, measurements=m_group, prep=tape._prep)
+        qscripts = [
+            QuantumScript(ops=qscript._ops, measurements=m_group, prep=qscript._prep)
             for m_group in m_groups
         ]
     else:
-        tapes = [
-            QuantumScript(ops=tape._ops, measurements=[m], prep=tape._prep) for m in measurements
+        qscripts = [
+            QuantumScript(ops=qscript._ops, measurements=[m], prep=qscript._prep)
+            for m in measurements
         ]
 
     def processing_fn(expanded_results):
         results = []  # [(m_idx, result)]
-        for tape_res, tape_idxs in zip(expanded_results, idxs_coeffs):
-            if isinstance(tape_idxs[0], tuple):  # tape_res contains only one result
+        for qscript_res, qscript_idxs in zip(expanded_results, idxs_coeffs):
+            if isinstance(qscript_idxs[0], tuple):  # qscript_res contains only one result
                 if not qml.active_return():  # old return types
-                    tape_res = tape_res[0]
-                for idx, coeff in tape_idxs:
-                    results.append((idx, tape_res if coeff is None else coeff * tape_res))
+                    qscript_res = qscript_res[0]
+                for idx, coeff in qscript_idxs:
+                    results.append((idx, qscript_res if coeff is None else coeff * qscript_res))
                 continue
-            # tape_res contains multiple results
-            for res, idxs in zip(tape_res, tape_idxs):
+            # qscript_res contains multiple results
+            for res, idxs in zip(qscript_res, qscript_idxs):
                 for idx, coeff in idxs:
                     results.append((idx, res if coeff is None else coeff * res))
 
@@ -371,7 +372,7 @@ def sum_expand(tape: QuantumScript, group=True):
 
         return results[0] if len(results) == 1 else results
 
-    return tapes, processing_fn
+    return qscripts, processing_fn
 
 
 def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[MeasurementProcess]]:
