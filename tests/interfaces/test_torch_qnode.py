@@ -37,9 +37,10 @@ interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
 ] + [["torch"] + inner_list for inner_list in qubit_device_and_diff_method]
 
-TOL_FOR_SPSA = 1.
+TOL_FOR_SPSA = 1.0
 SEED_FOR_SPSA = 32651
 H_FOR_SPSA = 0.01
+
 
 @pytest.mark.parametrize(
     "interface, dev_name,diff_method,mode", interface_and_qubit_device_and_diff_method
@@ -144,7 +145,6 @@ class TestQNode:
             spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
             gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
-
 
         a_val = 0.1
         b_val = 0.2
@@ -1017,7 +1017,12 @@ class TestQubitIntegration:
 
 @pytest.mark.parametrize(
     "diff_method,kwargs",
-    [["finite-diff", {}], ["spsa", {"num_directions": 100, "h": 0.05}], ("parameter-shift", {}), ("parameter-shift", {"force_order2": True})],
+    [
+        ["finite-diff", {}],
+        ["spsa", {"num_directions": 100, "h": 0.05}],
+        ("parameter-shift", {}),
+        ("parameter-shift", {"force_order2": True}),
+    ],
 )
 class TestCV:
     """Tests for CV integration"""
@@ -1196,7 +1201,14 @@ class TestTapeExpansion:
         dev = qml.device(dev_name, wires=3, shots=None)
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="torch", **gradient_kwargs)
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            mode=mode,
+            max_diff=max_diff,
+            interface="torch",
+            **gradient_kwargs
+        )
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])
             qml.templates.AngleEmbedding(data, wires=[0, 1])
@@ -1273,7 +1285,14 @@ class TestTapeExpansion:
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="torch", **gradient_kwargs)
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            mode=mode,
+            max_diff=max_diff,
+            interface="torch",
+            **gradient_kwargs
+        )
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])
             qml.templates.AngleEmbedding(data, wires=[0, 1])

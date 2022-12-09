@@ -35,9 +35,10 @@ interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
 ] + [["autograd"] + inner_list for inner_list in qubit_device_and_diff_method]
 
-TOL_FOR_SPSA = 1.
+TOL_FOR_SPSA = 1.0
 SEED_FOR_SPSA = 32651
 H_FOR_SPSA = 0.01
+
 
 @pytest.mark.parametrize(
     "interface, dev_name, diff_method, mode", interface_and_qubit_device_and_diff_method
@@ -1248,7 +1249,12 @@ class TestQubitIntegration:
 
 @pytest.mark.parametrize(
     "diff_method,kwargs",
-    [["finite-diff", {}], ["spsa", {"num_directions": 100, "h": 0.05}], ("parameter-shift", {}), ("parameter-shift", {"force_order2": True})],
+    [
+        ["finite-diff", {}],
+        ["spsa", {"num_directions": 100, "h": 0.05}],
+        ("parameter-shift", {}),
+        ("parameter-shift", {"force_order2": True}),
+    ],
 )
 class TestCV:
     """Tests for CV integration"""
@@ -1263,6 +1269,7 @@ class TestCV:
         phi = np.array(-0.654, requires_grad=True)
 
         print(kwargs)
+
         @qnode(dev, diff_method=diff_method, **kwargs)
         def circuit(r, phi):
             qml.Squeezing(r, 0, wires=0)
@@ -1446,7 +1453,6 @@ class TestTapeExpansion:
             tol = TOL_FOR_SPSA
         elif diff_method == "finite-diff":
             gradient_kwargs = {"h": 0.05}
-
 
         dev = qml.device(dev_name, wires=3, shots=50000)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
