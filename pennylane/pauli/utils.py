@@ -1302,7 +1302,7 @@ def simplify(h, cutoff=1.0e-12):
 
     coeffs, ops = [], []
     c = qml.math.convert_like(c, c[0])
-    nonzero_ind = np.argwhere(abs(np.array(c)) > cutoff).flatten()
+    nonzero_ind = qml.math.argwhere(abs(c) > cutoff).flatten()
     for i in nonzero_ind:
         coeffs.append(c[i])
         ops.append(qml.pauli.string_to_pauli_word(o[i], wire_map=wiremap))

@@ -42,7 +42,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     >>> ops
     [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
     """
-    coeffs = np.array([])
+    coeffs = qml.math.array([])
 
     if constant != np.array([0.0]):
         coeffs = qml.math.concatenate((coeffs, constant))
@@ -60,7 +60,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         operators = operators + operators_one
 
     if two is not None:
-        indices_two = list(qml.math.argwhere(abs(two) >= cutoff))
+        indices_two = np.array(qml.math.argwhere(abs(two) >= cutoff))
         n = len(indices_two)
         operators_two = (
             [(indices_two[i] * 2).tolist() for i in range(n)]  # up-up-up-up
