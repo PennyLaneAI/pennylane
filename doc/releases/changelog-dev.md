@@ -4,6 +4,24 @@
 
 <h3>New features since last release</h3>
 
+* Added ability to create expressions from mid-circuit measurements.
+  [#3159](https://github.com/PennyLaneAI/pennylane/pull/3159)
+
+  ```python
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.Hadamard(wires=1)
+      m0 = qml.measure(wires=0)
+      m1 = qml.measure(wires=1)
+      combined = 2 * m1 + m0
+      qml.cond(combined == 2, qml.RX)(1.3, wires=2)
+      return qml.probs(wires=2)
+  ```
+  ```pycon 
+  >>> circuit()
+  [0.90843735 0.09156265]  
+  ```
+
 * New gradient transform `qml.gradients.spsa_grad` based on the idea of SPSA.
   [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
 
@@ -283,6 +301,9 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
+* Extended the functionality of `qml.matrix` to qutrits.
+  [(#3460)](https://github.com/PennyLaneAI/pennylane/pull/3460)
+
 * File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
   [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
 
@@ -303,11 +324,20 @@
   the optional `use_grouping` attribute.
   [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
 
+* Updated `zyz_decomposition` function such that it now supports broadcast operators. This
+  means that single-qubit `QubitUnitary` operators, instantiated from a batch of unitaries,
+  can now be decomposed.
+  [(#3477)](https://github.com/PennyLaneAI/pennylane/pull/3477)
+
 * Reduce usage of `MeasurementProcess.return_type`. Use `isinstance` checks instead.
   [(#3399)](https://github.com/PennyLaneAI/pennylane/pull/3399)
 
 * Improved the performance of executing circuits under the `jax.vmap` transformation, which can now leverage the batch-execution capabilities of some devices. [(#3452)](https://github.com/PennyLaneAI/pennylane/pull/3452)
-  
+
+* The tolerance for converting openfermion Hamiltonian complex coefficients to real is modified to
+  prevent conversion errors.
+  [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
@@ -501,8 +531,8 @@
   support the new return types.
   [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
 
-* The tolerance for converting openfermion Hamiltonian complex coefficient is modified.
-  [(#3367)](https://github.com/PennyLaneAI/pennylane/pull/3367)
+* Update `OperationRecorder` to inherit from `AnnotatedQueue` and `QuantumScript` instead of `QuantumTape`.
+  [(#3496)](https://github.com/PennyLaneAI/pennylane/pull/3496)
 
 <h3>Breaking changes</h3>
 
@@ -638,9 +668,12 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso
 Juan Miguel Arrazola
 Utkarsh Azad
+Samuel Banning
 Astral Cai
+Ahmed Darwish
 Isaac De Vlugt
 Pieter Eendebak
 Lillian M. A. Frederiksen
