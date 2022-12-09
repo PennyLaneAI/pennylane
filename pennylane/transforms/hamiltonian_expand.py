@@ -209,7 +209,7 @@ def sum_expand(tape: QuantumScript, group=True):
     and provides a function to recombine the results.
 
     Args:
-        tape (.QuantumTape): the tape used when calculating the expectation value
+        tape (.QuantumScript): the quantum script used when calculating the expectation value
             of the Hamiltonian
         group (bool): Whether to compute disjoint groups of commuting Pauli observables, leading to fewer tapes.
             If grouping information can be found in the Hamiltonian, it will be used even if group=False.
