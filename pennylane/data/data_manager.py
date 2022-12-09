@@ -208,7 +208,7 @@ def _generate_folders(node, folders):
 def load(
     data_name, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
 ):
-    r"""Downloads the data if it is not already present in the directory and return it to user as a 
+    r"""Downloads the data if it is not already present in the directory and return it to user as a
     :class:`~pennylane.data.Dataset` object. For the full list of available datasets, please see the
     `datasets website <https://pennylane.ai/qml/datasets.html>`_.
 
@@ -226,11 +226,11 @@ def load(
         list[:class:`~pennylane.data.Dataset`]
 
     .. warning::
-    
+
         PennyLane datasets use the ``pickle`` module to compress, store, and read data. Here, we reproduce
         and important warning from the ``pickle`` module: it is possible
         to construct malicious pickle data which will execute arbitrary code during unpickling.
-        Never unpickle data that could have come from an untrusted source, or that could have been 
+        Never unpickle data that could have come from an untrusted source, or that could have been
         tampered with.
 
 
