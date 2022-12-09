@@ -455,6 +455,7 @@ class THadamard(Operation):
     where :math:`\omega = \exp(2 \pi i / 3)`.
 
     **Details:**
+    
     * Number of wires: 1
     * Number of parameters: 0
 
@@ -542,9 +543,9 @@ class THadamard(Operation):
         **Example**
 
         >>> print(qml.THadamard.compute_matrix(subspace=[0, 2]))
-        array([[ 1.,  0.,  1.],
-               [ 0.,  1.,  0.],
-               [ 1.,  0., -1.]])
+    array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
+           [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
+           [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
         """
 
         if subspace is None:
