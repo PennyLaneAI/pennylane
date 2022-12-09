@@ -32,7 +32,7 @@ class ExpvalCost:
 
     .. warning::
         ``ExpvalCost`` is deprecated. Instead, it is recommended to simply
-        pass Hamiltonians to the :func:`~.expval` function inside QNodes.
+        pass Hamiltonians to the :func:`~pennylane.expval` function inside QNodes.
 
         .. code-block:: python
 

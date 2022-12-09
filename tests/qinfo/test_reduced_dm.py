@@ -81,13 +81,13 @@ class TestDensityMatrixQNode:
             qml.RZ(0, wires=[0])
             return qml.expval(qml.PauliX(wires=0))
 
-        with pytest.raises(ValueError, match="The qfunc return type needs to be a state"):
+        with pytest.raises(ValueError, match="The qfunc measurement needs to be State"):
             qml.qinfo.reduced_dm(circuit, wires=[0])()
 
     def test_density_matrix_qnode_jax_jit(self, tol):
         """Test reduced_dm jitting for QNode."""
-        from jax import jit
         import jax.numpy as jnp
+        from jax import jit
 
         angle = jnp.array(0.1)
 

@@ -16,27 +16,28 @@ Functions handling quantum tapes for circuit cutting, and their auxillary functi
 """
 
 import copy
-from typing import List, Tuple, Sequence, Union, Callable
 from itertools import product
+from typing import Callable, List, Sequence, Tuple, Union
 
 from networkx import MultiDiGraph
 
 import pennylane as qml
 from pennylane import apply, expval
-from pennylane.pauli import string_to_pauli_word
-from pennylane.measurements import Expectation, MeasurementProcess, Sample
-from pennylane.ops.qubit.non_parametric_ops import WireCut
-from pennylane.tape import QuantumTape
-from pennylane.wires import Wires
+from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP
 from pennylane.operation import Operator, Tensor
+from pennylane.ops.qubit.non_parametric_ops import WireCut
+from pennylane.pauli import string_to_pauli_word
+from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.wires import Wires
 
 from .qcut import (
-    _prep_zero_state,
-    _prep_one_state,
-    _prep_plus_state,
-    _prep_iplus_state,
     MeasureNode,
     PrepareNode,
+    _prep_iplus_state,
+    _prep_one_state,
+    _prep_plus_state,
+    _prep_zero_state,
 )
 
 
@@ -84,7 +85,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
         if obs is not None and isinstance(obs, Tensor):
-            if m.return_type is Sample:
+            if isinstance(m, SampleMP):
                 raise ValueError(
                     "Sampling from tensor products of observables "
                     "is not supported in circuit cutting"
@@ -93,7 +94,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
                 m_ = m.__class__(obs=o)
 
                 _add_operator_node(graph, m_, order, wire_latest_node)
-        elif m.return_type is Sample and obs is None:
+        elif isinstance(m, SampleMP) and obs is None:
             for w in m.wires:
                 s_ = qml.sample(qml.Projector([1], wires=w))
                 _add_operator_node(graph, s_, order, wire_latest_node)
@@ -122,7 +123,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
         graph (nx.MultiDiGraph): directed multigraph to be converted to a tape
 
     Returns:
-        QuantumTape: the quantum tape corresponding to the input graph
+        QuantumTape: the quantum script corresponding to the input graph
 
     **Example**
 
@@ -163,7 +164,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     copy_meas = [copy.copy(op) for _, op in ordered_ops if isinstance(op, MeasurementProcess)]
     observables = []
 
-    with QuantumTape() as tape:
+    with AnnotatedQueue() as q:
         for op in copy_ops:
             op = qml.map_wires(op, wire_map=wire_map, queue=True)
             if isinstance(op, MeasureNode):
@@ -178,15 +179,15 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 reverse_wire_map[new_wire] = original_wire
 
         if copy_meas:
-            return_types = set(meas.return_type for meas in copy_meas)
-            if len(return_types) > 1:
+            measurement_types = {type(meas) for meas in copy_meas}
+            if len(measurement_types) > 1:
                 raise ValueError(
                     "Only a single return type can be used for measurement "
                     "nodes in graph_to_tape"
                 )
-            return_type = return_types.pop()
+            measurement_type = measurement_types.pop()
 
-            if return_type not in {Sample, Expectation}:
+            if measurement_type not in {SampleMP, ExpectationMP}:
                 raise ValueError(
                     "Invalid return type. Only expectation value and sampling measurements "
                     "are supported in graph_to_tape"
@@ -197,16 +198,16 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 obs = meas.obs
                 observables.append(obs)
 
-                if return_type is Sample:
+                if measurement_type is SampleMP:
                     apply(meas)
 
-            if return_type is Expectation:
+            if measurement_type is ExpectationMP:
                 if len(observables) > 1:
                     qml.expval(Tensor(*observables))
                 else:
                     qml.expval(obs)
 
-    return tape
+    return QuantumScript.from_queue(q)
 
 
 def _add_operator_node(graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict):
@@ -309,7 +310,7 @@ def expand_fragment_tape(
                 n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
             }
 
-            with QuantumTape() as tape_:
+            with AnnotatedQueue() as q:
                 for op in tape.operations:
                     if isinstance(op, PrepareNode):
                         w = op.wires[0]
@@ -322,7 +323,7 @@ def expand_fragment_tape(
                 for meas in measurements:
                     apply(meas)
 
-                tapes.append(tape_)
+            tapes.append(QuantumScript.from_queue(q))
 
     return tapes, prepare_nodes, measure_nodes
 
@@ -360,7 +361,7 @@ def _get_measurements(
 
     measurement = measurements[0]
 
-    if measurement.return_type is not Expectation:
+    if not isinstance(measurement, ExpectationMP):
         raise ValueError(
             "The circuit cutting workflow only supports circuits with expectation "
             "value measurements"

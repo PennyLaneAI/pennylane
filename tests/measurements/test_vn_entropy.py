@@ -19,7 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
 from pennylane.measurements import VnEntropy
-from pennylane.measurements.vn_entropy import _VnEntropy
+from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
 
 
@@ -60,7 +60,7 @@ class TestVnEntropy:
 
         circuit()
 
-        assert isinstance(circuit.tape[0], _VnEntropy)
+        assert isinstance(circuit.tape[0], VnEntropyMP)
 
     def test_copy(self):
         """Test that the ``__copy__`` method also copies the ``log_base`` information."""
