@@ -703,7 +703,7 @@ class TestIntegration:
         is used in the measurement process."""
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, grad_method="best")
+        @qml.qnode(dev, diff_method="best")
         def circuit(scalar):
             qml.PauliX(wires=0)
             return qml.expval(SProd(scalar, qml.Hadamard(wires=0)))
@@ -719,7 +719,7 @@ class TestIntegration:
         sprod_op = SProd(100, qml.Hadamard(0))
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, grad_method="best")
+        @qml.qnode(dev, diff_method="best")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             return qml.expval(sprod_op)

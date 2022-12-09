@@ -839,9 +839,10 @@ class TestErrors:
 
     def test_error_finite_shots(self):
         """Test that an error is raised if the device has a finite number of shots set."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.RY(1.9, wires=1)
+        tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit", wires=2, shots=1)
 
         with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):

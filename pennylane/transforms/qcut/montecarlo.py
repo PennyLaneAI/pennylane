@@ -16,36 +16,34 @@ Function cut_circuit_mc for cutting a quantum circuit into smaller circuit fragm
     Monte Carlo method, at its auxillary functions"""
 
 import inspect
-
 from functools import partial
-
 from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 from networkx import MultiDiGraph
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.measurements import Sample
+from pennylane.measurements import SampleMP
 from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.transforms.batch_transform import batch_transform
 from pennylane.wires import Wires
 
-from pennylane.transforms.batch_transform import batch_transform
-from .kahypar import kahypar_cut
-from .tapes import graph_to_tape, tape_to_graph, _qcut_expand_fn
-from .utils import replace_wire_cut_nodes, fragment_graph, find_and_place_cuts
 from .cutstrategy import CutStrategy
+from .kahypar import kahypar_cut
 from .processing import qcut_processing_fn_mc, qcut_processing_fn_sample
 from .qcut import (
     MeasureNode,
     PrepareNode,
-    _prep_zero_state,
+    _prep_iminus_state,
+    _prep_iplus_state,
+    _prep_minus_state,
     _prep_one_state,
     _prep_plus_state,
-    _prep_minus_state,
-    _prep_iplus_state,
-    _prep_iminus_state,
+    _prep_zero_state,
 )
+from .tapes import _qcut_expand_fn, graph_to_tape, tape_to_graph
+from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
 @batch_transform
@@ -400,7 +398,7 @@ def cut_circuit_mc(
             "with a single output measurement"
         )
 
-    if not all(m.return_type is Sample for m in tape.measurements):
+    if not all(isinstance(m, SampleMP) for m in tape.measurements):
         raise ValueError(
             "The Monte Carlo circuit cutting workflow only supports circuits "
             "with sampling-based measurements"

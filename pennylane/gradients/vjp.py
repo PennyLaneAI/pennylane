@@ -370,6 +370,7 @@ def vjp(tape, dy, gradient_fn, shots=None, gradient_kwargs=None):
                     multi = len(tape.measurements) > 1
                     if multi:
                         multi_dy = dy[0]
+                        res = qml.math.convert_like(res, multi_dy)
                         return qml.math.cast_like(res, multi_dy)
                 return qml.math.cast_like(res, dy)
 

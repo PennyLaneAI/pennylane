@@ -1060,11 +1060,12 @@ class TestInverse:
             r"""Dummy custom Operation"""
             num_wires = 1
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
                 op = DummyOp(wires=[0]).inv()
             assert op.inverse is True
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert op.inverse is True
 
     def test_inverse_integration(self):
@@ -1163,48 +1164,48 @@ class TestTensor:
         op2 = qml.PauliY(1)
         T = Tensor(op1, op2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             T.queue()
 
-        assert len(tape.queue) == 1
-        assert tape.queue[0] is T
+        assert len(q.queue) == 1
+        assert q.queue[0] is T
 
-        assert tape[T] == {"owns": (op1, op2)}
+        assert q[T] == {"owns": (op1, op2)}
 
     def test_queuing(self):
         """Test the queuing of a Tensor object."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.PauliX(0)
             op2 = qml.PauliY(1)
             T = Tensor(op1, op2)
 
-        assert len(tape.queue) == 3
-        assert tape.queue[0] is op1
-        assert tape.queue[1] is op2
-        assert tape.queue[2] is T
+        assert len(q.queue) == 3
+        assert q.queue[0] is op1
+        assert q.queue[1] is op2
+        assert q.queue[2] is T
 
-        assert tape[op1] == {"owner": T}
-        assert tape[op2] == {"owner": T}
-        assert tape[T] == {"owns": (op1, op2)}
+        assert q[op1] == {"owner": T}
+        assert q[op2] == {"owner": T}
+        assert q[T] == {"owns": (op1, op2)}
 
     def test_queuing_observable_matmul(self):
         """Test queuing when tensor constructed with matmul."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.PauliX(0)
             op2 = qml.PauliY(1)
             t = op1 @ op2
 
-        assert len(tape.queue) == 3
-        assert tape[op1] == {"owner": t}
-        assert tape[op2] == {"owner": t}
-        assert tape[t] == {"owns": (op1, op2)}
+        assert len(q.queue) == 3
+        assert q[op1] == {"owner": t}
+        assert q[op2] == {"owner": t}
+        assert q[t] == {"owns": (op1, op2)}
 
     def test_queuing_tensor_matmul(self):
         """Tests the tensor-specific matmul method updates queuing metadata."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.PauliX(0)
             op2 = qml.PauliY(1)
             t = Tensor(op1, op2)
@@ -1212,8 +1213,8 @@ class TestTensor:
             op3 = qml.PauliZ(2)
             t2 = t @ op3
 
-        assert tape[t2] == {"owns": (op1, op2, op3)}
-        assert tape[op3] == {"owner": t2}
+        assert q[t2] == {"owns": (op1, op2, op3)}
+        assert q[op3] == {"owner": t2}
 
     def test_queuing_tensor_matmul_components_outside(self):
         """Tests the tensor-specific matmul method when components are defined outside the
@@ -1234,7 +1235,7 @@ class TestTensor:
     def test_queuing_tensor_rmatmul(self):
         """Tests tensor-specific rmatmul updates queuing metatadata."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.PauliX(0)
             op2 = qml.PauliY(1)
 
@@ -1244,8 +1245,8 @@ class TestTensor:
 
             t2 = op3 @ t1
 
-        assert tape[op3] == {"owner": t2}
-        assert tape[t2] == {"owns": (op3, op1, op2)}
+        assert q[op3] == {"owner": t2}
+        assert q[t2] == {"owns": (op3, op1, op2)}
 
     def test_name(self):
         """Test that the names of the observables are
@@ -1624,7 +1625,7 @@ class TestTensor:
         the pruned tensor as owned by the measurement,
         and turns the original tensor into an orphan without an owner."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as ann_queue:
             # we assign operations to variables here so we can compare them below
             a = qml.PauliX(wires=0)
             b = qml.PauliY(wires=1)
@@ -1632,8 +1633,6 @@ class TestTensor:
             T = qml.operation.Tensor(a, b, c)
             T_pruned = T.prune()
             m = qml.expval(T_pruned)
-
-        ann_queue = tape
 
         # the pruned tensor became the owner of Paulis
         assert ann_queue[a]["owner"] == T_pruned
@@ -1657,14 +1656,12 @@ class TestTensor:
         the pruned observable as owned by the measurement,
         and turns the original tensor into an orphan without an owner."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as ann_queue:
             a = qml.PauliX(wires=0)
             c = qml.Identity(wires=2)
             T = qml.operation.Tensor(a, c)
             T_pruned = T.prune()
             m = qml.expval(T_pruned)
-
-        ann_queue = tape
 
         # the pruned tensor is the Pauli observable
         assert T_pruned == a
