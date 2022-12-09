@@ -179,11 +179,7 @@ class QuantumPhaseEstimation(Operation):
             "estimation_wires": estimation_wires,
         }
 
-        super().__init__(None, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
+        super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @property
     def target_wires(self):
@@ -218,7 +214,7 @@ class QuantumPhaseEstimation(Operation):
 
     @staticmethod
     def compute_decomposition(
-        data, wires, unitary, target_wires, estimation_wires
+        wires, unitary, target_wires, estimation_wires
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the QPE circuit as a product of other operators.
 
@@ -228,7 +224,6 @@ class QuantumPhaseEstimation(Operation):
         .. seealso:: :meth:`~.QuantumPhaseEstimation.decomposition`.
 
         Args:
-            data (None): this should just be `None`.
             wires (Any or Iterable[Any]): wires that the QPE circuit acts on
             unitary (Operator): the phase estimation unitary, specified as an operator
             target_wires (Any or Iterable[Any]): the target wires to apply the unitary
