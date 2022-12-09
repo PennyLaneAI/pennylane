@@ -254,25 +254,15 @@ class TestConditionalOperations:
         tape = qml.defer_measurements(tape)
 
         # Conditioned on 0 as the control value, PauliX is applied before and after
-        assert len(tape.operations) == 3
+        assert len(tape.operations) == 1
         assert len(tape.measurements) == 1
 
-        # We flip the control qubit
-        first_x = tape.operations[0]
-        assert isinstance(first_x, qml.PauliX)
-        assert first_x.wires == qml.wires.Wires(0)
-
         # Check the two underlying Controlled instance
-        ctrl_op = tape.operations[1]
+        ctrl_op = tape.operations[0]
         assert isinstance(ctrl_op, qml.ops.op_math.Controlled)
         assert qml.equal(ctrl_op.base, qml.RY(first_par, 1))
 
         assert ctrl_op.wires == qml.wires.Wires([0, 1])
-
-        # We flip the control qubit back
-        sec_x = tape.operations[2]
-        assert isinstance(sec_x, qml.PauliX)
-        assert sec_x.wires == qml.wires.Wires(0)
 
     def test_correct_ops_in_tape_assert_zero_state(self):
         """Test that the underlying tape contains the correct operations if a
@@ -294,23 +284,13 @@ class TestConditionalOperations:
         tape = qml.defer_measurements(tape)
 
         # Conditioned on 0 as the control value, PauliX is applied before and after
-        assert len(tape.operations) == 3
+        assert len(tape.operations) == 1
         assert len(tape.measurements) == 1
 
-        # We flip the control qubit
-        first_x = tape.operations[0]
-        assert isinstance(first_x, qml.PauliX)
-        assert first_x.wires == qml.wires.Wires(0)
-
         # Check the underlying Controlled instance
-        ctrl_op = tape.operations[1]
+        ctrl_op = tape.operations[0]
         assert isinstance(ctrl_op, qml.ops.op_math.Controlled)
         assert qml.equal(ctrl_op.base, qml.RY(first_par, 1))
-
-        # We flip the control qubit back
-        sec_x = tape.operations[2]
-        assert isinstance(sec_x, qml.PauliX)
-        assert sec_x.wires == qml.wires.Wires(0)
 
     @pytest.mark.parametrize("rads", np.linspace(0.0, np.pi, 3))
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
