@@ -253,6 +253,7 @@ jobs:
         config:
           - { loc: "tests/returntypes/jax"}
           - { loc: "tests/returntypes/tf"}
+          - { loc: "tests/returntypes/torch"}
           - { loc: "tests/returntypes/autograd"}
           - { loc: "tests/returntypes/gradients"}
           - { loc: "tests/returntypes/transforms"}

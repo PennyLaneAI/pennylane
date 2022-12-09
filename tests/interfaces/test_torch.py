@@ -18,6 +18,7 @@ import pytest
 pytestmark = pytest.mark.torch
 
 torch = pytest.importorskip("torch")
+torch_cuda = pytest.importorskip("torch.cuda")
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
@@ -333,7 +334,7 @@ class TestCaching:
 
 torch_devices = [None]
 
-if torch.cuda.is_available():
+if torch_cuda.is_available():
     torch_devices.append(torch.device("cuda"))
 
 
