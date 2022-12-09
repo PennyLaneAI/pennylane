@@ -349,11 +349,13 @@ class Exp(SymbolicOp, Operation):
         + (1.0) [Z0 X1]
 
         """
-        for op in [self, qml.simplify(self)]:
-            if op.base.is_hermitian and not np.real(op.coeff):
-                return op.base
+        if self.base.is_hermitian and not np.real(self.coeff):
+            return self.base
+
         raise GeneratorUndefinedError(
-            f"Exponential with coefficient {self.coeff} and base operator {self.base} does not have a generator."
+            f"Exponential with coefficient {self.coeff} and base operator {self.base} does not appear to have a "
+            f"generator. Consider using op.simplify() to simplify before finding the generator, or define the operator "
+            f"in the form exp(ixG) through the Evolution class."
         )
 
 
@@ -440,3 +442,28 @@ class Evolution(Exp):
         if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
             return Evolution(new_base.base, self.param * new_base.scalar)
         return Evolution(new_base, self.param)
+
+    def generator(self):
+        r"""Generator of an operator that is in single-parameter-form.
+
+        For example, for operator
+
+        .. math::
+
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+
+        we get the generator
+
+        >>> U.generator()
+          (0.5) [Y0]
+        + (1.0) [Z0 X1]
+
+        """
+        if not self.base.is_hermitian:
+            warn(f"The base {self.base} may not be hermitian.")
+        if np.real(self.coeff):
+            raise GeneratorUndefinedError(
+                f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(ixG)."
+                f"The generator is not defined."
+            )
+        return self.base
