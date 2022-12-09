@@ -218,35 +218,20 @@ class QubitDevice(Device):
     measurement_map = defaultdict(lambda: "")  # e.g. {SampleMP: "sample"}
     """Mapping used to override the logic of measurement processes. The dictionary maps a
     measurement class to a string containing the name of a device's method that overrides the
-    measurement process. The method defined by the device should have the following signature:
+    measurement process. The method defined by the device should have the following arguments:
 
-    .. code-block:: python
-
-        def custom_measurement(self, measurement: MeasurementProcess, shot_range=None, bin_size=None):
-            '''Device's custom measurement implementation.
-
-            Args:
-                measurement (MeasurementProcess): measurement to override
-                shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
-                    to use. If not specified, all samples are used.
-                bin_size (int): Divides the shot range into bins of size ``bin_size``, and
-                    returns the measurement statistic separately over each bin. If not
-                    provided, the entire shot range is treated as a single bin.
-            '''
-
+    * measurement (MeasurementProcess): measurement to override
+    * shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+        to use. If not specified, all samples are used.
+    * bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+        returns the measurement statistic separately over each bin. If not
+        provided, the entire shot range is treated as a single bin.
 
     .. note::
         When overriding the logic of a :class:`~pennylane.measurements.MeasurementTransform`, the
-        signature of the method defined by the device should have the following signature:
+        method defined by the device should only have a single argument:
 
-        .. code-block:: python
-
-            def custom_measurement(self, qscript: QuantumScript):
-                '''Device's custom measurement implementation.
-
-                Args:
-                    qscript: quantum script to transform
-                '''
+        * qscript: quantum script to transform
 
     **Example:**
     Let's create device that inherits from :class:`~pennylane.devices.DefaultQubit` and overrides the
