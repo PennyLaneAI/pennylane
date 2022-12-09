@@ -23,7 +23,11 @@ from pennylane.wires import Wires
 
 
 class VertexType:  # pylint: disable=too-few-public-methods
-    """Type of a vertex in the graph."""
+    """Type of a vertex in the graph.
+
+    This class is copied from PyZX as we do not make PyZX a Pennylane requirement.
+
+    Copyright (C) 2018 - Aleks Kissinger and John van de Wetering"""
 
     BOUNDARY = 0
     Z = 1
@@ -32,7 +36,11 @@ class VertexType:  # pylint: disable=too-few-public-methods
 
 
 class EdgeType:  # pylint: disable=too-few-public-methods
-    """Type of an edge in the graph."""
+    """Type of an edge in the graph.
+
+    This class is copied from PyZX as we do not make PyZX a Pennylane requirement.
+
+    Copyright (C) 2018 - Aleks Kissinger and John van de Wetering"""
 
     SIMPLE = 1
     HADAMARD = 2
@@ -44,7 +52,7 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
 
     Args:
-        qscript(QuantumScript): The PennyLane quantum script.
+        qscript(QuantumScript, Operation): The PennyLane quantum circuit.
         expand_measurements(bool): The expansion will be applied on measurements that are not in the Z-basis and
             rotations will be added to the operations.
 
@@ -97,18 +105,108 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
                 qml.SWAP(wires=[0, 1]),
             ]
 
-        qscript = QuantumScript(operations, [], [])
+        qscript = QuantumScript(operations)
         g = qml.transforms.to_zx(qscript)
 
     >>> g
     Graph(22 vertices, 24 edges)
 
+    .. details::
+        :title: Usage Details
+
+            Here we give an example of how to use optimization techniques from ZX calculus and get back a PennyLane
+            circuit. With this example we also show how to draw the circuit and the drawing.
+
+        .. code-block:: python
+
+            @qml.transforms.to_zx
+            @qml.qnode(device=dev)
+            def mod_5_4():
+                qml.PauliX(wires=4),
+                qml.Hadamard(wires=4),
+                qml.CNOT(wires=[3, 4]),
+                qml.adjoint(qml.T(wires=[4])),
+                qml.CNOT(wires=[0, 4]),
+                qml.T(wires=[4]),
+                qml.CNOT(wires=[3, 4]),
+                qml.adjoint(qml.T(wires=[4])),
+                qml.CNOT(wires=[0, 4]),
+                qml.T(wires=[3]),
+                qml.T(wires=[4]),
+                qml.CNOT(wires=[0, 3]),
+                qml.T(wires=[0]),
+                qml.adjoint(qml.T(wires=[3]))
+                qml.CNOT(wires=[0, 3]),
+                qml.CNOT(wires=[3, 4]),
+                qml.adjoint(qml.T(wires=[4])),
+                qml.CNOT(wires=[2, 4]),
+                qml.T(wires=[4]),
+                qml.CNOT(wires=[3, 4]),
+                qml.adjoint(qml.T(wires=[4])),
+                qml.CNOT(wires=[2, 4]),
+                qml.T(wires=[3]),
+                qml.T(wires=[4]),
+                qml.CNOT(wires=[2, 3]),
+                qml.T(wires=[2]),
+                qml.adjoint(qml.T(wires=[3]))
+                qml.CNOT(wires=[2, 3]),
+                qml.Hadamard(wires=[4]),
+                qml.CNOT(wires=[3, 4]),
+                qml.Hadamard(wires=4),
+                qml.CNOT(wires=[2, 4]),
+                qml.adjoint(qml.T(wires=[4]),)
+                qml.CNOT(wires=[1, 4]),
+                qml.T(wires=[4]),
+                qml.CNOT(wires=[2, 4]),
+                qml.adjoint(qml.T(wires=[4])),
+                qml.CNOT(wires=[1, 4]),
+                qml.T(wires=[4]),
+                qml.T(wires=[2]),
+                qml.CNOT(wires=[1, 2]),
+                qml.T(wires=[1]),
+                qml.adjoint(qml.T(wires=[2]))
+                qml.CNOT(wires=[1, 2]),
+                qml.Hadamard(wires=[4]),
+                qml.CNOT(wires=[2, 4]),
+                qml.Hadamard(wires=4),
+                qml.CNOT(wires=[1, 4]),
+                qml.adjoint(qml.T(wires=[4])),
+                qml.CNOT(wires=[0, 4]),
+                qml.T(wires=[4]),
+                qml.CNOT(wires=[1, 4]),
+                qml.adjoint(qml.T(wires=[4])),
+                qml.CNOT(wires=[0, 4]),
+                qml.T(wires=[4]),
+                qml.T(wires=[1]),
+                qml.CNOT(wires=[0, 1]),
+                qml.T(wires=[0]),
+                qml.adjoint(qml.T(wires=[1])),
+                qml.CNOT(wires=[0, 1]),
+                qml.Hadamard(wires=[4]),
+                qml.CNOT(wires=[1, 4]),
+                qml.CNOT(wires=[0, 4]),
+                return qml.expval(qml.PauliZ(wires=0))
+
+        64 gates,  after 53 gates, t count 8
+        >>> g = circuit()
+        >>> pyzx.tcount(g)
+        28
+
+        >>>
+    .. note::
+
+        It is a PennyLane adapted and reworked `circuit_to_graph <https://github.com/Quantomatic/pyzx/blob/master/pyzx/circuit/graphparser.py>`_
+        function.
+
+        Copyright (C) 2018 - Aleks Kissinger and John van de Wetering
     """
-    return None  # pragma: no cover
+    # If it is a simple operation just transform it to a tape
+    return _to_zx(QuantumScript([qscript]))
 
 
 @to_zx.tape_transform
 def _to_zx(qscript, expand_measurements=False):
+    """Private function to convert a PennyLane tape to a `PyZX graph <https://pyzx.readthedocs.io/en/latest/>`_ ."""
     # Avoid to make PyZX a requirement for PennyLane.
     try:
         # pylint: disable=import-outside-toplevel
@@ -139,8 +237,7 @@ def _to_zx(qscript, expand_measurements=False):
         "CCZ": pyzx.circuit.gates.CCZ,
         "Toffoli": pyzx.circuit.gates.Tofolli,
     }
-
-    # Create the graph, a qubit mapper, the classical mapper stays empty as PennyLane do not support classical bits.
+    # Create the graph, a qubit mapper, the classical mapper stays empty as PennyLane does not support classical bits.
     graph = Graph(None)
     q_mapper = TargetMapper()
     c_mapper = TargetMapper()
@@ -225,12 +322,13 @@ def _add_operations_to_graph(qscript, graph, gate_types, q_mapper, c_mapper):
         gate.to_graph(graph, q_mapper, c_mapper)
 
 
-def from_zx(graph, split_phases=True):
-    """It converts a graph from PyZX to a PennyLane qscript, if graph is diagram-like.
+def from_zx(graph, decompose_phases=True):
+    """It converts a graph from `PyZX <https://pyzx.readthedocs.io/en/latest/>`_ to a PennyLane qscript, if graph is
+    diagram-like.
 
     Args:
-        graph(Graph): ZX graph in PyZX.
-        split_phases(bool): If True the phases are decomposed, meaning that :func:`qml.RZ` and :func:`qml.RX` are
+        graph (Graph): ZX graph in PyZX.
+        decompose_phases (bool): If True the phases are decomposed, meaning that :func:`qml.RZ` and :func:`qml.RX` are
             simplified into other gates (e.g. :func:`qml.T`, :func:`qml.S`, ...).
 
     **Example**
@@ -284,6 +382,13 @@ def from_zx(graph, split_phases=True):
         after you apply some optimization on your PyZX graph. You can extract a circuit by using the dedicated
         PyZX function.
 
+    .. note::
+
+        It is a PennyLane adapted and reworked `graph_to_circuit <https://github.com/Quantomatic/pyzx/blob/master/pyzx/circuit/graphparser.py>`_
+        function.
+
+        Copyright (C) 2018 - Aleks Kissinger and John van de Wetering
+
     """
 
     # Avoid to make PyZX a requirement for PennyLane.
@@ -332,7 +437,7 @@ def from_zx(graph, split_phases=True):
             # The graph is not diagram like.
             if len(neighbors) != 1:
                 raise qml.QuantumFunctionError(
-                    "Graph doesn't seem circuit like: multiple parents. Use extract circuit function."
+                    "Graph doesn't seem circuit like: multiple parents. Try to use the PyZX function `extract_circuit`."
                 )
 
             neighbor_0 = neighbors[0]
@@ -351,7 +456,7 @@ def from_zx(graph, split_phases=True):
                 continue
 
             # Add the one qubits gate
-            operations.extend(_add_one_qubit_gate(param, type_1, qubit_1, split_phases))
+            operations.extend(_add_one_qubit_gate(param, type_1, qubit_1, decompose_phases))
 
             # Given the neighbors on the same rowadd two qubits gates
             neighbors = [
@@ -366,13 +471,13 @@ def from_zx(graph, split_phases=True):
                     _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit_2)
                 )
 
-    qscript = QuantumScript(operations, [], prep=[])
+    qscript = QuantumScript(operations)
     return qscript
 
 
-def _add_one_qubit_gate(param, type_1, qubit_1, split_phases):
+def _add_one_qubit_gate(param, type_1, qubit_1, decompose_phases):
     """Return the list of one qubit gates, that will be added to the tape."""
-    if split_phases:
+    if decompose_phases:
         type_z = type_1 == VertexType.Z
         if type_z and param.denominator == 2:
             op = qml.adjoint(qml.S(wires=qubit_1)) if param.numerator == 3 else qml.S(wires=qubit_1)
@@ -400,7 +505,7 @@ def _add_one_qubit_gate(param, type_1, qubit_1, split_phases):
             scaled_param = np.pi * float(param)
             op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
             return [op_class(scaled_param, wires=qubit_1)]
-    # Phases are not split
+    # Phases are not decomposed
     else:
         if param != 0:
             scaled_param = np.pi * float(param)

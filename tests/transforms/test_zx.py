@@ -47,7 +47,8 @@ expanded_operations = [qml.PauliY(wires=0), qml.PhaseShift(0.3, wires=0), qml.RY
 
 non_diagram_like_operations = [qml.CCZ(wires=[0, 1, 2]), qml.Toffoli(wires=[0, 1, 2])]
 
-split = [True, False]
+decompose = [True, False]
+qscript = [True, False]
 
 
 def test_import_pyzx(monkeypatch):
@@ -55,6 +56,9 @@ def test_import_pyzx(monkeypatch):
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "pyzx", None)
+
+        with pytest.raises(ImportError, match="This feature requires PyZX."):
+            qml.transforms.to_zx(qml.PauliX(wires=0))
 
         with pytest.raises(ImportError, match="This feature requires PyZX."):
             qml.transforms.to_zx(QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]))
@@ -66,13 +70,18 @@ def test_import_pyzx(monkeypatch):
 class TestConvertersZX:
     """Test converters to_zx and from_zx."""
 
+    @pytest.mark.parametrize("qscript", qscript)
     @pytest.mark.parametrize("operation", supported_operations)
-    def test_supported_operation_no_params(self, operation):
+    def test_supported_operation_no_params(self, operation, qscript):
         """Test to convert the script to a ZX graph and back for supported operations."""
 
         I = qml.math.eye(2 ** len(operation.wires))
 
-        qscript = QuantumScript([operation], [], [])
+        if qscript:
+            qscript = QuantumScript([operation])
+        else:
+            qscript = operation
+
         matrix_qscript = qml.matrix(qscript)
 
         zx_g = qml.transforms.to_zx(qscript)
@@ -100,13 +109,18 @@ class TestConvertersZX:
 
         assert qml.math.allclose(mat_product, I)
 
+    @pytest.mark.parametrize("qscript", qscript)
     @pytest.mark.parametrize("operation", supported_operations_params)
-    def test_supported_operation_params(self, operation):
+    def test_supported_operation_params(self, operation, qscript):
         """Test to convert the script to a ZX graph and back for supported operations with parameters."""
 
+        if qscript:
+            qscript = QuantumScript([operation])
+        else:
+            qscript = operation
+
         I = qml.math.eye(2 ** len(operation.wires))
 
-        qscript = QuantumScript([operation], [], [])
         matrix_qscript = qml.matrix(qscript)
 
         zx_g = qml.transforms.to_zx(qscript)
@@ -135,13 +149,18 @@ class TestConvertersZX:
 
         assert qml.math.allclose(mat_product, I)
 
+    @pytest.mark.parametrize("qscript", qscript)
     @pytest.mark.parametrize("operation", expanded_operations)
-    def test_expanded_operation_params(self, operation):
+    def test_operation_need_expansion(self, operation, qscript):
         """Test to convert the script to a ZX graph and back for operations that needs expansions."""
+
+        if qscript:
+            qscript = QuantumScript([operation])
+        else:
+            qscript = operation
 
         I = qml.math.eye(2 ** len(operation.wires))
 
-        qscript = QuantumScript([operation], [], [])
         matrix_qscript = qml.matrix(qscript)
 
         zx_g = qml.transforms.to_zx(qscript)
@@ -192,9 +211,9 @@ class TestConvertersZX:
         with pytest.raises(qml.QuantumFunctionError, match="Graph doesn't seem circuit like"):
             qml.transforms.from_zx(zx_g)
 
-    @pytest.mark.parametrize("split", split)
+    @pytest.mark.parametrize("decompose", decompose)
     @pytest.mark.parametrize("operation", non_diagram_like_operations)
-    def test_circuit(self, operation, split):
+    def test_circuit(self, operation, decompose):
         """Test a simple circuit."""
 
         I = qml.math.eye(2**2)
@@ -224,7 +243,7 @@ class TestConvertersZX:
         mat_product /= mat_product[0, 0]
         assert qml.math.allclose(mat_product, I)
 
-        qscript_back = qml.transforms.from_zx(zx_g, split_phases=split)
+        qscript_back = qml.transforms.from_zx(zx_g, decompose_phases=decompose)
         assert isinstance(qscript_back, qml.tape.QuantumScript)
 
         matrix_qscript_back = qml.matrix(
