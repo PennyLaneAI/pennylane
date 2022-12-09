@@ -4,6 +4,24 @@
 
 <h3>New features since last release</h3>
 
+* Added ability to create expressions from mid-circuit measurements.
+  [#3159](https://github.com/PennyLaneAI/pennylane/pull/3159)
+
+  ```python
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.Hadamard(wires=1)
+      m0 = qml.measure(wires=0)
+      m1 = qml.measure(wires=1)
+      combined = 2 * m1 + m0
+      qml.cond(combined == 2, qml.RX)(1.3, wires=2)
+      return qml.probs(wires=2)
+  ```
+  ```pycon 
+  >>> circuit()
+  [0.90843735 0.09156265]  
+  ```
+
 * New gradient transform `qml.gradients.spsa_grad` based on the idea of SPSA.
   [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
 
@@ -642,6 +660,7 @@ This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola
 Utkarsh Azad
+Samuel Banning
 Astral Cai
 Ahmed Darwish
 Isaac De Vlugt
