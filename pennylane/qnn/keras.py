@@ -15,7 +15,7 @@
 API."""
 import inspect
 from collections.abc import Iterable
-from typing import Optional, Union, Sequence, Text
+from typing import Optional, Sequence, Text, Union
 
 from pennylane.transforms.batch_input import batch_input
 
@@ -192,8 +192,8 @@ class KerasLayer(Layer):
 
         **Returning a state**
 
-        If your QNode returns the state of the quantum circuit using :func:`~.state` or
-        :func:`~.density_matrix`, you must immediately follow your quantum Keras Layer with a layer
+        If your QNode returns the state of the quantum circuit using :func:`~pennylane.state` or
+        :func:`~pennylane.density_matrix`, you must immediately follow your quantum Keras Layer with a layer
         that casts to reals. For example, you could use
         `tf.keras.layers.Lambda <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Lambda>`__
         with the function ``lambda x: tf.abs(x)``. This casting is required because TensorFlow's
