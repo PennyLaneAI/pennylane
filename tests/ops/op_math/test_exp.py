@@ -787,3 +787,15 @@ class TestEvolution:
         grad = jax.grad(circ)(x)
 
         assert qml.math.allclose(grad, grad_param_shift)
+
+    def test_generator_warns_if_not_hermitian(self):
+        base = qml.s_prod(1j, qml.Identity(0))
+        op = Evolution(base, 2)
+        with pytest.warns(UserWarning, match="may not be hermitian"):
+            op.generator()
+
+    def test_simplifying_Evolution_operator(self):
+        base = qml.PauliX(0) + qml.PauliX(1) + qml.PauliX(0)
+        op = Evolution(base, 2)
+
+        assert qml.equal(op.simplify(), Evolution(base.simplify(), 2))
