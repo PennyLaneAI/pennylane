@@ -214,11 +214,12 @@ class TestJVP:
     def test_no_trainable_parameters(self):
         """A tape with no trainable parameters will simply return None"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {}
         tangent = np.array([1.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
@@ -229,11 +230,12 @@ class TestJVP:
     def test_zero_tangent_single_measurement_single_param(self):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
         tangent = np.array([0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
@@ -244,12 +246,13 @@ class TestJVP:
     def test_zero_tangent_single_measurement_multiple_param(self):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([0.0, 0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
@@ -260,12 +263,13 @@ class TestJVP:
     def test_zero_tangent_single_measurement_probs_multiple_param(self):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([0.0, 0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
@@ -276,12 +280,13 @@ class TestJVP:
     def test_zero_tangent_multiple_measurement_single_param(self):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
         tangent = np.array([0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
@@ -301,13 +306,14 @@ class TestJVP:
     def test_zero_tangent_multiple_measurement_multiple_param(self):
         """A zero tangent vector will return no tapes and a zero matrix"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([0.0, 0.0])
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
@@ -331,12 +337,13 @@ class TestJVP:
         x = 0.543
         y = -0.654
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([1.0, 1.0])
 
@@ -356,13 +363,14 @@ class TestJVP:
         x = 0.543
         y = -0.654
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([1.0, 2.0])
 
@@ -381,12 +389,13 @@ class TestJVP:
         dev = qml.device("default.qubit", wires=2)
         x = 0.543
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0}
         tangent = np.array([1.0])
 
@@ -409,13 +418,14 @@ class TestJVP:
         x = 0.543
         y = -0.654
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tangent = np.array([1.0, 1.0])
 
@@ -450,10 +460,11 @@ class TestJVP:
         zero-like."""
         x = np.array([0.1], dtype=np.float64)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x[0], wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         dy = np.zeros(1, dtype=dtype)
         _, func = qml.gradients.jvp(tape, dy, qml.gradients.param_shift)
 
@@ -483,9 +494,10 @@ class TestJVPGradients:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x, tangent):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 ansatz(x[0], x[1])
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
             jvp = fn(dev.batch_execute(tapes))
@@ -511,9 +523,10 @@ class TestJVPGradients:
         params = torch.tensor(params_np, requires_grad=True, dtype=torch.float64)
         tangent = torch.tensor([1.0, 0.0], dtype=torch.float64)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             ansatz(params[0], params[1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
         jvp = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="torch"))
@@ -546,9 +559,10 @@ class TestJVPGradients:
         )
 
         with tf.GradientTape() as t:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 ansatz(params[0], params[1])
 
+            tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
             jvp = fn(dev.batch_execute(tapes))
@@ -569,8 +583,9 @@ class TestJVPGradients:
         params = jnp.array(params_np)
 
         def cost_fn(x):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 ansatz(x[0], x[1])
+            tape = qml.tape.QuantumScript.from_queue(q)
             tangent = jax.numpy.array([1.0, 0.0])
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
@@ -592,17 +607,19 @@ class TestBatchJVP:
         """A tape with no trainable parameters will simply return None"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = {}
         tape2.trainable_params = {0, 1}
 
@@ -623,17 +640,19 @@ class TestBatchJVP:
         """If all tapes have no trainable parameters all outputs will be None"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = set()
         tape2.trainable_params = set()
 
@@ -649,17 +668,19 @@ class TestBatchJVP:
         """A zero dy vector will return no tapes and a zero matrix"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = {0}
         tape2.trainable_params = {0, 1}
 
@@ -679,17 +700,19 @@ class TestBatchJVP:
         """Test the 'append' reduction strategy"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = {0}
         tape2.trainable_params = {0, 1}
 
@@ -710,17 +733,19 @@ class TestBatchJVP:
         """Test the 'extend' reduction strategy"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=0)
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=1)
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = {0}
         tape2.trainable_params = {1}
 
@@ -735,18 +760,20 @@ class TestBatchJVP:
         """Test the 'extend' reduction strategy"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=0)
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = {0}
         tape2.trainable_params = {0, 1}
 
@@ -769,18 +796,20 @@ class TestBatchJVP:
         """Test the callable reduction strategy"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=0)
 
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         tape1.trainable_params = {0}
         tape2.trainable_params = {0, 1}
 

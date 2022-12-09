@@ -42,13 +42,14 @@ class TestPatternMatchingOptimization:
             qml.CNOT(wires=[1, 4])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[0, 2])
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
@@ -83,13 +84,14 @@ class TestPatternMatchingOptimization:
             qml.CNOT(wires=[1, 4])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[0, 2])
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
@@ -127,10 +129,11 @@ class TestPatternMatchingOptimization:
             qml.CNOT(wires=[1, 4])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.PauliX(wires=0)
             qml.PauliX(wires=0)
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
@@ -163,11 +166,12 @@ class TestPatternMatchingOptimization:
             qml.S(wires=2)
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.S(wires=0)
             qml.S(wires=0)
             qml.PauliZ(wires=0)
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
@@ -203,13 +207,14 @@ class TestPatternMatchingOptimization:
             qml.Toffoli(wires=[0, 2, 4])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.Toffoli(wires=[0, 1, 2])
             qml.CNOT(wires=[0, 1])
             qml.Toffoli(wires=[0, 1, 2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[0, 2])
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
@@ -244,12 +249,13 @@ class TestPatternMatchingOptimization:
             qml.Toffoli(wires=[2, 0, 3])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 0])
             qml.CNOT(wires=[0, 1])
             qml.SWAP(wires=[0, 1])
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=4)
 
         qnode = qml.QNode(circuit, dev)
@@ -297,10 +303,11 @@ class TestPatternMatchingOptimization:
             qml.SWAP(wires=[1, 3])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.SWAP(wires=[0, 1])
             qml.SWAP(wires=[0, 1])
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=4)
 
         qnode = qml.QNode(circuit, dev)
@@ -345,10 +352,11 @@ class TestPatternMatchingOptimization:
             qml.CSWAP(wires=[0, 1, 3])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.CSWAP(wires=[0, 1, 2])
             qml.CSWAP(wires=[0, 1, 2])
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=4)
 
         qnode = qml.QNode(circuit, dev)
@@ -396,14 +404,16 @@ class TestPatternMatchingOptimization:
             qml.CNOT(wires=[1, 4])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template_rz:
+        with qml.queuing.AnnotatedQueue() as q_template_rz:
             qml.RZ(0.1, wires=[0])
             qml.RZ(-0.1, wires=[0])
 
-        with qml.tape.QuantumTape() as template_rx:
+        template_rz = qml.tape.QuantumScript.from_queue(q_template_rz)
+        with qml.queuing.AnnotatedQueue() as q_template_rx:
             qml.RX(0.2, wires=[0])
             qml.RX(-0.2, wires=[0])
 
+        template_rx = qml.tape.QuantumScript.from_queue(q_template_rx)
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
@@ -444,18 +454,21 @@ class TestPatternMatchingOptimization:
             qml.PauliX(wires=1)
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template_cnot:
+        with qml.queuing.AnnotatedQueue() as q_template_cnot:
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[0, 1])
 
-        with qml.tape.QuantumTape() as template_x:
+        template_cnot = qml.tape.QuantumScript.from_queue(q_template_cnot)
+        with qml.queuing.AnnotatedQueue() as q_template_x:
             qml.PauliX(wires=[0])
             qml.PauliX(wires=[0])
 
-        with qml.tape.QuantumTape() as template_z:
+        template_x = qml.tape.QuantumScript.from_queue(q_template_x)
+        with qml.queuing.AnnotatedQueue() as q_template_z:
             qml.PauliZ(wires=[0])
             qml.PauliZ(wires=[0])
 
+        template_z = qml.tape.QuantumScript.from_queue(q_template_z)
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(circuit, dev)
@@ -535,13 +548,14 @@ class TestPatternMatchingOptimization:
             qml.CNOT(wires=[0, 4])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[0, 2])
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=5)
 
         qnode = qml.QNode(mod_5_4, dev)
@@ -657,13 +671,14 @@ class TestPatternMatchingOptimization:
             qml.Hadamard(wires=3)
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[0, 2])
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=10)
 
         qnode = qml.QNode(vbe_adder_3, dev)
@@ -728,9 +743,10 @@ class TestPatternMatchingOptimization:
             qml.CNOT(wires=[1, 4])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.CNOT(wires=[1, 2])
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=10)
 
         with pytest.raises(
@@ -747,10 +763,11 @@ class TestPatternMatchingOptimization:
             qml.PauliX(wires=0)
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[0, 1])
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
@@ -774,7 +791,7 @@ class TestPatternMatchingOptimization:
             qml.CNOT(wires=[1, 4])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as template:
+        with qml.queuing.AnnotatedQueue() as q_template:
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
@@ -782,6 +799,7 @@ class TestPatternMatchingOptimization:
             qml.CNOT(wires=[0, 2])
             qml.expval(qml.PauliX(wires=0))
 
+        template = qml.tape.QuantumScript.from_queue(q_template)
         dev = qml.device("default.qubit", wires=10)
 
         with pytest.raises(qml.QuantumFunctionError, match="The pattern contains measurements."):
@@ -820,7 +838,7 @@ class TestPatternMatching:
             qml.CNOT(wires=[4, 5])
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as pattern:
+        with qml.queuing.AnnotatedQueue() as q_pattern:
             qml.CNOT(wires=[3, 0])
             qml.PauliX(wires=4)
             qml.PauliZ(wires=0)
@@ -834,6 +852,7 @@ class TestPatternMatching:
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 3])
 
+        pattern = qml.tape.QuantumScript.from_queue(q_pattern)
         circuit_dag = commutation_dag(circuit)()
         pattern_dag = commutation_dag(pattern)()
 
@@ -936,12 +955,13 @@ class TestPatternMatching:
             qml.PauliX(wires=0)
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as pattern:
+        with qml.queuing.AnnotatedQueue() as q_pattern:
             qml.CNOT(wires=[1, 0])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=[0])
 
+        pattern = qml.tape.QuantumScript.from_queue(q_pattern)
         circuit_dag = commutation_dag(circuit)()
         pattern_dag = commutation_dag(pattern)()
 
@@ -970,7 +990,7 @@ class TestPatternMatching:
             qml.Hadamard(wires=3)
             return qml.expval(qml.PauliX(wires=0))
 
-        with qml.tape.QuantumTape() as pattern:
+        with qml.queuing.AnnotatedQueue() as q_pattern:
             qml.S(wires=0)
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=1)
@@ -978,6 +998,7 @@ class TestPatternMatching:
             qml.T(wires=1)
             qml.CNOT(wires=[0, 1])
 
+        pattern = qml.tape.QuantumScript.from_queue(q_pattern)
         circuit_dag = commutation_dag(circuit)()
         pattern_dag = commutation_dag(pattern)()
 

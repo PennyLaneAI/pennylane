@@ -167,30 +167,32 @@ class TestQueuing:
 
     def test_queuing(self):
         """Test symbolic op queues and updates base metadata."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = TempOperator("a")
             op = SymbolicOp(base)
 
-        assert tape.get_info(base)["owner"] is op
-        assert tape.get_info(op)["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert q.get_info(base)["owner"] is op
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_queuing_base_defined_outside(self):
         """Test symbolic op queues without adding base to the queue if it isn't already in the queue."""
 
         base = TempOperator("b")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = SymbolicOp(base)
 
-        assert qml.queuing.AnnotatedQueue.__len__(tape) == 1
-        assert tape.get_info(op)["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert len(q) == 1
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_false(self):
         """Test that queuing can be avoided if `do_queue=False`."""
 
         base = TempOperator("c")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = SymbolicOp(base, do_queue=False)
 
-        assert len(tape.queue) == 0
+        assert len(q.queue) == 0

@@ -30,8 +30,8 @@ def reduced_dm(qnode, wires):
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        func: Function which wraps the QNode and accepts the same arguments. When called, this function will
-        return the density matrix.
+        func: Function which wraps the QNode and accepts the same arguments. When called,
+        this function will return the density matrix.
 
     **Example**
 
@@ -86,7 +86,8 @@ def purity(qnode, wires):
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        A function that computes the purity of the wrapped circuit.
+        function: A function that computes the purity of the wrapped circuit and accepts the same
+        arguments.
 
     **Example**
 
@@ -145,7 +146,8 @@ def vn_entropy(qnode, wires, base=None):
         base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
     Returns:
-        float: Von Neumann entropy of the considered subsystem.
+        function: A function that computes the Von Neumann entropy of the considered subsystem
+        for the wrapped circuit and accepts the same arguments.
 
     **Example**
 
@@ -213,8 +215,8 @@ def mutual_info(qnode, wires0, wires1, base=None):
         base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
-        func: A function with the same arguments as the QNode that returns
-        the mutual information from its output state.
+        function: A function that computes the mutual information from the output state
+        of the QNode and accepts the same arguments.
 
     **Example**
 
@@ -303,7 +305,8 @@ def _compute_cfim(p, dp):
 
 @batch_transform
 def _make_probs(tape, wires=None, post_processing_fn=None):
-    """Ignores the return types of any qnode and creates a new one that outputs probabilities"""
+    """Ignores the return types of the provided circuit and creates a new one
+    that outputs probabilities"""
     qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(wires=wires or tape.wires)])
 
     if post_processing_fn is None:
@@ -521,7 +524,7 @@ def quantum_fisher(qnode, *args, **kwargs):
         *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
 
     Returns:
-        func: The function that computes the quantum fisher information matrix.
+        func: A function that computes the quantum fisher information matrix.
 
     .. note::
 

@@ -726,7 +726,8 @@ class QubitDevice(Device):
         """
         if observables is not None:
             if isinstance(observables, QuantumScript):
-                measurements = observables.measurements
+                circuit = observables
+                measurements = circuit.measurements
             else:
                 warnings.warn(
                     message="Using a list of observables in ``QubitDevice.statistics`` is "
