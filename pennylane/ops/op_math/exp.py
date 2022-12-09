@@ -358,7 +358,6 @@ class Exp(SymbolicOp, Operation):
 
 
 class Evolution(Exp):
-
     r"""Create an exponential operator that defines a generator, of the form :math:`e^{ix\hat{G}}`
 
     Args:

@@ -233,6 +233,8 @@
 
   ```pycon
   >>> phi = np.array(1.2)
+  >>> circuit(phi)
+  tensor(0.36235775, requires_grad=True)
   >>> qml.grad(circuit)(phi)
   -0.9320390495504149
   ```
