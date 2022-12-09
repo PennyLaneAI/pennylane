@@ -653,21 +653,6 @@ class TestDifferentiation:
         op = Exp(base_op, 1j)
         assert op.base == op.generator()
 
-    def test_generator_if_simplified(self):
-        """Tests that the generator can still be determined in cases where the input format is such that the
-        coefficient is real and operator is not hermitian, but the overall operator can be simplified to a form
-        with an imaginary coefficient and hermitian base"""
-
-        base_op = qml.s_prod(1j, qml.Identity(wires=0))
-        coeff = 1
-        op = Exp(base_op, coeff)
-
-        assert not base_op.is_hermitian
-        assert np.real(coeff)
-
-        assert op.generator() != op.base
-        assert op.generator() == qml.simplify(op).base
-
     def test_parameter_frequencies(self):
         """Test parameter_frequencies property"""
         op = Exp(qml.PauliZ(1), 1j)
