@@ -67,6 +67,7 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
         dev = qml.device('default.qubit', wires=2)
 
         @qml.transforms.to_zx
+        @qml.qnode(device=dev)
         def circuit(p):
             qml.RZ(p[0], wires=1),
             qml.RZ(p[1], wires=1),
@@ -83,11 +84,11 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
         g = circuit(params)
 
     >>> g
-    Graph(22 vertices, 24 edges)
+    Graph(20 vertices, 23 edges)
 
     It is now a PyZX graph and can apply function from the framework on your Graph, for example you can draw it:
 
-    >>> pyzx.draw(g)
+    >>> pyzx.draw_matplotlib(g)
     <Figure size 800x200 with 1 Axes>
 
     Alternatively you can use the transform directly on a quantum script and get PyZX graph.
@@ -106,11 +107,11 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
                 qml.SWAP(wires=[0, 1]),
             ]
 
-        qscript = QuantumScript(operations)
+        qscript = qml.tape.QuantumScript(operations)
         g = qml.transforms.to_zx(qscript)
 
     >>> g
-    Graph(22 vertices, 24 edges)
+    Graph(20 vertices, 23 edges)
 
     .. details::
         :title: Usage Details
@@ -195,7 +196,7 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
                 return qml.expval(qml.PauliZ(wires=0))
 
         The circuit contains 63 gates; 28 :func:`qml.T` gates, 28 :func:`qml.CNOT`, 6 :func:`qml.Hadmard` and
-        1 :func:`qml.PauliX`. We applied the `qml.transforms.to_zx` decorator in order to transform our circuit to
+        1 :func:`qml.PauliX`. We applied the ``qml.transforms.to_zx`` decorator in order to transform our circuit to
         a ZX graph.
 
         You can get the PyZX graph by simply calling the QNode:
@@ -214,19 +215,17 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
         8
 
         If you give a closer look, the circuit contains now 53 gates; 8 :func:`qml.T` gates, 28 :func:`qml.CNOT`, 6 :func:`qml.Hadmard` and
-        1 :func:`qml.PauliX` and 10 :func:`qml.PauliX`. We successfully reduced the T-count by 20 and have ten additional
-        S gates and also notice that the number of CNOT remains the same.
+        1 :func:`qml.PauliX` and 10 :func:`qml.S`. We successfully reduced the T-count by 20 and have ten additional
+        S gates. The number of CNOT gates remained the same.
 
         It is possible now possible to use the optimized circuit in PennyLane:
-
-        >>> qscript =
 
         .. code-block:: python
 
             qscript_opt = qml.transforms.from_zx(g)
 
             wires = qml.wires.Wires([4, 3, 0, 2, 1])
-            wires_map = OrderedDict(zip(qscript.wires, wires))
+            wires_map = dict(zip(qscript_opt.wires, wires))
             qscript_opt_reorder = qml.map_wires(input=qscript_opt, wire_map=wires_map)
 
             @qml.qnode(device=dev)
