@@ -455,7 +455,6 @@ class THadamard(Operation):
     where :math:`\omega = \exp(2 \pi i / 3)`.
 
     **Details:**
-    
     * Number of wires: 1
     * Number of parameters: 0
 
