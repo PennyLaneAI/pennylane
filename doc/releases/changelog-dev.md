@@ -252,6 +252,32 @@
   >>> qml.grad(qml.qinfo.purity(circuit, wires=[0]))(param)
   -0.5
   ```
+* New operation `Evolution` defines the exponential of an operator $\hat{O}$ of the form $e^{ix\hat{O}}$, with a single 
+  trainable parameter, x. Limiting to a single trainable parameter allows the use of `qml.gradient.param_shift` to 
+  find the gradient with respect to the parameter x.
+  [(#3375)](https://github.com/PennyLaneAI/pennylane/pull/3375)
+
+  This example circuit uses the `Evolution` operation to define $e^{-\frac{i}{2}\phi\hat{\sigma}_x}$ and finds a 
+  gradient using parameter shift:
+
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  
+  @qml.qnode(dev, diff_method=qml.gradients.param_shift)
+  def circuit(phi):
+      Evolution(qml.PauliX(0), -.5 * phi)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  
+  If we run this circuit, we will get the following output
+
+  ```pycon
+  >>> phi = np.array(1.2)
+  >>> circuit(phi)
+  tensor(0.36235775, requires_grad=True)
+  >>> qml.grad(circuit)(phi)
+  -0.9320390495504149
+  ```
 
 <h3>Improvements</h3>
 

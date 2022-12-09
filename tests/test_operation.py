@@ -625,7 +625,7 @@ class TestOperationConstruction:
 
         x = 0.654
         op = DummyOp(x, wires=0)
-        assert op.parameter_frequencies == (0.4,)
+        assert op.parameter_frequencies == [(0.4,)]
 
     def test_frequencies_default_multi_param(self):
         """Test that an operation with default parameter frequencies and multiple
