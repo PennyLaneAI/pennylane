@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.classical_shadow measurement.
 """
@@ -44,7 +43,7 @@ def shadow_expval(H, k=1, seed=None, seed_recipes=True):
             Different seeds are still generated for different constructed tapes.
 
     Returns:
-        float: expectation value estimate.
+        ShadowExpvalMP: measurement process instance
 
     .. note::
 
@@ -118,6 +117,9 @@ def classical_shadow(wires, seed=None, seed_recipes=True):
             classical shadows protocol. If None, a random seed will be generated. If a tape with
             a ``classical_shadow`` measurement is copied, the seed will also be copied.
             Different seeds are still generated for different constructed tapes.
+
+    Returns:
+        ClassicalShadowMP: measurement process instance
 
     **Example**
 
@@ -222,8 +224,8 @@ class ClassicalShadowMP(MeasurementTransform):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
-    This has the same arguments as the base class MeasurementProcess, plus other additional
-    arguments specific to the classical shadow protocol.
+    Please refer to :func:`classical_shadow` for detailed documentation.
+
 
     Args:
         args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
@@ -260,7 +262,7 @@ class ClassicalShadowMP(MeasurementTransform):
         quantum scripts containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
 
-        .. seealso:: :func:`~.classical_shadow`
+        .. seealso:: :func:`~pennylane.classical_shadow`
 
         Args:
             qscript (QuantumScript): the quantum script to be processed
@@ -336,14 +338,13 @@ class ClassicalShadowMP(MeasurementTransform):
 class ShadowExpvalMP(MeasurementTransform):
     """Measures the expectation value of an operator using the classical shadow measurement process.
 
-    This has the same arguments as the base class MeasurementProcess, plus other additional
-    arguments specific to the classical shadow protocol.
+    Please refer to :func:`shadow_expval` for detailed documentation.
 
     Args:
         args (tuple[Any]): Positional arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
-        seed (Union[int, None]): The seed used to generate the random measurements
         H (:class:`~.pennylane.Hamiltonian` or :class:`~.pennylane.operation.Tensor`): Observable
             to compute the expectation value over.
+        seed (Union[int, None]): The seed used to generate the random measurements
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
             ``k=1`` corresponds to simply taking the mean over all measurements.
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
@@ -358,17 +359,6 @@ class ShadowExpvalMP(MeasurementTransform):
         super().__init__(*args, **kwargs)
 
     def process(self, qscript, device):
-        """Compute expectation values using classical shadows in a differentiable manner.
-
-        Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
-
-        Args:
-            qscript (QuantumScript): the quantum script to be processed
-            device (Device): the device used to process the quantum script
-
-        Returns:
-            float: expectation value estimate.
-        """
         bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(
             qscript, device
         )

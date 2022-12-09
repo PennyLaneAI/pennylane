@@ -514,8 +514,7 @@
   class which inherits from `AnnotatedQueue`.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
-* Change class name `ShadowMeasurementProcess` to `ClassicalShadow`, to be consistent with the
-  `qml.classical_shadow` function name.
+* Change class name `ShadowMeasurementProcess` to `ClassicalShadowMP`
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 * The method `qml.Operation.get_parameter_shift` is removed. The `gradients` module should be used

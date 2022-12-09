@@ -29,6 +29,12 @@ from .measurements import SampleMeasurement, StateMeasurement, Variance
 def var(op: Operator):
     r"""Variance of the supplied observable.
 
+    Args:
+        op (Observable): a quantum observable object
+
+    Returns:
+        VarianceMP: measurement process instance
+
     **Example:**
 
     .. code-block:: python3
@@ -46,12 +52,6 @@ def var(op: Operator):
 
     >>> circuit(0.5)
     0.7701511529340698
-
-    Args:
-        op (Observable): a quantum observable object
-
-    Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -59,7 +59,21 @@ def var(op: Operator):
 
 
 class VarianceMP(SampleMeasurement, StateMeasurement):
-    """Measurement process that computes the variance of the supplied observable."""
+    """Measurement process that computes the variance of the supplied observable.
+
+    Please refer to :func:`var` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
 
     method_name = "var"
 

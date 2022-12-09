@@ -43,6 +43,9 @@ def mutual_info(wires0, wires1, log_base=None):
         wires1 (Sequence[int] or int): the wires of the second subsystem
         log_base (float): Base for the logarithm.
 
+    Returns:
+        MutualInfoMP: measurement process instance
+
     **Example:**
 
     .. code-block:: python3
@@ -85,11 +88,27 @@ def mutual_info(wires0, wires1, log_base=None):
 
 
 class MutualInfoMP(StateMeasurement):
-    """Measurement process that returns the mutual information between the provided wires."""
+    """Measurement process that computes the mutual information between the provided wires.
+
+    Please refer to :func:`mutual_info` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+        log_base (float): base for the logarithm
+
+    """
 
     method_name = "mutual_info"
 
-    # pylint: disable=too-many-arguments, unused-argument
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         obs: Operator = None,
