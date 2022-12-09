@@ -4,15 +4,13 @@
 
 <h3>New features since last release</h3>
 
-* Support for the getting the ZX calculus graph of a circuit with the PyZX framework.
+* Support for getting the ZX calculus graph of a circuit with the PyZX framework.
   [#3446](https://github.com/PennyLaneAI/pennylane/pull/3446)
   
   ```python
-  import pyzx
-  
   dev = qml.device("default.qubit", wires=2)
 
-  @qml.transforms.to_zx(expand_measurements=True)
+  @qml.transforms.to_zx
   @qml.qnode(device=dev)
   def circuit(p):
       qml.RZ(p[0], wires=1),
@@ -25,9 +23,11 @@
       qml.CNOT(wires=[1, 0]),
       qml.SWAP(wires=[0, 1]),
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-  params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
-  g = circuit(params)
+  ```
+  ```pycon
+  >>> params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
+  >>> circuit(params)
+  Graph(20 vertices, 23 edges)
   ```
   
 * New gradient transform `qml.gradients.spsa_grad` based on the idea of SPSA.
