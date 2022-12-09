@@ -69,10 +69,9 @@
     `VnEntropyMP`, `MutualInfoMP`, `ClassicalShadowMP` and `ShadowExpvalMP` classes.
 
   * Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
-    measurement processes in `QubitDevice`.
-
-  * Add the `QubitDevice.measurement_map` attribute, which maps a measurement class to the name
-    of a device method that will override the measurement process.
+    measurement processes in `QubitDevice`. Also allow devices to override measurement processes by
+    adding a `measurement_map` attribute, which should contain the measurement class as key and
+    the method name as value.
     [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
     [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
