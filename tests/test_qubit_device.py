@@ -24,16 +24,16 @@ from pennylane import DeviceError, QubitDevice
 from pennylane import numpy as pnp
 from pennylane.measurements import (
     Expectation,
+    ExpectationMP,
     MeasurementProcess,
     Probability,
+    ProbabilityMP,
     Sample,
+    SampleMP,
     State,
+    StateMP,
     Variance,
-    _Expectation,
-    _Probability,
-    _Sample,
-    _State,
-    _Variance,
+    VarianceMP,
     state,
 )
 from pennylane.tape import QuantumScript
@@ -180,10 +180,11 @@ class TestOperations:
         """Tests that the op_queue is correctly filled when apply is called and that accessing
         op_queue raises no error"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
             observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
 
+        tape = QuantumScript.from_queue(q)
         call_history = []
 
         with monkeypatch.context() as m:
@@ -210,10 +211,11 @@ class TestOperations:
 
     def test_unsupported_operations_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.Hadamard(wires=2)]
             observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
 
+        tape = QuantumScript.from_queue(q)
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
@@ -236,10 +238,11 @@ class TestOperations:
     ):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             for op in queue + observables:
                 op.queue()
 
+        tape = QuantumScript.from_queue(q)
         call_history = {}
 
         with monkeypatch.context() as m:
@@ -268,7 +271,7 @@ class TestObservables:
 
     def test_unsupported_observables_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
 
             observables = [
@@ -277,6 +280,7 @@ class TestObservables:
                 qml.sample(qml.PauliZ(2)),
             ]
 
+        tape = QuantumScript.from_queue(q)
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
@@ -291,10 +295,11 @@ class TestObservables:
             def return_type(self):
                 return "SomeUnsupportedReturnType"
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)
             UnsupportedMeasurement(obs=qml.PauliZ(0))
 
+        tape = QuantumScript.from_queue(q)
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
             with pytest.raises(
@@ -347,7 +352,7 @@ class TestExtractStatistics:
                 dev.statistics()
 
     @pytest.mark.parametrize(
-        "measurement", [_Expectation, _Variance, _Sample, _Probability, _State]
+        "measurement", [ExpectationMP, VarianceMP, SampleMP, ProbabilityMP, StateMP]
     )
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
@@ -1250,13 +1255,16 @@ class TestExecutionBroadcasted:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
-    with qml.tape.QuantumTape() as tape1:
+    with qml.queuing.AnnotatedQueue() as q1:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-    with qml.tape.QuantumTape() as tape2:
+    tape1 = QuantumScript.from_queue(q1)
+    with qml.queuing.AnnotatedQueue() as q2:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0))
+
+    tape2 = QuantumScript.from_queue(q2)
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
     def test_calls_to_execute(self, n_tapes, mocker, mock_qubit_device_with_paulis_and_methods):
@@ -1304,7 +1312,7 @@ class TestBatchExecution:
 
         dev = mock_qubit_device_with_paulis_and_methods(wires=2)
 
-        empty_tape = qml.tape.QuantumTape()
+        empty_tape = QuantumScript()
         tapes = [empty_tape] * 3
         res = dev.batch_execute(tapes)
 

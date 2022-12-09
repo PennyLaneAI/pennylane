@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.measurements import ClassicalShadow
+from pennylane.measurements import ClassicalShadowMP
 
 
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):
@@ -134,7 +134,9 @@ class TestClassicalShadow:
         assert res.shape(device=dev) == (1, 2, shots, wires)
 
         # test an error is raised when device is None
-        msg = "The device argument is required to obtain the shape of a classical shadow measurement process"
+        msg = (
+            "The device argument is required to obtain the shape of a classical shadow measurement"
+        )
         with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
             res.shape(device=None)
 
@@ -158,7 +160,7 @@ class TestClassicalShadow:
         res = qml.classical_shadow(wires=range(wires), seed=seed)
 
         copied_res = copy.copy(res)
-        assert isinstance(copied_res, ClassicalShadow)
+        assert isinstance(copied_res, ClassicalShadowMP)
         assert copied_res.return_type == res.return_type
         assert copied_res.wires == res.wires
         assert copied_res.seed == res.seed

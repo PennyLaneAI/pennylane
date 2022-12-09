@@ -56,12 +56,11 @@ def expval(op: Operator):
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
 
-    return _Expectation(obs=op)
+    return ExpectationMP(obs=op)
 
 
-# TODO: Make public when removing the ObservableReturnTypes enum
-class _Expectation(SampleMeasurement, StateMeasurement):
-    """Measurement process that computes the probability of each computational basis state."""
+class ExpectationMP(SampleMeasurement, StateMeasurement):
+    """Measurement process that computes the expectation value of the given operator."""
 
     method_name = "expval"
 

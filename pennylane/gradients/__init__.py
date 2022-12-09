@@ -111,7 +111,7 @@ creating the QNode:
 
 .. code-block:: python
 
-    @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
+    @qml.qnode(dev, diff_method=qml.gradients.param_shift)
     def circuit(weights):
         ...
 
