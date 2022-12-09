@@ -234,7 +234,7 @@
   >>> qml.grad(qml.qinfo.purity(circuit, wires=[0]))(param)
   -0.5
   ```
-* New operation `Evolution` defines an exponential of an operator in the form $e^{ix\hat{G}}$, with a single 
+* New operation `Evolution` defines the exponential of an operator $\hat{O}$ of the form $e^{ix\hat{O}}$, with a single 
   trainable parameter, x. Limiting to a single trainable parameter allows the use of `qml.gradient.param_shift` to 
   find the gradient with respect to the parameter x.
   [(#3375)](https://github.com/PennyLaneAI/pennylane/pull/3375)
