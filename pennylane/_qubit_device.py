@@ -239,6 +239,7 @@ class QubitDevice(Device):
     dictionary:
 
     .. code-block:: python
+
         class NewDevice(DefaultQubit):
             def __init__(self, wires, shots):
                 super().__init__(wires=wires, shots=shots)
