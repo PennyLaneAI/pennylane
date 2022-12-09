@@ -100,7 +100,7 @@ MeasurementProcess
 
 While the :class:`~.Operator` class describes a physical system and its dynamics,
 the :class:`pennylane.measure.MeasurementProcess` class describes how we extract information from the quantum system.
-The measurement functions such as :func:`~.expval` create an instance of this class.
+The measurement functions such as :func:`~pennylane.expval` create an instance of this class.
 
 >>> m = qml.expval(qml.PauliZ("a"))
 >>> type(m)
@@ -140,7 +140,7 @@ of :class:`~.Operator` and :class:`~.MeasurementProcesses` instances.
 
 If we call the quantum function in a tape context, the
 gates are stored in the tape's ``operation`` property, while the
-measurement functions such as :func:`~.expval` are responsible for adding measurement processes
+measurement functions such as :func:`~pennylane.expval` are responsible for adding measurement processes
 to the tape's ``measurement`` property.
 
 >>> with qml.tape.QuantumTape() as tape:
