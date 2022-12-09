@@ -564,7 +564,7 @@ class SampleMeasurement(MeasurementProcess):
     Let's create a measurement that returns the sum of all samples of the given wires.
 
     >>> class MyMeasurement(SampleMeasurement):
-    ...     def process_samples(self, samples, wire_order, shot_range, bin_size):
+    ...     def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
     ...         return qml.math.sum(samples[..., self.wires])
 
     We can now execute it in a QNode:
