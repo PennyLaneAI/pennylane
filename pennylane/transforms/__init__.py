@@ -147,6 +147,7 @@ more tapes as well as a classical processing function.
     ~transforms.broadcast_expand
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
+    ~transforms.sum_expand
 
 Decorators and utility functions
 --------------------------------
@@ -181,54 +182,51 @@ Transforms for error mitigation
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
 """
+from . import qcut
+from .adjoint_metric_tensor import adjoint_metric_tensor
+from .batch_input import batch_input
+from .batch_params import batch_params
+from .batch_partial import batch_partial
+
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
-from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
-from .op_transforms import op_transform
-from .batch_params import batch_params
-from .batch_input import batch_input
-from .batch_partial import batch_partial
+from .broadcast_expand import broadcast_expand
 from .classical_jacobian import classical_jacobian
-from .condition import cond, Conditional
+from .commutation_dag import CommutationDAG, CommutationDAGNode, commutation_dag
 from .compile import compile
-from .decompositions import zyz_decomposition, two_qubit_decomposition
+from .condition import Conditional, cond
+from .decompositions import two_qubit_decomposition, zyz_decomposition
 from .defer_measurements import defer_measurements
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
-from .split_non_commuting import split_non_commuting
+from .insert_ops import insert
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
-from .adjoint_metric_tensor import adjoint_metric_tensor
-from .insert_ops import insert
-from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
+from .mitigate import fold_global, mitigate_with_zne, poly_extrapolate, richardson_extrapolate
+from .op_transforms import op_transform
 from .optimization import (
     cancel_inverses,
     commute_controlled,
-    merge_rotations,
-    single_qubit_fusion,
     merge_amplitude_embedding,
-    remove_barrier,
-    undo_swaps,
+    merge_rotations,
     pattern_matching,
     pattern_matching_optimization,
+    remove_barrier,
+    single_qubit_fusion,
+    undo_swaps,
 )
-from .specs import specs
+from .qcut import cut_circuit, cut_circuit_mc
+from .qfunc_transforms import make_tape, qfunc_transform, single_tape_transform
 from .qmc import apply_controlled_Q, quantum_monte_carlo
-from .unitary_to_rot import unitary_to_rot
-from .commutation_dag import (
-    commutation_dag,
-    CommutationDAG,
-    CommutationDAGNode,
-)
+from .specs import specs
+from .split_non_commuting import split_non_commuting
 from .tape_expand import (
+    create_decomp_expand_fn,
+    create_expand_fn,
     expand_invalid_trainable,
     expand_multipar,
     expand_nonunitary_gen,
     expand_trainable_multipar,
-    create_expand_fn,
-    create_decomp_expand_fn,
     set_decomposition,
 )
 from .transpile import transpile
-from . import qcut
-from .qcut import cut_circuit, cut_circuit_mc
-from .broadcast_expand import broadcast_expand
+from .unitary_to_rot import unitary_to_rot
