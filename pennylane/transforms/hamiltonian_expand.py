@@ -264,7 +264,7 @@ def sum_expand(qscript: QuantumScript, group=True):
 
     Applying the processing function results in the expectation value of the Hamiltonian:
 
-        >>> fn(res)
+    >>> fn(res)
     [-0.5, 0.0, 0.0, -0.9999999999999996]
 
     Fewer tapes can be constructed by grouping commuting observables. This can be achieved
