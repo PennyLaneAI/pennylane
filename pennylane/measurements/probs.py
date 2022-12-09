@@ -41,7 +41,7 @@ def probs(wires=None, op=None):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable): Observable (with a diagonalizing_gates attribute) that rotates
+        op (Observable): Observable (with a ``diagonalizing_gates`` attribute) that rotates
             the computational basis
 
     Returns:
