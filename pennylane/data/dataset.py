@@ -106,7 +106,7 @@ class Dataset(ABC):
     def __std_init__(self, data_name, folder, attr_prefix, docstring):
         """Constructor for standardized datasets."""
         self._dtype = data_name
-        self._folder = folder.rstrip("/")
+        self._folder = folder.rstrip(os.path.sep)
         self._prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
         self._prefix_len = len(attr_prefix) + 1
         self._description = os.path.join(data_name, self._folder.split(data_name)[-1][1:])
@@ -116,7 +116,7 @@ class Dataset(ABC):
         if not os.path.exists(self._fullfile):
             self._fullfile = None
 
-        for f in glob(self._folder + "/*.dat"):
+        for f in glob(f"{self._folder}{os.path.sep}*.dat"):
             self.read(f, lazy=True)
 
     def __base_init__(self, **kwargs):
@@ -144,8 +144,9 @@ class Dataset(ABC):
         attr_str = (
             str(list(self.attrs))
             if len(self.attrs) < 3
-            else str(list(self.attrs)[:2])[:-1] + ", ...]"
+            else f"{str(list(self.attrs)[:2])[:-1]}, ...]"
         )
+
         std_str = f"description: {self._description}, " if self._is_standard else ""
         return f"<Dataset = {std_str}attributes: {attr_str}>"
 
@@ -241,7 +242,7 @@ class Dataset(ABC):
 
     # The methods below are intended for use only by standard Dataset objects
     def __get_filename_for_attribute(self, attribute):
-        return self._fullfile if self._fullfile else self._prefix.format(attribute)
+        return self._fullfile or self._prefix.format(attribute)
 
     def __get_attribute_from_filename(self, filename):
         return os.path.basename(filename)[self._prefix_len : -4]
