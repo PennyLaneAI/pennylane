@@ -759,7 +759,11 @@ def _get_var_with_second_order(pdA2, f0, pdA):
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
     """
-    return qml.math.array(pdA2 - 2 * f0 * pdA)
+    # Only necessary for numpy array with shape () not to be float
+    if any(isinstance(term, np.ndarray) for term in [pdA2, f0, pdA]):
+        # It breaks differentiability for Torch
+        return qml.math.array(pdA2 - 2 * f0 * pdA)
+    return pdA2 - 2 * f0 * pdA
 
 
 def _put_zeros_in_pdA2_involutory(tape, pdA2, involutory_indices):
@@ -1736,7 +1740,7 @@ def param_shift(
     to use during autodifferentiation:
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
+    >>> @qml.qnode(dev, diff_method=qml.gradients.param_shift)
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)
