@@ -192,8 +192,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     array([1.])
     """
     p = alpha + beta
-    q = alpha * beta / p
-    q = np.array(q, requires_grad=True)
+    q = qml.math.array(alpha * beta / p)
     r = ra - rb
 
     if la == lb == t == 0:
