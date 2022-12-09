@@ -220,7 +220,7 @@ def _equal_prod(op1: Prod, op2: Prod, **kwargs):
 
     # compare each wire group
     for wire_ops1, wire_ops2 in zip(sorted_ops1, sorted_ops2):
-        if not np.all([qml.equal(op1, op2) for op1, op2 in zip(wire_ops1, wire_ops2)]):
+        if not np.all([qml.equal(op1, op2, **kwargs) for op1, op2 in zip(wire_ops1, wire_ops2)]):
             return False
 
     return True
