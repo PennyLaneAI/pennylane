@@ -301,6 +301,9 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
+* Extended the functionality of `qml.matrix` to qutrits.
+  [(#3460)](https://github.com/PennyLaneAI/pennylane/pull/3460)
+
 * File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
   [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
 
@@ -664,6 +667,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso
 Juan Miguel Arrazola
 Utkarsh Azad
 Samuel Banning
