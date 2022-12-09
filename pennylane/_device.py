@@ -28,6 +28,7 @@ import pennylane as qml
 from pennylane.measurements import (
     CountsMP,
     Expectation,
+    ExpectationMP,
     MidMeasureMP,
     Probability,
     ProbabilityMP,
