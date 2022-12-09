@@ -72,7 +72,7 @@
     measurement processes in `QubitDevice`.
 
   * Add the `QubitDevice.measurement_map` attribute, which maps a measurement class to the name
-    of the device method that overrides the measurement process.
+    of a device method that will override the measurement process.
     [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
     [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
