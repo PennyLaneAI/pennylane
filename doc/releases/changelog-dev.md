@@ -501,6 +501,9 @@
   support the new return types.
   [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
 
+* The tolerance for converting openfermion Hamiltonian complex coefficient is modified.
+  [(#3367)](https://github.com/PennyLaneAI/pennylane/pull/3367)
+
 <h3>Breaking changes</h3>
 
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `VnEntropyMP` and
