@@ -26,6 +26,7 @@ to have a more relevant location.
     ~backward_patch_interface
     ~PythonDevice
     ~Tracker
+    ~DefaultPreprocessor
     ~simple_preprocessor
     ~adjoint_diff_gradient
     ~PlainNumpySimulator
@@ -94,6 +95,7 @@ We can also use :func:`~.execute` or :class:`~.QNode` with ``cache=False``.
 """
 
 from .tracker import Tracker
+from .default_preprocessor import DefaultPreprocessor
 from .device_interface import AbstractDevice
 from .python_device import PythonDevice
 from .compatibility_patching import backward_patch_interface
