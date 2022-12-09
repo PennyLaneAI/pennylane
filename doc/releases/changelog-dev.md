@@ -303,6 +303,11 @@
   the optional `use_grouping` attribute.
   [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
 
+* Updated `zyz_decomposition` function such that it now supports broadcast operators. This
+  means that single-qubit `QubitUnitary` operators, instantiated from a batch of unitaries,
+  can now be decomposed.
+  [(#3477)](https://github.com/PennyLaneAI/pennylane/pull/3477)
+
 * Reduce usage of `MeasurementProcess.return_type`. Use `isinstance` checks instead.
   [(#3399)](https://github.com/PennyLaneAI/pennylane/pull/3399)
 
@@ -638,6 +643,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Utkarsh Azad
 Astral Cai
+Ahmed Darwish
 Isaac De Vlugt
 Pieter Eendebak
 Lillian M. A. Frederiksen
