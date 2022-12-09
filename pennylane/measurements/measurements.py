@@ -556,7 +556,8 @@ class MeasurementProcess(ABC):
 class SampleMeasurement(MeasurementProcess):
     """Sample-based measurement process.
 
-    Any class inheriting from this class should define its own ``process_samples`` method.
+    Any class inheriting from ``SampleMeasurement`` should define its own
+    :func:`SampleMeasurement.process_samples` method.
 
     **Example:**
 
@@ -601,7 +602,8 @@ class SampleMeasurement(MeasurementProcess):
 class StateMeasurement(MeasurementProcess):
     """State-based measurement process.
 
-    Any class inheriting from this class should define its own ``process_state`` method.
+    Any class inheriting from ``StateMeasurement`` should define its own
+    :func:`StateMeasurement.process_state` method.
 
     **Example:**
 
@@ -641,8 +643,9 @@ class MeasurementTransform(MeasurementProcess):
     """Measurement process that applies a transform into the given quantum script. This transform
     is carried out inside the gradient black box, thus is not tracked by the gradient transform.
 
-    Any class inheriting from this class should define its own ``process`` method, which takes a
-    device instance and a quantum script and returns the result of the measurement process.
+    Any class inheriting from ``MeasurementTransform`` should define its own
+    :func:`MeasurementTransform.process` method, which takes a device instance and a quantum script
+    and returns the result of the measurement process.
     """
 
     method_name = ""
