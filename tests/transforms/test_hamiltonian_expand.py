@@ -314,13 +314,13 @@ with AnnotatedQueue() as qs_tape3:
     qml.probs(op=qml.PauliY(0))
 
 
-S4 = (
-    qml.prod(qml.PauliX(0), qml.PauliZ(2))
-    + qml.s_prod(3, qml.PauliZ(2))
-    - qml.s_prod(2, qml.PauliX(0))
-    + qml.PauliZ(2)
-    + qml.PauliZ(2)
-    + qml.prod(qml.PauliZ(0), qml.PauliX(1), qml.PauliY(2))
+S4 = qml.op_sum(
+    qml.prod(qml.PauliX(0), qml.PauliZ(2)),
+    qml.s_prod(3, qml.PauliZ(2)),
+    qml.s_prod(-2, qml.PauliX(0)),
+    qml.PauliZ(2),
+    qml.PauliZ(2),
+    qml.prod(qml.PauliZ(0), qml.PauliX(1), qml.PauliY(2)),
 )
 
 with AnnotatedQueue() as qs_tape4:
@@ -384,26 +384,12 @@ class TestSumExpand:
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
-        qs = QuantumScript(tape.operations, tape.measurements)
-        tapes, fn = sum_expand(qs)
-        results = dev.batch_execute(tapes)
-        expval = fn(results)
-
-        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
-
     @pytest.mark.parametrize(("tape", "output"), zip(SUM_TAPES, SUM_OUTPUTS))
     def test_sums_no_grouping(self, tape, output):
         """Tests that the sum_expand transform returns the correct value
         if we switch grouping off"""
 
         tapes, fn = sum_expand(tape, group=False)
-        results = dev.batch_execute(tapes)
-        expval = fn(results)
-
-        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
-
-        qs = QuantumScript(tape.operations, tape.measurements)
-        tapes, fn = sum_expand(qs, group=False)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
@@ -426,25 +412,6 @@ class TestSumExpand:
 
         qs = QuantumScript(tape.operations, tape.measurements)
         tapes, fn = sum_expand(qs, group=True)
-        assert len(tapes) == 2
-
-    def test_number_of_tapes(self):
-        """Tests that the the correct number of tapes is produced"""
-
-        S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
-
-        with AnnotatedQueue() as q:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PauliX(wires=2)
-            qml.expval(S)
-
-        tape = QuantumScript.from_queue(q)
-
-        tapes, fn = sum_expand(tape, group=False)
-        assert len(tapes) == 3
-
-        tapes, fn = sum_expand(tape, group=True)
         assert len(tapes) == 2
 
     def test_number_of_qscripts(self):
@@ -472,7 +439,7 @@ class TestSumExpand:
 
         assert len(tapes) == 1
         assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
-        # Old returntypes return a list for a single value:
+        # Old return types return a list for a single value:
         # e.g. qml.expval(qml.PauliX(0)) = [1.23]
         res = [1.23] if qml.active_return() else [[1.23]]
         assert fn(res) == 1.23
