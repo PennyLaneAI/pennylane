@@ -313,7 +313,7 @@ class MeasurementProcess(ABC):
             return f"{self.return_type.value}(wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        if self.obs.return_type is None:
+        if getattr(self.obs, "return_type", None) is None:
             return f"{self.return_type.value}({self.obs})"
 
         return f"{self.obs}"
