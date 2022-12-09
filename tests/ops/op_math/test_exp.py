@@ -414,6 +414,7 @@ class TestMiscMethods:
 
         assert qml.equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 12
+        assert new_op is not op
 
     def test_copy(self):
         """Tests making a copy."""
@@ -421,7 +422,6 @@ class TestMiscMethods:
         copied_op = op.__copy__()
 
         assert qml.equal(op.base, copied_op.base)
-        assert op.wires == copied_op.wires
         assert op.data == copied_op.data
         assert op.hyperparameters.keys() == copied_op.hyperparameters.keys()
 
