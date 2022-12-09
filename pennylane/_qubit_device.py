@@ -228,6 +228,7 @@ class QubitDevice(Device):
         provided, the entire shot range is treated as a single bin.
 
     .. note::
+
         When overriding the logic of a :class:`~pennylane.measurements.MeasurementTransform`, the
         method defined by the device should only have a single argument:
 
