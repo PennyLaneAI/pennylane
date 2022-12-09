@@ -47,7 +47,6 @@ class QubitUnitary(Operation):
 
     Raises:
         ValueError: if the number of wires doesn't fit the dimensions of the matrix
-        UserWarning: if the input matrix might not be unitary
 
     **Example**
 

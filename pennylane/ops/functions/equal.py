@@ -325,7 +325,7 @@ def _(op1: MutualInfoMP, op2: MutualInfoMP, **kwargs):
 @_equal.register
 # pylint: disable=unused-argument
 def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **kwargs):
-    """Determine whether two ClassicalShadow objects are equal"""
+    """Determine whether two ShadowExpvalMP objects are equal"""
 
     wires_match = op1.wires == op2.wires
     H_match = op1.H == op2.H
