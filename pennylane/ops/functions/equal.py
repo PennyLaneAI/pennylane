@@ -237,7 +237,10 @@ def _equal_sum(op1: Sum, op2: Sum, **kwargs):
     simplified_op2 = qml.op_sum(*sorted_ops2).simplify()
 
     return np.all(
-        [qml.equal(o1, o2) for o1, o2 in zip(simplified_op1.operands, simplified_op2.operands)]
+        [
+            qml.equal(o1, o2, **kwargs)
+            for o1, o2 in zip(simplified_op1.operands, simplified_op2.operands)
+        ]
     )
 
 
