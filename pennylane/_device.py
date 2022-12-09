@@ -736,7 +736,7 @@ class Device(abc.ABC):
 
         hamiltonian_in_obs = any(isinstance(obs, Hamiltonian) for obs in circuit.observables)
         expval_sum_in_obs = any(
-            isinstance(m.obs, Sum) and m.return_type is Expectation for m in circuit.measurements
+            isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
         )
 
         is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
