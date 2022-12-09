@@ -7,4 +7,4 @@ qml.measurements
     :no-heading:
     :include-all-objects:
     :inheritance-diagram:
-    :skip: MeasurementShapeError, MeasurementValueError
+    :skip: MeasurementShapeError, MeasurementValueError, ObservableReturnTypes
