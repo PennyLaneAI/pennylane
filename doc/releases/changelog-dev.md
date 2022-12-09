@@ -280,6 +280,9 @@
   Replaces `qml.transforms.make_tape` with `make_qscript`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
+* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
+  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
+
 * Add a UserWarning when creating a `Tensor` object with overlapping wires,
   informing that this can in some cases lead to undefined behaviour.
   [(#3459)](https://github.com/PennyLaneAI/pennylane/pull/3459)
@@ -290,13 +293,19 @@
 * Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
 
+* Extended the `qml.equal` function to `Pow`, `SProd`, `Exp` and `Adjoint` objects.
+  [(#3471)](https://github.com/PennyLaneAI/pennylane/pull/3471)
+
 * Adds support for devices disregarding observable grouping indices in Hamiltonians through
   the optional `use_grouping` attribute.
   [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
 
 * Reduce usage of `MeasurementProcess.return_type`. Use `isinstance` checks instead.
   [(#3399)](https://github.com/PennyLaneAI/pennylane/pull/3399)
+
+* Improved the performance of executing circuits under the `jax.vmap` transformation, which can now leverage the batch-execution capabilities of some devices. [(#3452)](https://github.com/PennyLaneAI/pennylane/pull/3452)
   
+
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
@@ -417,10 +426,30 @@
          [-0.383     , -0.1915    ,  0.        ,  0.        ,  0.1915    ],
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
+* Thy PyTorch interface supports the new return system and users can use jacobian and hessian using custom differentiation
+  methods (e.g., parameter-shift, finite difference or adjoint).
+  [(#3416)](https://github.com/PennyLaneAI/pennylane/pull/3414)
+  
+  ```python
+  dev = qml.device("default.qubit", wires=2)
 
-* The JAX-JIT interface now supports gradient transforms and device gradient execution in `backward` mode with the new
-  return types system.
+  @qml.qnode(dev, diff_method="parameter-shift", interface="torch")
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=1)
+      qml.CNOT(wires=[0, 1])>
+      return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+  ```
+  ```pycon
+  >>> a = torch.tensor(0.1, requires_grad=True)
+  >>> b = torch.tensor(0.2, requires_grad=True)
+  >>> torch.autograd.functional.jacobian(circuit, (a, b))
+  ((tensor(-0.0998), tensor(0.)), (tensor([-0.0494, -0.0005,  0.0005,  0.0494]), tensor([-0.0991,  0.0991,  0.0002, -0.0002])))
+  ```
+
+* The JAX-JIT interface now supports first-order gradient computation with the new return types system.
   [(#3235)](https://github.com/PennyLaneAI/pennylane/pull/3235)
+  [(#3445)](https://github.com/PennyLaneAI/pennylane/pull/3445)
 
   ```python
   import pennylane as qml
@@ -450,7 +479,6 @@
   (DeviceArray(5.55111512e-17, dtype=float64, weak_type=True),
   DeviceArray(0., dtype=float64, weak_type=True)))
   ```
-
 * Updated `qml.transforms.split_non_commuting` to support the new return types.
   [(#3414)](https://github.com/PennyLaneAI/pennylane/pull/3414)
 
@@ -461,8 +489,13 @@
   `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
   [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
 
-* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
-  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
+* Updated `qml.transforms.batch_params` and `qml.transforms.batch_input` to support the new return types
+  [(#3431)](https://github.com/PennyLaneAI/pennylane/pull/3431)
+
+* Updated `qml.transforms.cut_circuit` and `qml.transforms.cut_circuit_mc` to
+  support the new return types.
+  [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
+
 
 <h3>Breaking changes</h3>
 
@@ -542,6 +575,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Documentation</h3>
 
+* Corrects the return type statements of gradient and Hessian transforms, as well as a series
+  of other functions that are a `batch_transform`.
+  [(#3476)](https://github.com/PennyLaneAI/pennylane/pull/3476)
+
 * Adds developer documentation for the queuing module.
   [(#3268)](https://github.com/PennyLaneAI/pennylane/pull/3268)
 
@@ -609,3 +646,4 @@ Jay Soni
 Antal Száva
 David Wierichs
 Moritz Willmann
+Filippo Vicentini

@@ -155,12 +155,13 @@ class TestMultipleOperations:
         """Check the total matrix for a tape containing multiple gates"""
         wire_order = ["a", "b", "c"]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")
             qml.S(wires="b")
             qml.Hadamard(wires="c")
             qml.CNOT(wires=["b", "c"])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape, wire_order)
         expected_matrix = I_CNOT @ X_S_H
         assert np.allclose(matrix, expected_matrix)
@@ -208,12 +209,13 @@ class TestWithParameterBroadcasting:
         wire_order = ["a", "b", "c"]
 
         angles = np.array([0.0, np.pi, 0.7])
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.S(wires="b")
             qml.RX(angles, wires="a")
             qml.Hadamard(wires="c")
             qml.CNOT(wires=["b", "c"])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape, wire_order)
         expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ np.kron(RX(0.7), S_H)]
         assert np.allclose(matrix, expected_matrix)
@@ -228,12 +230,13 @@ class TestWithParameterBroadcasting:
         wire_order = ["a", "b", "c"]
 
         angles = np.array([0.0, np.pi, 0.7])
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(angles, wires="a")
             qml.S(wires="b")
             qml.Hadamard(wires="c")
             qml.CNOT(wires=["b", "c"])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape, wire_order)
         expected_matrix = [I_CNOT @ I_S_H, -1j * I_CNOT @ X_S_H, I_CNOT @ np.kron(RX(0.7), S_H)]
         assert np.allclose(matrix, expected_matrix)
@@ -245,13 +248,14 @@ class TestWithParameterBroadcasting:
 
         angles1 = np.array([0.0, np.pi, 0.0, np.pi])
         angles2 = np.array([0.0, 0.0, np.pi, np.pi])
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.S(wires="b")
             qml.RX(angles1, wires="a")
             qml.Hadamard(wires="c")
             qml.CNOT(wires=["b", "c"])
             qml.RX(angles2, wires="c")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape, wire_order)
         I_I_X = np.kron(np.eye(4), X)
         expected_matrix = [
@@ -269,13 +273,14 @@ class TestWithParameterBroadcasting:
 
         angles1 = np.array([0.0, np.pi, 0.0, np.pi])
         angles2 = np.array([0.0, 0.0, np.pi, np.pi])
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.S(wires="b")
             qml.RX(angles1, wires="a")
             qml.Hadamard(wires="b")
             qml.CNOT(wires=["a", "b"])
             qml.RX(angles2, wires="b")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape, wire_order)
         I_HS = np.kron(I, H @ S)
         X_HS = np.kron(X, H @ S)
@@ -300,11 +305,12 @@ class TestCustomWireOrdering:
     def test_tape_wireorder(self):
         """Test changing the wire order when using a tape"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)
             qml.PauliY(wires=1)
             qml.PauliZ(wires=2)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         matrix = qml.matrix(tape)
         expected_matrix = np.kron(X, np.kron(Y, Z))
         assert np.allclose(matrix, expected_matrix)
@@ -369,9 +375,10 @@ class TestTemplates:
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
         res = qml.matrix(op)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op.decomposition()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = qml.matrix(tape)
         np.allclose(res, expected)
 
@@ -388,10 +395,11 @@ class TestTemplates:
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op.decomposition()
             qml.RX(x, wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = qml.matrix(tape)
         np.allclose(res, expected)
 
@@ -411,9 +419,10 @@ class TestTemplates:
         res = qml.matrix(op)
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op.decomposition()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = qml.matrix(tape)
         np.allclose(res, expected)
 
@@ -438,10 +447,11 @@ class TestTemplates:
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op.decomposition()
             qml.RX(x, wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = qml.matrix(tape)
         np.allclose(res, expected)
 

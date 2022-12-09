@@ -97,7 +97,7 @@ class SProd(SymbolicOp):
 
             dev = qml.device("default.qubit", wires=1)
 
-            @qml.qnode(dev, grad_method="best")
+            @qml.qnode(dev, diff_method="best")
             def circuit(scalar, theta):
                 qml.RX(theta, wires=0)
                 return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))

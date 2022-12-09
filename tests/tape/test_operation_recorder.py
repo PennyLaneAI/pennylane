@@ -84,6 +84,7 @@ class TestOperationRecorder:
             template(3)
 
         assert str(recorder) == expected_output
+        assert qml.equal(recorder[0], qml.RZ(0, wires=0))
 
     def test_template_with_return_integration(self):
         """Tests that the OperationRecorder integrates well with the
