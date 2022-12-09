@@ -301,10 +301,6 @@
 
 * Improved the performance of executing circuits under the `jax.vmap` transformation, which can now leverage the batch-execution capabilities of some devices. [(#3452)](https://github.com/PennyLaneAI/pennylane/pull/3452)
 
-* Child classes of `QuantumScript` now return their own type when using `SomeChildClass.from_queue`.
-  [(#3501)](https://github.com/PennyLaneAI/pennylane/pull/3501)
-  
-
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
@@ -623,6 +619,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * Fixed a bug where a QNode returning `qml.sample` would produce incorrect results when
   run on a device defined with a shot vector.
   [(#3422)](https://github.com/PennyLaneAI/pennylane/pull/3422)
+
+* Child classes of `QuantumScript` now return their own type when using `SomeChildClass.from_queue`.
+  [(#3501)](https://github.com/PennyLaneAI/pennylane/pull/3501)
 
 <h3>Contributors</h3>
 
