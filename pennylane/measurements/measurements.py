@@ -122,25 +122,6 @@ class MeasurementProcess(ABC):
             where the instance has to be identified
     """
 
-    method_name = ""
-    """Devices can override the logic of a measurement process by defining a method with the
-    name ``method_name`` of the corresponding class. The method should have the following signature:
-
-    .. code-block:: python
-
-        def method_name(self, measurement: MeasurementProcess, shot_range=None, bin_size=None):
-            '''Device's custom measurement implementation.
-
-            Args:
-                measurement (MeasurementProcess): measurement to override
-                shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
-                    to use. If not specified, all samples are used.
-                bin_size (int): Divides the shot range into bins of size ``bin_size``, and
-                    returns the measurement statistic separately over each bin. If not
-                    provided, the entire shot range is treated as a single bin.
-            '''
-    """
-
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -660,20 +641,6 @@ class MeasurementTransform(MeasurementProcess):
 
     * qscript (QuantumScript): quantum script to transform
     * device (Device): device used to transform the quantum script
-    """
-
-    method_name = ""
-    """Devices can override the logic of a measurement process by defining a method with the
-    name ``method_name`` of the corresponding class. The method should have the following signature:
-
-    .. code-block:: python
-
-        def method_name(self, qscript: QuantumScript):
-            '''Device's custom measurement implementation.
-
-            Args:
-                qscript: quantum script to transform
-            '''
     """
 
     @abstractmethod

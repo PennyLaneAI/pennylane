@@ -75,8 +75,6 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    method_name = "expval"
-
     @property
     def return_type(self):
         return Expectation

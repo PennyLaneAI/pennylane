@@ -142,8 +142,6 @@ class StateMP(StateMeasurement):
             where the instance has to be identified
     """
 
-    method_name = "state"
-
     @property
     def return_type(self):
         return State

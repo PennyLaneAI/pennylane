@@ -75,8 +75,6 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    method_name = "var"
-
     @property
     def return_type(self):
         return Variance

@@ -131,8 +131,6 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    method_name = "probability"
-
     @property
     def return_type(self):
         return Probability

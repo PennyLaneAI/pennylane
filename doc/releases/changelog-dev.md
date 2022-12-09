@@ -69,7 +69,9 @@
     `VnEntropyMP`, `MutualInfoMP`, `ClassicalShadowMP` and `ShadowExpvalMP` classes.
 
   * Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
-    measurement processes in `QubitDevice`.
+    measurement processes in `QubitDevice`. Also allow devices to override measurement processes by
+    adding a `measurement_map` attribute, which should contain the measurement class as key and
+    the method name as value.
     [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
     [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
@@ -84,6 +86,7 @@
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
     [(#3439)](https://github.com/PennyLaneAI/pennylane/pull/3439)
     [(#3466)](https://github.com/PennyLaneAI/pennylane/pull/3466)
+    [(#3503)](https://github.com/PennyLaneAI/pennylane/pull/3503)
 
 * Functionality for fetching symbols and geometry of a compound from the PubChem Database using `qchem.mol_data`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
@@ -305,7 +308,6 @@
 
 * Improved the performance of executing circuits under the `jax.vmap` transformation, which can now leverage the batch-execution capabilities of some devices. [(#3452)](https://github.com/PennyLaneAI/pennylane/pull/3452)
   
-
 <h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
@@ -426,6 +428,7 @@
          [-0.383     , -0.1915    ,  0.        ,  0.        ,  0.1915    ],
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
+
 * Thy PyTorch interface supports the new return system and users can use jacobian and hessian using custom differentiation
   methods (e.g., parameter-shift, finite difference or adjoint).
   [(#3416)](https://github.com/PennyLaneAI/pennylane/pull/3414)
@@ -440,6 +443,7 @@
       qml.CNOT(wires=[0, 1])>
       return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
   ```
+
   ```pycon
   >>> a = torch.tensor(0.1, requires_grad=True)
   >>> b = torch.tensor(0.2, requires_grad=True)
@@ -479,6 +483,7 @@
   (DeviceArray(5.55111512e-17, dtype=float64, weak_type=True),
   DeviceArray(0., dtype=float64, weak_type=True)))
   ```
+
 * Updated `qml.transforms.split_non_commuting` to support the new return types.
   [(#3414)](https://github.com/PennyLaneAI/pennylane/pull/3414)
 
@@ -495,7 +500,6 @@
 * Updated `qml.transforms.cut_circuit` and `qml.transforms.cut_circuit_mc` to
   support the new return types.
   [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
-
 
 <h3>Breaking changes</h3>
 
