@@ -891,7 +891,7 @@ class TestQubitIntegrationHigherOrder:
 
         x = jax.numpy.array([1.0, 2.0])
         res = circuit(x)
-        g = jax.jit(jax.grad(circuit)(x))
+        g = jax.jit(jax.grad(circuit))(x)
         g2 = jax.jit(jax.grad(lambda x: jax.numpy.sum(jax.grad(circuit)(x))))(x)
 
         a, b = x
@@ -1131,12 +1131,12 @@ class TestQubitIntegrationHigherOrder:
             probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
-        res = jax.jit(cost_fn(x, y))
+        res = jax.jit(cost_fn)(x, y)
 
         if diff_method not in {"backprop"}:
             pytest.skip("Test only supports backprop")
 
-        res = jax.jit(jax.grad(cost_fn, argnums=[0, 1])(x, y))
+        res = jax.jit(jax.grad(cost_fn, argnums=[0, 1]))(x, y)
         expected = np.array([-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1156,7 +1156,7 @@ class TestQubitIntegrationHigherOrder:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.Projector(P, wires=0) @ qml.PauliX(1))
 
-        res = jax.jit(circuit(x, y))
+        res = jax.jit(circuit)(x, y)
         expected = 0.25 * np.sin(x / 2) ** 2 * (3 + np.cos(2 * y) + 2 * np.cos(x) * np.sin(y) ** 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -2052,13 +2052,12 @@ hessian_fn = [
 
 
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method_and_mode)
-# TODO
-# @pytest.mark.parametrize("shots", [None, 10000])
+@pytest.mark.parametrize("shots", [None, 10000])
 @pytest.mark.parametrize("hessian", hessian_fn)
 class TestReturnHessian:
     """Class to test the shape of the Hessian with different return types."""
 
-    def test_hessian_expval_multiple_params(self, dev_name, diff_method, hessian, mode):
+    def test_hessian_expval_multiple_params(self, dev_name, diff_method, hessian, shots, mode):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
@@ -2094,7 +2093,7 @@ class TestReturnHessian:
         assert hess[1][0].shape == ()
         assert hess[1][1].shape == ()
 
-    def test_hessian_expval_multiple_param_array(self, dev_name, diff_method, hessian, mode):
+    def test_hessian_expval_multiple_param_array(self, dev_name, diff_method, hessian, shots, mode):
         """The hessian of single measurement with a multiple params array return a single array."""
 
         if diff_method == "adjoint":
@@ -2116,7 +2115,7 @@ class TestReturnHessian:
         assert isinstance(hess, jax.numpy.ndarray)
         assert hess.shape == (2, 2)
 
-    def test_hessian_var_multiple_params(self, dev_name, diff_method, hessian, mode):
+    def test_hessian_var_multiple_params(self, dev_name, diff_method, hessian, shots, mode):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
@@ -2152,7 +2151,7 @@ class TestReturnHessian:
         assert hess[1][0].shape == ()
         assert hess[1][1].shape == ()
 
-    def test_hessian_var_multiple_param_array(self, dev_name, diff_method, hessian, mode):
+    def test_hessian_var_multiple_param_array(self, dev_name, diff_method, hessian, shots, mode):
         """The hessian of single measurement with a multiple params array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
@@ -2173,7 +2172,9 @@ class TestReturnHessian:
         assert isinstance(hess, jax.numpy.ndarray)
         assert hess.shape == (2, 2)
 
-    def test_hessian_probs_expval_multiple_params(self, dev_name, diff_method, hessian, mode):
+    def test_hessian_probs_expval_multiple_params(
+        self, dev_name, diff_method, hessian, shots, mode
+    ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
@@ -2208,7 +2209,9 @@ class TestReturnHessian:
             for h_comp in h:
                 assert h_comp.shape == (4,)
 
-    def test_hessian_probs_expval_multiple_param_array(self, dev_name, diff_method, hessian, mode):
+    def test_hessian_probs_expval_multiple_param_array(
+        self, dev_name, diff_method, hessian, shots, mode
+    ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
 
         if diff_method == "adjoint":
@@ -2238,7 +2241,7 @@ class TestReturnHessian:
         assert isinstance(hess[1], jax.numpy.ndarray)
         assert hess[1].shape == (4, 2, 2)
 
-    def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, hessian, mode):
+    def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, hessian, shots, mode):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         dev = qml.device(dev_name, wires=2)
 
@@ -2255,18 +2258,27 @@ class TestReturnHessian:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        hess = jax.jit(hessian(circuit))((par_0, par_1))
+        hess = jax.jit(hessian(circuit, argnums=[0, 1]))(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 
-        assert isinstance(hess[0], jax.numpy.ndarray)
-        assert hess[0].shape == (10,)
+        assert isinstance(hess[0], tuple)
+        assert len(hess[0]) == 2
 
-        assert isinstance(hess[1], jax.numpy.ndarray)
-        assert hess[1].shape == (10,)
+        for h in hess[0]:
+            assert isinstance(h, tuple)
+            for h_comp in h:
+                assert h_comp.shape == ()
 
-    def test_hessian_probs_var_multiple_param_array(self, dev_name, diff_method, hessian, mode):
+        for h in hess[1]:
+            assert isinstance(h, tuple)
+            for h_comp in h:
+                assert h_comp.shape == (4,)
+
+    def test_hessian_probs_var_multiple_param_array(
+        self, dev_name, diff_method, hessian, shots, mode
+    ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
@@ -2284,5 +2296,13 @@ class TestReturnHessian:
 
         hess = jax.jit(hessian(circuit))(params)
 
-        assert isinstance(hess, jax.numpy.ndarray)
-        assert hess.shape == (5, 2, 2)
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+        assert isinstance(hess[0], jax.numpy.ndarray)
+        assert hess[0].shape == (
+            2,
+            2,
+        )
+
+        assert isinstance(hess[1], jax.numpy.ndarray)
+        assert hess[1].shape == (4, 2, 2)
