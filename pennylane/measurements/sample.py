@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.sample measurement.
 """
@@ -40,8 +39,10 @@ def sample(op: Union[Observable, None] = None, wires=None):
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is ``None``
 
+    Returns:
+        SampleMP: measurement process instance
+
     Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
         ValueError: Cannot set wires if an observable is provided
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
@@ -114,7 +115,22 @@ def sample(op: Union[Observable, None] = None, wires=None):
 
 
 class SampleMP(SampleMeasurement):
-    """Measurement process that returns the samples of a given observable."""
+    """Measurement process that returns the samples of a given observable. If no observable is
+    provided then basis state samples are returned directly from the device.
+
+    Please refer to :func:`sample` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
 
     method_name = "sample"
 
@@ -138,11 +154,9 @@ class SampleMP(SampleMeasurement):
 
     @property
     def samples_computational_basis(self):
-        r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
-        computational basis states.
-        """
         return self.obs is None
 
+    # pylint: disable=protected-access
     def shape(self, device=None):
         if qml.active_return():
             return self._shape_new(device)

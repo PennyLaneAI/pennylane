@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.expval measurement.
 """
@@ -50,8 +49,8 @@ def expval(op: Operator):
     Args:
         op (Observable): a quantum observable object
 
-    Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
+    Returns:
+        ExpectationMP: measurement process instance
     """
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -60,7 +59,21 @@ def expval(op: Operator):
 
 
 class ExpectationMP(SampleMeasurement, StateMeasurement):
-    """Measurement process that computes the expectation value of the given operator."""
+    """Measurement process that computes the expectation value of the supplied observable.
+
+    Please refer to :func:`expval` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
 
     method_name = "expval"
 

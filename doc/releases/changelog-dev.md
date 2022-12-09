@@ -134,6 +134,10 @@
 * New basis sets, `6-311g` and `CC-PVDZ`, are added to the qchem basis set repo.
   [#3279](https://github.com/PennyLaneAI/pennylane/pull/3279)
 
+* Add `sum_expand` function, which splits a tape measuring a `Sum` expectation into mutliple tapes
+  of summand expectations, and provides a function to recombine the results.
+  [#3230](https://github.com/PennyLaneAI/pennylane/pull/3230)
+
 * Added a `pauli_decompose()` which takes a hermitian matrix and decomposes it in the
   Pauli basis, returning it either as a `Hamiltonian` or `PauliSentence` instance.
   [(#3384)](https://github.com/PennyLaneAI/pennylane/pull/3384)
@@ -536,8 +540,7 @@
   class which inherits from `AnnotatedQueue`.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
 
-* Change class name `ShadowMeasurementProcess` to `ClassicalShadow`, to be consistent with the
-  `qml.classical_shadow` function name.
+* Change class name `ShadowMeasurementProcess` to `ClassicalShadowMP`
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
 
 * The method `qml.Operation.get_parameter_shift` is removed. The `gradients` module should be used
@@ -646,6 +649,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * Fixed a bug where a QNode returning `qml.sample` would produce incorrect results when
   run on a device defined with a shot vector.
   [(#3422)](https://github.com/PennyLaneAI/pennylane/pull/3422)
+
+* The `qml.data` module now works as expected on Windows.
+  [(#3504)](https://github.com/PennyLaneAI/pennylane/pull/3504)
 
 <h3>Contributors</h3>
 

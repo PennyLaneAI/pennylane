@@ -73,7 +73,7 @@ class QubitDevice(Device):
       and perform the quantum computation.
 
     Devices that generate their own samples (such as hardware) may optionally
-    overwrite :meth:`~.probabilty`. This method otherwise automatically
+    overwrite :meth:`~.probability`. This method otherwise automatically
     computes the probabilities from the generated samples, and **must**
     overwrite the following method:
 
@@ -1373,10 +1373,10 @@ class QubitDevice(Device):
         tapes containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
 
-        .. seealso:: :func:`~.classical_shadow`
+        .. seealso:: :func:`~pennylane.classical_shadow`
 
         Args:
-            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow measurement process
+            obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
         Returns:
@@ -1426,7 +1426,7 @@ class QubitDevice(Device):
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
 
         Args:
-            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow expectation
+            obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow expectation
                 value measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
