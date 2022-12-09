@@ -58,7 +58,8 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
 
     **Example**
 
-    You can use the transform decorator directly on your ``QNode``, and executing it will produce a PyZX graph.
+    You can use the transform decorator directly on your :class:`~.QNode`, quantum function and executing it will produce a
+    PyZX graph. You can also use the transform directly on the :class:`~.QuantumScript`.
 
     .. code-block:: python
 
@@ -422,7 +423,7 @@ def from_zx(graph, decompose_phases=True):
 
     .. warning::
 
-        Be careful because not all graph are circuit-like, so the process might not be successful
+        Be careful because not all graphs are circuit-like, so the process might not be successful
         after you apply some optimization on your PyZX graph. You can extract a circuit by using the dedicated
         PyZX function.
 
@@ -434,17 +435,6 @@ def from_zx(graph, decompose_phases=True):
         Copyright (C) 2018 - Aleks Kissinger and John van de Wetering
 
     """
-
-    # Avoid to make PyZX a requirement for PennyLane.
-    try:
-        # pylint: disable=import-outside-toplevel, unused-import
-        import pyzx
-        from pyzx.graph.base import VT
-
-    except ImportError as Error:
-        raise ImportError(
-            "This feature requires PyZX. It can be installed with: pip install pyzx"
-        ) from Error
 
     # List of PennyLane operations
     operations = []
@@ -550,7 +540,7 @@ def _add_one_qubit_gate(param, type_1, qubit_1, decompose_phases):
             op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
             return [op_class(scaled_param, wires=qubit_1)]
     # Phases are not decomposed
-    elif param != 0:
+    if param != 0:
         scaled_param = np.pi * float(param)
         op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
         return [op_class(scaled_param, wires=qubit_1)]
