@@ -205,7 +205,7 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
 
 # pylint: disable=too-many-branches, too-many-statements
 def sum_expand(tape: QuantumScript, group=True):
-    """Splits a tape measuring a Sum expectation into mutliple tapes of summand expectations,
+    """Splits a quantum script measuring a Sum expectation into mutliple tapes of summand expectations,
     and provides a function to recombine the results.
 
     Args:
