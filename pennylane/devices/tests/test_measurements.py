@@ -19,7 +19,14 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.measurements import MeasurementTransform, SampleMeasurement, StateMeasurement
+from pennylane.measurements import (
+    ClassicalShadowMP,
+    MeasurementTransform,
+    SampleMeasurement,
+    SampleMP,
+    StateMeasurement,
+    StateMP,
+)
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -1530,19 +1537,18 @@ class TestSampleMeasurement:
         """Test that the device can override a measurement process."""
         dev = device(2)
 
-        class MyMeasurement(SampleMeasurement):
-            """Dummy sampled measurement."""
-
-            method_name = "test_method"
-
-            def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
-                return qml.math.sum(samples[..., self.wires])
+        if dev.shots is None:
+            pytest.skip(
+                "The number of shots has to be explicitly set on the device when using "
+                "sample-based measurements."
+            )
 
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(0)
-            return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+            return qml.sample(wires=0), qml.sample(wires=1)
 
+        circuit.device.measurement_map[SampleMP] = "test_method"
         circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert qml.math.allequal(circuit(), [2, 2])
@@ -1594,18 +1600,12 @@ class TestStateMeasurement:
         """Test that the device can override a measurement process."""
         dev = device(2)
 
-        class MyMeasurement(StateMeasurement):
-            """Dummy state measurement."""
-
-            method_name = "test_method"
-
-            def process_state(self, state, wire_order):
-                return qml.math.sum(state)
-
         @qml.qnode(dev)
         def circuit():
-            return MyMeasurement()
+            qml.PauliX(0)
+            return qml.state()
 
+        circuit.device.measurement_map[StateMP] = "test_method"
         circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert circuit() == 2
@@ -1634,18 +1634,17 @@ class TestCustomMeasurement:
         """Test that the device can override a measurement process."""
         dev = device(2)
 
-        class MyMeasurement(MeasurementTransform):
-            """Dummy measurement transform."""
-
-            method_name = "test_method"
-
-            def process(self, qscript, device):
-                return {device.shots: len(qscript)}
+        if dev.shots is None:
+            pytest.skip(
+                "The number of shots has to be explicitly set on the device when using "
+                "sample-based measurements."
+            )
 
         @qml.qnode(dev)
         def circuit():
-            return MyMeasurement()
+            return qml.classical_shadow(wires=0)
 
+        circuit.device.measurement_map[ClassicalShadowMP] = "test_method"
         circuit.device.test_method = lambda qscript: 2
 
         assert circuit() == 2

@@ -573,7 +573,6 @@ class TestDiffMulti:
         for g, exp in zip(grad, expected):
             assert qml.math.allclose(g, exp, atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="Torch interface for new returns")
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     def test_torch(self, diff_method, tol):
@@ -589,39 +588,42 @@ class TestDiffMulti:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
-        def cost(x):
-            res = circuit(x)
-            return qml.math.concatenate([qml.math.expand_dims(res[0], 1), res[1]], axis=1)
-
         batch_size = 3
         x = torch.tensor(np.linspace(0.1, 0.5, batch_size), requires_grad=True)
 
-        res = cost(x)
-        expected = qml.math.transpose(
-            qml.math.stack(
-                [
-                    torch.cos(x),
-                    torch.cos(x / 2) ** 2,
-                    torch.zeros_like(x),
-                    torch.zeros_like(x),
-                    torch.sin(x / 2) ** 2,
-                ]
-            )
+        res = circuit(x)
+        expected = (
+            torch.cos(x),
+            qml.math.transpose(
+                qml.math.stack(
+                    [
+                        torch.cos(x / 2) ** 2,
+                        torch.zeros_like(x),
+                        torch.zeros_like(x),
+                        torch.sin(x / 2) ** 2,
+                    ]
+                )
+            ),
         )
-        assert qml.math.allclose(res, expected, atol=tol)
 
-        grad = torch.autograd.functional.jacobian(cost, x)
-        expected = qml.math.stack(
-            [
-                -torch.sin(x),
-                -torch.sin(x) / 2,
-                torch.zeros_like(x),
-                torch.zeros_like(x),
-                torch.sin(x) / 2,
-            ]
-        ) * qml.math.expand_dims(torch.eye(batch_size), 1)
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        for r, exp in zip(res, expected):
+            assert qml.math.allclose(r, exp, atol=tol)
 
-        assert qml.math.allclose(grad, expected, atol=tol, rtol=0)
+        grad = torch.autograd.functional.jacobian(circuit, x)
+        expected = (
+            -torch.sin(x) * torch.eye(batch_size),
+            qml.math.stack(
+                [-torch.sin(x) / 2, torch.zeros_like(x), torch.zeros_like(x), torch.sin(x) / 2]
+            )
+            * qml.math.expand_dims(torch.eye(batch_size), 1),
+        )
+
+        assert isinstance(grad, tuple)
+        assert len(grad) == 2
+        for g, exp in zip(grad, expected):
+            assert qml.math.allclose(g, exp, atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
