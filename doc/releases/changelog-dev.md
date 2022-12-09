@@ -50,7 +50,17 @@
 * Three new parametric operators, `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10`, are now available. Each of these operators performs a phase shift akin to `qml.ControlledPhaseShift` but on different positions of the state vector.
   [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
 
-  TODO: code example 
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev)
+  ...     qml.PauliX(wires=1)
+  ...     qml.CPhaseShift01(phi=1.23, wires=[0,1])
+  ...     return qml.state()
+  ...
+  >>> circ()
+  tensor([0.        +0.j       , 0.33423773+0.9424888j, 
+          0.        +0.j       , 0.        +0.j       ], requires_grad=True)
+  ```
 
 <h4>QChem things</h4>
 
@@ -114,16 +124,19 @@
 
 <h4>Custom measurement processes</h4>
 
-* Support custom measurement processes: 
-  TODO: need to expand on what these features mean for users
+* Support custom measurement processes:
   - `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
-    They contain an abstract method to process samples/quantum state/quantum script.
+    They contain an abstract method to process samples/quantum states/quantum scripts. These classes
+    make it easier for users to define their own `MeasurementProcess` by compartmentalizing the different
+    types of measurements into three simple categories. 
 
   - Add `ExpectationMP`, `SampleMP`, `VarianceMP`, `ProbabilityMP`, `CountsMP`, `StateMP`,
-    `VnEntropyMP`, `MutualInfoMP`, `ClassicalShadowMP` and `ShadowExpvalMP` classes.
+    `VnEntropyMP`, `MutualInfoMP`, `ClassicalShadowMP` and `ShadowExpvalMP` classes. These make use of the 
+    new subclasses of `MeasurementProcess` to implement the well known quantities. These will become the default 
+    once we deprecate the old approach. 
 
   - Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
-    measurement processes in `QubitDevice`.
+    measurement processes in `QubitDevice`. This integrates the new classes to be executed on device.
     [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
     [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
     [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
@@ -399,8 +412,8 @@
   wires. Calling any of the aforementioned measurements with an empty wire list (e.g., `qml.sample(wires=[])`) will raise an error.
   [#3299](https://github.com/PennyLaneAI/pennylane/pull/3299)
 
-* Made `gradients.finite_diff` more convenient to use with custom data type observables/devices.
-  TODO: define "convenient"
+* Made `gradients.finite_diff` more convenient to use with custom data type observables/devices by reducing the 
+  number of magic methods that need to be defined in the custom data type to support `finite_diff`. 
   [(#3426)](https://github.com/PennyLaneAI/pennylane/pull/3426)
 
 * The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency.
@@ -415,8 +428,7 @@
 * `qml.Tracker` now also logs results in `tracker.history` when tracking the execution of a circuit.
   [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
 
-* Improve performance of `Wires.all_wires`.
-  TODO: how so?
+* Improves the execution time of `Wires.all_wires` by avoiding changes of data type and making use of `itertools.chain`
   [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
 
 * Printing an instance of `qml.qchem.Molecule` is now more concise and informational.
@@ -556,7 +568,6 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   [(#3177)](https://github.com/PennyLaneAI/pennylane/pull/3177)
 
 * Original tape `_obs_sharing_wires` attribute is updated during its expansion.
-  TODO: This PR was made in v0.27 ?
   [(#3293)](https://github.com/PennyLaneAI/pennylane/pull/3293)
 
 * An issue with `drain=False` in the adaptive optimizer has been fixed. Before the fix, the operator pool needed to be reconstructed inside the optimization pool when `drain=False`. With this improvement, this reconstruction is no longer needed.
