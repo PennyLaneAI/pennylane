@@ -12,7 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains measurements supported by PennyLane.
+This module contains all the measurements supported by PennyLane.
+
+Description
+-----------
+The :class:`MeasurementProcess` class serves as a base class for measurements, and is inherited
+from the :class:`SampleMeasurement`, :class:`StateMeasurement` and :class:`MeasurementTransform`
+classes. These classes are subclassed to implement measurements in PennyLane.
+
+* Each :class
+
 """
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
