@@ -621,6 +621,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   run on a device defined with a shot vector.
   [(#3422)](https://github.com/PennyLaneAI/pennylane/pull/3422)
 
+* The `qml.data` module now works as expected on Windows.
+  [(#3504)](https://github.com/PennyLaneAI/pennylane/pull/3504)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
