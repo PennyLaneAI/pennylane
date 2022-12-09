@@ -526,6 +526,7 @@
 
 * Update `OperationRecorder` to inherit from `AnnotatedQueue` and `QuantumScript` instead of `QuantumTape`.
   [(#3496)](https://github.com/PennyLaneAI/pennylane/pull/3496)
+  [(#3510)](https://github.com/PennyLaneAI/pennylane/pull/3510)
 
 <h3>Breaking changes</h3>
 
