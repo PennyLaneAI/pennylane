@@ -235,6 +235,7 @@ class QubitDevice(Device):
         * qscript: quantum script to transform
 
     **Example:**
+
     Let's create device that inherits from :class:`~pennylane.devices.DefaultQubit` and overrides the
     logic of the `qml.sample` measurement. To do so we will need to update the ``measurement_map``
     dictionary:
