@@ -87,8 +87,6 @@ def mutual_info(wires0, wires1, log_base=None):
 class MutualInfoMP(StateMeasurement):
     """Measurement process that returns the mutual information between the provided wires."""
 
-    method_name = "mutual_info"
-
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,

@@ -116,8 +116,6 @@ def probs(wires=None, op=None):
 class ProbabilityMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state."""
 
-    method_name = "probability"
-
     @property
     def return_type(self):
         return Probability

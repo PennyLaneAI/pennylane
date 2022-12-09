@@ -125,8 +125,6 @@ def density_matrix(wires):
 class StateMP(StateMeasurement):
     """Measurement process that returns the quantum state."""
 
-    method_name = "state"
-
     @property
     def return_type(self):
         return State

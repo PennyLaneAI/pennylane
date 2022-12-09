@@ -116,8 +116,6 @@ def sample(op: Union[Observable, None] = None, wires=None):
 class SampleMP(SampleMeasurement):
     """Measurement process that returns the samples of a given observable."""
 
-    method_name = "sample"
-
     @property
     def return_type(self):
         return Sample

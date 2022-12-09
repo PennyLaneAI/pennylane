@@ -62,8 +62,6 @@ def expval(op: Operator):
 class ExpectationMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the expectation value of the given operator."""
 
-    method_name = "expval"
-
     @property
     def return_type(self):
         return Expectation

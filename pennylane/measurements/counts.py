@@ -147,8 +147,6 @@ class CountsMP(SampleMeasurement):
     """Measurement process that samples from the supplied observable and returns the number of
     counts for each sample."""
 
-    method_name = "counts"
-
     def __init__(
         self,
         obs: Union[Observable, None] = None,
