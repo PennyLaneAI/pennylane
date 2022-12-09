@@ -147,6 +147,7 @@ class MeasurementValue(Generic[T]):
     def _transform_bin_op(self, base_bin, other):
         """Helper function for defining dunder binary operations."""
         if isinstance(other, MeasurementValue):
+            # pylint: disable=protected-access
             return self._merge(other)._apply(lambda t: base_bin(t[0], t[1]))
         # if `other` is not a MeasurementValue then apply it to each branch
         return self._apply(lambda v: base_bin(v, other))

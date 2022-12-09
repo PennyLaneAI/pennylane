@@ -357,7 +357,16 @@ measurement_value_binary_dunders = [
     "__sub__",
 ]
 
-boolean_binary_dunders = ["__and__", "__eq__", "__ge__", "__gt__", "__le__", "__lt__", "__ne__", "__or__"]
+boolean_binary_dunders = [
+    "__and__",
+    "__eq__",
+    "__ge__",
+    "__gt__",
+    "__le__",
+    "__lt__",
+    "__ne__",
+    "__or__",
+]
 
 binary_dunders = measurement_value_binary_dunders + boolean_binary_dunders
 
