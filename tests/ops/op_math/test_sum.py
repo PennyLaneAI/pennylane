@@ -80,8 +80,8 @@ ops = (
 )
 
 
-def _get_pw(w, pauil_op):
-    return qml.pauli.PauliWord({w: pauil_op})
+def _get_pw(w, pauli_op):
+    return qml.pauli.PauliWord({w: pauli_op})
 
 
 def sum_using_dunder_method(*summands, do_queue=True, id=None):
