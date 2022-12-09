@@ -14,18 +14,30 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
-import pytest
-import numpy as np
 from random import random
 
+import numpy as np
+import pytest
+
 import pennylane as qml
+from pennylane import DeviceError, QubitDevice
 from pennylane import numpy as pnp
-from pennylane import QubitDevice, DeviceError, QuantumFunctionError
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State
-from pennylane.circuit_graph import CircuitGraph
+from pennylane.measurements import (
+    Expectation,
+    ExpectationMP,
+    MeasurementProcess,
+    Probability,
+    ProbabilityMP,
+    Sample,
+    SampleMP,
+    State,
+    StateMP,
+    Variance,
+    VarianceMP,
+    state,
+)
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
-from pennylane.tape import QuantumTape
-from pennylane.measurements import state
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -168,10 +180,11 @@ class TestOperations:
         """Tests that the op_queue is correctly filled when apply is called and that accessing
         op_queue raises no error"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
             observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
 
+        tape = QuantumScript.from_queue(q)
         call_history = []
 
         with monkeypatch.context() as m:
@@ -198,10 +211,11 @@ class TestOperations:
 
     def test_unsupported_operations_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.Hadamard(wires=2)]
             observables = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))]
 
+        tape = QuantumScript.from_queue(q)
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
@@ -224,10 +238,11 @@ class TestOperations:
     ):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             for op in queue + observables:
                 op.queue()
 
+        tape = QuantumScript.from_queue(q)
         call_history = {}
 
         with monkeypatch.context() as m:
@@ -256,7 +271,7 @@ class TestObservables:
 
     def test_unsupported_observables_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)]
 
             observables = [
@@ -265,6 +280,7 @@ class TestObservables:
                 qml.sample(qml.PauliZ(2)),
             ]
 
+        tape = QuantumScript.from_queue(q)
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
@@ -274,12 +290,16 @@ class TestObservables:
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
-        with qml.tape.QuantumTape() as tape:
-            qml.PauliX(wires=0)
-            qml.measurements.MeasurementProcess(
-                return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0)
-            )
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return "SomeUnsupportedReturnType"
 
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliX(wires=0)
+            UnsupportedMeasurement(obs=qml.PauliZ(0))
+
+        tape = QuantumScript.from_queue(q)
         with monkeypatch.context() as m:
             m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
             with pytest.raises(
@@ -306,46 +326,72 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
-    @pytest.mark.parametrize("returntype", [Expectation, Variance, Sample, Probability, State])
-    def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
+    def test_observables_deprecated(self, mock_qubit_device_extract_stats, monkeypatch):
+        """Test that using a list of observables as an argument is deprecated."""
+        with monkeypatch.context() as m:
+            dev = mock_qubit_device_extract_stats()
+            with pytest.warns(
+                UserWarning,
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
+            ):
+                dev.statistics([])
+            with pytest.warns(
+                UserWarning,
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
+            ):
+                dev.statistics(observables=[])
+            qscript = QuantumScript()
+            with pytest.warns(
+                UserWarning,
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
+            ):
+                dev.statistics([], circuit=qscript)
+            with pytest.raises(
+                ValueError, match="Please provide a circuit into the statistics method"
+            ):
+                dev.statistics()
+
+    @pytest.mark.parametrize(
+        "measurement", [ExpectationMP, VarianceMP, SampleMP, ProbabilityMP, StateMP]
+    )
+    def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
-            return_type = returntype
-
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[measurement(obs=qml.PauliX(0))])
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
-            results = dev.statistics([obs])
+            results = dev.statistics(qscript)
 
         assert results == [0]
 
     def test_results_no_state(self, mock_qubit_device_extract_stats, monkeypatch):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QubitDevice does not have a state attribute"""
+        qscript = QuantumScript(measurements=[qml.state()])
+
         with monkeypatch.context():
             dev = mock_qubit_device_extract_stats()
             delattr(dev.__class__, "state")
             with pytest.raises(
                 qml.QuantumFunctionError, match="The state is not available in the current"
             ):
-                dev.statistics([state()])
+                dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qubit_device_extract_stats, monkeypatch, returntype):
         """Tests that the statistics method returns an empty list if the return type is None"""
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
-            return_type = returntype
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
 
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
-            results = dev.statistics([obs])
+            results = dev.statistics(qscript)
 
         assert results == []
 
@@ -355,15 +401,16 @@ class TestExtractStatistics:
 
         assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
 
-        class SomeObservable(qml.operation.Observable):
-            num_wires = 1
-            return_type = returntype
+        class UnsupportedMeasurement(MeasurementProcess):
+            @property
+            def return_type(self):
+                return returntype
 
-        obs = SomeObservable(wires=0)
+        qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev = mock_qubit_device_extract_stats()
-            dev.statistics([obs])
+            dev.statistics(qscript)
 
 
 class TestGenerateSamples:
@@ -1208,13 +1255,16 @@ class TestExecutionBroadcasted:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
-    with qml.tape.QuantumTape() as tape1:
+    with qml.queuing.AnnotatedQueue() as q1:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-    with qml.tape.QuantumTape() as tape2:
+    tape1 = QuantumScript.from_queue(q1)
+    with qml.queuing.AnnotatedQueue() as q2:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0))
+
+    tape2 = QuantumScript.from_queue(q2)
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
     def test_calls_to_execute(self, n_tapes, mocker, mock_qubit_device_with_paulis_and_methods):
@@ -1262,7 +1312,7 @@ class TestBatchExecution:
 
         dev = mock_qubit_device_with_paulis_and_methods(wires=2)
 
-        empty_tape = qml.tape.QuantumTape()
+        empty_tape = QuantumScript()
         tapes = [empty_tape] * 3
         res = dev.batch_execute(tapes)
 

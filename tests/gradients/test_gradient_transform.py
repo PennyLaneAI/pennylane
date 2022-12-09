@@ -31,13 +31,14 @@ class TestGradAnalysis:
         """Test that a non-differentiable parameter is correctly marked"""
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QubitStateVector(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] is None
@@ -49,13 +50,14 @@ class TestGradAnalysis:
         if grad_fn is set an unchanged."""
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QubitStateVector(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(qml.operation, "has_grad_method")
         gradient_analysis(tape, grad_fn=5)
         spy.assert_called()
@@ -72,11 +74,12 @@ class TestGradAnalysis:
         """Test that an independent variable is properly marked
         as having a zero gradient"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.expval(qml.PauliY(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] == "A"
@@ -86,11 +89,12 @@ class TestGradAnalysis:
         """In non-graph mode, it is impossible to determine
         if a parameter is independent or not"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.expval(qml.PauliY(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         gradient_analysis(tape, use_graph=False)
 
         assert tape._par_info[0]["grad_method"] == "A"
@@ -102,13 +106,14 @@ class TestGradAnalysis:
 
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QubitStateVector(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] is None
@@ -123,10 +128,11 @@ class TestGradMethodValidation:
     def test_with_nondiff_parameters(self, method):
         """Test that trainable parameters without grad_method
         are detected correctly, raising an exception."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.expval(qml.PauliZ(0))
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape._par_info[0]["grad_method"] = "A"
         tape._par_info[1]["grad_method"] = None
         with pytest.raises(ValueError, match="Cannot differentiate with respect"):
@@ -135,10 +141,11 @@ class TestGradMethodValidation:
     def test_with_numdiff_parameters_and_analytic(self):
         """Test that trainable parameters with numerical grad_method ``"F"``
         together with ``method="analytic"`` raises an exception."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.expval(qml.PauliZ(0))
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape._par_info[0]["grad_method"] = "A"
         tape._par_info[1]["grad_method"] = "F"
         with pytest.raises(ValueError, match="The analytic gradient method cannot be used"):

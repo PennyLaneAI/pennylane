@@ -549,12 +549,6 @@ class TestAdjointOperationDiffInfo:
         """Test that the grad_recipe of the Adjoint is the same as the grad_recipe of the base."""
         assert Adjoint(base).grad_recipe == base.grad_recipe
 
-    def test_get_parameter_shift(self):
-        """Test `get_parameter_shift` for an operation where it still doesn't raise warnings and errors."""
-        base = qml.Rotation(1.234, wires=0)
-        with pytest.warns(UserWarning, match=r"get_parameter_shift is deprecated."):
-            assert Adjoint(base).get_parameter_shift(0) == base.get_parameter_shift(0)
-
     @pytest.mark.parametrize(
         "base",
         (qml.RX(1.23, wires=0), qml.Rot(1.23, 2.345, 3.456, wires=0), qml.CRX(1.234, wires=(0, 1))),
@@ -570,31 +564,34 @@ class TestQueueing:
     def test_queueing(self):
         """Test queuing and metadata when both Adjoint and base defined inside a recording context."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Adjoint(base)
 
-        assert tape.get_info(base)["owner"] is op
-        assert tape.get_info(op)["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert q.get_info(base)["owner"] is op
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
         """Test that base isn't added to queue if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 1
-        assert tape.get_info(op)["owns"] is base
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base, do_queue=False)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 0
 
 

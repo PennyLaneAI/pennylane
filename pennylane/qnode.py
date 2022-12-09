@@ -25,7 +25,8 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.tape import QuantumTape
+from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
+from pennylane.tape import QuantumScript, make_qscript
 
 
 class QNode:
@@ -35,7 +36,7 @@ class QNode:
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumScript` instance representing
     the quantum circuit.
 
     Args:
@@ -513,7 +514,7 @@ class QNode:
         )
 
     @property
-    def tape(self) -> QuantumTape:
+    def tape(self) -> QuantumScript:
         """The quantum tape"""
         return self._tape
 
@@ -522,11 +523,10 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self._tape = qml.tape.QuantumTape()
-
-        with self.tape:
-            self._qfunc_output = self.func(*args, **kwargs)
-        self._tape._qfunc_output = self._qfunc_output
+        self._tape = make_qscript(self.func)(*args, **kwargs)
+        self._tape._queue_category = "_ops"
+        self._qfunc_output = self.tape._qfunc_output
+        qml.QueuingManager.append(self.tape)
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -547,7 +547,7 @@ class QNode:
             )
 
         terminal_measurements = [
-            m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
+            m for m in self.tape.measurements if not isinstance(m, MidMeasureMP)
         ]
         if any(ret != m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
@@ -577,10 +577,7 @@ class QNode:
         # operations
         # 2. Move this expansion to Device (e.g., default_expand_fn or
         # batch_transform method)
-        if any(
-            getattr(obs, "return_type", None) == qml.measurements.MidMeasure
-            for obs in self.tape.operations
-        ):
+        if any(isinstance(m, MidMeasureMP) for m in self.tape.operations):
             self._tape = qml.defer_measurements(self._tape)
 
         if self.expansion_strategy == "device":
@@ -689,9 +686,8 @@ class QNode:
 
             res = res[0]
 
-        if not isinstance(self._qfunc_output, Sequence) and self._qfunc_output.return_type in (
-            qml.measurements.Counts,
-            qml.measurements.AllCounts,
+        if not isinstance(self._qfunc_output, Sequence) and isinstance(
+            self._qfunc_output, CountsMP
         ):
             if self.device._has_partitioned_shots():
                 return tuple(res)
@@ -700,8 +696,7 @@ class QNode:
             return res[0]
 
         if isinstance(self._qfunc_output, Sequence) and any(
-            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-            for m in self._qfunc_output
+            isinstance(m, CountsMP) for m in self._qfunc_output
         ):
 
             # If Counts was returned with other measurements, then apply the
@@ -720,7 +715,7 @@ class QNode:
         ):
             return res
 
-        if self._qfunc_output.return_type is qml.measurements.Shadow:
+        if isinstance(self._qfunc_output, ClassicalShadowMP):
             # if classical shadows is returned, then don't squeeze the
             # last axis corresponding to the number of qubits
             return qml.math.squeeze(res, axis=0)
