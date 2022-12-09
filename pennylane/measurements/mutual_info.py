@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import MutualInfo, ObservableReturnTypes, StateMeasurement
+from .measurements import MutualInfo, StateMeasurement
 
 
 def mutual_info(wires0, wires1, log_base=None):
@@ -42,6 +42,9 @@ def mutual_info(wires0, wires1, log_base=None):
         wires0 (Sequence[int] or int): the wires of the first subsystem
         wires1 (Sequence[int] or int): the wires of the second subsystem
         log_base (float): Base for the logarithm.
+
+    Returns:
+        MutualInfoMP: measurement process instance
 
     **Example:**
 
@@ -73,24 +76,39 @@ def mutual_info(wires0, wires1, log_base=None):
 
     .. seealso:: :func:`~.vn_entropy`, :func:`pennylane.qinfo.transforms.mutual_info` and :func:`pennylane.math.mutual_info`
     """
+    wires0 = qml.wires.Wires(wires0)
+    wires1 = qml.wires.Wires(wires1)
+
     # the subsystems cannot overlap
     if [wire for wire in wires0 if wire in wires1]:
         raise qml.QuantumFunctionError(
             "Subsystems for computing mutual information must not overlap."
         )
-
-    wires0 = qml.wires.Wires(wires0)
-    wires1 = qml.wires.Wires(wires1)
-    return _MutualInfo(MutualInfo, wires=[wires0, wires1], log_base=log_base)
+    return MutualInfoMP(wires=[wires0, wires1], log_base=log_base)
 
 
-class _MutualInfo(StateMeasurement):
-    """Measurement process that returns the mutual information."""
+class MutualInfoMP(StateMeasurement):
+    """Measurement process that computes the mutual information between the provided wires.
 
-    # pylint: disable=too-many-arguments, unused-argument
+    Please refer to :func:`mutual_info` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+        log_base (float): base for the logarithm
+
+    """
+
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
-        return_type: ObservableReturnTypes,
         obs: Operator = None,
         wires=None,
         eigvals=None,
@@ -98,7 +116,29 @@ class _MutualInfo(StateMeasurement):
         log_base=None,
     ):
         self.log_base = log_base
-        super().__init__(return_type=return_type, obs=obs, wires=wires, eigvals=eigvals, id=id)
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+
+    @property
+    def return_type(self):
+        return MutualInfo
+
+    @property
+    def numeric_type(self):
+        return float
+
+    def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
+        if device is None or device.shot_vector is None:
+            return (1,)
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return (num_shot_elements,)
+
+    def _shape_new(self, device=None):
+        if device is None or device.shot_vector is None:
+            return ()
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         return qml.math.mutual_info(
@@ -111,7 +151,6 @@ class _MutualInfo(StateMeasurement):
 
     def __copy__(self):
         return self.__class__(
-            self.return_type,
             obs=copy.copy(self.obs),
             wires=self._wires,
             eigvals=self._eigvals,

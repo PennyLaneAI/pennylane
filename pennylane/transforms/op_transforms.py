@@ -495,7 +495,7 @@ class op_transform:
 
         elif callable(obj):
             # user passed something that is callable but not a tape or QNode.
-            tape = qml.transforms.make_tape(obj)(*args, **kwargs)
+            tape = qml.tape.make_qscript(obj)(*args, **kwargs)
             wires = tape.wires
 
             # raise exception if it is not a quantum function

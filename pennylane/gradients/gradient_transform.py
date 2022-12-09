@@ -46,11 +46,11 @@ def gradient_analysis(tape, use_graph=True, grad_fn=None):
             the cached gradient analysis will be used.
     """
     # pylint:disable=protected-access
-    if grad_fn is not None and getattr(tape, "_gradient_fn", None) is grad_fn:
-        # gradient analysis has already been performed on this tape
-        return
-
     if grad_fn is not None:
+        if getattr(tape, "_gradient_fn", None) is grad_fn:
+            # gradient analysis has already been performed on this tape
+            return
+
         tape._gradient_fn = grad_fn
 
     for idx, info in enumerate(tape._par_info):
@@ -207,7 +207,7 @@ class gradient_transform(qml.batch_transform):
       to differentiate with respect to. If not provided, the derivatives with respect to all
       trainable inputs of the tape should be returned (``tape.trainable_params``).
 
-    - ``gradient_tapes`` (*List[QuantumTape]*): is a list of output tapes to be evaluated.
+    - ``gradient_tapes`` (*list[QuantumTape]*): is a list of output tapes to be evaluated.
       If this list is empty, no quantum evaluations will be made.
 
     - ``processing_fn`` is a processing function to be applied to the output of the evaluated

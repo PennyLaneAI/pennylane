@@ -975,6 +975,17 @@ def test_numpy(t):
     assert isinstance(res, onp.ndarray)
 
 
+@pytest.mark.parametrize("t", test_data)
+def test_numpy_arraybox(t):
+    """Test that the to_numpy method correctly converts the input
+    ArrayBox into a NumPy array."""
+    val = np.array(5.0)
+    t = ArrayBox(val, None, None)
+    res = fn.to_numpy(t)
+    assert res == val
+    assert isinstance(res, type(val))
+
+
 def test_numpy_jax_jit():
     """Test that the to_numpy() method raises an exception
     if used inside the JAX JIT"""
@@ -986,6 +997,13 @@ def test_numpy_jax_jit():
 
     with pytest.raises(ValueError, match="not supported when using the JAX JIT"):
         cost(jnp.array(0.1))
+
+
+def test_numpy_torch():
+    """Test that the to_numpy method correctly converts the input
+    Torch tensor into a NumPy array."""
+    x = torch.tensor([1.0, 2.0, 3.0])
+    fn.to_numpy(x)
 
 
 class TestOnesLike:
