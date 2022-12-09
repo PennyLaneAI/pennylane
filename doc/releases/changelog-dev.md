@@ -53,11 +53,12 @@
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2)
   >>> @qml.qnode(dev)
+  >>> def circuit():
   ...     qml.PauliX(wires=1)
   ...     qml.CPhaseShift01(phi=1.23, wires=[0,1])
   ...     return qml.state()
   ...
-  >>> circ()
+  >>> circuit()
   tensor([0.        +0.j       , 0.33423773+0.9424888j, 
           0.        +0.j       , 0.        +0.j       ], requires_grad=True)
   ```
@@ -135,24 +136,24 @@
     new subclasses of `MeasurementProcess` to implement the well known quantities. These will become the default 
     once we deprecate the old approach. 
 
-  * Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
+  - Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
     measurement processes in `QubitDevice`. Also allow devices to override measurement processes by
     adding a `measurement_map` attribute, which should contain the measurement class as key and
     the method name as value.
-    [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
-    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
-    [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
-    [(#3288)](https://github.com/PennyLaneAI/pennylane/pull/3288)
-    [(#3312)](https://github.com/PennyLaneAI/pennylane/pull/3312)
-    [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
-    [(#3292)](https://github.com/PennyLaneAI/pennylane/pull/3292)
-    [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
-    [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
-    [(#3327)](https://github.com/PennyLaneAI/pennylane/pull/3327)
-    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
-    [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
-    [(#3439)](https://github.com/PennyLaneAI/pennylane/pull/3439)
-    [(#3466)](https://github.com/PennyLaneAI/pennylane/pull/3466)
+  [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
+  [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+  [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
+  [(#3288)](https://github.com/PennyLaneAI/pennylane/pull/3288)
+  [(#3312)](https://github.com/PennyLaneAI/pennylane/pull/3312)
+  [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
+  [(#3292)](https://github.com/PennyLaneAI/pennylane/pull/3292)
+  [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
+  [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
+  [(#3327)](https://github.com/PennyLaneAI/pennylane/pull/3327)
+  [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+  [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
+  [(#3439)](https://github.com/PennyLaneAI/pennylane/pull/3439)
+  [(#3466)](https://github.com/PennyLaneAI/pennylane/pull/3466)
   
 <h4>Pauli stuff</h4>
 
