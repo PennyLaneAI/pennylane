@@ -21,7 +21,7 @@ tf = pytest.importorskip("tensorflow")
 
 import pennylane as qml
 from pennylane import qnode
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", "backward"],
@@ -376,10 +376,11 @@ class TestQNode:
                 theta, phi, lam = self.data
                 wires = self.wires
 
-                with QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q_tape:
                     qml.Rot(lam, theta, -lam, wires=wires)
                     qml.PhaseShift(phi + lam, wires=wires)
 
+                tape = QuantumScript.from_queue(q_tape)
                 return tape
 
         dev = qml.device(dev_name, wires=1)
@@ -1050,8 +1051,9 @@ class TestTapeExpansion:
             grad_method = None
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=2, interface="tf")
@@ -1105,8 +1107,9 @@ class TestTapeExpansion:
             grad_method = None
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="tf")

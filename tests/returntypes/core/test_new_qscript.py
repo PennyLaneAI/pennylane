@@ -341,11 +341,12 @@ class TestOutputShape:
         a = np.array([0.1, 0.2, 0.3])
         b = np.array([0.4, 0.5, 0.6])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected_shape = qml.execute([tape], dev, gradient_fn=None)[0].shape
 
         assert tape.shape(dev) == expected_shape
@@ -367,12 +368,13 @@ class TestOutputShape:
         a = np.array([0.1, 0.2, 0.3])
         b = np.array([0.4, 0.5, 0.6])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             for _ in range(2):
                 qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = qml.execute([tape], dev, gradient_fn=None)[0]
         actual = tape.shape(dev)
 
@@ -431,11 +433,12 @@ class TestOutputShape:
         broadcasting along with a device with a shot vector raises an error."""
         dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(np.array([0.1, 0.2]), wires=0)
             qml.RX(np.array([0.3, 0.4]), wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         msg = "Parameter broadcasting when using a shot vector is not supported yet"
 
         with pytest.raises(NotImplementedError, match=msg):

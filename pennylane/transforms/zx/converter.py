@@ -48,7 +48,7 @@ class EdgeType:  # pylint: disable=too-few-public-methods
 
 @op_transform
 def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
-    """It converts a PennyLane quantum script to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
+    """This transform converts a PennyLane quantum script to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
 
     Args:
@@ -58,7 +58,7 @@ def to_zx(qscript, expand_measurement=False):  # pylint: disable=unused-argument
 
     **Example**
 
-    You can use the transform decorator directly on your `QNode`, by executing then you will get the PyZX graph.
+    You can use the transform decorator directly on your ``QNode``, and executing it will produce a PyZX graph.
 
     .. code-block:: python
 
@@ -488,7 +488,7 @@ def from_zx(graph, decompose_phases=True):
 
             if qubits[neighbor_0] != qubit_1:
                 raise qml.QuantumFunctionError(
-                    "Cross qubit connections, the graoh is not circuit-like."
+                    "Cross qubit connections, the graph is not circuit-like."
                 )
 
             # Add Hadamard gate (written in the edge)
@@ -550,11 +550,11 @@ def _add_one_qubit_gate(param, type_1, qubit_1, decompose_phases):
             op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
             return [op_class(scaled_param, wires=qubit_1)]
     # Phases are not decomposed
-    else:
-        if param != 0:
-            scaled_param = np.pi * float(param)
-            op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
-            return [op_class(scaled_param, wires=qubit_1)]
+    elif param != 0:
+        scaled_param = np.pi * float(param)
+        op_class = qml.RZ if type_1 == VertexType.Z else qml.RX
+        return [op_class(scaled_param, wires=qubit_1)]
+
     # No gate is added
     return []
 
