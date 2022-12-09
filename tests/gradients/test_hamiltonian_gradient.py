@@ -21,12 +21,13 @@ def test_behaviour():
 
     dev = qml.device("default.qubit", wires=2)
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RY(0.3, wires=0)
         qml.RX(0.5, wires=1)
         qml.CNOT(wires=[0, 1])
         qml.expval(qml.Hamiltonian([-1.5, 2.0], [qml.PauliZ(0), qml.PauliZ(1)]))
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     tape.trainable_params = {2, 3}
     tapes, processing_fn = hamiltonian_grad(tape, idx=0)
     res1 = processing_fn(dev.batch_execute(tapes))
@@ -34,18 +35,20 @@ def test_behaviour():
     tapes, processing_fn = hamiltonian_grad(tape, idx=1)
     res2 = processing_fn(dev.batch_execute(tapes))
 
-    with qml.tape.QuantumTape() as tape1:
+    with qml.queuing.AnnotatedQueue() as q1:
         qml.RY(0.3, wires=0)
         qml.RX(0.5, wires=1)
         qml.CNOT(wires=[0, 1])
         qml.expval(qml.PauliZ(0))
 
-    with qml.tape.QuantumTape() as tape2:
+    tape1 = qml.tape.QuantumScript.from_queue(q1)
+    with qml.queuing.AnnotatedQueue() as q2:
         qml.RY(0.3, wires=0)
         qml.RX(0.5, wires=1)
         qml.CNOT(wires=[0, 1])
         qml.expval(qml.PauliZ(1))
 
+    tape2 = qml.tape.QuantumScript.from_queue(q2)
     dev.reset()
     res_expected1 = qml.math.squeeze(dev.execute(tape1))
     dev.reset()
