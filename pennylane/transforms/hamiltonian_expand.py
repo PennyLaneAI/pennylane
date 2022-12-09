@@ -211,8 +211,8 @@ def sum_expand(qscript: QuantumScript, group=True):
     Args:
         qscript (.QuantumScript): the quantum script used when calculating the expectation value
             of the Hamiltonian
-        group (bool): Whether to compute disjoint groups of commuting Pauli observables, leading to fewer tapes.
-            If grouping information can be found in the Hamiltonian, it will be used even if group=False.
+        group (bool): Whether to compute disjoint groups of Pauli observables acting on different
+            wires, leading to fewer tapes.
 
     Returns:
         tuple[list[.QuantumScript], function]: Returns a tuple containing a list of
