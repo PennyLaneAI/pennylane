@@ -18,6 +18,7 @@ Contains the Dataset utility functions.
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
 import os
+from os.path import sep as pathsep
 from time import sleep
 from urllib.parse import quote
 
@@ -25,8 +26,8 @@ import requests
 from pennylane.data.dataset import Dataset
 
 S3_URL = "https://xanadu-quantum-datasets.s3.amazonaws.com"
-FOLDERMAP_URL = os.path.join(S3_URL, "foldermap.json")
-DATA_STRUCT_URL = os.path.join(S3_URL, "data_struct.json")
+FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
+DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
 
 _foldermap = {}
 _data_struct = {}
@@ -137,7 +138,8 @@ def _refresh_data_struct():
 
 def _fetch_and_save(filename, dest_folder):
     """Download a single file from S3 and save it locally."""
-    response = requests.get(os.path.join(S3_URL, quote(filename)), timeout=5.0)
+    webfile = filename if pathsep == "/" else filename.replace(pathsep, "/")
+    response = requests.get(f"{S3_URL}/{quote(webfile)}", timeout=5.0)
     response.raise_for_status()
     with open(os.path.join(dest_folder, filename), "wb") as f:
         f.write(response.content)
@@ -161,16 +163,16 @@ def _s3_download(data_name, folders, attributes, dest_folder, force, num_threads
         if not os.path.exists(local_folder):
             os.makedirs(local_folder)
 
-        prefix = os.path.join(data_name, folder, f"{folder.replace('/', '_')}_")
+        prefix = os.path.join(data_name, folder, f"{folder.replace(pathsep, '_')}_")
         # TODO: consider combining files within a folder (switch to append)
         files.extend([f"{prefix}{attr}.dat" for attr in attributes])
 
     if not force:
-        start = len(dest_folder.rstrip("/")) + 1
+        start = len(dest_folder.rstrip(pathsep)) + 1
         existing_files = {
             os.path.join(path, name)[start:]
-            for path, _, files in os.walk(dest_folder)
-            for name in files
+            for path, _, local_files in os.walk(dest_folder)
+            for name in local_files
         }
         files = list(set(files) - existing_files)
 
@@ -196,13 +198,15 @@ def _generate_folders(node, folders):
 
     next_folders = folders[1:]
     folders = set(node) if folders[0] == ["full"] else set(folders[0]).intersection(set(node))
-    if not next_folders:
-        return folders
-    return [
-        os.path.join(folder, child)
-        for folder in folders
-        for child in _generate_folders(node[folder], next_folders)
-    ]
+    return (
+        [
+            os.path.join(folder, child)
+            for folder in folders
+            for child in _generate_folders(node[folder], next_folders)
+        ]
+        if next_folders
+        else folders
+    )
 
 
 def load(
@@ -251,7 +255,7 @@ def load(
     for folder in all_folders:
         real_folder = os.path.join(directory_path, data_name, folder)
         data_files.append(
-            Dataset(data_name, real_folder, folder.replace("/", "_"), docstring, standard=True)
+            Dataset(data_name, real_folder, folder.replace(pathsep, "_"), docstring, standard=True)
         )
 
     return data_files
@@ -263,10 +267,7 @@ def _direc_to_dict(path):
         if not dirs:
             return None
         tree = {x: _direc_to_dict(os.path.join(root, x)) for x in dirs}
-        vals = [x is None for x in tree.values()]
-        if all(vals):
-            return list(dirs)
-        return tree
+        return list(dirs) if all(x is None for x in tree.values()) else tree
 
 
 def list_datasets(path=None):
@@ -417,7 +418,7 @@ def load_interactive():
     )
 
     print("\nPlease confirm your choices:")
-    print("dataset:", os.path.join(data_name, *[description[param] for param in params]))
+    print("dataset:", "/".join([data_name] + [description[param] for param in params]))
     print("attributes:", attributes)
     print("force:", force)
     print("dest folder:", os.path.join(dest_folder, "datasets"))
