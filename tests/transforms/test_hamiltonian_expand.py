@@ -278,14 +278,14 @@ class TestHamiltonianExpand:
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
 
-with AnnotatedQueue() as qs_tape1:
+with AnnotatedQueue() as s_tape1:
     qml.PauliX(0)
     S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1)))
     qml.expval(S1)
     qml.expval(S1)
     qml.state()
 
-with AnnotatedQueue() as qs_tape2:
+with AnnotatedQueue() as s_tape2:
     qml.Hadamard(0)
     qml.Hadamard(1)
     qml.PauliZ(1)
@@ -305,7 +305,7 @@ S3 = qml.op_sum(
     qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1))), qml.s_prod(0.3, qml.PauliX(1))
 )
 
-with AnnotatedQueue() as qs_tape3:
+with AnnotatedQueue() as s_tape3:
     qml.PauliX(0)
     qml.expval(S3)
     qml.probs(wires=[1, 3])
@@ -323,7 +323,7 @@ S4 = qml.op_sum(
     qml.prod(qml.PauliZ(0), qml.PauliX(1), qml.PauliY(2)),
 )
 
-with AnnotatedQueue() as qs_tape4:
+with AnnotatedQueue() as s_tape4:
     qml.Hadamard(0)
     qml.Hadamard(1)
     qml.PauliZ(1)
@@ -334,12 +334,12 @@ with AnnotatedQueue() as qs_tape4:
     qml.expval(S4)
     qml.expval(qml.PauliX(2))
 
-s_tape1 = QuantumScript.from_queue(qs_tape1)
-s_tape2 = QuantumScript.from_queue(qs_tape2)
-s_tape3 = QuantumScript.from_queue(qs_tape3)
-s_tape4 = QuantumScript.from_queue(qs_tape4)
+s_qscript1 = QuantumScript.from_queue(s_tape1)
+s_qscript2 = QuantumScript.from_queue(s_tape2)
+s_qscript3 = QuantumScript.from_queue(s_tape3)
+s_qscript4 = QuantumScript.from_queue(s_tape4)
 
-SUM_TAPES = [s_tape1, s_tape2, s_tape3, s_tape4]
+SUM_QSCRIPTS = [s_qscript1, s_qscript2, s_qscript3, s_qscript4]
 SUM_OUTPUTS = [
     [
         -1.5,
@@ -374,22 +374,20 @@ SUM_OUTPUTS = [
 class TestSumExpand:
     """Tests for the sum_expand transform"""
 
-    @pytest.mark.parametrize(("tape", "output"), zip(SUM_TAPES, SUM_OUTPUTS))
-    def test_sums(self, tape, output):
+    @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
+    def test_sums(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
-
-        tapes, fn = sum_expand(tape)
+        tapes, fn = sum_expand(qscript)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
-    @pytest.mark.parametrize(("tape", "output"), zip(SUM_TAPES, SUM_OUTPUTS))
-    def test_sums_no_grouping(self, tape, output):
+    @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
+    def test_sums_no_grouping(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value
         if we switch grouping off"""
-
-        tapes, fn = sum_expand(tape, group=False)
+        tapes, fn = sum_expand(qscript, group=False)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
@@ -405,13 +403,9 @@ class TestSumExpand:
             qml.PauliX(wires=2)
             qml.expval(S)
 
-        tape = QuantumScript.from_queue(q)
+        qscript = QuantumScript.from_queue(q)
 
-        tapes, fn = sum_expand(tape, group=True)
-        assert len(tapes) == 2
-
-        qs = QuantumScript(tape.operations, tape.measurements)
-        tapes, fn = sum_expand(qs, group=True)
+        tapes, fn = sum_expand(qscript, group=True)
         assert len(tapes) == 2
 
     def test_number_of_qscripts(self):
@@ -481,11 +475,11 @@ class TestSumExpand:
 
             qml.expval(S)
 
-        tape = QuantumScript.from_queue(q)
+        qscript = QuantumScript.from_queue(q)
 
         def cost(x):
-            tape.set_parameters(x, trainable_only=False)
-            tapes, fn = sum_expand(tape)
+            qscript.set_parameters(x, trainable_only=False)
+            tapes, fn = sum_expand(qscript)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
@@ -529,8 +523,8 @@ class TestSumExpand:
                     qml.CNOT(wires=[2, 0])
                 qml.expval(S)
 
-            tape = QuantumScript.from_queue(q)
-            tapes, fn = sum_expand(tape)
+            qscript = QuantumScript.from_queue(q)
+            tapes, fn = sum_expand(qscript)
             res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
 
             assert np.isclose(res, output)
@@ -575,11 +569,11 @@ class TestSumExpand:
 
             qml.expval(S)
 
-        tape = QuantumScript.from_queue(q)
+        qscript = QuantumScript.from_queue(q)
 
         def cost(x):
-            tape.set_parameters(x, trainable_only=False)
-            tapes, fn = sum_expand(tape)
+            qscript.set_parameters(x, trainable_only=False)
+            tapes, fn = sum_expand(qscript)
             res = qml.execute(tapes, dev, qml.gradients.param_shift, interface="jax")
             return fn(res)
 
