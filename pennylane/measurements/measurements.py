@@ -556,8 +556,16 @@ class MeasurementProcess(ABC):
 class SampleMeasurement(MeasurementProcess):
     """Sample-based measurement process.
 
-    Any class inheriting from ``SampleMeasurement`` should define its own
-    :func:`SampleMeasurement.process_samples` method.
+    Any class inheriting from ``SampleMeasurement`` should define its own ``process_samples`` method,
+    which should have the following arguments:
+
+    * samples (Sequence[complex]): computational basis samples generated for all wires
+    * wire_order (Wires): wires determining the subspace that ``samples`` acts on
+    * shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+        to use. If not specified, all samples are used.
+    * bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+        returns the measurement statistic separately over each bin. If not
+        provided, the entire shot range is treated as a single bin.
 
     **Example:**
 
@@ -602,8 +610,12 @@ class SampleMeasurement(MeasurementProcess):
 class StateMeasurement(MeasurementProcess):
     """State-based measurement process.
 
-    Any class inheriting from ``StateMeasurement`` should define its own
-    :func:`StateMeasurement.process_state` method.
+    Any class inheriting from ``StateMeasurement`` should define its own ``process_state`` method,
+    which should have the following arguments:
+
+    * state (Sequence[complex]): quantum state
+    * wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+        dimension :math:`2^n` acts on a subspace of :math:`n` wires
 
     **Example:**
 
@@ -643,9 +655,11 @@ class MeasurementTransform(MeasurementProcess):
     """Measurement process that applies a transform into the given quantum script. This transform
     is carried out inside the gradient black box, thus is not tracked by the gradient transform.
 
-    Any class inheriting from ``MeasurementTransform`` should define its own
-    :func:`MeasurementTransform.process` method, which takes a device instance and a quantum script
-    and returns the result of the measurement process.
+    Any class inheriting from ``MeasurementTransform`` should define its own ``process`` method,
+    which should have the following arguments:
+
+    * qscript (QuantumScript): quantum script to transform
+    * device (Device): device used to transform the quantum script
     """
 
     method_name = ""
