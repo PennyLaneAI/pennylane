@@ -267,7 +267,7 @@ def sum_expand(qscript: QuantumScript, group=True):
     >>> fn(res)
     [-0.5, 0.0, 0.0, -0.9999999999999996]
 
-    Fewer tapes can be constructed by grouping commuting observables. This can be achieved
+    Fewer tapes can be constructed by grouping observables acting on different wires. This can be achieved
     by the ``group`` keyword argument:
 
     .. code-block:: python3
