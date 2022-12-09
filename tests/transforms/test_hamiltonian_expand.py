@@ -17,8 +17,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.tape import QuantumScript
 from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumScript
 from pennylane.transforms import hamiltonian_expand, sum_expand
 
 dev = qml.device("default.qubit", wires=4)
@@ -570,3 +570,55 @@ class TestSumExpand:
 
             g = gtape.gradient(res, var)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
+
+    @pytest.mark.jax
+    def test_sum_dif_jax(self, tol):
+        """Tests that the sum_expand tape transform is differentiable with the Jax interface"""
+        import jax
+        from jax import numpy as jnp
+
+        S = qml.op_sum(
+            qml.s_prod(-0.2, qml.PauliX(1)),
+            qml.s_prod(0.5, qml.prod(qml.PauliZ(1), qml.PauliY(2))),
+            qml.s_prod(1, qml.PauliZ(0)),
+        )
+
+        var = jnp.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7, -0.2, 0.5, 1])
+        output = 0.42294409781940356
+        output2 = [
+            9.68883500e-02,
+            -2.90832724e-01,
+            -1.04448033e-01,
+            -1.94289029e-09,
+            3.50307411e-01,
+            -3.41123470e-01,
+            0.0,
+            0.0,
+            0.0,
+        ]
+
+        with AnnotatedQueue() as q:
+            for _ in range(2):
+                qml.RX(np.array(0), wires=0)
+                qml.RX(np.array(0), wires=1)
+                qml.RX(np.array(0), wires=2)
+                qml.CNOT(wires=[0, 1])
+                qml.CNOT(wires=[1, 2])
+                qml.CNOT(wires=[2, 0])
+
+            qml.expval(S)
+
+        tape = QuantumScript.from_queue(q)
+
+        def cost(x):
+            tape.set_parameters(x, trainable_only=False)
+            tapes, fn = sum_expand(tape)
+            res = qml.execute(tapes, dev, qml.gradients.param_shift, interface="jax")
+            return fn(res)
+
+        assert np.isclose(cost(var), output)
+
+        grad = jax.grad(cost)(var)
+        assert len(grad) == len(output2)
+        for g, o in zip(grad, output2):
+            assert np.allclose(g, o, atol=tol)
