@@ -35,9 +35,6 @@ def var(op: Operator):
     Returns:
         VarianceMP: measurement process instance
 
-    Raises:
-        Warning: `op` might not be hermitian
-
     **Example:**
 
     .. code-block:: python3

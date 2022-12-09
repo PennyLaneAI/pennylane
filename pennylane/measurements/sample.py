@@ -43,7 +43,6 @@ def sample(op: Union[Observable, None] = None, wires=None):
         SampleMP: measurement process instance
 
     Raises:
-        Warning: `op` might not be hermitian
         ValueError: Cannot set wires if an observable is provided
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.

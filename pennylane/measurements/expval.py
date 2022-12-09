@@ -51,9 +51,6 @@ def expval(op: Operator):
 
     Returns:
         ExpectationMP: measurement process instance
-
-    Raises:
-        Warning: `op` might not be hermitian
     """
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
