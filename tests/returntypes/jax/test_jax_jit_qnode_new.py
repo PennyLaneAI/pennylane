@@ -2190,16 +2190,23 @@ class TestReturnHessian:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
 
-        hess = jax.jit(hessian(circuit))(par_0, par_1)
+        hess = jax.jit(hessian(circuit, argnums=[0, 1]))(par_0, par_1)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
 
-        assert isinstance(hess[0], jax.numpy.ndarray)
-        assert hess[0].shape == (10,)
+        assert isinstance(hess[0], tuple)
+        assert len(hess[0]) == 2
 
-        assert isinstance(hess[1], jax.numpy.ndarray)
-        assert hess[1].shape == (10,)
+        for h in hess[0]:
+            assert isinstance(h, tuple)
+            for h_comp in h:
+                assert h_comp.shape == ()
+
+        for h in hess[1]:
+            assert isinstance(h, tuple)
+            for h_comp in h:
+                assert h_comp.shape == (4,)
 
     def test_hessian_probs_expval_multiple_param_array(self, dev_name, diff_method, hessian, mode):
         """The hessian of multiple measurements with a multiple param array return a single array."""
@@ -2220,8 +2227,16 @@ class TestReturnHessian:
 
         hess = jax.jit(hessian(circuit))(params)
 
-        assert isinstance(hess, jax.numpy.ndarray)
-        assert hess.shape == (5, 2, 2)
+        assert isinstance(hess, tuple)
+        assert len(hess) == 2
+        assert isinstance(hess[0], jax.numpy.ndarray)
+        assert hess[0].shape == (
+            2,
+            2,
+        )
+
+        assert isinstance(hess[1], jax.numpy.ndarray)
+        assert hess[1].shape == (4, 2, 2)
 
     def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, hessian, mode):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""

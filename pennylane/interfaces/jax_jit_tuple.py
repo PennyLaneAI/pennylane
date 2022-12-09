@@ -197,7 +197,6 @@ def _execute_bwd_tuple(
             return res
 
         res = jax.pure_callback(wrapper, shape_dtype_structs, params, vectorized=True)
-        print("Evaluation result: ", res)
         return res
 
     @execute_wrapper.defjvp
@@ -252,7 +251,6 @@ def _execute_bwd_tuple(
 
             jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
 
-        print("Evaluation result (main return): ", evaluation_results)
         return evaluation_results, jvps
 
     def _grad_transform_jac_via_callback(params, device):
