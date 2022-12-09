@@ -295,8 +295,8 @@ def sum_expand(tape: QuantumScript, group=True):
     idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
     for idx, m in enumerate(tape.measurements):
         obs = m.obs
-        coeff = 1 if m.return_type is Expectation else None
-        if isinstance(obs, Sum) and m.return_type is Expectation:
+        coeff = 1 if isinstance(m, ExpectationMP) else None
+        if isinstance(obs, Sum) and isinstance(m, ExpectationMP):
             for summand in obs.operands:
                 if isinstance(summand, SProd):
                     coeff = summand.scalar
@@ -309,7 +309,7 @@ def sum_expand(tape: QuantumScript, group=True):
                     idxs_coeffs_dict[s_m.hash].append((idx, coeff))
             continue
 
-        if isinstance(obs, SProd) and m.return_type is Expectation:
+        if isinstance(obs, SProd) and isinstance(m, ExpectationMP):
             coeff = obs.scalar
             m = qml.expval(obs.base)
 

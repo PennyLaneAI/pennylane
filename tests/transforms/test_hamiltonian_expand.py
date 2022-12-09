@@ -17,7 +17,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript
+from pennylane.queuing import AnnotatedQueue
 from pennylane.transforms import hamiltonian_expand, sum_expand
 
 dev = qml.device("default.qubit", wires=4)
@@ -25,13 +26,13 @@ dev = qml.device("default.qubit", wires=4)
 
 
 """Defines circuits to be used in queueing/output tests"""
-with qml.queuing.AnnotatedQueue() as q_tape1:
+with AnnotatedQueue() as q_tape1:
     qml.PauliX(0)
     H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
     qml.expval(H1)
 tape1 = QuantumScript.from_queue(q_tape1)
 
-with qml.queuing.AnnotatedQueue() as q_tape2:
+with AnnotatedQueue() as q_tape2:
     qml.Hadamard(0)
     qml.Hadamard(1)
     qml.PauliZ(1)
@@ -51,7 +52,7 @@ tape2 = QuantumScript.from_queue(q_tape2)
 
 H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
 
-with qml.queuing.AnnotatedQueue() as q3:
+with AnnotatedQueue() as q3:
     qml.PauliX(0)
     qml.expval(H3)
 
@@ -66,7 +67,7 @@ H4 = (
 )
 H4 += qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliY(2)
 
-with qml.queuing.AnnotatedQueue() as q4:
+with AnnotatedQueue() as q4:
     qml.Hadamard(0)
     qml.Hadamard(1)
     qml.PauliZ(1)
@@ -137,7 +138,7 @@ class TestHamiltonianExpand:
         )
         assert H.grouping_indices is not None
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
@@ -156,7 +157,7 @@ class TestHamiltonianExpand:
 
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
@@ -210,8 +211,8 @@ class TestHamiltonianExpand:
             0.64123,
         ]
 
-        with qml.queuing.AnnotatedQueue() as q:
-            for i in range(2):
+        with AnnotatedQueue() as q:
+            for _ in range(2):
                 qml.RX(np.array(0), wires=0)
                 qml.RX(np.array(0), wires=1)
                 qml.RX(np.array(0), wires=2)
@@ -257,7 +258,7 @@ class TestHamiltonianExpand:
         ]
 
         with tf.GradientTape() as gtape:
-            with qml.queuing.AnnotatedQueue() as q:
+            with AnnotatedQueue() as q:
                 for i in range(2):
                     qml.RX(var[i, 0], wires=0)
                     qml.RX(var[i, 1], wires=1)
@@ -277,14 +278,14 @@ class TestHamiltonianExpand:
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
 
-with QuantumTape() as s_tape1:
+with AnnotatedQueue() as qs_tape1:
     qml.PauliX(0)
     S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1)))
     qml.expval(S1)
     qml.expval(S1)
     qml.state()
 
-with QuantumTape() as s_tape2:
+with AnnotatedQueue() as qs_tape2:
     qml.Hadamard(0)
     qml.Hadamard(1)
     qml.PauliZ(1)
@@ -304,7 +305,7 @@ S3 = qml.op_sum(
     qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1))), qml.s_prod(0.3, qml.PauliX(1))
 )
 
-with QuantumTape() as s_tape3:
+with AnnotatedQueue() as qs_tape3:
     qml.PauliX(0)
     qml.expval(S3)
     qml.probs(wires=[1, 3])
@@ -322,7 +323,7 @@ S4 = (
     + qml.prod(qml.PauliZ(0), qml.PauliX(1), qml.PauliY(2))
 )
 
-with QuantumTape() as s_tape4:
+with AnnotatedQueue() as qs_tape4:
     qml.Hadamard(0)
     qml.Hadamard(1)
     qml.PauliZ(1)
@@ -332,6 +333,11 @@ with QuantumTape() as s_tape4:
     qml.expval(qml.PauliX(2))
     qml.expval(S4)
     qml.expval(qml.PauliX(2))
+
+s_tape1 = QuantumScript.from_queue(qs_tape1)
+s_tape2 = QuantumScript.from_queue(qs_tape2)
+s_tape3 = QuantumScript.from_queue(qs_tape3)
+s_tape4 = QuantumScript.from_queue(qs_tape4)
 
 SUM_TAPES = [s_tape1, s_tape2, s_tape3, s_tape4]
 SUM_OUTPUTS = [
@@ -407,11 +413,13 @@ class TestSumExpand:
         """Test the grouping functionality"""
         S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
 
-        with QuantumTape() as tape:
+        with AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
             qml.expval(S)
+
+        tape = QuantumScript.from_queue(q)
 
         tapes, fn = sum_expand(tape, group=True)
         assert len(tapes) == 2
@@ -425,11 +433,13 @@ class TestSumExpand:
 
         S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
 
-        with QuantumTape() as tape:
+        with AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
             qml.expval(S)
+
+        tape = QuantumScript.from_queue(q)
 
         tapes, fn = sum_expand(tape, group=False)
         assert len(tapes) == 3
@@ -453,8 +463,10 @@ class TestSumExpand:
         """Test that the ``sum_expand`` function returns the input tape if it does not
         contain a single measurement with the expectation value of a Sum."""
 
-        with QuantumTape() as tape:
+        with AnnotatedQueue() as q:
             qml.expval(qml.PauliZ(0))
+
+        tape = QuantumScript.from_queue(q)
 
         tapes, fn = sum_expand(tape)
 
@@ -491,7 +503,7 @@ class TestSumExpand:
             0.0,
         ]
 
-        with QuantumTape() as tape:
+        with AnnotatedQueue() as q:
             for _ in range(2):
                 qml.RX(np.array(0), wires=0)
                 qml.RX(np.array(0), wires=1)
@@ -501,6 +513,8 @@ class TestSumExpand:
                 qml.CNOT(wires=[2, 0])
 
             qml.expval(S)
+
+        tape = QuantumScript.from_queue(q)
 
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
@@ -538,7 +552,7 @@ class TestSumExpand:
         ]
 
         with tf.GradientTape() as gtape:
-            with QuantumTape() as tape:
+            with AnnotatedQueue() as q:
                 for i in range(2):
                     qml.RX(var[i, 0], wires=0)
                     qml.RX(var[i, 1], wires=1)
@@ -548,6 +562,7 @@ class TestSumExpand:
                     qml.CNOT(wires=[2, 0])
                 qml.expval(S)
 
+            tape = QuantumScript.from_queue(q)
             tapes, fn = sum_expand(tape)
             res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
 
