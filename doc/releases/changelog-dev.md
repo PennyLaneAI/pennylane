@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* Support for getting the ZX calculus graph of a circuit with the PyZX framework.
+* Support for getting the ZX calculus graph of a circuit with the PyZX framework and converting
+  a PyZX graph back into a PennyLane circuit.
   [#3446](https://github.com/PennyLaneAI/pennylane/pull/3446)
   
   ```python
