@@ -88,7 +88,8 @@ class TestConvertersZX:
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
         # Remove global phase
-        mat_product /= mat_product[0, 0]
+        if not np.allclose(mat_product[0, 0], 1.0):
+            mat_product /= mat_product[0, 0]
 
         assert qml.math.allclose(mat_product, I)
 
@@ -102,7 +103,8 @@ class TestConvertersZX:
         # Check whether the two matrices are each others conjugate transposes
         mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_qscript_back.T))
         # Remove global phase
-        mat_product /= mat_product[0, 0]
+        if not np.allclose(mat_product[0, 0], 1.0):
+            mat_product /= mat_product[0, 0]
 
         assert qml.math.allclose(mat_product, I)
 
