@@ -4,6 +4,33 @@
 
 <h3>New features since last release</h3>
 
+* Support for getting the ZX calculus graph of a circuit with the PyZX framework and converting
+  a PyZX graph back into a PennyLane circuit.
+  [#3446](https://github.com/PennyLaneAI/pennylane/pull/3446)
+  
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.transforms.to_zx
+  @qml.qnode(device=dev)
+  def circuit(p):
+      qml.RZ(p[0], wires=1),
+      qml.RZ(p[1], wires=1),
+      qml.RX(p[2], wires=0),
+      qml.PauliZ(wires=0),
+      qml.RZ(p[3], wires=1),
+      qml.PauliX(wires=1),
+      qml.CNOT(wires=[0, 1]),
+      qml.CNOT(wires=[1, 0]),
+      qml.SWAP(wires=[0, 1]),
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+  ```pycon
+  >>> params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
+  >>> circuit(params)
+  Graph(20 vertices, 23 edges)
+  ```
+  
 * Added ability to create expressions from mid-circuit measurements.
   [#3159](https://github.com/PennyLaneAI/pennylane/pull/3159)
 
