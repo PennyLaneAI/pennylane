@@ -6,6 +6,42 @@ Deprecations
 Pending deprecations
 --------------------
 
+* ``with qml.tape.QuantumTape()`` is deprecated. The QuantumTape class has been separated into
+  ``qml.queuing.AnnotateQueue``, which handles the context/queuing component of ``QuantumTape``,
+  and ``qml.tape.QuantumScript``, which holds the processed sequence of operations and measurements.
+
+  - Still accessible in v0.28
+  - Will be removed in v0.29
+
+  Don't use:
+
+  .. code-block:: python
+
+    with qml.tape.QuantumTape() as tape:
+      qml.RX(0.1, wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.expval(qml.PauliZ(0))
+      qml.expval(qml.PauliZ(1))
+
+  Instead, use:
+
+  .. code-block:: python
+
+    tape = qml.tape.QuantumTape(
+      [qml.RX(0.1, wires=0), qml.CNOT(wires=[0, 1])],
+      [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))],
+    )
+
+  Alternatively, if your application requires queuing, you can do the following:
+
+  .. code-block:: python
+
+    with qml.queuing.AnnotateQueue() as q:
+      op1 = qml.PauliX(0)
+      op2 = qml.PauliY(1)
+      qml.expval(op1 @ op2)
+    tape = qml.tape.QuantumTape.from_queue(q)
+
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead.
 
