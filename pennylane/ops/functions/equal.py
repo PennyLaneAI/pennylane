@@ -233,6 +233,9 @@ def _equal_sum(op1: Sum, op2: Sum, **kwargs):
     sorted_ops1 = op1._sort(op1.operands)
     sorted_ops2 = op2._sort(op2.operands)
 
+    if len(sorted_ops1) != len(sorted_ops2):
+        return False
+
     return np.all([qml.equal(o1, o2, **kwargs) for o1, o2 in zip(sorted_ops1, sorted_ops2)])
 
 
