@@ -110,8 +110,7 @@ processes:
         [qml.CNOT(wires=[i, i + 1]) for i in range(3)]
         return CountState(state="011")
 
->>> from pennylane import numpy as np
->>> x = np.array(0.123, requires_grad=True)
+>>> x = qml.numpy.array(0.123, requires_grad=True)
 >>> qml.grad(circuit)(x)
 63.50000000000001
 """
