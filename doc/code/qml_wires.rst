@@ -10,5 +10,4 @@ qml.wires
 
 .. automodapi:: pennylane.wires
     :no-heading:
-    :no-inheritance-diagram:
     :skip: Sequence, Iterable

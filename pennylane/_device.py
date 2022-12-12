@@ -28,6 +28,7 @@ import pennylane as qml
 from pennylane.measurements import (
     CountsMP,
     Expectation,
+    ExpectationMP,
     MidMeasureMP,
     Probability,
     ProbabilityMP,
@@ -38,6 +39,8 @@ from pennylane.measurements import (
     Variance,
 )
 from pennylane.operation import Observable, Operation, Tensor
+from pennylane.ops import Hamiltonian, Sum
+from pennylane.tape import QuantumScript
 from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
@@ -696,7 +699,7 @@ class Device(abc.ABC):
 
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
-    def batch_transform(self, circuit):
+    def batch_transform(self, circuit: QuantumScript):
         """Apply a differentiable batch transform for preprocessing a circuit
         prior to execution. This method is called directly by the QNode, and
         should be overwritten if the device requires a transform that
@@ -727,12 +730,15 @@ class Device(abc.ABC):
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in circuit.observables
-            if obs.name == "Hamiltonian"
+            if isinstance(obs, Hamiltonian)
         )
         # device property present in braket plugin
         use_grouping = getattr(self, "use_grouping", True)
 
-        hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
+        hamiltonian_in_obs = any(isinstance(obs, Hamiltonian) for obs in circuit.observables)
+        expval_sum_in_obs = any(
+            isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
+        )
 
         is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
 
@@ -745,11 +751,13 @@ class Device(abc.ABC):
             # split tape into multiple tapes of diagonalizable known observables.
             try:
                 circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
-
             except ValueError as e:
                 raise ValueError(
                     "Can only return the expectation of a single Hamiltonian observable"
                 ) from e
+        elif expval_sum_in_obs and not is_shadow:
+            circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
+
         elif (
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs

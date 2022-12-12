@@ -958,10 +958,11 @@ class TestMultiControlledX:
 
         dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX._decomposition_with_many_workers(
                 control_wires, target_wire, work_wires
             )
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert all(isinstance(op, qml.Toffoli) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -988,10 +989,11 @@ class TestMultiControlledX:
 
         dev = qml.device("default.qubit", wires=n_ctrl_wires + 2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX._decomposition_with_one_worker(
                 control_wires, target_wire, work_wires
             )
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=1)
         assert all(
             isinstance(op, qml.Toffoli) or isinstance(op, qml.CNOT) for op in tape.operations
@@ -1042,12 +1044,13 @@ class TestMultiControlledX:
         spy = mocker.spy(qml.MultiControlledX, "decomposition")
         dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(
                 wires=control_target_wires,
                 work_wires=work_wires,
                 control_values=control_values,
             )
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=1)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
@@ -1077,8 +1080,9 @@ class TestMultiControlledX:
         spy = mocker.spy(qml.MultiControlledX, "decomposition")
         dev = qml.device("default.qubit", wires=all_wires)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=2)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
@@ -1109,8 +1113,9 @@ class TestMultiControlledX:
         spy = mocker.spy(qml.MultiControlledX, "decomposition")
         dev = qml.device("default.qubit", wires=n_all_wires)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=1)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
@@ -1449,3 +1454,16 @@ def test_adjoint_method(op, tol):
         adj_op = adj_op.adjoint()
 
         assert adj_op.name == op.name
+
+
+op_pauli_rep = (
+    (qml.PauliX(wires=0), qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X"}): 1})),
+    (qml.PauliY(wires="a"), qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1})),
+    (qml.PauliZ(wires=4), qml.pauli.PauliSentence({qml.pauli.PauliWord({4: "Z"}): 1})),
+    (qml.Identity(wires="target"), qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),
+)
+
+
+@pytest.mark.parametrize("op, rep", op_pauli_rep)
+def test_pauli_rep(op, rep):
+    assert op._pauli_rep == rep
