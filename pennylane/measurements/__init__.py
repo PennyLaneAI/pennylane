@@ -98,7 +98,7 @@ so that we can verify our results mathematically.
 
 The quantum state before the measurement will be:
 
-.. math:: \psi = R_x(\theta) \times \begin{bmatrix} 1 \\ 0 \end{bmatrix} = \begin{bmatrix}
+.. math:: \psi = R_x(\theta) \begin{bmatrix} 1 \\ 0 \end{bmatrix} = \begin{bmatrix}
                 \cos(\theta/2) & -i\sin(\theta/2) \\
                 -i\sin(\theta/2) & \cos(\theta/2)
             \end{bmatrix} \begin{bmatrix} 1 \\ 0 \end{bmatrix} = \begin{bmatrix}
@@ -116,10 +116,10 @@ Given that the measurement process returns a real scalar value, we can different
 using the analytic method.
 
 We know from the previous analysis that the analytic result of the measurement process is
-:math:`r(\theta) = n\_shots \times {\sin(\theta/2)}^2`.
+:math:`r(\theta) = \var{n_shots} \cdot {\sin(\theta/2)}^2`.
 
 The gradient of the measurement process is
-:math:`\frac{\partial r}{\partial \theta} = n\_shots \times \sin(\theta/2) \times \cos(\theta/2)`.
+:math:`\frac{\partial r}{\partial \theta} = \var{n_shots} \cdot \sin(\theta/2) \cdot \cos(\theta/2)`.
 
 When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
