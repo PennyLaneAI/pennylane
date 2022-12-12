@@ -529,6 +529,32 @@ class TestProperties:
         assert op.label(decimals=2, cache=cache) == "-1.20*U(M0)"
         assert len(cache["matrices"]) == 1
 
+    op_pauli_reps = (
+        (
+            qml.s_prod(1.23, qml.PauliZ(wires=0)),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1.23}),
+        ),
+        (
+            qml.s_prod(-1j, qml.PauliX(wires=1)),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({1: "X"}): -1j}),
+        ),
+        (
+            qml.s_prod(1.23 - 4j, qml.PauliY(wires="a")),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1.23 - 4j}),
+        ),
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps)
+    def test_pauli_rep(self, op, rep):
+        """Test the pauli rep is produced as expected."""
+        assert op._pauli_rep == rep
+
+    def test_pauli_rep_none_if_base_pauli_rep_none(self):
+        """Test that None is produced if the base op does not have a pauli rep"""
+        base = qml.RX(1.23, wires=0)
+        op = qml.s_prod(2, base)
+        assert op._pauli_rep is None
+
 
 class TestSimplify:
     """Test SProd simplify method and depth property."""
