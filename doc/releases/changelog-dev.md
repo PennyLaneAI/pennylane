@@ -409,6 +409,9 @@
   the optional `use_grouping` attribute.
   [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
 
+* Add the optional argument lazy=True to functions `qml.s_prod`, `qml.prod` and `qml.op_sum` to allow simplification.
+  [(#3483)](https://github.com/PennyLaneAI/pennylane/pull/3483)
+
 * Updated `zyz_decomposition` function such that it now supports broadcast operators. This
   means that single-qubit `QubitUnitary` operators, instantiated from a batch of unitaries,
   can now be decomposed.
@@ -847,6 +850,7 @@ Edward Jiang
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Kevin Shen
 Mudit Pandey
 Matthew Silverman
 Jay Soni

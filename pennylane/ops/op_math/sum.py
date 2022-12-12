@@ -15,6 +15,7 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+import itertools
 from copy import copy
 from typing import List
 from functools import reduce
@@ -24,11 +25,12 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
 
 
-def op_sum(*summands, do_queue=True, id=None):
+def op_sum(*summands, do_queue=True, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
@@ -38,6 +40,7 @@ def op_sum(*summands, do_queue=True, id=None):
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
             Default is True.
         id (str or None): id for the Sum operator. Default is None.
+        lazy=True (bool): If ``lazy=False``, a simplification will be peformed such that when any of the operators is already a sum operator, its operands (summands) will be used instead.
 
     Returns:
         ~ops.op_math.Sum: The operator representing the sum of summands.
@@ -53,7 +56,21 @@ def op_sum(*summands, do_queue=True, id=None):
     array([[ 1,  1],
            [ 1, -1]])
     """
-    return Sum(*summands, do_queue=do_queue, id=id)
+    if lazy:
+        return Sum(*summands, do_queue=do_queue, id=id)
+
+    summands_simp = Sum(
+        *itertools.chain.from_iterable([op if isinstance(op, Sum) else [op] for op in summands]),
+        do_queue=do_queue,
+        id=id,
+    )
+
+    if do_queue:
+        for op in summands:
+            QueuingManager.update_info(op, owner=summands_simp)
+        QueuingManager.update_info(summands_simp, owns=summands)
+
+    return summands_simp
 
 
 class Sum(CompositeOp):
