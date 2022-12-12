@@ -307,6 +307,23 @@ class TestDeviceSupportedLogic:
 class TestInternalFunctions:
     """Test the internal functions of the abstract Device class"""
 
+    def test_repr(self, mock_device_with_operations):
+        """Tests the __repr__ function"""
+        dev = mock_device_with_operations()
+        repr_string = dev.__repr__()
+        assert "<Device device (wires=1, shots=1000) at " in repr_string
+
+    def test_str(self, mock_device_with_operations):
+        """Tests the __str__ function"""
+        dev = mock_device_with_operations()
+        string = dev.__str__()
+        assert "Short name: MockDevice" in string
+        assert "Package: pennylane" in string
+        assert "Plugin version: None" in string
+        assert "Author: None" in string
+        assert "Wires: 1" in string
+        assert "Shots: 1000" in string
+
     def test_check_validity_on_valid_queue(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with valid queue and observables"""
         dev = mock_device_supporting_paulis()
@@ -552,10 +569,11 @@ class TestInternalFunctions:
         dev = mock_device_with_paulis_and_methods(wires=2)
 
         # mid-circuit measurements are part of the queue (for now)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.measure(1)
             qml.PauliZ(0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # Raises an error for device that doesn't support mid-circuit measurements natively
         with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
             dev.check_validity(tape.operations, tape.observables)
@@ -567,10 +585,11 @@ class TestInternalFunctions:
         mid-circuit measurements are not supported natively"""
         dev = mock_device_with_paulis_and_methods(wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.cond(0, qml.RY)(0.3, wires=0)
             qml.PauliZ(0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # Raises an error for device that doesn't support conditional
         # operations natively
         with pytest.raises(DeviceError, match="Gate Conditional not supported on device"):
@@ -731,6 +750,37 @@ class TestOperations:
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(queue, observables)
+
+    def test_execute_obs_probs(self, mock_device_with_observables):
+        """Tests that the execute function raises an error if probabilities are
+        not supported by the device"""
+        dev = mock_device_with_observables()
+        obs = qml.PauliZ(0)
+        obs.return_type = qml.measurements.ObservableReturnTypes.Probability
+        with pytest.raises(NotImplementedError):
+            dev.execute([], [obs])
+
+    def test_var(self, mock_device_with_observables):
+        """Tests that the variance method are not implemented by the device by
+        default"""
+        dev = mock_device_with_observables()
+        with pytest.raises(NotImplementedError):
+            dev.var(qml.PauliZ, 0, [])
+
+    def test_sample(self, mock_device_with_observables):
+        """Tests that the sample method are not implemented by the device by
+        default"""
+        dev = mock_device_with_observables()
+        with pytest.raises(NotImplementedError):
+            dev.sample(qml.PauliZ, 0, [])
+
+    @pytest.mark.parametrize("wires", [None, []])
+    def test_probability(self, mock_device_with_observables, wires):
+        """Tests that the probability method are not implemented by the device
+        by default"""
+        dev = mock_device_with_observables()
+        with pytest.raises(NotImplementedError):
+            dev.probability(wires=wires)
 
 
 class TestObservables:
@@ -961,13 +1011,16 @@ class TestDeviceInit:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
-    with qml.tape.QuantumTape() as tape1:
+    with qml.queuing.AnnotatedQueue() as q1:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-    with qml.tape.QuantumTape() as tape2:
+    tape1 = qml.tape.QuantumScript.from_queue(q1)
+    with qml.queuing.AnnotatedQueue() as q2:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0))
+
+    tape2 = qml.tape.QuantumScript.from_queue(q2)
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
     def test_calls_to_execute(self, n_tapes, mocker, mock_device_with_paulis_and_methods):
@@ -1014,7 +1067,7 @@ class TestBatchExecution:
 
         dev = mock_device_with_paulis_and_methods(wires=2)
 
-        empty_tape = qml.tape.QuantumTape()
+        empty_tape = qml.tape.QuantumScript()
         tapes = [empty_tape] * 3
         res = dev.batch_execute(tapes)
 
