@@ -34,8 +34,8 @@ classes. These classes are subclassed to implement measurements in PennyLane.
 * Each :class:`MeasurementTransform` subclass represents a measurement process that requires
   the application of a batch transform, which converts the given quantum script into a batch of
   quantum scripts and executes them using the device. The main difference between a
-  ``MeasurementTransform`` and a :func:`~pennylane.batch_transform` is that a batch transform is
-  tracked by the gradient transform, while a ``MeasurementTransform`` process isn't.
+  :class:`MeasurementTransform` and a :func:`~pennylane.batch_transform` is that a batch transform is
+  tracked by the gradient transform, while a :class:`MeasurementTransform` process isn't.
   See the :class:`ClassicalShadowMP` class for an example.
 
 .. note::
