@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.state measurement.
 """
@@ -32,6 +31,9 @@ def state():
 
     Note that the output shape of this measurement process depends on the
     number of wires defined for the device.
+
+    Returns:
+        StateMP: measurement process instance
 
     **Example:**
 
@@ -54,14 +56,14 @@ def state():
 
     .. note::
 
-        Differentiating :func:`~.state` is currently only supported when using the
+        Differentiating :func:`~pennylane.state` is currently only supported when using the
         classical backpropagation differentiation method (``diff_method="backprop"``) with a
         compatible device.
 
     .. details::
         :title: Usage Details
 
-        A QNode with the ``qml.state`` output can be used in a cost function with
+        A QNode with the ``qml.state`` output can be used in a cost function which
         is then differentiated:
 
         >>> dev = qml.device('default.qubit', wires=2)
@@ -76,8 +78,7 @@ def state():
         >>> qml.grad(cost)(x)
         -0.07471906623679961
     """
-    # pylint: disable=protected-access
-    return _State()
+    return StateMP()
 
 
 def density_matrix(wires):
@@ -87,6 +88,12 @@ def density_matrix(wires):
     matrix or reduced density matrix. The ``wires`` argument gives the possibility
     to trace out a part of the system. It can result in obtaining a mixed state, which can be
     only represented by the reduced density matrix.
+
+    Args:
+        wires (Sequence[int] or int): the wires of the subsystem
+
+    Returns:
+        StateMP: measurement process instance
 
     **Example:**
 
@@ -108,24 +115,32 @@ def density_matrix(wires):
 
     The returned matrix is the reduced density matrix, where system 1 is traced out.
 
-    Args:
-        wires (Sequence[int] or int): the wires of the subsystem
-
     .. note::
 
-        Calculating the derivative of :func:`~.density_matrix` is currently only supported when
+        Calculating the derivative of :func:`~pennylane.density_matrix` is currently only supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device.
     """
-    # pylint: disable=protected-access
     wires = Wires(wires)
-    return _State(wires=wires)
+    return StateMP(wires=wires)
 
 
-class _State(StateMeasurement):
-    """Measurement process that returns the quantum state."""
+class StateMP(StateMeasurement):
+    """Measurement process that returns the quantum state in the computational basis.
 
-    method_name = "state"
+    Please refer to :func:`state` and :func:`density_matrix` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
 
     @property
     def return_type(self):
@@ -151,8 +166,8 @@ class _State(StateMeasurement):
 
         if device is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
         # qml.state()
         dim = 2 ** len(device.wires)
@@ -177,8 +192,8 @@ class _State(StateMeasurement):
         # qml.state()
         if device is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement process; "
-                + f"got return type {self.return_type}."
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
 
         dim = 2 ** len(device.wires)

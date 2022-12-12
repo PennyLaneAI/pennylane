@@ -25,22 +25,23 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
+    CountsMP,
+    Expectation,
+    ExpectationMP,
+    MidMeasureMP,
+    Probability,
+    ProbabilityMP,
     Sample,
+    SampleMP,
+    ShadowExpvalMP,
     State,
     Variance,
-    Expectation,
-    Probability,
-    MidMeasure,
-    ShadowExpval,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.ops import Hamiltonian, Sum
+from pennylane.tape import QuantumScript
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -698,7 +699,7 @@ class Device(abc.ABC):
 
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
-    def batch_transform(self, circuit):
+    def batch_transform(self, circuit: QuantumScript):
         """Apply a differentiable batch transform for preprocessing a circuit
         prior to execution. This method is called directly by the QNode, and
         should be overwritten if the device requires a transform that
@@ -729,40 +730,39 @@ class Device(abc.ABC):
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in circuit.observables
-            if obs.name == "Hamiltonian"
+            if isinstance(obs, Hamiltonian)
+        )
+        # device property present in braket plugin
+        use_grouping = getattr(self, "use_grouping", True)
+
+        hamiltonian_in_obs = any(isinstance(obs, Hamiltonian) for obs in circuit.observables)
+        expval_sum_in_obs = any(
+            isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
         )
 
-        hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
+        is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
 
-        return_types = [m.return_type for m in circuit.observables]
+        hamiltonian_unusable = not supports_hamiltonian or (finite_shots and not is_shadow)
 
-        is_shadow = ShadowExpval in return_types
-
-        if hamiltonian_in_obs and (
-            (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known
-        ):
+        if hamiltonian_in_obs and (hamiltonian_unusable or (use_grouping and grouping_known)):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
             # split tape into multiple tapes of diagonalizable known observables.
             try:
                 circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
-
             except ValueError as e:
                 raise ValueError(
                     "Can only return the expectation of a single Hamiltonian observable"
                 ) from e
+        elif expval_sum_in_obs and not is_shadow:
+            circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
+
         elif (
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs
             and all(
-                t not in return_types
-                for t in [
-                    qml.measurements.Sample,
-                    qml.measurements.Probability,
-                    qml.measurements.Counts,
-                    qml.measurements.AllCounts,
-                ]
+                not isinstance(m, (SampleMP, ProbabilityMP, CountsMP)) for m in circuit.measurements
             )
         ):
             # Check for case of non-commuting terms and that there are no Hamiltonians
@@ -964,7 +964,7 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
-            if getattr(o, "return_type", None) == MidMeasure and not self.capabilities().get(
+            if isinstance(o, MidMeasureMP) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(

@@ -81,24 +81,31 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
         nqubits (int): the number of qubits.
 
     Returns:
-         func: Function which accepts the same arguments as the QNode. When called, this
-         function will return the Lie algebra commutator.
+        function or tuple[list[QuantumTape], function]:
 
+        - If the input is a QNode, an object representing the Riemannian gradient function
+          of the QNode that can be executed with the same arguments as the QNode to obtain
+          the Lie algebra commutator.
+
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Lie algebra commutator.
     """
     tapes_plus_total = []
     tapes_min_total = []
     for obs in observables:
         for o in obs:
             # create a list of tapes for the plus and minus shifted circuits
-            tapes_plus = [qml.tape.QuantumTape(name=f"{p}_p") for p in lie_algebra_basis_names]
-            tapes_min = [qml.tape.QuantumTape(name=f"{p}_m") for p in lie_algebra_basis_names]
+            queues_plus = [qml.queuing.AnnotatedQueue() for _ in lie_algebra_basis_names]
+            queues_min = [qml.queuing.AnnotatedQueue() for _ in lie_algebra_basis_names]
 
             # loop through all operations on the input tape
             for op in tape.operations:
-                for t in tapes_plus + tapes_min:
+                for t in queues_plus + queues_min:
                     with t:
                         qml.apply(op)
-            for i, t in enumerate(tapes_plus):
+            for i, t in enumerate(queues_plus):
                 with t:
                     qml.PauliRot(
                         np.pi / 2,
@@ -106,7 +113,7 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
                         wires=list(range(nqubits)),
                     )
                     qml.expval(o)
-            for i, t in enumerate(tapes_min):
+            for i, t in enumerate(queues_min):
                 with t:
                     qml.PauliRot(
                         -np.pi / 2,
@@ -114,8 +121,18 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
                         wires=list(range(nqubits)),
                     )
                     qml.expval(o)
-            tapes_plus_total.extend(tapes_plus)
-            tapes_min_total.extend(tapes_min)
+            tapes_plus_total.extend(
+                [
+                    qml.tape.QuantumScript(*qml.queuing.process_queue(q), name=f"{p}_p")
+                    for q, p in zip(queues_plus, lie_algebra_basis_names)
+                ]
+            )
+            tapes_min_total.extend(
+                [
+                    qml.tape.QuantumScript(*qml.queuing.process_queue(q), name=f"{p}_m")
+                    for q, p in zip(queues_min, lie_algebra_basis_names)
+                ]
+            )
     return tapes_plus_total + tapes_min_total, None
 
 
@@ -340,7 +357,6 @@ class LieAlgebraOptimizer:
 
         Returns:
             array: array of omegas for each direction in the Lie algebra.
-
         """
 
         obs_groupings, _ = qml.pauli.group_observables(self.observables, self.coeffs)

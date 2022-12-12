@@ -22,9 +22,9 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import QuantumFunctionError, math
+from pennylane import DeviceError, QuantumFunctionError, math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
-from pennylane.ops.op_math import Sum, op_sum
+from pennylane.ops.op_math import Prod, Sum, op_sum
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -80,8 +80,8 @@ ops = (
 )
 
 
-def _get_pw(w, pauil_op):
-    return qml.pauli.PauliWord({w: pauil_op})
+def _get_pw(w, pauli_op):
+    return qml.pauli.PauliWord({w: pauli_op})
 
 
 def sum_using_dunder_method(*summands, do_queue=True, id=None):
@@ -835,6 +835,30 @@ class TestWrapperFunc:
         assert sum_class_op.wires == sum_func_op.wires
         assert sum_class_op.parameters == sum_func_op.parameters
 
+    def test_lazy_mode(self):
+        """Test that by default, the operator is simply wrapped in `Sum`, even if a simplification exists."""
+        op = op_sum(qml.S(0), Sum(qml.S(1), qml.T(1)))
+
+        assert isinstance(op, Sum)
+        assert len(op) == 2
+
+    def test_non_lazy_mode(self):
+        """Test the lazy=False keyword."""
+        op = op_sum(qml.S(0), Sum(qml.S(1), qml.T(1)), lazy=False)
+
+        assert isinstance(op, Sum)
+        assert len(op) == 3
+
+    def test_non_lazy_mode_queueing(self):
+        """Test that if a simpification is accomplished, the metadata for the original op
+        and the new simplified op is updated."""
+        with qml.queuing.AnnotatedQueue() as q:
+            sum1 = op_sum(qml.S(1), qml.T(1))
+            sum2 = op_sum(qml.S(0), sum1, lazy=False)
+
+        assert q[sum1]["owner"] is sum2
+        assert sum1 in q[sum2]["owns"]
+
 
 class TestIntegration:
     """Integration tests for the Sum class."""
@@ -934,7 +958,7 @@ class TestIntegration:
         sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, grad_method="best")
+        @qml.qnode(dev, diff_method="best")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=1)
@@ -952,7 +976,7 @@ class TestIntegration:
         """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
-        sum_op = Sum(qml.RX(1.23, wires=0), qml.Identity(wires=1))
+        sum_op = Sum(Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1)), qml.Identity(wires=1))
 
         @qml.qnode(dev)
         def my_circ():

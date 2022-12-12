@@ -30,6 +30,7 @@ from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .composite import CompositeOp
@@ -39,7 +40,7 @@ MAX_NUM_WIRES_KRON_PRODUCT = 9
 computing the sparse matrix representation."""
 
 
-def prod(*ops, do_queue=True, id=None):
+def prod(*ops, do_queue=True, id=None, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -53,6 +54,7 @@ def prod(*ops, do_queue=True, id=None):
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
+        lazy=True (bool): If ``lazy=False``, a simplification will be peformed such that when any of the operators is already a product operator, its operands will be used instead.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
@@ -68,7 +70,21 @@ def prod(*ops, do_queue=True, id=None):
     array([[ 0, -1],
            [ 1,  0]])
     """
-    return Prod(*ops, do_queue=do_queue, id=id)
+    if lazy:
+        return Prod(*ops, do_queue=do_queue, id=id)
+
+    ops_simp = Prod(
+        *itertools.chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops]),
+        do_queue=do_queue,
+        id=id,
+    )
+
+    if do_queue:
+        for op in ops:
+            QueuingManager.update_info(op, owner=ops_simp)
+        QueuingManager.update_info(ops_simp, owns=ops)
+
+    return ops_simp
 
 
 class Prod(CompositeOp):
