@@ -62,7 +62,7 @@ def op_sum(*summands, do_queue=True, id=None, lazy=True):
     summands_simp = Sum(
         *itertools.chain.from_iterable([op if isinstance(op, Sum) else [op] for op in summands]),
         do_queue=do_queue,
-        id=id
+        id=id,
     )
 
     if do_queue:

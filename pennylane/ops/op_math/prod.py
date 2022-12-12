@@ -76,7 +76,7 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     ops_simp = Prod(
         *itertools.chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops]),
         do_queue=do_queue,
-        id=id
+        id=id,
     )
 
     if do_queue:
