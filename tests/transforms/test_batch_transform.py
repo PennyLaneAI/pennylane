@@ -32,8 +32,8 @@ class TestBatchTransform:
         """Generates two tapes, one with all RX replaced with RY,
         and the other with all RX replaced with RZ."""
 
-        tape1 = qml.tape.QuantumTape()
-        tape2 = qml.tape.QuantumTape()
+        q_tape1 = qml.queuing.AnnotatedQueue()
+        q_tape2 = qml.queuing.AnnotatedQueue()
 
         # loop through all operations on the input tape
         for op in tape:
@@ -41,15 +41,18 @@ class TestBatchTransform:
                 wires = op.wires
                 param = op.parameters[0]
 
-                with tape1:
+                with q_tape1:
                     qml.RY(a * qml.math.abs(param), wires=wires)
 
-                with tape2:
+                with q_tape2:
                     qml.RZ(b * qml.math.sin(param), wires=wires)
             else:
-                for t in [tape1, tape2]:
+                for t in [q_tape1, q_tape2]:
                     with t:
                         qml.apply(op)
+
+        tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
+        tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
 
         def processing_fn(results):
             return qml.math.sum(qml.math.stack(results))
@@ -106,10 +109,11 @@ class TestBatchTransform:
             tape2 = tape.copy()
             return [tape1, tape2], None
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = my_transform(tape)
         assert fn(5) == 5
 
@@ -186,10 +190,11 @@ class TestBatchTransform:
             MyTransform().my_transform, expand_fn=self.phaseshift_expand
         )
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PhaseShift(0.5, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy_expand = mocker.spy(transform_fn, "expand_fn")
 
         transform_fn(tape)
@@ -218,10 +223,11 @@ class TestBatchTransform:
         transform_fn = qml.batch_transform(
             MyTransform().my_transform, expand_fn=self.expand_logic_with_kwarg
         )
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PhaseShift(0.5, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy_expand = mocker.spy(transform_fn, "expand_fn")
 
         transform_fn(tape, perform_expansion=perform_expansion)
@@ -277,11 +283,12 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.RX(x, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = self.my_transform(tape, a, b)
 
         assert len(tapes[0].operations) == 2
@@ -302,11 +309,12 @@ class TestBatchTransform:
         b = 0.4
         x = 0.543
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.RX(x, wires=0)
             qml.expval(qml.PauliX(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = self.my_transform(a, b)(tape)
 
         assert len(tapes[0].operations) == 2
@@ -499,8 +507,8 @@ class TestBatchTransformGradients:
         """Generates two tapes, one with all RX replaced with RY,
         and the other with all RX replaced with RZ."""
 
-        tape1 = qml.tape.QuantumTape()
-        tape2 = qml.tape.QuantumTape()
+        q_tape1 = qml.queuing.AnnotatedQueue()
+        q_tape2 = qml.queuing.AnnotatedQueue()
 
         # loop through all operations on the input tape
         for op in tape:
@@ -508,15 +516,18 @@ class TestBatchTransformGradients:
                 wires = op.wires
                 param = op.parameters[0]
 
-                with tape1:
+                with q_tape1:
                     qml.RY(weights[0] * qml.math.sin(param), wires=wires)
 
-                with tape2:
+                with q_tape2:
                     qml.RZ(weights[1] * qml.math.cos(param), wires=wires)
             else:
-                for t in [tape1, tape2]:
+                for t in [q_tape1, q_tape2]:
                     with t:
                         qml.apply(op)
+
+        tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
+        tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
 
         def processing_fn(results):
             return qml.math.sum(qml.math.stack(results))
@@ -663,20 +674,24 @@ class TestMapBatchTransform:
         x = 0.6
         y = 0.7
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(H)
 
-        with qml.tape.QuantumTape() as tape2:
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
             qml.CNOT(wires=[0, 1])
             qml.expval(H + 0.5 * qml.PauliY(0))
 
-        spy = mocker.spy(qml.transforms, "split_tape")
-        tapes, fn = qml.transforms.map_batch_transform(qml.transforms.split_tape, [tape1, tape2])
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        tapes, fn = qml.transforms.map_batch_transform(
+            qml.transforms.hamiltonian_expand, [tape1, tape2]
+        )
 
         spy.assert_called()
         assert len(tapes) == 5
@@ -694,20 +709,22 @@ class TestMapBatchTransform:
         weights = np.array([0.6, 0.8], requires_grad=True)
 
         def cost(weights):
-            with qml.tape.QuantumTape() as tape1:
+            with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(H)
 
-            with qml.tape.QuantumTape() as tape2:
+            tape1 = qml.tape.QuantumScript.from_queue(q1)
+            with qml.queuing.AnnotatedQueue() as q2:
                 qml.Hadamard(wires=0)
                 qml.CRX(weights[0], wires=[0, 1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(H + 0.5 * qml.PauliY(0))
 
+            tape2 = qml.tape.QuantumScript.from_queue(q2)
             tapes, fn = qml.transforms.map_batch_transform(
-                qml.transforms.split_tape, [tape1, tape2]
+                qml.transforms.hamiltonian_expand, [tape1, tape2]
             )
             res = qml.execute(tapes, dev, qml.gradients.param_shift, device_batch_transform=False)
             return np.sum(fn(res))

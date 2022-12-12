@@ -18,13 +18,13 @@ Contains the hamiltonian expand tape transform
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import Expectation, MeasurementProcess
+from pennylane.measurements import ExpectationMP, MeasurementProcess
 from pennylane.ops import Hamiltonian, SProd, Sum
 from pennylane.tape import QuantumScript
 
 
 # pylint: disable=too-many-branches, too-many-statements
-def split_tape(tape: QuantumScript, group=True):
+def split_tape(qscript: QuantumScript, group=True):
     """If the tape is measuring any Hamiltonian or Sum expectation, this method splits it into
     multiple tapes of Pauli expectations and provides a function to recombine the results.
 
@@ -114,8 +114,8 @@ def split_tape(tape: QuantumScript, group=True):
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=2)
 
-            qml.expval(qml.PauliZ(0))
             qml.expval(S)
+            qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
             qml.expval(qml.PauliZ(2))
 
@@ -125,13 +125,15 @@ def split_tape(tape: QuantumScript, group=True):
     >>> tapes, fn = qml.transforms.split_tape(tape, group=False)
     >>> for tape in tapes:
     ...     print(tape.measurements)
+    [expval(PauliZ(wires=[0]))]
     [expval(PauliY(wires=[2]) @ PauliZ(wires=[1]))]
-    [expval(0.5*(PauliZ(wires=[2])))]
+    [expval(PauliZ(wires=[2]))]
     [expval(PauliZ(wires=[1]))]
-    [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1])), expval(PauliZ(wires=[2]))]
+    [expval(PauliX(wires=[1]))]
 
-    Four tapes are generated: the first three contain the summands of the `Sum` operator,
-    and the last tape contains the remaining observables.
+    Five tapes are generated: the first three contain the summands of the `Sum` operator,
+    and the last two contain the remaining observables. Note that the scalars of the scalar products
+    have been removed. These values will be multiplied by the result obtained from the execution.
 
     We can evaluate these tapes on a device:
 
@@ -143,7 +145,7 @@ def split_tape(tape: QuantumScript, group=True):
     >>> fn(res)
     [0.0, -0.5, 0.0, -0.9999999999999996]
 
-    Fewer tapes can be constructed by grouping commuting observables. This can be achieved
+    Fewer tapes can be constructed by grouping observables acting on different wires. This can be achieved
     by the ``group`` keyword argument:
 
     .. code-block:: python3
@@ -161,22 +163,22 @@ def split_tape(tape: QuantumScript, group=True):
 
     >>> tapes, fn = qml.transforms.split_tape(tape, group=True)
     >>> for tape in tapes:
-    ...    print(tape.measurements)
-    [expval(PauliZ(wires=[0])), expval(2*(PauliX(wires=[1])))]
-    [expval(3*(PauliX(wires=[0])))]
+    ...     print(tape.measurements)
+    [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]
+    [expval(PauliX(wires=[0]))]
     """
     # Populate these 2 dictionaries with the unique measurement objects, the index of the
-    # initial measurement on the tape and the coefficient
+    # initial measurement on the qscript and the coefficient
     # NOTE: expval(Sum) is expanded into the expectation of each summand
     # NOTE: expval(SProd) is transformed into expval(SProd.base) and the coeff is updated
     # TODO: Separate expval(Prod) and expval(Tensor) into different measurements
     measurements_dict = {}  # {m_hash: measurement}
     idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
-    for idx, m in enumerate(tape.measurements):
+    for idx, m in enumerate(qscript.measurements):
         obs = m.obs
-        coeff = 1 if m.return_type is Expectation else None
-        if isinstance(obs, Sum) and m.return_type is Expectation:
+        if isinstance(obs, Sum) and isinstance(m, ExpectationMP):
             for summand in obs.operands:
+                coeff = 1
                 if isinstance(summand, SProd):
                     coeff = summand.scalar
                     summand = summand.base
@@ -188,7 +190,7 @@ def split_tape(tape: QuantumScript, group=True):
                     idxs_coeffs_dict[s_m.hash].append((idx, coeff))
             continue
 
-        if isinstance(obs, Hamiltonian) and m.return_type is Expectation:
+        if isinstance(obs, Hamiltonian) and isinstance(m, ExpectationMP):
             for o, coeff in zip(obs.ops, obs.data):
                 o_m = qml.expval(o)
                 if o_m.hash not in measurements_dict:
@@ -198,7 +200,8 @@ def split_tape(tape: QuantumScript, group=True):
                     idxs_coeffs_dict[o_m.hash].append((idx, coeff))
             continue
 
-        if isinstance(obs, SProd) and m.return_type is Expectation:
+        coeff = 1 if isinstance(m, ExpectationMP) else None
+        if isinstance(obs, SProd) and isinstance(m, ExpectationMP):
             coeff = obs.scalar
             m = qml.expval(obs.base)
 
@@ -212,7 +215,7 @@ def split_tape(tape: QuantumScript, group=True):
     measurements = list(measurements_dict.values())
     idxs_coeffs = list(idxs_coeffs_dict.values())
 
-    # Create the tapes, group observables if group==True
+    # Create the qscripts, group observables if group==True
     if group:
         m_groups = _group_measurements(measurements)
         # Update ``idxs_coeffs`` list such that it tracks the new ``m_groups`` list of lists
@@ -223,20 +226,21 @@ def split_tape(tape: QuantumScript, group=True):
             else:
                 tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
         idxs_coeffs = tmp_idxs
-        tapes = [
-            tape.__class__(ops=tape._ops, measurements=m_group, prep=tape._prep)
+        qscripts = [
+            qscript.__class__(ops=qscript._ops, measurements=m_group, prep=qscript._prep)
             for m_group in m_groups
         ]
     else:
-        tapes = [
-            tape.__class__(ops=tape._ops, measurements=[m], prep=tape._prep) for m in measurements
+        qscripts = [
+            qscript.__class__(ops=qscript._ops, measurements=[m], prep=qscript._prep)
+            for m in measurements
         ]
 
     def processing_fn(expanded_results):
         results = []  # [(m_idx, result)]
         for tape_res, tape_idxs in zip(expanded_results, idxs_coeffs):
             if isinstance(tape_idxs[0], tuple):  # tape_res contains only one result
-                if not qml.active_return() and len(tape_res) == 1:  # old returntypes
+                if not qml.active_return() and len(tape_res) == 1:  # old return types
                     tape_res = tape_res[0]
                 for idx, coeff in tape_idxs:
                     results.append(
@@ -262,17 +266,17 @@ def split_tape(tape: QuantumScript, group=True):
 
         return results[0] if len(results) == 1 else results
 
-    return tapes, processing_fn
+    return qscripts, processing_fn
 
 
 def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[MeasurementProcess]]:
-    """Group observables of measurements list into qubit-wise commuting groups.
+    """Group observables of ``measurements`` into groups with non overlapping wires.
 
     Args:
         measurements (List[MeasurementProcess]): list of measurement processes
 
     Returns:
-        List[List[MeasurementProcess]]: list of qubit-wise commuting measurement groups
+        List[List[MeasurementProcess]]: list of groups of observables with non overlapping wires
     """
     qwc_groups = []
     for m in measurements:

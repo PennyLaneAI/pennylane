@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 
 
 def dummyfunc():
@@ -513,7 +513,7 @@ class TestTapeConstruction:
 
         res = qn(x, y)
 
-        assert isinstance(qn.qtape, QuantumTape)
+        assert isinstance(qn.qtape, QuantumScript)
         assert len(qn.qtape.operations) == 3
         assert len(qn.qtape.observables) == 1
         assert qn.qtape.num_params == 2
@@ -719,7 +719,7 @@ class TestDecorator:
 
         res = func(x, y)
 
-        assert isinstance(func.qtape, QuantumTape)
+        assert isinstance(func.qtape, QuantumScript)
         assert len(func.qtape.operations) == 3
         assert len(func.qtape.observables) == 1
         assert func.qtape.num_params == 2
@@ -1243,10 +1243,11 @@ class TestShots:
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = qml.device("default.qubit", wires=1, shots=5)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RZ(0.3, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = QuantumScript.from_queue(q)
         # no warning on the first execution
         cache = {}
         qml.execute([tape], dev, None, cache=cache)
@@ -1359,8 +1360,9 @@ class TestTapeExpansion:
             num_wires = 1
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RX(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode)
@@ -1394,8 +1396,9 @@ class TestTapeExpansion:
             grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RX(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method="parameter-shift", max_diff=2)
@@ -1435,8 +1438,9 @@ class TestTapeExpansion:
             grad_method = None
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method="parameter-shift", max_diff=2)
@@ -1507,14 +1511,35 @@ class TestTapeExpansion:
         def circuit():
             return qml.expval(H)
 
-        spy = mocker.spy(qml.transforms, "split_tape")
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         res = circuit()
         assert np.allclose(res, c[2], atol=0.1)
 
         spy.assert_called()
-        tapes, _ = spy.spy_return
+        tapes, fn = spy.spy_return
 
-        assert len(tapes) == 3  # TODO: This will be 2 when separating expval(Prod)
+        assert len(tapes) == 2
+
+    def test_invalid_hamiltonian_expansion_finite_shots(self, mocker):
+        """Test that an error is raised if multiple expectations are requested
+        when using finite shots"""
+        dev = qml.device("default.qubit", wires=3, shots=50000)
+
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        c = np.array([-0.6543, 0.24, 0.54])
+        H = qml.Hamiltonian(c, obs)
+        H.compute_grouping()
+
+        assert len(H.grouping_indices) == 2
+
+        @qnode(dev)
+        def circuit():
+            return qml.expval(H), qml.expval(H)
+
+        with pytest.raises(
+            ValueError, match="Can only return the expectation of a single Hamiltonian"
+        ):
+            circuit()
 
     def test_device_expansion_strategy(self, mocker):
         """Test that the device expansion strategy performs the device

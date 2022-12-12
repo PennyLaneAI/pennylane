@@ -97,7 +97,7 @@ class SProd(SymbolicOp):
 
             dev = qml.device("default.qubit", wires=1)
 
-            @qml.qnode(dev, grad_method="best")
+            @qml.qnode(dev, diff_method="best")
             def circuit(scalar, theta):
                 qml.RX(theta, wires=0)
                 return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
@@ -264,13 +264,10 @@ class SProd(SymbolicOp):
         return SProd(scalar=self.scalar, base=new_base)
 
     def _check_scalar_is_valid(self):
-        """Check that the given scalar is valid.
-
-        Args:
-            scalar (Union[int, float, complex]): scalar value to check
+        """Check that ``self.scalar`` is valid.
 
         Raises:
-            ValueError: if the scalar is not valid
+            ValueError: if ``self.scalar`` is not valid
         """
         backend = autoray.infer_backend(self.scalar)
         # TODO: Remove shape check when supporting batching

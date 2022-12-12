@@ -17,6 +17,7 @@ PennyLane can be directly imported.
 """
 from importlib import reload
 import types
+import warnings
 import pkg_resources
 
 
@@ -32,7 +33,8 @@ import pennylane.math
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
-from pennylane import pauli
+import pennylane.pauli
+from pennylane.pauli import pauli_decompose
 import pennylane.resource
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
@@ -338,3 +340,18 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
+
+
+# pragma: no cover
+def __getattr__(name):
+    """Raise a deprecation warning and still allow `qml.grouping.func_name`
+    syntax for one release."""
+    if name == "grouping":
+        warnings.warn(
+            "The qml.grouping module is deprecated, please use qml.pauli instead.",
+            UserWarning,
+        )
+        import pennylane.grouping as grouping  # pylint:disable=import-outside-toplevel,consider-using-from-import
+
+        return grouping
+    raise AttributeError(f"Module {__name__} has no attribute {name}")

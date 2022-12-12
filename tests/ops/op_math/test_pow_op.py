@@ -85,8 +85,8 @@ class TestConstructor:
             original_op = qml.PauliX(0)
             new_op = qml.pow(original_op, 0.5, lazy=False)
 
-        assert q._queue[original_op]["owner"] is new_op
-        assert q._queue[new_op]["owns"] is original_op
+        assert q[original_op]["owner"] is new_op
+        assert q[new_op]["owns"] is original_op
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
@@ -530,31 +530,34 @@ class TestQueueing:
     def test_queueing(self):
         """Test queuing and metadata when both Pow and base defined inside a recording context."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Pow(base, 1.2)
 
-        assert tape._queue[base]["owner"] is op
-        assert tape._queue[op]["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert q.get_info(base)["owner"] is op
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
         """Test that base is added to queue even if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Pow(base, 3.4)
 
-        assert len(tape.queue) == 1
-        assert tape._queue[op]["owns"] is base
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert len(q.queue) == 1
+        assert q.get_info(op)["owns"] is base
         assert tape.operations == [op]
 
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Pow(base, 4.5, do_queue=False)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(tape) == 0
 
 
@@ -605,7 +608,7 @@ class TestMatrix:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
-    def test_matrix_against_shortcut_jax(self, z):
+    def test_matrix_against_shortcut_tf(self, z):
         """Test the matrix using a tf variable parameter."""
         import tensorflow as tf
 

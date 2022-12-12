@@ -18,7 +18,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", "backward"],
@@ -403,10 +403,11 @@ class TestQNode:
                 theta, phi, lam = self.data
                 wires = self.wires
 
-                with QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q_tape:
                     qml.Rot(lam, theta, -lam, wires=wires)
                     qml.PhaseShift(phi + lam, wires=wires)
 
+                tape = QuantumScript.from_queue(q_tape)
                 return tape
 
         dev = qml.device(dev_name, wires=1)
@@ -488,15 +489,14 @@ class TestShotsIntegration:
 
         # execute with shots=100
         res = circuit(a, b, shots=100)
-        spy.assert_called()
+        spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
         assert dev.shots is None
-        spy = mocker.spy(dev, "sample")
         res = circuit(a, b)
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
-        spy.assert_not_called()
+        spy.assert_called_once()  # same single call from above. No additional calls
 
     def test_gradient_integration(self, tol):
         """Test that temporarily setting the shots works
@@ -713,8 +713,9 @@ class TestQubitIntegration:
 
         class Template(qml.templates.StronglyEntanglingLayers):
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, interface=interface, diff_method=diff_method)
@@ -1296,8 +1297,9 @@ class TestTapeExpansion:
             grad_method = None
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff)
@@ -1387,7 +1389,7 @@ class TestTapeExpansion:
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
 
         dev = qml.device(dev_name, wires=3, shots=50000)
-        spy = mocker.spy(qml.transforms, "split_tape")
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff)

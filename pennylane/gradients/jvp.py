@@ -15,9 +15,13 @@
 This module contains functions for computing the Jacobian vector product
 of tapes.
 """
+from collections.abc import Sequence
+
 import numpy as np
 
 import pennylane as qml
+from pennylane._device import _get_num_copies
+from pennylane.measurements import ProbabilityMP
 
 
 def _convert(jac, tangent):
@@ -165,9 +169,9 @@ def compute_jvp_multi(tangent, jac):
     return res
 
 
-def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
+def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
-    the Jacobian vector products of a tape.
+    the Jacobian vector product of a tape. This function only works with the new return type system on.
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
@@ -175,6 +179,8 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
             matching the number of trainable parameters.
         gradient_fn (callable): the gradient transform to use to differentiate
             the tape
+        shots (None, int, list[int]): The device shots that will be used to
+            execute the tapes outputted by this
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
 
@@ -183,7 +189,43 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
         has no trainable parameters.
 
     **Example**
-    #TODO: add examples
+
+    Consider the following quantum tape with Jax parameters:
+
+    .. code-block:: python
+
+        import jax
+
+        qml.enable_return()
+
+        x = jax.numpy.array([[0.1, 0.2, 0.3],
+                             [0.4, 0.5, 0.6]])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x[0, 0], wires=0)
+            qml.RY(x[0, 1], wires=1)
+            qml.RZ(x[0, 2], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(x[1, 0], wires=1)
+            qml.RY(x[1, 1], wires=0)
+            qml.RZ(x[1, 2], wires=1)
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=1)
+
+    We can use the ``jvp`` function to compute the Jacobian vector product,
+    given a tangent vector ``tangent``:
+
+    >>> tangent = [jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0)]
+    >>> jvp_tapes, fn = qml.gradients.jvp(tape, tangent, qml.gradients.param_shift)
+
+    Note that ``tangent`` has six elements, matching the parameter dimension of the tape.
+
+    Executing the JVP tapes, and applying the processing function:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> jvp = fn(dev.batch_execute(jvp_tapes))
+    >>> jvp
+    (DeviceArray(-0.62073976, dtype=float32), DeviceArray([-0.3259707 ,  0.32597077], dtype=float32))
     """
     gradient_kwargs = gradient_kwargs or {}
     num_params = len(tape.trainable_params)
@@ -213,33 +255,50 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
                 return res
 
             return [], func
-        # TODO remove the pragma in PR #3170
-    except (AttributeError, TypeError):  # pragma: no cover
+    except (AttributeError, TypeError):
         pass
 
-    gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
+    gradient_tapes, fn = gradient_fn(tape, shots=shots, **gradient_kwargs)
 
     def processing_fn(results):
         # postprocess results to compute the Jacobian
         jac = fn(results)
+        shot_vector = isinstance(shots, Sequence)
+
+        # Jacobian without shot vectors
+        if not shot_vector:
+            if multi_m:
+                return compute_jvp_multi(tangent, jac)
+            return compute_jvp_single(tangent, jac)
+
+        # The jacobian is calculated for shot vectors
+        len_shot_vec = _get_num_copies(shots)
+        jvps = []
         if multi_m:
-            return compute_jvp_multi(tangent, jac)
-        return compute_jvp_single(tangent, jac)
+            for i in range(len_shot_vec):
+                jvps.append(compute_jvp_multi(tangent, jac[i]))
+        else:
+            for i in range(len_shot_vec):
+                jvps.append(compute_jvp_single(tangent, jac[i]))
+
+        return tuple(jvps)
 
     return gradient_tapes, processing_fn
 
 
-def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=None):
+def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", gradient_kwargs=None):
     r"""Generate the gradient tapes and processing function required to compute
     the Jacobian vector products of a batch of tapes.
 
     Args:
         tapes (Sequence[.QuantumTape]): sequence of quantum tapes to differentiate
-        tangentss (Sequence[tensor_like]): Sequence of gradient-output vectors ``dy``. Must be the
+        tangents (Sequence[tensor_like]): Sequence of gradient-output vectors ``dy``. Must be the
             same length as ``tapes``. Each ``dy`` tensor should have shape
             matching the output shape of the corresponding tape.
         gradient_fn (callable): the gradient transform to use to differentiate
             the tapes
+        shots (None, int, list[int]): The device shots that will be used to
+            execute the tapes outputted by this
         reduction (str): Determines how the Jacobian-vector products are returned.
             If ``append``, then the output of the function will be of the form
             ``List[tensor_like]``, with each element corresponding to the JVP of each
@@ -252,8 +311,57 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
         to tapes with no trainable parameters.
 
     **Example**
-    # TODO: add examples
+
+    .. code-block:: python
+
+        import jax
+        qml.enable_return()
+        x = jax.numpy.array([[0.1, 0.2, 0.3],
+                             [0.4, 0.5, 0.6]])
+
+        def ansatz(x):
+            qml.RX(x[0, 0], wires=0)
+            qml.RY(x[0, 1], wires=1)
+            qml.RZ(x[0, 2], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(x[1, 0], wires=1)
+            qml.RY(x[1, 1], wires=0)
+            qml.RZ(x[1, 2], wires=1)
+
+        with qml.tape.QuantumTape() as tape1:
+            ansatz(x)
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=1)
+
+        with qml.tape.QuantumTape() as tape2:
+            ansatz(x)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        tapes = [tape1, tape2]
+
+    Both tapes share the same circuit ansatz, but have different measurement outputs.
+
+    We can use the ``batch_jvp`` function to compute the Jacobian vector product,
+    given a list of tangents ``tangent``:
+
+    >>> tangent_0 = [jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0)]
+    >>> tangent_1 = [jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0), jax.numpy.array(1.0)]
+    >>> tangents = [tangent_0, tangent_1]
+
+    Note that each ``tangents`` has shape matching the parameter dimension of the tape.
+
+    Executing the JVP tapes, and applying the processing function:
+
+    >>> jvp_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, qml.gradients.param_shift)
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> jvps = fn(dev.batch_execute(jvp_tapes))
+    >>> jvps
+    [(DeviceArray(-0.62073976, dtype=float32), DeviceArray([-0.3259707 ,  0.32597077], dtype=float32)), DeviceArray(-0.6900841, dtype=float32)]
+
+    We have two JVPs; one per tape. Each one corresponds to the shape of the output of their respective tape.
     """
+    # pylint: disable=too-many-arguments
     gradient_kwargs = gradient_kwargs or {}
     reshape_info = []
     gradient_tapes = []
@@ -261,7 +369,7 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
 
     # Loop through the tapes and dys vector
     for tape, tangent in zip(tapes, tangents):
-        g_tapes, fn = jvp(tape, tangent, gradient_fn, gradient_kwargs)
+        g_tapes, fn = jvp(tape, tangent, gradient_fn, shots, gradient_kwargs)
 
         reshape_info.append(len(g_tapes))
         processing_fns.append(fn)
@@ -297,10 +405,7 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
 
 def _single_measurement_zero(m, tangent):
     """Aux function to create a zero tensor from a measurement."""
-    if m.return_type is qml.measurements.Probability:
-        dim = 2 ** len(m.wires)
-    else:
-        dim = ()
+    dim = 2 ** len(m.wires) if isinstance(m, ProbabilityMP) else ()
     res = qml.math.convert_like(np.zeros(dim), tangent)
     res = qml.math.cast_like(res, tangent)
     return res

@@ -195,6 +195,16 @@ def get_interface(*values):
 
     * Vanilla NumPy arrays and SciPy sparse matrices can be used alongside other tensor objects;
       they will always be treated as non-differentiable constants.
+
+    .. warning::
+        ``get_interface`` defaults to ``"numpy"`` whenever Python built-in objects are passed.
+        I.e. a list or tuple of ``torch`` tensors will be identified as ``"numpy"``:
+
+        >>> get_interface([torch.tensor([1]), torch.tensor([1])])
+        "numpy"
+
+        The correct usage in that case is to unpack the arguments ``get_interface(*[torch.tensor([1]), torch.tensor([1])])``.
+
     """
 
     if len(values) == 1:
@@ -356,7 +366,14 @@ def is_abstract(tensor, like=None):
         import jax
         from jax.interpreters.partial_eval import DynamicJaxprTracer
 
-        if isinstance(tensor, (jax.ad.JVPTracer, jax.interpreters.batching.BatchTracer)):
+        if isinstance(
+            tensor,
+            (
+                jax.ad.JVPTracer,
+                jax.interpreters.batching.BatchTracer,
+                jax.interpreters.partial_eval.JaxprTracer,
+            ),
+        ):
             # Tracer objects will be used when computing gradients or applying transforms.
             # If the value of the tracer is known, it will contain a ConcreteArray.
             # Otherwise, it will be abstract.
