@@ -357,6 +357,33 @@ class TestProperties:
         assert op.ndim_params == (0, 2)
         assert op.batch_size == 3
 
+    op_pauli_reps = (
+        (qml.PauliZ(wires=0), 1, qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1})),
+        (qml.PauliX(wires=1), 2, qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),  # identity
+        (qml.PauliY(wires="a"), 5, qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1})),
+    )
+
+    @pytest.mark.parametrize("base, exp, rep", op_pauli_reps)
+    def test_pauli_rep(self, base, exp, rep, power_method):
+        """Test the pauli rep is produced as expected."""
+        op = power_method(base, exp)
+        assert op._pauli_rep == rep
+
+    def test_pauli_rep_is_none_for_bad_exponents(self, power_method):
+        """Test that the _pauli_rep is None if the exponent is not positive or non integer."""
+        base = qml.PauliX(wires=0)
+        exponents = [1.23, -2]
+
+        for exponent in exponents:
+            op = power_method(base, z=exponent)
+            assert op._pauli_rep is None
+
+    def test_pauli_rep_none_if_base_pauli_rep_none(self, power_method):
+        """Test that None is produced if the base op does not have a pauli rep"""
+        base = qml.RX(1.23, wires=0)
+        op = power_method(base, z=2)
+        assert op._pauli_rep is None
+
 
 class TestSimplify:
     """Test Pow simplify method and depth property."""
