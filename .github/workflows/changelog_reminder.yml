@@ -13,7 +13,7 @@ jobs:
     - name: Changelog Reminder
       uses: peterjgrainger/action-changelog-reminder@v1.3.0
       with:
-        changelog_regex: 'doc/releases/changelog-dev.md'
+        changelog_regex: 'doc/releases/changelog-0.28.0.md'
         customPrMessage: |
           Hello. You may have forgotten to update the changelog!
           Please edit [`doc/releases/changelog-dev.md`](/PennyLaneAI/pennylane/blob/master/doc/releases/changelog-dev.md) with:
