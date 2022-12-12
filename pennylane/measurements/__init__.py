@@ -76,7 +76,7 @@ obtained of a given state:
             return CountState(state=self.state)
 
 The measurement process in this example uses the of :func:`~pennylane.counts` function, which is a
-measurement process which returns a dictionary containing the number of times a quantum
+measurement process which returns a dictionary containing the number of times each quantum
 state has been sampled.
 
 .. note::
