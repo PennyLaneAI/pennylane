@@ -866,8 +866,6 @@ hessian_qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
-# TODO: double-check: every test case has jax.jit transformation?
-
 
 @pytest.mark.parametrize(
     "dev_name,diff_method,mode,interface", hessian_qubit_device_and_diff_method
