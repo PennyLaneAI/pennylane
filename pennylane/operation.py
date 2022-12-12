@@ -1190,6 +1190,8 @@ class Operator(abc.ABC):
         if z == 0:
             return []
         if z == 1:
+            if QueuingManager.recording():
+                return [qml.apply(self)]
             return [copy.copy(self)]
         raise PowUndefinedError
 

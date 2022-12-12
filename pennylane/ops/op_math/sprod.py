@@ -26,11 +26,12 @@ from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
+from pennylane.queuing import QueuingManager
 
 from .symbolicop import SymbolicOp
 
 
-def s_prod(scalar, operator, do_queue=True, id=None):
+def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
     r"""Construct an operator which is the scalar product of the
     given scalar and operator provided.
 
@@ -39,9 +40,9 @@ def s_prod(scalar, operator, do_queue=True, id=None):
         operator (~.operation.Operator): the operator which will get scaled.
 
     Keyword Args:
+        lazy=True (bool): If ``lazy=False`` and the operator is already a scalar product operator, the scalar provided will simply be combined with the existing scaling factor.
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
-
     Returns:
         ~ops.op_math.SProd: The operator representing the scalar product.
 
@@ -56,7 +57,16 @@ def s_prod(scalar, operator, do_queue=True, id=None):
     array([[ 0., 2.],
            [ 2., 0.]])
     """
-    return SProd(scalar, operator, do_queue=do_queue, id=id)
+    if lazy or not isinstance(operator, SProd):
+        return SProd(scalar, operator, do_queue=do_queue, id=id)
+
+    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, do_queue=do_queue, id=id)
+
+    if do_queue:
+        QueuingManager.update_info(operator, owner=sprod_op)
+        QueuingManager.update_info(sprod_op, owns=operator)
+
+    return sprod_op
 
 
 class SProd(SymbolicOp):
