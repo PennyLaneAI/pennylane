@@ -103,6 +103,10 @@ TSHIFT = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])  # Qutrit right-shift gate
 
 TCLOCK = np.array([[1, 0, 0], [0, OMEGA, 0], [0, 0, OMEGA**2]])  # Qutrit clock gate
 
+TH = (-1j / np.sqrt(3)) * np.array(
+    [[1, 1, 1], [1, OMEGA, OMEGA**2], [1, OMEGA**2, OMEGA]]
+)  # hadamard gate
+
 TSWAP = np.array(
     [
         [1, 0, 0, 0, 0, 0, 0, 0, 0],

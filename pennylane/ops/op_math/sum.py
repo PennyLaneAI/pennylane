@@ -18,6 +18,7 @@ computing the sum of operations.
 import itertools
 from copy import copy
 from typing import List
+from functools import reduce
 
 import numpy as np
 
@@ -124,7 +125,7 @@ class Sum(CompositeOp):
             sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
             dev = qml.device("default.qubit", wires=2)
 
-            @qml.qnode(dev, grad_method="best")
+            @qml.qnode(dev, diff_method="best")
             def circuit(weights):
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
@@ -220,6 +221,16 @@ class Sum(CompositeOp):
 
     def adjoint(self):
         return Sum(*(qml.adjoint(summand) for summand in self))
+
+    def _build_pauli_rep(self):
+        """PauliSentence representation of the Sum of operations."""
+        if all(
+            operand_pauli_reps := [
+                op._pauli_rep for op in self.operands  # pylint: disable=protected-access
+            ]
+        ):
+            return reduce((lambda a, b: a + b), operand_pauli_reps)
+        return None
 
     @classmethod
     def _simplify_summands(cls, summands: List[Operator]):
