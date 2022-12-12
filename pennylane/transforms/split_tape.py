@@ -244,7 +244,12 @@ def split_tape(qscript: QuantumScript, group=True):
                     tape_res = tape_res[0]
                 for idx, coeff in tape_idxs:
                     results.append(
-                        (idx, tape_res if coeff is None else qml.math.dot(coeff, tape_res))
+                        (
+                            idx,
+                            tape_res
+                            if coeff is None
+                            else qml.math.array(qml.math.dot(coeff, tape_res)),
+                        )
                     )
                 continue
             # tape_res contains multiple results
@@ -253,7 +258,9 @@ def split_tape(qscript: QuantumScript, group=True):
             ]  # needed when batching
             for res, idxs in zip(tape_res, tape_idxs):
                 for idx, coeff in idxs:
-                    results.append((idx, res if coeff is None else qml.math.dot(coeff, res)))
+                    results.append(
+                        (idx, res if coeff is None else qml.math.array(qml.math.dot(coeff, res)))
+                    )
 
         # sum results by idx
         res_dict = {}
