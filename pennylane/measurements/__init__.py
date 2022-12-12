@@ -46,8 +46,8 @@ classes. These classes are subclassed to implement measurements in PennyLane.
 Differentiation
 ^^^^^^^^^^^^^^^
 In general, a :class:`MeasurementProcess` is differentiable with respect to a parameter if the domain of
-that parameter is continuous. When using the analytic method of differentiation, it must satisfy an
-additional constraint: the output of the measurement process must be a real scalar value.
+that parameter is continuous. When using the analytic method of differentiation the output of the
+measurement process must be a real scalar value for it to be differentiable.
 
 Creating custom measurements
 ----------------------------
