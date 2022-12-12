@@ -54,7 +54,8 @@ def equal(
         comparing ``Operation`` objects. Comparisons of ``MeasurementProcess``
         or ``Observable`` objects will use the defualt value of ``True`` for both, regardless
         of what the user specifies when calling the function. For subclasses of ``SymbolicOp``
-        with an ``Operation`` as a base, the kwargs will be applied to the base comparison.
+        or ``CompositeOp`` with an ``Operation`` as a base, the kwargs will be applied to the base
+        comparison.
 
     Args:
         op1 (.Operator or .MeasurementProcess): First object to compare
@@ -104,9 +105,10 @@ def equal(
         :title: Usage Details
 
         You can use the optional arguments to get more specific results. Additionally, they are
-        applied when comparing the base of ``SymbolicOp`` operators such as ``Controlled``, ``Pow``,
-        ``SProd``, etc., if the base is an ``Operation``. These arguments are, however, not used
-        for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        applied when comparing the base of ``SymbolicOp`` and ``CompositeOp`` operators such as
+        ``Controlled``, ``Pow``, ``SProd``, ``Prod``, etc., if the base is an ``Operation``. These arguments
+        are, however, not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor``
+        objects.
 
         Consider the following comparisons:
 
