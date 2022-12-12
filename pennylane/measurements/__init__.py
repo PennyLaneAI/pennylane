@@ -85,7 +85,7 @@ state has been sampled.
     method.
 
 We can now execute the new measurement in a :class:`~pennylane.QNode`. Let's use a simple circuit
-so that we ca verify our results mathematically.
+so that we can verify our results mathematically.
 
 .. code-block:: python
 
