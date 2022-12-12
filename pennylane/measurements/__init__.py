@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 This module contains all the measurements supported by PennyLane.
 
 Description
@@ -84,35 +84,46 @@ state has been sampled.
     The ``__copy__`` method needs to be overriden when new arguments are added into the ``__init__``
     method.
 
-We can now execute the new measurement in a :class:`~pennylane.QNode`:
+We can now execute the new measurement in a :class:`~pennylane.QNode`. Let's use a simple circuit
+so that we ca verify our results mathematically.
 
 .. code-block:: python
 
-    dev = qml.device("default.qubit", wires=4, shots=1000)
-
-    @qml.qnode(dev)
-    def circuit():
-        [qml.Hadamard(w) for w in range(4)]
-        [qml.CNOT(wires=[i, i + 1]) for i in range(3)]
-        return CountState(state="011")
-
->>> circuit()
-tensor(129., requires_grad=True)
-
-If the differentiation constraints mentioned above are met, we can also differentiate measurement
-processes:
-
-.. code-block:: python
+    dev = qml.device("default.qubit", wires=1, shots=10000)
 
     @qml.qnode(dev)
     def circuit(x):
-        [qml.RX(x, w) for w in range(4)]
-        [qml.CNOT(wires=[i, i + 1]) for i in range(3)]
-        return CountState(state="011")
+        qml.RX(x, wires=0)
+        return CountState(state="1")
 
->>> x = qml.numpy.array(0.123, requires_grad=True)
+The quantum state before the measurement will be:
+
+.. math:: \psi = R_x(\theta) \times \begin{bmatrix} 1 \\ 0 \end{bmatrix} = \begin{bmatrix}
+                \cos(\theta/2) & -i\sin(\theta/2) \\
+                -i\sin(\theta/2) & \cos(\theta/2)
+            \end{bmatrix} \begin{bmatrix} 1 \\ 0 \end{bmatrix} = \begin{bmatrix}
+                \cos(\theta/2) \\ -i\sin(\theta/2)
+            \end{bmatrix}
+
+When :math:`\theta = 1.23`, the probability of obtaining the state
+:math:`\begin{bmatrix} 1 \\ 0 \end{bmatrix}` is :math:`{\sin(\theta/2)}^2 = 0.333. Using 10000 shots
+we should obtain the excited state 3333 times approximately.
+
+>>> circuit(1.23)
+tensor(3303., requires_grad=True)
+
+Given that the measurement process returns a real scalar value, we can differentiate it using
+using the analytic method.
+
+We know from the previous analysis that the analytic result of the measurement process is
+:math:`r(\theta) = n_shots \times {\sin(\theta/2)}^2`. The gradient of the measurement process is
+:math:`\frac{\partial r}{\partial \theta} = n_shots \times \sin(\theta/2) \times \cos(\theta/2)`.
+
+Thus :math:`\frac{\partial r(1.23)}{\partial \theta} = 4712.444`
+
+>>> x = qml.numpy.array(1.23, requires_grad=True)
 >>> qml.grad(circuit)(x)
-63.50000000000001
+4715.000000000001
 """
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
