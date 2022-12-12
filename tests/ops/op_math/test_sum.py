@@ -835,6 +835,30 @@ class TestWrapperFunc:
         assert sum_class_op.wires == sum_func_op.wires
         assert sum_class_op.parameters == sum_func_op.parameters
 
+    def test_lazy_mode(self):
+        """Test that by default, the operator is simply wrapped in `Sum`, even if a simplification exists."""
+        op = op_sum(qml.S(0), Sum(qml.S(1), qml.T(1)))
+
+        assert isinstance(op, Sum)
+        assert len(op) == 2
+
+    def test_non_lazy_mode(self):
+        """Test the lazy=False keyword."""
+        op = op_sum(qml.S(0), Sum(qml.S(1), qml.T(1)), lazy=False)
+
+        assert isinstance(op, Sum)
+        assert len(op) == 3
+
+    def test_non_lazy_mode_queueing(self):
+        """Test that if a simpification is accomplished, the metadata for the original op
+        and the new simplified op is updated."""
+        with qml.queuing.AnnotatedQueue() as q:
+            sum1 = op_sum(qml.S(1), qml.T(1))
+            sum2 = op_sum(qml.S(0), sum1, lazy=False)
+
+        assert q[sum1]["owner"] is sum2
+        assert sum1 in q[sum2]["owns"]
+
 
 class TestIntegration:
     """Integration tests for the Sum class."""
