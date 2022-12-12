@@ -112,7 +112,7 @@ we should obtain the excited state 3333 times approximately.
 >>> circuit(1.23)
 tensor(3303., requires_grad=True)
 
-Given that the measurement process returns a real scalar value, we can differentiate it using
+Given that the measurement process returns a real scalar value, we can differentiate it
 using the analytic method.
 
 We know from the previous analysis that the analytic result of the measurement process is
