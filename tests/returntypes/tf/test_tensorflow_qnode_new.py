@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TensorFlow interface with a QNode"""
-import numpy as np
 import pytest
+import numpy as np
 
 pytestmark = pytest.mark.tf
 
 tf = pytest.importorskip("tensorflow")
 
 import pennylane as qml
-from pennylane import QNode, qnode
+from pennylane import qnode, QNode
 from pennylane.tape import QuantumScript
+
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", "backward"],
