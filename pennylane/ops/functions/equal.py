@@ -213,17 +213,14 @@ def _equal_operators(
 def _equal_prod(op1: Prod, op2: Prod, **kwargs):
     """Determine whether two Prod objects are equal"""
 
-    # organizes into groups of operators acting on overlapping wires,
-    # then sorts by wire indicies while respecting commutivity
-    sorted_ops1 = [op1._sort(ops_list) for ops_list in op1.overlapping_ops]
-    sorted_ops2 = [op2._sort(ops_list) for ops_list in op2.overlapping_ops]
+    # sorts by wire indicies while respecting commutivity
+    sorted_ops1 = op1._sort(op1.operands)
+    sorted_ops2 = op2._sort(op2.operands)
 
-    # compare each wire group
-    for wire_ops1, wire_ops2 in zip(sorted_ops1, sorted_ops2):
-        if not np.all([qml.equal(op1, op2, **kwargs) for op1, op2 in zip(wire_ops1, wire_ops2)]):
-            return False
+    if len(sorted_ops1) != len(sorted_ops2):
+        return False
 
-    return True
+    return np.all([qml.equal(o1, o2, **kwargs) for o1, o2 in zip(sorted_ops1, sorted_ops2)])
 
 
 @_equal.register
