@@ -149,6 +149,33 @@ class TestSingleOperation:
         mat = qml.matrix(ansatz, wire_order=[1, 0, 2])(x)
         expected = reduce(np.kron, [Y, Z, I]) - x * np.kron(X, np.eye(4))
 
+    def test_qutrits(self):
+        """Test that the function works with qutrits"""
+
+        dev = qml.device("default.qutrit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.TAdd(wires=[0, 1])
+            return qml.state()
+
+        mat = qml.matrix(circuit)()
+        expected = np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 1, 0, 0],
+            ]
+        )
+
+        assert np.allclose(mat, expected)
+
 
 class TestMultipleOperations:
     def test_multiple_operations_tape(self):

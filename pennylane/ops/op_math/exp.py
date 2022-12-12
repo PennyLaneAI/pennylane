@@ -14,8 +14,10 @@
 """
 This submodule defines the symbolic operation that stands for an exponential of an operator.
 """
+from copy import copy
 from warnings import warn
 from scipy.sparse.linalg import expm as sparse_expm
+import numpy as np
 
 import pennylane as qml
 from pennylane import math
@@ -23,9 +25,11 @@ from pennylane.operation import (
     DecompositionUndefinedError,
     expand_matrix,
     OperatorPropertyUndefined,
+    GeneratorUndefinedError,
     Tensor,
 )
 from pennylane.wires import Wires
+from pennylane.operation import Operation
 
 from .symbolicop import SymbolicOp
 
@@ -81,7 +85,7 @@ def exp(op, coeff=1, id=None):
     return Exp(op, coeff, id=id)
 
 
-class Exp(SymbolicOp):
+class Exp(SymbolicOp, Operation):
     """A symbolic operator representating the exponential of a operator.
 
     Args:
@@ -127,15 +131,13 @@ class Exp(SymbolicOp):
 
     """
 
-    coeff = 1
-    """The numerical coefficient of the operator in the exponent."""
-
     control_wires = Wires([])
 
     def __init__(self, base=None, coeff=1, do_queue=True, id=None):
-        self.coeff = coeff
         super().__init__(base, do_queue=do_queue, id=id)
         self._name = "Exp"
+        self._data = [[coeff], self.base.data]
+        self.grad_recipe = [None]
 
     def __repr__(self):
         return (
@@ -144,14 +146,35 @@ class Exp(SymbolicOp):
             else f"Exp({self.coeff} {self.base.name})"
         )
 
+    # pylint: disable=attribute-defined-outside-init
+    def __copy__(self):
+        # this method needs to be overwritten because the base must be copied too.
+        copied_op = object.__new__(type(self))
+        # copied_op must maintain inheritance structure of self
+        # Relevant for symbolic ops that mix in operation-specific components.
+
+        for attr, value in vars(self).items():
+            if attr not in {"_hyperparameters"}:
+                setattr(copied_op, attr, value)
+
+        copied_op._hyperparameters = copy(self.hyperparameters)
+        copied_op.hyperparameters["base"] = copy(self.base)
+        copied_op._data = copy(self._data)
+
+        return copied_op
+
+    @property
+    def hash(self):
+        return hash((str(self.name), self.base.hash, str(self.coeff)))
+
     @property
     def data(self):
-        return [[self.coeff], self.base.data]
+        return self._data
 
-    @data.setter
-    def data(self, new_data):
-        self.coeff = new_data[0][0]
-        self.base.data = new_data[1]
+    @property
+    def coeff(self):
+        """The numerical coefficient of the operator in the exponent."""
+        return self.data[0][0]
 
     @property
     def num_params(self):
@@ -179,6 +202,35 @@ class Exp(SymbolicOp):
                     f"Received base {self.base}."
                 )
         return math.real(self.coeff) == 0 and qml.pauli.is_pauli_word(self.base)
+
+    @property
+    def inverse(self):
+        """Setting inverse is not defined for Exp, so the inverse is always False"""
+        return False
+
+    @inverse.setter
+    def inverse(self, boolean):
+        raise NotImplementedError(
+            f"Setting the inverse of {type(self)} is not implemented. "
+            f"Use qml.adjoint or qml.pow instead."
+        )
+
+    def inv(self):
+        """Inverts the operator.
+
+        This method concatenates a string to the name of the operation,
+        to indicate that the inverse will be used for computations.
+
+        Any subsequent call of this method will toggle between the original
+        operation and the inverse of the operation.
+
+        Returns:
+            :class:`Operator`: operation to be inverted
+        """
+        raise NotImplementedError(
+            f"Setting the inverse of {type(self)} is not implemented. "
+            f"Use qml.adjoint or qml.pow instead."
+        )
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators. Decomposes into
@@ -276,6 +328,136 @@ class Exp(SymbolicOp):
         return Exp(self.base, self.coeff * z)
 
     def simplify(self):
-        if isinstance(self.base, qml.ops.op_math.SProd):  # pylint: disable=no-member
-            return Exp(self.base.base.simplify(), self.coeff * self.base.scalar)
-        return Exp(self.base.simplify(), self.coeff)
+        new_base = self.base.simplify()
+        if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
+            return Exp(new_base.base, self.coeff * new_base.scalar)
+        return Exp(new_base, self.coeff)
+
+    def generator(self):
+        r"""Generator of an operator that is in single-parameter-form.
+
+        For example, for operator
+
+        .. math::
+
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+
+        we get the generator
+
+        >>> U.generator()
+          (0.5) [Y0]
+        + (1.0) [Z0 X1]
+
+        """
+        if self.base.is_hermitian and not np.real(self.coeff):
+            return self.base
+
+        raise GeneratorUndefinedError(
+            f"Exponential with coefficient {self.coeff} and base operator {self.base} does not appear to have a "
+            f"generator. Consider using op.simplify() to simplify before finding the generator, or define the operator "
+            f"in the form exp(ixG) through the Evolution class."
+        )
+
+
+class Evolution(Exp):
+    r"""Create an exponential operator that defines a generator, of the form :math:`e^{ix\hat{G}}`
+
+    Args:
+        base (~.operation.Operator): The operator to be used as a generator, G.
+        param (float): The evolution parameter, x. This parameter is not expected to have
+            any complex component.
+
+    Returns:
+       :class:`Evolution`: A :class`~.operation.Operator` representing an operator exponential of the form :math:`e^{ix\hat{G}}`,
+       where x is real.
+
+    **Usage Details**
+
+    In contrast to the general :class:`~.Exp` class, the Evolution operator :math:`e^{ix\hat{G}}` is constrained to have a single trainable
+    parameter, x. Any parameters contained in the base operator are not trainable. This allows the operator
+    to be differentiated with regard to the evolution parameter. Defining a mathematically identical operator
+    using the :class:`~.Exp` class will be incompatible with a variety of PennyLane functions that require only a single
+    trainable parameter.
+
+    **Example**
+    This symbolic operator can be used to make general rotation operators:
+
+    >>> theta = np.array(1.23)
+    >>> op = Evolution(qml.PauliX(0), -0.5 * theta)
+    >>> qml.math.allclose(op.matrix(), qml.RX(theta, wires=0).matrix())
+    True
+
+    Or to define a time evolution operator for a time-independent Hamiltonian:
+
+    >>> H = qml.Hamiltonian([1, 1], [qml.PauliY(0), qml.PauliX(1)])
+    >>> t = 10e-6
+    >>> U = Evolution(H, -1 * t)
+
+    If the base operator is Hermitian, then the gate can be used in a circuit,
+    though it may not be supported by the device and may not be differentiable.
+
+    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    ... def circuit(x):
+    ...     Evolution(qml.PauliX(0), -0.5 * x)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> print(qml.draw(circuit)(1.23))
+    0: ──Exp(-0.61j X)─┤  <Z>
+
+    """
+
+    def __init__(self, generator, param, do_queue=True, id=None):
+        super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
+        self._name = "Evolution"
+        self._data = [param]
+
+    @property
+    def param(self):
+        """A real coefficient with ``1j`` factored out."""
+        return self.data[0]
+
+    @property
+    def coeff(self):
+        return 1j * self.data[0]
+
+    @property
+    def num_params(self):
+        return 1
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        param = (
+            self.data[0]
+            if decimals is None
+            else format(math.toarray(self.data[0]), f".{decimals}f")
+        )
+        return base_label or f"Exp({param}j {self.base.label(decimals=decimals, cache=cache)})"
+
+    def simplify(self):
+        new_base = self.base.simplify()
+        if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
+            return Evolution(new_base.base, self.param * new_base.scalar)
+        return Evolution(new_base, self.param)
+
+    def generator(self):
+        r"""Generator of an operator that is in single-parameter-form.
+
+        For example, for operator
+
+        .. math::
+
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+
+        we get the generator
+
+        >>> U.generator()
+          (0.5) [Y0]
+        + (1.0) [Z0 X1]
+
+        """
+        if not self.base.is_hermitian:
+            warn(f"The base {self.base} may not be hermitian.")
+        if np.real(self.coeff):
+            raise GeneratorUndefinedError(
+                f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(ixG)."
+                f"The generator is not defined."
+            )
+        return self.base
