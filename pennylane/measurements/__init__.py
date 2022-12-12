@@ -39,6 +39,12 @@ classes. These classes are subclassed to implement measurements in PennyLane.
   See :class:`ClassicalShadowMP` for an example.
 
 .. note::
+
+    The :func:`SampleMeasurement.process_samples`, :func:`StateMeasurement.process_state` and
+    :func:`MeasurementTransform.process` functions should always have the same signature.
+
+.. note::
+
     A measurement process can inherit from both :class:`SampleMeasurement` and
     :class:`StateMeasurement` classes, defining the needed logic to process either samples or the
     quantum state. See :class:`VarianceMP` for an example.
@@ -116,10 +122,10 @@ Given that the measurement process returns a real scalar value, we can different
 using the analytic method.
 
 We know from the previous analysis that the analytic result of the measurement process is
-:math:`r(\theta) = \tttext{nshots} \cdot \sin^2(\theta/2)`.
+:math:`r(\theta) = \text{nshots} \cdot \sin^2(\theta/2)`.
 
 The gradient of the measurement process is
-:math:`\frac{\partial r}{\partial \theta} = \tttext{nshots} \sin(\theta/2) \cos(\theta/2)`.
+:math:`\frac{\partial r}{\partial \theta} = \text{nshots} \sin(\theta/2) \cos(\theta/2)`.
 
 When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
