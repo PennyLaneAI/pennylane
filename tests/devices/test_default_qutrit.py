@@ -80,6 +80,15 @@ class TestApply:
         ),
         (qml.TClock, [1, 0, 0], np.array([1, 0, 0]), None),
         (qml.TClock, [0, 1, 0], np.array([0, OMEGA, 0]), None),
+        (qml.THadamard, [0, 1, 0], np.array([0, 1, 0]), [0, 2]),
+        (
+            qml.THadamard,
+            [1 / np.sqrt(2), 0, 1 / np.sqrt(2)],
+            np.array([1 / np.sqrt(2), 0.5, -0.5]),
+            [1, 2],
+        ),
+        (qml.THadamard, [0, 1, 0], np.array([1, OMEGA, OMEGA**2]) * (-1j / np.sqrt(3)), None),
+        (qml.THadamard, [0, 0, 1], np.array([1, OMEGA**2, OMEGA]) * (-1j / np.sqrt(3)), None),
     ]
 
     test_data_no_parameters_inverses = [
@@ -92,6 +101,25 @@ class TestApply:
         ),
         (qml.TClock, [1, 0, 0], np.array([1, 0, 0]), None),
         (qml.TClock, [0, OMEGA, 0], np.array([0, 1, 0]), None),
+        (qml.THadamard, [0, 1, 0], np.array([0, 1, 0]), [0, 2]),
+        (
+            qml.THadamard,
+            [1 / np.sqrt(2), 0, 1 / np.sqrt(2)],
+            np.array([1 / np.sqrt(2), 0.5, -0.5]),
+            [1, 2],
+        ),
+        (
+            qml.THadamard,
+            np.array([1, OMEGA, OMEGA**2]) * (-1j / np.sqrt(3)),
+            np.array([0, 1, 0]),
+            None,
+        ),
+        (
+            qml.THadamard,
+            np.array([1, OMEGA**2, OMEGA]) * (-1j / np.sqrt(3)),
+            np.array([0, 0, 1]),
+            None,
+        ),
     ]
 
     @pytest.mark.parametrize("operation, input, expected_output, subspace", test_data_no_parameters)
@@ -971,7 +999,6 @@ class TestTensorVar:
         assert np.isclose(res, expected, atol=tol, rtol=0)
 
 
-# TODO: Add tests for tensor non-parametrized observables
 class TestTensorSample:
     """Test tensor samples"""
 
@@ -1232,8 +1259,6 @@ class TestApplyOps:
 
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
-
-    # TODO: Add test for testing operations with internal implementations
 
     @pytest.mark.parametrize("inverse", [True, False])
     def test_apply_tensordot_case(self, inverse, monkeypatch):

@@ -279,6 +279,11 @@
   >>> qml.grad(qml.qinfo.purity(circuit, wires=[0]))(param)
   -0.5
   ```
+  
+* Added operation `qml.THadamard`, which is the qutrit Hadamard gate. The operation accepts a `subspace`
+  keyword argument which determines which variant of the qutrit Hadamard to use.
+  [#3340](https://github.com/PennyLaneAI/pennylane/pull/3340)
+
 * New operation `Evolution` defines the exponential of an operator $\hat{O}$ of the form $e^{ix\hat{O}}$, with a single 
   trainable parameter, x. Limiting to a single trainable parameter allows the use of `qml.gradient.param_shift` to 
   find the gradient with respect to the parameter x.
@@ -369,6 +374,10 @@
 
 * Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
   [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
+  
+* Added `validate_subspace` static method to `qml.Operator` to check the validity of the subspace of certain
+  qutrit operations.
+  [#3340](https://github.com/PennyLaneAI/pennylane/pull/3340)
 
 * Extended the `qml.equal` function to `Pow`, `SProd`, `Exp` and `Adjoint` objects.
   [(#3471)](https://github.com/PennyLaneAI/pennylane/pull/3471)
@@ -750,6 +759,7 @@ Edward Jiang
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Mudit Pandey
 Matthew Silverman
 Jay Soni
 Antal Száva
