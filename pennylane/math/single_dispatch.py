@@ -90,10 +90,8 @@ ar.register_function("builtins", "cond", _cond)
 ar.register_function("numpy", "gamma", lambda x: _i("scipy").special.gamma(x))
 ar.register_function("numpy", "gammainc", lambda x, y: _i("scipy").special.gammainc(y, x))
 
-ar.register_function("builtins", "gamma", lambda x: _i("autograd.scipy").special.gamma(x))
-ar.register_function(
-    "builtins", "gammainc", lambda x, y: _i("autograd.scipy").special.gammainc(y, x)
-)
+ar.register_function("builtins", "gamma", lambda x: _i("scipy").special.gamma(x))
+ar.register_function("builtins", "gammainc", lambda x, y: _i("scipy").special.gammainc(y, x))
 
 # -------------------------------- Autograd --------------------------------- #
 
