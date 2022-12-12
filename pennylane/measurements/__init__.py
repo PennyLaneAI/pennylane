@@ -119,7 +119,7 @@ We know from the previous analysis that the analytic result of the measurement p
 :math:`r(\theta) = \tttext{nshots} \cdot \sin^2(\theta/2)`.
 
 The gradient of the measurement process is
-:math:`\frac{\partial r}{\partial \theta} = nshots \cdot \sin(\theta/2) \cdot \cos(\theta/2)`.
+:math:`\frac{\partial r}{\partial \theta} = \tttext{nshots} \sin(\theta/2) \cos(\theta/2)`.
 
 When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
