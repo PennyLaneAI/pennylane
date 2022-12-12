@@ -527,24 +527,24 @@ class THadamard(Operation):
     def compute_matrix(subspace=None):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
-            The canonical matrix is the textbook matrix representation that does not consider wires.
-            Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-            .. seealso:: :meth:`~.THadamard.matrix`
+        .. seealso:: :meth:`~.THadamard.matrix`
 
-            Args:
-                subspace (Sequence[int]): the 2D subspace on which to apply operation. This should be
-                `None` for the generalized Hadamard.
+        Args:
+            subspace (Sequence[int]): the 2D subspace on which to apply operation. This should be
+            `None` for the generalized Hadamard.
 
-            Returns:
-                ndarray: matrix
+        Returns:
+            ndarray: matrix
 
-            **Example**
+        **Example**
 
-            >>> print(qml.THadamard.compute_matrix(subspace=[0, 2]))
-            array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
-                   [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
-                   [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
+        >>> print(qml.THadamard.compute_matrix(subspace=[0, 2]))
+        array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
+               [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
+               [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
         """
 
         if subspace is None:
