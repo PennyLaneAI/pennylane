@@ -116,10 +116,12 @@ Given that the measurement process returns a real scalar value, we can different
 using the analytic method.
 
 We know from the previous analysis that the analytic result of the measurement process is
-:math:`r(\theta) = n_shots \times {\sin(\theta/2)}^2`. The gradient of the measurement process is
-:math:`\frac{\partial r}{\partial \theta} = n_shots \times \sin(\theta/2) \times \cos(\theta/2)`.
+:math:`r(\theta) = n\_shots \times {\sin(\theta/2)}^2`.
 
-Thus :math:`\frac{\partial r(1.23)}{\partial \theta} = 4712.444`
+The gradient of the measurement process is
+:math:`\frac{\partial r}{\partial \theta} = n\_shots \times \sin(\theta/2) \times \cos(\theta/2)`.
+
+When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
 >>> x = qml.numpy.array(1.23, requires_grad=True)
 >>> qml.grad(circuit)(x)
