@@ -820,15 +820,19 @@ def expm(tensor, like=None):
     return scipy_expm(tensor)
 
 
-@multi_dispatch(argnum=[0, 1])
+@multi_dispatch(argnum=[1])
 def gammainc(x, y, like=None):
 
-    if like is None:
-        like = get_interface(*y)
-
     if like == "jax":
-        import jax
-        return jax.special.gammainc(x, y)
+        from jax.scipy.special import gammainc
 
-    import autograd
-    return autograd.special.gammainc(x, y)
+        return gammainc(x, y)
+
+    if like == "autograd":
+        from autograd.scipy.special import gammainc
+
+        return gammainc(x, y)
+
+    import scipy
+
+    return scipy.special.gammainc(x, y)
