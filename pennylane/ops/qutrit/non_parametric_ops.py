@@ -16,6 +16,8 @@ This submodule contains the qutrit quantum operations
 that do not depend on any parameters.
 """
 # pylint:disable=arguments-differ
+from copy import copy
+
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
@@ -106,13 +108,8 @@ class TShift(Operation):
             z_mod3 = z % 3
             if z_mod3 < 2:
                 return super().pow(z_mod3)
-            return [self.adjoint()]
+            return [qml.adjoint(self)]
         return super().pow(z)
-
-    def adjoint(self):
-        op = TShift(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
 
 
 class TClock(Operation):
@@ -196,13 +193,8 @@ class TClock(Operation):
             z_mod3 = z % 3
             if z_mod3 < 2:
                 return super().pow(z_mod3)
-            return [self.adjoint()]
+            return [qml.adjoint(self)]
         return super().pow(z)
-
-    def adjoint(self):
-        op = TClock(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
 
 
 class TAdd(Operation):
@@ -313,13 +305,8 @@ class TAdd(Operation):
             z_mod3 = z % 3
             if z_mod3 < 2:
                 return super().pow(z_mod3)
-            return [self.adjoint()]
+            return [qml.adjoint(self)]
         return super().pow(z)
-
-    def adjoint(self):
-        op = TAdd(self.wires)
-        op.inverse = not self.inverse
-        return op
 
     @property
     def control_wires(self):
@@ -496,8 +483,6 @@ class THadamard(Operation):
 
     def label(self, decimals=None, base_label=None, cache=None):
         label = base_label or "TH"
-        if self.subspace is None and self.inverse:
-            label += "⁻¹"
 
         return label
 
@@ -566,12 +551,7 @@ class THadamard(Operation):
         return mat / np.sqrt(2)
 
     def adjoint(self):
-        op = THadamard(wires=self.wires, subspace=self.subspace)
-
-        if self.subspace is None:
-            op.inverse = not self.inverse
-
-        return op
+        return super().adjoint() if self.subspace is None else copy(self).queue()
 
     def pow(self, z):
         if self.subspace is not None:

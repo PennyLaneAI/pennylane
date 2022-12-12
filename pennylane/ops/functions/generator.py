@@ -23,16 +23,6 @@ import numpy as np
 import pennylane as qml
 
 
-def _generator_observable(gen, op):
-    """Return the generator as type :class:`~.Hermitian`,
-    :class:`~.SparseHamiltonian`, or :class:`~.Hamiltonian`,
-    as provided by the original gate.
-    """
-    if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
-        return gen
-    return gen
-
-
 def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~.Hamiltonian`."""
     wires = op.wires
@@ -56,7 +46,7 @@ def _generator_hamiltonian(gen, op):
     return H
 
 
-def _generator_prefactor(gen, op):
+def _generator_prefactor(gen):
     r"""Return the generator as ```(obs, prefactor)`` representing
     :math:`G=p \hat{O}`, where
 
@@ -182,12 +172,12 @@ def generator(op, format="prefactor"):
         )
 
     if format == "prefactor":
-        return _generator_prefactor(gen, op)
+        return _generator_prefactor(gen)
 
     if format == "hamiltonian":
         return _generator_hamiltonian(gen, op)
 
     if format == "observable":
-        return _generator_observable(gen, op)
+        return gen
 
     raise ValueError("format must be one of ('prefactor', 'hamiltonian', 'observable')")
