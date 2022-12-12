@@ -116,7 +116,7 @@ Given that the measurement process returns a real scalar value, we can different
 using the analytic method.
 
 We know from the previous analysis that the analytic result of the measurement process is
-:math:`r(\theta) = nshots \cdot {\sin(\theta/2)}^2`.
+:math:`r(\theta) = \tttext{nshots} \cdot \sin^2(\theta/2)`.
 
 The gradient of the measurement process is
 :math:`\frac{\partial r}{\partial \theta} = nshots \cdot \sin(\theta/2) \cdot \cos(\theta/2)`.
