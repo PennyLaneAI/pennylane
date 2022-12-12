@@ -81,7 +81,7 @@ state has been sampled.
 
 .. note::
 
-    The `__copy__` method needs to be overriden when new arguments are added into the `__init__`
+    The ``__copy__`` method needs to be overriden when new arguments are added into the ``__init__``
     method.
 
 We can now execute the new measurement in a :class:`~pennylane.QNode`:
