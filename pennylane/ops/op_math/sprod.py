@@ -115,7 +115,7 @@ class SProd(SymbolicOp):
         self._check_scalar_is_valid()
         super().__init__(base=base, do_queue=do_queue, id=id)
 
-        if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) is not None:
+        if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)):
             pr = {}
             for pw, coeff in base_pauli_rep.items():
                 pr[pw] = qnp.dot(coeff, self.scalar)  # to support dispatching over interfaces
