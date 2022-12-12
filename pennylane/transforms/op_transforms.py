@@ -297,7 +297,6 @@ class op_transform:
             raise OperationTransformError(
                 "This transform does not support tapes or QNodes with multiple operations."
             )
-
         return self._tape_fn(obj, *args, **kwargs)
 
     @property

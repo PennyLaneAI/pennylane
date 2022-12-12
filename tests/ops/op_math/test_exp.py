@@ -17,8 +17,12 @@ from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math import Exp
+from pennylane.operation import (
+    DecompositionUndefinedError,
+    GeneratorUndefinedError,
+    ParameterFrequenciesUndefinedError,
+)
+from pennylane.ops.op_math import Exp, Evolution
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -95,7 +99,7 @@ class TestProperties:
     """Test of the properties of the Exp class."""
 
     def test_data(self):
-        """Test accessing and setting the data property."""
+        """Test intializaing and accessing the data property."""
 
         phi = np.array(1.234)
         coeff = np.array(2.345)
@@ -104,13 +108,6 @@ class TestProperties:
         op = Exp(base, coeff)
 
         assert op.data == [[coeff], [phi]]
-
-        new_data = [[-2.1], [-3.4]]
-        op.data = new_data
-
-        assert op.data == new_data
-        assert op.coeff == -2.1
-        assert base.data == [-3.4]
 
     def test_queue_category_ops(self):
         """Test the _queue_category property."""
@@ -127,6 +124,15 @@ class TestProperties:
         assert not Exp(qml.PauliX(0), 1.0 + 2j).is_hermitian
 
         assert not Exp(qml.RX(1.2, wires=0)).is_hermitian
+
+    def test_setting_inverse_raises_error(self):
+        op = Exp(qml.PauliX(0), -1.234j)
+
+        with pytest.raises(NotImplementedError):
+            op.inverse = True
+
+        with pytest.raises(NotImplementedError):
+            op.inv()
 
 
 class TestMatrix:
@@ -399,6 +405,34 @@ class TestMiscMethods:
         assert qml.equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 0.2
 
+    def test_simplify_s_prod(self):
+        """Tests that when simplification of the base results in an SProd,
+        the scalar is included in the coeff rather than the base"""
+        base = qml.s_prod(2, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        op = Exp(base, 3)
+        new_op = op.simplify()
+
+        assert qml.equal(new_op.base, qml.PauliX(0))
+        assert new_op.coeff == 12
+        assert new_op is not op
+
+    def test_copy(self):
+        """Tests making a copy."""
+        op = Exp(qml.CNOT([0, 1]), 2)
+        copied_op = op.__copy__()
+
+        assert qml.equal(op.base, copied_op.base)
+        assert op.data == copied_op.data
+        assert op.hyperparameters.keys() == copied_op.hyperparameters.keys()
+
+        for attr, value in vars(copied_op).items():
+            if (
+                not attr == "_hyperparameters"
+            ):  # hyperparameters contains base, which can't be compared via ==
+                assert vars(op)[attr] == value
+
+        assert len(vars(op).items()) == len(vars(copied_op).items())
+
 
 class TestIntegration:
     """Test Exp with gradients in qnodes."""
@@ -472,6 +506,24 @@ class TestIntegration:
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
+        def circuit(phi):
+            Exp(qml.PauliX(0), -0.5j * phi)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit(phi)
+        assert qml.math.allclose(res, qml.numpy.cos(phi))
+
+        grad = qml.grad(circuit)(phi)
+        assert qml.math.allclose(grad, -qml.numpy.sin(phi))
+
+    @pytest.mark.autograd
+    def test_autograd_param_shift_qnode(self):
+        """Test execution and gradient with pennylane numpy array."""
+        phi = qml.numpy.array(1.2)
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
         def circuit(phi):
             Exp(qml.PauliX(0), -0.5j * phi)
             return qml.expval(qml.PauliZ(0))
@@ -578,3 +630,172 @@ class TestIntegration:
         qml.drawer.tape_text(tape)
 
         assert "0: ──Exp─┤  "
+
+
+class TestDifferentiation:
+    """Test generator and parameter_frequency for differentiation"""
+
+    def test_base_not_hermitian_generator_undefined(self):
+        """That that imaginary coefficient but non-Hermitian base operator raises GeneratorUndefinedError"""
+        op = Exp(qml.RX(1.23, 0), 1j)
+        with pytest.raises(GeneratorUndefinedError):
+            op.generator()
+
+    def test_real_component_coefficient_generator_undefined(self):
+        """Test that Hermitian base operator but real coefficient raises GeneratorUndefinedError"""
+        op = Exp(qml.PauliX(0), 1)
+        with pytest.raises(GeneratorUndefinedError):
+            op.generator()
+
+    def test_generator_is_base_operator(self):
+        """Test that generator is base operator"""
+        base_op = qml.PauliX(0)
+        op = Exp(base_op, 1j)
+        assert op.base == op.generator()
+
+    def test_parameter_frequencies(self):
+        """Test parameter_frequencies property"""
+        op = Exp(qml.PauliZ(1), 1j)
+        assert op.parameter_frequencies == [(2,)]
+
+    def test_parameter_frequencies_raises_error(self):
+        """Test that parameter_frequencies raises an error if the op.generator() is undefined"""
+        op = Exp(qml.PauliX(0), 1)
+        with pytest.raises(GeneratorUndefinedError):
+            op.generator()
+        with pytest.raises(ParameterFrequenciesUndefinedError):
+            op.parameter_frequencies
+
+    def test_parameter_frequency_with_parameters_in_base_operator(self):
+        """Test that parameter_frequency raises an error for the Exp class, but not the
+        Evolution class, if there are additional parameters in the base operator"""
+
+        base_op = 2 * qml.PauliX(0)
+        op1 = Exp(base_op, 1j)
+        op2 = Evolution(base_op, 1)
+
+        with pytest.raises(ParameterFrequenciesUndefinedError):
+            op1.parameter_frequencies()
+
+        assert op2.parameter_frequencies == [(4.0,)]
+
+
+class TestEvolution:
+    """Test Evolution(Exp) class that takes a parameter x and a generator G and defines an evolution exp(ixG)"""
+
+    def test_initialization(self):
+        """Test initialization with a provided coefficient and a Tensor base."""
+        base = qml.PauliZ("b") @ qml.PauliZ("c")
+        param = 1.23
+
+        op = Evolution(base, param)
+
+        assert op.base is base
+        assert op.coeff == 1j * param
+        assert op.name == "Evolution"
+        assert isinstance(op, Exp)
+
+        assert op.num_params == 1
+        assert op.parameters == [param]
+        assert op.data == [param]
+
+        assert op.wires == qml.wires.Wires(("b", "c"))
+
+    def test_evolution_matches_corresponding_exp(self):
+        base_op = 2 * qml.PauliX(0)
+        op1 = Exp(base_op, 1j)
+        op2 = Evolution(base_op, 1)
+
+        assert np.all(op1.matrix() == op2.matrix())
+
+    def test_generator(self):
+        U = Evolution(qml.PauliX(0), 3)
+        assert U.base == U.generator()
+
+    def test_num_params_for_parametric_base(self):
+        base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
+        op = Evolution(base_op, 1.23)
+
+        assert base_op.num_params == 2
+        assert op.num_params == 1
+
+    def test_data(self):
+        """Test initializing and accessing the data property."""
+
+        param = np.array(1.234)
+
+        base = qml.PauliX(0)
+        op = Evolution(base, param)
+
+        assert op.data == [param]
+        assert op.coeff == 1j * op.data[0]
+        assert op.param == op.data[0]
+
+    @pytest.mark.parametrize(
+        "op,decimals,expected",
+        [
+            (Evolution(qml.PauliZ(0), 2), None, "Exp(2j Z)"),
+            (Evolution(qml.PauliZ(0), 2), 2, "Exp(2.00j Z)"),
+            (Evolution(qml.prod(qml.PauliZ(0), qml.PauliY(1)), 2), None, "Exp(2j Z@Y)"),
+            (Evolution(qml.prod(qml.PauliZ(0), qml.PauliY(1)), 2), 2, "Exp(2.00j Z@Y)"),
+            (Evolution(qml.RZ(1.234, wires=[0]), 5.678), None, "Exp(5.678j RZ)"),
+            (Evolution(qml.RZ(1.234, wires=[0]), 5.678), 2, "Exp(5.68j RZ\n(1.23))"),
+        ],
+    )
+    def test_label(self, op, decimals, expected):
+        """Test that the label is informative and uses decimals."""
+        assert op.label(decimals=decimals) == expected
+
+    def test_simplify(self):
+        """Test that the simplify method simplifies the base."""
+        orig_base = qml.adjoint(qml.adjoint(qml.PauliX(0)))
+
+        op = Exp(orig_base, coeff=0.2)
+        new_op = op.simplify()
+        assert qml.equal(new_op.base, qml.PauliX(0))
+        assert new_op.coeff == 0.2
+
+    def test_simplify_s_prod(self):
+        """Tests that when simplification of the base results in an SProd,
+        the scalar is included in the coeff rather than the base"""
+        base = qml.s_prod(2, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        op = Evolution(base, 3)
+        new_op = op.simplify()
+
+        assert qml.equal(new_op.base, qml.PauliX(0))
+        assert new_op.coeff == 12j
+
+    @pytest.mark.jax
+    def test_parameter_shift_gradient_matches_jax(self):
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+        base = qml.PauliX(0)
+        x = np.array(1.234)
+
+        @qml.qnode(dev, diff_method=qml.gradients.param_shift)
+        def circ_param_shift(x):
+            Evolution(base, -0.5 * x)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(qml.device("default.qubit.jax", wires=1), interface="jax")
+        def circ(x):
+            Evolution(qml.PauliX(0), -0.5 * x)
+            return qml.expval(qml.PauliZ(0))
+
+        grad_param_shift = qml.grad(circ_param_shift)(x)
+        grad = jax.grad(circ)(x)
+
+        assert qml.math.allclose(grad, grad_param_shift)
+
+    def test_generator_warns_if_not_hermitian(self):
+        base = qml.s_prod(1j, qml.Identity(0))
+        op = Evolution(base, 2)
+        with pytest.warns(UserWarning, match="may not be hermitian"):
+            op.generator()
+
+    def test_simplifying_Evolution_operator(self):
+        base = qml.PauliX(0) + qml.PauliX(1) + qml.PauliX(0)
+        op = Evolution(base, 2)
+
+        assert qml.equal(op.simplify(), Evolution(base.simplify(), 2))

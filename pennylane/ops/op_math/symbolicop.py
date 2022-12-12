@@ -66,6 +66,7 @@ class SymbolicOp(Operator):
         self.hyperparameters["base"] = base
         self._id = id
         self.queue_idx = None
+        self._pauli_rep = None
 
         if do_queue:
             self.queue()
