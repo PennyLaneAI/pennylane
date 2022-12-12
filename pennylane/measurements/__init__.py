@@ -75,7 +75,7 @@ obtained of a given state:
         def __copy__(self):
             return CountState(state=self.state)
 
-The measurement process in this example uses the of :func:`~pennylane.counts` function, which is a
+The measurement process in this example uses the :func:`~pennylane.counts` function, which is a
 measurement process which returns a dictionary containing the number of times each quantum
 state has been sampled.
 
@@ -112,14 +112,14 @@ we should obtain the excited state 3333 times approximately.
 >>> circuit(1.23)
 tensor(3303., requires_grad=True)
 
-Given that the measurement process returns a real scalar value, we can differentiate it using
+Given that the measurement process returns a real scalar value, we can differentiate it
 using the analytic method.
 
 We know from the previous analysis that the analytic result of the measurement process is
-:math:`r(\theta) = nshots \cdot {\sin(\theta/2)}^2`.
+:math:`r(\theta) = \tttext{nshots} \cdot \sin^2(\theta/2)`.
 
 The gradient of the measurement process is
-:math:`\frac{\partial r}{\partial \theta} = nshots \cdot \sin(\theta/2) \cdot \cos(\theta/2)`.
+:math:`\frac{\partial r}{\partial \theta} = \tttext{nshots} \sin(\theta/2) \cos(\theta/2)`.
 
 When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
