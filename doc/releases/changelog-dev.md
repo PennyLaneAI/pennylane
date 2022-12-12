@@ -4,6 +4,33 @@
 
 <h3>New features since last release</h3>
 
+* Support for getting the ZX calculus graph of a circuit with the PyZX framework and converting
+  a PyZX graph back into a PennyLane circuit.
+  [#3446](https://github.com/PennyLaneAI/pennylane/pull/3446)
+  
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.transforms.to_zx
+  @qml.qnode(device=dev)
+  def circuit(p):
+      qml.RZ(p[0], wires=1),
+      qml.RZ(p[1], wires=1),
+      qml.RX(p[2], wires=0),
+      qml.PauliZ(wires=0),
+      qml.RZ(p[3], wires=1),
+      qml.PauliX(wires=1),
+      qml.CNOT(wires=[0, 1]),
+      qml.CNOT(wires=[1, 0]),
+      qml.SWAP(wires=[0, 1]),
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+  ```pycon
+  >>> params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
+  >>> circuit(params)
+  Graph(20 vertices, 23 edges)
+  ```
+  
 * Added ability to create expressions from mid-circuit measurements.
   [#3159](https://github.com/PennyLaneAI/pennylane/pull/3159)
 
@@ -251,6 +278,32 @@
   >>> param = np.array(np.pi / 4, requires_grad=True)
   >>> qml.grad(qml.qinfo.purity(circuit, wires=[0]))(param)
   -0.5
+  ```
+* New operation `Evolution` defines the exponential of an operator $\hat{O}$ of the form $e^{ix\hat{O}}$, with a single 
+  trainable parameter, x. Limiting to a single trainable parameter allows the use of `qml.gradient.param_shift` to 
+  find the gradient with respect to the parameter x.
+  [(#3375)](https://github.com/PennyLaneAI/pennylane/pull/3375)
+
+  This example circuit uses the `Evolution` operation to define $e^{-\frac{i}{2}\phi\hat{\sigma}_x}$ and finds a 
+  gradient using parameter shift:
+
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  
+  @qml.qnode(dev, diff_method=qml.gradients.param_shift)
+  def circuit(phi):
+      Evolution(qml.PauliX(0), -.5 * phi)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  
+  If we run this circuit, we will get the following output
+
+  ```pycon
+  >>> phi = np.array(1.2)
+  >>> circuit(phi)
+  tensor(0.36235775, requires_grad=True)
+  >>> qml.grad(circuit)(phi)
+  -0.9320390495504149
   ```
 
 <h3>Improvements</h3>
@@ -624,6 +677,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making
   $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis.
   [(#3409)](https://github.com/PennyLaneAI/pennylane/pull/3409)
+
+* Adds warnings about using ``dill`` to pickle and unpickle datasets. 
+  [#3505](https://github.com/PennyLaneAI/pennylane/pull/3505)
 
 <h3>Bug fixes</h3>
 
