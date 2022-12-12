@@ -239,9 +239,9 @@ def split_tape(qscript: QuantumScript, group=True):
     def processing_fn(expanded_results):
         results = []  # [(m_idx, result)]
         for tape_res, tape_idxs in zip(expanded_results, idxs_coeffs):
-            tape_res = (
+            tape_res = [
                 qml.math.transpose(res) if qml.math.ndim(res) > 0 else res for res in tape_res
-            )  # needed when batching
+            ]  # needed when batching
             if isinstance(tape_idxs[0], tuple):  # tape_res contains only one result
                 if not qml.active_return() and len(tape_res) == 1:  # old return types
                     tape_res = tape_res[0]
