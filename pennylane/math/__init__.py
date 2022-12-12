@@ -114,7 +114,6 @@ __all__ = [
     "einsum",
     "eye",
     "fidelity",
-    "gammainc",
     "frobenius_inner_product",
     "get_interface",
     "get_trainable_indices",
