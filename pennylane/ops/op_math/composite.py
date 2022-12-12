@@ -16,7 +16,7 @@ This submodule defines a base class for composite operations.
 """
 # pylint: disable=too-many-instance-attributes
 import abc
-from typing import Callable, List, Tuple
+from typing import Callable, List
 
 import numpy as np
 
@@ -60,6 +60,7 @@ class CompositeOp(Operator):
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
+        self._pauli_rep = self._build_pauli_rep()
 
         if do_queue:
             self.queue()
@@ -168,7 +169,7 @@ class CompositeOp(Operator):
         """Representation of the operator as a matrix in the computational basis."""
 
     @property
-    def overlapping_ops(self) -> List[Tuple[Wires, List[Operator]]]:
+    def overlapping_ops(self) -> List[List[Operator]]:
         """Groups all operands of the composite operator that act on overlapping wires.
 
         Returns:
@@ -332,3 +333,7 @@ class CompositeOp(Operator):
                 setattr(new_op, attr, value)
 
         return new_op
+
+    @abc.abstractmethod
+    def _build_pauli_rep(self):
+        """The function to generate the pauli representation for the composite operator."""
