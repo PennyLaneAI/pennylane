@@ -39,15 +39,81 @@ classes. These classes are subclassed to implement measurements in PennyLane.
   See the :class:`ClassicalShadowMP` class for an example.
 
 .. note::
-    A measurement process can inherit from both `SampleMeasurement` and `StateMeasurement` classes,
-    defining the needed logic to process either samples or the quantum state. See the
-    :class:`VarianceMP` for an example.
+    A measurement process can inherit from both :class:`SampleMeasurement` and
+    :class:`StateMeasurement` classes, defining the needed logic to process either samples or the
+    quantum state. See the :class:`VarianceMP` for an example.
 
 Differentiation
 ^^^^^^^^^^^^^^^
-In general, a ``MeasurementProcess` is differentiable with respect to a parameter if the domain of
+In general, a :class:`MeasurementProcess` is differentiable with respect to a parameter if the domain of
 that parameter is continuous. When using the analytic method of differentiation, it must satisfy an
 additional constraint: the output of the measurement process must be a real scalar value.
+
+Creating custom measurements
+----------------------------
+A custom measurement process can be created by inheriting from any of the classes mentioned above.
+
+The following is an example for a sample-based measurement that computes the number of samples
+obtained of a given state:
+
+.. code-block:: python
+
+    import pennylane as qml
+    from pennylane.measurements import SampleMeasurement
+
+    class CountState(SampleMeasurement):
+        def __init__(self, state: str):
+            self.state = state  # string identifying the state e.g. "0101"
+            wires = list(range(len(state)))
+            super().__init__(wires=wires)
+
+        def process_samples(self, samples, wire_order, shot_range, bin_size):
+            counts_mp = qml.counts(wires=self._wires)
+            counts = counts_mp.process_samples(samples, wire_order, shot_range, bin_size)
+            return 0 if self.state not in counts else counts[self.state]
+
+        def __copy__(self):
+            return CountState(state=self.state)
+
+The measurement process in this example makes use of :func:`~pennylane.counts`, which is a
+measurement process in pennylane which returns a dictionary containing the number of times a quantum
+state has been sampled.
+
+.. note::
+
+    The `__copy__` method needs to be overriden when new arguments are added into the `__init__`
+    method.
+
+We can now execute the new measurement in a :class:`~pennylane.QNode`:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=4, shots=1000)
+
+    @qml.qnode(dev)
+    def circuit():
+        [qml.Hadamard(w) for w in range(4)]
+        [qml.CNOT(wires=[i, i + 1]) for i in range(3)]
+        return CountState(state="011")
+
+>>> circuit()
+tensor(129., requires_grad=True)
+
+If the differentiation constraints mentioned above are met, we can also differentiate measurement
+processes:
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    def circuit(x):
+        [qml.RX(x, w) for w in range(4)]
+        [qml.CNOT(wires=[i, i + 1]) for i in range(3)]
+        return CountState(state="011")
+
+>>> from pennylane import numpy as np
+>>> x = np.array(0.123, requires_grad=True)
+>>> qml.grad(circuit)(x)
+63.50000000000001
 """
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
