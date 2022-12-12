@@ -207,7 +207,7 @@ class gradient_transform(qml.batch_transform):
       to differentiate with respect to. If not provided, the derivatives with respect to all
       trainable inputs of the tape should be returned (``tape.trainable_params``).
 
-    - ``gradient_tapes`` (*List[QuantumTape]*): is a list of output tapes to be evaluated.
+    - ``gradient_tapes`` (*list[QuantumTape]*): is a list of output tapes to be evaluated.
       If this list is empty, no quantum evaluations will be made.
 
     - ``processing_fn`` is a processing function to be applied to the output of the evaluated

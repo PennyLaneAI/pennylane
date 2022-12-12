@@ -37,15 +37,15 @@ quantum operations supported by PennyLane, as well as their conventions.
 # abstract methods are not defined in the CV case, disabling the related check
 # pylint: disable=abstract-method
 import math
+
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane.operation import AnyWires, CVOperation, CVObservable
 from pennylane import math as qml_math
+from pennylane.operation import AnyWires, CVObservable, CVOperation
 
-from .identity import Identity  #  pylint: disable=unused-import
-from .snapshot import Snapshot  #  pylint: disable=unused-import
-
+from .identity import Identity  # pylint: disable=unused-import
+from .snapshot import Snapshot  # pylint: disable=unused-import
 
 _two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 
@@ -1077,7 +1077,7 @@ class NumberOperator(CVObservable):
     The number operator is defined as
     :math:`\hat{n} = \a^\dagger \a = \frac{1}{2\hbar}(\x^2 +\p^2) -\I/2`.
 
-    When used with the :func:`~.expval` function, the mean
+    When used with the :func:`~pennylane.expval` function, the mean
     photon number :math:`\braket{\hat{n}}` is returned.
 
     **Details:**
@@ -1119,7 +1119,7 @@ class TensorN(CVObservable):
 
     If a single wire is defined, returns a :class:`~.NumberOperator` instance for convenient gradient computations.
 
-    When used with the :func:`~.expval` function, the expectation value
+    When used with the :func:`~pennylane.expval` function, the expectation value
     :math:`\langle \hat{n}_{i_0} \hat{n}_{i_1}\dots \hat{n}_{i_{N-1}}\rangle`
     for a (sub)set of modes :math:`[i_0, i_1, \dots, i_{N-1}]` of the system is
     returned.
@@ -1177,7 +1177,7 @@ class X(CVObservable):
     r"""
     The position quadrature observable :math:`\hat{x}`.
 
-    When used with the :func:`~.expval` function, the position expectation
+    When used with the :func:`~pennylane.expval` function, the position expectation
     value :math:`\braket{\hat{x}}` is returned. This corresponds to
     the mean displacement in the phase space along the :math:`x` axis.
 
@@ -1210,7 +1210,7 @@ class P(CVObservable):
     r"""
     The momentum quadrature observable :math:`\hat{p}`.
 
-    When used with the :func:`~.expval` function, the momentum expectation
+    When used with the :func:`~pennylane.expval` function, the momentum expectation
     value :math:`\braket{\hat{p}}` is returned. This corresponds to
     the mean displacement in the phase space along the :math:`p` axis.
 
@@ -1243,7 +1243,7 @@ class QuadOperator(CVObservable):
     r"""
     The generalized quadrature observable :math:`\x_\phi = \x cos\phi+\p\sin\phi`.
 
-    When used with the :func:`~.expval` function, the expectation
+    When used with the :func:`~pennylane.expval` function, the expectation
     value :math:`\braket{\hat{\x_\phi}}` is returned. This corresponds to
     the mean displacement in the phase space along axis at angle :math:`\phi`.
 
