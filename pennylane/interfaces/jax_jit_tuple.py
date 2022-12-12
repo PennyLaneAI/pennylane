@@ -239,16 +239,14 @@ def _execute_bwd_tuple(
                     jacs = res_processing_fn(jacs)
                     all_jacs.append(jacs)
 
-                # print("ALL JACS: ", all_jacs)
-                print("Number tapes: ", len(tapes))
-                if len(all_jacs) == 1:
+                if len(all_jacs) == 1 and len(tangents[0]) > 1:
                     all_jacs = all_jacs[0]
 
-                print("ALL JACS: ", all_jacs)
-                jvps = _compute_jvps([all_jacs], tangents[0], multi_measurements)
+                jvps = _compute_jvps(all_jacs, tangents[0], multi_measurements)
         else:
             # Gradient function is a device method
             res_from_callback = _device_method_jac_via_callback(params, device)
+
             if len(tapes) == 1:
                 res_from_callback = [res_from_callback]
 
