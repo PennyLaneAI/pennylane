@@ -1283,7 +1283,7 @@ def test_generator_no_expval(monkeypatch):
             qml.expval(qml.PauliX(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(qml.QuantumFunctionError, match="is not an observable"):
+        with pytest.raises(qml.QuantumFunctionError, match="is not hermitian"):
             qml.metric_tensor(tape, approx="block-diag")
 
 
