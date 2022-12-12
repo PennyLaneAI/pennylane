@@ -111,7 +111,7 @@ class hessian_transform(qml.batch_transform):
 
     - ``tape`` (*QuantumTape*): the input quantum tape to compute the Hessian of
 
-    - ``hessian_tapes`` (*List[QuantumTape]*): is a list of output tapes to be
+    - ``hessian_tapes`` (*list[QuantumTape]*): is a list of output tapes to be
       evaluated. If this list is empty, no quantum evaluations will be made.
 
     - ``processing_fn`` is a processing function to be applied to the output of the

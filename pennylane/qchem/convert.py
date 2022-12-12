@@ -14,6 +14,8 @@
 """
 This module contains the functions for converting an external operator to a Pennylane operator.
 """
+import warnings
+
 # pylint: disable=import-outside-toplevel
 import pennylane as qml
 from pennylane import numpy as np
@@ -141,7 +143,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
     (array([0.1, 0.2]), [PauliX(wires=['w0']), PauliY(wires=['w0']) @ PauliZ(wires=['w2'])])
     """
     n_wires = (
-        1 + max([max([i for i, _ in t]) if t else 1 for t in qubit_operator.terms])
+        1 + max(max(i for i, _ in t) if t else 1 for t in qubit_operator.terms)
         if qubit_operator.terms
         else 1
     )
@@ -284,7 +286,7 @@ def _openfermion_pennylane_equivalent(
     return openfermion_qubit_operator == _pennylane_to_openfermion(coeffs, ops, wires=wires)
 
 
-def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08):
+def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e010):
     r"""Convert an external operator to a PennyLane operator.
 
     The external format currently supported is openfermion.
@@ -298,9 +300,9 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08
             for the corresponding qubit index.
             For type dict, only int-keyed dictionaries (for qubit-to-wire conversion) are accepted.
             If ``None``, the identity map (e.g., ``0->0, 1->1, ...``) will be used.
-        tol (float): Tolerance in machine epsilons for the imaginary part of the
-            coefficients in ``qubit_observable``. Coefficients with imaginary part
-            less than 2.22e-16*tol are considered to be real.
+        tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
+            for the imaginary part of the coefficients in ``qubit_observable``.
+            Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
 
     Returns:
         (.Hamiltonian): PennyLane :class:`~.Hamiltonian`
@@ -319,12 +321,13 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08
     if format not in "openfermion":
         raise TypeError(f"Converter does not exist for {format} format.")
 
-    if any(
-        np.iscomplex(np.real_if_close(coef, tol=tol)) for coef in qubit_observable.terms.values()
-    ):
-        raise TypeError(
+    coeffs = np.array([np.real_if_close(coef, tol=tol) for coef in qubit_observable.terms.values()])
+
+    if any(np.iscomplex(coeffs)):
+        warnings.warn(
             f"The coefficients entering the QubitOperator must be real;"
-            f" got complex coefficients in the operator {qubit_observable}"
+            f" got complex coefficients in the operator"
+            f" {list(coeffs[np.iscomplex(coeffs)])}"
         )
 
     return qml.Hamiltonian(*_openfermion_to_pennylane(qubit_observable, wires=wires))

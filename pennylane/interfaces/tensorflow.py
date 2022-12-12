@@ -112,7 +112,7 @@ def _jac_restructured(jacs, tapes):
     """
     start = 0
     jacs_nested = []
-    for i, tape in enumerate(tapes):
+    for tape in tapes:
         num_meas = len(tape.measurements)
         num_params = len(tape.trainable_params)
 
@@ -125,6 +125,7 @@ def _jac_restructured(jacs, tapes):
             tape_jacs = tape_jacs[0]
 
         jacs_nested.append(tape_jacs)
+        start += num_meas * num_params
 
     return tuple(jacs_nested)
 

@@ -69,10 +69,11 @@ def test_custom_op_with_matrix():
         def compute_matrix(self):
             return np.eye(2)
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         DummyOp(0)
         qml.state()
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     dev = qml.device("null.qubit", wires=1)
     assert dev.execute(tape) == [0.0]
 
