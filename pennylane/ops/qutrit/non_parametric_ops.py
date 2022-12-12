@@ -542,9 +542,9 @@ class THadamard(Operation):
             **Example**
 
             >>> print(qml.THadamard.compute_matrix(subspace=[0, 2]))
-        array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
-               [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
-               [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
+            array([[ 0.70710678+0.j,  0.        +0.j,  0.70710678+0.j],
+                   [ 0.        +0.j,  1.        +0.j,  0.        +0.j],
+                   [ 0.70710678+0.j,  0.        +0.j, -0.70710678+0.j]])
         """
 
         if subspace is None:
