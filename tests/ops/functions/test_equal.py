@@ -1415,13 +1415,14 @@ class TestProdComparisons:
 
     @pytest.mark.parametrize(("base_list1", "base_list2", "res"), SINGLE_WIRE_BASES)
     def test_prod_comparisons_single_wire_bases(self, base_list1, base_list2, res):
-        """Test comparison of lists of wires where all operators have a single wire"""
+        """Test comparison of products of operators where all operators have a single wire"""
         op1 = qml.prod(*base_list1)
         op2 = qml.prod(*base_list2)
         assert qml.equal(op1, op2) == res
 
     @pytest.mark.parametrize(("base_list1", "base_list2", "res"), MULTI_WIRE_BASES)
     def test_prod_with_multi_wire_bases(self, base_list1, base_list2, res):
+        """Test comparison of products of operators where some operators work on multiple wires"""
         op1 = qml.prod(*base_list1)
         op2 = qml.prod(*base_list2)
         assert qml.equal(op1, op2) == res
