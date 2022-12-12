@@ -383,6 +383,134 @@ class Operator(abc.ABC):
     >>> circuit(a)
     -0.9999987318946099
 
+    .. details::
+        :title: Parameter broadcasting
+        :href: parameter-broadcasting
+
+        Many quantum functions are executed repeatedly at different parameters, which
+        can be done with parameter broadcasting. For usage details and examples see the
+        :class:`~.pennylane.QNode` documentation.
+
+        In order to support parameter broadcasting with an operator class,
+        the following steps are necessary:
+
+        #. Define the class attribute ``ndim_params``, a tuple that indicates
+           the expected number of dimensions for each operator argument
+           *without broadcasting*. For example, ``FlipAndRotate``
+           above has ``ndim_params = (0,)`` for a single scalar argument.
+           An operator taking a matrix argument and a scalar would have ``ndim_params = (2, 0)``.
+           Note that ``ndim_params`` does *not require the size* of the axes.
+        #. Make the representations of the operator broadcasting-compatible. Typically, one or
+           multiple of the methods ``compute_matrix``, ``compute_eigvals`` and
+           ``compute_decomposition`` are defined by an operator, and these need to work with
+           the original input and output as well as with broadcasted inputs and outputs
+           that have an additional, leading axis. See below for an example.
+        #. Make sure that validation within the above representation methods and
+           ``__init__``---if it is overwritten by the operator class---allow
+           for broadcasted inputs. For custom operators this usually is a minor
+           step or not necessary at all.
+        #. For proper registration, add the name of the operator to
+           :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting` in the file
+           ``pennylane/ops/qubit/attributes.py``.
+        #. Make sure that the operator's ``_check_batching`` method is called in all
+           places required. This is typically done automatically but needs to be assured.
+           See further below for details.
+
+        **Examples**
+
+        Consider an operator with the same matrix as ``qml.RX``. A basic variant of
+        ``compute_matrix`` (which will not be compatible with all autodifferentiation
+        frameworks or backpropagation) is
+
+        .. code-block:: python
+
+            @staticmethod
+            def compute_matrix(theta):
+                '''Broadcasting axis ends up in the wrong position.'''
+                c = qml.math.cos(theta / 2)
+                s = qml.math.sin(theta / 2)
+                return qml.math.array([[c, -1j * s], [-1j * s, c]])
+
+        If we passed a broadcasted argument ``theta`` of shape ``(batch_size,)`` to this method,
+        which would have one instead of zero dimensions, ``cos`` and ``sin`` would correctly
+        be applied elementwise.
+        We would also obtain the correct matrix with shape ``(2, 2, batch_size)``.
+        However, the broadcasting axis needs to be the *first* axis by convention, so that we need
+        to move the broadcasting axis--if it exists--to the front before returning the matrix:
+
+        .. code-block:: python
+
+            @staticmethod
+            def compute_matrix(theta):
+                '''Broadcasting axis ends up in the correct leading position.'''
+                c = qml.math.cos(theta / 2)
+                s = qml.math.sin(theta / 2)
+                mat = qml.math.array([[c, -1j * s], [-1j * s, c]])
+                # Check whether the input has a broadcasting axis
+                if qml.math.ndim(theta)==1:
+                    # Move the broadcasting axis to the first position
+                    return qml.math.moveaxis(mat, 2, 0)
+                return mat
+
+        Adapting ``compute_eigvals`` to broadcasting looks similar.
+
+        Usually no major changes are required for ``compute_decomposition``, but we need
+        to take care of the correct mapping of input arguments to the operators in the
+        decomposition. As an example, consider the operator that represents a layer of
+        ``RX`` rotations with individual angles for each rotation. Without broadcasting,
+        it takes one onedimensional array, i.e. ``ndim_params=(1,)``.
+        Its decomposition, which is a convenient way to support this custom operation
+        on all devices that implement ``RX``, might look like this:
+
+        .. code-block:: python
+
+            @staticmethod
+            def compute_decomposition(theta, wires):
+                '''Iterate over the first axis of theta.'''
+                decomp_ops = [qml.RX(x, wires=w) for x, w in zip(theta, wires)]
+                return decomp_ops
+
+        If ``theta`` is a broadcasted argument, its first axis is the broadcasting
+        axis and we would like to iterate over the *second* axis within the ``for``
+        loop instead. This is easily achieved by adding a transposition of ``theta``
+        that switches the axes in this case. Conveniently this does not have any
+        effect in the non-broadcasted case, so that we do not need to handle two
+        cases separately.
+
+        .. code-block:: python
+
+            @staticmethod
+            def compute_decomposition(theta, wires):
+                '''Iterate over the last axis of theta, which is also the first axis
+                or the second axis without and with broadcasting, respectively.'''
+                decomp_ops = [qml.RX(x, wires=w) for x, w in zip(qml.math.T(theta), wires)]
+                return decomp_ops
+
+        **The ``_check_batching`` method**
+
+        Each operator determines whether it is used with a batch of parameters within
+        the ``_check_batching`` method, by comparing the shape of the input data to
+        the expected shape. Therefore, it is necessary to call ``_check_batching`` on
+        any new input parameters passed to the operator. By default, any class inheriting
+        from :class:`~.operation.Operator` will do so within its ``__init__`` method, and
+        other objects may do so when updating the data of the ``Operator``.
+
+        ``_check_batching`` modifies the following class attributes:
+
+        - ``_ndim_params``: The number of dimensions of the parameters passed to
+          ``_check_batching``. For an ``Operator`` that does _not_ set the ``ndim_params``
+          attribute, ``_ndim_params`` is used as a surrogate, interpreting any parameters
+          as "not broadcasted". This attribute should be understood as temporary and likely
+          should not be used in other contexts.
+
+        - ``_batch_size``: If the ``Operator`` is broadcasted: The batch size/size of the
+          broadcasting axis. If it is not broadcasted: ``None``. An ``Operator`` that does
+          not support broadcasting will report to not be broadcasted independently of the
+          input.
+
+        Both attributes are not defined if ``_check_batching`` is not called. Therefore it
+        *needs to be called* within custom ``__init__`` implementations, either directly
+        or by calling ``Operator.__init__``.
     """
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 

@@ -664,6 +664,17 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Documentation</h3>
 
+* Added documentation on parameter broadcasting regarding both its usage and technical aspects
+  [#3356](https://github.com/PennyLaneAI/pennylane/pull/3356)
+
+  The [quickstart guide on circuits](https://docs.pennylane.ai/en/stable/introduction/circuits.html#parameter-broadcasting-in-qnodes)
+  as well as the the documentation of
+  [QNodes](https://docs.pennylane.ai/en/stable/code/api/pennylane.QNode.html) and
+  [Operators](https://docs.pennylane.ai/en/stable/code/api/pennylane.operation.Operator.html)
+  now contain introductions and details on parameter broadcasting. The QNode documentation
+  mostly contains usage details, the Operator documentation is concerned with implementation
+  details and a guide to support broadcasting in custom operators.
+
 * Corrects the return type statements of gradient and Hessian transforms, as well as a series
   of other functions that are a `batch_transform`.
   [(#3476)](https://github.com/PennyLaneAI/pennylane/pull/3476)
