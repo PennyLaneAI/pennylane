@@ -216,6 +216,21 @@ class Pow(SymbolicOp):
 
         super().__init__(base, do_queue=do_queue, id=id)
 
+        if isinstance(self.z, int) and self.z > 0:
+            if (
+                base_pauli_rep := getattr(
+                    self.base, "_pauli_rep", None
+                )  # pylint: disable=protected-access
+            ) is not None:
+                pr = qml.pauli.PauliSentence({})
+                for _ in range(self.z):
+                    pr = pr * base_pauli_rep
+                self._pauli_rep = pr
+            else:
+                self._pauli_rep = None
+        else:
+            self._pauli_rep = None
+
     def __repr__(self):
         return (
             f"({self.base})**{self.z}"

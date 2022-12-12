@@ -104,18 +104,18 @@ def defer_measurements(tape):
             measured_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
-            control_wire = [measured_wires[m_id] for m_id in op.meas_val.measurements]
-            for value in op.meas_val.branches.values():
-                if value == op.meas_val.control_value:
-                    if op.meas_val.control_value == 0:
-                        qml.PauliX(Wires(control_wire))
-
-                    ctrl(
-                        lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
-                        control=Wires(control_wire),
-                    )()
-
-                    if op.meas_val.control_value == 0:
-                        qml.PauliX(Wires(control_wire))
+            _add_control_gate(op, measured_wires)
         else:
             apply(op)
+
+
+def _add_control_gate(op, measured_wires):
+    """Helper function to add control gates"""
+    control = [measured_wires[m_id] for m_id in op.meas_val.measurement_ids]
+    for branch, value in op.meas_val._items():  # pylint: disable=protected-access
+        if value:
+            ctrl(
+                lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
+                control=Wires(control),
+                control_values=branch,
+            )()
