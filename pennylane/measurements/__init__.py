@@ -75,8 +75,8 @@ obtained of a given state:
         def __copy__(self):
             return CountState(state=self.state)
 
-The measurement process in this example makes use of :func:`~pennylane.counts`, which is a
-measurement process in pennylane which returns a dictionary containing the number of times a quantum
+The measurement process in this example uses the of :func:`~pennylane.counts` function, which is a
+measurement process which returns a dictionary containing the number of times a quantum
 state has been sampled.
 
 .. note::
