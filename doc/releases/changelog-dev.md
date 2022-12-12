@@ -6,6 +6,72 @@
 
 <h4>New operators and such</h4>
 
+* Support for getting the ZX calculus graph of a circuit with the PyZX framework and converting
+  a PyZX graph back into a PennyLane circuit.
+  [#3446](https://github.com/PennyLaneAI/pennylane/pull/3446)
+  
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.transforms.to_zx
+  @qml.qnode(device=dev)
+  def circuit(p):
+      qml.RZ(p[0], wires=1),
+      qml.RZ(p[1], wires=1),
+      qml.RX(p[2], wires=0),
+      qml.PauliZ(wires=0),
+      qml.RZ(p[3], wires=1),
+      qml.PauliX(wires=1),
+      qml.CNOT(wires=[0, 1]),
+      qml.CNOT(wires=[1, 0]),
+      qml.SWAP(wires=[0, 1]),
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+  ```pycon
+  >>> params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
+  >>> circuit(params)
+  Graph(20 vertices, 23 edges)
+  ```
+  
+* Added ability to create expressions from mid-circuit measurements.
+  [#3159](https://github.com/PennyLaneAI/pennylane/pull/3159)
+
+  ```python
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.Hadamard(wires=1)
+      m0 = qml.measure(wires=0)
+      m1 = qml.measure(wires=1)
+      combined = 2 * m1 + m0
+      qml.cond(combined == 2, qml.RX)(1.3, wires=2)
+      return qml.probs(wires=2)
+  ```
+  ```pycon 
+  >>> circuit()
+  [0.90843735 0.09156265]  
+  ```
+
+* New gradient transform `qml.gradients.spsa_grad` based on the idea of SPSA.
+  [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
+
+  This new transform allows users to compute a single estimate of a quantum gradient
+  using simultaneous perturbation of parameters and a stochastic approximation.
+  Given some QNode `circuit` that takes, say, an argument `x`, the approximate
+  gradient can be computed via
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> x = pnp.array(0.4, requires_grad=True)
+  >>> @qml.qnode(dev)
+  ... def circuit(x):
+  ...     qml.RX(x, 0)
+  ...     qml.RX(x, 1)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> grad_fn = qml.gradients.spsa_grad(circuit, h=0.1, num_directions=1)
+  >>> grad_fn(x)
+  array(-0.38876964)
+  ```
+
 * The controlled CZ gate and Hadamard gate are now available via `qml.CCZ` and `qml.CH`, respectively.
   [(#3408)](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
@@ -227,8 +293,134 @@
   >>> qml.grad(qml.qinfo.purity(circuit, wires=[0]))(param)
   -0.5
   ```
+  
+* Added operation `qml.THadamard`, which is the qutrit Hadamard gate. The operation accepts a `subspace`
+  keyword argument which determines which variant of the qutrit Hadamard to use.
+  [#3340](https://github.com/PennyLaneAI/pennylane/pull/3340)
+
+* New operation `Evolution` defines the exponential of an operator $\hat{O}$ of the form $e^{ix\hat{O}}$, with a single 
+  trainable parameter, x. Limiting to a single trainable parameter allows the use of `qml.gradient.param_shift` to 
+  find the gradient with respect to the parameter x.
+  [(#3375)](https://github.com/PennyLaneAI/pennylane/pull/3375)
+
+  This example circuit uses the `Evolution` operation to define $e^{-\frac{i}{2}\phi\hat{\sigma}_x}$ and finds a 
+  gradient using parameter shift:
+
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  
+  @qml.qnode(dev, diff_method=qml.gradients.param_shift)
+  def circuit(phi):
+      Evolution(qml.PauliX(0), -.5 * phi)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  
+  If we run this circuit, we will get the following output
+
+  ```pycon
+  >>> phi = np.array(1.2)
+  >>> circuit(phi)
+  tensor(0.36235775, requires_grad=True)
+  >>> qml.grad(circuit)(phi)
+  -0.9320390495504149
+  ```
+
 
 <h4>(Experimental) Return types project</h4>
+
+<h3>Improvements</h3>
+
+* The `qml.is_pauli_word` now supports instances of `Hamiltonian`.
+  [(#3389)](https://github.com/PennyLaneAI/pennylane/pull/3389)
+
+* Support calling `qml.probs()`, `qml.counts()` and `qml.sample()` with no arguments to measure all
+  wires. Calling any measurement with an empty wire list will raise an error.
+  [#3299](https://github.com/PennyLaneAI/pennylane/pull/3299)
+
+* Made `gradients.finite_diff` more convenient to use with custom data type observables/devices.
+  [(#3426)](https://github.com/PennyLaneAI/pennylane/pull/3426)
+
+* The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency.
+  [(#3284)](https://github.com/PennyLaneAI/pennylane/pull/3284)
+
+* Added more input validation to `hamiltonian_expand` such that Hamiltonian objects with no terms raise an error.
+  [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
+
+* Continuous integration checks are now performed for Python 3.11 and Torch v1.13. Python 3.7 is dropped.
+  [(#3276)](https://github.com/PennyLaneAI/pennylane/pull/3276)
+
+* `qml.Tracker` now also logs results in `tracker.history` when tracking execution of a circuit.
+   [(#3306)](https://github.com/PennyLaneAI/pennylane/pull/3306)
+
+* Improve performance of `Wires.all_wires`.
+  [(#3302)](https://github.com/PennyLaneAI/pennylane/pull/3302)
+
+* A representation has been added to the `Molecule` class.
+  [(#3364)](https://github.com/PennyLaneAI/pennylane/pull/3364)
+
+* Add detail to the error message when the `insert` transform
+  fails to diagonalize non-qubit-wise-commuting observables.
+  [(#3381)](https://github.com/PennyLaneAI/pennylane/pull/3381)
+
+* Extended the `qml.equal` function to `Hamiltonian` and `Tensor` objects.
+  [(#3390)](https://github.com/PennyLaneAI/pennylane/pull/3390)
+
+* Remove private `_wires` setter from the `Controlled.map_wires` method.
+  [(#3405)](https://github.com/PennyLaneAI/pennylane/pull/3405)
+
+* `QuantumTape._process_queue` has been moved to `qml.queuing.process_queue` to disentangle
+  its functionality from the `QuantumTape` class.
+  [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
+
+* Adds `qml.tape.make_qscript` for converting a quantum function into a quantum script.
+  Replaces `qml.transforms.make_tape` with `make_qscript`.
+  [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
+
+* Add a `_pauli_rep` attribute to operators to integrate the new Pauli arithmetic classes with native PennyLane objects.
+  [(#3443)](https://github.com/PennyLaneAI/pennylane/pull/3443)
+
+* Extended the functionality of `qml.matrix` to qutrits.
+  [(#3460)](https://github.com/PennyLaneAI/pennylane/pull/3460)
+
+* File `qcut.py` in `qml.transforms` reorganized into multiple files in `qml.transforms.qcut`
+  [3413](https://github.com/PennyLaneAI/pennylane/pull/3413)
+
+* Add a UserWarning when creating a `Tensor` object with overlapping wires,
+  informing that this can in some cases lead to undefined behaviour.
+  [(#3459)](https://github.com/PennyLaneAI/pennylane/pull/3459)
+
+* Extended the `qml.equal` function to `Controlled` and `ControlledOp` objects.
+  [(#3463)](https://github.com/PennyLaneAI/pennylane/pull/3463)
+
+* Replace (almost) all instances of `with QuantumTape()` with `QuantumScript` construction.
+  [(#3454)](https://github.com/PennyLaneAI/pennylane/pull/3454)
+  
+* Added `validate_subspace` static method to `qml.Operator` to check the validity of the subspace of certain
+  qutrit operations.
+  [#3340](https://github.com/PennyLaneAI/pennylane/pull/3340)
+
+* Extended the `qml.equal` function to `Pow`, `SProd`, `Exp` and `Adjoint` objects.
+  [(#3471)](https://github.com/PennyLaneAI/pennylane/pull/3471)
+
+* Adds support for devices disregarding observable grouping indices in Hamiltonians through
+  the optional `use_grouping` attribute.
+  [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
+
+* Updated `zyz_decomposition` function such that it now supports broadcast operators. This
+  means that single-qubit `QubitUnitary` operators, instantiated from a batch of unitaries,
+  can now be decomposed.
+  [(#3477)](https://github.com/PennyLaneAI/pennylane/pull/3477)
+
+* Reduce usage of `MeasurementProcess.return_type`. Use `isinstance` checks instead.
+  [(#3399)](https://github.com/PennyLaneAI/pennylane/pull/3399)
+
+* Improved the performance of executing circuits under the `jax.vmap` transformation, which can now leverage the batch-execution capabilities of some devices. [(#3452)](https://github.com/PennyLaneAI/pennylane/pull/3452)
+
+* The tolerance for converting openfermion Hamiltonian complex coefficients to real is modified to
+  prevent conversion errors.
+  [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
+
+<h4>Return types project</h4>
 
 * The autograd interface for the new return types now supports devices with shot vectors.
   [(#3374)](https://github.com/PennyLaneAI/pennylane/pull/3374)
@@ -492,6 +684,9 @@
   can now be decomposed.
   [(#3477)](https://github.com/PennyLaneAI/pennylane/pull/3477)
 
+* Update `OperationRecorder` to inherit from `AnnotatedQueue` and `QuantumScript` instead of `QuantumTape`.
+  [(#3496)](https://github.com/PennyLaneAI/pennylane/pull/3496)
+
 <h3>Breaking changes</h3>
 
 * Python 3.7 support is no longer maintained. PennyLane will be maintained for versions 3.8 and up.
@@ -572,6 +767,17 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 <h3>Documentation</h3>
 
+* Added documentation on parameter broadcasting regarding both its usage and technical aspects
+  [#3356](https://github.com/PennyLaneAI/pennylane/pull/3356)
+
+  The [quickstart guide on circuits](https://docs.pennylane.ai/en/stable/introduction/circuits.html#parameter-broadcasting-in-qnodes)
+  as well as the the documentation of
+  [QNodes](https://docs.pennylane.ai/en/stable/code/api/pennylane.QNode.html) and
+  [Operators](https://docs.pennylane.ai/en/stable/code/api/pennylane.operation.Operator.html)
+  now contain introductions and details on parameter broadcasting. The QNode documentation
+  mostly contains usage details, the Operator documentation is concerned with implementation
+  details and a guide to support broadcasting in custom operators.
+
 * Corrects the return type statements of gradient and Hessian transforms, as well as a series
   of other functions that are a `batch_transform`.
   [(#3476)](https://github.com/PennyLaneAI/pennylane/pull/3476)
@@ -581,6 +787,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 * More mentions of diagonalizing gates for all relevant operations have been corrected. The docstrings for `compute_eigvals` used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis.
   [(#3409)](https://github.com/PennyLaneAI/pennylane/pull/3409)
+
+* Adds warnings about using ``dill`` to pickle and unpickle datasets. 
+  [#3505](https://github.com/PennyLaneAI/pennylane/pull/3505)
 
 <h3>Bug fixes</h3>
 
@@ -616,8 +825,10 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso
 Juan Miguel Arrazola
 Utkarsh Azad
+Samuel Banning
 Astral Cai
 Ahmed Darwish
 Isaac De Vlugt
@@ -629,6 +840,7 @@ Edward Jiang
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Mudit Pandey
 Matthew Silverman
 Jay Soni
 Antal Száva

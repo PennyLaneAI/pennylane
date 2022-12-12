@@ -517,6 +517,16 @@ class TestOperatorConstruction:
         assert op.wires == Wires([0, 1, 2])
         assert mapped_op.wires == Wires([10, 1, 12])
 
+    def test_default_pauli_rep(self):
+        """Test that the default _pauli_rep attribute is None"""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp(wires=0)
+        assert op._pauli_rep is None
+
 
 class TestOperationConstruction:
     """Test custom operations construction."""
@@ -625,7 +635,7 @@ class TestOperationConstruction:
 
         x = 0.654
         op = DummyOp(x, wires=0)
-        assert op.parameter_frequencies == (0.4,)
+        assert op.parameter_frequencies == [(0.4,)]
 
     def test_frequencies_default_multi_param(self):
         """Test that an operation with default parameter frequencies and multiple

@@ -83,6 +83,8 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.pattern_matching
+    ~transforms.to_zx
+    ~transforms.from_zx
 
 There are also utility functions that take a circuit and return a DAG.
 
@@ -232,4 +234,5 @@ from .tape_expand import (
 from .transpile import transpile
 from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
+from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
