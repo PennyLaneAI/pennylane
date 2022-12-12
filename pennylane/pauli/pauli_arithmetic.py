@@ -120,6 +120,11 @@ class PauliWord(dict):
         """Copy the PauliWord instance."""
         return PauliWord(dict(self.items()))
 
+    def __deepcopy__(self, memo):
+        res = self.__copy__()
+        memo[id(self)] = res
+        return res
+
     def __setitem__(self, key, item):
         """Restrict setting items after instantiation."""
         raise TypeError("PauliWord object does not support assignment")
@@ -254,10 +259,28 @@ class PauliSentence(dict):
 
         return larger_ps
 
+    def __copy__(self):
+        """Copy the PauliSentence instance."""
+        copied_ps = {}
+        for pw, coeff in self.items():
+            copied_ps[copy(pw)] = coeff
+        return PauliSentence(copied_ps)
+
+    def __deepcopy__(self, memo):
+        res = self.__copy__()
+        memo[id(self)] = res
+        return res
+
     def __mul__(self, other):
         """Multiply two Pauli sentences by iterating over each sentence and multiplying
         the Pauli words pair-wise"""
         final_ps = PauliSentence()
+
+        if len(self) == 0:
+            return copy(other)
+
+        if len(other) == 0:
+            return copy(self)
 
         for pw1 in self:
             for pw2 in other:

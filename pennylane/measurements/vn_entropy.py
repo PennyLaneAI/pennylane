@@ -89,8 +89,6 @@ class VnEntropyMP(StateMeasurement):
             where the instance has to be identified
     """
 
-    method_name = "vn_entropy"
-
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,

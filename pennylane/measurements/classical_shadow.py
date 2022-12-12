@@ -233,8 +233,6 @@ class ClassicalShadowMP(MeasurementTransform):
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
 
-    method_name = "classical_shadow"
-
     def __init__(self, *args, seed=None, **kwargs):
         self.seed = seed
         super().__init__(*args, **kwargs)
@@ -349,8 +347,6 @@ class ShadowExpvalMP(MeasurementTransform):
             ``k=1`` corresponds to simply taking the mean over all measurements.
         kwargs (dict[Any, Any]): Additional keyword arguments passed to :class:`~.pennylane.measurements.MeasurementProcess`
     """
-
-    method_name = "shadow_expval"
 
     def __init__(self, *args, H, seed=None, k=1, **kwargs):
         self.seed = seed
