@@ -368,6 +368,9 @@
 * Remove private `_wires` setter from the `Controlled.map_wires` method.
   [(#3405)](https://github.com/PennyLaneAI/pennylane/pull/3405)
 
+* QPE can now accept a target operator instead of a matrix and target wires pair.
+  [#3373](https://github.com/PennyLaneAI/pennylane/pull/3373)
+
 * `QuantumTape._process_queue` has been moved to `qml.queuing.process_queue` to disentangle
   its functionality from the `QuantumTape` class.
   [(#3401)](https://github.com/PennyLaneAI/pennylane/pull/3401)
@@ -405,6 +408,9 @@
 * Adds support for devices disregarding observable grouping indices in Hamiltonians through
   the optional `use_grouping` attribute.
   [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
+
+* Add the optional argument lazy=True to functions `qml.s_prod`, `qml.prod` and `qml.op_sum` to allow simplification.
+  [(#3483)](https://github.com/PennyLaneAI/pennylane/pull/3483)
 
 * Updated `zyz_decomposition` function such that it now supports broadcast operators. This
   means that single-qubit `QubitUnitary` operators, instantiated from a batch of unitaries,
@@ -815,7 +821,11 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * The `pad_with` argument in the `qml.AmplitudeEmbedding` template is now compatible with all interfaces
   [(#3392)](https://github.com/PennyLaneAI/pennylane/pull/3392)
 
-* Fixed a bug where a QNode returning `qml.sample` would produce incorrect results when run on a device defined with a shot vector.
+* `Operator.pow` now queues its constituents by default.
+  [(#3373)](https://github.com/PennyLaneAI/pennylane/pull/3373)
+
+* Fixed a bug where a QNode returning `qml.sample` would produce incorrect results when
+  run on a device defined with a shot vector.
   [(#3422)](https://github.com/PennyLaneAI/pennylane/pull/3422)
 
 * The `qml.data` module now works as expected on Windows.
@@ -840,6 +850,7 @@ Edward Jiang
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Kevin Shen
 Mudit Pandey
 Matthew Silverman
 Jay Soni
