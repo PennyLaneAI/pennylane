@@ -230,6 +230,7 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
 @_equal.register
 # pylint: disable=unused-argument, protected-access
 def _equal_sum(op1: Sum, op2: Sum, **kwargs):
+    """Determine whether two Sum objects are equal"""
     sorted_ops1 = op1._sort(op1.operands)
     sorted_ops2 = op2._sort(op2.operands)
 

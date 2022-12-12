@@ -1400,13 +1400,14 @@ class TestSumComparisons:
 
     @pytest.mark.parametrize(("base_list1", "base_list2", "res"), SINGLE_WIRE_BASES)
     def test_sum_comparisons_single_wire_bases(self, base_list1, base_list2, res):
-        """Test comparison of lists of wires where all operators have a single wire"""
+        """Test comparison of sums of operators where all operators have a single wire"""
         op1 = qml.op_sum(*base_list1)
         op2 = qml.op_sum(*base_list2)
         assert qml.equal(op1, op2) == res
 
     @pytest.mark.parametrize(("base_list1", "base_list2", "res"), MULTI_WIRE_BASES)
     def test_sum_with_multi_wire_operations(self, base_list1, base_list2, res):
+        """Test comparison of sums of operators where some operators act on multiple wires"""
         op1 = qml.op_sum(*base_list1)
         op2 = qml.op_sum(*base_list2)
         assert qml.equal(op1, op2) == res
