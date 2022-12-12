@@ -16,6 +16,7 @@ This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
 import copy
+import warnings
 from threading import RLock
 
 import pennylane as qml
@@ -354,6 +355,10 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
 
     def __enter__(self):
+        warnings.warn(
+            "``with QuantumTape()`` is deprecated. Please initialize tapes directly if queuing is not needed, or use ``with qml.queuing.AnnotatedQueue()`` to queue operations.",
+            UserWarning,
+        )
         QuantumTape._lock.acquire()
         try:
             if self.do_queue:

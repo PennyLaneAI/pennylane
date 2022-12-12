@@ -389,6 +389,12 @@ class TestConstruction:
         ):
             tape.set_parameters([x] + rot + [y])
 
+    def test_with_tape_raises_warning(self):
+        """Test that with QuantumTape() raises a deprecation warning."""
+        with pytest.warns(UserWarning, match=r"``with QuantumTape\(\)`` is deprecated"):
+            with QuantumTape() as tape:
+                qml.PauliX(0)
+
 
 class TestIteration:
     """Test the capabilities related to iterating over tapes."""
