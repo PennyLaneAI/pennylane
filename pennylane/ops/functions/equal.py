@@ -24,8 +24,7 @@ from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, Sum, Prod
-
+from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
 
 
 def equal(
@@ -211,10 +210,10 @@ def _equal_operators(
 
 @_equal.register
 # pylint: disable=unused-argument, protected-access
-def _equal_prod(op1: Prod, op2: Prod, **kwargs):
-    """Determine whether two Prod objects are equal"""
+def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
+    """Determine whether two Prod or Sum objects are equal"""
 
-    # sorts by wire indicies while respecting commutivity
+    # organizes by wire indicies while respecting commutation relations
     sorted_ops1 = op1._sort(op1.operands)
     sorted_ops2 = op2._sort(op2.operands)
 
@@ -241,19 +240,6 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
         raise NotImplementedError(
             f"Unable to compare base operators {op1.base} and {op2.base}."
         ) from e
-
-
-@_equal.register
-# pylint: disable=unused-argument, protected-access
-def _equal_sum(op1: Sum, op2: Sum, **kwargs):
-    """Determine whether two Sum objects are equal"""
-    sorted_ops1 = op1._sort(op1.operands)
-    sorted_ops2 = op2._sort(op2.operands)
-
-    if len(sorted_ops1) != len(sorted_ops2):
-        return False
-
-    return np.all([qml.equal(o1, o2, **kwargs) for o1, o2 in zip(sorted_ops1, sorted_ops2)])
 
 
 @_equal.register
