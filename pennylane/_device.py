@@ -1011,17 +1011,6 @@ class Device(abc.ABC):
             else:
                 observable_name = o.name
 
-                if issubclass(o.__class__, Operation) and o.inverse:
-                    # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                    supports_inv = self.capabilities().get(
-                        "supports_inverse_operations", False
-                    ) or self.capabilities().get("inverse_operations", False)
-                    if not supports_inv:
-                        raise DeviceError(
-                            f"The inverse of gates are not supported on device {self.short_name}"
-                        )
-                    observable_name = o.base_name
-
                 if not self.supports_observable(observable_name):
                     raise DeviceError(
                         f"Observable {observable_name} not supported on device {self.short_name}"

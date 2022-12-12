@@ -2015,7 +2015,7 @@ class QubitDevice(Device):
         expanded_ops = []
         for op in reversed(tape.operations):
             if op.num_params > 1:
-                if not isinstance(op, qml.Rot) or op.inverse:
+                if not isinstance(op, qml.Rot):
                     raise qml.QuantumFunctionError(
                         f"The {op.name} operation is not supported using "
                         'the "adjoint" differentiation method'

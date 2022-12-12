@@ -765,9 +765,6 @@ class Operator(abc.ABC):
         "my_label"
         >>> op.label(decimals=2, base_label="my_label")
         "my_label\n(1.23)"
-        >>> op.inv()
-        >>> op.label()
-        "RX⁻¹"
 
         If the operation has a matrix-valued parameter and a cache dictionary is provided,
         unique matrices will be cached in the ``'matrices'`` key list. The label will contain
@@ -1245,12 +1242,7 @@ class Operator(abc.ABC):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        decomp_fn = (
-            qml.adjoint(self.decomposition, lazy=False)
-            if getattr(self, "inverse", False)
-            else self.decomposition
-        )
-        qscript = qml.tape.make_qscript(decomp_fn)()
+        qscript = qml.tape.make_qscript(self.decomposition)()
 
         if not self.data:
             # original operation has no trainable parameters
@@ -1496,68 +1488,8 @@ class Operation(Operator):
             "and parameter frequencies can not be computed as no generator is defined."
         )
 
-    @property
-    def inverse(self):
-        """Boolean determining if the inverse of the operation was requested."""
-        return self._inverse
-
-    @inverse.setter
-    def inverse(self, boolean):
-        warnings.warn(
-            "In-place inversion with inverse is deprecated. Please use qml.adjoint or"
-            " qml.pow instead.",
-            UserWarning,
-        )
-        self._inverse = boolean
-
-    def inv(self):
-        """Inverts the operator.
-
-        This method concatenates a string to the name of the operation,
-        to indicate that the inverse will be used for computations.
-
-        Any subsequent call of this method will toggle between the original
-        operation and the inverse of the operation.
-
-        Returns:
-            :class:`Operator`: operation to be inverted
-        """
-        self.inverse = not self._inverse
-        return self
-
-    def matrix(self, wire_order=None):
-        canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
-
-        if self.inverse:
-            canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
-
-        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
-
-    def eigvals(self):
-        op_eigvals = super().eigvals()
-
-        return qml.math.conj(op_eigvals) if self.inverse else op_eigvals
-
-    @property
-    def base_name(self):
-        """If inverse is requested, this is the name of the original
-        operator to be inverted."""
-        return self.__class__.__name__
-
-    @property
-    def name(self):
-        """Name of the operator."""
-        return f"{self._name}.inv" if self.inverse else self._name
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        if self.inverse:
-            base_label = base_label or self.__class__.__name__
-            base_label += "⁻¹"
-        return super().label(decimals=decimals, base_label=base_label, cache=cache)
-
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
-        self._inverse = False
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
         # check the grad_recipe validity

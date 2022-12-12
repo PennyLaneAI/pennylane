@@ -16,7 +16,6 @@ This submodule defines the symbolic operation that stands for the power of an op
 """
 import copy
 from typing import Union
-from warnings import warn
 
 from scipy.linalg import fractional_matrix_power
 
@@ -109,28 +108,6 @@ class PowOperation(Operation):
     # until we add gradient support
     grad_method = None
 
-    def inv(self):
-        warn(
-            "In-place inversion with inv is deprecated. Please use qml.adjoint instead or qml.pow.",
-            UserWarning,
-        )
-        self.hyperparameters["z"] *= -1
-        self._name = f"{self.base.name}**{self.z}"
-        return self
-
-    @property
-    def inverse(self):
-        return False
-
-    @inverse.setter
-    def inverse(self, boolean):
-        if boolean is True:
-            raise NotImplementedError("The inverse can not be set for a power operator")
-
-    @property
-    def base_name(self):
-        return self._name
-
     @property
     def name(self):
         return self._name
@@ -205,11 +182,6 @@ class Pow(SymbolicOp):
         return object.__new__(Pow)
 
     def __init__(self, base=None, z=1, do_queue=True, id=None):
-
-        # incorporate base inverse attribute into the exponent
-        if getattr(base, "inverse", False):
-            base.inverse = False
-            z *= -1
 
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"

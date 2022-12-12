@@ -72,34 +72,6 @@ class TestToQasmUnitTests:
 
         assert res == expected
 
-    def test_native_inverse_gates(self):
-        """Test that a circuit containing inverse gates that are supported
-        natively by QASM, such as sdg, are correctly serialized."""
-        with qml.queuing.AnnotatedQueue() as q_circuit:
-            qml.S(wires=0)
-            qml.S(wires=0).inv()
-            qml.T(wires=0)
-            qml.T(wires=0).inv(),
-
-        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
-        res = circuit.to_openqasm()
-
-        expected = dedent(
-            """\
-            OPENQASM 2.0;
-            include "qelib1.inc";
-            qreg q[1];
-            creg c[1];
-            s q[0];
-            sdg q[0];
-            t q[0];
-            tdg q[0];
-            measure q[0] -> c[0];
-            """
-        )
-
-        assert res == expected
-
     def test_unused_wires(self):
         """Test that unused wires are correctly taken into account"""
         with qml.queuing.AnnotatedQueue() as q_circuit:
@@ -464,39 +436,6 @@ class TestQNodeQasmIntegrationTests:
         )
 
         res = qnode.qtape.to_openqasm()
-        assert res == expected
-
-    def test_native_inverse_gates(self):
-        """Test that a QNode containing inverse gates that are supported
-        natively by QASM, such as sdg, are correctly serialized."""
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def qnode():
-            qml.S(wires=0)
-            qml.S(wires=0).inv()
-            qml.T(wires=0)
-            qml.T(wires=0).inv()
-            return qml.expval(qml.PauliZ(0))
-
-        # construct the qnode circuit
-        qnode()
-        res = qnode.qtape.to_openqasm()
-
-        expected = dedent(
-            """\
-            OPENQASM 2.0;
-            include "qelib1.inc";
-            qreg q[1];
-            creg c[1];
-            s q[0];
-            sdg q[0];
-            t q[0];
-            tdg q[0];
-            measure q[0] -> c[0];
-            """
-        )
-
         assert res == expected
 
     def test_unused_wires(self):

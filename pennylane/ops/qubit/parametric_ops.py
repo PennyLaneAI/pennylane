@@ -125,7 +125,7 @@ class RX(Operation):
 
     def _controlled(self, wire):
         new_op = CRX(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return new_op
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -223,7 +223,7 @@ class RY(Operation):
 
     def _controlled(self, wire):
         new_op = CRY(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return new_op
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -361,7 +361,7 @@ class RZ(Operation):
 
     def _controlled(self, wire):
         new_op = CRZ(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return new_op
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -528,7 +528,7 @@ class PhaseShift(Operation):
 
     def _controlled(self, wire):
         new_op = ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return new_op
 
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
@@ -1415,7 +1415,7 @@ class Rot(Operation):
 
     def _controlled(self, wire):
         new_op = CRot(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return new_op
 
     def single_qubit_rot_angles(self):
         return self.data
@@ -1720,9 +1720,6 @@ class PauliRot(Operation):
         """
         pauli_word = self.hyperparameters["pauli_word"]
         op_label = base_label or ("R" + pauli_word)
-
-        if self.inverse:
-            op_label += "⁻¹"
 
         # TODO[dwierichs]: Implement a proper label for parameter-broadcasted operators
         if decimals is not None and self.batch_size is None:

@@ -205,7 +205,7 @@ def _equal_operators(
             if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
                 return False
 
-    return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
+    return True
 
 
 @_equal.register

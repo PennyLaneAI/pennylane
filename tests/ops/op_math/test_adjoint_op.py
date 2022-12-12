@@ -420,15 +420,6 @@ class TestMiscMethods:
 class TestAdjointOperation:
     """Test methods in the AdjointOperation mixin."""
 
-    @pytest.mark.parametrize(
-        "base, adjoint_base_name",
-        ((qml.PauliX(0), "Adjoint(PauliX)"), (qml.RX(1.2, wires=0), "Adjoint(RX)")),
-    )
-    def test_base_name(self, base, adjoint_base_name):
-        """Test the base_name property of AdjointOperation."""
-        op = Adjoint(base)
-        assert op.base_name == adjoint_base_name
-
     def test_generator(self):
         """Assert that the generator of an Adjoint is -1.0 times the base generator."""
         base = qml.RX(1.23, wires=0)
@@ -443,7 +434,7 @@ class TestAdjointOperation:
             Adjoint(1.0 * qml.PauliX(0)).generator()
 
     def test_single_qubit_rot_angles(self):
-
+        """Test the single_qubit_rot_angles of an adjoint gate are the negative of the base parameters."""
         param = 1.234
         base = qml.RX(param, wires=0)
         op = Adjoint(base)
@@ -471,60 +462,6 @@ class TestAdjointOperation:
         """Test the control_wires of an adjoint are the same as the base op."""
         op = Adjoint(qml.CNOT(wires=("a", "b")))
         assert op.control_wires == qml.wires.Wires("a")
-
-
-class TestInverse:
-    """Tests involving the inverse attribute."""
-
-    def test_base_inverted(self):
-        """Test when base is already inverted."""
-        base = qml.S(0).inv()
-        op = Adjoint(base)
-
-        assert op.inverse is True
-        assert base.inverse is True
-        assert op.name == "Adjoint(S.inv)"
-
-        assert qml.math.allclose(qml.matrix(op), qml.matrix(qml.S(0)))
-
-        decomp_adj_inv = op.expand().circuit
-        decomp = qml.S(0).expand().circuit
-
-        for op1, op2 in zip(decomp, decomp_adj_inv):
-            assert type(op1) == type(op2)
-            assert op1.data == op2.data
-            assert op1.wires == op2.wires
-
-    def test_inv_method(self):
-        """Test that calling inv on an Adjoint op defers to base op."""
-
-        base = qml.T(0)
-        op = Adjoint(base)
-        op.inv()
-
-        assert base.inverse is True
-        assert op.inverse is True
-        assert op.name == "Adjoint(T.inv)"
-
-        assert qml.math.allclose(qml.matrix(op), qml.matrix(qml.T(0)))
-        decomp_adj_inv = op.expand().circuit
-        decomp = qml.T(0).expand().circuit
-
-        for op1, op2 in zip(decomp, decomp_adj_inv):
-            assert type(op1) == type(op2)
-            assert op1.data == op2.data
-            assert op1.wires == op2.wires
-
-    def test_inverse_setter(self):
-        """Test the inverse getting updated by property setter."""
-        base = qml.T(0)
-        op = Adjoint(base)
-
-        assert base.inverse == op.inverse == False
-        op.inverse = True
-
-        assert base.inverse == op.inverse == True
-        assert op.name == "Adjoint(T.inv)"
 
 
 class TestAdjointOperationDiffInfo:

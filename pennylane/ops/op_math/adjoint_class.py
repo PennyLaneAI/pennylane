@@ -36,29 +36,6 @@ class AdjointOperation(Operation):
     class can be removed.
     """
 
-    # This inverse behavior only needs to temporarily patch behavior until in-place inversion is
-    # removed.
-
-    @property
-    def _inverse(self):
-        return self.base._inverse  # pylint: disable=protected-access
-
-    @_inverse.setter
-    def _inverse(self, boolean):
-        self.base._inverse = boolean  # pylint: disable=protected-access
-        # refresh name as base_name got updated.
-        self._name = f"Adjoint({self.base.name})"
-
-    def inv(self):
-        self.base.inv()
-        # refresh name as base_name got updated.
-        self._name = f"Adjoint({self.base.name})"
-        return self
-
-    @property
-    def base_name(self):
-        return self._name
-
     @property
     def name(self):
         return self._name
