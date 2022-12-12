@@ -70,7 +70,7 @@ obtained of a given state:
         def process_samples(self, samples, wire_order, shot_range, bin_size):
             counts_mp = qml.counts(wires=self._wires)
             counts = counts_mp.process_samples(samples, wire_order, shot_range, bin_size)
-            return 0 if self.state not in counts else counts[self.state]
+            return counts.get(self.state, 0)
 
         def __copy__(self):
             return CountState(state=self.state)
