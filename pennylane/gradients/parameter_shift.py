@@ -1740,7 +1740,7 @@ def param_shift(
     to use during autodifferentiation:
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
+    >>> @qml.qnode(dev, diff_method=qml.gradients.param_shift)
     ... def circuit(params):
     ...     qml.RX(params[0], wires=0)
     ...     qml.RY(params[1], wires=0)

@@ -24,7 +24,8 @@ from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, Sum
+from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, Sum, Prod
+
 
 
 def equal(
@@ -209,6 +210,21 @@ def _equal_operators(
 
 
 @_equal.register
+# pylint: disable=unused-argument, protected-access
+def _equal_prod(op1: Prod, op2: Prod, **kwargs):
+    """Determine whether two Prod objects are equal"""
+
+    # sorts by wire indicies while respecting commutivity
+    sorted_ops1 = op1._sort(op1.operands)
+    sorted_ops2 = op2._sort(op2.operands)
+
+    if len(sorted_ops1) != len(sorted_ops2):
+        return False
+
+    return np.all([qml.equal(o1, o2, **kwargs) for o1, o2 in zip(sorted_ops1, sorted_ops2)])
+
+
+@_equal.register
 def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
     # wires are ordered [control wires, operator wires, work wires]
@@ -338,7 +354,7 @@ def _(op1: MutualInfoMP, op2: MutualInfoMP, **kwargs):
 @_equal.register
 # pylint: disable=unused-argument
 def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **kwargs):
-    """Determine whether two ClassicalShadow objects are equal"""
+    """Determine whether two ShadowExpvalMP objects are equal"""
 
     wires_match = op1.wires == op2.wires
     H_match = op1.H == op2.H

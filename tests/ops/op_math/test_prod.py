@@ -679,12 +679,7 @@ class TestProperties:
             """Dummy op with None queue category"""
 
             _queue_category = None
-
-            def __init__(self, wires):
-                self._wires = qml.wires.Wires([wires])
-
-            def num_wires(self):
-                return len(self.wires)
+            num_wires = 1
 
         prod_op = prod(qml.Identity(wires=0), DummyOp(wires=0))
         assert prod_op._queue_category is None
@@ -728,6 +723,63 @@ class TestProperties:
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
         assert diag_prod_op.diagonalizing_gates() == []
+
+    op_pauli_reps = (
+        (
+            qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires="a")),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 1: "Y", "a": "Z"}): 1}),
+        ),
+        (
+            qml.prod(qml.PauliX(wires=0), qml.PauliX(wires=0)),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1}),
+        ),
+        (
+            qml.prod(
+                qml.PauliX(wires=0),
+                qml.PauliY(wires=0),
+                qml.PauliZ(wires="a"),
+                qml.PauliZ(wires="a"),
+            ),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1j}),
+        ),
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps)
+    def test_pauli_rep(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep
+
+    def test_pauli_rep_none(self):
+        """Test that None is produced if any of the terms don't have a _pauli_rep property."""
+        op = qml.prod(qml.PauliX(wires=0), qml.RX(1.23, wires=1))
+        assert op._pauli_rep is None
+
+    op_pauli_reps_nested = (
+        (
+            qml.prod(
+                qml.pow(qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)), z=3),
+                qml.pow(qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)), z=5),
+            ),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Y", 2: "Z"}): 1j}),
+        ),  # prod + pow
+        (
+            qml.prod(
+                qml.s_prod(
+                    -2j,
+                    qml.prod(
+                        qml.s_prod(0.5, qml.PauliX(wires=0)), qml.s_prod(2, qml.PauliZ(wires=1))
+                    ),
+                ),
+                qml.s_prod(3, qml.PauliY(wires=0)),
+            ),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Z"}): 6}),
+        ),  # prod + s_prod
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps_nested)
+    def test_pauli_rep_nested(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep
 
 
 class TestSimplify:
@@ -973,6 +1025,30 @@ class TestWrapperFunc:
         assert prod_class_op.id == prod_func_op.id
         assert prod_class_op.wires == prod_func_op.wires
         assert prod_class_op.parameters == prod_func_op.parameters
+
+    def test_lazy_mode(self):
+        """Test that by default, the operator is simply wrapped in `Prod`, even if a simplification exists."""
+        op = prod(qml.S(0), Prod(qml.S(1), qml.T(1)))
+
+        assert isinstance(op, Prod)
+        assert len(op) == 2
+
+    def test_non_lazy_mode(self):
+        """Test the lazy=False keyword."""
+        op = prod(qml.S(0), Prod(qml.S(1), qml.T(1)), lazy=False)
+
+        assert isinstance(op, Prod)
+        assert len(op) == 3
+
+    def test_nonlazy_mode_queueing(self):
+        """Test that if a simpification is accomplished, the metadata for the original op
+        and the new simplified op is updated."""
+        with qml.queuing.AnnotatedQueue() as q:
+            prod1 = prod(qml.S(1), qml.T(1))
+            prod2 = prod(qml.S(0), prod1, lazy=False)
+
+        assert q[prod1]["owner"] == prod2
+        assert prod1 in q[prod2]["owns"]
 
 
 class TestIntegration:
