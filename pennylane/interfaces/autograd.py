@@ -123,6 +123,9 @@ def _execute(
     with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
+    # If tuple passed in, use list temporarily
+    res = list(res)
+
     for i, r in enumerate(res):
         if any(
             m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
@@ -142,7 +145,7 @@ def _execute(
         else:
             res[i] = qml.math.toarray(res[i])
 
-    return res, jacs
+    return tuple(res), jacs
 
 
 def vjp(
