@@ -136,7 +136,7 @@ The quantum state before the measurement will be:
             \end{bmatrix}
 
 When :math:`\theta = 1.23`, the probability of obtaining the state
-:math:`\begin{bmatrix} 1 \\ 0 \end{bmatrix}` is :math:`{\sin(\theta/2)}^2 = 0.333`. Using 10000 shots
+:math:`\begin{bmatrix} 1 \\ 0 \end{bmatrix}` is :math:`\sin^2(\theta/2) = 0.333`. Using 10000 shots
 we should obtain the excited state 3333 times approximately.
 
 >>> circuit(1.23)
