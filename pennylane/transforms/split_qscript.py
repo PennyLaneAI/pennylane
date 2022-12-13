@@ -247,6 +247,8 @@ def split_qscript(qscript: QuantumScript, group=True):
                     results.append((idx, res))
                 continue
             # qscript_res contains multiple results
+            if qml.active_return():
+                qscript_res = qml.math.stack(*qscript_res)
             qscript_res = qml.math.transpose(qscript_res)  # needed when batching
             for q_res, idxs in zip(qscript_res, qscript_idxs):
                 for idx, coeff in idxs:
