@@ -130,7 +130,6 @@ class MeasurementProcess(ABC):
         eigvals=None,
         id=None,
     ):
-        self.obs = obs
         self.id = id
 
         if wires is not None:
@@ -138,7 +137,12 @@ class MeasurementProcess(ABC):
                 raise ValueError("Cannot set an empty list of wires.")
             if obs is not None:
                 raise ValueError("Cannot set the wires if an observable is provided.")
-
+            if len(wires) == 1:
+                self.obs = qml.PauliZ(wires[0])
+            else:
+                self.obs = qml.prod(*[qml.PauliZ(w) for w in wires])
+        else:
+            self.obs = obs
         # _wires = None indicates broadcasting across all available wires.
         # It translates to the public property wires = Wires([])
         self._wires = wires
