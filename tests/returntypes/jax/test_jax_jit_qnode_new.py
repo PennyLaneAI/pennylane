@@ -2298,3 +2298,28 @@ class TestReturnHessian:
 
         assert isinstance(hess[1], jax.numpy.ndarray)
         assert hess[1].shape == (4, 2, 2)
+
+
+@pytest.mark.parametrize("hessian", hessian_fn)
+def test_jax_device_hessian_shots(hessian, tol):
+    """The hessian of multiple measurements with a multiple param array return a single array."""
+    dev = qml.device("default.qubit.jax", wires=1, shots=10000)
+
+    @jax.jit
+    @qml.qnode(dev, interface="jax", diff_method="parameter-shift", max_diff=2)
+    def circuit(x):
+        qml.RY(x[0], wires=0)
+        qml.RX(x[1], wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    x = jax.numpy.array([1.0, 2.0])
+    a, b = x
+
+    hess = jax.jit(hessian(circuit))(x)
+
+    expected_hess = [
+        [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
+        [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)],
+    ]
+    shots_tol = 0.1
+    assert np.allclose(hess, expected_hess, atol=shots_tol, rtol=0)
