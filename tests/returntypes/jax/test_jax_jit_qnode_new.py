@@ -2231,10 +2231,7 @@ class TestReturnHessian:
         assert isinstance(hess, tuple)
         assert len(hess) == 2
         assert isinstance(hess[0], jax.numpy.ndarray)
-        assert hess[0].shape == (
-            2,
-            2,
-        )
+        assert hess[0].shape == (2, 2)
 
         assert isinstance(hess[1], jax.numpy.ndarray)
         assert hess[1].shape == (4, 2, 2)
@@ -2297,10 +2294,7 @@ class TestReturnHessian:
         assert isinstance(hess, tuple)
         assert len(hess) == 2
         assert isinstance(hess[0], jax.numpy.ndarray)
-        assert hess[0].shape == (
-            2,
-            2,
-        )
+        assert hess[0].shape == (2, 2)
 
         assert isinstance(hess[1], jax.numpy.ndarray)
         assert hess[1].shape == (4, 2, 2)
