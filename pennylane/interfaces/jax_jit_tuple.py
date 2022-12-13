@@ -239,9 +239,6 @@ def _execute_bwd_tuple(
                     jacs = res_processing_fn(jacs)
                     all_jacs.append(jacs)
 
-                if len(all_jacs) == 1 and len(tangents[0]) > 1:
-                    all_jacs = all_jacs[0]
-
                 jvps = _compute_jvps(all_jacs, tangents[0], multi_measurements)
         else:
             # Gradient function is a device method
