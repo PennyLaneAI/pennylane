@@ -6,23 +6,7 @@
 
 <h4>Custom measurement processes</h4>
 
-TODO code example and more user-friendly descriptions
-
-* Support custom measurement processes:
-  - `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
-    They contain an abstract method to process samples/quantum states/quantum scripts. These classes
-    make it easier for users to define their own `MeasurementProcess` by compartmentalizing the different
-    types of measurements into three simple categories. 
-
-  - Add `ExpectationMP`, `SampleMP`, `VarianceMP`, `ProbabilityMP`, `CountsMP`, `StateMP`,
-    `VnEntropyMP`, `MutualInfoMP`, `ClassicalShadowMP` and `ShadowExpvalMP` classes. These make use of the 
-    new subclasses of `MeasurementProcess` to implement the well known quantities. These will become the default 
-    once we deprecate the old approach. 
-
-  - Allow the execution of `SampleMeasurement`, `StateMeasurement` and `MeasurementTransform`
-    measurement processes in `QubitDevice`. Also allow devices to override measurement processes by
-    adding a `measurement_map` attribute, which should contain the measurement class as key and
-    the method name as value.
+* Custom measurements can now be facilitated with the addition of the `qml.measurements` module.
   [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
   [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
@@ -37,6 +21,73 @@ TODO code example and more user-friendly descriptions
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
   [(#3439)](https://github.com/PennyLaneAI/pennylane/pull/3439)
   [(#3466)](https://github.com/PennyLaneAI/pennylane/pull/3466)
+
+  Within `qml.measurements` are several new subclasses that inherit from `MeasurementProcess`. The following `MeasurementProcess` subclasses within `qml.measurements` have been created in order to implement the corresponding staple measurements and will be fully used internally once the old approach has been deprecated:
+
+  - `StateMP`: for `qml.state`
+  - `ExpectationMP`: for `qml.expval`
+  - `SampleMP`: for `qml.sample`
+  - `VarianceMP`: for `qml.var`
+  - `ProbabilityMP`: for `qml.probs`
+  - `CountsMP`: for `qml.counts`
+  - `VnEntropyMP`: for `qml.vn_entropy`
+  - `MutualInfoMP`: for `qml.mutual_info`
+  - `ClassicalShadowMP`: for `qml.classical_shadow`
+  - `ShadowExpvalMP`: for `qml.shadow_expval`
+
+  This restructuring of measurements now allows for the possibility to create *custom* measurements based on computational basis samples, state-based measurements, and other fundamental measurement types:
+
+  - `SampleMeasurement`: represents a sample-based measurement
+  - `StateMeasurement`: represents a state-based measurement
+  - `MeasurementTransform`: represents a measurement process that requires the application of a batch transform
+
+  Users can create custom measurement classes from the relevant classes above. Here is an example of a custom measurement that computes the number of samples obtained of a given state:
+
+  ```python
+  from pennylane.measurements import SampleMeasurement
+
+  class CountState(SampleMeasurement):
+      def __init__(self, state: str):
+          self.state = state  # string identifying the state e.g. "0101"
+          wires = list(range(len(state)))
+          super().__init__(wires=wires)
+
+      def process_samples(self, samples, wire_order, shot_range, bin_size):
+          counts_mp = qml.counts(wires=self._wires)
+          counts = counts_mp.process_samples(samples, wire_order, shot_range, bin_size)
+          return counts.get(self.state, 0)
+
+      def __copy__(self):
+          return CountState(state=self.state)
+  ```
+
+  When creating a custom measurement with new attributes defined in `__init__`, the `__copy__` method needs to be redefined.
+
+  We can now execute the new measurement in a QNode. Let’s use a simple circuit so that we can verify our results mathematically.
+
+  ```python
+  dev = qml.device("default.qubit", wires=1, shots=10000)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      return CountState(state="1")
+  ```
+
+  ```pycon
+  >>> circuit(1.23)
+  tensor(3303., requires_grad=True)
+  ```
+
+  Differentiability is also conserved for this new measurement process given that it returns a scalar value.
+
+  ```pycon
+  >>> x = qml.numpy.array(1.23, requires_grad=True)
+  >>> qml.grad(circuit)(x)
+  4715.000000000001
+  ```
+
+  For more information, see the documentation for [`qml.measurements`](https://docs.pennylane.ai/en/stable/code/qml_measurements.html).
 
 <h4>ZX Calculus</h4>
 
@@ -110,7 +161,7 @@ TODO code example and more user-friendly descriptions
   [-2.84061284]
   ```
 
-<h4>New operators and such</h4>
+<h4>New operators</h4>
 
 * The controlled CZ gate and Hadamard gate are now available via `qml.CCZ` and `qml.CH`, respectively.
   [(#3408)](https://github.com/PennyLaneAI/pennylane/pull/3408)
@@ -202,7 +253,7 @@ TODO code example and more user-friendly descriptions
         [ 0.        +0.j,  0.        +0.j,  1.        +0.j]])
   ```
 
-<h4>Disenfranchised features</h4>
+<h4>New transforms, functions, and more!</h4>
 
 * A new gradient transform, `qml.gradients.spsa_grad`, that is based on the idea of SPSA is now available.
   [#3366](https://github.com/PennyLaneAI/pennylane/pull/3366)
