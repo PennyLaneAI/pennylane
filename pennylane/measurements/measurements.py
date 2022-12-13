@@ -164,6 +164,7 @@ class MeasurementProcess(ABC):
         self.data = []
 
         # Queue the measurement process
+        _ = self.obs  # cache the observable to avoid queueing it
         self.queue()
 
     @property
@@ -175,17 +176,17 @@ class MeasurementProcess(ABC):
         Returns:
             Operator: Measurement observable.
         """
-        if self._obs is not None:
-            return self._obs
+        if self._obs is None:
+            if self._wires is None:
+                return None
 
-        if self._wires is None:
-            return None
+            self._obs = (
+                qml.PauliZ(self._wires[0])
+                if len(self._wires) == 1
+                else qml.prod(*[qml.PauliZ(w) for w in self._wires])
+            )
 
-        return (
-            qml.PauliZ(self._wires[0])
-            if len(self._wires) == 1
-            else qml.prod(*[qml.PauliZ(w) for w in self._wires])
-        )
+        return self._obs
 
     @property
     def return_type(self):
