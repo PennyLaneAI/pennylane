@@ -29,6 +29,12 @@ from .measurements import SampleMeasurement, StateMeasurement, Variance
 def var(op: Operator):
     r"""Variance of the supplied observable.
 
+    Args:
+        op (Observable): a quantum observable object
+
+    Returns:
+        VarianceMP: measurement process instance
+
     **Example:**
 
     .. code-block:: python3
@@ -46,20 +52,28 @@ def var(op: Operator):
 
     >>> circuit(0.5)
     0.7701511529340698
-
-    Args:
-        op (Observable): a quantum observable object
-
-    Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
-    return _Variance(obs=op)
+    return VarianceMP(obs=op)
 
 
-class _Variance(SampleMeasurement, StateMeasurement):
-    """Measurement process that computes the variance of the supplied observable."""
+class VarianceMP(SampleMeasurement, StateMeasurement):
+    """Measurement process that computes the variance of the supplied observable.
+
+    Please refer to :func:`var` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
 
     @property
     def return_type(self):
@@ -68,6 +82,20 @@ class _Variance(SampleMeasurement, StateMeasurement):
     @property
     def numeric_type(self):
         return float
+
+    def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
+        if device is None or device.shot_vector is None:
+            return (1,)
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return (num_shot_elements,)
+
+    def _shape_new(self, device=None):
+        if device is None or device.shot_vector is None:
+            return ()
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return tuple(() for _ in range(num_shot_elements))
 
     def process_samples(
         self,

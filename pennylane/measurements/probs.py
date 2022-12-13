@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.probs measurement.
 """
@@ -20,7 +19,7 @@ from typing import Sequence, Tuple
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import Probability, SampleMeasurement, StateMeasurement
+from .measurements import MeasurementShapeError, Probability, SampleMeasurement, StateMeasurement
 
 
 def probs(wires=None, op=None):
@@ -36,6 +35,17 @@ def probs(wires=None, op=None):
     Marginal probabilities may also be requested by restricting
     the wires to a subset of the full system; the size of the
     returned array will be ``[2**len(wires)]``.
+
+    .. Note::
+        If no wires or observable are given, the probability of all wires is returned.
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+        op (Observable): Observable (with a ``diagonalizing_gates`` attribute) that rotates
+            the computational basis
+
+    Returns:
+        ProbabilityMP: measurement process instance
 
     **Example:**
 
@@ -79,18 +89,7 @@ def probs(wires=None, op=None):
 
     Note that the output shape of this measurement process depends on whether
     the device simulates qubit or continuous variable quantum systems.
-
-    Args:
-        wires (Sequence[int] or int): the wire the operation acts on
-        op (Observable): Observable (with a diagonalizing_gates attribute) that rotates
-         the computational basis
     """
-    # pylint: disable=protected-access
-
-    if wires is None and op is None:
-        raise qml.QuantumFunctionError(
-            "qml.probs requires either the wires or the observable to be passed."
-        )
 
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
@@ -112,12 +111,25 @@ def probs(wires=None, op=None):
                 "provided. The wires for probs will be determined directly from the observable."
             )
         wires = qml.wires.Wires(wires)
-    return _Probability(obs=op, wires=wires)
+    return ProbabilityMP(obs=op, wires=wires)
 
 
-# TODO: Make public when removing the ObservableReturnTypes enum
-class _Probability(SampleMeasurement, StateMeasurement):
-    """Measurement process that computes the probability of each computational basis state."""
+class ProbabilityMP(SampleMeasurement, StateMeasurement):
+    """Measurement process that computes the probability of each computational basis state.
+
+    Please refer to :func:`probs` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
 
     @property
     def return_type(self):
@@ -126,6 +138,36 @@ class _Probability(SampleMeasurement, StateMeasurement):
     @property
     def numeric_type(self):
         return float
+
+    def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
+            )
+        num_shot_elements = (
+            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
+        )
+        len_wires = len(self.wires)
+        dim = self._get_num_basis_states(len_wires, device)
+
+        return (num_shot_elements, dim)
+
+    def _shape_new(self, device=None):
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
+            )
+        num_shot_elements = (
+            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
+        )
+        len_wires = len(self.wires)
+        dim = self._get_num_basis_states(len_wires, device)
+
+        return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
     def process_samples(
         self,

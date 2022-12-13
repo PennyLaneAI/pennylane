@@ -393,6 +393,7 @@ class Hamiltonian(Observable):
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
         # reset grouping, since the indices refer to the old observables and coefficients
         self._grouping_indices = None
+        return self
 
     def __str__(self):
         def wires_print(ob: Observable):

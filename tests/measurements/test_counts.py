@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import AllCounts, Counts, _Counts
+from pennylane.measurements import AllCounts, Counts, CountsMP
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -71,7 +71,7 @@ class TestCounts:
 
         circuit()
 
-        assert isinstance(circuit.tape[0], _Counts)
+        assert isinstance(circuit.tape[0], CountsMP)
 
     def test_copy(self):
         """Test that the ``__copy__`` method also copies the ``all_outcomes`` information."""
@@ -527,5 +527,22 @@ class TestCounts:
         assert len(res[0]) == 10
         assert res[1] == {"00": 10}
         assert res[2] == {"00": 10, "01": 0, "10": 0, "11": 0}
-
         custom_measurement_process(dev, spy)
+
+    def test_counts_empty_wires(self):
+        """Test that using ``qml.counts`` with an empty wire list raises an error."""
+        with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
+            qml.counts(wires=[])
+
+    @pytest.mark.parametrize("shots", [1, 100])
+    def test_counts_no_arguments(self, shots):
+        """Test that using ``qml.counts`` with no arguments returns the counts of all wires."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.counts()
+
+        res = circuit()
+
+        assert qml.math.allequal(res, {"000": shots})

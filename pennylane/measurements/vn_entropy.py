@@ -35,6 +35,9 @@ def vn_entropy(wires, log_base=None):
         wires (Sequence[int] or int): The wires of the subsystem
         log_base (float): Base for the logarithm.
 
+    Returns:
+        VnEntropyMP: measurement process instance
+
     **Example:**
 
     .. code-block:: python3
@@ -66,11 +69,25 @@ def vn_entropy(wires, log_base=None):
     .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
     """
     wires = Wires(wires)
-    return _VnEntropy(wires=wires, log_base=log_base)
+    return VnEntropyMP(wires=wires, log_base=log_base)
 
 
-class _VnEntropy(StateMeasurement):
-    """Measurement process that returns the Von Neumann entropy."""
+class VnEntropyMP(StateMeasurement):
+    """Measurement process that computes the Von Neumann entropy of the system prior to measurement.
+
+    Please refer to :func:`vn_entropy` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
 
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(
@@ -91,6 +108,20 @@ class _VnEntropy(StateMeasurement):
     @property
     def numeric_type(self):
         return float
+
+    def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
+        if device is None or device.shot_vector is None:
+            return (1,)
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return (num_shot_elements,)
+
+    def _shape_new(self, device=None):
+        if device is None or device.shot_vector is None:
+            return ()
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         return qml.math.vn_entropy(

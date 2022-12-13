@@ -19,7 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
 from pennylane.measurements import VnEntropy
-from pennylane.measurements.vn_entropy import _VnEntropy
+from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
 
 
@@ -60,7 +60,7 @@ class TestVnEntropy:
 
         circuit()
 
-        assert isinstance(circuit.tape[0], _VnEntropy)
+        assert isinstance(circuit.tape[0], VnEntropyMP)
 
     def test_copy(self):
         """Test that the ``__copy__`` method also copies the ``log_base`` information."""
@@ -74,3 +74,11 @@ class TestVnEntropy:
         meas = qml.vn_entropy(wires=0)
         assert meas.numeric_type == float
         assert meas.return_type == VnEntropy
+
+    @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ((1, 10), (2,))])
+    def test_shape(self, shots, shape):
+        """Test the ``shape`` method."""
+        meas = qml.vn_entropy(wires=0)
+        dev = qml.device("default.qubit", wires=1, shots=shots)
+
+        assert meas.shape(dev) == shape
