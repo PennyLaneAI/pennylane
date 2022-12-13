@@ -29,11 +29,11 @@ classes. These classes are subclassed to implement measurements in PennyLane.
 
   * samples (Sequence[complex]): computational basis samples generated for all wires
   * wire_order (Wires): wires determining the subspace that ``samples`` acts on
-  * shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
-        to use. If not specified, all samples are used.
-  * bin_size (int): Divides the shot range into bins of size ``bin_size``, and
-        returns the measurement statistic separately over each bin. If not
-        provided, the entire shot range is treated as a single bin.
+  * shot_range (tuple[int]): 2-tuple of integers specifying the range of samples to use. If not
+  specified, all samples are used.
+  * bin_size (int): Divides the shot range into bins of size ``bin_size``, and returns the
+  measurement statistic separately over each bin. If not provided, the entire shot range is treated
+  as a single bin.
 
   `See :class:`CountsMP` for an example.
 
@@ -42,8 +42,8 @@ classes. These classes are subclassed to implement measurements in PennyLane.
   device. This method should always have the same arguments:
 
   * state (Sequence[complex]): quantum state
-  * wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
-        dimension :math:`2^n` acts on a subspace of :math:`n` wires
+  * wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of dimension
+  :math:`2^n` acts on a subspace of :math:`n` wires
 
   See :class:`StateMP` for an example.
 
