@@ -1562,6 +1562,9 @@ class TestStateMeasurement:
         """Test the execution of a custom state measurement."""
         dev = device(2)
 
+        if dev.shots is not None:
+            pytest.skip("Some plugins don't update state information when shots is not None.")
+
         class MyMeasurement(StateMeasurement):
             """Dummy state measurement."""
 
