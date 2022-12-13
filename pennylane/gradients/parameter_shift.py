@@ -523,7 +523,7 @@ def _expval_param_shift_tuple(
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
         # If no gradient tapes are returned (e.g. only unshifted term in recipe), batch_size=None
-        batch_size = g_tapes[0].batch_size if g_tapes else None
+        batch_size = g_tapes[0].batch_size if broadcast and g_tapes else None
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, batch_size))
 
     def processing_fn(results):
@@ -690,7 +690,7 @@ def expval_param_shift(
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
         # If no gradient tapes are returned (e.g. only unshifted term in recipe), batch_size=None
-        batch_size = g_tapes[0].batch_size if g_tapes else None
+        batch_size = g_tapes[0].batch_size if broadcast and g_tapes else None
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, batch_size))
 
     def processing_fn(results):
