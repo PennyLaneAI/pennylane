@@ -151,7 +151,7 @@ class MutualInfoMP(StateMeasurement):
 
     def __copy__(self):
         return self.__class__(
-            obs=copy.copy(self.obs),
+            obs=copy.copy(self._obs),
             wires=self._wires,
             eigvals=self._eigvals,
             log_base=self.log_base,

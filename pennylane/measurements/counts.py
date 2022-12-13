@@ -272,7 +272,7 @@ class CountsMP(SampleMeasurement):
 
     def __copy__(self):
         return self.__class__(
-            obs=copy.copy(self.obs),
+            obs=copy.copy(self._obs),
             eigvals=self._eigvals,
             wires=self._wires,
             all_outcomes=self.all_outcomes,

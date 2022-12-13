@@ -326,7 +326,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
     def __copy__(self):
         return self.__class__(
-            obs=copy.copy(self.obs),
+            obs=copy.copy(self._obs),
             seed=self.seed,
             wires=self._wires,
             eigvals=self._eigvals,
@@ -401,7 +401,7 @@ class ShadowExpvalMP(MeasurementTransform):
             H=H_copy,
             k=self.k,
             seed=self.seed,
-            obs=copy.copy(self.obs),
+            obs=copy.copy(self._obs),
             wires=self._wires,
             eigvals=self._eigvals,
         )
