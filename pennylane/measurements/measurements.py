@@ -26,7 +26,7 @@ from typing import Sequence, Tuple, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Observable
+from pennylane.operation import Observable, Operator
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -130,6 +130,7 @@ class MeasurementProcess(ABC):
         eigvals=None,
         id=None,
     ):
+        self._obs = obs
         self.id = id
 
         if wires is not None:
@@ -137,12 +138,7 @@ class MeasurementProcess(ABC):
                 raise ValueError("Cannot set an empty list of wires.")
             if obs is not None:
                 raise ValueError("Cannot set the wires if an observable is provided.")
-            if len(wires) == 1:
-                self.obs = qml.PauliZ(wires[0])
-            else:
-                self.obs = qml.prod(*[qml.PauliZ(w) for w in wires])
-        else:
-            self.obs = obs
+
         # _wires = None indicates broadcasting across all available wires.
         # It translates to the public property wires = Wires([])
         self._wires = wires
@@ -169,6 +165,24 @@ class MeasurementProcess(ABC):
 
         # Queue the measurement process
         self.queue()
+
+    @property
+    def obs(self) -> Operator:
+        """Returns the observable of the measurement process.
+
+        If no observable was provided, PauliZ is returned for each measurement wire.
+
+        Returns:
+            Operator: Measurement observable.
+        """
+        if self._obs is not None:
+            return self._obs
+
+        return (
+            qml.PauliZ(self.wires[0])
+            if len(self.wires) == 1
+            else qml.prod(*[qml.PauliZ(w) for w in self.wires])
+        )
 
     @property
     def return_type(self):
