@@ -533,6 +533,7 @@ class TestParamShift:
             ):
                 qml.gradients.param_shift(tape)
 
+
 class TestParamShiftWithBroadcasted:
     """Tests for the `param_shift` transform on already broadcasted tapes.
     The tests for `param_shift` using broadcasting itself can be found

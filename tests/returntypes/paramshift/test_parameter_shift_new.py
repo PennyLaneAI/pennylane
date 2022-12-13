@@ -745,7 +745,7 @@ class TestParamShiftWithBroadcasted:
         res = fn(dev.batch_execute(tapes))
         assert isinstance(res, tuple)
         assert len(res) == 2
-        
+
         assert res[0].shape == (dim,)
         assert res[1].shape == (dim,)
 
@@ -773,7 +773,7 @@ class TestParamShiftWithBroadcasted:
         res = fn(dev.batch_execute(tapes))
         assert isinstance(res, tuple)
         assert len(res) == 3
-        
+
         assert res[0].shape == res[1].shape == res[2].shape == (dim,)
 
 
