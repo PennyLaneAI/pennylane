@@ -393,6 +393,7 @@ class QNode:
                     f"Received gradient_kwarg {kwarg}, which is not included in the list of standard qnode "
                     f"gradient kwargs."
                 )
+                # raise NotImplementedError(f"bad kwarg {kwarg}")
 
         # input arguments
         self.func = func
