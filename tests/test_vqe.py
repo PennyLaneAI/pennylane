@@ -20,6 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultMixed, DefaultQubit
+from pennylane.operation import EigvalsUndefinedError
 
 
 @pytest.fixture(scope="function")
@@ -1014,7 +1015,7 @@ class TestNewVQE:
         def circuit():
             return qml.sample(H)
 
-        with pytest.raises(ValueError, match="Cannot compute samples of Hamiltonian"):
+        with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of Hamiltonian"):
             circuit()
 
     @pytest.mark.autograd
