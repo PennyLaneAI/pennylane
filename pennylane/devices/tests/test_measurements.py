@@ -1570,6 +1570,7 @@ class TestStateMeasurement:
 
         @qml.qnode(dev)
         def circuit():
+            qml.PauliX(0)
             return MyMeasurement()
 
         assert circuit() == 1
@@ -1589,6 +1590,7 @@ class TestStateMeasurement:
 
         @qml.qnode(dev)
         def circuit():
+            qml.PauliX(0)
             return MyMeasurement()
 
         with pytest.warns(
@@ -1627,6 +1629,7 @@ class TestCustomMeasurement:
 
         @qml.qnode(dev)
         def circuit():
+            qml.PauliX(0)
             return MyMeasurement()
 
         assert circuit() == 1
@@ -1643,6 +1646,7 @@ class TestCustomMeasurement:
 
         @qml.qnode(dev)
         def circuit():
+            qml.PauliX(0)
             return qml.classical_shadow(wires=0)
 
         circuit.device.measurement_map[ClassicalShadowMP] = "test_method"
