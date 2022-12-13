@@ -67,12 +67,6 @@ classes. These classes are subclassed to implement measurements in PennyLane.
     :class:`StateMeasurement` classes, defining the needed logic to process either samples or the
     quantum state. See :class:`VarianceMP` for an example.
 
-.. note::
-
-    In PennyLane we use functions to define measurements (e.g. :func:`counts`). These
-    functions will return an instance of the corresponding measurement process
-    (e.g. :class:`CountsMP`). This decision is just for design purposes.
-
 Differentiation
 ^^^^^^^^^^^^^^^
 In general, a :class:`MeasurementProcess` is differentiable with respect to a parameter if the domain of
@@ -156,6 +150,12 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
 >>> x = qml.numpy.array(1.23, requires_grad=True)
 >>> qml.grad(circuit)(x)
 4715.000000000001
+
+.. note::
+
+    In PennyLane we use functions to define measurements (e.g. :func:`counts`). These
+    functions will return an instance of the corresponding measurement process
+    (e.g. :class:`CountsMP`). This decision is just for design purposes.
 """
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
