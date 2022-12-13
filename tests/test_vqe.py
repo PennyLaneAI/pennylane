@@ -1003,6 +1003,20 @@ class TestNewVQE:
         ):
             circuit()
 
+    def test_error_sample_measurement(self):
+        """Tests that error is thrown if sample(H) is measured."""
+        observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
+        coeffs = [1.0] * len(observables)
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        H = qml.Hamiltonian(coeffs, observables)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(H)
+
+        with pytest.raises(ValueError, match="Cannot compute samples of Hamiltonian"):
+            circuit()
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
     def test_grad_autograd(self, diff_method, tol):
