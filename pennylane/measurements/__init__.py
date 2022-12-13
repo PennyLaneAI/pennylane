@@ -20,7 +20,7 @@ Description
 Measurements
 ~~~~~~~~~~~~
 The :class:`MeasurementProcess` class serves as a base class for measurements, and is inherited
-from the :class:`SampleMeasurement`, :class:`StateMeasurement` and :class:`MeasurementTransform`
+from by the :class:`SampleMeasurement`, :class:`StateMeasurement` and :class:`MeasurementTransform`
 classes. These classes are subclassed to implement measurements in PennyLane.
 
 * Each :class:`SampleMeasurement` subclass represents a sample-based measurement, which contains a
