@@ -104,8 +104,9 @@ so that we can verify our results mathematically.
 
 .. note::
 
-    In PennyLane we use functions to define measurements (e.g. ``qml.counts``). These functions
-    will return an instance of the corresponding measurement process (e.g. ``CountsMP``).
+    In PennyLane we use functions to define measurements (e.g. :func:`counts`). These
+    functions will return an instance of the corresponding measurement process
+    (e.g. :class:`CountsMP`).
 
 The quantum state before the measurement will be:
 
