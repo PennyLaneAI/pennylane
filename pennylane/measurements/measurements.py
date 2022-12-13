@@ -178,10 +178,13 @@ class MeasurementProcess(ABC):
         if self._obs is not None:
             return self._obs
 
+        if self._wires is None:
+            return None
+
         return (
-            qml.PauliZ(self.wires[0])
-            if len(self.wires) == 1
-            else qml.prod(*[qml.PauliZ(w) for w in self.wires])
+            qml.PauliZ(self._wires[0])
+            if len(self._wires) == 1
+            else qml.prod(*[qml.PauliZ(w) for w in self._wires])
         )
 
     @property
