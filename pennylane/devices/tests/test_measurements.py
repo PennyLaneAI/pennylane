@@ -1508,7 +1508,8 @@ class TestSampleMeasurement:
             qml.PauliX(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
-        assert qml.math.allequal(circuit(), [1, 1])
+        res = circuit()
+        assert qml.math.allequal(res, [1, 1])
 
     def test_sample_measurement_without_shots(self, device):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
