@@ -779,8 +779,7 @@ class TestParamShiftWithBroadcasted:
 
 class TestParamShiftUsingBroadcasting:
     """Tests for the `param_shift` function using broadcasting.
-    The tests for `param_shift` on already broadcasted tapes can be found
-    further below."""
+    The tests for `param_shift` on already broadcasted tapes can be found above."""
 
     def test_independent_parameter(self, mocker):
         """Test that an independent parameter is skipped
