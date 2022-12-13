@@ -728,6 +728,7 @@ Juan Miguel Arrazola
 Utkarsh Azad
 Samuel Banning
 Astral Cai
+Albert Mitjans Coma
 Ahmed Darwish
 Isaac De Vlugt
 Pieter Eendebak
@@ -736,10 +737,9 @@ Katharine Hyatt
 Soran Jahangiri
 Edward Jiang
 Christina Lee
-Albert Mitjans Coma
 Romain Moyard
-Kevin Shen
 Mudit Pandey
+Kevin Shen
 Matthew Silverman
 Jay Soni
 Antal Száva
