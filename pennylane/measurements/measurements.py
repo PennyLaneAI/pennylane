@@ -319,8 +319,12 @@ class MeasurementProcess(ABC):
         return f"{self.obs}"
 
     def __copy__(self):
+        if self._wires is None:
+            return self.__class__(
+                obs=copy.copy(self._obs),
+                eigvals=self._eigvals,
+            )
         return self.__class__(
-            obs=copy.copy(self._obs),
             wires=self._wires,
             eigvals=self._eigvals,
         )
