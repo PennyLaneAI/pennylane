@@ -390,7 +390,7 @@ class QNode:
                 )
             elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
                 warnings.warn(
-                    f"Received gradient_kwarg {kwarg}, which is not included in the list of standard qnode"
+                    f"Received gradient_kwarg {kwarg}, which is not included in the list of standard qnode "
                     f"gradient kwargs."
                 )
                 # raise NotImplementedError(f"bad kwarg {kwarg}")
