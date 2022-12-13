@@ -81,14 +81,14 @@ obtained of a given state:
         def __copy__(self):
             return CountState(state=self.state)
 
-The measurement process in this example uses the :func:`~pennylane.counts` function, which is a
-measurement process which returns a dictionary containing the number of times each quantum
-state has been sampled.
-
 .. note::
 
     The ``__copy__`` method needs to be overriden when new arguments are added into the ``__init__``
     method.
+
+The measurement process in this example uses the :func:`~pennylane.counts` function, which is a
+measurement process which returns a dictionary containing the number of times each quantum
+state has been sampled.
 
 We can now execute the new measurement in a :class:`~pennylane.QNode`. Let's use a simple circuit
 so that we can verify our results mathematically.
@@ -101,6 +101,11 @@ so that we can verify our results mathematically.
     def circuit(x):
         qml.RX(x, wires=0)
         return CountState(state="1")
+
+.. note::
+
+    In PennyLane we use functions to define measurements (e.g. ``qml.counts``). These functions
+    will return an instance of the corresponding measurement process (e.g. ``CountsMP``).
 
 The quantum state before the measurement will be:
 
