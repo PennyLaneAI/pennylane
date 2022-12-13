@@ -800,7 +800,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 <h3>Bug fixes</h3>
 
 * Fixed a bug that prevented `qml.gradients.param_shift` from being used for broadcasted tapes.
-  [(#3xxx)](https://github.com/PennyLaneAI/pennylane/pull/3xxx)
+  [(#3528)](https://github.com/PennyLaneAI/pennylane/pull/3528)
 
 * Fixed a bug where `qml.transforms.hamiltonian_expand` didn't preserve the type of the input results in its output.
   [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
