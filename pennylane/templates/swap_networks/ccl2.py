@@ -62,7 +62,7 @@ class TwoLocalSwapNetwork(Operation):
         .. code-block:: python
 
             >>> dev = qml.device('default.qubit', wires=5)
-            >>> weights = np.random.random(size=TwoLocalSwapNetwork.shape(len(dev.wires)))
+            >>> weights = np.random.random(size=qml.TwoLocalSwapNetwork.shape(len(dev.wires)))
             >>> print(weights)
             tensor([0.20308242, 0.91906199, 0.67988804, 0.81290256, 0.08708985,
                     0.81860084, 0.34448344, 0.05655892, 0.61781612, 0.51829044], requires_grad=True)
@@ -151,7 +151,7 @@ class TwoLocalSwapNetwork(Operation):
         Args:
             weights (tensor): weight tensor for the parameterized acquaintances of length :math:`N \times (N - 1) / 2`, where `N` is the length of `wires`
             wires (Iterable or Wires): ordered sequence of wires on which the swap network acts
-            acquaintances (Callable): callable `func(index, wires, param=None, **kwargs)` that returns a two-local operation applied on a pair of logical wires specified by `index` currently stored in physical wires provided by `wires` before they are swapped apart. Parameters for the operation are specified using `param`, and any additional keyword arguments for the callable should be provided using the ``kwargs`` separately
+            acquaintances (Callable): callable `func(index, wires, param=None, **kwargs)` that returns a two-local operation, which is applied on a pair of logical wires specified by `index`. This corresponds to applying the operation on physical wires provided by `wires` before any SWAP gates occurred. Parameters for the operation are specified using `param`, and any additional keyword arguments for the callable should be provided using the ``kwargs`` separately
             fermionic (bool): If ``True``, qubits are realized as fermionic modes and :class:`~.pennylane.FermionicSWAP` with :math:`\phi=\pi` is used instead of :class:`~.pennylane.SWAP`
             shift (bool): If ``True``, odd-numbered layers begins from the second qubit instead of first one
             **kwargs: additional keyword arguments for `acquaintances`
