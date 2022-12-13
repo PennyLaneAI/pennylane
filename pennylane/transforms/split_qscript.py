@@ -200,7 +200,7 @@ def split_qscript(qscript: QuantumScript, group=True):
                     idxs_coeffs_dict[o_m.hash].append((idx, coeff))
             continue
 
-        coeff = 1 if isinstance(m, ExpectationMP) else None
+        coeff = 1
         if isinstance(obs, SProd) and isinstance(m, ExpectationMP):
             coeff = obs.scalar
             m = qml.expval(obs.base)
@@ -243,21 +243,17 @@ def split_qscript(qscript: QuantumScript, group=True):
                 if not qml.active_return() and len(qscript_res) == 1:  # old return types
                     qscript_res = qscript_res[0]
                 for idx, coeff in qscript_idxs:
-                    if coeff is not None:
-                        qscript_res = qml.math.convert_like(
-                            qml.math.dot(coeff, qscript_res), qscript_res
-                        )
-                    results.append((idx, qscript_res))
+                    res = qml.math.convert_like(qml.math.dot(coeff, qscript_res), qscript_res)
+                    results.append((idx, res))
                 continue
             # qscript_res contains multiple results
             qscript_res = [
                 qml.math.transpose(res) if qml.math.ndim(res) > 0 else res for res in qscript_res
             ]  # needed when batching
-            for res, idxs in zip(qscript_res, qscript_idxs):
+            for q_res, idxs in zip(qscript_res, qscript_idxs):
                 for idx, coeff in idxs:
-                    if coeff is not None:
-                        qscript_res = qml.math.convert_like(qml.math.dot(coeff, res), res)
-                    results.append((idx, qscript_res))
+                    res = qml.math.convert_like(qml.math.dot(coeff, q_res), q_res)
+                    results.append((idx, res))
 
         # sum results by idx
         res_dict = {}
