@@ -1486,6 +1486,12 @@ class TestTensorVar:
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
 
+def _skip_test_for_braket(dev):
+    """Skip the specific test because the Braket plugin does not yet support custom measurement processes."""
+    if "braket" in dev.short_name:
+        pytest.skip(f"Custom measurement test skipped for {dev.short_name}.")
+
+
 class TestSampleMeasurement:
     """Tests for the SampleMeasurement class."""
 
@@ -1493,6 +1499,7 @@ class TestSampleMeasurement:
         """Test the execution of a custom sampled measurement."""
 
         dev = device(2)
+        _skip_test_for_braket(dev)
 
         if dev.shots is None:
             pytest.skip("Shots must be specified in the device to compute a sampled measurement.")
@@ -1536,6 +1543,7 @@ class TestSampleMeasurement:
     def test_method_overriden_by_device(self, device):
         """Test that the device can override a measurement process."""
         dev = device(2)
+        _skip_test_for_braket(dev)
 
         if dev.shots is None:
             pytest.skip(
@@ -1560,6 +1568,7 @@ class TestStateMeasurement:
     def test_custom_state_measurement(self, device):
         """Test the execution of a custom state measurement."""
         dev = device(2)
+        _skip_test_for_braket(dev)
 
         class MyMeasurement(StateMeasurement):
             """Dummy state measurement."""
@@ -1576,6 +1585,7 @@ class TestStateMeasurement:
     def test_sample_measurement_with_shots(self, device):
         """Test that executing a state measurement with shots raises a warning."""
         dev = device(2)
+        _skip_test_for_braket(dev)
 
         if dev.shots is None:
             pytest.skip("If shots=None no warning is raised.")
@@ -1599,6 +1609,7 @@ class TestStateMeasurement:
     def test_method_overriden_by_device(self, device):
         """Test that the device can override a measurement process."""
         dev = device(2)
+        _skip_test_for_braket(dev)
 
         @qml.qnode(dev)
         def circuit():
@@ -1617,6 +1628,7 @@ class TestCustomMeasurement:
     def test_custom_measurement(self, device):
         """Test the execution of a custom measurement."""
         dev = device(2)
+        _skip_test_for_braket(dev)
 
         class MyMeasurement(MeasurementTransform):
             """Dummy measurement transform."""
@@ -1633,6 +1645,7 @@ class TestCustomMeasurement:
     def test_method_overriden_by_device(self, device):
         """Test that the device can override a measurement process."""
         dev = device(2)
+        _skip_test_for_braket(dev)
 
         if dev.shots is None:
             pytest.skip(
