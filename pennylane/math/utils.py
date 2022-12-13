@@ -322,7 +322,7 @@ def is_abstract(tensor, like=None):
     >>> function(x)
     Value: [0.5, 0.1]
     Abstract: False
-    DeviceArray(0.26, dtype=float32)
+    Array(0.26, dtype=float32)
 
     However, if we use the ``@jax.jit`` decorator, the tensor will now be abstract:
 
@@ -330,7 +330,7 @@ def is_abstract(tensor, like=None):
     >>> jax.jit(function)(x)
     Value: Traced<ShapedArray(float32[2])>with<DynamicJaxprTrace(level=0/1)>
     Abstract: True
-    DeviceArray(0.26, dtype=float32)
+    Array(0.26, dtype=float32)
 
     Note that JAX uses an abstract *shaped* array, so although we won't be able to
     include conditionals within our function that depend on the value of the tensor,
