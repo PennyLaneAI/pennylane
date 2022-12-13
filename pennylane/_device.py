@@ -752,7 +752,7 @@ class Device(abc.ABC):
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
             # split tape into multiple tapes of diagonalizable known observables.
-            circuits, hamiltonian_fn = qml.transforms.split_tape(circuit, group=True)
+            circuits, hamiltonian_fn = qml.transforms.split_qscript(circuit, group=True)
 
         elif (
             len(circuit._obs_sharing_wires) > 0
@@ -785,7 +785,7 @@ class Device(abc.ABC):
 
         # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
         # expansion. Note that the application order is reversed compared to the expansion order,
-        # i.e. while we first applied `split_tape` to the tape, we need to process the
+        # i.e. while we first applied `split_qscript` to the tape, we need to process the
         # results from the broadcast expansion first.
         def total_processing(results):
             return hamiltonian_fn(expanded_fn(results))

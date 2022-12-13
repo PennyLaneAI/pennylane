@@ -24,7 +24,7 @@ from pennylane.tape import QuantumScript
 
 
 # pylint: disable=too-many-branches, too-many-statements
-def split_tape(qscript: QuantumScript, group=True):
+def split_qscript(qscript: QuantumScript, group=True):
     """If the tape is measuring any Hamiltonian or Sum expectation, this method splits it into
     multiple tapes of Pauli expectations and provides a function to recombine the results.
 
@@ -58,10 +58,10 @@ def split_tape(qscript: QuantumScript, group=True):
 
             qml.expval(H)
 
-    We can use the ``split_tape`` transform to generate new tapes and a classical
+    We can use the ``split_qscript`` transform to generate new tapes and a classical
     post-processing function for computing the expectation value of the Hamiltonian.
 
-    >>> tapes, fn = qml.transforms.split_tape(tape)
+    >>> tapes, fn = qml.transforms.split_qscript(tape)
 
     We can evaluate these tapes on a device:
 
@@ -89,13 +89,13 @@ def split_tape(qscript: QuantumScript, group=True):
     With grouping, the Hamiltonian gets split into two groups of observables (here ``[qml.PauliZ(0)]`` and
     ``[qml.PauliX(1), qml.PauliX(0)]``):
 
-    >>> tapes, fn = qml.transforms.split_tape(tape)
+    >>> tapes, fn = qml.transforms.split_qscript(tape)
     >>> len(tapes)
     2
 
     Without grouping it gets split into three groups (``[qml.PauliZ(0)]``, ``[qml.PauliX(1)]`` and ``[qml.PauliX(0)]``):
 
-    >>> tapes, fn = qml.transforms.split_tape(tape, group=False)
+    >>> tapes, fn = qml.transforms.split_qscript(tape, group=False)
     >>> len(tapes)
     3
 
@@ -119,10 +119,10 @@ def split_tape(qscript: QuantumScript, group=True):
             qml.expval(qml.PauliX(1))
             qml.expval(qml.PauliZ(2))
 
-    We can use the ``split_tape`` transform to generate new tapes and a classical
+    We can use the ``split_qscript`` transform to generate new tapes and a classical
     post-processing function to speed-up the computation of the expectation value of the `Sum`.
 
-    >>> tapes, fn = qml.transforms.split_tape(tape, group=False)
+    >>> tapes, fn = qml.transforms.split_qscript(tape, group=False)
     >>> for tape in tapes:
     ...     print(tape.measurements)
     [expval(PauliZ(wires=[0]))]
@@ -161,7 +161,7 @@ def split_tape(qscript: QuantumScript, group=True):
     With grouping, the Sum gets split into two groups of observables (here
     ``[qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1))]`` and ``[qml.s_prod(3, qml.PauliX(0))]``):
 
-    >>> tapes, fn = qml.transforms.split_tape(tape, group=True)
+    >>> tapes, fn = qml.transforms.split_qscript(tape, group=True)
     >>> for tape in tapes:
     ...     print(tape.measurements)
     [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]
@@ -238,24 +238,26 @@ def split_tape(qscript: QuantumScript, group=True):
 
     def processing_fn(expanded_results):
         results = []  # [(m_idx, result)]
-        for tape_res, tape_idxs in zip(expanded_results, idxs_coeffs):
-            if isinstance(tape_idxs[0], tuple):  # tape_res contains only one result
-                if not qml.active_return() and len(tape_res) == 1:  # old return types
-                    tape_res = tape_res[0]
-                for idx, coeff in tape_idxs:
+        for qscript_res, qscript_idxs in zip(expanded_results, idxs_coeffs):
+            if isinstance(qscript_idxs[0], tuple):  # qscript_res contains only one result
+                if not qml.active_return() and len(qscript_res) == 1:  # old return types
+                    qscript_res = qscript_res[0]
+                for idx, coeff in qscript_idxs:
                     if coeff is not None:
-                        tape_res = qml.math.convert_like(qml.math.dot(coeff, tape_res), tape_res)
-                    results.append((idx, tape_res))
+                        qscript_res = qml.math.convert_like(
+                            qml.math.dot(coeff, qscript_res), qscript_res
+                        )
+                    results.append((idx, qscript_res))
                 continue
-            # tape_res contains multiple results
-            tape_res = [
-                qml.math.transpose(res) if qml.math.ndim(res) > 0 else res for res in tape_res
+            # qscript_res contains multiple results
+            qscript_res = [
+                qml.math.transpose(res) if qml.math.ndim(res) > 0 else res for res in qscript_res
             ]  # needed when batching
-            for res, idxs in zip(tape_res, tape_idxs):
+            for res, idxs in zip(qscript_res, qscript_idxs):
                 for idx, coeff in idxs:
                     if coeff is not None:
-                        tape_res = qml.math.convert_like(qml.math.dot(coeff, res), res)
-                    results.append((idx, tape_res))
+                        qscript_res = qml.math.convert_like(qml.math.dot(coeff, res), res)
+                    results.append((idx, qscript_res))
 
         # sum results by idx
         res_dict = {}

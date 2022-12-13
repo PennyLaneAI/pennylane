@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.transforms import split_tape
+from pennylane.transforms import split_qscript
 
 dev = qml.device("default.qubit", wires=4)
 """Defines the device used for all tests"""
@@ -140,21 +140,21 @@ OUTPUTS = [
 ]
 
 
-class TestSplitTape:
-    """Tests for the split_tape transform"""
+class TestSplitQscript:
+    """Tests for the split_qscript transform"""
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_tapes(self, tape, output):
-        """Tests that the split_tape transform returns the correct value"""
+        """Tests that the split_qscript transform returns the correct value"""
 
-        tapes, fn = split_tape(tape)
+        tapes, fn = split_qscript(tape)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
         qs = QuantumScript(tape.operations, tape.measurements)
-        tapes, fn = split_tape(qs)
+        tapes, fn = split_qscript(qs)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
@@ -162,17 +162,17 @@ class TestSplitTape:
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_no_grouping(self, tape, output):
-        """Tests that the split_tape transform returns the correct value
+        """Tests that the split_qscript transform returns the correct value
         if we switch grouping off"""
 
-        tapes, fn = split_tape(tape, group=False)
+        tapes, fn = split_qscript(tape, group=False)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
         qs = QuantumScript(tape.operations, tape.measurements)
-        tapes, fn = split_tape(qs, group=False)
+        tapes, fn = split_qscript(qs, group=False)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
@@ -191,10 +191,10 @@ class TestSplitTape:
             qml.expval(H)
             qml.expval(S)
 
-        tapes, _ = split_tape(tape, group=False)
+        tapes, _ = split_qscript(tape, group=False)
         assert len(tapes) == 3
 
-        tapes, _ = split_tape(tape, group=True)
+        tapes, _ = split_qscript(tape, group=True)
         assert len(tapes) == 2
 
     def test_number_of_qscripts(self):
@@ -205,20 +205,20 @@ class TestSplitTape:
 
         qs = QuantumScript(measurements=[qml.expval(H), qml.expval(S)])
 
-        tapes, _ = split_tape(qs, group=False)
+        tapes, _ = split_qscript(qs, group=False)
         assert len(tapes) == 3
 
-        tapes, _ = split_tape(qs, group=True)
+        tapes, _ = split_qscript(qs, group=True)
         assert len(tapes) == 2
 
     def test_non_ham_and_non_sum_tape(self):
-        """Test that the ``split_tape`` function returns the input tape if it does not
+        """Test that the ``split_qscript`` function returns the input tape if it does not
         contain a single measurement with the expectation value of a Sum or a Hamiltonian."""
 
         with QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
 
-        tapes, fn = split_tape(tape)
+        tapes, fn = split_qscript(tape)
 
         assert len(tapes) == 1
         assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
@@ -229,7 +229,7 @@ class TestSplitTape:
 
     @pytest.mark.autograd
     def test_dif_autograd(self, tol):
-        """Tests that the split_tape tape transform is differentiable with the Autograd interface"""
+        """Tests that the split_qscript tape transform is differentiable with the Autograd interface"""
 
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
@@ -262,7 +262,7 @@ class TestSplitTape:
 
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
-            tapes, fn = split_tape(tape)
+            tapes, fn = split_qscript(tape)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
@@ -275,7 +275,7 @@ class TestSplitTape:
 
     @pytest.mark.tf
     def test_dif_tensorflow(self):
-        """Tests that the split_tape tape transform is differentiable with the Tensorflow interface"""
+        """Tests that the split_qscript tape transform is differentiable with the Tensorflow interface"""
 
         import tensorflow as tf
 
@@ -304,7 +304,7 @@ class TestSplitTape:
                     qml.CNOT(wires=[2, 0])
                 qml.expval(H)
 
-            tapes, fn = split_tape(tape)
+            tapes, fn = split_qscript(tape)
             res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
 
             assert np.allclose(res, output)
@@ -407,12 +407,12 @@ SUM_OUTPUTS = [
 
 
 class TestSumExpand:
-    """Tests for the split_tape transform"""
+    """Tests for the split_qscript transform"""
 
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums(self, qscript, output):
-        """Tests that the split_tape transform returns the correct value"""
-        tapes, fn = split_tape(qscript)
+        """Tests that the split_qscript transform returns the correct value"""
+        tapes, fn = split_qscript(qscript)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
@@ -420,9 +420,9 @@ class TestSumExpand:
 
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums_no_grouping(self, qscript, output):
-        """Tests that the split_tape transform returns the correct value
+        """Tests that the split_qscript transform returns the correct value
         if we switch grouping off"""
-        tapes, fn = split_tape(qscript, group=False)
+        tapes, fn = split_qscript(qscript, group=False)
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
@@ -440,7 +440,7 @@ class TestSumExpand:
 
         qscript = QuantumScript.from_queue(q)
 
-        tapes, fn = split_tape(qscript, group=True)
+        tapes, fn = split_qscript(qscript, group=True)
         assert len(tapes) == 2
 
     def test_number_of_qscripts(self):
@@ -449,14 +449,14 @@ class TestSumExpand:
         S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
         qs = QuantumScript(measurements=[qml.expval(S)])
 
-        tapes, fn = split_tape(qs, group=False)
+        tapes, fn = split_qscript(qs, group=False)
         assert len(tapes) == 3
 
-        tapes, fn = split_tape(qs, group=True)
+        tapes, fn = split_qscript(qs, group=True)
         assert len(tapes) == 2
 
     def test_non_sum_tape(self):
-        """Test that the ``split_tape`` function returns the input tape if it does not
+        """Test that the ``split_qscript`` function returns the input tape if it does not
         contain a single measurement with the expectation value of a Sum."""
 
         with AnnotatedQueue() as q:
@@ -464,7 +464,7 @@ class TestSumExpand:
 
         tape = QuantumScript.from_queue(q)
 
-        tapes, fn = split_tape(tape)
+        tapes, fn = split_qscript(tape)
 
         assert len(tapes) == 1
         assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
@@ -474,11 +474,11 @@ class TestSumExpand:
         assert fn(res) == 1.23
 
     def test_multiple_sum_tape(self):
-        """Test that the ``split_tape`` function can expand tapes with multiple sum observables"""
+        """Test that the ``split_qscript`` function can expand tapes with multiple sum observables"""
 
     @pytest.mark.autograd
     def test_sum_dif_autograd(self, tol):
-        """Tests that the split_tape tape transform is differentiable with the Autograd interface"""
+        """Tests that the split_qscript tape transform is differentiable with the Autograd interface"""
         S = qml.op_sum(
             qml.s_prod(-0.2, qml.PauliX(1)),
             qml.s_prod(0.5, qml.prod(qml.PauliZ(1), qml.PauliY(2))),
@@ -514,7 +514,7 @@ class TestSumExpand:
 
         def cost(x):
             qscript.set_parameters(x, trainable_only=False)
-            tapes, fn = split_tape(qscript)
+            tapes, fn = split_qscript(qscript)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
@@ -527,7 +527,7 @@ class TestSumExpand:
 
     @pytest.mark.tf
     def test_sum_dif_tensorflow(self):
-        """Tests that the split_tape tape transform is differentiable with the Tensorflow interface"""
+        """Tests that the split_qscript tape transform is differentiable with the Tensorflow interface"""
 
         import tensorflow as tf
 
@@ -559,7 +559,7 @@ class TestSumExpand:
                 qml.expval(S)
 
             qscript = QuantumScript.from_queue(q)
-            tapes, fn = split_tape(qscript)
+            tapes, fn = split_qscript(qscript)
             res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
 
             assert np.isclose(res, output)
@@ -569,7 +569,7 @@ class TestSumExpand:
 
     @pytest.mark.jax
     def test_sum_dif_jax(self, tol):
-        """Tests that the split_tape tape transform is differentiable with the Jax interface"""
+        """Tests that the split_qscript tape transform is differentiable with the Jax interface"""
         import jax
         from jax import numpy as jnp
 
@@ -608,7 +608,7 @@ class TestSumExpand:
 
         def cost(x):
             qscript.set_parameters(x, trainable_only=False)
-            tapes, fn = split_tape(qscript)
+            tapes, fn = split_qscript(qscript)
             res = qml.execute(tapes, dev, qml.gradients.param_shift, interface="jax")
             return fn(res)
 

@@ -76,7 +76,7 @@ def measurement_grouping(tape, obs_list, coeffs_list):
     """
 
     warnings.warn(
-        "qml.transforms.measurement_grouping is deprecated. Instead, use qml.transforms.split_tape",
+        "qml.transforms.measurement_grouping is deprecated. Instead, use qml.transforms.split_qscript",
         UserWarning,
     )
 

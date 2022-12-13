@@ -148,7 +148,7 @@ more tapes as well as a classical processing function.
 
     ~transforms.broadcast_expand
     ~transforms.measurement_grouping
-    ~transforms.split_tape
+    ~transforms.split_qscript
 
 Decorators and utility functions
 --------------------------------
@@ -195,7 +195,7 @@ from .condition import cond, Conditional
 from .compile import compile
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
-from .split_tape import split_tape
+from .split_qscript import split_qscript
 from .split_non_commuting import split_non_commuting
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
