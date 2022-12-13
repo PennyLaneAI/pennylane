@@ -1501,14 +1501,14 @@ class TestSampleMeasurement:
             """Dummy sampled measurement."""
 
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
-                return qml.math.sum(samples[..., self.wires])
+                return 1
 
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
-        assert qml.math.allequal(circuit(), [dev.shots, 0])
+        assert circuit() == 1
 
     def test_sample_measurement_without_shots(self, device):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
@@ -1521,7 +1521,7 @@ class TestSampleMeasurement:
             """Dummy sampled measurement."""
 
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
-                return qml.math.sum(samples[..., self.wires])
+                return 1
 
         @qml.qnode(dev)
         def circuit():
@@ -1565,7 +1565,7 @@ class TestStateMeasurement:
             """Dummy state measurement."""
 
             def process_state(self, state, wire_order):
-                return qml.math.sum(state)
+                return 1
 
         @qml.qnode(dev)
         def circuit():
@@ -1584,7 +1584,7 @@ class TestStateMeasurement:
             """Dummy state measurement."""
 
             def process_state(self, state, wire_order):
-                return qml.math.sum(state)
+                return 1
 
         @qml.qnode(dev)
         def circuit():
@@ -1622,13 +1622,13 @@ class TestCustomMeasurement:
             """Dummy measurement transform."""
 
             def process(self, qscript, device):
-                return {device.shots: len(qscript)}
+                return 1
 
         @qml.qnode(dev)
         def circuit():
             return MyMeasurement()
 
-        assert circuit() == {dev.shots: len(circuit.tape)}
+        assert circuit() == 1
 
     def test_method_overriden_by_device(self, device):
         """Test that the device can override a measurement process."""
