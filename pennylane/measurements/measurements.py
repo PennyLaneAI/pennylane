@@ -327,8 +327,8 @@ class MeasurementProcess(ABC):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.obs is not None:
-            return self.obs.wires
+        if self._obs is not None:
+            return self._obs.wires
 
         return (
             Wires.all_wires(self._wires)
