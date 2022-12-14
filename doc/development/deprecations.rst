@@ -16,8 +16,8 @@ Pending deprecations
   A new argument ``seed`` has been added, which defaults to ``None`` and can contain an integer with the 
   wanted seed.
 
-  - Still accessible in v0.27
-  - Will be removed in v0.28
+  - Still accessible in v0.28
+  - Will be removed in v0.29
 
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
@@ -55,7 +55,7 @@ Pending deprecations
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
-  - Will be removed in v0.28
+  - Will be removed in v0.29
 
   Instead, it is recommended to simply
   pass Hamiltonians to the ``qml.expval`` function inside QNodes:
