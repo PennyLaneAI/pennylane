@@ -64,7 +64,7 @@ class TestQNode:
 
         # gradients should work
         grad = jax.jit(jax.grad(circuit))(a)
-        assert isinstance(grad, jax.numpy.DeviceArray)
+        assert isinstance(grad, jax.Array)
         assert grad.shape == ()
 
     def test_changing_trainability(self, dev_name, diff_method, mode, interface, mocker, tol):
@@ -780,9 +780,9 @@ class TestQubitIntegration:
 
         assert isinstance(res, tuple)
 
-        assert isinstance(res[0], jax.numpy.DeviceArray)
+        assert isinstance(res[0], jax.Array)
         assert res[0].shape == (10,)
-        assert isinstance(res[1], jax.numpy.DeviceArray)
+        assert isinstance(res[1], jax.Array)
         assert res[1].shape == (10,)
 
     def test_counts(self, dev_name, diff_method, mode, interface):
