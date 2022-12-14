@@ -590,7 +590,7 @@
   to
 
   ```python
-  def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
+  def statistics(self, circuit: QuantumTape, shot_range=None, bin_size=None):
   ```
   [(#3421)](https://github.com/PennyLaneAI/pennylane/pull/3421)
 

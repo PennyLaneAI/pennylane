@@ -49,11 +49,11 @@ classes. These classes are subclassed to implement measurements in PennyLane.
 
 * Each :class:`MeasurementTransform` subclass represents a measurement process that requires
   the application of a batch transform, which contains a :meth:`MeasurementTransform.process` method
-  that converts the given quantum script into a batch of quantum scripts and executes them using the
+  that converts the given quantum tape into a batch of quantum tapes and executes them using the
   device. This method should always have the same arguments:
 
-  * qscript (QuantumScript): quantum script to transform
-  * device (Device): device used to transform the quantum script
+  * tape (QuantumTape): quantum tape to transform
+  * device (Device): device used to transform the quantum tape
 
   The main difference between a :class:`MeasurementTransform` and a
   :func:`~pennylane.batch_transform` is that a batch transform is tracked by the gradient transform,
