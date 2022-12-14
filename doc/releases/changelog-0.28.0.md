@@ -304,7 +304,7 @@
   array(-0.38876964)
   ```
 
-  The argument `num_directions` determines how many directions of simultaneous perturbation and, therefore, the number of circuit evaluations are used up to a prefactor. See the [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details. Note that the full SPSA optimizer is already available as `qml.SPSAOptimizer`.
+  The argument num_directions determines how many directions of simultaneous perturbation are used, which is proportional to the number of circuit evaluations. See the [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details. Note that the full SPSA optimizer is already available as `qml.SPSAOptimizer`.
   ```
   
 * Multiple mid-circuit measurements can now be combined arithmetically to create new conditionals.
@@ -346,7 +346,7 @@
   >>> print(ps.hamiltonian())
     (-1.23) [X0 Y1]
   ```
-  
+
 * A `sum_expand` function has been added for tapes, which splits a tape measuring a `Sum` expectation into mutliple tapes of summand expectations, and provides a function to recombine the results.
   [(#3230)](https://github.com/PennyLaneAI/pennylane/pull/3230)
   
