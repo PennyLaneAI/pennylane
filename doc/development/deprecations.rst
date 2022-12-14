@@ -106,6 +106,12 @@ Pending deprecations
   - Deprecated in v0.28
   - Will be removed in v0.29
 
+* ``qml.transforms.hamiltonian_expand`` has been deprecated. Users are redirected to the new
+  ``qml.transforms.split_qscript`` function.
+
+  - Deprecated in v0.28
+  - Will be removed in v0.29
+
 Completed deprecation cycles
 ----------------------------
 
