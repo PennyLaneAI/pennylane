@@ -174,7 +174,6 @@ def split_qscript(qscript: QuantumScript, group=True):
     # initial measurement on the qscript and the coefficient
     # NOTE: expval(Sum) is expanded into the expectation of each summand
     # NOTE: expval(SProd) is transformed into expval(SProd.base) and the coeff is updated
-    # TODO: Separate expval(Prod) and expval(Tensor) into different measurements
     measurements_dict = {}  # {m_hash: measurement}
     idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
     for idx, m in enumerate(qscript.measurements):
@@ -214,7 +213,7 @@ def split_qscript(qscript: QuantumScript, group=True):
         else:
             idxs_coeffs_dict[m.hash].append((idx, coeff))
 
-    # Cast the dictionaries into lists (we don't need the hashed anymore)
+    # Cast the dictionaries into lists (we don't need the hashes anymore)
     measurements = list(measurements_dict.values())
     idxs_coeffs = list(idxs_coeffs_dict.values())
 
@@ -283,21 +282,23 @@ def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[Mea
     Returns:
         List[List[MeasurementProcess]]: list of groups of observables with non overlapping wires
     """
-    qwc_groups = []  # [(wires (Wires), m_group (list), pauli group (bool))]
+    qwc_groups = []  # [(wires (Wires), m_group (list), is_pauli (bool))]
     for m in measurements:
         if len(m.wires) == 0:  # measurement acts on all wires: e.g. qml.counts()
-            qwc_groups.append((m.wires, [m], True))
+            qwc_groups.append((m.wires, [m], True))  # use True because observable is ``qml.PauliZ``
             continue
 
         op_added = False
         obs = m.obs or _pauli_z(m.wires)
         for idx, (wires, group, is_pauli) in enumerate(qwc_groups):
             if is_pauli and is_pauli_word(obs):
+                # use pauli grouping functionality if all the elements in the group are pauli words
                 obs_group = [m.obs or _pauli_z(m.wires) for m in group]
                 if len(group_observables(obs_group + [obs])) == 1:
                     qwc_groups[idx] = (wires + m.wires, group + [m], True)
                     op_added = True
                     break
+            # check overlapping wires
             if len(wires) > 0 and all(wire not in m.wires for wire in wires):
                 qwc_groups[idx] = (wires + m.wires, group + [m], False)
                 op_added = True
