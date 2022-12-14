@@ -19,8 +19,11 @@ from typing import List
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess
+from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, SProd, Sum
+from pennylane.pauli import group_observables, is_pauli_word
 from pennylane.tape import QuantumScript
+from pennylane.wires import Wires
 
 
 # pylint: disable=too-many-branches, too-many-statements
@@ -280,20 +283,37 @@ def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[Mea
     Returns:
         List[List[MeasurementProcess]]: list of groups of observables with non overlapping wires
     """
-    qwc_groups = []
+    qwc_groups = []  # [(wires (Wires), m_group (list), pauli group (bool))]
     for m in measurements:
         if len(m.wires) == 0:  # measurement acts on all wires: e.g. qml.counts()
-            qwc_groups.append((m.wires, [m]))
+            qwc_groups.append((m.wires, [m], True))
             continue
 
         op_added = False
-        for idx, (wires, group) in enumerate(qwc_groups):
+        obs = m.obs or _pauli_z(m.wires)
+        for idx, (wires, group, is_pauli) in enumerate(qwc_groups):
+            if is_pauli and is_pauli_word(obs):
+                obs_group = [m.obs or _pauli_z(m.wires) for m in group]
+                if len(group_observables(obs_group + [obs])) == 1:
+                    qwc_groups[idx] = (wires + m.wires, group + [m], True)
+                    op_added = True
+                    break
             if len(wires) > 0 and all(wire not in m.wires for wire in wires):
-                qwc_groups[idx] = (wires + m.wires, group + [m])
+                qwc_groups[idx] = (wires + m.wires, group + [m], False)
                 op_added = True
                 break
 
         if not op_added:
-            qwc_groups.append((m.wires, [m]))
+            qwc_groups.append((m.wires, [m], is_pauli_word(obs)))
 
     return [group[1] for group in qwc_groups]
+
+
+def _pauli_z(wires: Wires):
+    """Generate ``PauliZ`` operator.
+
+    Args:
+        wires (Wires): wires that the operator acts on"""
+    if len(wires) == 1:
+        return qml.PauliZ(0)
+    return Tensor(*[qml.PauliZ(w) for w in wires])

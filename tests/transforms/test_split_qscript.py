@@ -149,8 +149,8 @@ class TestSplitQscript:
     @pytest.mark.parametrize(("qscript", "output"), zip(QSCRIPTS, OUTPUTS))
     def test_qscripts(self, qscript, output):
         """Tests that the split_qscript transform returns the correct value"""
-
         qscripts, fn = split_qscript(qscript)
+        qscripts = [q.expand() for q in qscripts]
         results = dev.batch_execute(qscripts)
         expval = fn(results)
 
@@ -162,6 +162,7 @@ class TestSplitQscript:
         if we switch grouping off"""
 
         qscripts, fn = split_qscript(qscript, group=False)
+        qscripts = [q.expand() for q in qscripts]
         results = dev.batch_execute(qscripts)
         expval = fn(results)
 
