@@ -799,3 +799,26 @@ class TestEvolution:
         op = Evolution(base, 2)
 
         assert qml.equal(op.simplify(), Evolution(base.simplify(), 2))
+
+    @pytest.mark.parametrize(
+        "base",
+        [
+            qml.pow(qml.PauliX(0) + qml.PauliY(1)),
+            qml.adjoint(qml.PauliZ(2)),
+            qml.s_prod(0.5, qml.PauliX(0)),
+        ],
+    )
+    def test_generator_not_observable_class(self, base):
+        """Test that qml.generator will return generator if it is_hermitian, but is not a subclass of Observable"""
+        op = Evolution(base, 1)
+        gen = qml.generator(op)[0]
+        assert qml.equal(gen, base)
+
+    def test_generator_error_if_not_hermitian(self):
+        """Tests that an error is raised if the generator is not hermitian."""
+        op = Evolution(qml.RX(np.pi / 3, 0), 1)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="of operation Evolution is not hermitian"
+        ):
+            qml.generator(op)
