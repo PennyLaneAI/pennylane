@@ -180,7 +180,7 @@ def test_kron():
         ),
     ],
 )
-def test_gammainc(self, n, t, gamma_ref):
+def test_gammainc(n, t, gamma_ref):
     """Test that the lower incomplete Gamma function is computed correctly."""
     gamma = fn.gammainc(n, t)
 
