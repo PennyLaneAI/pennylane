@@ -264,7 +264,7 @@ class TestSplitQscript:
             -3.41123470e-01,
         ]
 
-        with tf.Gradientqscript() as gqscript:
+        with tf.GradientTape() as gtape:
             with AnnotatedQueue() as q_qscript:
                 for i in range(2):
                     qml.RX(var[i, 0], wires=0)
@@ -280,7 +280,7 @@ class TestSplitQscript:
 
             assert np.allclose(res, output)
 
-            g = gqscript.gradient(res, var)
+            g = gtape.gradient(res, var)
             assert np.allclose(list(g[0]) + list(g[1]), output2)
 
     @pytest.mark.jax
