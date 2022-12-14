@@ -48,8 +48,6 @@
           return CountState(state=self.state)
   ```
 
-  When creating a custom measurement with new attributes defined in `__init__`, the `__copy__` method needs to be redefined similarly to the example above.
-
   We can now execute the new measurement in a QNode as follows.
 
   ```python
@@ -120,7 +118,7 @@
 
   ```pycon
   >>> import pennylane as qml
-  >>> from qml.qchem import mol_data
+  >>> from pennylane.qchem import mol_data
   >>> mol_data("BeH2")
   (['Be', 'H', 'H'],
   array([[ 4.79405604,  0.29290815,  0.        ],
@@ -144,15 +142,15 @@
   >>> charge = 1
   >>> basis_names = ["6-311G", "CC-PVDZ"] 
   >>> for basis_name in basis_names:
-  ...     mol = qchem.Molecule(symbols, geometry, charge=charge, basis_name=basis_name)
-  ...     print(qchem.hf_energy(mol)())
+  ...     mol = qml.qchem.Molecule(symbols, geometry, charge=charge, basis_name=basis_name)
+  ...     print(qml.qchem.hf_energy(mol)())
   [-2.84429531] 
   [-2.84061284]
   ```
 
 <h4>A bunch of new operators 👀</h4>
 
-* The controlled CZ gate and Hadamard gate are now available via `qml.CCZ` and `qml.CH`, respectively.
+* The controlled CZ gate and controlled Hadamard gate are now available via `qml.CCZ` and `qml.CH`, respectively.
   [(#3408)](https://github.com/PennyLaneAI/pennylane/pull/3408)
 
   ```pycon
@@ -236,7 +234,8 @@
   The operation accepts a `subspace` keyword argument which determines which variant of the qutrit Hadamard to use.
 
   ```pycon
-  >>> qml.THadamard(wires=0, subspace=[0, 1]).matrix()
+  >>> th = qml.THadamard(wires=0, subspace=[0, 1])
+  >>> qml.matrix(th)
   array([[ 0.70710678+0.j,  0.70710678+0.j,  0.        +0.j],
         [ 0.70710678+0.j, -0.70710678+0.j,  0.        +0.j],
         [ 0.        +0.j,  0.        +0.j,  1.        +0.j]])
@@ -295,7 +294,7 @@
 
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2)
-  >>> x = pnp.array(0.4, requires_grad=True)
+  >>> x = np.array(0.4, requires_grad=True)
   >>> @qml.qnode(dev)
   ... def circuit(x):
   ...     qml.RX(x, 0)
@@ -306,7 +305,7 @@
   array(-0.38876964)
   ```
 
-  The argument `num_directions` determines how many directions of simultaneous perturbation and, therefore, the number of circuit evaluations are used up to a prefactor. See the [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details. Note: The full SPSA optimizer is already available as `qml.SPSAOptimizer`.
+  The argument `num_directions` determines how many directions of simultaneous perturbation and, therefore, the number of circuit evaluations are used up to a prefactor. See the [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details. Note that the full SPSA optimizer is already available as `qml.SPSAOptimizer`.
   ```
 
 * A new method called `pauli_decompose()` has been added to the `qml.pauli` module, which takes a hermitian matrix, decomposes it in the Pauli basis, and returns it either as a `qml.Hamiltonian` or `qml.PauliSentence` instance.
@@ -370,7 +369,7 @@
          [-0.38466667, -0.19233333,  0.        ,  0.        ,  0.19233333]])>
   ```
 
-* The PyTorch interface is now fully supported when `qml.enable_return()` has been called, allowing the calculation of Jacobian and Hessian using custom differentiation methods (e.g., parameter-shift, finite difference, or adjoint).
+* The PyTorch interface is now fully supported when `qml.enable_return()` has been called, allowing the calculation of the Jacobian and the Hessian using custom differentiation methods (e.g., parameter-shift, finite difference, or adjoint).
   [(#3416)](https://github.com/PennyLaneAI/pennylane/pull/3414)
   
   ```python
@@ -448,6 +447,9 @@
   [(#3159)](https://github.com/PennyLaneAI/pennylane/pull/3159)
 
   ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
   def circuit():
       qml.Hadamard(wires=0)
       qml.Hadamard(wires=1)
@@ -534,7 +536,7 @@
 * Devices can now disregard observable grouping indices in Hamiltonians through the optional `use_grouping` attribute.
   [(#3456)](https://github.com/PennyLaneAI/pennylane/pull/3456)
 
-* Add the optional argument lazy=True to functions `qml.s_prod`, `qml.prod` and `qml.op_sum` to allow simplification.
+* Add the optional argument `lazy=True` to functions `qml.s_prod`, `qml.prod` and `qml.op_sum` to allow simplification.
   [(#3483)](https://github.com/PennyLaneAI/pennylane/pull/3483)
 
 * Updated the `qml.transforms.zyz_decomposition` function such that it now supports broadcast operators. This means that single-qubit `qml.QubitUnitary` operators, instantiated from a batch of unitaries, can now be decomposed.
