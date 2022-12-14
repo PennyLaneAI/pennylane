@@ -183,6 +183,8 @@ Transforms for error mitigation
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
 """
+import warnings
+
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
@@ -235,3 +237,16 @@ from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
+
+# pragma: no cover
+def __getattr__(name):
+    """Raise a deprecation warning and still allow `qml.transforms.hamiltonian_expand`
+    syntax for one release."""
+    if name == "hamiltonian_expand":
+        warnings.warn(
+            "The hamiltonian_expand function is deprecated, please use split_qscript instead.",
+            UserWarning,
+        )
+        return split_qscript
+
+    raise AttributeError(f"Module {__name__} has no attribute {name}")

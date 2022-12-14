@@ -334,3 +334,13 @@ class TestSplitQscript:
         assert len(grad) == len(output2)
         for g, o in zip(grad, output2):
             assert np.allclose(g, o, atol=tol)
+
+    def test_hamiltonian_expand_deprecated(self):
+        qscript = QuantumScript()
+        with pytest.warns(UserWarning, match="hamiltonian_expand function is deprecated"):
+            _ = qml.transforms.hamiltonian_expand(qscript)
+
+        with pytest.warns(UserWarning, match="hamiltonian_expand function is deprecated"):
+            from pennylane.transforms import hamiltonian_expand
+
+        assert hamiltonian_expand is split_qscript
