@@ -111,11 +111,4 @@ def broadcast_expand(tape):
         new_tape.set_parameters(p, trainable_only=False)
         output_tapes.append(new_tape)
 
-    def processing_fn(x):
-        res = qml.math.squeeze(qml.math.stack(x))
-        if not qml.active_return() and qml.math.shape(res) == ():
-            # old return types return a 1d-tensor when res only has one value
-            res = qml.math.expand_dims(res, axis=0)
-        return res
-
-    return output_tapes, processing_fn
+    return output_tapes, lambda x: qml.math.squeeze(qml.math.stack(x))
