@@ -60,7 +60,7 @@ class QNode:
 
             * ``"jax"``: Allows JAX to backpropagate
               through the QNode. The QNode accepts and returns
-              JAX ``DeviceArray`` objects.
+              JAX ``Array`` objects.
 
             * ``None``: The QNode accepts default Python types
               (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,

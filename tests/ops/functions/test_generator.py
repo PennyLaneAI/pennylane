@@ -107,7 +107,7 @@ class TestValidation:
 
         op = SomeOp(0.5, wires=0)
 
-        with pytest.raises(qml.QuantumFunctionError, match="is not an observable"):
+        with pytest.raises(qml.QuantumFunctionError, match="is not hermitian"):
             qml.generator(op)
 
     def test_multi_param_op(self):

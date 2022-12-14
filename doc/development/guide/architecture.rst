@@ -67,9 +67,9 @@ These four defining properties are accessible for all :class:`~.Operator` instan
 >>> op.name
 Rot
 >>> op.parameters
-[DeviceArray(0.1, dtype=float32, weak_type=True),
- DeviceArray(0.2, dtype=float32, weak_type=True),
- DeviceArray(0.3, dtype=float32, weak_type=True)]
+[Array(0.1, dtype=float32, weak_type=True),
+ Array(0.2, dtype=float32, weak_type=True),
+ Array(0.3, dtype=float32, weak_type=True)]
 >>> op.hyperparameters
 {}
 >>> op.wires
@@ -147,9 +147,9 @@ to the tape's ``measurement`` property.
 ...	    qfunc(params)
 
 >>> tape.operations
-[RX(DeviceArray(0.5, dtype=float32), wires=['b']),
+[RX(Array(0.5, dtype=float32), wires=['b']),
  CNOT(wires=['a', 'b']),
- RY(DeviceArray(0.2, dtype=float32), wires=['a'])]
+ RY(Array(0.2, dtype=float32), wires=['a'])]
 
 >>> tape.measurements
 [expval(PauliZ(wires=['b']))]
