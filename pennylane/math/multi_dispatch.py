@@ -404,11 +404,11 @@ def get_trainable_indices(values, like=None):
         import jax
 
         if not any(isinstance(v, jax.core.Tracer) for v in values):
-            # No JAX tracing is occuring; treat all `DeviceArray` objects as trainable.
+            # No JAX tracing is occuring; treat all `Array` objects as trainable.
 
             # pylint: disable=function-redefined,unused-argument
             def trainable(p, **kwargs):
-                return isinstance(p, jax.numpy.DeviceArray)
+                return isinstance(p, jax.Array)
 
         else:
             # JAX tracing is occuring; use the default behaviour (only traced arrays

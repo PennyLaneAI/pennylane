@@ -230,7 +230,7 @@ class gradient_transform(qml.batch_transform):
     .. note::
 
         The input tape might have parameters of various types, including
-        NumPy arrays, JAX DeviceArrays, and TensorFlow and PyTorch tensors.
+        NumPy arrays, JAX Arrays, and TensorFlow and PyTorch tensors.
 
         If the gradient transform is written in a autodiff-compatible manner, either by
         using a framework such as Autograd or TensorFlow, or by using ``qml.math`` for

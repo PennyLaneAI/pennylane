@@ -304,7 +304,7 @@
   ```
   ```pycon
   >>> circuit(x, y)
-  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
+  Array([0.8397495 , 0.16025047], dtype=float32)
   ```
 
   Note that computing the jacobian of vector-valued QNode is not supported with JAX
@@ -322,7 +322,7 @@
   
   ```pycon
   >>> jax.grad(cost, argnums=[0])(x, y)
-  (DeviceArray(-0.2050439, dtype=float32),)
+  (Array(-0.2050439, dtype=float32),)
   ```
 
 <h4>More drawing styles 🎨</h4>
