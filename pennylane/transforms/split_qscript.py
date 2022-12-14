@@ -289,6 +289,8 @@ def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[Mea
             continue
 
         op_added = False
+        # when m.obs is None the measurement acts on the basis states, and thus we can assume that
+        # the observable is ``qml.PauliZ`` for all measurement wires
         obs = m.obs or _pauli_z(m.wires)
         for idx, (wires, group, is_pauli) in enumerate(qwc_groups):
             if is_pauli and is_pauli_word(obs):
