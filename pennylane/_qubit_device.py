@@ -232,7 +232,7 @@ class QubitDevice(Device):
         When overriding the logic of a :class:`~pennylane.measurements.MeasurementTransform`, the
         method defined by the device should only have a single argument:
 
-        * qscript: quantum script to transform
+        * tape: quantum tape to transform
 
     **Example:**
 
@@ -796,7 +796,7 @@ class QubitDevice(Device):
             # Check if there is an overriden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
-                    results.append(method(qscript=circuit))
+                    results.append(method(tape=circuit))
                 else:
                     results.append(method(m, shot_range=shot_range, bin_size=bin_size))
             # TODO: Remove return_type when `observables` argument is removed from this method
@@ -908,7 +908,7 @@ class QubitDevice(Device):
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
             elif isinstance(m, MeasurementTransform):
-                results.append(m.process(qscript=circuit, device=self))
+                results.append(m.process(tape=circuit, device=self))
 
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
                 results.append(self._measure(m, shot_range=shot_range, bin_size=bin_size))
@@ -1022,7 +1022,7 @@ class QubitDevice(Device):
             # Check if there is an overriden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
-                    result = method(qscript=circuit)
+                    result = method(tape=circuit)
                 else:
                     result = method(m, shot_range=shot_range, bin_size=bin_size)
             # 1. Based on the measurement type, compute statistics
@@ -1123,7 +1123,7 @@ class QubitDevice(Device):
                 result = self.shadow_expval(obs, circuit=circuit)
 
             elif isinstance(m, MeasurementTransform):
-                result = m.process(qscript=circuit, device=self)
+                result = m.process(tape=circuit, device=self)
 
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
