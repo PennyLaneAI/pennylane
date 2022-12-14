@@ -284,6 +284,7 @@
   >>> param = np.array(np.pi / 4, requires_grad=True)
   >>> qml.grad(qml.qinfo.purity(circuit, wires=[0]))(param)
   -0.5
+  ```
 
 * A new gradient transform, `qml.gradients.spsa_grad`, that is based on the idea of SPSA is now available.
   [(#3366)](https://github.com/PennyLaneAI/pennylane/pull/3366)
