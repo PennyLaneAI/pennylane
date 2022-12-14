@@ -1278,7 +1278,7 @@ class TestTapeExpansion:
             pytest.skip("JAX only supports first derivatives")
 
         dev = qml.device(dev_name, wires=3, shots=None)
-        spy = mocker.spy(qml.transforms, "split_qscript")
+        spy = mocker.spy(qml.transforms, "split_tape")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode, max_diff=max_diff)
@@ -1337,7 +1337,7 @@ class TestTapeExpansion:
             pytest.skip("JAX only supports first derivatives")
 
         dev = qml.device(dev_name, wires=3, shots=50000)
-        spy = mocker.spy(qml.transforms, "split_qscript")
+        spy = mocker.spy(qml.transforms, "split_tape")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode, max_diff=max_diff)

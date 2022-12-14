@@ -455,7 +455,7 @@ def map_batch_transform(transform, tapes):
     batch transform across both of the these tapes in such a way
     that allows us to submit a single job for execution:
 
-    >>> tapes, fn = map_batch_transform(qml.transforms.split_qscript, [tape1, tape2])
+    >>> tapes, fn = map_batch_transform(qml.transforms.split_tape, [tape1, tape2])
     >>> dev = qml.device("default.qubit", wires=2)
     >>> fn(qml.execute(tapes, dev, qml.gradients.param_shift))
     [0.9950041652780257, 0.8150893013179248]

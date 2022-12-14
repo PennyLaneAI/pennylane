@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
-from pennylane.transforms import split_qscript
+from pennylane.transforms import split_tape
 
 dev = qml.device("default.qubit", wires=4)
 """Defines the device used for all tests"""
@@ -28,13 +28,9 @@ H1 = qml.Hamiltonian([1.5, 1.5], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @
 S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1)))
 
 """Defines circuits to be used in queueing/output tests"""
-with AnnotatedQueue() as q_qscript1:
-    qml.PauliX(0)
-    qml.expval(H1)
-    qml.expval(S1)
-    qml.expval(S1)
-    qml.state()
-qscript1 = QuantumScript.from_queue(q_qscript1)
+tape1 = QuantumScript(
+    [qml.PauliX(0)], [qml.expval(H1), qml.expval(S1), qml.expval(S1), qml.state()]
+)
 
 H2 = qml.Hamiltonian(
     [1, 3, -2, 1, 1],
@@ -53,33 +49,27 @@ S2 = qml.op_sum(
     qml.PauliX(2),
     qml.prod(qml.PauliZ(0), qml.PauliX(1)),
 )
-with AnnotatedQueue() as q_qscript2:
-    qml.Hadamard(0)
-    qml.Hadamard(1)
-    qml.PauliZ(1)
-    qml.PauliX(2)
-    qml.expval(H2)
-    qml.expval(S2)
-    qml.probs(op=qml.PauliZ(0))
-    qml.expval(S2)
-qscript2 = QuantumScript.from_queue(q_qscript2)
+tape2 = QuantumScript(
+    [qml.Hadamard(0), qml.Hadamard(1), qml.PauliZ(1), qml.PauliX(2)],
+    [qml.expval(H2), qml.expval(S2), qml.probs(op=qml.PauliZ(0)), qml.expval(S2)],
+)
 
 H3 = 1.5 * qml.PauliZ(0) @ qml.PauliZ(1) + 0.3 * qml.PauliX(1)
 S3 = qml.op_sum(
     qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1))), qml.s_prod(0.3, qml.PauliX(1))
 )
 
-with AnnotatedQueue() as q_qscript3:
-    qml.PauliX(0)
-    qml.expval(H3)
-    qml.expval(S3)
-    qml.probs(wires=1)
-    qml.expval(qml.PauliX(1))
-    qml.expval(S3)
-    qml.probs(op=qml.PauliY(0))
-
-
-qscript3 = QuantumScript.from_queue(q_qscript3)
+tape3 = QuantumScript(
+    [qml.PauliX(0)],
+    [
+        qml.expval(H3),
+        qml.expval(S3),
+        qml.probs(wires=1),
+        qml.expval(qml.PauliX(1)),
+        qml.expval(S3),
+        qml.probs(op=qml.PauliY(0)),
+    ],
+)
 H4 = (
     qml.PauliX(0) @ qml.PauliZ(2)
     + 3 * qml.PauliZ(2)
@@ -97,20 +87,17 @@ S4 = (
     + qml.prod(qml.PauliZ(0), qml.PauliX(1), qml.PauliY(2))
 )
 
-with AnnotatedQueue() as q_qscript4:
-    qml.Hadamard(0)
-    qml.Hadamard(1)
-    qml.PauliZ(1)
-    qml.PauliX(2)
-
-    qml.expval(H4)
-    qml.expval(S4)
-    qml.expval(qml.PauliX(2))
-    qml.expval(S4)
-    qml.expval(qml.PauliX(2))
-
-qscript4 = QuantumScript.from_queue(q_qscript4)
-QSCRIPTS = [qscript1, qscript2, qscript3, qscript4]
+tape4 = QuantumScript(
+    [qml.Hadamard(0), qml.Hadamard(1), qml.PauliZ(1), qml.PauliX(2)],
+    [
+        qml.expval(H4),
+        qml.expval(S4),
+        qml.expval(qml.PauliX(2)),
+        qml.expval(S4),
+        qml.expval(qml.PauliX(2)),
+    ],
+)
+TAPES = [tape1, tape2, tape3, tape4]
 OUTPUTS = [
     [
         -3.0,
@@ -143,54 +130,54 @@ OUTPUTS = [
 ]
 
 
-class TestSplitQscript:
-    """Tests for the split_qscript transform"""
+class TestSplitTape:
+    """Tests for the split_tape transform"""
 
-    @pytest.mark.parametrize(("qscript", "output"), zip(QSCRIPTS, OUTPUTS))
-    def test_qscripts(self, qscript, output):
-        """Tests that the split_qscript transform returns the correct value"""
-        qscripts, fn = split_qscript(qscript)
-        qscripts = [q.expand() for q in qscripts]
-        results = dev.batch_execute(qscripts)
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    def test_tapes(self, tape, output):
+        """Tests that the split_tape transform returns the correct value"""
+        tapes, fn = split_tape(tape)
+        tapes = [q.expand() for q in tapes]
+        results = dev.batch_execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
-    @pytest.mark.parametrize(("qscript", "output"), zip(QSCRIPTS, OUTPUTS))
-    def test_no_grouping(self, qscript, output):
-        """Tests that the split_qscript transform returns the correct value
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    def test_no_grouping(self, tape, output):
+        """Tests that the split_tape transform returns the correct value
         if we switch grouping off"""
 
-        qscripts, fn = split_qscript(qscript, group=False)
-        qscripts = [q.expand() for q in qscripts]
-        results = dev.batch_execute(qscripts)
+        tapes, fn = split_tape(tape, group=False)
+        tapes = [q.expand() for q in tapes]
+        results = dev.batch_execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
-    def test_number_of_qscripts(self):
-        """Tests the correct number of quantum scripts are produced."""
+    def test_number_of_tapes(self):
+        """Tests the correct number of quantum tapes are produced."""
 
         H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
         S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
 
         qs = QuantumScript(measurements=[qml.expval(H), qml.expval(S)])
 
-        qscripts, _ = split_qscript(qs, group=False)
-        assert len(qscripts) == 3
+        tapes, _ = split_tape(qs, group=False)
+        assert len(tapes) == 3
 
-        qscripts, _ = split_qscript(qs, group=True)
-        assert len(qscripts) == 2
+        tapes, _ = split_tape(qs, group=True)
+        assert len(tapes) == 2
 
-    def test_non_ham_and_non_sum_qscript(self):
-        """Test that the ``split_qscript`` function returns the input qscript if it does not
+    def test_non_ham_and_non_sum_tape(self):
+        """Test that the ``split_tape`` function returns the input tape if it does not
         contain a single measurement with the expectation value of a Sum or a Hamiltonian."""
 
-        qscript = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
-        qscripts, fn = split_qscript(qscript)
+        tape = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
+        tapes, fn = split_tape(tape)
 
-        assert len(qscripts) == 1
-        assert isinstance(list(qscripts[0])[0].obs, qml.PauliZ)
+        assert len(tapes) == 1
+        assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
         # Old return types return a list for a single value:
         # e.g. qml.expval(qml.PauliX(0)) = [1.23]
         res = [1.23] if qml.active_return() else [[1.23]]
@@ -198,7 +185,7 @@ class TestSplitQscript:
 
     @pytest.mark.autograd
     def test_dif_autograd(self, tol):
-        """Tests that the split_qscript qscript transform is differentiable with the Autograd interface"""
+        """Tests that the split_tape tape transform is differentiable with the Autograd interface"""
 
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
@@ -218,7 +205,7 @@ class TestSplitQscript:
             0.64123,
         ]
 
-        with AnnotatedQueue() as q_qscript:
+        with AnnotatedQueue() as q_tape:
             for _ in range(2):
                 qml.RX(np.array(0), wires=0)
                 qml.RX(np.array(0), wires=1)
@@ -229,12 +216,12 @@ class TestSplitQscript:
 
             qml.expval(H)
 
-        qscript = QuantumScript.from_queue(q_qscript)
+        tape = QuantumScript.from_queue(q_tape)
 
         def cost(x):
-            qscript.set_parameters(x, trainable_only=False)
-            qscripts, fn = split_qscript(qscript)
-            res = qml.execute(qscripts, dev, qml.gradients.param_shift)
+            tape.set_parameters(x, trainable_only=False)
+            tapes, fn = split_tape(tape)
+            res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
         assert np.allclose(cost(var), output)
@@ -246,7 +233,7 @@ class TestSplitQscript:
 
     @pytest.mark.tf
     def test_dif_tensorflow(self):
-        """Tests that the split_qscript qscript transform is differentiable with the Tensorflow interface"""
+        """Tests that the split_tape tape transform is differentiable with the Tensorflow interface"""
 
         import tensorflow as tf
 
@@ -265,7 +252,7 @@ class TestSplitQscript:
         ]
 
         with tf.GradientTape() as gtape:
-            with AnnotatedQueue() as q_qscript:
+            with AnnotatedQueue() as q_tape:
                 for i in range(2):
                     qml.RX(var[i, 0], wires=0)
                     qml.RX(var[i, 1], wires=1)
@@ -274,9 +261,9 @@ class TestSplitQscript:
                     qml.CNOT(wires=[1, 2])
                     qml.CNOT(wires=[2, 0])
                 qml.expval(H)
-            qscript = QuantumScript.from_queue(q_qscript)
-            qscripts, fn = split_qscript(qscript)
-            res = fn(qml.execute(qscripts, dev, qml.gradients.param_shift, interface="tf"))
+            tape = QuantumScript.from_queue(q_tape)
+            tapes, fn = split_tape(tape)
+            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
 
             assert np.allclose(res, output)
 
@@ -285,7 +272,7 @@ class TestSplitQscript:
 
     @pytest.mark.jax
     def test_sum_dif_jax(self, tol):
-        """Tests that the split_qscript transform is differentiable with the Jax interface"""
+        """Tests that the split_tape transform is differentiable with the Jax interface"""
         import jax
         from jax import numpy as jnp
 
@@ -320,12 +307,12 @@ class TestSplitQscript:
 
             qml.expval(S)
 
-        qscript = QuantumScript.from_queue(q)
+        tape = QuantumScript.from_queue(q)
 
         def cost(x):
-            qscript.set_parameters(x, trainable_only=False)
-            qscripts, fn = split_qscript(qscript)
-            res = qml.execute(qscripts, dev, qml.gradients.param_shift, interface="jax")
+            tape.set_parameters(x, trainable_only=False)
+            tapes, fn = split_tape(tape)
+            res = qml.execute(tapes, dev, qml.gradients.param_shift, interface="jax")
             return fn(res)
 
         assert np.isclose(cost(var), output)
@@ -336,11 +323,11 @@ class TestSplitQscript:
             assert np.allclose(g, o, atol=tol)
 
     def test_hamiltonian_expand_deprecated(self):
-        qscript = QuantumScript()
+        tape = QuantumScript()
         with pytest.warns(UserWarning, match="hamiltonian_expand function is deprecated"):
-            _ = qml.transforms.hamiltonian_expand(qscript)
+            _ = qml.transforms.hamiltonian_expand(tape)
 
         with pytest.warns(UserWarning, match="hamiltonian_expand function is deprecated"):
             from pennylane.transforms import hamiltonian_expand
 
-        assert hamiltonian_expand is split_qscript
+        assert hamiltonian_expand is split_tape
