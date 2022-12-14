@@ -204,10 +204,10 @@ def enable_return():
                 return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         >>> jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
-        ((DeviceArray(-0.19767681, dtype=float32, weak_type=True),
-          DeviceArray(-0.09784342, dtype=float32, weak_type=True)),
-         (DeviceArray(-0.09784339, dtype=float32, weak_type=True),
-          DeviceArray(-0.19767687, dtype=float32, weak_type=True)))
+        ((Array(-0.19767681, dtype=float32, weak_type=True),
+          Array(-0.09784342, dtype=float32, weak_type=True)),
+         (Array(-0.09784339, dtype=float32, weak_type=True),
+          Array(-0.19767687, dtype=float32, weak_type=True)))
 
         The new return types system also unlocks the use of ``probs`` mixed with different measurements with JAX:
 
@@ -231,8 +231,8 @@ def enable_return():
             x = jax.numpy.array([0.1, 0.2, 0.3])
 
         >>> jax.jacobian(circuit)(x)
-        (DeviceArray([-9.9833414e-02, -7.4505806e-09,  6.9285655e-10], dtype=float32),
-         DeviceArray([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
+        (Array([-9.9833414e-02, -7.4505806e-09,  6.9285655e-10], dtype=float32),
+         Array([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
                       [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
                       [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
                       [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32))
@@ -264,15 +264,15 @@ def enable_return():
                 return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         >>> jax.hessian(circuit)(params)
-        ((DeviceArray([[ 0.,  0.],
+        ((Array([[ 0.,  0.],
                         [ 2., -3.]], dtype=float32),
-          DeviceArray([[[-0.5,  0. ],
+          Array([[[-0.5,  0. ],
                        [ 0. ,  0. ]],
                       [[ 0.5,  0. ],
                        [ 0. ,  0. ]]], dtype=float32)),
-         (DeviceArray([[ 0.07677898,  0.0563341 ],
+         (Array([[ 0.07677898,  0.0563341 ],
                        [ 0.07238522, -1.830669  ]], dtype=float32),
-          DeviceArray([[[-4.9707499e-01,  2.9999996e-04],
+          Array([[[-4.9707499e-01,  2.9999996e-04],
                         [-6.2500127e-04,  1.2500001e-04]],
                        [[ 4.9707499e-01, -2.9999996e-04],
                         [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))

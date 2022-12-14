@@ -75,7 +75,7 @@ class TestQNode:
 
         # gradients should work
         grad = jax.grad(circuit)(a)
-        assert isinstance(grad, jax.numpy.DeviceArray)
+        assert isinstance(grad, jax.Array)
         assert grad.shape == tuple()
 
     def test_changing_trainability(self, dev_name, diff_method, mode, interface, mocker, tol):
@@ -704,7 +704,7 @@ class TestQubitIntegration:
         res = circuit()
 
         assert res.shape == (2, 10)
-        assert isinstance(res, jax.numpy.DeviceArray)
+        assert isinstance(res, jax.Array)
 
     def test_chained_qnodes(self, dev_name, diff_method, mode, interface):
         """Test that the gradient of chained QNodes works without error"""

@@ -596,10 +596,10 @@
 
   ```pycon
   >>> jax.jacobian(circuit, argnums=[0, 1])(a, b)
-  ((DeviceArray(0.35017549, dtype=float64, weak_type=True),
-  DeviceArray(-0.4912955, dtype=float64, weak_type=True)),
-  (DeviceArray(5.55111512e-17, dtype=float64, weak_type=True),
-  DeviceArray(0., dtype=float64, weak_type=True)))
+  ((Array(0.35017549, dtype=float64, weak_type=True),
+  Array(-0.4912955, dtype=float64, weak_type=True)),
+  (Array(5.55111512e-17, dtype=float64, weak_type=True),
+  Array(0., dtype=float64, weak_type=True)))
   ```
 
 * Updated `qml.transforms.split_non_commuting` to support the new return types.
