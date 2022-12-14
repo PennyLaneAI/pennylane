@@ -72,8 +72,6 @@
   4715.000000000001
   ```
 
-  In future releases, all of the staple measurements — e.g., `qml.state`, `qml.probs`, and `qml.expval` — will be facilitated with additional subclasses of `MeasurementProcess`. 
-
   For more information about these new features, see the documentation for [`qml.measurements`](https://docs.pennylane.ai/en/stable/code/qml_measurements.html).
 
 <h4>ZX Calculus 🧮</h4>
@@ -155,7 +153,7 @@
 
   ```pycon
   >>> ccz = qml.CCZ(wires=[0, 1, 2])
-  >>> matrix = ccz.compute_matrix()
+  >>> qml.matrix(ccz)
   [[ 1  0  0  0  0  0  0  0]
    [ 0  1  0  0  0  0  0  0]
    [ 0  0  1  0  0  0  0  0]
@@ -165,11 +163,27 @@
    [ 0  0  0  0  0  0  1  0]
    [ 0  0  0  0  0  0  0 -1]]
   >>> ch = qml.CH(wires=[0, 1])
-  >>> matrix = ch.compute_matrix()
+  >>> qml.matrix(ch)
   [[ 1.          0.          0.          0.        ]
    [ 0.          1.          0.          0.        ]
    [ 0.          0.          0.70710678  0.70710678]
    [ 0.          0.          0.70710678 -0.70710678]]
+  ```
+
+* Three new parametric operators, `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10`, are now available. Each of these operators performs a phase shift akin to `qml.ControlledPhaseShift` but on different positions of the state vector.
+  [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...     qml.PauliX(wires=1)
+  ...     qml.CPhaseShift01(phi=1.23, wires=[0,1])
+  ...     return qml.state()
+  ...
+  >>> circuit()
+  tensor([0.        +0.j       , 0.33423773+0.9424888j, 
+          1.        +0.j       , 0.        +0.j       ], requires_grad=True)
   ```
 
 * A new gate operation called `qml.FermionicSWAP` has been added. This implements the exchange of spin orbitals
@@ -189,22 +203,6 @@
   ```pycon
   >>> circuit(0.1)
   array([0.+0.j, 0.9975+0.04992j, 0.0025-0.04992j, 0.+0.j])
-  ```
-
-* Three new parametric operators, `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10`, are now available. Each of these operators performs a phase shift akin to `qml.ControlledPhaseShift` but on different positions of the state vector.
-  [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
-
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=2)
-  >>> @qml.qnode(dev)
-  >>> def circuit():
-  ...     qml.PauliX(wires=1)
-  ...     qml.CPhaseShift01(phi=1.23, wires=[0,1])
-  ...     return qml.state()
-  ...
-  >>> circuit()
-  tensor([0.        +0.j       , 0.33423773+0.9424888j, 
-          1.        +0.j       , 0.        +0.j       ], requires_grad=True)
   ```
 
 * Create operators defined from a generator via `qml.ops.op_math.Evolution`.
@@ -264,21 +262,21 @@
 
   - `qml.qinfo.purity` can transform a QNode returning a state to a function that returns the purity:
 
-  ```python3
-  dev = qml.device("default.mixed", wires=2)
+    ```python3
+    dev = qml.device("default.mixed", wires=2)
 
-  @qml.qnode(dev)
-  def circuit(x):
-    qml.IsingXX(x, wires=[0, 1])
-    return qml.state()
-  ```
+    @qml.qnode(dev)
+    def circuit(x):
+      qml.IsingXX(x, wires=[0, 1])
+      return qml.state()
+    ```
 
-  ```pycon
-  >>> qml.qinfo.purity(circuit, wires=[0])(np.pi / 2)
-  0.5
-  >>> qml.qinfo.purity(circuit, wires=[0, 1])(np.pi / 2)
-  1.0
-  ```
+    ```pycon
+    >>> qml.qinfo.purity(circuit, wires=[0])(np.pi / 2)
+    0.5
+    >>> qml.qinfo.purity(circuit, wires=[0, 1])(np.pi / 2)
+    1.0
+    ```
 
   As with the other methods in `qml.qinfo`, the purity is fully differentiable:
 
@@ -306,6 +304,27 @@
   ```
 
   The argument `num_directions` determines how many directions of simultaneous perturbation and, therefore, the number of circuit evaluations are used up to a prefactor. See the [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details. Note that the full SPSA optimizer is already available as `qml.SPSAOptimizer`.
+  ```
+  
+* Multiple mid-circuit measurements can now be combined arithmetically to create new conditionals.
+  [(#3159)](https://github.com/PennyLaneAI/pennylane/pull/3159)
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Hadamard(wires=0)
+      qml.Hadamard(wires=1)
+      m0 = qml.measure(wires=0)
+      m1 = qml.measure(wires=1)
+      combined = 2 * m1 + m0
+      qml.cond(combined == 2, qml.RX)(1.3, wires=2)
+      return qml.probs(wires=2)
+  ```
+  ```pycon 
+  >>> circuit()
+  [0.90843735 0.09156265]  
   ```
 
 * A new method called `pauli_decompose()` has been added to the `qml.pauli` module, which takes a hermitian matrix, decomposes it in the Pauli basis, and returns it either as a `qml.Hamiltonian` or `qml.PauliSentence` instance.
@@ -352,7 +371,8 @@
       return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
   ```
 
-  ```
+  ```pycon
+  >>> a = tf.Variable(0.4
   >>> with tf.GradientTape() as tape:
   ...     res = circuit(a)
   ...     res = tf.stack([tf.experimental.numpy.hstack(r) for r in res])
@@ -383,7 +403,7 @@
   def circuit(a, b):
       qml.RY(a, wires=0)
       qml.RX(b, wires=1)
-      qml.CNOT(wires=[0, 1])>
+      qml.CNOT(wires=[0, 1])
       return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
   ```
 
@@ -426,43 +446,7 @@
   DeviceArray(0., dtype=float64, weak_type=True)))
   ```
 
-* Updated `qml.transforms.split_non_commuting` to support the new return types.
-  [(#3414)](https://github.com/PennyLaneAI/pennylane/pull/3414)
-
-* Updated `qml.transforms.mitigate_with_zne` to support the new return types.
-  [(#3415)](https://github.com/PennyLaneAI/pennylane/pull/3415)
-
-* Updated `qml.transforms.metric_tensor`, `qml.transforms.adjoint_metric_tensor`, `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
-  [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
-
-* Updated `qml.transforms.batch_params` and `qml.transforms.batch_input` to support the new return types.
-  [(#3431)](https://github.com/PennyLaneAI/pennylane/pull/3431)
-
-* Updated `qml.transforms.cut_circuit` and `qml.transforms.cut_circuit_mc` to support the new return types.
-  [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
-
 <h3>Improvements 🛠</h3>
-  
-* Multiple mid-circuit measurements can now be combined arithmetically to create new conditionals.
-  [(#3159)](https://github.com/PennyLaneAI/pennylane/pull/3159)
-
-  ```python
-  dev = qml.device("default.qubit", wires=3)
-
-  @qml.qnode(dev)
-  def circuit():
-      qml.Hadamard(wires=0)
-      qml.Hadamard(wires=1)
-      m0 = qml.measure(wires=0)
-      m1 = qml.measure(wires=1)
-      combined = 2 * m1 + m0
-      qml.cond(combined == 2, qml.RX)(1.3, wires=2)
-      return qml.probs(wires=2)
-  ```
-  ```pycon 
-  >>> circuit()
-  [0.90843735 0.09156265]  
-  ```
 
 * `qml.pauli.is_pauli_word` now supports instances of `qml.Hamiltonian`.
   [(#3389)](https://github.com/PennyLaneAI/pennylane/pull/3389)
@@ -553,6 +537,21 @@
 
 * `OperationRecorder` now inherits from `AnnotatedQueue` and `QuantumScript` instead of `QuantumTape`.
   [(#3496)](https://github.com/PennyLaneAI/pennylane/pull/3496)
+
+* Updated `qml.transforms.split_non_commuting` to support the new return types.
+  [(#3414)](https://github.com/PennyLaneAI/pennylane/pull/3414)
+
+* Updated `qml.transforms.mitigate_with_zne` to support the new return types.
+  [(#3415)](https://github.com/PennyLaneAI/pennylane/pull/3415)
+
+* Updated `qml.transforms.metric_tensor`, `qml.transforms.adjoint_metric_tensor`, `qml.qinfo.classical_fisher`, and `qml.qinfo.quantum_fisher` to support the new return types.
+  [(#3449)](https://github.com/PennyLaneAI/pennylane/pull/3449)
+
+* Updated `qml.transforms.batch_params` and `qml.transforms.batch_input` to support the new return types.
+  [(#3431)](https://github.com/PennyLaneAI/pennylane/pull/3431)
+
+* Updated `qml.transforms.cut_circuit` and `qml.transforms.cut_circuit_mc` to support the new return types.
+  [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
 
 <h3>Breaking changes 💔</h3>
 
@@ -683,26 +682,4 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso
-Juan Miguel Arrazola
-Utkarsh Azad
-Samuel Banning
-Astral Cai
-Albert Mitjans Coma
-Ahmed Darwish
-Isaac De Vlugt
-Pieter Eendebak
-Lillian M. A. Frederiksen
-Katharine Hyatt
-Soran Jahangiri
-Edward Jiang
-Christina Lee
-Romain Moyard
-Mudit Pandey
-Kevin Shen
-Matthew Silverman
-Jay Soni
-Antal Száva
-David Wierichs
-Moritz Willmann
-Filippo Vicentini
+Guillermo Alonso, Juan Miguel Arrazola, Utkarsh Azad, Samuel Banning, Astral Cai, Albert Mitjans Coma, Ahmed Darwish, Isaac De Vlugt, Pieter Eendebak, Lillian M. A. Frederiksen, Katharine Hyatt, Soran Jahangiri, Edward Jiang, Christina Lee, Romain Moyard, Mudit Pandey, Kevin Shen, Matthew Silverman, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann, Filippo Vicentini
