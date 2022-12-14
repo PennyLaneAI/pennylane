@@ -202,7 +202,6 @@ def test_unwrap_jax_backward():
     works as expected during a backwards pass"""
     import jax
     from jax import numpy as jnp
-    from jaxlib.xla_extension import DeviceArray
     from jax.interpreters.ad import JVPTracer
 
     p = [
@@ -231,7 +230,7 @@ def test_unwrap_jax_backward():
 
         # outside the context, the original parameters have been restored.
         params = tape.get_parameters(trainable_only=False)
-        assert all(isinstance(i, (DeviceArray, JVPTracer)) for i in params)
+        assert all(isinstance(i, (jax.Array, JVPTracer)) for i in params)
 
         return p[0][0] * p[1] ** 2 * jnp.sin(p[0][1]) * jnp.exp(-0.5 * p[0][2])
 
