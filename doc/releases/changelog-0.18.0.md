@@ -478,7 +478,7 @@
   def group(coeffs, select=None):
     _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
     # in this example, grouped_coeffs is a list of two jax tensors
-    # [DeviceArray([1., 2.], dtype=float32), DeviceArray([3.], dtype=float32)]
+    # [Array([1., 2.], dtype=float32), Array([3.], dtype=float32)]
     return grouped_coeffs[select]
 
   jac_fn = jax.jacobian(group)
