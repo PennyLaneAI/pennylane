@@ -225,7 +225,7 @@ def jvp(tape, tangent, gradient_fn, shots=None, gradient_kwargs=None):
     >>> dev = qml.device("default.qubit", wires=2)
     >>> jvp = fn(dev.batch_execute(jvp_tapes))
     >>> jvp
-    (DeviceArray(-0.62073976, dtype=float32), DeviceArray([-0.3259707 ,  0.32597077], dtype=float32))
+    (Array(-0.62073976, dtype=float32), Array([-0.3259707 ,  0.32597077], dtype=float32))
     """
     gradient_kwargs = gradient_kwargs or {}
     num_params = len(tape.trainable_params)
@@ -357,7 +357,7 @@ def batch_jvp(tapes, tangents, gradient_fn, shots=None, reduction="append", grad
     >>> dev = qml.device("default.qubit", wires=2)
     >>> jvps = fn(dev.batch_execute(jvp_tapes))
     >>> jvps
-    [(DeviceArray(-0.62073976, dtype=float32), DeviceArray([-0.3259707 ,  0.32597077], dtype=float32)), DeviceArray(-0.6900841, dtype=float32)]
+    [(Array(-0.62073976, dtype=float32), Array([-0.3259707 ,  0.32597077], dtype=float32)), Array(-0.6900841, dtype=float32)]
 
     We have two JVPs; one per tape. Each one corresponds to the shape of the output of their respective tape.
     """
