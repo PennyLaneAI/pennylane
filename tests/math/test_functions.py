@@ -1060,7 +1060,7 @@ class TestRequiresGrad:
 
     @pytest.mark.slow
     def test_jax(self):
-        """JAX DeviceArrays differentiability depends on the argnums argument"""
+        """JAX Arrays differentiability depends on the argnums argument"""
         res = None
 
         def cost_fn(t, s):
@@ -1156,7 +1156,7 @@ class TestInBackprop:
 
     @pytest.mark.slow
     def test_jax(self):
-        """The value of in_backprop for JAX DeviceArrays depends on the argnums argument"""
+        """The value of in_backprop for JAX Arrays depends on the argnums argument"""
         res = None
 
         def cost_fn(t, s):
@@ -1699,7 +1699,7 @@ class TestScatterElementAdd:
             return fn.scatter_element_add(weights[0], self.index, weights[1] ** 2)
 
         res = cost([x, y])
-        assert isinstance(res, jax.interpreters.xla.DeviceArray)
+        assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
         grad = jax.grad(lambda weights: cost(weights)[self.index[0], self.index[1]])([x, y])
@@ -1716,7 +1716,7 @@ class TestScatterElementAdd:
             return fn.scatter_element_add(weight_0, self.index, weight_1**2)
 
         res = cost_multi(x, y)
-        assert isinstance(res, jax.interpreters.xla.DeviceArray)
+        assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
         jac = jax.jacobian(lambda *weights: cost_multi(*weights), argnums=[0, 1])(x, y)
@@ -1812,7 +1812,7 @@ class TestScatterElementAddMultiValue:
             )
 
         res = cost([x, y])
-        assert isinstance(res, jax.interpreters.xla.DeviceArray)
+        assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
         scalar_cost = (
