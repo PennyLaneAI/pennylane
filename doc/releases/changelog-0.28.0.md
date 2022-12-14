@@ -683,4 +683,27 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso, Juan Miguel Arrazola, Utkarsh Azad, Samuel Banning, Astral Cai, Albert Mitjans Coma, Ahmed Darwish, Isaac De Vlugt, Pieter Eendebak, Lillian M. A. Frederiksen, Katharine Hyatt, Soran Jahangiri, Edward Jiang, Christina Lee, Romain Moyard, Mudit Pandey, Kevin Shen, Matthew Silverman, Jay Soni, Antal Száva, David Wierichs, Moritz Willmann, Filippo Vicentini
+Guillermo Alonso, 
+Juan Miguel Arrazola, 
+Utkarsh Azad, 
+Samuel Banning, 
+Thomas Bromley, 
+Astral Cai, 
+Albert Mitjans Coma, 
+Ahmed Darwish,
+Isaac De Vlugt, 
+Pieter Eendebak, 
+Lillian M. A. Frederiksen, 
+Katharine Hyatt, 
+Soran Jahangiri, 
+Edward Jiang, 
+Christina Lee, 
+Romain Moyard, 
+Mudit Pandey, 
+Kevin Shen,
+Matthew Silverman, 
+Jay Soni, 
+Antal Száva, 
+David Wierichs,
+Moritz Willmann, and 
+Filippo Vicentini.
