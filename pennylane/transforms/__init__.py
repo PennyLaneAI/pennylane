@@ -238,7 +238,7 @@ from .qcut import cut_circuit, cut_circuit_mc
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
 
-# pragma: no cover
+
 def __getattr__(name):
     """Raise a deprecation warning and still allow `qml.transforms.hamiltonian_expand`
     syntax for one release."""
@@ -249,4 +249,4 @@ def __getattr__(name):
         )
         return split_qscript
 
-    raise AttributeError(f"Module {__name__} has no attribute {name}")
+    raise AttributeError(f"Module {__name__} has no attribute {name}")  # pragma: no cover
