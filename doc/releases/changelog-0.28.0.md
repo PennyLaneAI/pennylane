@@ -79,7 +79,7 @@
 * QNodes can now be converted into ZX diagrams via the PyZX framework.
   [(#3446)](https://github.com/PennyLaneAI/pennylane/pull/3446)
 
-  The ZX-calculus is a graphical approach to quantum processes. ZX diagrams are the medium for which we can envision, say, a quantum circuit in the ZX-calculus language, showing properties of quantum protocols in a visually compact and logically complete fashion.
+  ZX diagrams are the medium for which we can envision a quantum circuit as a graph in the ZX-calculus language, showing properties of quantum protocols in a visually compact and logically complete fashion.
 
   QNodes decorated with `@qml.transforms.to_zx` will return a PyZX graph that represents the computation in the ZX-calculus language. 
 
