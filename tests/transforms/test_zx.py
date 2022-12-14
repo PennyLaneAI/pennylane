@@ -487,7 +487,7 @@ class TestConvertersZX:
         qscript = QuantumScript(operations, [], [])
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="The expansion of the quantum script failed, PyZX does not support",
+            match="The expansion of the quantum tape failed, PyZX does not support",
         ):
             qml.transforms.to_zx(qscript)
 
