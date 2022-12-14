@@ -346,6 +346,7 @@
   >>> print(ps.hamiltonian())
     (-1.23) [X0 Y1]
   ```
+  
 * A `sum_expand` function has been added for tapes, which splits a tape measuring a `Sum` expectation into mutliple tapes of summand expectations, and provides a function to recombine the results.
   [(#3230)](https://github.com/PennyLaneAI/pennylane/pull/3230)
   
