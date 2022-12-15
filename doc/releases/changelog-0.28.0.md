@@ -106,7 +106,7 @@
   Graph(20 vertices, 23 edges)
   ```
 
-  Information about PyZX graphs can be found in the [PyZX Graphs API](https://pyzx.readthedocs.io/en/latest/api.html).
+  Information about PyZX graphs can be found in the [PyZX Graphs API](https://pyzx.readthedocs.io/en/stable/api.html).
 
 <h4>QChem databases and basis sets ⚛️</h4>
 
@@ -602,7 +602,7 @@
 
 <h3>Deprecations 👋</h3>
 
-Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://docs.pennylane.ai/en/latest/development/deprecations.html).
+Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://docs.pennylane.ai/en/stable/development/deprecations.html).
 
 * The following methods are deprecated:
   [(#3281)](https://github.com/PennyLaneAI/pennylane/pull/3281/)
