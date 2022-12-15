@@ -529,7 +529,7 @@
   [(#3452)](https://github.com/PennyLaneAI/pennylane/pull/3452)
 
 * The tolerance for converting openfermion Hamiltonian complex coefficients to real ones has been modified to prevent conversion errors.
-  [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
+  [(#3367)](https://github.com/PennyLaneAI/pennylane/pull/3367)
 
 * `OperationRecorder` now inherits from `AnnotatedQueue` and `QuantumScript` instead of `QuantumTape`.
   [(#3496)](https://github.com/PennyLaneAI/pennylane/pull/3496)
