@@ -153,7 +153,8 @@ def pauli_sentence(op):
     Raises:
         ValueError: Op must be a linear combination of Pauli operators
 
-    Returns ~.PauliSentence
+    Returns:
+        .PauliSentence: the PauliSentence representation of an arithmetic operator or Hamiltonian
     """
     raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
