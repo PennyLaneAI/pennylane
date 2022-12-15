@@ -53,9 +53,12 @@
 
  <h3>Bug fixes</h3>
 
+* Fixed typo in calculation error message and comment in operation.py
+  [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
+
  <h3>Contributors</h3>
 
  This release contains contributions from (in alphabetical order):
  
 Lillian M. A. Frederiksen
-Antal Száva
+Antal Száva, Ikko Ashimine
