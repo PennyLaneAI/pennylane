@@ -239,3 +239,29 @@ def test_nuclear_energy_gradient(symbols, geometry, g_ref):
     args = [mol.coordinates]
     g = qml.grad(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
     assert np.allclose(g, g_ref)
+
+
+class TestJax:
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "g_ref"),
+        [
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+                # HF gradient computed with pyscf using rnuc_grad_method().kernel()
+                np.array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]]),
+            ),
+        ],
+    )
+    @pytest.mark.jax
+    def test_hf_energy_gradient(self, symbols, geometry, g_ref):
+        r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
+        correct."""
+        import jax
+
+        mol = qchem.Molecule(symbols, geometry)
+        args = [jax.numpy.array(mol.coordinates)]
+        g = jax.grad(qchem.hf_energy(mol))(*args)
+        g_ref = jax.numpy.array(g_ref)
+
+        assert np.allclose(g, g_ref)

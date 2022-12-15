@@ -17,7 +17,6 @@ This module contains the functions needed for computing integrals over basis fun
 # pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
 import itertools as it
 
-import autograd.scipy as asp
 from scipy.special import factorial2 as fac2
 
 import pennylane as qml
@@ -172,8 +171,8 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     Args:
         la (integer): angular momentum component for the first Gaussian function
         lb (integer): angular momentum component for the second Gaussian function
-        ra (float): position component of the the first Gaussian function
-        rb (float): position component of the the second Gaussian function
+        ra (float): position component of the first Gaussian function
+        rb (float): position component of the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
         t (integer): number of nodes in the Hermite Gaussian
@@ -193,8 +192,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     array([1.])
     """
     p = alpha + beta
-    q = alpha * beta / p
-    q = np.array(q, requires_grad=True)
+    q = qml.math.array(alpha * beta / p)
     r = ra - rb
 
     if la == lb == t == 0:
@@ -536,8 +534,8 @@ def _diff2(i, j, ri, rj, alpha, beta):
     Args:
         i (integer): angular momentum component for the first Gaussian function
         j (integer): angular momentum component for the second Gaussian function
-        ri (array[float]): position component of the the first Gaussian function
-        rj (array[float]): position component of the the second Gaussian function
+        ri (array[float]): position component of the first Gaussian function
+        rj (array[float]): position component of the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
 
@@ -576,8 +574,8 @@ def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
     Args:
         la (tuple[int]): angular momentum for the first Gaussian function
         lb (tuple[int]): angular momentum for the second Gaussian function
-        ra (array[float]): position vector of the the first Gaussian function
-        rb (array[float]): position vector of the the second Gaussian function
+        ra (array[float]): position vector of the first Gaussian function
+        rb (array[float]): position vector of the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
 
@@ -711,11 +709,11 @@ def _boys(n, t):
     Returns:
         (array[float]): value of the Boys function
     """
-    return np.where(
+    return qml.math.where(
         t == 0.0,
         1 / (2 * n + 1),
-        asp.special.gammainc(n + 0.5, t + (t == 0.0))
-        * asp.special.gamma(n + 0.5)
+        qml.math.gammainc(n + 0.5, t + (t == 0.0))
+        * qml.math.gamma(n + 0.5)
         / (2 * (t + (t == 0.0)) ** (n + 0.5)),
     )  # (t == 0.0) is added to avoid divide by zero
 
@@ -803,8 +801,8 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     Args:
         la (tuple[int]): angular momentum for the first Gaussian function
         lb (tuple[int]): angular momentum for the second Gaussian function
-        ra (array[float]): position vector of the the first Gaussian function
-        rb (array[float]): position vector of the the second Gaussian function
+        ra (array[float]): position vector of the first Gaussian function
+        rb (array[float]): position vector of the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
         r (array[float]): position vector of nucleus
@@ -922,10 +920,10 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
         lb (tuple[int]): angular momentum for the second Gaussian function
         lc (tuple[int]): angular momentum for the third Gaussian function
         ld (tuple[int]): angular momentum for the forth Gaussian function
-        ra (array[float]): position vector of the the first Gaussian function
-        rb (array[float]): position vector of the the second Gaussian function
-        rc (array[float]): position vector of the the third Gaussian function
-        rd (array[float]): position vector of the the forth Gaussian function
+        ra (array[float]): position vector of the first Gaussian function
+        rb (array[float]): position vector of the second Gaussian function
+        rc (array[float]): position vector of the third Gaussian function
+        rd (array[float]): position vector of the forth Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
         gamma (array[float]): exponent of the third Gaussian function

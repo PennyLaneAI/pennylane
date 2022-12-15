@@ -818,3 +818,37 @@ def expm(tensor, like=None):
     from scipy.linalg import expm as scipy_expm
 
     return scipy_expm(tensor)
+
+
+@multi_dispatch(argnum=[1])
+def gammainc(m, t, like=None):
+    r"""Return the lower incomplete Gamma function.
+
+    The lower incomplete Gamma function is defined in scipy as
+
+    .. math::
+
+        \gamma(m, t) = \frac{1}{\Gamma(m)} \int_{0}^{t} x^{m-1} e^{-x} dx,
+
+    where :math:`\Gamma` denotes the Gamma function.
+
+     Args:
+        m (float): exponent of the incomplete Gamma function
+        t (array[float]): upper limit of the incomplete Gamma function
+
+    Returns:
+        (array[float]): value of the incomplete Gamma function
+    """
+    if like == "jax":
+        from jax.scipy.special import gammainc
+
+        return gammainc(m, t)
+
+    if like == "autograd":
+        from autograd.scipy.special import gammainc
+
+        return gammainc(m, t)
+
+    import scipy
+
+    return scipy.special.gammainc(m, t)
