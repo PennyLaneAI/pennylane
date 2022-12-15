@@ -44,7 +44,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     """
     coeffs = qml.math.array([])
 
-    if constant != np.array([0.0]):
+    if not qml.math.allclose(constant, 0.0):
         coeffs = qml.math.concatenate((coeffs, constant))
         operators = [[]]
     else:
@@ -104,18 +104,18 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     + ((1+0j)) [I0]
     """
     ops = []
-    coeffs = np.array([])
+    coeffs = qml.math.array([])
 
     for n, t in enumerate(o_ferm[1]):
         if len(t) == 0:
             ops = ops + [qml.Identity(0)]
-            coeffs = np.array([0.0])
+            coeffs = qml.math.array([0.0])
             coeffs = coeffs + o_ferm[0][n]
         else:
             op = jordan_wigner(t)
             if op != 0:
                 ops = ops + op[1]
-                coeffs = qml.math.concatenate([coeffs, np.array(op[0]) * o_ferm[0][n]])
+                coeffs = qml.math.concatenate([coeffs, qml.math.array(op[0]) * o_ferm[0][n]])
 
     o_qubit = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 

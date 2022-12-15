@@ -118,7 +118,7 @@ def dipole_integrals(mol, core=None, active=None):
         )
 
         # x, y, z components (core orbitals contribution)
-        core_x, core_y, core_z = np.array([0]), np.array([0]), np.array([0])
+        core_x, core_y, core_z = qml.math.array([0]), qml.math.array([0]), qml.math.array([0])
 
         if core is None and active is None:
             return (core_x, core_y, core_z), (d_x, d_y, d_z)

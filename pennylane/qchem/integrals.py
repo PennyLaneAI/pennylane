@@ -504,7 +504,7 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
             + beta * rb[:, np.newaxis, np.newaxis]
         ) / p
 
-        i, j, k = np.roll(np.array([0, 2, 1]), idx)
+        i, j, k = qml.math.roll(qml.math.array([0, 2, 1]), idx)
 
         s = (
             gaussian_moment(la[i], lb[i], ra[i], rb[i], alpha[:, np.newaxis], beta, order, r[i])
