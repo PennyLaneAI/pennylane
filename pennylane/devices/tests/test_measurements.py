@@ -1639,7 +1639,7 @@ class TestCustomMeasurement:
         class MyMeasurement(MeasurementTransform):
             """Dummy measurement transform."""
 
-            def process(self, qscript, device):
+            def process(self, tape, device):
                 return 1
 
         @qml.qnode(dev)
@@ -1666,6 +1666,6 @@ class TestCustomMeasurement:
             return qml.classical_shadow(wires=0)
 
         circuit.device.measurement_map[ClassicalShadowMP] = "test_method"
-        circuit.device.test_method = lambda qscript: 2
+        circuit.device.test_method = lambda tape: 2
 
         assert circuit() == 2
