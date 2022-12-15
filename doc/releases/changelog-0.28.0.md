@@ -305,7 +305,6 @@
   ```
 
   The argument num_directions determines how many directions of simultaneous perturbation are used, which is proportional to the number of circuit evaluations. See the [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details. Note that the full SPSA optimizer is already available as `qml.SPSAOptimizer`.
-  ```
   
 * Multiple mid-circuit measurements can now be combined arithmetically to create new conditionals.
   [(#3159)](https://github.com/PennyLaneAI/pennylane/pull/3159)
@@ -360,7 +359,6 @@
 
   ```python
   import tensorflow as tf
-
   qml.enable_return()
 
   dev = qml.device("default.qubit", wires=2, shots=[1000, 2000, 3000])
@@ -442,10 +440,10 @@
 
   ```pycon
   >>> jax.jacobian(circuit, argnums=[0, 1])(a, b)
-  ((DeviceArray(0.35017549, dtype=float64, weak_type=True),
-  DeviceArray(-0.4912955, dtype=float64, weak_type=True)),
-  (DeviceArray(5.55111512e-17, dtype=float64, weak_type=True),
-  DeviceArray(0., dtype=float64, weak_type=True)))
+  ((Array(0.35017549, dtype=float64, weak_type=True),
+  Array(-0.4912955, dtype=float64, weak_type=True)),
+  (Array(5.55111512e-17, dtype=float64, weak_type=True),
+  Array(0., dtype=float64, weak_type=True)))
   ```
 
 <h3>Improvements 🛠</h3>
@@ -590,7 +588,7 @@
   to
 
   ```python
-  def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
+  def statistics(self, circuit: QuantumTape, shot_range=None, bin_size=None):
   ```
   [(#3421)](https://github.com/PennyLaneAI/pennylane/pull/3421)
 
@@ -649,6 +647,9 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   [(#3505)](https://github.com/PennyLaneAI/pennylane/pull/3505)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug that prevented `qml.gradients.param_shift` from being used for broadcasted tapes.
+  [(#3528)](https://github.com/PennyLaneAI/pennylane/pull/3528)
 
 * Fixed a bug where `qml.transforms.hamiltonian_expand` didn't preserve the type of the input results in its output.
   [(#3339)](https://github.com/PennyLaneAI/pennylane/pull/3339)
