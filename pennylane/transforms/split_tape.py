@@ -190,9 +190,8 @@ def split_tape(tape: QuantumTape, group=True):
                     idxs_coeffs_dict[s_m.hash] = [(idx, coeff)]
                 else:
                     idxs_coeffs_dict[s_m.hash].append((idx, coeff))
-            continue
 
-        if isinstance(obs, Hamiltonian) and isinstance(m, ExpectationMP):
+        elif isinstance(obs, Hamiltonian) and isinstance(m, ExpectationMP):
             for o, coeff in zip(obs.ops, obs.data):
                 o_m = qml.expval(o)
                 if o_m.hash not in measurements_dict:
@@ -200,18 +199,17 @@ def split_tape(tape: QuantumTape, group=True):
                     idxs_coeffs_dict[o_m.hash] = [(idx, coeff)]
                 else:
                     idxs_coeffs_dict[o_m.hash].append((idx, coeff))
-            continue
-
-        coeff = 1
-        if isinstance(obs, SProd) and isinstance(m, ExpectationMP):
-            coeff = obs.scalar
-            m = qml.expval(obs.base)
-
-        if m.hash not in measurements_dict:
-            measurements_dict[m.hash] = m
-            idxs_coeffs_dict[m.hash] = [(idx, coeff)]
         else:
-            idxs_coeffs_dict[m.hash].append((idx, coeff))
+            coeff = 1
+            if isinstance(obs, SProd) and isinstance(m, ExpectationMP):
+                coeff = obs.scalar
+                m = qml.expval(obs.base)
+
+            if m.hash not in measurements_dict:
+                measurements_dict[m.hash] = m
+                idxs_coeffs_dict[m.hash] = [(idx, coeff)]
+            else:
+                idxs_coeffs_dict[m.hash].append((idx, coeff))
 
     # Cast the dictionaries into lists (we don't need the hashes anymore)
     measurements = list(measurements_dict.values())
