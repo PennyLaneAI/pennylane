@@ -98,7 +98,7 @@ Pending deprecations
       qml.RX(0.2, wires=1)
       qml.expval(H)
 
-    tapes, fn = qml.transforms.split_qscript(tape)
+    tapes, fn = qml.transforms.split_tape(tape)
 
 * ``qml.transforms.make_tape`` has been deprecated, and usage will now raise a warning.
   Instead, use ``qml.tape.make_qscript``.
@@ -107,7 +107,7 @@ Pending deprecations
   - Will be removed in v0.29
 
 * ``qml.transforms.hamiltonian_expand`` has been deprecated. Users are redirected to the new
-  ``qml.transforms.split_qscript`` function.
+  ``qml.transforms.split_tape`` function.
 
   - Deprecated in v0.28
   - Will be removed in v0.29

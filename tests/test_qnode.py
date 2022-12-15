@@ -1511,7 +1511,7 @@ class TestTapeExpansion:
         def circuit():
             return qml.expval(H)
 
-        spy = mocker.spy(qml.transforms, "split_qscript")
+        spy = mocker.spy(qml.transforms, "split_tape")
         res = circuit()
         assert np.allclose(res, c[2], atol=0.1)
 

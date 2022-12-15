@@ -148,7 +148,7 @@ more tapes as well as a classical processing function.
 
     ~transforms.broadcast_expand
     ~transforms.measurement_grouping
-    ~transforms.split_qscript
+    ~transforms.split_tape
 
 Decorators and utility functions
 --------------------------------
@@ -197,7 +197,7 @@ from .condition import cond, Conditional
 from .compile import compile
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
-from .split_qscript import split_qscript
+from .split_tape import split_tape
 from .split_non_commuting import split_non_commuting
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
@@ -244,9 +244,9 @@ def __getattr__(name):
     syntax for one release."""
     if name == "hamiltonian_expand":
         warnings.warn(
-            "The hamiltonian_expand function is deprecated, please use split_qscript instead.",
+            "The hamiltonian_expand function is deprecated, please use split_tape instead.",
             UserWarning,
         )
-        return split_qscript
+        return split_tape
 
     raise AttributeError(f"Module {__name__} has no attribute {name}")  # pragma: no cover
