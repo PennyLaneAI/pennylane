@@ -67,7 +67,7 @@ tape3 = QuantumScript(
         qml.probs(wires=1),
         qml.expval(qml.PauliX(1)),
         qml.expval(S3),
-        qml.probs(op=qml.PauliY(0)),
+        qml.probs(wires=[0, 1]),
     ],
 )
 H4 = (
@@ -125,7 +125,7 @@ OUTPUTS = [
         ),
     ],
     [-6, -6, np.array([0.5, 0.5]), -6],
-    [-1.5, -1.5, np.array([1.0, 0.0]), 0.0, -1.5, np.array([0.5, 0.5])],
+    [-1.5, -1.5, np.array([1.0, 0.0]), 0.0, -1.5, np.array([0.0, 0.0, 1.0, 0.0])],
     [-8, -8, 0, -8, 0],
 ]
 
