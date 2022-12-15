@@ -241,24 +241,15 @@ def split_tape(tape: QuantumTape, group=True):
             if isinstance(tape_idxs[0], tuple):  # tape_res contains only one result
                 if not qml.active_return() and len(tape_res) == 1:  # old return types
                     tape_res = tape_res[0]
-                for idx, coeff in tape_idxs:
-                    if coeff is not None:
-                        res = qml.math.convert_like(qml.math.dot(coeff, tape_res), tape_res)
-                        results.append((idx, res))
-                    else:
-                        results.append((idx, tape_res))
+                results.extend(_compute_result_for_each_idx(tape_res, tape_idxs))
                 continue
             # tape_res contains multiple results
-            if qml.active_return():
-                tape_res = qml.math.stack(tape_res)
-            tape_res = qml.math.transpose(tape_res)  # needed when batching
+            if tape.batch_size is not None and tape.batch_size > 1:
+                # when batching is used, the first dimension of tape_res corresponds to the
+                # batching dimension
+                tape_res = qml.math.transpose(qml.math.stack(tape_res))
             for q_res, idxs in zip(tape_res, tape_idxs):
-                for idx, coeff in idxs:
-                    if coeff is not None:
-                        res = qml.math.convert_like(qml.math.dot(coeff, q_res), q_res)
-                        results.append((idx, res))
-                    else:
-                        results.append((idx, q_res))
+                results.extend(_compute_result_for_each_idx(q_res, idxs))
 
         # sum results by idx
         res_dict = {}
@@ -276,6 +267,17 @@ def split_tape(tape: QuantumTape, group=True):
     return tapes, processing_fn
 
 
+def _compute_result_for_each_idx(result, idxs):
+    results = []
+    for idx, coeff in idxs:
+        if coeff is not None:
+            tmp_res = qml.math.convert_like(qml.math.dot(coeff, result), result)
+            results.append((idx, tmp_res))
+        else:
+            results.append((idx, result))
+    return results
+
+
 def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[MeasurementProcess]]:
     """Group observables of ``measurements`` into groups.
 
@@ -290,33 +292,35 @@ def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[Mea
     Returns:
         List[List[MeasurementProcess]]: list of groups of observables with non overlapping wires
     """
-    all_wires = Wires.all_wires([m.wires for m in measurements])
     qwc_groups = []  # [(wires (Wires), m_group (list), pauli_group (list))]
     for m in measurements:
-        op_added = False
-        # When m.obs is None the measurement acts on the basis states, and thus we can assume that
-        # the observable is ``qml.PauliZ`` for all measurement wires.
-        # If the measurement doesn't have wires, we assume it acts on all wires.
-        obs = m.obs or _pauli_z(m.wires or all_wires)
-        for idx, (wires, group, pauli_group) in enumerate(qwc_groups):
-            # use pauli grouping functionality if all the elements in the group are pauli words
-            if (
-                pauli_group
-                and is_pauli_word(obs)
-                and len(group_observables(pauli_group + [obs])) == 1
-            ):
-                qwc_groups[idx] = (wires + m.wires, group + [m], pauli_group + [obs])
-                op_added = True
-                break
-            # check overlapping wires
-            if len(wires) > 0 and all(wire not in m.wires for wire in wires):
-                qwc_groups[idx] = (wires + m.wires, group + [m], [])
-                op_added = True
-                break
+        if len(m.wires) == 0:
+            # If the measurement doesn't have wires, we assume it acts on all wires and that
+            # it won't commute with any other measurement
+            qwc_groups.append((m.wires, [m], []))
+        else:
+            op_added = False
+            # When m.obs is None the measurement acts on the basis states, and thus we can assume that
+            # the observable is ``qml.PauliZ`` for all measurement wires.
+            obs = m.obs or _pauli_z(m.wires)
+            for idx, (wires, group, pauli_group) in enumerate(qwc_groups):
+                # use pauli grouping functionality if all the elements in the group are pauli words
+                if (
+                    pauli_group
+                    and is_pauli_word(obs)
+                    and len(group_observables(pauli_group + [obs])) == 1
+                ):
+                    qwc_groups[idx] = (wires + m.wires, group + [m], pauli_group + [obs])
+                    op_added = True
+                    break
+                # check overlapping wires
+                if len(wires) > 0 and all(wire not in m.wires for wire in wires):
+                    qwc_groups[idx] = (wires + m.wires, group + [m], [])
+                    op_added = True
+                    break
 
-        if not op_added:
-
-            qwc_groups.append((m.wires, [m], [obs] if is_pauli_word(obs) else []))
+            if not op_added:
+                qwc_groups.append((m.wires, [m], [obs] if is_pauli_word(obs) else []))
 
     return [group[1] for group in qwc_groups]
 
