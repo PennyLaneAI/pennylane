@@ -206,7 +206,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
         """
         constants, integrals = dipole_integrals(mol, core, active)(*args)
 
-        nd = [np.array([0]), np.array([0]), np.array([0])]
+        nd = [qml.math.array([0]), qml.math.array([0]), qml.math.array([0])]
         for i, s in enumerate(mol.symbols):  # nuclear contributions
             nd[0] = nd[0] + atomic_numbers[s] * mol.coordinates[i][0]
             nd[1] = nd[1] + atomic_numbers[s] * mol.coordinates[i][1]
