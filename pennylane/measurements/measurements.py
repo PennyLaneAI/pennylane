@@ -375,7 +375,7 @@ class MeasurementProcess(ABC):
         rotation and a measurement in the computational basis.
 
         Returns:
-            .QuantumScript: a quantum script containing the operations
+            .QuantumTape: a quantum tape containing the operations
             required to diagonalize the observable
 
         **Example:**
@@ -389,18 +389,18 @@ class MeasurementProcess(ABC):
 
         Expanding this out:
 
-        >>> qscript = m.expand()
+        >>> tape = m.expand()
 
-        We can see that the resulting script has the qubit unitary applied,
+        We can see that the resulting tape has the qubit unitary applied,
         and a measurement process with no observable, but the eigenvalues
         specified:
 
-        >>> print(qscript.operations)
+        >>> print(tape.operations)
         [QubitUnitary(array([[-0.89442719,  0.4472136 ],
               [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(qscript.measurements[0].eigvals())
+        >>> print(tape.measurements[0].eigvals())
         [0. 5.]
-        >>> print(qscript.measurements[0].obs)
+        >>> print(tape.measurements[0].obs)
         None
         """
         if self.obs is None:
@@ -633,21 +633,21 @@ class StateMeasurement(MeasurementProcess):
 
 
 class MeasurementTransform(MeasurementProcess):
-    """Measurement process that applies a transform into the given quantum script. This transform
+    """Measurement process that applies a transform into the given quantum tape. This transform
     is carried out inside the gradient black box, thus is not tracked by the gradient transform.
 
     Any class inheriting from ``MeasurementTransform`` should define its own ``process`` method,
     which should have the following arguments:
 
-    * qscript (QuantumScript): quantum script to transform
-    * device (Device): device used to transform the quantum script
+    * tape (QuantumTape): quantum tape to transform
+    * device (Device): device used to transform the quantum tape
     """
 
     @abstractmethod
-    def process(self, qscript, device):
-        """Process the given quantum script.
+    def process(self, tape, device):
+        """Process the given quantum tape.
 
         Args:
-            qscript (QuantumScript): quantum script to transform
-            device (Device): device used to transform the quantum script
+            tape (QuantumTape): quantum tape to transform
+            device (Device): device used to transform the quantum tape
         """

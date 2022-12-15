@@ -193,7 +193,7 @@
 
 * Support custom measurement processes:
   - `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
-    They contain an abstract method to process samples/quantum states/quantum scripts. These classes
+    They contain an abstract method to process samples/quantum states/quantum tapes. These classes
     make it easier for users to define their own `MeasurementProcess` by compartmentalizing the different
     types of measurements into three simple categories. 
 
@@ -732,7 +732,7 @@
   to
 
   ```python
-  def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
+  def statistics(self, circuit: QuantumTape, shot_range=None, bin_size=None):
   ```
 
   [(#3421)](https://github.com/PennyLaneAI/pennylane/pull/3421)
