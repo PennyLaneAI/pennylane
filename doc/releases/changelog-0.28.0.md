@@ -260,7 +260,8 @@
     0.5
     ```
 
-  - `qml.qinfo.purity` can transform a QNode returning a state to a function that returns the purity:
+  - `qml.qinfo.transforms.purity` can transform a QNode returning a state to a 
+    function that returns the purity:
 
     ```python3
     dev = qml.device("default.mixed", wires=2)
@@ -272,9 +273,9 @@
     ```
 
     ```pycon
-    >>> qml.qinfo.purity(circuit, wires=[0])(np.pi / 2)
+    >>> qml.qinfo.transforms.purity(circuit, wires=[0])(np.pi / 2)
     0.5
-    >>> qml.qinfo.purity(circuit, wires=[0, 1])(np.pi / 2)
+    >>> qml.qinfo.transforms.purity(circuit, wires=[0, 1])(np.pi / 2)
     1.0
     ```
 
@@ -282,7 +283,7 @@
 
   ```pycon
   >>> param = np.array(np.pi / 4, requires_grad=True)
-  >>> qml.grad(qml.qinfo.purity(circuit, wires=[0]))(param)
+  >>> qml.grad(qml.qinfo.transforms.purity(circuit, wires=[0]))(param)
   -0.5
   ```
 
