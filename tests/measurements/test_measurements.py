@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import (
+    AllCounts,
     ClassicalShadowMP,
     Counts,
     CountsMP,
@@ -25,6 +26,7 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementTransform,
     MidMeasure,
+    MutualInfo,
     MutualInfoMP,
     Probability,
     ProbabilityMP,
@@ -37,6 +39,7 @@ from pennylane.measurements import (
     StateMP,
     Variance,
     VarianceMP,
+    VnEntropy,
     VnEntropyMP,
     expval,
     sample,
@@ -44,6 +47,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
+from pennylane.wires import Wires
 
 
 class NotValidMeasurement(MeasurementProcess):
@@ -108,6 +112,31 @@ def test_shape_unrecognized_error():
         match="The shape of the measurement NotValidMeasurement is not defined",
     ):
         mp.shape(dev)
+
+
+params = [
+    (Counts, CountsMP, {"wires": [1, 2, 3]}),
+    (AllCounts, CountsMP, {"wires": [1, 2, 3]}),
+    (Expectation, ExpectationMP, {"wires": [1, 2, 3]}),
+    (Variance, VarianceMP, {"wires": [1, 2, 3]}),
+    (MutualInfo, MutualInfoMP, {"wires": [1, 2, 3]}),
+    (VnEntropy, VnEntropyMP, {"wires": [1, 2, 3]}),
+    (State, StateMP, {"wires": [1, 2, 3]}),
+    (Sample, SampleMP, {"wires": [1, 2, 3]}),
+]
+
+
+@pytest.mark.parametrize(("return_type", "class_type", "kwargs"), params)
+def test_return_type_deprecated(return_type, class_type, kwargs):
+    with pytest.warns(
+        UserWarning,
+        match="Instantiating ``MeasurementProcess`` with the "
+        "``return_type`` argument is deprecated",
+    ):
+        m = MeasurementProcess(return_type, **kwargs)
+
+    assert isinstance(m, class_type)
+    assert m.wires == Wires([1, 2, 3])
 
 
 @pytest.mark.parametrize(

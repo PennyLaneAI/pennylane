@@ -19,6 +19,7 @@ and measurement samples using AnnotatedQueues.
 import contextlib
 import copy
 import functools
+import warnings
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Union
@@ -122,9 +123,29 @@ class MeasurementProcess(ABC):
             where the instance has to be identified
     """
 
+    def __new__(cls, *args, **kwargs):
+        return_type = None
+        if args and isinstance(args[0], ObservableReturnTypes):
+            return_type = args[0]
+        elif "return_type" in kwargs:
+            return_type = kwargs.pop("return_type")
+        if return_type is not None:
+            warnings.warn(
+                "Instantiating ``MeasurementProcess`` with the ``return_type`` argument "
+                "is deprecated. Please instantiate the measurement class directly instead.",
+                UserWarning,
+            )
+            if return_type is AllCounts:
+                class_type = qml.measurements.CountsMP
+            else:
+                class_type = getattr(qml.measurements, f"{return_type.name}MP")
+            return super().__new__(class_type)
+        return super().__new__(cls)
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
+        return_type=None,  # pylint: disable=unused-argument
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,

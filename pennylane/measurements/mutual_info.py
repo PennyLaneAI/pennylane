@@ -109,6 +109,7 @@ class MutualInfoMP(StateMeasurement):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
+        return_type=None,
         obs: Operator = None,
         wires=None,
         eigvals=None,

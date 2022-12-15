@@ -92,6 +92,7 @@ class VnEntropyMP(StateMeasurement):
     # pylint: disable=too-many-arguments, unused-argument
     def __init__(
         self,
+        return_type=None,
         obs: Operator = None,
         wires=None,
         eigvals=None,

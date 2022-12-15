@@ -166,6 +166,7 @@ class CountsMP(SampleMeasurement):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
+        return_type=None,
         obs: Union[Observable, None] = None,
         wires=None,
         eigvals=None,
@@ -173,7 +174,10 @@ class CountsMP(SampleMeasurement):
         all_outcomes=False,
     ):
         self.all_outcomes = all_outcomes
-        super().__init__(obs, wires, eigvals, id)
+        if return_type is AllCounts:
+            self.all_outcomes = True
+
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
 
     @property
     def return_type(self):
