@@ -227,12 +227,12 @@ def split_tape(tape: QuantumTape, group=True):
                 tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
         idxs_coeffs = tmp_idxs
         tapes = [
-            tape.__class__(ops=tape._ops, measurements=m_group, prep=tape._prep)
+            QuantumTape(ops=tape._ops, measurements=m_group, prep=tape._prep)
             for m_group in m_groups
         ]
     else:
         tapes = [
-            tape.__class__(ops=tape._ops, measurements=[m], prep=tape._prep) for m in measurements
+            QuantumTape(ops=tape._ops, measurements=[m], prep=tape._prep) for m in measurements
         ]
 
     def processing_fn(expanded_results):
