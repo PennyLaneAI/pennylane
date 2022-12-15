@@ -8,7 +8,6 @@
 
 * Custom measurements can now be facilitated with the addition of the `qml.measurements` module.
   [(#3286)](https://github.com/PennyLaneAI/pennylane/pull/3286)
-  [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
   [(#3343)](https://github.com/PennyLaneAI/pennylane/pull/3343)
   [(#3288)](https://github.com/PennyLaneAI/pennylane/pull/3288)
   [(#3312)](https://github.com/PennyLaneAI/pennylane/pull/3312)
@@ -17,7 +16,6 @@
   [(#3287)](https://github.com/PennyLaneAI/pennylane/pull/3287)
   [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
   [(#3327)](https://github.com/PennyLaneAI/pennylane/pull/3327)
-  [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
   [(#3388)](https://github.com/PennyLaneAI/pennylane/pull/3388)
   [(#3439)](https://github.com/PennyLaneAI/pennylane/pull/3439)
   [(#3466)](https://github.com/PennyLaneAI/pennylane/pull/3466)
@@ -64,7 +62,7 @@
   tensor(3303., requires_grad=True)
   ```
 
-  Differentiability is also conserved for this new measurement process:
+  Differentiability is also supported for this new measurement process:
 
   ```pycon
   >>> x = qml.numpy.array(1.23, requires_grad=True)
@@ -268,8 +266,8 @@
 
     @qml.qnode(dev)
     def circuit(x):
-      qml.IsingXX(x, wires=[0, 1])
-      return qml.state()
+        qml.IsingXX(x, wires=[0, 1])
+        return qml.state()
     ```
 
     ```pycon
@@ -305,7 +303,7 @@
   array(-0.38876964)
   ```
 
-  The argument num_directions determines how many directions of simultaneous perturbation are used, which is proportional to the number of circuit evaluations. See the [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details. Note that the full SPSA optimizer is already available as `qml.SPSAOptimizer`.
+  The argument `num_directions` determines how many directions of simultaneous perturbation are used, which is proportional to the number of circuit evaluations. See the [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details. Note that the full SPSA optimizer is already available as `qml.SPSAOptimizer`.
   
 * Multiple mid-circuit measurements can now be combined arithmetically to create new conditionals.
   [(#3159)](https://github.com/PennyLaneAI/pennylane/pull/3159)
@@ -373,7 +371,7 @@
   ```
 
   ```pycon
-  >>> a = tf.Variable(0.4
+  >>> a = tf.Variable(0.4)
   >>> with tf.GradientTape() as tape:
   ...     res = circuit(a)
   ...     res = tf.stack([tf.experimental.numpy.hstack(r) for r in res])
@@ -497,7 +495,7 @@
   [(#3443)](https://github.com/PennyLaneAI/pennylane/pull/3443)
 
 * Extended the functionality of `qml.matrix` to qutrits.
-  [(#3460)](https://github.com/PennyLaneAI/pennylane/pull/3460)
+  [(#3508)](https://github.com/PennyLaneAI/pennylane/pull/3508)
 
 * The `qcut.py` file in `pennylane/transforms/` has been reorganized into multiple files that are now in `pennylane/transforms/qcut/`.
   [(#3413)](https://github.com/PennyLaneAI/pennylane/pull/3413)
@@ -526,9 +524,6 @@
 
 * Updated the `qml.transforms.zyz_decomposition` function such that it now supports broadcast operators. This means that single-qubit `qml.QubitUnitary` operators, instantiated from a batch of unitaries, can now be decomposed.
   [(#3477)](https://github.com/PennyLaneAI/pennylane/pull/3477)
-
-* Reduce usage of `MeasurementProcess.return_type`. Use `isinstance` checks instead.
-  [(#3399)](https://github.com/PennyLaneAI/pennylane/pull/3399)
 
 * The performance of executing circuits under the `jax.vmap` transformation has been improved by being able to leverage the batch-execution capabilities of some devices.
   [(#3452)](https://github.com/PennyLaneAI/pennylane/pull/3452)
