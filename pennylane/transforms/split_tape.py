@@ -247,9 +247,11 @@ def split_tape(tape: QuantumTape, group=True):
             if tape.batch_size is not None and tape.batch_size > 1:
                 # when batching is used, the first dimension of tape_res corresponds to the
                 # batching dimension
-                tape_res = qml.math.transpose(qml.math.stack(tape_res))
-            for q_res, idxs in zip(tape_res, tape_idxs):
-                results.extend(_compute_result_for_each_idx(q_res, idxs))
+                for i, idxs in enumerate(tape_idxs):
+                    results.extend(_compute_result_for_each_idx([r[i] for r in tape_res], idxs))
+            else:
+                for res, idxs in zip(tape_res, tape_idxs):
+                    results.extend(_compute_result_for_each_idx(res, idxs))
 
         # sum results by idx
         res_dict = {}
