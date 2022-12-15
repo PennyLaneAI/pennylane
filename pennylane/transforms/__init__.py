@@ -36,7 +36,6 @@ that compute the desired quantity.
     ~metric_tensor
     ~adjoint_metric_tensor
     ~specs
-    ~transforms.split_non_commuting
 
 Transforms that act on quantum functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -198,7 +197,6 @@ from .compile import compile
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
 from .split_tape import split_tape
-from .split_non_commuting import split_non_commuting
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
@@ -242,7 +240,7 @@ from .broadcast_expand import broadcast_expand
 def __getattr__(name):
     """Raise a deprecation warning and still allow `qml.transforms.hamiltonian_expand`
     syntax for one release."""
-    if name in ["hamiltonian_expand", "sum_expand"]:
+    if name in ["hamiltonian_expand", "sum_expand", "split_non_commuting"]:
         warnings.warn(
             f"The {name} function is deprecated, please use split_tape instead.",
             UserWarning,

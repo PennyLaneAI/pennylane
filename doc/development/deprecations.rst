@@ -106,8 +106,9 @@ Pending deprecations
   - Deprecated in v0.28
   - Will be removed in v0.29
 
-* ``qml.transforms.hamiltonian_expand`` and ``qml.transforms.sum_expand`` have been deprecated. 
-  Users are redirected to the new ``qml.transforms.split_tape`` function.
+* ``qml.transforms.hamiltonian_expand``, ``qml.transforms.sum_expand`` and 
+  ``qml.transforms.split_non_commuting`` have been deprecated. Users are redirected to the new 
+  ``qml.transforms.split_tape`` function.
 
   - Deprecated in v0.28
   - Will be removed in v0.29

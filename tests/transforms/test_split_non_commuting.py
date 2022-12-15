@@ -65,19 +65,17 @@ class TestUnittestSplitNonCommuting:
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(3))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        split, fn = split_non_commuting(tape)
+        split, _ = split_non_commuting(tape)
 
         spy = mocker.spy(qml.math, "concatenate")
 
-        assert split == [tape]
+        assert len(split) == 1
         assert all(isinstance(t, qml.tape.QuantumScript) for t in split)
-        assert fn([0.5]) == 0.5
 
         qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
         split, fn = split_non_commuting(qs)
-        assert split == [qs]
+        assert len(split) == 1
         assert all(isinstance(i_qs, qml.tape.QuantumScript) for i_qs in split)
-        assert fn([0.5]) == 0.5
 
         spy.assert_not_called()
 
@@ -127,16 +125,6 @@ class TestUnittestSplitNonCommuting:
         for new_tape in split:
             for meas in new_tape.measurements:
                 assert meas.return_type == the_return_type
-
-    def test_raise_not_supported(self):
-        """Test that NotImplementedError is raised when probabilities or samples are called"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=0)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(NotImplementedError, match="non-commuting observables are used"):
-            split_non_commuting(tape)
 
 
 # Integration test
