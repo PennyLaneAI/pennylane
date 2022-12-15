@@ -170,7 +170,7 @@
    [ 0.          0.          0.70710678 -0.70710678]]
   ```
 
-* Three new parametric operators, `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10`, are now available. Each of these operators performs a phase shift akin to `qml.ControlledPhaseShift` but on different positions of the state vector.
+* Three new parametric operators, `qml.CPhaseShift00`, `qml.CPhaseShift01`, and `qml.CPhaseShift10`, are now available. Each of these operators performs a phase shift akin to `qml.ControlledPhaseShift` but on different positions of the state vector.
   [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
 
   ```pycon
