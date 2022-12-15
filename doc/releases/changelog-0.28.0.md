@@ -588,10 +588,7 @@
   ```
   [(#3421)](https://github.com/PennyLaneAI/pennylane/pull/3421)
 
-* The `MeasurementProcess.return_type` argument has been removed from the `__init__` method. Now it is a property of the class.
-  [(#3434)](https://github.com/PennyLaneAI/pennylane/pull/3434)
-
-* The `MeasurementProcess` class is now an abstract class.
+* The `MeasurementProcess` class is now an abstract class and `return_type` is now a property of the class.
   [(#3434)](https://github.com/PennyLaneAI/pennylane/pull/3434)
 
 <h3>Deprecations 👋</h3>
