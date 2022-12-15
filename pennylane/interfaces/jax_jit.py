@@ -240,11 +240,11 @@ def _execute(
             # Unwrap partial results into ndim=0 arrays to allow
             # differentiability with JAX
             # E.g.,
-            # [DeviceArray([-0.9553365], dtype=float32), DeviceArray([0., 0.],
+            # [Array([-0.9553365], dtype=float32), Array([0., 0.],
             # dtype=float32)]
             # is mapped to
-            # [[DeviceArray(-0.9553365, dtype=float32)], [DeviceArray(0.,
-            # dtype=float32), DeviceArray(0., dtype=float32)]].
+            # [[Array(-0.9553365, dtype=float32)], [Array(0.,
+            # dtype=float32), Array(0., dtype=float32)]].
             need_unstacking = any(r.ndim != 0 for r in res)
             if need_unstacking:
                 res = [qml.math.unstack(x) for x in res]
@@ -328,10 +328,10 @@ def _execute_with_fwd(
         # Adjust the structure of how the jacobian is returned to match the
         # non-forward mode cases
         # E.g.,
-        # [DeviceArray([[ 0.06695931,  0.01383095, -0.46500877]], dtype=float32)]
+        # [Array([[ 0.06695931,  0.01383095, -0.46500877]], dtype=float32)]
         # is mapped to
-        # [[DeviceArray(0.06695931, dtype=float32), DeviceArray(0.01383095,
-        # dtype=float32), DeviceArray(-0.46500877, dtype=float32)]]
+        # [[Array(0.06695931, dtype=float32), Array(0.01383095,
+        # dtype=float32), Array(-0.46500877, dtype=float32)]]
         res_jacs = []
         for j in jacs:
             this_j = []

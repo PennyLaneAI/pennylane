@@ -193,7 +193,7 @@
 
 * Support custom measurement processes:
   - `SampleMeasurement`, `StateMeasurement` and `CustomMeasurement` classes have been added.
-    They contain an abstract method to process samples/quantum states/quantum scripts. These classes
+    They contain an abstract method to process samples/quantum states/quantum tapes. These classes
     make it easier for users to define their own `MeasurementProcess` by compartmentalizing the different
     types of measurements into three simple categories. 
 
@@ -596,10 +596,10 @@
 
   ```pycon
   >>> jax.jacobian(circuit, argnums=[0, 1])(a, b)
-  ((DeviceArray(0.35017549, dtype=float64, weak_type=True),
-  DeviceArray(-0.4912955, dtype=float64, weak_type=True)),
-  (DeviceArray(5.55111512e-17, dtype=float64, weak_type=True),
-  DeviceArray(0., dtype=float64, weak_type=True)))
+  ((Array(0.35017549, dtype=float64, weak_type=True),
+  Array(-0.4912955, dtype=float64, weak_type=True)),
+  (Array(5.55111512e-17, dtype=float64, weak_type=True),
+  Array(0., dtype=float64, weak_type=True)))
   ```
 
 * Updated `qml.transforms.split_non_commuting` to support the new return types.
@@ -732,7 +732,7 @@
   to
 
   ```python
-  def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
+  def statistics(self, circuit: QuantumTape, shot_range=None, bin_size=None):
   ```
 
   [(#3421)](https://github.com/PennyLaneAI/pennylane/pull/3421)

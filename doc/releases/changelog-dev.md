@@ -29,7 +29,42 @@
   2: ─╭●────────╭SWAP─╰RY(0.68)─╰SWAP─╭●────────╭SWAP─╰RY(0.34)─╰SWAP─╭●────────╭SWAP─┤  State
   3: ─╰RY(0.92)─╰SWAP─╭●────────╭SWAP─╰RY(0.82)─╰SWAP─╭●────────╭SWAP─╰RY(0.52)─╰SWAP─┤  State
   4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
+  ```
 
+* The JAX-JIT interface now supports higher-order gradient computation with the new return types system.
+  [(#3498)](https://github.com/PennyLaneAI/pennylane/pull/3498)
+
+  ```python
+  import pennylane as qml
+  import jax
+  from jax import numpy as jnp
+  
+  jax.config.update("jax_enable_x64", True)
+  
+  qml.enable_return()
+  
+  dev = qml.device("lightning.qubit", wires=2)
+  
+  @jax.jit
+  @qml.qnode(dev, interface="jax-jit", diff_method="parameter-shift", max_diff=2)
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=1)
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+  
+  a, b = jnp.array(1.0), jnp.array(2.0)
+  ```
+
+  ```pycon
+  >>> jax.hessian(circuit, argnums=[0, 1])(a, b)
+  (((DeviceArray(-0.54030231, dtype=float64, weak_type=True),
+     DeviceArray(1.76002563e-17, dtype=float64, weak_type=True)),
+    (DeviceArray(1.76002563e-17, dtype=float64, weak_type=True),
+     DeviceArray(1.11578284e-34, dtype=float64, weak_type=True))),
+   ((DeviceArray(2.77555756e-17, dtype=float64, weak_type=True),
+     DeviceArray(-4.54411427e-17, dtype=float64, weak_type=True)),
+    (DeviceArray(-1.76855671e-17, dtype=float64, weak_type=True),
+     DeviceArray(0.41614684, dtype=float64, weak_type=True))))
   ```
 
  <h3>Improvements</h3>
@@ -50,3 +85,4 @@
 
 Utkarsh Azad
 Lillian M. A. Frederiksen
+Antal Száva
