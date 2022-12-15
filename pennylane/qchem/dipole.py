@@ -15,7 +15,6 @@
 This module contains the functions needed for computing the dipole moment.
 """
 import pennylane as qml
-from pennylane import numpy as np
 
 from .basis_data import atomic_numbers
 from .hartree_fock import scf

@@ -18,7 +18,6 @@ This module contains the functions needed for performing the self-consistent-fie
 import itertools
 
 import pennylane as qml
-from pennylane import numpy as np
 
 from .matrices import core_matrix, mol_density_matrix, overlap_matrix, repulsion_tensor
 
