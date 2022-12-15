@@ -331,3 +331,13 @@ class TestSplitTape:
             from pennylane.transforms import hamiltonian_expand
 
         assert hamiltonian_expand is split_tape
+
+    def test_sum_expand_deprecated(self):
+        tape = QuantumScript()
+        with pytest.warns(UserWarning, match="sum_expand function is deprecated"):
+            _ = qml.transforms.sum_expand(tape)
+
+        with pytest.warns(UserWarning, match="sum_expand function is deprecated"):
+            from pennylane.transforms import sum_expand
+
+        assert sum_expand is split_tape

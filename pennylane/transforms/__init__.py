@@ -242,9 +242,9 @@ from .broadcast_expand import broadcast_expand
 def __getattr__(name):
     """Raise a deprecation warning and still allow `qml.transforms.hamiltonian_expand`
     syntax for one release."""
-    if name == "hamiltonian_expand":
+    if name in ["hamiltonian_expand", "sum_expand"]:
         warnings.warn(
-            "The hamiltonian_expand function is deprecated, please use split_tape instead.",
+            f"The {name} function is deprecated, please use split_tape instead.",
             UserWarning,
         )
         return split_tape
