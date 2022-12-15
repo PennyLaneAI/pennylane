@@ -110,7 +110,7 @@
 
 <h4>QChem databases and basis sets ⚛️</h4>
 
-* The symbols and geometry of a compound from the PubChem Database can now be access via `qchem.mol_data()`.
+* The symbols and geometry of a compound from the PubChem database can now be access via `qchem.mol_data()`.
   [(#3289)](https://github.com/PennyLaneAI/pennylane/pull/3289)
   [(#3378)](https://github.com/PennyLaneAI/pennylane/pull/3378)
 
