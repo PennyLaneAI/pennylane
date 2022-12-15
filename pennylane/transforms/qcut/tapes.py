@@ -123,7 +123,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
         graph (nx.MultiDiGraph): directed multigraph to be converted to a tape
 
     Returns:
-        QuantumTape: the quantum script corresponding to the input graph
+        QuantumTape: the quantum tape corresponding to the input graph
 
     **Example**
 
