@@ -208,7 +208,7 @@
 * Create operators defined from a generator via `qml.ops.op_math.Evolution`.
   [(#3375)](https://github.com/PennyLaneAI/pennylane/pull/3375)
 
-  `qml.ops.op_math.Evolution` defines the exponential of an operator $\hat{O}$ of the form $e^{ix\hat{O}}$, with a single trainable parameter, x. Limiting to a single trainable parameter allows the use of `qml.gradient.param_shift` to find the gradient with respect to the parameter x.
+  `qml.ops.op_math.Evolution` defines the exponential of an operator $\hat{O}$ of the form $e^{ix\hat{O}}$, with a single trainable parameter, $x$. Limiting to a single trainable parameter allows the use of `qml.gradient.param_shift` to find the gradient with respect to the parameter $x$.
 
   ```python
   dev = qml.device('default.qubit', wires=2)
