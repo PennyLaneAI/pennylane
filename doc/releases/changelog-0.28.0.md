@@ -562,7 +562,7 @@
 * The `log_base` attribute has been moved from `MeasurementProcess` to the new `VnEntropyMP` and `MutualInfoMP` classes, which inherit from `MeasurementProcess`.
   [(#3326)](https://github.com/PennyLaneAI/pennylane/pull/3326)
 
-* `qml.utils.decompose_hamiltonian()` has been removed. Please use `qml.pauli_decompose()` instead.
+* `qml.utils.decompose_hamiltonian()` has been removed. Please use `qml.pauli.pauli_decompose()` instead.
   [(#3384)](https://github.com/PennyLaneAI/pennylane/pull/3384)
 
 * The `return_type` attribute of `MeasurementProcess` has been removed where possible. Use `isinstance` checks instead.
