@@ -892,19 +892,9 @@ class QubitDevice(Device):
                 )
 
             elif obs.return_type is Shadow:
-                if len(measurements) > 1:
-                    raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
-                    )
                 results.append(self.classical_shadow(obs, circuit))
 
             elif obs.return_type is ShadowExpval:
-                if len(measurements) > 1:
-                    raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
-                    )
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
             elif isinstance(m, MeasurementTransform):
