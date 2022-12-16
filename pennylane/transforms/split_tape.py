@@ -262,7 +262,7 @@ def split_tape(tape: QuantumTape, group=True):
                 res_dict[idx] = res
 
         # sort results by idx
-        results = [res_dict[key] for key in sorted(res_dict)]
+        results = tuple(res_dict[key] for key in sorted(res_dict))
 
         return results[0] if len(results) == 1 else results
 
