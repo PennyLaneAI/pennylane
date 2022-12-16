@@ -352,7 +352,7 @@ class PauliSentence(dict):
         return math.expand_matrix(reduced_mat, result_wire_order, wire_order=wire_order)
 
     def operation(self, wire_order=None):
-        """Returns a native PennyLane``~.Operator`` representing the PauliSentence."""
+        """Returns a native PennyLane :class:`~pennylane.Operation` representing the PauliSentence."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the operation for an empty PauliSentence.")
@@ -364,7 +364,7 @@ class PauliSentence(dict):
         return summands[0] if len(summands) == 1 else op_sum(*summands)
 
     def hamiltonian(self, wire_order=None):
-        """Returns a native PennyLane ~.Hamiltonian representing the PauliSentence."""
+        """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
