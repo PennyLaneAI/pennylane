@@ -489,7 +489,7 @@
 * QPE can now accept a target operator instead of a matrix and target wires pair.
   [(#3373)](https://github.com/PennyLaneAI/pennylane/pull/3373)
 
-* The `qml.ops.op_math.Controlled.map_wires` method now uses `base.map_wires` instead of the private `_wires` property setter.
+* The `qml.ops.op_math.Controlled.map_wires` method now uses `base.map_wires` internally instead of the private `_wires` property setter.
   [(#3405)](https://github.com/PennyLaneAI/pennylane/pull/3405)
 
 * A new function called `qml.tape.make_qscript` has been created for converting a quantum function into a quantum script. This replaces `qml.transforms.make_tape`.
