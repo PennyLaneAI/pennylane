@@ -45,6 +45,7 @@ class ObservableReturnTypes(Enum):
     Probability = "probs"
     State = "state"
     MidMeasure = "measure"
+    Purity = "purity"
     VnEntropy = "vnentropy"
     MutualInfo = "mutualinfo"
     Shadow = "shadow"
@@ -85,6 +86,9 @@ State = ObservableReturnTypes.State
 MidMeasure = ObservableReturnTypes.MidMeasure
 """Enum: An enumeration which represents returning sampling the computational
 basis in the middle of the circuit."""
+
+Purity = ObservableReturnTypes.Purity
+"""Enum: An enumeration which represents returning the purity before measurement."""
 
 VnEntropy = ObservableReturnTypes.VnEntropy
 """Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
