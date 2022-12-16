@@ -20,11 +20,11 @@ from itertools import product
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.measurements import ClassicalShadowMP
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
 
 
 @qml.batch_transform
-def _replace_obs(tape: QuantumScript, obs, *args, **kwargs):
+def _replace_obs(tape: QuantumTape, obs, *args, **kwargs):
     """
     Tape transform to replace the measurement processes with the given one
     """
@@ -42,7 +42,7 @@ def _replace_obs(tape: QuantumScript, obs, *args, **kwargs):
 
         # queue the new observable
         obs(*args, **kwargs)
-    qscript = qml.tape.QuantumScript.from_queue(q)
+    qscript = QuantumScript.from_queue(q)
 
     def processing_fn(res):
         if qml.active_return():
