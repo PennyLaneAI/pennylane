@@ -813,6 +813,7 @@ def molecular_hamiltonian(
     args=None,
     grouping_type=None,
     grouping_method="rlf",
+    convert_tol=1e012,
 ):  # pylint:disable=too-many-arguments
     r"""Generate the qubit Hamiltonian of a molecule.
 
@@ -870,6 +871,9 @@ def molecular_hamiltonian(
         grouping_type (str): method to group commuting observables
         grouping_method (str): the graph coloring heuristic to use in solving minimum clique cover
             for grouping
+        convert_tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
+            for the imaginary part of the Hamiltonian coefficients created by openfermion.
+            Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
 
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
@@ -953,7 +957,7 @@ def molecular_hamiltonian(
 
     h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
 
-    h_pl = qml.qchem.convert.import_operator(h_of, wires=wires)
+    h_pl = qml.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)
 
     return (
         qml.Hamiltonian(h_pl.coeffs, h_pl.ops, grouping_type=grouping_type, method=grouping_method),

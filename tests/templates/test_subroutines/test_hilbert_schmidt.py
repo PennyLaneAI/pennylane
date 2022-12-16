@@ -24,17 +24,20 @@ class TestHilbertSchmidt:
 
     def test_hs_decomposition_1_qubit(self):
         """Test if the HS operation is correctly decomposed for a 1 qubit unitary."""
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.Hadamard(wires=0)
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires=1)
 
         op = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
@@ -50,8 +53,10 @@ class TestHilbertSchmidt:
 
     def test_hs_decomposition_2_qubits(self):
         """Test if the HS operation is correctly decomposed for 2 qubits."""
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.SWAP(wires=[0, 1])
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires=2)
@@ -59,9 +64,10 @@ class TestHilbertSchmidt:
 
         op = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2, 3], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=[0]),
             qml.Hadamard(wires=[1]),
@@ -83,8 +89,10 @@ class TestHilbertSchmidt:
 
     def test_hs_decomposition_2_qubits_custom_wires(self):
         """Test if the HS operation is correctly decomposed for 2 qubits with custom wires."""
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.SWAP(wires=["a", "b"])
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires="c")
@@ -92,9 +100,10 @@ class TestHilbertSchmidt:
 
         op = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=["c", "d"], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=["a"]),
             qml.Hadamard(wires=["b"]),
@@ -117,12 +126,14 @@ class TestHilbertSchmidt:
     def test_v_not_quantum_function(self):
         """Test that we cannot pass a non quantum function to the HS operation"""
 
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.Hadamard(wires=0)
 
-        with qml.tape.QuantumTape(do_queue=False) as v_circuit:
+        U = qml.tape.QuantumScript.from_queue(q_U)
+        with qml.queuing.AnnotatedQueue() as q_v_circuit:
             qml.RZ(0.1, wires=1)
 
+        v_circuit = qml.tape.QuantumScript.from_queue(q_v_circuit)
         with pytest.raises(
             qml.QuantumFunctionError,
             match="The argument v_function must be a callable quantum " "function.",
@@ -132,8 +143,10 @@ class TestHilbertSchmidt:
     def test_u_v_same_number_of_wires(self):
         """Test that U and V must have the same number of wires."""
 
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.CNOT(wires=[0, 1])
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires=1)
@@ -160,8 +173,10 @@ class TestHilbertSchmidt:
     def test_v_wires(self):
         """Test that all wires in V are also in v_wires."""
 
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.Hadamard(wires=0)
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires=2)
@@ -174,8 +189,10 @@ class TestHilbertSchmidt:
     def test_distinct_wires(self):
         """Test that U and V have distinct wires."""
 
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.Hadamard(wires=0)
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires=0)
@@ -191,17 +208,20 @@ class TestLocalHilbertSchmidt:
 
     def test_lhs_decomposition_1_qubit(self):
         """Test if the LHS operation is correctly decomposed"""
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.Hadamard(wires=0)
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires=1)
 
         op = qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=[0]),
             qml.CNOT(wires=[0, 1]),
@@ -218,17 +238,20 @@ class TestLocalHilbertSchmidt:
 
     def test_lhs_decomposition_1_qubit_custom_wires(self):
         """Test if the LHS operation is correctly decomposed with custom wires."""
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.Hadamard(wires="a")
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires="b")
 
         op = qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=["b"], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=["a"]),
             qml.CNOT(wires=["a", "b"]),
@@ -245,8 +268,10 @@ class TestLocalHilbertSchmidt:
 
     def test_lhs_decomposition_2_qubits(self):
         """Test if the LHS operation is correctly decomposed for 2 qubits."""
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.SWAP(wires=[0, 1])
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires=2)
@@ -254,9 +279,10 @@ class TestLocalHilbertSchmidt:
 
         op = qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2, 3], u_tape=U)
 
-        with qml.tape.QuantumTape() as tape_dec:
+        with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
 
+        tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
             qml.Hadamard(wires=[0]),
             qml.Hadamard(wires=[1]),
@@ -277,12 +303,14 @@ class TestLocalHilbertSchmidt:
     def test_v_not_quantum_function(self):
         """Test that we cannot pass a non quantum function to the HS operation"""
 
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.Hadamard(wires=0)
 
-        with qml.tape.QuantumTape(do_queue=False) as v_circuit:
+        U = qml.tape.QuantumScript.from_queue(q_U)
+        with qml.queuing.AnnotatedQueue() as q_v_circuit:
             qml.RZ(0.1, wires=1)
 
+        v_circuit = qml.tape.QuantumScript.from_queue(q_v_circuit)
         with pytest.raises(
             qml.QuantumFunctionError,
             match="The argument v_function must be a callable quantum " "function.",
@@ -292,8 +320,10 @@ class TestLocalHilbertSchmidt:
     def test_u_v_same_number_of_wires(self):
         """Test that U and V must have the same number of wires."""
 
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.CNOT(wires=[0, 1])
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires=1)
@@ -320,8 +350,10 @@ class TestLocalHilbertSchmidt:
     def test_v_wires(self):
         """Test that all wires in V are also in v_wires."""
 
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.Hadamard(wires=0)
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires=2)
@@ -334,8 +366,10 @@ class TestLocalHilbertSchmidt:
     def test_distinct_wires(self):
         """Test that U and V have distinct wires."""
 
-        with qml.tape.QuantumTape(do_queue=False) as U:
+        with qml.queuing.AnnotatedQueue() as q_U:
             qml.Hadamard(wires=0)
+
+        U = qml.tape.QuantumScript.from_queue(q_U)
 
         def v_circuit(params):
             qml.RZ(params[0], wires=0)

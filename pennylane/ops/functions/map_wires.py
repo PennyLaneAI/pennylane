@@ -22,11 +22,11 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, make_qscript, QuantumTape
 
 
 def map_wires(
-    input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable],
+    input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable],
     wire_map: dict,
     queue=False,
     replace=False,
@@ -35,25 +35,29 @@ def map_wires(
     wire map.
 
     Args:
-        input (.Operator, pennylane.QNode, .QuantumScript, or Callable): an operator, quantum node,
-            quantum script, or function that applies quantum operations
+        input (.Operator, pennylane.QNode, .QuantumTape, or Callable): an operator, quantum node,
+            quantum tape, or function that applies quantum operations
         wire_map (dict): dictionary containing the old wires as keys and the new wires as values
         queue (bool): Whether or not to queue the object when recording. Defaults to False.
         replace (bool): When ``queue=True``, if ``replace=True`` the input operators will be
             replaced by its mapped version. Defaults to False.
 
     Returns:
-        (.Operator, pennylane.QNode, .QuantumScript, or Callable): input with changed wires
+        (.Operator, pennylane.QNode, .QuantumTape, or Callable): input with changed wires
 
     .. note::
 
         ``qml.map_wires`` can be used as a decorator with the help of the ``functools`` module:
 
+        >>> dev = qml.device("default.qubit", wires=1)
+        >>> wire_map = {0: 10}
+        >>>
         >>> @functools.partial(qml.map_wires, wire_map=wire_map)
         ... @qml.qnode(dev)
         ... def func(x):
         ...     qml.RX(x, wires=0)
         ...     return qml.expval(qml.PauliZ(0))
+        ...
         >>> print(qml.draw(func)(0.1))
         10: ──RX(0.10)─┤  <Z>
 
@@ -73,15 +77,15 @@ def map_wires(
 
     >>> dev = qml.device("default.qubit", wires=4)
     >>> @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.54, wires=0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.RY(1.23, wires=3)
-            return qml.probs(wires=0)
+    ... def circuit():
+    ...    qml.RX(0.54, wires=0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.RY(1.23, wires=3)
+    ...    return qml.probs(wires=0)
+    ...
     >>> mapped_circuit = qml.map_wires(circuit, wire_map)
     >>> mapped_circuit()
     tensor([0.92885434, 0.07114566], requires_grad=True)
     >>> list(mapped_circuit.tape)
-    [((RX(0.54, wires=[3]) @ PauliX(wires=[2])) @ PauliZ(wires=[1])) @ RY(1.23, wires=[0]),
-    probs(wires=[3])]
+    [((RX(0.54, wires=[3]) @ PauliX(wires=[2])) @ PauliZ(wires=[1])) @ RY(1.23, wires=[0]), probs(wires=[3])]
     """
     if isinstance(input, (Operator, MeasurementProcess)):
         if QueuingManager.recording():
@@ -99,7 +103,7 @@ def map_wires(
         measurements = [qml.map_wires(m, wire_map) for m in input.measurements]
         prep = [qml.map_wires(p, wire_map) for p in input._prep]  # pylint: disable=protected-access
 
-        return QuantumScript(ops=ops, measurements=measurements, prep=prep)
+        return input.__class__(ops=ops, measurements=measurements, prep=prep)
 
     if callable(input):
 
@@ -107,12 +111,9 @@ def map_wires(
 
         @wraps(func)
         def qfunc(*args, **kwargs):
-            tape = QuantumTape()
-            with QueuingManager.stop_recording(), tape:
-                func(*args, **kwargs)
-
-            _ = [qml.map_wires(op, wire_map=wire_map, queue=True) for op in tape.operations]
-            m = tuple(qml.map_wires(m, wire_map=wire_map, queue=True) for m in tape.measurements)
+            qscript = make_qscript(func)(*args, **kwargs)
+            _ = [qml.map_wires(op, wire_map=wire_map, queue=True) for op in qscript.operations]
+            m = tuple(qml.map_wires(m, wire_map=wire_map, queue=True) for m in qscript.measurements)
             return m[0] if len(m) == 1 else m
 
         if isinstance(input, QNode):

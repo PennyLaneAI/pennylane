@@ -21,8 +21,8 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.measurements import Sample, Probability
 from pennylane.interfaces import InterfaceUnsupportedError
+from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 
 dtype = jnp.float64
 
@@ -136,16 +136,18 @@ def _validate_tapes(tapes):
     """
     for t in tapes:
 
-        return_types = [o.return_type for o in t.observables]
-        set_of_return_types = set(return_types)
-        probs_or_sample_measure = Sample in return_types or Probability in return_types
-        if probs_or_sample_measure and len(set_of_return_types) > 1:
+        measurement_types = [type(m) for m in t.measurements]
+        set_of_measurement_types = set(measurement_types)
+        probs_or_sample_measure = (
+            SampleMP in measurement_types or ProbabilityMP in measurement_types
+        )
+        if probs_or_sample_measure and len(set_of_measurement_types) > 1:
             raise InterfaceUnsupportedError(
                 "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
             )
 
-        if Probability in return_types:
-            set_len_wires = set(len(o.wires) for o in t.observables)
+        if ProbabilityMP in measurement_types:
+            set_len_wires = {len(m.wires) for m in t.measurements}
             if len(set_len_wires) > 1:
                 raise InterfaceUnsupportedError(
                     "Using the JAX interface, multiple probability measurements need to have the same number of wires specified."
@@ -174,14 +176,7 @@ def _execute(
         """Auxiliary function to convert the result of a tape to an array,
         unless the tape had Counts measurements that are represented with
         dictionaries. JAX NumPy arrays don't support dictionaries."""
-        return (
-            jnp.array(r)
-            if not any(
-                m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-                for m in tape.measurements
-            )
-            else r
-        )
+        return jnp.array(r) if not any(isinstance(m, CountsMP) for m in tape.measurements) else r
 
     @jax.custom_vjp
     def wrapped_exec(params):
@@ -221,8 +216,8 @@ def _execute(
 
             for t in tapes:
                 multi_probs = (
-                    any(o.return_type is Probability for o in t.observables)
-                    and len(t.observables) > 1
+                    any(isinstance(m, ProbabilityMP) for m in t.measurements)
+                    and len(t.measurements) > 1
                 )
 
             if multi_probs:
@@ -251,11 +246,11 @@ def _execute(
             # Unstack partial results into ndim=0 arrays to allow
             # differentiability with JAX
             # E.g.,
-            # [DeviceArray([-0.9553365], dtype=float32), DeviceArray([0., 0.],
+            # [Array([-0.9553365], dtype=float32), Array([0., 0.],
             # dtype=float32)]
             # is mapped to
-            # [[DeviceArray(-0.9553365, dtype=float32)], [DeviceArray(0.,
-            # dtype=float32), DeviceArray(0., dtype=float32)]].
+            # [[Array(-0.9553365, dtype=float32)], [Array(0.,
+            # dtype=float32), Array(0., dtype=float32)]].
             need_unstacking = any(r.ndim != 0 for r in res)
             if need_unstacking:
                 res = [qml.math.unstack(x) for x in res]
@@ -286,13 +281,13 @@ def _raise_vector_valued_fwd(tapes):
     Example to the latter:
 
     1. Output when using jax.jacobian:
-    DeviceArray([[-0.09983342,  0.01983384],\n
+    Array([[-0.09983342,  0.01983384],\n
                  [-0.09983342, 0.01983384]], dtype=float64),
-    DeviceArray([[ 0.        , -0.97517033],\n
+    Array([[ 0.        , -0.97517033],\n
                  [ 0.        , -0.97517033]], dtype=float64)),
 
     2. Expected output:
-    DeviceArray([[-0.09983342, 0.01983384],\n
+    Array([[-0.09983342, 0.01983384],\n
                 [ 0.        , -0.97517033]]
 
     The output produced by this function matches 1.
@@ -347,10 +342,10 @@ def _execute_fwd(
         # Adjust the structure of how the jacobian is returned to match the
         # non-forward mode cases
         # E.g.,
-        # [DeviceArray([[ 0.06695931,  0.01383095, -0.46500877]], dtype=float32)]
+        # [Array([[ 0.06695931,  0.01383095, -0.46500877]], dtype=float32)]
         # is mapped to
-        # [[DeviceArray(0.06695931, dtype=float32), DeviceArray(0.01383095,
-        # dtype=float32), DeviceArray(-0.46500877, dtype=float32)]]
+        # [[Array(0.06695931, dtype=float32), Array(0.01383095,
+        # dtype=float32), Array(-0.46500877, dtype=float32)]]
         res_jacs = []
         for j in jacs:
             this_j = []
@@ -381,9 +376,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
-            If the device does not provide a ``batch_execute`` method,
-            by default the tapes will be executed in serial.
+        device (.Device): Device to use for the shots vectors.
         execute_fn (callable): The execution function used to execute the tapes
             during the forward pass. This function must return a tuple ``(results, jacobians)``.
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
@@ -455,7 +448,10 @@ def _execute_bwd_new(
         with qml.tape.Unwrap(*new_tapes):
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
-        res = _to_jax(res)
+        if device.shot_vector:
+            res = _to_jax_shot_vector(res)
+        else:
+            res = _to_jax(res)
 
         return res
 
@@ -472,6 +468,7 @@ def _execute_bwd_new(
                         new_tapes,
                         tangents[0],
                         gradient_fn,
+                        device.shot_vector,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
@@ -482,6 +479,7 @@ def _execute_bwd_new(
                     new_tapes,
                     tangents[0],
                     gradient_fn,
+                    device.shot_vector,
                     reduction="append",
                     gradient_kwargs=gradient_kwargs,
                 )
@@ -521,7 +519,8 @@ def _execute_fwd_new(
 ):
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
-    provided. This function does not allow multiple derivatives."""
+    provided. This function does not allow multiple derivatives. It currently does not support shot vectors
+    because adjoint jacobian for default qubit does not support it.."""
 
     # pylint: disable=unused-variable
     @jax.custom_jvp
@@ -531,7 +530,6 @@ def _execute_fwd_new(
         with qml.tape.Unwrap(*new_tapes):
             res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
-        print(res, jacs)
         res = _to_jax(res)
 
         return res, jacs
@@ -583,6 +581,8 @@ def _copy_tape(t, a):
 
 
 def _to_jax(res):
+    """From a list of tapes results (each result is either a np.array or tuple), transform it to a list of Jax
+    results (structure stay the same)."""
     res_ = []
     for r in res:
         if not isinstance(r, tuple):
@@ -595,4 +595,13 @@ def _to_jax(res):
                 else:
                     sub_r.append(jnp.array(r_i))
             res_.append(tuple(sub_r))
+    return res_
+
+
+def _to_jax_shot_vector(res):
+    """Convert the results obtained by executing a list of tapes on a device with a shot vector to JAX objects while preserving the input structure.
+
+    The expected structure of the inputs is a list of tape results with each element in the list being a tuple due to execution using shot vectors.
+    """
+    res_ = [tuple(_to_jax([r_])[0] for r_ in r) for r in res]
     return res_

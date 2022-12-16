@@ -18,15 +18,16 @@ Contains the Dataset utility functions.
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_EXCEPTION
 import os
+from os.path import sep as pathsep
 from time import sleep
 from urllib.parse import quote
 
 import requests
 from pennylane.data.dataset import Dataset
 
-S3_URL = "https://xanadu-quantum-datasets-test.s3.amazonaws.com"
-FOLDERMAP_URL = os.path.join(S3_URL, "foldermap.json")
-DATA_STRUCT_URL = os.path.join(S3_URL, "data_struct.json")
+S3_URL = "https://xanadu-quantum-datasets.s3.amazonaws.com"
+FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
+DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
 
 _foldermap = {}
 _data_struct = {}
@@ -137,7 +138,8 @@ def _refresh_data_struct():
 
 def _fetch_and_save(filename, dest_folder):
     """Download a single file from S3 and save it locally."""
-    response = requests.get(os.path.join(S3_URL, quote(filename)), timeout=5.0)
+    webfile = filename if pathsep == "/" else filename.replace(pathsep, "/")
+    response = requests.get(f"{S3_URL}/{quote(webfile)}", timeout=5.0)
     response.raise_for_status()
     with open(os.path.join(dest_folder, filename), "wb") as f:
         f.write(response.content)
@@ -161,16 +163,16 @@ def _s3_download(data_name, folders, attributes, dest_folder, force, num_threads
         if not os.path.exists(local_folder):
             os.makedirs(local_folder)
 
-        prefix = os.path.join(data_name, folder, f"{folder.replace('/', '_')}_")
+        prefix = os.path.join(data_name, folder, f"{folder.replace(pathsep, '_')}_")
         # TODO: consider combining files within a folder (switch to append)
         files.extend([f"{prefix}{attr}.dat" for attr in attributes])
 
     if not force:
-        start = len(dest_folder.rstrip("/")) + 1
+        start = len(dest_folder.rstrip(pathsep)) + 1
         existing_files = {
             os.path.join(path, name)[start:]
-            for path, _, files in os.walk(dest_folder)
-            for name in files
+            for path, _, local_files in os.walk(dest_folder)
+            for name in local_files
         }
         files = list(set(files) - existing_files)
 
@@ -196,19 +198,23 @@ def _generate_folders(node, folders):
 
     next_folders = folders[1:]
     folders = set(node) if folders[0] == ["full"] else set(folders[0]).intersection(set(node))
-    if not next_folders:
-        return folders
-    return [
-        os.path.join(folder, child)
-        for folder in folders
-        for child in _generate_folders(node[folder], next_folders)
-    ]
+    return (
+        [
+            os.path.join(folder, child)
+            for folder in folders
+            for child in _generate_folders(node[folder], next_folders)
+        ]
+        if next_folders
+        else folders
+    )
 
 
 def load(
     data_name, attributes=None, lazy=False, folder_path="", force=False, num_threads=50, **params
 ):
-    r"""Downloads the data if it is not already present in the directory and return it to user as a Dataset object.
+    r"""Downloads the data if it is not already present in the directory and return it to user as a
+    :class:`~pennylane.data.Dataset` object. For the full list of available datasets, please see the
+    `datasets website <https://pennylane.ai/qml/datasets.html>`_.
 
     Args:
         data_name (str)   : A string representing the type of data required such as `qchem`, `qpsin`, etc.
@@ -221,7 +227,15 @@ def load(
             Note that these are not optional
 
     Returns:
-        list[Dataset]
+        list[:class:`~pennylane.data.Dataset`]
+
+    .. warning::
+
+        PennyLane datasets use the ``dill`` module to compress, store, and read data. Since ``dill``
+        is built on the ``pickle`` module, we reproduce an important warning from the ``pickle``
+        module: it is possible to construct malicious pickle data which will execute arbitrary code
+        during unpickling. Never unpickle data that could have come from an untrusted source, or
+        that could have been tampered with.
     """
 
     _ = lazy
@@ -251,7 +265,7 @@ def load(
     for folder in all_folders:
         real_folder = os.path.join(directory_path, data_name, folder)
         data_files.append(
-            Dataset(data_name, real_folder, folder.replace("/", "_"), docstring, standard=True)
+            Dataset(data_name, real_folder, folder.replace(pathsep, "_"), docstring, standard=True)
         )
 
     return data_files
@@ -263,39 +277,37 @@ def _direc_to_dict(path):
         if not dirs:
             return None
         tree = {x: _direc_to_dict(os.path.join(root, x)) for x in dirs}
-        vals = [x is None for x in tree.values()]
-        if all(vals):
-            return list(dirs)
-        return tree
+        return list(dirs) if all(x is None for x in tree.values()) else tree
 
 
 def list_datasets(path=None):
-    r"""Returns a list of datasets.
+    r"""Returns a dictionary of the available datasets.
 
     Return:
         dict: Nested dictionary representing the directory structure of the hosted datasets.
 
     **Example:**
 
-    Note that the available data will differ from this example as we add more datasets.
-    For updates on available data see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
+    Note that the results of calling this function may differ from this example as more datasets
+    are added. For updates on available data see the `datasets website <https://pennylane.ai/qml/datasets.html>`_.
 
     .. code-block :: pycon
 
         >>> qml.data.list_datasets()
-        {
-            'qchem': {
-                'H2': {
-                    '6-31G': ['0.46', '1.16', '0.58'],
-                    'STO-3G': ['0.46', '1.05']
-                },
-                'HeH+': {'STO-3G': ['0.9', '0.74', '0.6', '0.8']}
-            },
-            'qspin': {
-                'Heisenberg': {'closed': {'chain': ['1x4']}},
-                'Ising': {'open': {'chain': ['1x8']}}
-            }
-        }
+        {'qchem': {'H2': {'6-31G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1'],
+                          'STO-3G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1']},
+                   'HeH+': {'6-31G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1'],
+                            'STO-3G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1']},
+                   'LiH': {'STO-3G': ['0.5', '0.54', '0.58', ... '2.02', '2.06', '2.1']},
+                   'OH-': {'STO-3G': ['0.5', '0.54', '0.58', ... '0.94', '0.98', '1.02']}},
+        'qspin': {'Heisenberg': {'closed': {'chain': ['1x16', '1x4', '1x8'],
+                                            'rectangular': ['2x2', '2x4', '2x8', '4x4']},
+                                 'open': {'chain': ['1x16', '1x4', '1x8'],
+                                        'rectangular': ['2x2', '2x4', '2x8', '4x4']}},
+                  'Ising': {'closed': {'chain': ['1x16', '1x4', '1x8'],
+                                        'rectangular': ['2x2', '2x4', '2x8', '4x4']},
+                            'open': {'chain': ['1x16', '1x4', '1x8'],
+                                    'rectangular': ['2x2', '2x4', '2x8', '4x4']}}}}
     """
 
     if path:
@@ -305,7 +317,7 @@ def list_datasets(path=None):
 
 
 def list_attributes(data_name):
-    r"""List the attributes that exist for a specific data_name.
+    r"""List the attributes that exist for a specific ``data_name``.
 
     Args:
         data_name (str): The type of the desired data
@@ -361,7 +373,7 @@ def load_interactive():
     r"""Download a dataset using an interactive load prompt.
 
     Returns:
-        Dataset
+        :class:`~pennylane.data.Dataset`
 
     **Example**
 
@@ -383,7 +395,7 @@ def load_interactive():
         Please select attributes:
             ...
         Force download files? (Default is no) [y/N]: N
-        Folder to download to? (Default is pwd, will download to /datasets subdirectory): /Users/jovyan/Downloads
+        Folder to download to? (Default is pwd, will download to /datasets subdirectory):
 
         Please confirm your choices:
         dataset: qspin/Ising/open/rectangular/4x4
@@ -391,7 +403,7 @@ def load_interactive():
         force: False
         dest folder: /Users/jovyan/Downloads/datasets
         Would you like to continue? (Default is yes) [Y/n]:
-        <pennylane.data.dataset.Dataset object at 0x10157ab50>
+        <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
     """
 
     _refresh_foldermap()
@@ -416,7 +428,7 @@ def load_interactive():
     )
 
     print("\nPlease confirm your choices:")
-    print("dataset:", os.path.join(data_name, *[description[param] for param in params]))
+    print("dataset:", "/".join([data_name] + [description[param] for param in params]))
     print("attributes:", attributes)
     print("force:", force)
     print("dest folder:", os.path.join(dest_folder, "datasets"))
