@@ -210,7 +210,7 @@ class PauliWord(dict):
         return reduce(kron, (matrix_map[self[w]] for w in wire_order))
 
     def operation(self, wire_order=None):
-        """Returns a native PennyLane``~.Operator`` representing the PauliWord."""
+        """Returns a native PennyLane :class:`~pennylane.Operator` representing the PauliWord."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the operation for an empty PauliWord.")
@@ -220,7 +220,7 @@ class PauliWord(dict):
         return factors[0] if len(factors) == 1 else prod(*factors)
 
     def hamiltonian(self, wire_order=None):
-        """Return ~.Hamiltonian representing the PauliWord"""
+        """Return :class:`~pennylane.Hamiltonian` representing the PauliWord"""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
