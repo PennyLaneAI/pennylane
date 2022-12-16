@@ -22,7 +22,7 @@ import networkx as nx
 from networkx.drawing.nx_pydot import to_pydot
 
 import pennylane as qml
-from pennylane.tape import QuantumScript, make_qscript
+from pennylane.tape import QuantumScript, make_qscript, QuantumTape
 from pennylane.wires import Wires
 
 
@@ -212,7 +212,7 @@ class CommutationDAG:
 
     """
 
-    def __init__(self, tape: QuantumScript):
+    def __init__(self, tape: QuantumTape):
 
         self.num_wires = len(tape.wires)
         self.node_id = -1

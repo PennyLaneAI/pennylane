@@ -502,10 +502,10 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
             control the controlled-generator operations
 
     Returns:
-        list[pennylane.tape.QuantumScript]: Transformed qscripts that compute the
+        list[pennylane.tape.QuantumTape]: Transformed tapes that compute the
             first term of the metric tensor for the off-diagonal block belonging
             to the input layers
-        list[tuple[int]]: 2-tuple indices assigning the qscripts to metric tensor
+        list[tuple[int]]: 2-tuple indices assigning the tapes to metric tensor
             entries
     """
 
