@@ -249,7 +249,6 @@ def _execute_bwd_tuple(
 
             jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
 
-        print(evaluation_results, primals, tangents)
         return evaluation_results, jvps
 
     def _grad_transform_jac_via_callback(params, device):
