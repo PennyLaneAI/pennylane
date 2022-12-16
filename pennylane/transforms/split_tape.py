@@ -268,11 +268,11 @@ def split_tape(tape: QuantumTape):
         # sort results by idx
         results = tuple(res_dict[key] for key in sorted(res_dict))
 
-        if qml.active_return():
-            return results[0] if len(results) == 1 else results
-        return (
-            results[0] if len(results) == 1 else qml.math.convert_like(results, expanded_results[0])
-        )
+        if qml.math.requires_grad(expanded_results[0]):
+            # when computing gradients, we need to convert the tuple to a gradient box
+            return qml.math.stack(results)
+
+        return results[0] if len(results) == 1 else results
 
     return tapes, processing_fn
 

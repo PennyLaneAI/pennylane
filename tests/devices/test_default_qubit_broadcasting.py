@@ -14,18 +14,20 @@
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device when using broadcasting.
 """
-from itertools import product
 import cmath
 
 # pylint: disable=protected-access,cell-var-from-loop
 import math
+from itertools import product
 
 import pytest
-import pennylane as qml
-from pennylane import numpy as np, DeviceError
-from pennylane.devices.default_qubit import _get_slice, DefaultQubit
-from pennylane.wires import Wires, WireError
 from gate_data import *
+
+import pennylane as qml
+from pennylane import DeviceError
+from pennylane import numpy as np
+from pennylane.devices.default_qubit import DefaultQubit, _get_slice
+from pennylane.wires import WireError, Wires
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
@@ -2009,8 +2011,8 @@ class TestApplyOperationBroadcasted:
 class TestHamiltonianSupportBroadcasted:
     """Tests the devices' native support for Hamiltonian observables."""
 
-    def test_do_not_split_analytic_broadcasted(self, mocker):
-        """Tests that the Hamiltonian is not split for shots=None."""
+    def test_split_analytic_broadcasted(self, mocker):
+        """Tests that the Hamiltonian is split for shots=None."""
         dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 
@@ -2023,7 +2025,7 @@ class TestHamiltonianSupportBroadcasted:
 
         circuit()
         # evaluated one expval altogether
-        assert spy.call_count == 1
+        assert spy.call_count == 2
 
     def test_split_finite_shots_broadcasted(self, mocker):
         """Tests that the Hamiltonian is split for finite shots."""
