@@ -756,12 +756,12 @@ def test_consistent_taper_ops(operation, op_gen):
     )
     assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op1, taper_op2)])
 
-    tape1, tape2 = qml.tape.QuantumTape(), qml.tape.QuantumTape()
-    with tape1:
+    with qml.queuing.AnnotatedQueue() as q_tape1:
         taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=None)
-    with tape2:
+    with qml.queuing.AnnotatedQueue() as q_tape2:
         taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen)
-
+    tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
+    tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
     taper_circuit1 = [x for x in tape1.circuit if x.label() != "I"]
     taper_circuit2 = [x for x in tape2.circuit if x.label() != "I"]
 

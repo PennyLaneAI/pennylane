@@ -22,7 +22,7 @@ import numpy as np
 import retworkx as rx
 
 import pennylane as qml
-from pennylane.measurements import Sample, State, _State
+from pennylane.measurements import SampleMP, StateMP
 from pennylane.wires import Wires
 
 
@@ -114,20 +114,18 @@ class CircuitGraph:
         self.num_wires = len(wires)
         """int: number of wires the circuit contains"""
         for k, op in enumerate(queue):
-            op.queue_idx = k  # store the queue index in the Operator
             meas_wires = wires or None  # cannot use empty wire list in MeasurementProcess
-            if hasattr(op, "return_type"):
-                if op.return_type is State:
-                    # State measurements contain no wires by default, but wires are
-                    # required for the circuit drawer, so we recreate the state
-                    # measurement with all wires
-                    op = _State(wires=meas_wires)
+            if isinstance(op, StateMP):
+                # State measurements contain no wires by default, but wires are
+                # required for the circuit drawer, so we recreate the state
+                # measurement with all wires
+                op = StateMP(wires=meas_wires)
 
-                elif op.return_type is Sample and op.wires == Wires([]):
-                    # Sampling without specifying wires is treated as sampling all wires
-                    op = qml.sample(wires=meas_wires)
+            elif isinstance(op, SampleMP) and op.wires == Wires([]):
+                # Sampling without specifying wires is treated as sampling all wires
+                op = qml.sample(wires=meas_wires)
 
-                op.queue_idx = k
+            op.queue_idx = k  # store the queue index in the Operator
 
             for w in op.wires:
                 # get the index of the wire on the device
@@ -392,20 +390,6 @@ class CircuitGraph:
         B = self.ancestors([b])
         B.add(b)
         return A & B
-
-    def invisible_operations(self):
-        """Operations that cannot affect the circuit output.
-
-        An :class:`Operation` instance in a quantum circuit is *invisible* if is not an ancestor
-        of an observable. Such an operation cannot affect the circuit output, and usually indicates
-        there is something wrong with the circuit.
-
-        Returns:
-            set[Operator]: operations that cannot affect the output
-        """
-        visible = self.ancestors(self.observables)
-        invisible = set(self.operations) - visible
-        return invisible
 
     @property
     def parametrized_layers(self):
