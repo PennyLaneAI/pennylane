@@ -155,18 +155,6 @@ class TestSplitTape:
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
-    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
-    def test_no_grouping(self, tape, output):
-        """Tests that the split_tape transform returns the correct value
-        if we switch grouping off"""
-
-        tapes, fn = split_tape(tape, group=False)
-        tapes = [q.expand() for q in tapes]
-        results = dev.batch_execute(tapes)
-        expval = fn(results)
-
-        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
-
     def test_number_of_tapes(self):
         """Tests the correct number of quantum tapes are produced."""
 
@@ -175,10 +163,7 @@ class TestSplitTape:
 
         qs = QuantumScript(measurements=[qml.expval(H), qml.expval(S)])
 
-        tapes, _ = split_tape(qs, group=False)
-        assert len(tapes) == 3
-
-        tapes, _ = split_tape(qs, group=True)
+        tapes, _ = split_tape(qs)
         assert len(tapes) == 2
 
     def test_non_ham_and_non_sum_tape(self):
@@ -192,7 +177,7 @@ class TestSplitTape:
         assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
         # Old return types return a list for a single value:
         # e.g. qml.expval(qml.PauliX(0)) = [1.23]
-        res = [1.23] if qml.active_return() else [[1.23]]
+        res = [1.23]
         assert fn(res) == 1.23
 
     @pytest.mark.autograd

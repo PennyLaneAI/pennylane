@@ -713,7 +713,7 @@ class Device(abc.ABC):
             to be applied to the list of evaluated circuit results.
         """
 
-        circuits, hamiltonian_fn = qml.transforms.split_tape(circuit, group=True)
+        circuits, hamiltonian_fn = qml.transforms.split_tape(circuit)
 
         # Check whether the circuit was broadcasted (then the Hamiltonian-expanded
         # ones will be as well) and whether broadcasting is supported

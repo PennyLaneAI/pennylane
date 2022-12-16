@@ -32,16 +32,13 @@ from pennylane.wires import Wires
 
 
 # pylint: disable=too-many-branches, too-many-statements
-def split_tape(tape: QuantumTape, group=True):
+def split_tape(tape: QuantumTape):
     """If the tape is measuring any Hamiltonian or Sum expectation, this method splits it into
     multiple tapes of Pauli expectations and provides a function to recombine the results.
 
     Args:
         tape (.QuantumTape): the tape used when calculating the expectation value
             of the Hamiltonian
-        group (bool): Whether to compute disjoint groups of commuting Pauli observables, leading to fewer tapes.
-            If grouping information can be found in the Hamiltonian, it will be used even if group=False.
-
     Returns:
         tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
@@ -175,6 +172,11 @@ def split_tape(tape: QuantumTape, group=True):
     [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]
     [expval(PauliX(wires=[0]))]
     """
+    if len(tape.measurements) == 1 and not isinstance(
+        tape.measurements[0].obs, (Hamiltonian, Sum, SProd)
+    ):
+        # no need to split the measurement
+        return [tape], lambda res: res[0]
     # Populate these 2 dictionaries with the unique measurement objects, the index of the
     # initial measurement on the tape and the coefficient
     # NOTE: expval(Sum) is expanded into the expectation of each summand
@@ -220,25 +222,20 @@ def split_tape(tape: QuantumTape, group=True):
     measurements = list(measurements_dict.values())
     idxs_coeffs = list(idxs_coeffs_dict.values())
 
-    # Create the tapes, group observables if group==True
-    if group:
-        m_groups = _group_measurements(measurements)
-        # Update ``idxs_coeffs`` list such that it tracks the new ``m_groups`` list of lists
-        tmp_idxs = []
-        for m_group in m_groups:
-            if len(m_group) == 1:
-                tmp_idxs.append(idxs_coeffs[measurements.index(m_group[0])])
-            else:
-                tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
-        idxs_coeffs = tmp_idxs
-        tapes = [
-            QuantumTape(ops=tape._ops, measurements=m_group, prep=tape._prep)
-            for m_group in m_groups
-        ]
-    else:
-        tapes = [
-            QuantumTape(ops=tape._ops, measurements=[m], prep=tape._prep) for m in measurements
-        ]
+    # Group observables and create the tapes
+    m_groups = _group_measurements(measurements)
+
+    # Update ``idxs_coeffs`` list such that it tracks the new ``m_groups`` list of lists
+    tmp_idxs = []
+    for m_group in m_groups:
+        if len(m_group) == 1:
+            tmp_idxs.append(idxs_coeffs[measurements.index(m_group[0])])
+        else:
+            tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
+    idxs_coeffs = tmp_idxs
+    tapes = [
+        QuantumTape(ops=tape._ops, measurements=m_group, prep=tape._prep) for m_group in m_groups
+    ]
 
     def processing_fn(expanded_results):
         results = []  # [(m_idx, result)]
@@ -269,6 +266,8 @@ def split_tape(tape: QuantumTape, group=True):
         # sort results by idx
         results = tuple(res_dict[key] for key in sorted(res_dict))
 
+        if qml.active_return():
+            return results[0] if len(results) == 1 else results
         return (
             results[0] if len(results) == 1 else qml.math.convert_like(results, expanded_results[0])
         )

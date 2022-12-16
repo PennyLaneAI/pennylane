@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """ Tests for the transform ``qml.transform.split_non_commuting()`` """
+import numpy as np
+
 # pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error
 import pytest
-import numpy as np
+
 import pennylane as qml
 import pennylane.numpy as pnp
-
+from pennylane.qinfo.transforms import _compute_cfim, _make_probs
 from pennylane.transforms import split_non_commuting
-from pennylane.qinfo.transforms import _make_probs, _compute_cfim
 
 ### example tape with 3 commuting groups [[0,3],[1,4],[2,5]]
 with qml.queuing.AnnotatedQueue() as q3:
