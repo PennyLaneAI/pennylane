@@ -18,7 +18,12 @@ Contains the hamiltonian expand tape transform
 from typing import List
 
 import pennylane as qml
-from pennylane.measurements import ExpectationMP, MeasurementProcess
+from pennylane.measurements import (
+    ClassicalShadowMP,
+    ExpectationMP,
+    MeasurementProcess,
+    ShadowExpvalMP,
+)
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, SProd, Sum
 from pennylane.pauli import group_observables, is_pauli_word
@@ -298,10 +303,12 @@ def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[Mea
     """
     qwc_groups = []  # [(wires (Wires), m_group (list), pauli_group (list))]
     for m in measurements:
-        if len(m.wires) == 0:
+        if len(m.wires) == 0 or isinstance(m, (ClassicalShadowMP, ShadowExpvalMP)):
             # If the measurement doesn't have wires, we assume it acts on all wires and that
-            # it won't commute with any other measurement
-            qwc_groups.append((m.wires, [m], []))
+            # it won't commute with any other measurement.
+            # The classical shadows implementation of `QubitDevice` resets the state of the
+            # device, and thus it cannot be used with other measurements.
+            qwc_groups.append(([], [m], []))
         else:
             op_added = False
             # When m.obs is None the measurement acts on the basis states, and thus we can assume that
