@@ -210,7 +210,7 @@ class PauliWord(dict):
         return reduce(kron, (matrix_map[self[w]] for w in wire_order))
 
     def operation(self, wire_order=None):
-        """Returns a native PennyLane :class:`~pennylane.Operator` representing the PauliWord."""
+        """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the operation for an empty PauliWord.")
@@ -352,7 +352,7 @@ class PauliSentence(dict):
         return math.expand_matrix(reduced_mat, result_wire_order, wire_order=wire_order)
 
     def operation(self, wire_order=None):
-        """Returns a native PennyLane :class:`~pennylane.Operation` representing the PauliSentence."""
+        """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the operation for an empty PauliSentence.")
