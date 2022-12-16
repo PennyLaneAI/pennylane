@@ -273,7 +273,7 @@ def _compute_result_for_each_idx(result, idxs):
     results = []
     for idx, coeff in idxs:
         if coeff is not None:
-            tmp_res = qml.math.dot(result, coeff)
+            tmp_res = qml.math.convert_like(qml.math.dot(coeff, result), result)
             results.append((idx, tmp_res))
         else:
             results.append((idx, result))
