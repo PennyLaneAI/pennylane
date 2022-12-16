@@ -589,7 +589,7 @@ def enable_return():
                        [[ 4.9707499e-01, -2.9999996e-04],
                         [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
 
-    Note that failing to set the ``max-diff`` with jitting will raise a somewhat unrelated error:
+        Note that failing to set the ``max-diff`` with jitting will raise a somewhat unrelated error:
 
         .. code-block:: python
 
@@ -621,7 +621,7 @@ def enable_return():
 
         ValueError: Pure callbacks do not support JVP. Please use `jax.custom_jvp` to use callbacks while taking gradients.
 
-    Correctly specifying ``max_diff=2`` as a QNode argument helps compute the Hessian:
+        Correctly specifying ``max_diff=2`` as a QNode argument helps compute the Hessian:
 
         .. code-block:: python
 
