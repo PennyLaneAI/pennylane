@@ -17,7 +17,6 @@ This module contains the qml.equal function.
 # pylint: disable=too-many-arguments,too-many-return-statements
 from functools import singledispatch
 from typing import Union
-import numpy as np
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
@@ -215,14 +214,14 @@ def _equal_operators(
 def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     """Determine whether two Prod or Sum objects are equal"""
 
+    if len(op1.operands) != len(op2.operands):
+        return False
+
     # organizes by wire indicies while respecting commutation relations
     sorted_ops1 = op1._sort(op1.operands)
     sorted_ops2 = op2._sort(op2.operands)
 
-    if len(sorted_ops1) != len(sorted_ops2):
-        return False
-
-    return np.all([qml.equal(o1, o2, **kwargs) for o1, o2 in zip(sorted_ops1, sorted_ops2)])
+    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(sorted_ops1, sorted_ops2))
 
 
 @_equal.register
