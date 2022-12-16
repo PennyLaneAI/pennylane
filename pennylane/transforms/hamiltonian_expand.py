@@ -247,10 +247,10 @@ def sum_expand(tape: QuantumTape, group=True):
     >>> tapes, fn = qml.transforms.sum_expand(tape, group=False)
     >>> for tape in tapes:
     ...     print(tape.measurements)
-    [expval(PauliZ(wires=[0]))]
     [expval(PauliY(wires=[2]) @ PauliZ(wires=[1]))]
     [expval(PauliZ(wires=[2]))]
     [expval(PauliZ(wires=[1]))]
+    [expval(PauliZ(wires=[0]))]
     [expval(PauliX(wires=[1]))]
 
     Five tapes are generated: the first three contain the summands of the `Sum` operator,
