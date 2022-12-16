@@ -28,8 +28,8 @@ to have a more relevant location.
     ~Tracker
     ~DefaultPreprocessor
     ~simple_preprocessor
+    ~apply_operation
     ~adjoint_diff_gradient
-    ~PlainNumpySimulator
 
 **Examples:**
 
@@ -100,4 +100,4 @@ from .device_interface import AbstractDevice
 from .python_device import PythonDevice
 from .compatibility_patching import backward_patch_interface
 from .python_preprocessor import simple_preprocessor
-from .simulator import adjoint_diff_gradient, PlainNumpySimulator
+from .simulator import adjoint_diff_gradient, apply_operation

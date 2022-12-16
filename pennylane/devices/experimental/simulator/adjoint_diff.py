@@ -18,43 +18,43 @@ import numpy as np
 import pennylane as qml
 from pennylane.tape import QuantumScript
 
-from .numpy_simulator import PlainNumpySimulator
+from .apply_operation import apply_operation
+from .python_execute import create_zeroes_state
 
 
-def operation_derivative(operation):
+def operation_derivative(operation: qml.operation.Operator) -> qml.operation.Operator:
     """This code is copied from operation.py.  It's moved here to reduce
     spagetti dependencies over an extremely simple function."""
-    gen = qml.matrix(qml.generator(operation, format="observable"), wire_order=operation.wires)
-    return 1j * gen @ operation.matrix()
+    gen = qml.generator(operation, format="observable")
+    return 1j * qml.prod(gen, operation)
 
 
-def adjoint_diff_gradient(qscript: QuantumScript, sim: PlainNumpySimulator) -> tuple:
+def adjoint_diff_gradient(qscript: QuantumScript) -> tuple:
     """Calculate the gradient of a Quantum Script using adjoint differentiation with the provided
     simulator.
 
     Args:
         qscript (QuantumScript): the quantum script to take the gradient of
-        sim (PlainNumpySimulator): the simulator to perform the computation with
 
     """
-    state = sim.create_zeroes_state(qscript.num_wires)
+    state = create_zeroes_state(qscript.num_wires)
     for op in qscript.operations:
-        state = sim.apply_operation(state, op)
-    bra = sim.apply_operation(state, qscript.measurements[0].obs)
+        state = apply_operation(op, state)
+    bra = apply_operation(qscript.measurements[0].obs, state)
     ket = state
 
     grads = []
     for op in reversed(qscript.operations):
         adj_op = qml.adjoint(op)
-        ket = sim.apply_operation(ket, adj_op)
+        ket = apply_operation(adj_op, ket)
 
         if op.num_params != 0:
             dU = operation_derivative(op)
-            ket_temp = sim.apply_matrix(ket, dU, op.wires)
+            ket_temp = apply_operation(dU, ket)
             dM = 2 * np.real(np.vdot(bra, ket_temp))
             grads.append(dM)
 
-        bra = sim.apply_operation(bra, adj_op)
+        bra = apply_operation(adj_op, bra)
 
     grads = grads[::-1]
     return tuple(grads)

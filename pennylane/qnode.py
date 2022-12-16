@@ -410,6 +410,9 @@ class QNode:
 
     @staticmethod
     def _validate_backprop_method(device, interface):
+        if isinstance(device, AbstractDevice):
+            return "backprop", {}, device
+
         if device.shots is not None:
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
 

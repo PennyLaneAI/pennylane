@@ -15,7 +15,6 @@
 
 """
 
-from apply_operation import apply_operation
-
-from .numpy_simulator import PlainNumpySimulator
+from .apply_operation import apply_operation
+from .python_execute import python_execute
 from .adjoint_diff import adjoint_diff_gradient

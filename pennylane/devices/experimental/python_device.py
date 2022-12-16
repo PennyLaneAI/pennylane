@@ -21,18 +21,8 @@ from pennylane.tape import QuantumScript
 from pennylane.workflow import ExecutionConfig
 
 from .device_interface import AbstractDevice
-from .simulator import PlainNumpySimulator, adjoint_diff_gradient
+from .simulator import adjoint_diff_gradient, python_execute
 from .python_preprocessor import simple_preprocessor
-
-
-def _single_execution(single_qs: QuantumScript):
-    """Perform a single execution on an instantiated simulator.
-
-    Args:
-        single_qs (QuantumScript): A single quantum script to execute
-    """
-    simulator = PlainNumpySimulator()
-    return simulator.execute(single_qs)
 
 
 def _multiprocessing_execution(qscript: Sequence[QuantumScript]) -> Tuple:
@@ -40,11 +30,11 @@ def _multiprocessing_execution(qscript: Sequence[QuantumScript]) -> Tuple:
     results = None
     with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
         if executor is not None:
-            results = executor.map(_single_execution, qscript)
+            results = executor.map(python_execute, qscript)
     return tuple(results)
 
 
-_BACKENDS = {"serial": _single_execution, "multiprocessing": _multiprocessing_execution}
+_BACKENDS = {"serial": python_execute, "multiprocessing": _multiprocessing_execution}
 
 try:  # Validate if MPI is available
     from mpi4py.futures import MPIPoolExecutor
@@ -55,7 +45,7 @@ try:  # Validate if MPI is available
         results = None
         with MPIPoolExecutor() as executor:
             if executor is not None:
-                results = executor.map(_single_execution, qscript)
+                results = executor.map(python_execute, qscript)
         return tuple(results)
 
     _BACKENDS["mpi"] = _mpi_execution
@@ -70,12 +60,12 @@ try:  # Validate if Ray is available
 
         @ray.remote
         def fn(qscript: QuantumScript):
-            return _single_execution(qscript)
+            return python_execute(qscript)
 
         futures = [fn.remote(s) for s in qscript]
         return tuple(ray.get(futures))
 
-    _BACKENDS["ray"] = _ray_execution
+    _BACKENDS["ray"] = python_execute
 except ImportError:
     pass
 
@@ -96,8 +86,7 @@ class PythonDevice(AbstractDevice):
         self, qscripts: Union[QuantumScript, Sequence[QuantumScript]], execution_config=None
     ):
         if isinstance(qscripts, QuantumScript):
-            simulator = PlainNumpySimulator()
-            results = simulator.execute(qscripts)
+            results = python_execute(qscripts)
 
             if self.tracker.active:
                 self.tracker.update(executions=1, results=results)
@@ -134,8 +123,7 @@ class PythonDevice(AbstractDevice):
             self.tracker.record()
 
         if isinstance(qscript, QuantumScript):
-            simulator = PlainNumpySimulator()
-            return adjoint_diff_gradient(qscript, simulator)
+            return adjoint_diff_gradient(qscript)
 
         return tuple(self.gradient(qs, execution_config) for qs in qscript)
 

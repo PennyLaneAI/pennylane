@@ -15,6 +15,8 @@
 from functools import singledispatch
 from string import ascii_letters as ABC
 
+import numpy as np
+
 import pennylane as qml
 
 from pennylane import math
@@ -30,13 +32,12 @@ def _get_slice(index, axis, num_axes):
 
 
 def apply_operation_einsum(op: qml.operation.Operator, state):
-    """Apply ``matrix`` to ``state`` at ``indices``. Uses ``np.einsum`` and is more efficent at lower qubit
+    """Apply ``Operator`` to ``state`` using ``np.einsum``. This is more efficent at lower qubit
     numbers.
 
     Args:
+        op (Operator): Operator to apply to the
         state (array[complex]): input state
-        mat (array): matrix to multiply
-        indices (Iterable[integer]): indices to apply the matrix on
 
     Returns:
         array[complex]: output_state
@@ -63,8 +64,16 @@ def apply_operation_einsum(op: qml.operation.Operator, state):
 
 
 def apply_matrix_tensordot(op: qml.operation.Operator, state):
-    """Apply ``matrix`` to ``state`` at ``indices`` using ``np.tensordot``. More efficient at higher numbers
-    of indices."""
+    """Apply ``Operator`` to ``state`` using ``np.tensordot``. This is more efficent at higher qubit
+    numbers.
+
+    Args:
+        op (Operator): Operator to apply to the
+        state (array[complex]): input state
+
+    Returns:
+        array[complex]: output_state
+    """
     mat = op.matrix()
     total_indices = len(state.shape)
     num_indices = len(op.wires)
@@ -85,8 +94,8 @@ def apply_operation(op: qml.operation.Operator, state):
     """Apply ``op`` to the ``state``.
 
     Args:
-        op (Operator)
-        state (ndarray)
+        op (Operator): The operation to apply to ``state``
+        state (ndarray): The starting state.
 
     Returns:
         ndarray: output state
@@ -95,12 +104,12 @@ def apply_operation(op: qml.operation.Operator, state):
     of the state.  The shape of state should be ``[2]*num_wires``.
 
     This is a ``functools.singledispatch`` function, so additional specialized kernels
-    for apply specific operations can be register like:
+    for specific operations can be registered like:
 
     .. code-block:: python
 
         @apply_operation.register
-        def _(op: type_op_op, state):
+        def _(op: type_op, state):
             # custom op application method here
 
     """
@@ -112,7 +121,7 @@ def apply_operation(op: qml.operation.Operator, state):
 @apply_operation.register
 def apply_x(op: qml.PauliX, state):
     """Apply paulix operator to state"""
-    return math.roll(state, 1, op.wires[0])
+    return np.roll(state, 1, op.wires[0])
 
 
 @apply_operation.register
@@ -157,10 +166,10 @@ def apply_hadamard(op: qml.Hadamard, state):
 @apply_operation.register
 def apply_cnot(op: qml.CNOT, state):
     """Apply cnot gate to state."""
-    ndim = math.ndim(state)
+    ndim = np.ndim(state)
     sl_0 = _get_slice(0, op.wires[0], ndim)
     sl_1 = _get_slice(1, op.wires[0], ndim)
 
     target_axes = [op.wires[1] - 1] if op.wires[1] > op.wires[0] else [op.wires[1]]
-    state_x = apply_operation(qml.PauliX(target_axes), state[sl_1])
-    return math.stack([state[sl_0], state_x], axis=op.wires[0])
+    state_x = np.roll(state[sl_1], 1, target_axes)
+    return np.stack([state[sl_0], state_x], axis=op.wires[0])
