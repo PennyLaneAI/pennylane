@@ -545,9 +545,9 @@ def enable_return():
         >>> jax.jacobian(circuit)(x)
         (Array([-9.9833414e-02, -7.4505806e-09,  6.9285655e-10], dtype=float32),
          Array([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
-                      [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
-                      [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
-                      [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32))
+                [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
+                [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
+                [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32))
 
         where before the following error was raised:
 
@@ -577,17 +577,17 @@ def enable_return():
 
         >>> jax.hessian(circuit)(params)
         ((Array([[ 0.,  0.],
-                        [ 2., -3.]], dtype=float32),
+                [ 2., -3.]], dtype=float32),
           Array([[[-0.5,  0. ],
-                       [ 0. ,  0. ]],
-                      [[ 0.5,  0. ],
-                       [ 0. ,  0. ]]], dtype=float32)),
+                   [ 0. ,  0. ]],
+                  [[ 0.5,  0. ],
+                   [ 0. ,  0. ]]], dtype=float32)),
          (Array([[ 0.07677898,  0.0563341 ],
-                       [ 0.07238522, -1.830669  ]], dtype=float32),
+                   [ 0.07238522, -1.830669  ]], dtype=float32),
           Array([[[-4.9707499e-01,  2.9999996e-04],
-                        [-6.2500127e-04,  1.2500001e-04]],
-                       [[ 4.9707499e-01, -2.9999996e-04],
-                        [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
+                    [-6.2500127e-04,  1.2500001e-04]],
+                   [[ 4.9707499e-01, -2.9999996e-04],
+                    [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
 
         Note that failing to set the ``max-diff`` with jitting will raise a somewhat unrelated error:
 
@@ -611,28 +611,28 @@ def enable_return():
                 qml.CNOT(wires=[0, 1])
                 return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
-        >>> jax.hessian(circuit)(params)
-        ~/anaconda3/lib/python3.8/site-packages/jax/_src/callback.py in pure_callback_jvp_rule(***failed resolving arguments***)
-             53 def pure_callback_jvp_rule(*args, **kwargs):
-             54   del args, kwargs
-        ---> 55   raise ValueError(
-             56       "Pure callbacks do not support JVP. "
-             57       "Please use `jax.custom_jvp` to use callbacks while taking gradients.")
+        .. code-block:: python
 
-        ValueError: Pure callbacks do not support JVP. Please use `jax.custom_jvp` to use callbacks while taking gradients.
+            >>> jax.hessian(circuit)(params)
+            ~/anaconda3/lib/python3.8/site-packages/jax/_src/callback.py in pure_callback_jvp_rule(***failed resolving arguments***)
+                 53 def pure_callback_jvp_rule(*args, **kwargs):
+                 54   del args, kwargs
+            ---> 55   raise ValueError(
+                 56       "Pure callbacks do not support JVP. "
+                 57       "Please use `jax.custom_jvp` to use callbacks while taking gradients.")
+            ValueError: Pure callbacks do not support JVP. Please use `jax.custom_jvp` to use callbacks while taking gradients.
 
         Correctly specifying ``max_diff=2`` as a QNode argument helps compute the Hessian:
 
         .. code-block:: python
 
-        >>> jax.hessian(circuit)(params)
-        (Array([[ 0.06617428,  0.07165382],
-                [ 0.07165382, -1.8348092 ]], dtype=float64),
-         Array([[[-4.974e-01, -2.025e-03],
-                 [-2.025e-03,  1.000e-04]],
-
-                [[ 4.974e-01,  2.025e-03],
-                 [ 2.025e-03, -1.000e-04]]], dtype=float64))
+            >>> jax.hessian(circuit)(params)
+            (Array([[ 0.06617428,  0.07165382],
+                    [ 0.07165382, -1.8348092 ]], dtype=float64),
+             Array([[[-4.974e-01, -2.025e-03],
+                     [-2.025e-03,  1.000e-04]],
+                    [[ 4.974e-01,  2.025e-03],
+                     [ 2.025e-03, -1.000e-04]]], dtype=float64))
     """
 
     global __activated
