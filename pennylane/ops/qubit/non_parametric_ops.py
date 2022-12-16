@@ -1244,7 +1244,7 @@ class CH(Operation):
     r"""CH(wires)
     The controlled-Hadamard operator
 
-    .. math:: CY = \begin{bmatrix}
+    .. math:: CH = \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & 1 & 0 & 0 \\
             0 & 0 & \frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}} \\
