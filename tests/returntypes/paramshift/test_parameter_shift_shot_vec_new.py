@@ -615,7 +615,9 @@ class TestParamShift:
                 qml.gradients.param_shift(tape, shots=shot_vec)
 
 
-# TODO: add test class for parameter broadcasting
+# TODO: add test class for parameter broadcasting - both when using broadcasting in the transform
+# via `broadcast=True`, and when using the transform on an already broadcasted tape, with
+# `broadcast=False` (as double broadcasting is not supported).
 
 
 @pytest.mark.slow
