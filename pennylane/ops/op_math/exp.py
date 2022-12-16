@@ -398,7 +398,7 @@ class Evolution(Exp):
 
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit(x):
-    ...     qml.ops.op_math.EvolutionEvolution(qml.PauliX(0), -0.5 * x)
+    ...     qml.ops.Evolution(qml.PauliX(0), -0.5 * x)
     ...     return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(circuit)(1.23))
     0: ──Exp(-0.61j X)─┤  <Z>
