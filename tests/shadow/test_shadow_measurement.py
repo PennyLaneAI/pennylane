@@ -20,6 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import ClassicalShadowMP
+from pennylane.wires import Wires
 
 
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):
@@ -251,10 +252,9 @@ class TestClassicalShadow:
             circuit()
 
     @pytest.mark.parametrize("shots", shots_list)
-    def test_multi_measurement_error(self, wires, shots):
-        """Test that an error is raised when classical shadows is returned
-        with other measurement processes"""
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
+    def test_multi_measurement(self, wires, shots):
+        """Test that classical shadows can be returned with other measurements."""
+        dev = qml.device("default.mixed", wires=wires, shots=shots)
 
         @qml.qnode(dev)
         def circuit():
@@ -265,9 +265,11 @@ class TestClassicalShadow:
 
             return qml.classical_shadow(wires=range(wires)), qml.expval(qml.PauliZ(0))
 
-        msg = "Classical shadows cannot be returned in combination with other return types"
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
-            circuit()
+        res = circuit()
+
+        assert len(res) == 2
+        assert res[0].shape == (2, shots, wires)
+        assert res[1].shape == ()
 
     def test_seed_recipes_deprecated(self, wires):
         """Test that using the ``seed_recipes`` argument is deprecated."""

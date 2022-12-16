@@ -118,20 +118,22 @@ class TestExpvalMeasurement:
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             shadow = circuit(H, k=10)
 
-    def test_multi_measurement_error(self):
-        """Test that an error is raised when classical shadows is returned
-        with other measurement processes"""
-        dev = qml.device("default.qubit", wires=2, shots=100)
+    def test_multi_measurement(self):
+        """Test that shadow expval can be returned with other measurements."""
+        dev = qml.device("default.mixed", wires=2, shots=10)
 
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
+
             return qml.shadow_expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
 
-        msg = "Classical shadows cannot be returned in combination with other return types"
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
-            shadow = circuit()
+        res = circuit()
+
+        assert len(res) == 2
+        assert res[0].shape == ()
+        assert res[1].shape == ()
 
     def test_obs_not_queued(self):
         """Test that the observable passed to qml.shadow_expval is not queued"""
