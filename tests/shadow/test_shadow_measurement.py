@@ -131,7 +131,7 @@ class TestClassicalShadow:
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         res = qml.classical_shadow(wires=range(wires), seed=seed)
-        assert res.shape(device=dev) == (2, shots, wires)
+        assert res.shape(device=dev) == (1, 2, shots, wires)
 
         # test an error is raised when device is None
         msg = (
