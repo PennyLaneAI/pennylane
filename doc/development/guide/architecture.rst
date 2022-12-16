@@ -99,12 +99,14 @@ MeasurementProcess
 ******************
 
 While the :class:`~.Operator` class describes a physical system and its dynamics,
-the :class:`pennylane.measure.MeasurementProcess` class describes how we extract information from the quantum system.
-The measurement functions such as :func:`~pennylane.expval` create an instance of this class.
+the :class:`pennylane.measurement.MeasurementProcess` class describes how we extract information from the quantum system.
+Each measurement in pennylane has a specific class that inherits from :class:`pennylane.measurement.MeasurementProcess`.
+The measurement functions such as :func:`~pennylane.expval` create an instance of its corresponding
+class (:class:`pennylane.measurements.ExpectationMP`). 
 
 >>> m = qml.expval(qml.PauliZ("a"))
 >>> type(m)
-<class 'pennylane.measure.MeasurementProcess'>
+<class 'pennylane.measurements.expval.ExpectationMP'>
 
 An instance of the :class:`~.MeasurementProcess` class specifies the measured observables,
 which are themselves operators.

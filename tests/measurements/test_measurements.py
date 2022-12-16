@@ -564,8 +564,8 @@ class TestMeasurementTransform:
         switch_return()
 
         class MyMeasurement(MeasurementTransform):
-            def process(self, qscript, device):
-                return {device.shots: len(qscript)}
+            def process(self, tape, device):
+                return {device.shots: len(tape)}
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
@@ -586,6 +586,6 @@ class TestMeasurementTransform:
             return qml.classical_shadow(wires=0)
 
         circuit.device.measurement_map[ClassicalShadowMP] = "test_method"
-        circuit.device.test_method = lambda qscript: 2
+        circuit.device.test_method = lambda tape: 2
 
         assert circuit() == 2
