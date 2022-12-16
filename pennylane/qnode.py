@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
-from pennylane.tape import QuantumScript, make_qscript
+from pennylane.tape import QuantumTape, make_qscript
 
 
 class QNode:
@@ -36,7 +36,7 @@ class QNode:
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`~.QuantumScript` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
     the quantum circuit.
 
     Args:
@@ -60,7 +60,7 @@ class QNode:
 
             * ``"jax"``: Allows JAX to backpropagate
               through the QNode. The QNode accepts and returns
-              JAX ``DeviceArray`` objects.
+              JAX ``Array`` objects.
 
             * ``None``: The QNode accepts default Python types
               (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
@@ -699,7 +699,7 @@ class QNode:
         )
 
     @property
-    def tape(self) -> QuantumScript:
+    def tape(self) -> QuantumTape:
         """The quantum tape"""
         return self._tape
 

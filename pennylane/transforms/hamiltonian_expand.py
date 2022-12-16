@@ -20,10 +20,10 @@ from typing import List
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess
 from pennylane.ops import SProd, Sum
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
 
 
-def hamiltonian_expand(tape: QuantumScript, group=True):
+def hamiltonian_expand(tape: QuantumTape, group=True):
     r"""
     Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
     and provides a function to recombine the results.
@@ -204,20 +204,20 @@ def hamiltonian_expand(tape: QuantumScript, group=True):
 
 
 # pylint: disable=too-many-branches, too-many-statements
-def sum_expand(qscript: QuantumScript, group=True):
-    """Splits a quantum script measuring a Sum expectation into multiple scripts of summand
+def sum_expand(tape: QuantumTape, group=True):
+    """Splits a quantum tape measuring a Sum expectation into multiple tapes of summand
     expectations, and provides a function to recombine the results.
 
     Args:
-        qscript (.QuantumScript): the quantum script used when calculating the expectation value
+        tape (.QuantumTape): the quantum tape used when calculating the expectation value
             of the Hamiltonian
         group (bool): Whether to compute disjoint groups of Pauli observables acting on different
             wires, leading to fewer tapes.
 
     Returns:
-        tuple[list[.QuantumScript], function]: Returns a tuple containing a list of
-        quantum scripts to be evaluated, and a function to be applied to these
-        script executions to compute the expectation value.
+        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
+        quantum tapes to be evaluated, and a function to be applied to these
+        tape executions to compute the expectation value.
 
     **Example**
 
@@ -290,12 +290,12 @@ def sum_expand(qscript: QuantumScript, group=True):
     [expval(PauliX(wires=[0]))]
     """
     # Populate these 2 dictionaries with the unique measurement objects, the index of the
-    # initial measurement on the qscript and the coefficient
+    # initial measurement on the tape and the coefficient
     # NOTE: expval(Sum) is expanded into the expectation of each summand
     # NOTE: expval(SProd) is transformed into expval(SProd.base) and the coeff is updated
     measurements_dict = {}  # {m_hash: measurement}
     idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
-    for idx, m in enumerate(qscript.measurements):
+    for idx, m in enumerate(tape.measurements):
         obs = m.obs
         if isinstance(obs, Sum) and isinstance(m, ExpectationMP):
             for summand in obs.operands:
@@ -326,7 +326,7 @@ def sum_expand(qscript: QuantumScript, group=True):
     measurements = list(measurements_dict.values())
     idxs_coeffs = list(idxs_coeffs_dict.values())
 
-    # Create the qscripts, group observables if group==True
+    # Create the tapes, group observables if group==True
     if group:
         m_groups = _group_measurements(measurements)
         # Update ``idxs_coeffs`` list such that it tracks the new ``m_groups`` list of lists
@@ -338,13 +338,12 @@ def sum_expand(qscript: QuantumScript, group=True):
                 tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
         idxs_coeffs = tmp_idxs
         qscripts = [
-            QuantumScript(ops=qscript._ops, measurements=m_group, prep=qscript._prep)
+            QuantumScript(ops=tape._ops, measurements=m_group, prep=tape._prep)
             for m_group in m_groups
         ]
     else:
         qscripts = [
-            QuantumScript(ops=qscript._ops, measurements=[m], prep=qscript._prep)
-            for m in measurements
+            QuantumScript(ops=tape._ops, measurements=[m], prep=tape._prep) for m in measurements
         ]
 
     def processing_fn(expanded_results):

@@ -714,8 +714,72 @@ class TestParamShift:
                 qml.gradients.param_shift(tape)
 
 
-class TestParamShiftBroadcast:
-    """Tests for the `param_shift` function using broadcasting."""
+class TestParamShiftWithBroadcasted:
+    """Tests for the `param_shift` transform on already broadcasted tapes.
+    The tests for `param_shift` using broadcasting itself can be found
+    further below."""
+
+    @pytest.mark.parametrize("dim", [1, 3])
+    @pytest.mark.parametrize("pos", [0, 1])
+    def test_with_single_parameter_broadcasted(self, dim, pos):
+        """Test that the parameter-shift transform works with a tape that has
+        one of its parameters broadcasted already."""
+        x = np.array([0.23, 9.1, 2.3])
+        x = x[:dim]
+        y = -0.654
+        if pos == 1:
+            x, y = y, x
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[0])  # does not have any impact on the expval
+            qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert tape.batch_size == dim
+        tapes, fn = qml.gradients.param_shift(tape, argnum=[0, 1])
+        assert len(tapes) == 4
+        assert np.allclose([t.batch_size for t in tapes], dim)
+
+        dev = qml.device("default.qubit", wires=2)
+        res = fn(dev.batch_execute(tapes))
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert res[0].shape == (dim,)
+        assert res[1].shape == (dim,)
+
+    @pytest.mark.parametrize("argnum", [(0, 2), (0, 1), (1,), (2,)])
+    @pytest.mark.parametrize("dim", [1, 3])
+    def test_with_multiple_parameters_broadcasted(self, dim, argnum):
+        """Test that the parameter-shift transform works with a tape that has
+        multiple of its parameters broadcasted already."""
+        x, y = np.array([[0.23, 9.1, 2.3], [0.2, 1.2, -0.6]])[:, :dim]
+        z = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RZ(z, wires=[0])
+            qml.RY(y, wires=[0])  # does not have any impact on the expval
+            qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        assert tape.batch_size == dim
+        tapes, fn = qml.gradients.param_shift(tape, argnum=argnum)
+        assert len(tapes) == 2 * len(argnum)
+        assert np.allclose([t.batch_size for t in tapes], dim)
+
+        dev = qml.device("default.qubit", wires=2)
+        res = fn(dev.batch_execute(tapes))
+        assert isinstance(res, tuple)
+        assert len(res) == 3
+
+        assert res[0].shape == res[1].shape == res[2].shape == (dim,)
+
+
+class TestParamShiftUsingBroadcasting:
+    """Tests for the `param_shift` function using broadcasting.
+    The tests for `param_shift` on already broadcasted tapes can be found above."""
 
     def test_independent_parameter(self, mocker):
         """Test that an independent parameter is skipped
