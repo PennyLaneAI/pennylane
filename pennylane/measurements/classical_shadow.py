@@ -322,7 +322,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
-        return (1, 2, device.shots, len(self.wires))
+        return (2, device.shots, len(self.wires))
 
     def __copy__(self):
         return self.__class__(
@@ -368,7 +368,7 @@ class ShadowExpvalMP(MeasurementTransform):
         return ShadowExpval
 
     def shape(self, device=None):
-        return (1,)
+        return ()
 
     @property
     def wires(self):
