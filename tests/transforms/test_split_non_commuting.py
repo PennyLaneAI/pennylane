@@ -60,23 +60,24 @@ class TestUnittestSplitNonCommuting:
             qml.Hadamard(0)
             qml.CNOT((0, 1))
             qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
             qml.expval(qml.PauliZ(2))
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(3))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        split, _ = split_non_commuting(tape)
+        split, fn = split_non_commuting(tape)
 
         spy = mocker.spy(qml.math, "concatenate")
 
-        assert len(split) == 1
+        assert split == [tape]
         assert all(isinstance(t, qml.tape.QuantumScript) for t in split)
+        assert fn([0.5]) == 0.5
 
         qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
         split, fn = split_non_commuting(qs)
-        assert len(split) == 1
+        assert split == [qs]
         assert all(isinstance(i_qs, qml.tape.QuantumScript) for i_qs in split)
+        assert fn([0.5]) == 0.5
 
         spy.assert_not_called()
 

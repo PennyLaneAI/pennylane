@@ -172,11 +172,6 @@ def split_tape(tape: QuantumTape):
     [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]
     [expval(PauliX(wires=[0]))]
     """
-    if len(tape.measurements) == 1 and not isinstance(
-        tape.measurements[0].obs, (Hamiltonian, Sum, SProd)
-    ):
-        # no need to split the measurement
-        return [tape], lambda res: res[0]
     # Populate these 2 dictionaries with the unique measurement objects, the index of the
     # initial measurement on the tape and the coefficient
     # NOTE: expval(Sum) is expanded into the expectation of each summand
@@ -207,16 +202,15 @@ def split_tape(tape: QuantumTape):
                 else:
                     idxs_coeffs_dict[o_m.hash].append((idx, coeff))
         else:
-            coeff = None
             if isinstance(obs, SProd) and isinstance(m, ExpectationMP):
                 coeff = obs.scalar
                 m = qml.expval(obs.base)
 
             if m.hash not in measurements_dict:
                 measurements_dict[m.hash] = m
-                idxs_coeffs_dict[m.hash] = [(idx, coeff)]
+                idxs_coeffs_dict[m.hash] = [(idx, None)]
             else:
-                idxs_coeffs_dict[m.hash].append((idx, coeff))
+                idxs_coeffs_dict[m.hash].append((idx, None))
 
     # Cast the dictionaries into lists (we don't need the hashes anymore)
     measurements = list(measurements_dict.values())
@@ -224,6 +218,14 @@ def split_tape(tape: QuantumTape):
 
     # Group observables and create the tapes
     m_groups = _group_measurements(measurements)
+
+    if (
+        len(m_groups) == 1
+        and len(m_groups[0]) == len(tape.measurements)
+        and all(not isinstance(m, (Hamiltonian, Sum, SProd)) for m in tape.measurements)
+    ):
+        # no measurement was split, thus we can return the initial tape
+        return [tape], lambda res: res[0]
 
     # Update ``idxs_coeffs`` list such that it tracks the new ``m_groups`` list of lists
     tmp_idxs = []
