@@ -25,7 +25,9 @@ dev = qml.device("default.qubit", wires=4)
 """Defines the device used for all tests"""
 
 H1 = qml.Hamiltonian([1.5, 1.5], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)])
-S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1)))
+S1 = qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1))) + qml.s_prod(
+    1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1))
+)
 
 """Defines circuits to be used in queueing/output tests"""
 tape1 = QuantumScript(
@@ -97,12 +99,20 @@ tape4 = QuantumScript(
         qml.expval(qml.PauliX(2)),
     ],
 )
-TAPES = [tape1, tape2, tape3, tape4]
+tape5 = QuantumScript(
+    [qml.PauliX(0)],
+    [qml.expval(H1), qml.expval(H3), qml.expval(S1), qml.expval(S3)],
+)
+tape6 = QuantumScript(
+    [qml.Hadamard(0), qml.Hadamard(1), qml.PauliZ(1), qml.PauliX(2)],
+    [qml.expval(H2), qml.expval(H4), qml.expval(S2), qml.expval(S4)],
+)
+TAPES = [tape1, tape2, tape3, tape4, tape5, tape6]
 OUTPUTS = [
     [
         -3.0,
-        -1.5,
-        -1.5,
+        -3.0,
+        -3.0,
         np.array(
             [
                 0.0 + 0.0j,
@@ -127,6 +137,8 @@ OUTPUTS = [
     [-6, -6, np.array([0.5, 0.5]), -6],
     [-1.5, -1.5, np.array([1.0, 0.0]), 0.0, -1.5, np.array([0.0, 0.0, 1.0, 0.0])],
     [-8, -8, 0, -8, 0],
+    [-3.0, -1.5, -3.0, -1.5],
+    [-6, -8, -6, -8],
 ]
 
 
