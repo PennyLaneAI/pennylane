@@ -50,6 +50,11 @@
 
 <h3>Deprecations</h3>
 
+* `with qml.tape.QuantumTape()` is deprecated. Please initialize `QuantumTape` instances directly instead.
+  If queuing is needed for your purposes, you can instead use `with qml.queuing.AnnotateQueue() as q:` to queue operations,
+  then use `qml.tape.QuantumTape.from_queue(q)` to create a tape from a queue.
+  [(#3519)](https://github.com/PennyLaneAI/pennylane/pull/3519)
+
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
