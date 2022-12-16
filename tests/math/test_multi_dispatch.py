@@ -168,3 +168,30 @@ def test_kron():
     assert np.allclose(expected_result, fn.kron(m1, m2, like="scipy"))
     with pytest.warns(DeprecationWarning):
         _ = s.kron(m1, m2)
+
+
+@pytest.mark.parametrize(
+    ("n", "t", "gamma_ref"),
+    [
+        (
+            0.1,
+            jnp.array([0.2, 0.3, 0.4]),
+            jnp.array([0.87941963, 0.90835799, 0.92757383]),
+        ),
+        (
+            0.1,
+            np.array([0.2, 0.3, 0.4]),
+            np.array([0.87941963, 0.90835799, 0.92757383]),
+        ),
+        (
+            0.1,
+            onp.array([0.2, 0.3, 0.4]),
+            onp.array([0.87941963, 0.90835799, 0.92757383]),
+        ),
+    ],
+)
+def test_gammainc(n, t, gamma_ref):
+    """Test that the lower incomplete Gamma function is computed correctly."""
+    gamma = fn.gammainc(n, t)
+
+    assert np.allclose(gamma, gamma_ref)
