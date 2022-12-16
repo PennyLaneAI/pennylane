@@ -237,7 +237,7 @@ class ClassicalShadowMP(MeasurementTransform):
         self.seed = seed
         super().__init__(*args, **kwargs)
 
-    def process(self, qscript, device):
+    def process(self, tape, device):
         """
         Returns the measured bits and recipes in the classical shadow protocol.
 
@@ -257,14 +257,14 @@ class ClassicalShadowMP(MeasurementTransform):
         Pauli measurements have shape ``(T, n)``.
 
         This implementation is device-agnostic and works by executing single-shot
-        quantum scripts containing randomized Pauli observables. Devices should override this
+        quantum tapes containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
 
         .. seealso:: :func:`~pennylane.classical_shadow`
 
         Args:
-            qscript (QuantumScript): the quantum script to be processed
-            device (Device): the device used to process the quantum script
+            tape (QuantumTape): the quantum tape to be processed
+            device (Device): the device used to process the quantum tape
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -298,7 +298,7 @@ class ClassicalShadowMP(MeasurementTransform):
                 ]
 
                 device.reset()
-                device.apply(qscript.operations, rotations=qscript.diagonalizing_gates + rotations)
+                device.apply(tape.operations, rotations=tape.diagonalizing_gates + rotations)
 
                 outcomes[t] = device.generate_samples()[0][mapped_wires]
 
@@ -354,10 +354,8 @@ class ShadowExpvalMP(MeasurementTransform):
         self.k = k
         super().__init__(*args, **kwargs)
 
-    def process(self, qscript, device):
-        bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(
-            qscript, device
-        )
+    def process(self, tape, device):
+        bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 

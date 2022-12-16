@@ -591,8 +591,7 @@ class Device(abc.ABC):
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
         return qml.BooleanFn(
-            lambda obj: not isinstance(obj, qml.tape.QuantumScript)
-            and self.supports_operation(obj.name)
+            lambda obj: not isinstance(obj, QuantumScript) and self.supports_operation(obj.name)
         )
 
     def custom_expand(self, fn):
