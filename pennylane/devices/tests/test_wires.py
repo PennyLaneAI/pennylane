@@ -14,9 +14,9 @@
 """Tests that a device has the right attributes, arguments and methods."""
 # pylint: disable=no-self-use,too-many-arguments,too-few-public-methods
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 
 # ===== Factories for circuits using arbitrary wire labels and numbers
 
@@ -48,9 +48,9 @@ class TestWiresIntegration:
         "wires1, wires2",
         [
             (["a", "c", "d"], [2, 3, 0]),
-            ([-1, -2, -3], ["q1", "ancilla", 2]),
+            ([-2, -3, -4], ["q1", "ancilla", 2]),
             (["a", "c"], [3, 0]),
-            ([-1, -2], ["ancilla", 2]),
+            ([-2, -3], ["ancilla", 2]),
             (["a"], ["nothing"]),
         ],
     )
