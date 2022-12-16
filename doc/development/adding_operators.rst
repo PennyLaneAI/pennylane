@@ -42,12 +42,12 @@ The basic components of operators are the following:
 
 #. **Trainable parameters** (:attr:`.Operator.parameters`) that the map depends on, such as a rotation angle,
    which can be fed to the operator as tensor-like objects. For example, since we used jax arrays to
-   specify the three rotation angles of ``op``, the parameters are jax ``DeviceArrays``.
+   specify the three rotation angles of ``op``, the parameters are jax ``Arrays``.
 
    >>> op.parameters
-   [DeviceArray(0.1, dtype=float32, weak_type=True),
-    DeviceArray(0.2, dtype=float32, weak_type=True),
-    DeviceArray(0.3, dtype=float32, weak_type=True)]
+   [Array(0.1, dtype=float32, weak_type=True),
+    Array(0.2, dtype=float32, weak_type=True),
+    Array(0.3, dtype=float32, weak_type=True)]
 
 #. **Non-trainable hyperparameters** (:attr:`.Operator.hyperparameters`) that influence the action of the operator.
    Not every operator has hyperparameters.

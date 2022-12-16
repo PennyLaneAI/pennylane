@@ -40,7 +40,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Observable, Operation, Tensor
 from pennylane.ops import Hamiltonian, Sum
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
@@ -604,8 +604,7 @@ class Device(abc.ABC):
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
         return qml.BooleanFn(
-            lambda obj: not isinstance(obj, qml.tape.QuantumScript)
-            and self.supports_operation(obj.name)
+            lambda obj: not isinstance(obj, QuantumScript) and self.supports_operation(obj.name)
         )
 
     def custom_expand(self, fn):
@@ -699,7 +698,7 @@ class Device(abc.ABC):
 
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
-    def batch_transform(self, circuit: QuantumScript):
+    def batch_transform(self, circuit: QuantumTape):
         """Apply a differentiable batch transform for preprocessing a circuit
         prior to execution. This method is called directly by the QNode, and
         should be overwritten if the device requires a transform that
