@@ -297,7 +297,6 @@ class op_transform:
             raise OperationTransformError(
                 "This transform does not support tapes or QNodes with multiple operations."
             )
-
         return self._tape_fn(obj, *args, **kwargs)
 
     @property
@@ -495,7 +494,7 @@ class op_transform:
 
         elif callable(obj):
             # user passed something that is callable but not a tape or QNode.
-            tape = qml.transforms.make_tape(obj)(*args, **kwargs)
+            tape = qml.tape.make_qscript(obj)(*args, **kwargs)
             wires = tape.wires
 
             # raise exception if it is not a quantum function

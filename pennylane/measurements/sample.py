@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.sample measurement.
 """
+import functools
 import warnings
 from typing import Sequence, Tuple, Union
 
@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.wires import Wires
 
-from .measurements import Sample, SampleMeasurement
+from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 
 
 def sample(op: Union[Observable, None] = None, wires=None):
@@ -39,8 +39,10 @@ def sample(op: Union[Observable, None] = None, wires=None):
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
             op is ``None``
 
+    Returns:
+        SampleMP: measurement process instance
+
     Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
         ValueError: Cannot set wires if an observable is provided
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
@@ -109,12 +111,91 @@ def sample(op: Union[Observable, None] = None, wires=None):
             )
         wires = Wires(wires)
 
-    return _Sample(Sample, obs=op, wires=wires)
+    return SampleMP(obs=op, wires=wires)
 
 
-# TODO: Make public when removing the ObservableReturnTypes enum
-class _Sample(SampleMeasurement):
-    """Measurement process that returns the samples of a given observable."""
+class SampleMP(SampleMeasurement):
+    """Measurement process that returns the samples of a given observable. If no observable is
+    provided then basis state samples are returned directly from the device.
+
+    Please refer to :func:`sample` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
+
+    @property
+    def return_type(self):
+        return Sample
+
+    @property
+    @functools.lru_cache()
+    def numeric_type(self):
+        # Note: we only assume an integer numeric type if the observable is a
+        # built-in observable with integer eigenvalues or a tensor product thereof
+        if self.obs is None:
+
+            # Computational basis samples
+            return int
+        int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
+        tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
+        every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
+        return int if every_term_standard else float
+
+    @property
+    def samples_computational_basis(self):
+        return self.obs is None
+
+    # pylint: disable=protected-access
+    def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
+            )
+        if device.shot_vector is not None:
+            if self.obs is None:
+                # TODO: revisit when qml.sample without an observable fully
+                # supports shot vectors
+                raise MeasurementShapeError(
+                    "Getting the output shape of a measurement returning samples along with "
+                    "a device with a shot vector is not supported."
+                )
+            return tuple(
+                (shot_val,) if shot_val != 1 else tuple() for shot_val in device._raw_shot_sequence
+            )
+        len_wires = len(device.wires)
+        return (1, device.shots) if self.obs is not None else (1, device.shots, len_wires)
+
+    def _shape_new(self, device=None):
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
+            )
+        if device.shot_vector is not None:
+            if self.obs is None:
+                return tuple(
+                    (shot_val, len(device.wires)) if shot_val != 1 else (len(device.wires),)
+                    for shot_val in device._raw_shot_sequence
+                )
+            return tuple(
+                (shot_val,) if shot_val != 1 else tuple() for shot_val in device._raw_shot_sequence
+            )
+        if self.obs is None:
+            len_wires = len(device.wires)
+            return (device.shots, len_wires) if device.shots != 1 else (len_wires,)
+        return (device.shots,) if device.shots != 1 else ()
 
     def process_samples(
         self,
@@ -141,7 +222,7 @@ class _Sample(SampleMeasurement):
 
         if self.obs is None:
             # if no observable was provided then return the raw samples
-            return samples if bin_size is None else samples.reshape(num_wires, bin_size, -1)
+            return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
         if name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}

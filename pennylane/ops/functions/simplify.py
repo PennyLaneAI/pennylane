@@ -23,20 +23,19 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript
-from pennylane.transforms import make_tape
+from pennylane.tape import QuantumScript, make_qscript, QuantumTape
 
 
-def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable]):
+def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable]):
     """Simplifies an operator, tape, qnode or quantum function by reducing its arithmetic depth
     or number of rotation parameters.
 
     Args:
-        input (.Operator, pennylane.QNode, .QuantumScript, or Callable): an operator, quantum node,
+        input (.Operator, pennylane.QNode, .QuantumTape, or Callable): an operator, quantum node,
             tape or function that applies quantum operations
 
     Returns:
-        (.Operator, pennylane.QNode, .QuantumScript, or Callable): Simplified input.
+        (.Operator, pennylane.QNode, .QuantumTape, or Callable): Simplified input.
 
     **Example**
 
@@ -92,7 +91,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Ca
 
     if isinstance(input, QuantumScript):
         # pylint: disable=protected-access
-        return QuantumScript(
+        return input.__class__(
             [op.simplify() for op in input._ops],
             [m.simplify() for m in input.measurements],
             [op.simplify() for op in input._prep],
@@ -104,9 +103,9 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Ca
 
         @wraps(old_qfunc)
         def qfunc(*args, **kwargs):
-            tape = make_tape(old_qfunc)(*args, **kwargs)
-            _ = [qml.simplify(op) for op in tape.operations]
-            m = tuple(qml.simplify(m) for m in tape.measurements)
+            qs = make_qscript(old_qfunc)(*args, **kwargs)
+            _ = [qml.simplify(op) for op in qs.operations]
+            m = tuple(qml.simplify(m) for m in qs.measurements)
             return m[0] if len(m) == 1 else m
 
         if isinstance(input, QNode):

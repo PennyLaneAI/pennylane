@@ -1858,6 +1858,17 @@ class TestCycles:
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
+    def test_out_flow_constraint_raises(self, monkeypatch):
+        """Test the out-flow constraint function may raise an error."""
+
+        class OtherDirectedGraph(nx.DiGraph):
+            def __init__(self, *args, **kwargs):
+                pass
+
+        g = OtherDirectedGraph()
+        with pytest.raises(ValueError, match="must be directed"):
+            out_flow_constraint(g)
+
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
@@ -1966,11 +1977,23 @@ class TestCycles:
                 assert energy > min(energies_states)[0]
 
     @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
-    def test_net_flow_constraint_undirected_raises_error(self, g):
-        """Test `net_flow_constraint` raises ValueError if input graph is not directed"""
+    def test_net_flow_constraint_wrong_graph_type_raises_error(self, g):
+        """Test `net_flow_constraint` raises ValueError if input graph is not
+        the correct graph type"""
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Input graph must be"):
             h = net_flow_constraint(g)
+
+    def test_net_flow_constraint_undirected_raises_error(self, monkeypatch):
+        """Test the net-flow constraint function may raise an error."""
+
+        class OtherDirectedGraph(nx.DiGraph):
+            def __init__(self, *args, **kwargs):
+                pass
+
+        g = OtherDirectedGraph()
+        with pytest.raises(ValueError, match="must be directed"):
+            net_flow_constraint(g)
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]

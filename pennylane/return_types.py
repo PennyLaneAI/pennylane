@@ -204,10 +204,10 @@ def enable_return():
                 return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         >>> jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
-        ((DeviceArray(-0.19767681, dtype=float32, weak_type=True),
-          DeviceArray(-0.09784342, dtype=float32, weak_type=True)),
-         (DeviceArray(-0.09784339, dtype=float32, weak_type=True),
-          DeviceArray(-0.19767687, dtype=float32, weak_type=True)))
+        ((Array(-0.19767681, dtype=float32, weak_type=True),
+          Array(-0.09784342, dtype=float32, weak_type=True)),
+         (Array(-0.09784339, dtype=float32, weak_type=True),
+          Array(-0.19767687, dtype=float32, weak_type=True)))
 
         The new return types system also unlocks the use of ``probs`` mixed with different measurements with JAX:
 
@@ -231,8 +231,8 @@ def enable_return():
             x = jax.numpy.array([0.1, 0.2, 0.3])
 
         >>> jax.jacobian(circuit)(x)
-        (DeviceArray([-9.9833414e-02, -7.4505806e-09,  6.9285655e-10], dtype=float32),
-         DeviceArray([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
+        (Array([-9.9833414e-02, -7.4505806e-09,  6.9285655e-10], dtype=float32),
+         Array([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
                       [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
                       [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
                       [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32))
@@ -264,18 +264,329 @@ def enable_return():
                 return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         >>> jax.hessian(circuit)(params)
-        ((DeviceArray([[ 0.,  0.],
+        ((Array([[ 0.,  0.],
                         [ 2., -3.]], dtype=float32),
-          DeviceArray([[[-0.5,  0. ],
+          Array([[[-0.5,  0. ],
                        [ 0. ,  0. ]],
                       [[ 0.5,  0. ],
                        [ 0. ,  0. ]]], dtype=float32)),
-         (DeviceArray([[ 0.07677898,  0.0563341 ],
+         (Array([[ 0.07677898,  0.0563341 ],
                        [ 0.07238522, -1.830669  ]], dtype=float32),
-          DeviceArray([[[-4.9707499e-01,  2.9999996e-04],
+          Array([[[-4.9707499e-01,  2.9999996e-04],
                         [-6.2500127e-04,  1.2500001e-04]],
                        [[ 4.9707499e-01, -2.9999996e-04],
                         [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
+
+    .. details::
+        :title: Usage Details for Autograd
+
+        Autograd only allows differentiating functions that have array or tensor outputs. QNodes that have
+        multiple measurements may output tuples and cause errors with Autograd. Similarly, the outputs of
+        ``qml.grad`` or ``qml.jacobian`` may be tuples if there are multiple trainable arguments and
+        cause errors with higher-order derivatives.
+
+        These issues can be overcome by stacking the QNode results or gradients before computing derivatives.
+
+        **Examples for shot vectors**
+
+        Example for first-order derivatives with a single return:
+
+        .. code-block:: python
+
+            def func(a, b):
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+
+            dev = qml.device("default.qubit", wires=2, shots=[100, 200, 300])
+
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0))
+
+            def cost(a, b):
+                res = circuit(a, b)
+                return qml.math.stack(res)
+
+        >>> a = np.array(0.4, requires_grad=True)
+        >>> b = np.array(0.6, requires_grad=True)
+        >>> cost(a, b)
+        [0.94       0.93       0.89333333]
+        >>> qml.jacobian(cost)(a, b)
+        (array([-0.44, -0.38, -0.38]), array([-0.01      , -0.01      , -0.00666667]))
+
+        Example for first-order derivatives with multiple returns:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+            def cost(a, b):
+                res = circuit(a, b)
+                return qml.math.stack([qml.math.hstack(r) for r in res])
+
+        >>> cost(a, b)
+        [[0.92       0.91       0.05       0.03       0.01      ]
+         [0.95       0.9        0.075      0.         0.025     ]
+         [0.95333333 0.89666667 0.08       0.         0.02333333]]
+        >>> qml.jacobian(cost)(a, b)
+        (array([[-0.41  , -0.16  , -0.045 ,  0.01  ,  0.195 ],
+                [-0.325 , -0.1325, -0.03  ,  0.01  ,  0.1525],
+                [-0.39  , -0.175 , -0.02  ,  0.02  ,  0.175 ]]),
+         array([[-0.01      , -0.26      ,  0.255     ,  0.02      , -0.015     ],
+                [ 0.01      , -0.2525    ,  0.2575    ,  0.0075    , -0.0125    ],
+                [-0.02      , -0.26666667,  0.25666667,  0.01666667, -0.00666667]]))
+
+        Example for second-order derivatives with a single return:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+            def cost(a, b):
+                def cost2(a, b):
+                    res = circuit(a, b)
+                    return qml.math.stack(res)
+
+                return qml.math.stack(qml.jacobian(cost2)(a, b))
+
+        >>> cost(a, b)
+        [[ 0.05       -0.01        0.00666667]
+         [-0.51       -0.48       -0.62      ]]
+        >>> qml.jacobian(cost)(a, b)
+        (array([[-0.03      , -0.02      , -0.00333333],
+                [ 0.01      ,  0.025     , -0.02      ]]),
+         array([[ 0.005     ,  0.03      , -0.02166667],
+                [-0.85      , -0.83      , -0.81333333]]))
+
+        Example for second-order derivatives with multiple returns:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.probs([0, 1])
+
+            def cost(a, b):
+                def cost2(a, b):
+                    res = circuit(a, b)
+                    return qml.math.stack([qml.math.hstack(r) for r in res])
+
+                return qml.math.stack(qml.jacobian(cost2)(a, b))
+
+        >>> cost(a, b)
+        [[[-0.05       -0.2         0.          0.025       0.175     ]
+          [ 0.02       -0.17       -0.0275      0.0175      0.18      ]
+          [-0.00666667 -0.19166667 -0.01333333  0.01666667  0.18833333]]
+         [[-0.52       -0.25        0.265      -0.005      -0.01      ]
+          [-0.54       -0.25        0.2625      0.0075     -0.02      ]
+          [-0.57666667 -0.275       0.28166667  0.00666667 -0.01333333]]]
+        >>> qml.jacobian(cost)(a, b)
+        (array([[[ 0.02      , -0.38      , -0.055     ,  0.045     ,  0.39      ],
+                 [ 0.03      , -0.4275    , -0.04      ,  0.025     ,  0.4425    ],
+                 [-0.00666667, -0.42333333, -0.025     ,  0.02833333,  0.42      ]],
+                [[ 0.        ,  0.0625    , -0.065     ,  0.065     , -0.0625    ],
+                 [ 0.015     ,  0.06875   , -0.05      ,  0.0425    , -0.06125   ],
+                 [-0.03      ,  0.03833333, -0.04583333,  0.06083333, -0.05333333]]]),
+         array([[[-0.06      ,  0.0325    , -0.0525    ,  0.0825    , -0.0625    ],
+                 [ 0.02      ,  0.03      , -0.035     ,  0.025     , -0.02      ],
+                 [ 0.00833333,  0.06166667, -0.05666667,  0.0525    , -0.0575    ]],
+                [[-0.85      , -0.415     ,  0.425     ,  0.        , -0.01      ],
+                 [-0.78      , -0.3775    ,  0.375     ,  0.015     , -0.0125    ],
+                 [-0.80666667, -0.38      ,  0.38666667,  0.01666667, -0.02333333]]]))
+
+    .. details::
+        :title: Usage Details for TensorFlow
+
+        TensorFlow only allows differentiating functions that have array or tensor outputs. QNodes that have
+        multiple measurements may output tuples and cause errors with TensorFlow. Similarly, the outputs of
+        ``tape.gradient`` or ``tape.jacobian`` may be tuples if there are multiple trainable arguments and
+        cause errors with higher-order derivatives.
+
+        These issues can be overcome by stacking the QNode results or gradients before computing derivatives.
+
+        **Examples for shot vectors**
+
+        Example for first-order derivatives with a single return:
+
+        .. code-block:: python
+
+            def func(a, b):
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+
+            dev = qml.device("default.qubit", wires=2, shots=[100, 200, 300])
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0))
+
+        >>> a = tf.Variable(0.4, dtype=tf.float64, trainable=True)
+        >>> b = tf.Variable(0.6, dtype=tf.float64, trainable=True)
+        >>> with tf.GradientTape() as tape:
+        ...     res = circuit(a, b)
+        ...     res = tf.stack(res)
+        ...
+        >>> res
+        tf.Tensor([0.92 0.92 0.94], shape=(3,), dtype=float64)
+        >>> tape.jacobian(res, (a, b))
+        (<tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.31      , -0.385     , -0.32666667])>,
+         <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.02      ,  0.02      , -0.00333333])>)
+
+        Example for first-order derivatives with multiple returns:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+        >>> with tf.GradientTape() as tape:
+        ...     res = circuit(a, b)
+        ...     res = tf.stack([tf.experimental.numpy.hstack(r) for r in res])
+        ...
+        >>> res
+        tf.Tensor(
+        [[0.96       0.93       0.05       0.         0.02      ]
+         [0.9        0.87       0.08       0.01       0.04      ]
+         [0.96       0.86666667 0.11333333 0.         0.02      ]], shape=(3, 5), dtype=float64)
+        >>> tape.jacobian(res, (a, b))
+        (<tf.Tensor: shape=(3, 5), dtype=float64, numpy=
+         array([[-0.3       , -0.145     , -0.005     ,  0.03      ,  0.12      ],
+                [-0.395     , -0.19      , -0.0075    ,  0.01      ,  0.1875    ],
+                [-0.39333333, -0.17833333, -0.01833333,  0.00666667,  0.19      ]])>,
+         <tf.Tensor: shape=(3, 5), dtype=float64, numpy=
+         array([[-0.03      , -0.21      ,  0.195     ,  0.025     , -0.01      ],
+                [ 0.005     , -0.285     ,  0.2875    ,  0.0075    , -0.01      ],
+                [-0.01333333, -0.27      ,  0.26333333,  0.015     , -0.00833333]])>)
+
+        Example for second-order derivatives with a single return:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", max_diff=2, interface="tf")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        >>> with tf.GradientTape() as tape1:
+        ...     with tf.GradientTape(persistent=True) as tape2:
+        ...         res = circuit(a, b)
+        ...         res = tf.stack(res)
+        ...
+        ...    jac = tape2.jacobian(res, (a, b), experimental_use_pfor=False)
+        ...    jac = tf.stack(jac)
+        ...
+        >>> jac
+        tf.Tensor(
+        [[-0.02       -0.005       0.00333333]
+         [-0.47       -0.64       -0.58      ]], shape=(2, 3), dtype=float64)
+        >>> tape1.jacobian(jac, (a, b))
+        (<tf.Tensor: shape=(2, 3), dtype=float64, numpy=
+         array([[ 0.00000000e+00,  2.50000000e-02, -1.66666667e-02],
+                [-1.50000000e-02, -4.00000000e-02,  2.77555756e-17]])>,
+         <tf.Tensor: shape=(2, 3), dtype=float64, numpy=
+         array([[-0.015, -0.04 ,  0.   ],
+                [-0.84 , -0.825, -0.84 ]])>)
+
+        Example for second-order derivatives with multiple returns:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", max_diff=2, interface="tf")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.probs([0, 1])
+
+        >>> with tf.GradientTape() as tape1:
+        ...     with tf.GradientTape(persistent=True) as tape2:
+        ...         res = circuit(a, b)
+        ...         res = tf.stack([tf.experimental.numpy.hstack(r) for r in res])
+        ...
+        ...     jac = tape2.jacobian(res, (a, b), experimental_use_pfor=False)
+        ...     jac = tf.stack(jac)
+        ...
+        >>> jac
+        tf.Tensor(
+        [[[ 0.01       -0.13       -0.03        0.025       0.135     ]
+          [-0.045      -0.195      -0.0075      0.03        0.1725    ]
+          [-0.00666667 -0.17       -0.01833333  0.02166667  0.16666667]]
+         [[-0.61       -0.29        0.315      -0.01       -0.015     ]
+          [-0.55       -0.255       0.265       0.01       -0.02      ]
+          [-0.65       -0.305       0.31166667  0.01333333 -0.02      ]]], shape=(2, 3, 5), dtype=float64)
+        >>> tape1.jacobian(jac, (a, b))
+        (<tf.Tensor: shape=(2, 3, 5), dtype=float64, numpy=
+         array([[[ 0.07      , -0.415     , -0.055     ,  0.02      ,  0.45      ],
+                 [ 0.05      , -0.4       , -0.06      ,  0.035     ,  0.425     ],
+                 [ 0.01666667, -0.42166667, -0.04      ,  0.03166667,  0.43      ]],
+                [[-0.03      ,  0.0375    , -0.075     ,  0.09      , -0.0525    ],
+                 [-0.005     ,  0.0375    , -0.06625   ,  0.06875   , -0.04      ],
+                 [-0.04      ,  0.0375    , -0.05166667,  0.07166667, -0.0575    ]]])>,
+         <tf.Tensor: shape=(2, 3, 5), dtype=float64, numpy=
+         array([[[-0.03      ,  0.0375    , -0.075     ,  0.09      , -0.0525    ],
+                 [-0.005     ,  0.0375    , -0.06625   ,  0.06875   , -0.04      ],
+                 [-0.04      ,  0.0375    , -0.05166667,  0.07166667, -0.0575    ]],
+                [[-0.81      , -0.39      ,  0.385     ,  0.02      , -0.015     ],
+                 [-0.77      , -0.375     ,  0.355     ,  0.03      , -0.01      ],
+                 [-0.82666667, -0.40166667,  0.4       ,  0.01333333, -0.01166667]]])>)
+
+    .. details::
+        :title: Usage Details for PyTorch
+
+        PyTorch supports differentiation of Torch tensors or tuple of Torch tensors. It makes it easy to get the
+        Jacobian of functions returning any mix of measurements.
+
+        .. code-block:: python
+
+            def func(a, b):
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="torch")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+        >>> a = torch.tensor(0.1, requires_grad=True)
+        >>> b = torch.tensor(0.2, requires_grad=True)
+        >>> torch.autograd.functional.jacobian(circuit, (a, b))
+        ((tensor(-0.0998), tensor(0.)), (tensor([-0.0494, -0.0005,  0.0005,  0.0494]), tensor([-0.0991,  0.0991,  0.0002, -0.0002])))
+
+        An issue arises when one requires higher order differentation with multiple measurements, the Jacobian returns
+        a tuple of tuple which is not consider as differentiable by PyTorch. This issue can be overcome by stacking
+        the original results:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="torch", max_diff=2)
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+            a = torch.tensor(0.1, requires_grad=True)
+            b = torch.tensor(0.2, requires_grad=True)
+
+            def circuit_stack(a, b):
+                return torch.hstack(circuit(a, b))
+
+        >>> jac_fn = lambda a, b: torch.autograd.functional.jacobian(circuit_stack, (a, b), create_graph=True)
+        >>> torch.autograd.functional.jacobian(jac_fn, (a, b))
+        ((tensor([-0.9950, -0.4925, -0.0050,  0.0050,  0.4925]), tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050])),
+        (tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050]), tensor([ 0.0000, -0.4888,  0.4888,  0.0012, -0.0012])))
 
     """
 

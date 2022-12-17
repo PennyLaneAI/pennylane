@@ -21,8 +21,8 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.measurements import Sample, Probability
 from pennylane.interfaces import InterfaceUnsupportedError
+from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 
 dtype = jnp.float64
 
@@ -136,16 +136,18 @@ def _validate_tapes(tapes):
     """
     for t in tapes:
 
-        return_types = [o.return_type for o in t.observables]
-        set_of_return_types = set(return_types)
-        probs_or_sample_measure = Sample in return_types or Probability in return_types
-        if probs_or_sample_measure and len(set_of_return_types) > 1:
+        measurement_types = [type(m) for m in t.measurements]
+        set_of_measurement_types = set(measurement_types)
+        probs_or_sample_measure = (
+            SampleMP in measurement_types or ProbabilityMP in measurement_types
+        )
+        if probs_or_sample_measure and len(set_of_measurement_types) > 1:
             raise InterfaceUnsupportedError(
                 "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
             )
 
-        if Probability in return_types:
-            set_len_wires = set(len(o.wires) for o in t.observables)
+        if ProbabilityMP in measurement_types:
+            set_len_wires = {len(m.wires) for m in t.measurements}
             if len(set_len_wires) > 1:
                 raise InterfaceUnsupportedError(
                     "Using the JAX interface, multiple probability measurements need to have the same number of wires specified."
@@ -174,14 +176,7 @@ def _execute(
         """Auxiliary function to convert the result of a tape to an array,
         unless the tape had Counts measurements that are represented with
         dictionaries. JAX NumPy arrays don't support dictionaries."""
-        return (
-            jnp.array(r)
-            if not any(
-                m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-                for m in tape.measurements
-            )
-            else r
-        )
+        return jnp.array(r) if not any(isinstance(m, CountsMP) for m in tape.measurements) else r
 
     @jax.custom_vjp
     def wrapped_exec(params):
@@ -221,8 +216,8 @@ def _execute(
 
             for t in tapes:
                 multi_probs = (
-                    any(o.return_type is Probability for o in t.observables)
-                    and len(t.observables) > 1
+                    any(isinstance(m, ProbabilityMP) for m in t.measurements)
+                    and len(t.measurements) > 1
                 )
 
             if multi_probs:
@@ -251,11 +246,11 @@ def _execute(
             # Unstack partial results into ndim=0 arrays to allow
             # differentiability with JAX
             # E.g.,
-            # [DeviceArray([-0.9553365], dtype=float32), DeviceArray([0., 0.],
+            # [Array([-0.9553365], dtype=float32), Array([0., 0.],
             # dtype=float32)]
             # is mapped to
-            # [[DeviceArray(-0.9553365, dtype=float32)], [DeviceArray(0.,
-            # dtype=float32), DeviceArray(0., dtype=float32)]].
+            # [[Array(-0.9553365, dtype=float32)], [Array(0.,
+            # dtype=float32), Array(0., dtype=float32)]].
             need_unstacking = any(r.ndim != 0 for r in res)
             if need_unstacking:
                 res = [qml.math.unstack(x) for x in res]
@@ -286,13 +281,13 @@ def _raise_vector_valued_fwd(tapes):
     Example to the latter:
 
     1. Output when using jax.jacobian:
-    DeviceArray([[-0.09983342,  0.01983384],\n
+    Array([[-0.09983342,  0.01983384],\n
                  [-0.09983342, 0.01983384]], dtype=float64),
-    DeviceArray([[ 0.        , -0.97517033],\n
+    Array([[ 0.        , -0.97517033],\n
                  [ 0.        , -0.97517033]], dtype=float64)),
 
     2. Expected output:
-    DeviceArray([[-0.09983342, 0.01983384],\n
+    Array([[-0.09983342, 0.01983384],\n
                 [ 0.        , -0.97517033]]
 
     The output produced by this function matches 1.
@@ -347,10 +342,10 @@ def _execute_fwd(
         # Adjust the structure of how the jacobian is returned to match the
         # non-forward mode cases
         # E.g.,
-        # [DeviceArray([[ 0.06695931,  0.01383095, -0.46500877]], dtype=float32)]
+        # [Array([[ 0.06695931,  0.01383095, -0.46500877]], dtype=float32)]
         # is mapped to
-        # [[DeviceArray(0.06695931, dtype=float32), DeviceArray(0.01383095,
-        # dtype=float32), DeviceArray(-0.46500877, dtype=float32)]]
+        # [[Array(0.06695931, dtype=float32), Array(0.01383095,
+        # dtype=float32), Array(-0.46500877, dtype=float32)]]
         res_jacs = []
         for j in jacs:
             this_j = []
