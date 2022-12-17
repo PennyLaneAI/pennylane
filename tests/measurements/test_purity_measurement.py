@@ -50,7 +50,7 @@ class TestPurity:
 
     wires_list = [([0], True), ([1], True), ([0, 1], False)]
 
-    @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,))])
+    @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ((1, 10), (2,))])
     def test_shape(self, shots, shape):
         """Test the ``shape`` method."""
         meas = qml.purity(wires=0)
