@@ -47,7 +47,7 @@ def ControlledPauliEvolution(theta, wires, pauli_word, controls):
             ops.append(qml.RX(np.pi / 2, wires=[wire]))
 
     ops.append(qml.CNOT(wires=[controls[1], wires[0]]))
-    ops.extend(MultiCRZ(theta, wires=list(active_wires), control=controls[0]))
+    ops.append(qml.ctrl(op=qml.MultiRZ(theta, wires=list(active_wires)), control=controls[0]))
     ops.append(qml.CNOT(wires=[controls[1], wires[0]]))
 
     for wire, gate in zip(active_wires, active_gates):
@@ -55,25 +55,6 @@ def ControlledPauliEvolution(theta, wires, pauli_word, controls):
             ops.append(qml.Hadamard(wires=[wire]))
         elif gate == "Y":
             ops.append(qml.RX(-np.pi / 2, wires=[wire]))
-    return ops
-
-
-def MultiCRZ(theta, wires, control):
-    """
-    Implements a controlled decomposition of qml.MultiRZ
-
-    Args:
-        theta (float): rotation angle :math:`\theta`
-        wires (Iterable, Wires): the wires the operation acts on
-        control (Wire): The additional ancilla to control the RZ rotation on
-
-    Returns:
-        list[Operator]: decomposition that make up the controlled evolution
-    """
-    ops = [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])]
-    ops.append(qml.CRZ(theta, wires=[control, wires[0]]))
-    ops += [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0])]
-
     return ops
 
 

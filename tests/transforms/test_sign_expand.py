@@ -16,11 +16,11 @@ import pennylane as qml
 import pennylane.tape
 from pennylane import numpy as pnp
 
-"""Defines the device used for all tests"""
+# Defines the device used for all tests
 
 dev = qml.device("default.qubit", wires=[0, 1, 2, 3, "Hadamard", "Target"])
 
-"""Defines circuits to be used in queueing/output tests"""
+# Defines circuits to be used in queueing/output tests
 
 with pennylane.tape.QuantumTape() as tape1:
     qml.PauliX(0)
@@ -91,11 +91,11 @@ OUTPUTS_var = [0, 2]
 
 
 class TestSignExpand:
-    """Tests for the hamiltonian_expand transform"""
+    """Tests for the sign_expand transform"""
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians(self, tape, output):
-        """Tests that the hamiltonian_expand transform returns the correct value"""
+        """Tests that the sign_expand transform returns the correct value"""
 
         tapes, fn = qml.transforms.sign_expand(tape)
         results = dev.batch_execute(tapes)
@@ -105,7 +105,7 @@ class TestSignExpand:
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians_circuit_impl(self, tape, output):
-        """Tests that the hamiltonian_expand transform returns the correct value
+        """Tests that the sign_expand transform returns the correct value
         if we do not calculate analytical expectation values of groups but rely on their circuit approximations"""
 
         tapes, fn = qml.transforms.sign_expand(tape, circuit=True)
@@ -133,7 +133,7 @@ class TestSignExpand:
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES_var, OUTPUTS_var))
     def test_hamiltonians_vars(self, tape, output):
-        """Tests that the hamiltonian_expand transform returns the correct value"""
+        """Tests that the sign_expand transform returns the correct value"""
 
         tapes, fn = qml.transforms.sign_expand(tape)
         results = dev.batch_execute(tapes)
@@ -143,7 +143,7 @@ class TestSignExpand:
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES_var, OUTPUTS_var))
     def test_hamiltonians_vars_circuit_impl(self, tape, output):
-        """Tests that the hamiltonian_expand transform returns the correct value
+        """Tests that the sign_expand transform returns the correct value
         if we do not calculate analytical expectation values of groups but rely on their circuit approximations"""
 
         tapes, fn = qml.transforms.sign_expand(tape, circuit=True)
@@ -154,7 +154,7 @@ class TestSignExpand:
 
     @pytest.mark.autograd
     def test_hamiltonian_dif_autograd(self, tol):
-        """Tests that the hamiltonian_expand tape transform is differentiable with the Autograd interface"""
+        """Tests that the sign_expand tape transform is differentiable with the Autograd interface"""
 
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(3), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
@@ -185,6 +185,9 @@ class TestSignExpand:
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
+        print(cost(var))
+        print(cost_trad(var))
+        # assert 4==5
         assert np.isclose(cost(var), cost_trad(var), 0.05)
 
         # TODO: This does not work yet due to qml.utils.sparse_hamiltonian does not allow autograd to push gradients through
