@@ -326,29 +326,21 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
-    def test_list_of_observables_deprecated(self, mock_qubit_device_extract_stats, monkeypatch):
+    def test_statistics_deprecation_warning(self, mock_qubit_device_extract_stats, monkeypatch):
         """Test that using a list of observables as an argument is deprecated."""
         dev = mock_qubit_device_extract_stats()
+
         with pytest.warns(
             UserWarning,
             match="Using a list of observables in ``QubitDevice.statistics`` is",
         ):
-            dev.statistics([])
-
-    def test_observables_kwarg_deprecated(self, mock_qubit_device_extract_stats, monkeypatch):
-        """Test that using observables instead of circuit is deprecated."""
-        dev = mock_qubit_device_extract_stats()
-        with pytest.warns(
-            UserWarning,
-            match="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. ",
-        ):
             dev.statistics(observables=[])
-        qscript = QuantumScript()
+
         with pytest.warns(
             UserWarning,
-            match="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. ",
+            match="Using a list of observables in ``QubitDevice.statistics`` is",
         ):
-            dev.statistics([], observables=qscript)
+            dev.statistics(circuit=[])
 
     def test_no_observables_or_circuit_raises_error(
         self, mock_qubit_device_extract_stats, monkeypatch
