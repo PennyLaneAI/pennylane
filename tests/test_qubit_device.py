@@ -336,12 +336,6 @@ class TestExtractStatistics:
         ):
             dev.statistics(observables=[])
 
-        with pytest.warns(
-            UserWarning,
-            match="Using a list of observables in ``QubitDevice.statistics`` is",
-        ):
-            dev.statistics(circuit=[])
-
     def test_no_observables_or_circuit_raises_error(
         self, mock_qubit_device_extract_stats, monkeypatch
     ):
