@@ -160,6 +160,7 @@ def _su2su2_to_tensor_products(U):
 
     # From the definition of A \otimes B, C1 C4^\dag = a1^2 I, so we can extract a1
     C14 = math.dot(C1, math.conj(math.T(C4)))
+
     a1 = math.sqrt(math.cast_like(C14[0, 0], 1j))
 
     # Similarly, -C2 C3^\dag = a2^2 I, so we can extract a2
@@ -169,19 +170,30 @@ def _su2su2_to_tensor_products(U):
     # This gets us a1, a2 up to a sign. To resolve the sign, ensure that
     # C1 C2^dag = a1 a2* I
     C12 = math.dot(C1, math.conj(math.T(C2)))
-
-    if not math.allclose(a1 * math.conj(a2), C12[0, 0]):
-        a2 *= -1
+    if not math.is_abstract(C12):
+        if not math.allclose(a1 * math.conj(a2), C12[0, 0]):
+            a2 *= -1
+    else:
+        sign_is_correct = math.allclose(a1 * math.conj(a2), C12[0, 0])
+        sign = (-1) ** (sign_is_correct + 1)
+        a2 *= sign
 
     # Construct A
     A = math.stack([math.stack([a1, a2]), math.stack([-math.conj(a2), math.conj(a1)])])
-
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
-    if not math.allclose(A[0, 0], 0.0, atol=1e-6):
-        B = C1 / math.cast_like(A[0, 0], 1j)
+    # We use B1 unless division by 0 has caused all elements to be inf.
+    if not math.is_abstract(A):
+        if not math.allclose(A[0, 0], 0.0, atol=1e-6):
+            B = C1 / math.cast_like(A[0, 0], 1j)
+        else:
+            B = C2 / math.cast_like(A[0, 1], 1j)
     else:
-        B = C2 / math.cast_like(A[0, 1], 1j)
+        B1 = C1 / math.cast_like(A[0, 0], 1j)
+        B2 = C2 / math.cast_like(A[0, 1], 1j)
+        B1_and_B2 = math.array([B1, B2], like="jax")
+        idx = math.allclose(A[0, 0], 0.0, atol=1e-6) + 0
+        B = B1_and_B2[idx]
 
     return math.convert_like(A, U), math.convert_like(B, U)
 
@@ -429,7 +441,10 @@ def _decomposition_3_cnots(U, wires):
     evs, _ = math.linalg.eig(gammaU)
 
     # We will sort the angles so that results are consistent across interfaces.
-    angles = math.sort([math.angle(ev) for ev in evs])
+    angles = [math.angle(ev) for ev in evs]
+
+    if not qml.math.is_abstract(U):
+        angles = math.sort(angles)
 
     x, y, z = angles[0], angles[1], angles[2]
 
@@ -589,10 +604,13 @@ def two_qubit_decomposition(U, wires):
 
     # The next thing we will do is compute the number of CNOTs needed, as this affects
     # the form of the decomposition.
-    num_cnots = _compute_num_cnots(U)
+    if not qml.math.is_abstract(U):
+        num_cnots = _compute_num_cnots(U)
 
     with qml.QueuingManager.stop_recording():
-        if num_cnots == 0:
+        if qml.math.is_abstract(U):
+            decomp = _decomposition_3_cnots(U, wires)
+        elif num_cnots == 0:
             decomp = _decomposition_0_cnots(U, wires)
         elif num_cnots == 1:
             decomp = _decomposition_1_cnot(U, wires)
