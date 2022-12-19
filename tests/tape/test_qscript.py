@@ -784,13 +784,56 @@ class TestMakeQscript:
         assert qscript.operations[0].name == "PauliX"
 
 
-def test_from_queue():
-    """Test that QuantumScript.from_queue works correctly."""
-    with qml.queuing.AnnotatedQueue() as q:
-        op = qml.PauliX(0)
-        with qml.QueuingManager.stop_recording():
-            qml.Hadamard(0)
-        qml.expval(qml.PauliZ(0))
-    qscript = QuantumScript.from_queue(q)
-    assert qscript.operations == [op]
-    assert len(qscript.measurements) == 1
+class TestFromQueue:
+    """Test that QuantumScript.from_queue behaves properly."""
+
+    def test_from_queue(self):
+        """Test that QuantumScript.from_queue works correctly."""
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.PauliX(0)
+            with qml.QueuingManager.stop_recording():
+                qml.Hadamard(0)
+            qml.expval(qml.PauliZ(0))
+        qscript = QuantumScript.from_queue(q)
+        assert qscript.operations == [op]
+        assert len(qscript.measurements) == 1
+
+    def test_from_queue_child_class_preserved(self):
+        """Test that a child of QuantumScript gets its own type when calling from_queue."""
+
+        class MyScript(QuantumScript):
+            pass
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliZ(0)
+
+        qscript = MyScript.from_queue(q)
+        assert type(qscript) == MyScript
+
+    def test_from_queue_child_with_different_init_fails(self):
+        """Test that if a child class overrides init to take different arguments, from_queue will fail."""
+
+        class ScriptWithNewInit(QuantumScript):
+            """An arbitrary class that has a different constructor from QuantumScript."""
+
+            def __init__(self, ops, measurements, prep, bonus):
+                super().__init__(ops, measurements, prep)
+                self.bonus = bonus
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliZ(0)
+
+        with pytest.raises(TypeError):
+            ScriptWithNewInit.from_queue(q)
+
+    @pytest.mark.parametrize("child", QuantumScript.__subclasses__())
+    def test_that_fails_if_a_subclass_does_not_match(self, child):
+        """
+        Makes sure that no subclasses for QuantumScript override the constructor.
+        If you have, and you stumbled onto this test, note that QuantumScript.from_queue
+        might need some modification for your PR to be complete.
+        """
+        with qml.queuing.AnnotatedQueue() as q:
+            x = qml.PauliZ(0)
+
+        assert child.from_queue(q).operations == [x]

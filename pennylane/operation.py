@@ -1314,13 +1314,13 @@ class Operator(abc.ABC):
         raise ValueError("Can only perform tensor products between operators.")
 
     def __sub__(self, other):
-        """The substraction operation of Operator-Operator objects and Operator-scalar."""
+        """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, (Operator, numbers.Number)):
             return self + (-other)
-        raise ValueError(f"Cannot substract {type(other)} from Operator.")
+        raise ValueError(f"Cannot subtract {type(other)} from Operator.")
 
     def __rsub__(self, other):
-        """The reverse substraction operation of Operator-Operator objects and Operator-scalar."""
+        """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
         return -self + other
 
     def __neg__(self):
