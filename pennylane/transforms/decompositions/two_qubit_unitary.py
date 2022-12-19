@@ -160,7 +160,6 @@ def _su2su2_to_tensor_products(U):
 
     # From the definition of A \otimes B, C1 C4^\dag = a1^2 I, so we can extract a1
     C14 = math.dot(C1, math.conj(math.T(C4)))
-
     a1 = math.sqrt(math.cast_like(C14[0, 0], 1j))
 
     # Similarly, -C2 C3^\dag = a2^2 I, so we can extract a2
@@ -170,6 +169,7 @@ def _su2su2_to_tensor_products(U):
     # This gets us a1, a2 up to a sign. To resolve the sign, ensure that
     # C1 C2^dag = a1 a2* I
     C12 = math.dot(C1, math.conj(math.T(C2)))
+
     if not math.is_abstract(C12):
         if not math.allclose(a1 * math.conj(a2), C12[0, 0]):
             a2 *= -1
@@ -180,6 +180,7 @@ def _su2su2_to_tensor_products(U):
 
     # Construct A
     A = math.stack([math.stack([a1, a2]), math.stack([-math.conj(a2), math.conj(a1)])])
+
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
     # We use B1 unless division by 0 has caused all elements to be inf.
