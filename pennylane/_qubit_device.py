@@ -721,11 +721,7 @@ class QubitDevice(Device):
 
     # pylint: disable=too-many-statements
     def statistics(
-        self,
-        observables=None,
-        shot_range=None,
-        bin_size=None,
-        circuit: QuantumTape = None,
+        self, observables=None, shot_range=None, bin_size=None, circuit: QuantumTape = None
     ):
         """Process measurement results from circuit execution and return statistics.
 
