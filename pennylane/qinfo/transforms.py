@@ -255,7 +255,8 @@ def mutual_info(qnode, wires0, wires1, base=None):
 
 
 def vn_entanglement_entropy(qnode, wires0, wires1, base=None):
-    r"""Compute the Von Neumann entanglement entropy from a :class:`.QNode` returning a :func:`~.state`:
+    r"""Compute the Von Neumann entanglement entropy from a :class:`.QNode` returning
+    a :func:`~pennylane.state`.
 
     .. math::
 
@@ -270,7 +271,7 @@ def vn_entanglement_entropy(qnode, wires0, wires1, base=None):
     it indicates the two subsystems are entangled.
 
     Args:
-        qnode (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        qnode (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
         wires0 (Sequence(int)): List of wires in the first subsystem.
         wires1 (Sequence(int)): List of wires in the second subsystem.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
@@ -282,7 +283,7 @@ def vn_entanglement_entropy(qnode, wires0, wires1, base=None):
     **Example**
 
     It is possible to obtain the entanglement entropy of two subsystems from a
-    :class:`.QNode` returning a :func:`~.state`.
+    :class:`.QNode` returning a :func:`~pennylane.state`.
 
     .. code-block:: python
 
@@ -294,11 +295,11 @@ def vn_entanglement_entropy(qnode, wires0, wires1, base=None):
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-    >>> entanglement_entropy_circuit = qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])
-    >>> entanglement_entropy_circuit(np.pi / 2)
+    >>> result_circuit = qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])
+    >>> result_circuit(np.pi / 2)
     0.69314718
     >>> x = np.array(np.pi / 4, requires_grad=True)
-    >>> qml.grad(entanglement_entropy_circuit)(x)
+    >>> qml.grad(result_circuit)(x)
     0.62322524
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.vn_entanglement_entropy`
