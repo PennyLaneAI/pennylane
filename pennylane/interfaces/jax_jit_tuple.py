@@ -332,9 +332,9 @@ def _execute_fwd_tuple(
         return res, jacs
 
     @execute_wrapper.defjvp
-    def execute_wrapper_jvp(primal, tangents):
+    def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
-        res, jacs = execute_wrapper(primal[0])
+        res, jacs = execute_wrapper(primals[0])
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
         if len(tapes) == 1:
