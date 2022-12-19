@@ -131,7 +131,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
 
         # the probability vector must be permuted to account for the permuted
         # wire order of the observable
-        permuted_wires = self._permute_wires(self.obs.wires)
+        permuted_wires = self._permute_wires(wire_order)
 
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
