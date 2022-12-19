@@ -326,22 +326,30 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
-    def test_statistics_deprecation_warning(self, mock_qubit_device_extract_stats, monkeypatch):
+    def test_observables_deprecated(self, mock_qubit_device_extract_stats, monkeypatch):
         """Test that using a list of observables as an argument is deprecated."""
-        dev = mock_qubit_device_extract_stats()
-
-        with pytest.warns(
-            UserWarning,
-            match="Using a list of observables in ``QubitDevice.statistics`` is",
-        ):
-            dev.statistics(observables=[])
-
-    def test_no_observables_or_circuit_raises_error(
-        self, mock_qubit_device_extract_stats, monkeypatch
-    ):
-        dev = mock_qubit_device_extract_stats()
-        with pytest.raises(ValueError, match="Please provide a circuit into the statistics method"):
-            dev.statistics()
+        with monkeypatch.context() as m:
+            dev = mock_qubit_device_extract_stats()
+            with pytest.warns(
+                UserWarning,
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
+            ):
+                dev.statistics([])
+            with pytest.warns(
+                UserWarning,
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
+            ):
+                dev.statistics(observables=[])
+            qscript = QuantumScript()
+            with pytest.warns(
+                UserWarning,
+                match="Using a list of observables in ``QubitDevice.statistics`` is",
+            ):
+                dev.statistics([], circuit=qscript)
+            with pytest.raises(
+                ValueError, match="Please provide a circuit into the statistics method"
+            ):
+                dev.statistics()
 
     @pytest.mark.parametrize(
         "measurement", [ExpectationMP, VarianceMP, SampleMP, ProbabilityMP, StateMP]
