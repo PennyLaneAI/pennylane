@@ -34,9 +34,9 @@ class TRX(Operation):
     `Di et al. (2012) <https://arxiv.org/abs/1105.5485>`_.
 
     .. math:: TRX^{jk}(\phi) = \exp(-i\phi\sigma_x^{jk}/2),\\
-                \text{where } \sigma_x^{jk} = |j\rangle\langle k| + |k\rangle\langle j|
 
-    where :math:`j, k \in \{0, 1, 2\}, j < k`
+    where :math:`\sigma_x^{jk} = |j\rangle\langle k| + |k\rangle\langle j|`,
+    :math:`j, k \in \{0, 1, 2\}, j < k`
 
     .. seealso:: :class:`~.RX`
 
