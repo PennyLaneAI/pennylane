@@ -538,7 +538,7 @@ def enable_return():
               qml.RZ(a[2], wires=1)
               return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1])
 
-            x = jax.numpy.array([0.1, 0.2, 0.3])
+        >>> x = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(x)
         (Array([-9.9833414e-02, -7.4505806e-09,  6.9285655e-10], dtype=float32),
          Array([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
