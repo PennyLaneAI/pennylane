@@ -784,11 +784,12 @@ class QubitDevice(Device):
         if isinstance(circuit, QuantumScript):
             measurements = circuit.measurements
         else:
-            warnings.warn(
-                message="Using a list of observables in ``QubitDevice.statistics`` is "
-                "deprecated. Please use a ``QuantumTape`` instead.",
-                category=UserWarning,
-            )
+            if observables is None:
+                warnings.warn(
+                    message="Using a list of observables in ``QubitDevice.statistics`` is "
+                    "deprecated. Please use a ``QuantumTape`` instead.",
+                    category=UserWarning,
+                )
             measurements = circuit
 
         results = []
