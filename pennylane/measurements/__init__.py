@@ -186,9 +186,8 @@ Here are a few more tips for adding measurements:
   be added soon in a different context.
 
 * *Write good docstrings.* Explain what your measurement does in a clear docstring with ample examples.
-  You find more about Pennylane standards in the guidelines on :doc:`/development/guide/documentation`.
 
-More tips here: `Documentation <https://docs.pennylane.ai/en/stable/development/guide/documentation.html>`_.
+You can find more about Pennylane standards in the guidelines on :doc:`/development/guide/documentation`.
 """
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
