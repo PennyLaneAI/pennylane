@@ -20,7 +20,6 @@ from autograd.numpy.numpy_boxes import ArrayBox
 import autoray as ar
 from autoray import numpy as np
 import numpy as onp
-from jax import numpy as jnp
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
@@ -37,9 +36,6 @@ def array(*args, like=None, **kwargs):
     Returns:
         tensor_like: the tensor_like object of the framework
     """
-    if like == "jax":
-        return jnp.array(*args, **kwargs)
-
     res = np.array(*args, like=like, **kwargs)
     if like is not None and get_interface(like) == "torch":
         res = res.to(device=like.device)
@@ -164,19 +160,7 @@ def kron(*args, like=None, **kwargs):
     """The kronecker/tensor product of args."""
     if like == "scipy":
         return onp.kron(*args, **kwargs)  # Dispatch scipy kron to numpy backed specifically.
-    if like == "jax":
-        return jnp.kron(*args, **kwargs)
     return ar.numpy.kron(*args, like=like, **kwargs)
-
-
-@multi_dispatch
-def isinf(*args, like=None):
-    """Test element-wise for positive or negative infinity."""
-    if like == "jax":
-        res = jnp.isinf(*args)
-    else:
-        res = np.isinf(*args)
-    return res
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
