@@ -489,6 +489,9 @@
 * QPE can now accept a target operator instead of a matrix and target wires pair.
   [(#3373)](https://github.com/PennyLaneAI/pennylane/pull/3373)
 
+* The `qml.ops.op_math.Controlled.map_wires` method now uses `base.map_wires` internally instead of the private `_wires` property setter.
+  [(#3405)](https://github.com/PennyLaneAI/pennylane/pull/3405)
+
 * A new function called `qml.tape.make_qscript` has been created for converting a quantum function into a quantum script. This replaces `qml.transforms.make_tape`.
   [(#3429)](https://github.com/PennyLaneAI/pennylane/pull/3429)
 
@@ -572,9 +575,6 @@
 
 * The `qml.Operation.get_parameter_shift` method has been removed. The `gradients` module should be used for general parameter-shift rules instead.
   [(#3419)](https://github.com/PennyLaneAI/pennylane/pull/3419)
-
-* `_wires` has been removed from the `qml.ops.op_math.Controlled.map_wires` method.
-  [(#3405)](https://github.com/PennyLaneAI/pennylane/pull/3405)
 
 * The signature of the `QubitDevice.statistics` method has been changed from 
 
