@@ -94,7 +94,7 @@ class TRX(Operation):
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
     ):  # pylint: disable=dangerous-default-value
 
-        self._subspace = self.validate - subspace(subspace)
+        self._subspace = self.validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
         }
