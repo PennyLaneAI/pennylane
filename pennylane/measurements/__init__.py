@@ -167,7 +167,7 @@ creating a file with the name of your measurement (e.g. ``state.py``) and add it
 * The measurement class with the appropriate ``process`` method defined.
 
 * A function with the same name as the created file that will be used to instantiate the
-measurement class.
+  measurement class.
 
 .. note:
 
