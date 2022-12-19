@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
 import pytest
-from copy import copy
+from copy import copy, deepcopy
 
 from scipy import sparse
 import pennylane as qml
@@ -85,8 +85,12 @@ class TestPauliWord:
     def test_copy(self, pw):
         """Test that the copy is identical to the original."""
         copy_pw = copy(pw)
+        deep_copy_pw = deepcopy(pw)
+
         assert copy_pw == pw
+        assert deep_copy_pw == pw
         assert copy_pw is not pw
+        assert deep_copy_pw is not pw
 
     tup_pws_wires = ((pw1, {1, 2}), (pw2, {"a", "b", "c"}), (pw3, {0, "b", "c"}), (pw4, set()))
 
@@ -268,6 +272,17 @@ class TestPauliSentence:
         """Test the correct wires are given for the PauliSentence."""
         assert ps.wires == wires
 
+    @pytest.mark.parametrize("ps", (ps1, ps2, ps3, ps4))
+    def test_copy(self, ps):
+        """Test that the copy is identical to the original."""
+        copy_ps = copy(ps)
+        deep_copy_ps = deepcopy(ps)
+
+        assert copy_ps == ps
+        assert deep_copy_ps == ps
+        assert copy_ps is not ps
+        assert deep_copy_ps is not ps
+
     tup_ps_mult = (  # computed by hand
         (
             ps1,
@@ -295,6 +310,9 @@ class TestPauliSentence:
             ),
         ),
         (ps3, ps4, ps3),
+        (ps4, ps3, ps3),
+        (ps1, ps5, ps1),
+        (ps5, ps1, ps1),
     )
 
     @pytest.mark.parametrize("ps1, ps2, res", tup_ps_mult)

@@ -204,10 +204,10 @@ def enable_return():
                 return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         >>> jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
-        ((DeviceArray(-0.19767681, dtype=float32, weak_type=True),
-          DeviceArray(-0.09784342, dtype=float32, weak_type=True)),
-         (DeviceArray(-0.09784339, dtype=float32, weak_type=True),
-          DeviceArray(-0.19767687, dtype=float32, weak_type=True)))
+        ((Array(-0.19767681, dtype=float32, weak_type=True),
+          Array(-0.09784342, dtype=float32, weak_type=True)),
+         (Array(-0.09784339, dtype=float32, weak_type=True),
+          Array(-0.19767687, dtype=float32, weak_type=True)))
 
         The new return types system also unlocks the use of ``probs`` mixed with different measurements with JAX:
 
@@ -231,8 +231,8 @@ def enable_return():
             x = jax.numpy.array([0.1, 0.2, 0.3])
 
         >>> jax.jacobian(circuit)(x)
-        (DeviceArray([-9.9833414e-02, -7.4505806e-09,  6.9285655e-10], dtype=float32),
-         DeviceArray([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
+        (Array([-9.9833414e-02, -7.4505806e-09,  6.9285655e-10], dtype=float32),
+         Array([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
                       [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
                       [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
                       [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32))
@@ -264,15 +264,15 @@ def enable_return():
                 return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         >>> jax.hessian(circuit)(params)
-        ((DeviceArray([[ 0.,  0.],
+        ((Array([[ 0.,  0.],
                         [ 2., -3.]], dtype=float32),
-          DeviceArray([[[-0.5,  0. ],
+          Array([[[-0.5,  0. ],
                        [ 0. ,  0. ]],
                       [[ 0.5,  0. ],
                        [ 0. ,  0. ]]], dtype=float32)),
-         (DeviceArray([[ 0.07677898,  0.0563341 ],
+         (Array([[ 0.07677898,  0.0563341 ],
                        [ 0.07238522, -1.830669  ]], dtype=float32),
-          DeviceArray([[[-4.9707499e-01,  2.9999996e-04],
+          Array([[[-4.9707499e-01,  2.9999996e-04],
                         [-6.2500127e-04,  1.2500001e-04]],
                        [[ 4.9707499e-01, -2.9999996e-04],
                         [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
@@ -540,6 +540,54 @@ def enable_return():
                 [[-0.81      , -0.39      ,  0.385     ,  0.02      , -0.015     ],
                  [-0.77      , -0.375     ,  0.355     ,  0.03      , -0.01      ],
                  [-0.82666667, -0.40166667,  0.4       ,  0.01333333, -0.01166667]]])>)
+
+    .. details::
+        :title: Usage Details for PyTorch
+
+        PyTorch supports differentiation of Torch tensors or tuple of Torch tensors. It makes it easy to get the
+        Jacobian of functions returning any mix of measurements.
+
+        .. code-block:: python
+
+            def func(a, b):
+                qml.RY(a, wires=0)
+                qml.RX(b, wires=1)
+                qml.CNOT(wires=[0, 1])
+
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="torch")
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+        >>> a = torch.tensor(0.1, requires_grad=True)
+        >>> b = torch.tensor(0.2, requires_grad=True)
+        >>> torch.autograd.functional.jacobian(circuit, (a, b))
+        ((tensor(-0.0998), tensor(0.)), (tensor([-0.0494, -0.0005,  0.0005,  0.0494]), tensor([-0.0991,  0.0991,  0.0002, -0.0002])))
+
+        An issue arises when one requires higher order differentation with multiple measurements, the Jacobian returns
+        a tuple of tuple which is not consider as differentiable by PyTorch. This issue can be overcome by stacking
+        the original results:
+
+        .. code-block:: python
+
+            @qml.qnode(dev, diff_method="parameter-shift", interface="torch", max_diff=2)
+            def circuit(a, b):
+                func(a, b)
+                return qml.expval(qml.PauliZ(0)), qml.probs([0, 1])
+
+            a = torch.tensor(0.1, requires_grad=True)
+            b = torch.tensor(0.2, requires_grad=True)
+
+            def circuit_stack(a, b):
+                return torch.hstack(circuit(a, b))
+
+        >>> jac_fn = lambda a, b: torch.autograd.functional.jacobian(circuit_stack, (a, b), create_graph=True)
+        >>> torch.autograd.functional.jacobian(jac_fn, (a, b))
+        ((tensor([-0.9950, -0.4925, -0.0050,  0.0050,  0.4925]), tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050])),
+        (tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050]), tensor([ 0.0000, -0.4888,  0.4888,  0.0012, -0.0012])))
+
     """
 
     global __activated

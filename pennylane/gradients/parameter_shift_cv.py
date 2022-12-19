@@ -198,8 +198,9 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
-        list of generated tapes, in addition to a post-processing
-        function to be applied to the evaluated tapes.
+        list of generated tapes, together with a post-processing
+        function to be applied to the results of the evaluated tapes
+        in order to obtain the Jacobian matrix.
     """
     argnum = argnum or tape.trainable_params
 
@@ -302,8 +303,9 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
-        list of generated tapes, in addition to a post-processing
-        function to be applied to the evaluated tapes.
+        list of generated tapes, together with a post-processing
+        function to be applied to the results of the evaluated tapes
+        in order to obtain the Jacobian matrix.
     """
     argnum = argnum or list(tape.trainable_params)
     gradient_recipes = gradient_recipes or [None] * len(argnum)
@@ -523,15 +525,16 @@ def param_shift_cv(
         force_order2 (bool): if True, use the order-2 method even if not necessary
 
     Returns:
-        tensor_like or tuple[list[QuantumTape], function]:
+        function or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode, a tensor
-          representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
-          is returned.
+        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
+          that can be executed to obtain the Jacobian matrix.
+          The returned matrix is a tensor of size ``(number_outputs, number_gate_parameters)``
 
-        - If the input is a tape, a tuple containing a list of generated tapes,
-          in addition to a post-processing function to be applied to the
-          evaluated tapes.
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Jacobian matrix.
 
     This transform supports analytic gradients of Gaussian CV operations using
     the parameter-shift rule. This gradient method returns *exact* gradients,

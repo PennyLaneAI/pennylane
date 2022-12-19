@@ -14,7 +14,6 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
-from copy import copy
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -23,9 +22,9 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import QuantumFunctionError, math
+from pennylane import DeviceError, QuantumFunctionError, math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
-from pennylane.ops.op_math import Sum, op_sum
+from pennylane.ops.op_math import Prod, Sum, op_sum
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -79,6 +78,10 @@ ops = (
         qml.Rot(0.34, 1.0, 0, wires=0),
     ),
 )
+
+
+def _get_pw(w, pauli_op):
+    return qml.pauli.PauliWord({w: pauli_op})
 
 
 def sum_using_dunder_method(*summands, do_queue=True, id=None):
@@ -509,6 +512,131 @@ class TestProperties:
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
 
+    op_pauli_reps = (
+        (
+            qml.op_sum(qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliZ(wires=0)),
+            qml.pauli.PauliSentence({_get_pw(0, "X"): 1, _get_pw(0, "Y"): 1, _get_pw(0, "Z"): 1}),
+        ),
+        (
+            qml.op_sum(qml.PauliX(wires=0), qml.PauliX(wires=0), qml.PauliZ(wires=0)),
+            qml.pauli.PauliSentence({_get_pw(0, "X"): 2, _get_pw(0, "Z"): 1}),
+        ),
+        (
+            qml.op_sum(
+                qml.PauliX(wires=0),
+                qml.PauliY(wires=1),
+                qml.PauliZ(wires="a"),
+                qml.PauliZ(wires="a"),
+            ),
+            qml.pauli.PauliSentence({_get_pw(0, "X"): 1, _get_pw(1, "Y"): 1, _get_pw("a", "Z"): 2}),
+        ),
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps)
+    def test_pauli_rep(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep
+
+    def test_pauli_rep_none(self):
+        """Test that None is produced if any of the summands don't have a _pauli_rep."""
+        op = qml.op_sum(qml.PauliX(wires=0), qml.RX(1.23, wires=1))
+        assert op._pauli_rep is None
+
+    op_pauli_reps_nested = (
+        (
+            qml.op_sum(
+                qml.pow(
+                    qml.op_sum(
+                        qml.pow(qml.PauliZ(wires=0), z=3),
+                        qml.pow(qml.PauliX(wires=1), z=2),
+                        qml.pow(qml.PauliY(wires=2), z=1),
+                    ),
+                    z=3,
+                ),
+                qml.PauliY(wires=2),
+            ),
+            qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({0: "Z"}): 7,
+                    qml.pauli.PauliWord({2: "Y"}): 8,
+                    qml.pauli.PauliWord({0: "Z", 2: "Y"}): 6,
+                    qml.pauli.PauliWord({}): 7,  # identity
+                }
+            ),
+        ),  # sum + pow
+        (
+            qml.prod(
+                qml.op_sum(
+                    qml.prod(
+                        qml.op_sum(qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)),
+                        qml.op_sum(qml.PauliZ(wires=0), qml.PauliZ(wires=1), qml.PauliZ(wires=2)),
+                    ),
+                    qml.Identity(wires=1),
+                ),
+                qml.PauliY(wires=3),
+            ),
+            qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({0: "Y", 3: "Y"}): -1j,
+                    qml.pauli.PauliWord({0: "X", 1: "Z", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({0: "X", 2: "Z", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({0: "Z", 1: "Y", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({1: "X", 3: "Y"}): 1j,
+                    qml.pauli.PauliWord({1: "Y", 2: "Z", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({0: "Z", 2: "Z", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({1: "Z", 2: "Z", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({3: "Y"}): 2,
+                }
+            ),
+        ),  # sum + prod
+        (
+            qml.op_sum(
+                qml.s_prod(
+                    0.5,
+                    qml.op_sum(
+                        qml.s_prod(2j, qml.PauliX(wires=0)),
+                        qml.s_prod(-4, qml.PauliY(wires=1)),
+                    ),
+                ),
+                qml.s_prod(1.23 - 0.4j, qml.PauliZ(wires=2)),
+            ),
+            qml.pauli.PauliSentence(
+                {_get_pw(0, "X"): 1.0j, _get_pw(1, "Y"): -2.0, _get_pw(2, "Z"): 1.23 - 0.4j}
+            ),
+        ),  # sum + s_prod
+        (
+            qml.prod(
+                qml.s_prod(
+                    -2,
+                    qml.op_sum(
+                        qml.s_prod(1j, qml.PauliX(wires=0)),
+                        qml.PauliY(wires=1),
+                    ),
+                ),
+                qml.pow(
+                    qml.op_sum(
+                        qml.s_prod(3, qml.PauliZ(wires=0)),
+                        qml.PauliZ(wires=1),
+                    ),
+                    z=2,
+                ),
+            ),
+            qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({0: "X"}): -20j,
+                    qml.pauli.PauliWord({1: "Y"}): -20,
+                    qml.pauli.PauliWord({0: "Y", 1: "Z"}): -12,
+                    qml.pauli.PauliWord({0: "Z", 1: "X"}): -12j,
+                }
+            ),
+        ),  # mixed
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps_nested)
+    def test_pauli_rep_nested(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep
+
 
 class TestSimplify:
     """Test Sum simplify method and depth property."""
@@ -707,6 +835,30 @@ class TestWrapperFunc:
         assert sum_class_op.wires == sum_func_op.wires
         assert sum_class_op.parameters == sum_func_op.parameters
 
+    def test_lazy_mode(self):
+        """Test that by default, the operator is simply wrapped in `Sum`, even if a simplification exists."""
+        op = op_sum(qml.S(0), Sum(qml.S(1), qml.T(1)))
+
+        assert isinstance(op, Sum)
+        assert len(op) == 2
+
+    def test_non_lazy_mode(self):
+        """Test the lazy=False keyword."""
+        op = op_sum(qml.S(0), Sum(qml.S(1), qml.T(1)), lazy=False)
+
+        assert isinstance(op, Sum)
+        assert len(op) == 3
+
+    def test_non_lazy_mode_queueing(self):
+        """Test that if a simpification is accomplished, the metadata for the original op
+        and the new simplified op is updated."""
+        with qml.queuing.AnnotatedQueue() as q:
+            sum1 = op_sum(qml.S(1), qml.T(1))
+            sum2 = op_sum(qml.S(0), sum1, lazy=False)
+
+        assert q[sum1]["owner"] is sum2
+        assert sum1 in q[sum2]["owns"]
+
 
 class TestIntegration:
     """Integration tests for the Sum class."""
@@ -806,7 +958,7 @@ class TestIntegration:
         sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, grad_method="best")
+        @qml.qnode(dev, diff_method="best")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=1)
@@ -824,7 +976,7 @@ class TestIntegration:
         """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
-        sum_op = Sum(qml.RX(1.23, wires=0), qml.Identity(wires=1))
+        sum_op = Sum(Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1)), qml.Identity(wires=1))
 
         @qml.qnode(dev)
         def my_circ():

@@ -60,6 +60,7 @@ class DefaultQutrit(QutritDevice):
         "TClock",
         "TAdd",
         "TSWAP",
+        "THadamard",
         "TRX",
     }
 

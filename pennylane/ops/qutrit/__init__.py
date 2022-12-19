@@ -35,6 +35,7 @@ ops = {
     "TClock",
     "TAdd",
     "TSWAP",
+    "THadamard",
     "TRX",
 }
 

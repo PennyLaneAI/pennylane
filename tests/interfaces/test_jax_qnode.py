@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.interfaces import InterfaceUnsupportedError
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 
 qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],
@@ -75,7 +75,7 @@ class TestQNode:
 
         # gradients should work
         grad = jax.grad(circuit)(a)
-        assert isinstance(grad, jax.numpy.DeviceArray)
+        assert isinstance(grad, jax.Array)
         assert grad.shape == tuple()
 
     def test_changing_trainability(self, dev_name, diff_method, mode, interface, mocker, tol):
@@ -178,12 +178,9 @@ class TestQNode:
             def expand(self):
                 theta, phi, lam = self.data
                 wires = self.wires
-
-                with QuantumTape() as tape:
-                    qml.Rot(lam, theta, -lam, wires=wires)
-                    qml.PhaseShift(phi + lam, wires=wires)
-
-                return tape
+                return QuantumScript(
+                    [qml.Rot(lam, theta, -lam, wires=wires), qml.PhaseShift(phi + lam, wires=wires)]
+                )
 
         dev = qml.device(dev_name, wires=1)
         a = jax.numpy.array(0.1)
@@ -707,7 +704,7 @@ class TestQubitIntegration:
         res = circuit()
 
         assert res.shape == (2, 10)
-        assert isinstance(res, jax.numpy.DeviceArray)
+        assert isinstance(res, jax.Array)
 
     def test_chained_qnodes(self, dev_name, diff_method, mode, interface):
         """Test that the gradient of chained QNodes works without error"""
@@ -715,9 +712,9 @@ class TestQubitIntegration:
 
         class Template(qml.templates.StronglyEntanglingLayers):
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
-                    qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)
-                return tape
+                return QuantumScript(
+                    [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
+                )
 
         @qnode(dev, interface=interface, diff_method=diff_method)
         def circuit1(weights):
@@ -1243,9 +1240,7 @@ class TestTapeExpansion:
             grad_method = None
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
-                    qml.RY(3 * self.data[0], wires=self.wires)
-                return tape
+                return QuantumScript([qml.RY(3 * self.data[0], wires=self.wires)])
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface=interface)
         def circuit(x, y):
@@ -1629,3 +1624,71 @@ class TestJIT:
 
         params = np.random.random((5, 3, 3))
         assert circuit(params).shape == (3,)
+
+    def test_vmap_compared_param_broadcasting(self, dev_name, diff_method, mode, tol):
+        """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
+        vectorized=True is specified for the callback when caching is disabled."""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not yet support Hamiltonians")
+
+        if diff_method == "backprop":
+            pytest.skip(
+                "The backprop method does not yet support parameter-broadcasting with Hamiltonians"
+            )
+
+        phys_qubits = 2
+        n_configs = 5
+        pars_q = np.random.rand(n_configs, 2)
+
+        dev = qml.device(dev_name, wires=tuple(range(phys_qubits)), shots=None)
+
+        def minimal_circ(params):
+            @qml.qnode(dev, interface="jax-jit", diff_method=diff_method, mode=mode, cache=None)
+            def _measure_operator():
+                qml.RY(params[..., 0], wires=0)
+                qml.RY(params[..., 1], wires=1)
+                op = qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)])
+                return qml.expval(op)
+
+            res = _measure_operator()
+            return res
+
+        assert np.allclose(
+            jax.jit(minimal_circ)(pars_q), jax.jit(jax.vmap(minimal_circ))(pars_q), tol
+        )
+
+    def test_vmap_compared_param_broadcasting_multi_output(self, dev_name, diff_method, mode, tol):
+        """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
+        vectorized=True is specified for the callback when caching is disabled and when multiple output values
+        are returned."""
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not yet support Hamiltonians")
+
+        if diff_method == "backprop":
+            pytest.skip(
+                "The backprop method does not yet support parameter-broadcasting with Hamiltonians"
+            )
+
+        phys_qubits = 2
+        n_configs = 5
+        pars_q = np.random.rand(n_configs, 2)
+
+        dev = qml.device(dev_name, wires=tuple(range(phys_qubits)), shots=None)
+
+        def minimal_circ(params):
+            @qml.qnode(dev, interface="jax-jit", diff_method=diff_method, mode=mode, cache=None)
+            def _measure_operator():
+                qml.RY(params[..., 0], wires=0)
+                qml.RY(params[..., 1], wires=1)
+                op1 = qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)])
+                op2 = qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliX(1)])
+                return qml.expval(op1), qml.expval(op2)
+
+            res = _measure_operator()
+            return res
+
+        # Jax and Pennylane have a different convention on how they return expectation values.
+        # This will no longer be an issue in the new return types interface.
+        assert np.allclose(
+            jax.jit(minimal_circ)(pars_q), jax.jit(jax.vmap(minimal_circ))(pars_q).T, tol
+        )
