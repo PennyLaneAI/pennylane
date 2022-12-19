@@ -137,7 +137,7 @@ class TRX(Operation):
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000-0.2474j, 0.0000+0.0000j, 0.9689+0.0000j]])
         """
-        subspace = self.validate_subspace(subspace)
+        subspace = TRX.validate_subspace(subspace)
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
