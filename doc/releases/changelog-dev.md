@@ -62,8 +62,14 @@
 
 <h3>Contributors</h3>
 
+* Fixed typo in calculation error message and comment in operation.py
+  [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
+
+ <h3>Contributors</h3>
+
 This release contains contributions from (in alphabetical order):
 
+Ikko Ashimine
 Lillian M. A. Frederiksen
 Albert Mitjans Coma
 Matthew Silverman
