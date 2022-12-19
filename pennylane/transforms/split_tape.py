@@ -306,12 +306,12 @@ def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[Mea
             non_pauli_m.append(m)
 
     # group pauli measurements
-    if pauli_m:
+    if len(pauli_m) > 1:
         grouped_measurements = group_observables(
             observables=[m.obs or _pauli_z(m.wires) for m in pauli_m], coefficients=pauli_m
         )[1]
     else:
-        grouped_measurements = []
+        grouped_measurements = [pauli_m]
 
     # group remaining measurements into groups with non overlapping wires
     qwc_groups = [
