@@ -206,8 +206,8 @@ class TestValidation:
         """Test that the _validate_parameter_shift method
         returns the correct gradient transform for qutrit devices."""
         dev = qml.device("default.qutrit", wires=1)
-        grad_fn = QNode._validate_parameter_shift(dev)
-        assert grad_fn[0] is qml.gradients.param_shift
+        gradient_fn = QNode._validate_parameter_shift(dev)
+        assert gradient_fn[0] is qml.gradients.param_shift
 
     def test_parameter_shift_tape_unknown_model(self, monkeypatch):
         """Test that an unknown model raises an exception"""
