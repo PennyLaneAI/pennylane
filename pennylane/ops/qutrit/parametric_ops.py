@@ -34,8 +34,9 @@ class TRX(Operation):
     `Di et al. (2012) <https://arxiv.org/abs/1105.5485>`_.
 
     .. math:: TRX^{jk}(\phi) = \exp(-i\phi\sigma_x^{jk}/2),\\
-                \text{where } \sigma_x^{jk} = |j\rangle\langle k| + |k\rangle\langle j|,\\
-                j, k \in \{0, 1, 2\}, j < k
+                \text{where } \sigma_x^{jk} = |j\rangle\langle k| + |k\rangle\langle j|
+
+    where :math:`j, k \in \{0, 1, 2\}, j < k`
 
     .. seealso:: :class:`~.RX`
 
@@ -93,20 +94,9 @@ class TRX(Operation):
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
     ):  # pylint: disable=dangerous-default-value
 
-        if not hasattr(subspace, "__iter__") or len(subspace) != 2:
-            raise ValueError(
-                "The subspace must be a sequence with two unique elements from the set {0, 1, 2}."
-            )
-
-        if not all(s in {0, 1, 2} for s in subspace):
-            raise ValueError("Elements of the subspace must be 0, 1, or 2.")
-
-        if subspace[0] == subspace[1]:
-            raise ValueError("Elements of the subspace sequence must be unique.")
-
-        self._subspace = subspace
+        self._subspace = self.validate - subspace(subspace)
         self._hyperparameters = {
-            "subspace": self.subspace,
+            "subspace": self._subspace,
         }
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
@@ -120,7 +110,7 @@ class TRX(Operation):
         Returns:
             tuple[int]: subspace on which the operator acts
         """
-        return tuple(sorted(self._subspace))
+        return self._subspace
 
     @staticmethod
     def compute_matrix(
@@ -147,7 +137,7 @@ class TRX(Operation):
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000-0.2474j, 0.0000+0.0000j, 0.9689+0.0000j]])
         """
-        subspace = tuple(sorted(subspace))
+        subspace = self.validate_subspace(subspace)
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 

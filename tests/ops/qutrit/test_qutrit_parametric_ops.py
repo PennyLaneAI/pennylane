@@ -168,32 +168,32 @@ matrix_data = [
 ]
 
 
-matrix_data_tf = [
-    (
-        qml.TRX,
-        np.array([np.pi / 2] * 2),
-        [0, 1],
-        np.tensordot(
-            [1, 1], np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), axes=0
-        ),
-    ),
-    (
-        qml.TRX,
-        np.array([np.pi / 2] * 2),
-        [1, 2],
-        np.tensordot(
-            [1, 1], np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2), axes=0
-        ),
-    ),
-    (
-        qml.TRX,
-        np.array([np.pi / 2] * 2),
-        [0, 2],
-        np.tensordot(
-            [1, 1], np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2), axes=0
-        ),
-    ),
-]
+# matrix_data_tf = [
+#     (
+#         qml.TRX,
+#         np.array([np.pi / 2] * 2),
+#         [0, 1],
+#         np.tensordot(
+#             [1, 1], np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), axes=0
+#         ),
+#     ),
+#     (
+#         qml.TRX,
+#         np.array([np.pi / 2] * 2),
+#         [1, 2],
+#         np.tensordot(
+#             [1, 1], np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2), axes=0
+#         ),
+#     ),
+#     (
+#         qml.TRX,
+#         np.array([np.pi / 2] * 2),
+#         [0, 2],
+#         np.tensordot(
+#             [1, 1], np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2), axes=0
+#         ),
+#     ),
+# ]
 
 
 class TestMatrix:
@@ -206,7 +206,7 @@ class TestMatrix:
         )
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("op, theta, subspace, expected", matrix_data_tf)
+    @pytest.mark.parametrize("op, theta, subspace, expected", matrix_data)
     def test_matrix_tf(self, op, theta, subspace, expected, tol):
         """Test that compute_matrix works with tensorflow variables"""
         import tensorflow as tf
