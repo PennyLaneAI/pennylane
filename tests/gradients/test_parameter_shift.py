@@ -69,7 +69,7 @@ class TestGetOperationRecipe:
             (qml.CRY, (0.5, 1), None),
             (qml.CRY, (0.5, 1), (0.4, 0.8)),
             (qml.TRX, (0.5, 1), None),
-            (qml.TRX, (0.5, 1), (0.3, 0.6)),
+            (qml.TRX, (0.5, 1), (0.4, 0.8)),
         ],
     )
     def test_custom_recipe_second_order(self, orig_op, frequencies, shifts):
