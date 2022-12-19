@@ -151,7 +151,7 @@ class TestVar:
         custom_measurement_process(dev, spy)
 
     def test_permuted_wires(self, mocker):
-        """Test that the expectation value of an operator with permuted wires is the same."""
+        """Test that the variance of an operator with permuted wires is the same."""
         obs = qml.prod(qml.PauliZ(8), qml.s_prod(2, qml.PauliZ(10)), qml.s_prod(3, qml.PauliZ("h")))
         obs_2 = qml.prod(
             qml.s_prod(3, qml.PauliZ("h")), qml.PauliZ(8), qml.s_prod(2, qml.PauliZ(10))
