@@ -334,11 +334,6 @@ class TestExtractStatistics:
             match="Using a list of observables in ``QubitDevice.statistics`` is",
         ):
             dev.statistics([])
-        with pytest.warns(
-            UserWarning,
-            match="Using a list of observables in ``QubitDevice.statistics`` is",
-        ):
-            dev.statistics(observables=[])
 
     def test_observables_kwarg_deprecated(self, mock_qubit_device_extract_stats, monkeypatch):
         """Test that using observables instead of circuit is deprecated."""
