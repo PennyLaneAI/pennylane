@@ -773,19 +773,21 @@ class QubitDevice(Device):
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
         if observables is not None:
-            circuit = observables
-        elif circuit is None:
-            raise ValueError("Please provide a circuit into the statistics method.")
-        if isinstance(circuit, QuantumScript):
+            if isinstance(observables, QuantumScript):
+                circuit = observables
+                measurements = circuit.measurements
+            else:
+                warnings.warn(
+                    message="Using a list of observables in ``QubitDevice.statistics`` is deprecated. "
+                    "Please use a ``QuantumTape`` instead. This should be passed to ``circuit``, "
+                    "as the ``observables`` argument is also deprecated.",
+                    category=UserWarning,
+                )
+                measurements = observables
+        elif circuit is not None:
             measurements = circuit.measurements
         else:
-            warnings.warn(
-                message="Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a "
-                "``QuantumTape`` instead. This should be passed to ``circuit``, as the ``observables`` "
-                "argument is also deprecated.",
-                category=UserWarning,
-            )
-            measurements = circuit
+            raise ValueError("Please provide a circuit into the statistics method.")
 
         results = []
 
