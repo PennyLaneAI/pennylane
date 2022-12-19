@@ -277,8 +277,53 @@ def enable_return():
                        [[ 4.9707499e-01, -2.9999996e-04],
                         [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
 
+        Note that failing to set the ``max-diff`` with jitting will raise a somewhat unrelated error:
+
+        .. code-block:: python
+
+            import jax
+            import pennylane as qml
+
+            jax.config.update("jax_enable_x64", True)
+            qml.enable_return()
+
+            dev = qml.device("default.qubit", wires=2, shots=10000)
+
+            params = jax.numpy.array([0.1, 0.2])
+
+            @jax.jit
+            @qml.qnode(dev, interface="jax", diff_method="parameter-shift") # Note: max_diff=2 should be passed here
+            def circuit(x):
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+
+        .. code-block:: python
+
+            >>> jax.hessian(circuit)(params)
+            ~/anaconda3/lib/python3.8/site-packages/jax/_src/callback.py in pure_callback_jvp_rule(***failed resolving arguments***)
+                 53 def pure_callback_jvp_rule(*args, **kwargs):
+                 54   del args, kwargs
+            ---> 55   raise ValueError(
+                 56       "Pure callbacks do not support JVP. "
+                 57       "Please use `jax.custom_jvp` to use callbacks while taking gradients.")
+            ValueError: Pure callbacks do not support JVP. Please use `jax.custom_jvp` to use callbacks while taking gradients.
+
+        Correctly specifying ``max_diff=2`` as a QNode argument helps compute the Hessian:
+
+        .. code-block:: python
+
+            >>> jax.hessian(circuit)(params)
+            (Array([[ 0.06617428,  0.07165382],
+                    [ 0.07165382, -1.8348092 ]], dtype=float64),
+             Array([[[-4.974e-01, -2.025e-03],
+                     [-2.025e-03,  1.000e-04]],
+                    [[ 4.974e-01,  2.025e-03],
+                     [ 2.025e-03, -1.000e-04]]], dtype=float64))
+
     .. details::
-        :title: Usage Details for Autograd
+        :title: Autograd Usage Details
 
         Autograd only allows differentiating functions that have array or tensor outputs. QNodes that have
         multiple measurements may output tuples and cause errors with Autograd. Similarly, the outputs of
@@ -404,7 +449,7 @@ def enable_return():
                  [-0.80666667, -0.38      ,  0.38666667,  0.01666667, -0.02333333]]]))
 
     .. details::
-        :title: Usage Details for TensorFlow
+        :title: TensorFlow Usage Details
 
         TensorFlow only allows differentiating functions that have array or tensor outputs. QNodes that have
         multiple measurements may output tuples and cause errors with TensorFlow. Similarly, the outputs of
@@ -542,7 +587,7 @@ def enable_return():
                  [-0.82666667, -0.40166667,  0.4       ,  0.01333333, -0.01166667]]])>)
 
     .. details::
-        :title: Usage Details for PyTorch
+        :title: PyTorch Usage Details
 
         PyTorch supports differentiation of Torch tensors or tuple of Torch tensors. It makes it easy to get the
         Jacobian of functions returning any mix of measurements.
@@ -587,7 +632,6 @@ def enable_return():
         >>> torch.autograd.functional.jacobian(jac_fn, (a, b))
         ((tensor([-0.9950, -0.4925, -0.0050,  0.0050,  0.4925]), tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050])),
         (tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050]), tensor([ 0.0000, -0.4888,  0.4888,  0.0012, -0.0012])))
-
     """
 
     global __activated

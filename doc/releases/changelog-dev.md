@@ -45,7 +45,7 @@
 
 <h3>Improvements</h3>
 
-* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of 
+* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
  [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
  
@@ -55,6 +55,9 @@
 * Updated `pennylane/utils.py:sparse_hamiltonian` to include a `level` keyword argument to 
   support Hamiltonians for systems with an arbitrary number of levels per wire (qutrits, etc).
   ([#2845](https://github.com/PennyLaneAI/pennylane/pull/2845))
+
+* Limit the `numpy` version to `<1.24`.
+  [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
 
 <h3>Breaking changes</h3>
 
@@ -69,9 +72,16 @@
 
 <h3>Contributors</h3>
 
+* Fixed typo in calculation error message and comment in operation.py
+  [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
+
+ <h3>Contributors</h3>
+
 This release contains contributions from (in alphabetical order):
- 
+
+Ikko Ashimine
 Lillian M. A. Frederiksen
+Albert Mitjans Coma
 Mudit Pandey
 Matthew Silverman
 Antal Száva
