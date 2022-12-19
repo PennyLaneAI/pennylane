@@ -168,34 +168,6 @@ matrix_data = [
 ]
 
 
-# matrix_data_tf = [
-#     (
-#         qml.TRX,
-#         np.array([np.pi / 2] * 2),
-#         [0, 1],
-#         np.tensordot(
-#             [1, 1], np.array([[1, -1j, 0], [-1j, 1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), axes=0
-#         ),
-#     ),
-#     (
-#         qml.TRX,
-#         np.array([np.pi / 2] * 2),
-#         [1, 2],
-#         np.tensordot(
-#             [1, 1], np.array([[np.sqrt(2), 0, 0], [0, 1, -1j], [0, -1j, 1]]) / np.sqrt(2), axes=0
-#         ),
-#     ),
-#     (
-#         qml.TRX,
-#         np.array([np.pi / 2] * 2),
-#         [0, 2],
-#         np.tensordot(
-#             [1, 1], np.array([[1, 0, -1j], [0, np.sqrt(2), 0], [-1j, 0, 1]]) / np.sqrt(2), axes=0
-#         ),
-#     ),
-# ]
-
-
 class TestMatrix:
     @pytest.mark.parametrize("op, theta, subspace, expected", matrix_data)
     def test_matrix(self, op, theta, subspace, expected, tol):
@@ -339,7 +311,7 @@ def test_control_wires(op, control_wires):
 
 
 subspace_error_data = [
-    ([1, 1], "Elements of the subspace sequence must be unique."),
+    ([1, 1], "Elements of the subspace list must be unique."),
     ([-1], "The subspace must be a sequence"),
     (None, "The subspace must be a sequence"),
     ("a", "The subspace must be a sequence"),
