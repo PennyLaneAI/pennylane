@@ -1323,7 +1323,7 @@ class TestControlledMethod:
         assert qml.equal(out, qml.CZ(("a", 0)))
 
     def test_Hadamard(self):
-        """Test the PauliZ _controlled method."""
+        """Test the Hadamard _controlled method."""
         out = qml.Hadamard(0)._controlled("a")
         assert qml.equal(out, qml.CH(("a", 0)))
 

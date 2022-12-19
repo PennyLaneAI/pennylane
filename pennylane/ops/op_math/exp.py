@@ -364,16 +364,16 @@ class Evolution(Exp):
 
     Args:
         base (~.operation.Operator): The operator to be used as a generator, G.
-        param (float): The evolution parameter, x. This parameter is not expected to have
+        param (float): The evolution parameter, x. This parameter is expected not to have
             any complex component.
 
     Returns:
-       :class:`Evolution`: A :class`~.operation.Operator` representing an operator exponential of the form :math:`e^{ix\hat{G}}`,
+       :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{ix\hat{G}}`,
        where x is real.
 
     **Usage Details**
 
-    In contrast to the general :class:`~.Exp` class, the Evolution operator :math:`e^{ix\hat{G}}` is constrained to have a single trainable
+    In contrast to the general :class:`~.Exp` class, the ``Evolution`` operator :math:`e^{ix\hat{G}}` is constrained to have a single trainable
     parameter, x. Any parameters contained in the base operator are not trainable. This allows the operator
     to be differentiated with regard to the evolution parameter. Defining a mathematically identical operator
     using the :class:`~.Exp` class will be incompatible with a variety of PennyLane functions that require only a single
@@ -398,7 +398,7 @@ class Evolution(Exp):
 
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit(x):
-    ...     Evolution(qml.PauliX(0), -0.5 * x)
+    ...     qml.ops.Evolution(qml.PauliX(0), -0.5 * x)
     ...     return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(circuit)(1.23))
     0: ──Exp(-0.61j X)─┤  <Z>

@@ -1574,9 +1574,6 @@ class TestStateMeasurement:
         if dev.shots is not None:
             pytest.skip("Some plugins don't update state information when shots is not None.")
 
-        if dev.shots is not None:
-            pytest.skip("Some plugins don't update state information when shots is not None.")
-
         class MyMeasurement(StateMeasurement):
             """Dummy state measurement."""
 

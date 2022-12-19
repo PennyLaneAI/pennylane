@@ -656,7 +656,7 @@ class Operator(abc.ABC):
     def compute_eigvals(*params, **hyperparams):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -679,7 +679,7 @@ class Operator(abc.ABC):
     def eigvals(self):
         r"""Eigenvalues of the operator in the computational basis.
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`, the operator
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`, the operator
         can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
