@@ -181,104 +181,8 @@ def enable_return():
 
             AttributeError: 'tuple' object has no attribute 'shape'
 
-        **JAX interface upgrades: higher-order derivatives and mixing measurements**
-
-        Higher-order derivatives can now be computed with the JAX interface:
-
-        .. code-block:: python
-
-            import jax
-
-            qml.enable_return()
-
-            dev = qml.device("lightning.qubit", wires=2)
-
-            par_0 = jax.numpy.array(0.1)
-            par_1 = jax.numpy.array(0.2)
-
-            @qml.qnode(dev, interface="jax", diff_method="parameter-shift", max_diff=2)
-            def circuit(x, y):
-                qml.RX(x, wires=[0])
-                qml.RY(y, wires=[1])
-                qml.CNOT(wires=[0, 1])
-                return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-        >>> jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
-        ((Array(-0.19767681, dtype=float32, weak_type=True),
-          Array(-0.09784342, dtype=float32, weak_type=True)),
-         (Array(-0.09784339, dtype=float32, weak_type=True),
-          Array(-0.19767687, dtype=float32, weak_type=True)))
-
-        The new return types system also unlocks the use of ``probs`` mixed with different measurements with JAX:
-
-        .. code-block:: python
-
-            import jax
-
-            qml.enable_return()
-
-            dev = qml.device("default.qubit", wires=2)
-            qml.enable_return()
-
-            @qml.qnode(dev, interface="jax")
-            def circuit(a):
-              qml.RX(a[0], wires=0)
-              qml.CNOT(wires=(0, 1))
-              qml.RY(a[1], wires=1)
-              qml.RZ(a[2], wires=1)
-              return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1])
-
-            x = jax.numpy.array([0.1, 0.2, 0.3])
-
-        >>> jax.jacobian(circuit)(x)
-        (Array([-9.9833414e-02, -7.4505806e-09,  6.9285655e-10], dtype=float32),
-         Array([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
-                      [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
-                      [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
-                      [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32))
-
-        where before the following error was raised:
-
-        .. code-block:: python
-
-            ValueError: All input arrays must have the same shape.
-
-        The new return types system also unlocks the use of shot vectors with all the previous features. For example you
-        can take the second derivative and multiple measurement with with JAX:
-
-        .. code-block:: python
-
-            import jax
-
-            qml.enable_return()
-
-            dev = qml.device("default.qubit", wires=2, shots=(1, 10000))
-
-            params = jax.numpy.array([0.1, 0.2])
-
-            @qml.qnode(dev, interface="jax", diff_method="parameter-shift", max_diff=2)
-            def circuit(x):
-                qml.RX(x[0], wires=[0])
-                qml.RY(x[1], wires=[1])
-                qml.CNOT(wires=[0, 1])
-                return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
-
-        >>> jax.hessian(circuit)(params)
-        ((Array([[ 0.,  0.],
-                        [ 2., -3.]], dtype=float32),
-          Array([[[-0.5,  0. ],
-                       [ 0. ,  0. ]],
-                      [[ 0.5,  0. ],
-                       [ 0. ,  0. ]]], dtype=float32)),
-         (Array([[ 0.07677898,  0.0563341 ],
-                       [ 0.07238522, -1.830669  ]], dtype=float32),
-          Array([[[-4.9707499e-01,  2.9999996e-04],
-                        [-6.2500127e-04,  1.2500001e-04]],
-                       [[ 4.9707499e-01, -2.9999996e-04],
-                        [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
-
     .. details::
-        :title: Usage Details for Autograd
+        :title: Autograd Usage Details
 
         Autograd only allows differentiating functions that have array or tensor outputs. QNodes that have
         multiple measurements may output tuples and cause errors with Autograd. Similarly, the outputs of
@@ -404,7 +308,7 @@ def enable_return():
                  [-0.80666667, -0.38      ,  0.38666667,  0.01666667, -0.02333333]]]))
 
     .. details::
-        :title: Usage Details for TensorFlow
+        :title: TensorFlow Usage Details
 
         TensorFlow only allows differentiating functions that have array or tensor outputs. QNodes that have
         multiple measurements may output tuples and cause errors with TensorFlow. Similarly, the outputs of
@@ -542,7 +446,7 @@ def enable_return():
                  [-0.82666667, -0.40166667,  0.4       ,  0.01333333, -0.01166667]]])>)
 
     .. details::
-        :title: Usage Details for PyTorch
+        :title: PyTorch Usage Details
 
         PyTorch supports differentiation of Torch tensors or tuple of Torch tensors. It makes it easy to get the
         Jacobian of functions returning any mix of measurements.
@@ -588,6 +492,147 @@ def enable_return():
         ((tensor([-0.9950, -0.4925, -0.0050,  0.0050,  0.4925]), tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050])),
         (tensor([ 0.0000,  0.0050, -0.0050,  0.0050, -0.0050]), tensor([ 0.0000, -0.4888,  0.4888,  0.0012, -0.0012])))
 
+    .. details::
+        :title: JAX Usage Details
+
+        Higher-order derivatives can now be computed with the JAX interface:
+
+        .. code-block:: python
+
+            import jax
+
+            qml.enable_return()
+
+            dev = qml.device("lightning.qubit", wires=2)
+
+            par_0 = jax.numpy.array(0.1)
+            par_1 = jax.numpy.array(0.2)
+
+            @qml.qnode(dev, interface="jax", diff_method="parameter-shift", max_diff=2)
+            def circuit(x, y):
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        >>> jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        ((Array(-0.19767681, dtype=float32, weak_type=True),
+          Array(-0.09784342, dtype=float32, weak_type=True)),
+         (Array(-0.09784339, dtype=float32, weak_type=True),
+          Array(-0.19767687, dtype=float32, weak_type=True)))
+
+        The new return types system also unlocks the use of ``probs`` mixed with different measurements with JAX:
+
+        .. code-block:: python
+
+            import jax
+
+            qml.enable_return()
+
+            dev = qml.device("default.qubit", wires=2)
+            qml.enable_return()
+
+            @qml.qnode(dev, interface="jax")
+            def circuit(a):
+              qml.RX(a[0], wires=0)
+              qml.CNOT(wires=(0, 1))
+              qml.RY(a[1], wires=1)
+              qml.RZ(a[2], wires=1)
+              return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1])
+
+            x = jax.numpy.array([0.1, 0.2, 0.3])
+
+        >>> jax.jacobian(circuit)(x)
+        (Array([-9.9833414e-02, -7.4505806e-09,  6.9285655e-10], dtype=float32),
+         Array([[-4.9419206e-02, -9.9086545e-02,  3.4938008e-09],
+                [-4.9750542e-04,  9.9086538e-02,  1.2768372e-10],
+                [ 4.9750548e-04,  2.4812977e-04,  4.8371929e-13],
+                [ 4.9419202e-02, -2.4812980e-04,  2.6696912e-11]],            dtype=float32))
+
+        where before the following error was raised:
+
+        .. code-block:: python
+
+            ValueError: All input arrays must have the same shape.
+
+        The new return types system also unlocks the use of shot vectors with all the previous features. For example you
+        can take the second derivative and multiple measurement with with JAX:
+
+        .. code-block:: python
+
+            import jax
+
+            qml.enable_return()
+
+            dev = qml.device("default.qubit", wires=2, shots=(1, 10000))
+
+            params = jax.numpy.array([0.1, 0.2])
+
+            @qml.qnode(dev, interface="jax", diff_method="parameter-shift", max_diff=2)
+            def circuit(x):
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+
+        >>> jax.hessian(circuit)(params)
+        ((Array([[ 0.,  0.],
+                [ 2., -3.]], dtype=float32),
+          Array([[[-0.5,  0. ],
+                   [ 0. ,  0. ]],
+                  [[ 0.5,  0. ],
+                   [ 0. ,  0. ]]], dtype=float32)),
+         (Array([[ 0.07677898,  0.0563341 ],
+                   [ 0.07238522, -1.830669  ]], dtype=float32),
+          Array([[[-4.9707499e-01,  2.9999996e-04],
+                    [-6.2500127e-04,  1.2500001e-04]],
+                   [[ 4.9707499e-01, -2.9999996e-04],
+                    [ 6.2500127e-04, -1.2500001e-04]]], dtype=float32)))
+
+        Note that failing to set the ``max-diff`` with jitting will raise a somewhat unrelated error:
+
+        .. code-block:: python
+
+            import jax
+            import pennylane as qml
+
+            jax.config.update("jax_enable_x64", True)
+            qml.enable_return()
+
+            dev = qml.device("default.qubit", wires=2, shots=10000)
+
+            params = jax.numpy.array([0.1, 0.2])
+
+            @jax.jit
+            @qml.qnode(dev, interface="jax", diff_method="parameter-shift") # Note: max_diff=2 should be passed here
+            def circuit(x):
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
+
+        .. code-block:: python
+
+            >>> jax.hessian(circuit)(params)
+            ~/anaconda3/lib/python3.8/site-packages/jax/_src/callback.py in pure_callback_jvp_rule(***failed resolving arguments***)
+                 53 def pure_callback_jvp_rule(*args, **kwargs):
+                 54   del args, kwargs
+            ---> 55   raise ValueError(
+                 56       "Pure callbacks do not support JVP. "
+                 57       "Please use `jax.custom_jvp` to use callbacks while taking gradients.")
+            ValueError: Pure callbacks do not support JVP. Please use `jax.custom_jvp` to use callbacks while taking gradients.
+
+        Correctly specifying ``max_diff=2`` as a QNode argument helps compute the Hessian:
+
+        .. code-block:: python
+
+            >>> jax.hessian(circuit)(params)
+            (Array([[ 0.06617428,  0.07165382],
+                    [ 0.07165382, -1.8348092 ]], dtype=float64),
+             Array([[[-4.974e-01, -2.025e-03],
+                     [-2.025e-03,  1.000e-04]],
+                    [[ 4.974e-01,  2.025e-03],
+                     [ 2.025e-03, -1.000e-04]]], dtype=float64))
     """
 
     global __activated
