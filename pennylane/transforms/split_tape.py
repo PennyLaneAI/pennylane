@@ -294,35 +294,46 @@ def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[Mea
     Returns:
         List[List[MeasurementProcess]]: list of groups of observables with non overlapping wires
     """
-    qwc_groups = []  # [(wires (Wires), m_group (list), pauli_group (list))]
+    # Separate measurements into pauli and non-pauli words
+    pauli_m: List[MeasurementProcess] = []
+    non_pauli_m: List[MeasurementProcess] = []
     for m in measurements:
+        if is_pauli_word(m.obs) or (m.obs is None and m.wires):
+            # When m.obs is None the measurement acts on the basis states, and thus we can assume
+            # that the observable is ``qml.PauliZ`` for all measurement wires.
+            pauli_m.append(m)
+        else:
+            non_pauli_m.append(m)
+
+    # group pauli measurements
+    if pauli_m:
+        grouped_measurements = group_observables(
+            observables=[m.obs or _pauli_z(m.wires) for m in pauli_m], coefficients=pauli_m
+        )[1]
+    else:
+        grouped_measurements = []
+
+    # group remaining measurements into groups with non overlapping wires
+    qwc_groups = [
+        (Wires.all_wires([m.wires for m in group]), group) for group in grouped_measurements
+    ]
+    for m in non_pauli_m:
         if len(m.wires) == 0:
             # If the measurement doesn't have wires, we assume it acts on all wires and that
             # it won't commute with any other measurement
             qwc_groups.append((m.wires, [m], []))
         else:
             op_added = False
-            # When m.obs is None the measurement acts on the basis states, and thus we can assume that
-            # the observable is ``qml.PauliZ`` for all measurement wires.
-            obs = m.obs or _pauli_z(m.wires)
-            for idx, (wires, group, pauli_group) in enumerate(qwc_groups):
-                # use pauli grouping functionality if all the elements in the group are pauli words
-                if (
-                    pauli_group
-                    and is_pauli_word(obs)
-                    and len(group_observables(pauli_group + [obs])) == 1
-                ):
-                    qwc_groups[idx] = (wires + m.wires, group + [m], pauli_group + [obs])
-                    op_added = True
-                    break
+
+            for idx, (wires, group) in enumerate(qwc_groups):
                 # check overlapping wires
                 if len(wires) > 0 and all(wire not in m.wires for wire in wires):
-                    qwc_groups[idx] = (wires + m.wires, group + [m], [])
+                    qwc_groups[idx] = (wires + m.wires, group + [m])
                     op_added = True
                     break
 
             if not op_added:
-                qwc_groups.append((m.wires, [m], [obs] if is_pauli_word(obs) else []))
+                qwc_groups.append((m.wires, [m]))
 
     return [group[1] for group in qwc_groups]
 
@@ -333,5 +344,5 @@ def _pauli_z(wires: Wires):
     Args:
         wires (Wires): wires that the operator acts on"""
     if len(wires) == 1:
-        return qml.PauliZ(0)
+        return qml.PauliZ(wires[0])
     return Tensor(*[qml.PauliZ(w) for w in wires])
