@@ -46,7 +46,16 @@
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
  [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
 
+<<<<<<< Updated upstream
 <h3>Breaking changes</h3>
+=======
+* Validation has been added on the `gradient_kwargs` when initializing a QNode, and if unexpected kwargs are passed, 
+  a `UserWarning` is raised. A list of the current expected gradient function kwargs has been added as 
+  `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
+  [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
+
+ <h3>Breaking changes</h3>
+>>>>>>> Stashed changes
 
 <h3>Deprecations</h3>
 
