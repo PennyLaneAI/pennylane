@@ -160,7 +160,7 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
 Adding your new measurement to PennyLane
 ----------------------------------------
 
-If you want PennyLane to natively support your new measurement, you have to make a Pull Request
+If you want to add this new measurement to PennyLane such that other users can benefit from it, you have to make a Pull Request
 creating a file with the name of your measurement (e.g. ``state.py``) and add it in
 ``pennylane/measurements/``. This file should contain:
 
