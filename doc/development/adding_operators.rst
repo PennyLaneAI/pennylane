@@ -16,7 +16,7 @@ corresponding subclasses, are found in ``pennylane/operations.py``.
 
 ..note::
 
-  Check `qml.measurements <https://docs.pennylane.ai/en/latest/code/qml_measurements.html>` for
+  Check `qml.measurements <https://docs.pennylane.ai/en/latest/code/qml_measurements.html>`_ for
   documentation on how to create new measurements.
 
 Abstraction
