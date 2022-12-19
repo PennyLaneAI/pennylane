@@ -556,7 +556,7 @@
 * Updated `qml.transforms.cut_circuit` and `qml.transforms.cut_circuit_mc` to support the new return types.
   [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
 
-* Limit python version to `<1.24`.
+* Limit NumPy version to `<1.24`.
   [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
 
 <h3>Breaking changes 💔</h3>
