@@ -722,10 +722,10 @@ class QubitDevice(Device):
     # pylint: disable=too-many-statements
     def statistics(
         self,
-        circuit: QuantumTape = None,
+        observables=None,
         shot_range=None,
         bin_size=None,
-        observables=None,
+        circuit: QuantumTape = None,
     ):
         """Process measurement results from circuit execution and return statistics.
 
@@ -773,23 +773,18 @@ class QubitDevice(Device):
               ``shot_range=[35, 135]``, ``bin_size=100``.
         """
         if observables is not None:
-            warnings.warn(
-                message="The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. "
-                "Please use ``circuit`` instead.",
-                category=UserWarning,
-            )
             circuit = observables
         elif circuit is None:
             raise ValueError("Please provide a circuit into the statistics method.")
         if isinstance(circuit, QuantumScript):
             measurements = circuit.measurements
         else:
-            if observables is None:
-                warnings.warn(
-                    message="Using a list of observables in ``QubitDevice.statistics`` is "
-                    "deprecated. Please use a ``QuantumTape`` instead.",
-                    category=UserWarning,
-                )
+            warnings.warn(
+                message="Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a "
+                "``QuantumTape`` instead. This should be passed to ``circuit``, as the ``observables`` "
+                "argument is also deprecated.",
+                category=UserWarning,
+            )
             measurements = circuit
 
         results = []
