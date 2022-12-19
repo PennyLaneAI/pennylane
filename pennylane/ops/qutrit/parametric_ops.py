@@ -33,7 +33,7 @@ class TRX(Operation):
     The construction of this operator is based on section 3 of
     `Di et al. (2012) <https://arxiv.org/abs/1105.5485>`_.
 
-    .. math:: TRX^{jk}(\phi) = \exp(-i\phi\sigma_x^{jk}/2),\\
+    .. math:: TRX^{jk}(\phi) = \exp(-i\phi\sigma_x^{jk}/2),
 
     where :math:`\sigma_x^{jk} = |j\rangle\langle k| + |k\rangle\langle j|`,
     :math:`j, k \in \{0, 1, 2\}, j < k`
