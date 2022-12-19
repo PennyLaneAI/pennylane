@@ -42,7 +42,7 @@ def custom_measurement_process(device, spy):
             new_res = meas.process_samples(
                 samples=samples, wire_order=device.wires, shot_range=shot_range, bin_size=bin_size
             )
-        assert qml.math.allequal(old_res, new_res)
+        assert qml.math.allclose(old_res, new_res)
 
 
 class TestExpval:
@@ -161,3 +161,28 @@ class TestExpval:
         assert np.allclose(res, expected, atol=0.02, rtol=0.02)
 
         custom_measurement_process(new_dev, spy)
+
+    def test_permuted_wires(self, mocker):
+        """Test that the expectation value of an operator with permuted wires is the same."""
+        obs = qml.prod(qml.PauliZ(8), qml.s_prod(2, qml.PauliZ(10)), qml.s_prod(3, qml.PauliZ("h")))
+        obs_2 = qml.prod(
+            qml.s_prod(3, qml.PauliZ("h")), qml.PauliZ(8), qml.s_prod(2, qml.PauliZ(10))
+        )
+
+        dev = qml.device("default.qubit", wires=["h", 8, 10])
+        spy = mocker.spy(qml.QubitDevice, "expval")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.23, wires=["h"])
+            qml.RY(2.34, wires=[8])
+            return qml.expval(obs)
+
+        @qml.qnode(dev)
+        def circuit2():
+            qml.RX(1.23, wires=["h"])
+            qml.RY(2.34, wires=[8])
+            return qml.expval(obs_2)
+
+        assert circuit() == circuit2()
+        custom_measurement_process(dev, spy)
