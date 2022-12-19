@@ -184,6 +184,7 @@ def enable_return():
 
     .. details::
         :title: Autograd Usage Details
+
         Autograd only allows differentiating functions that have array or tensor outputs. QNodes that have
         multiple measurements may output tuples and cause errors with Autograd. Similarly, the outputs of
         ``qml.grad`` or ``qml.jacobian`` may be tuples if there are multiple trainable arguments and
@@ -309,6 +310,7 @@ def enable_return():
 
     .. details::
         :title: TensorFlow Usage Details
+
         TensorFlow only allows differentiating functions that have array or tensor outputs. QNodes that have
         multiple measurements may output tuples and cause errors with TensorFlow. Similarly, the outputs of
         ``tape.gradient`` or ``tape.jacobian`` may be tuples if there are multiple trainable arguments and
@@ -446,6 +448,7 @@ def enable_return():
 
     .. details::
         :title: PyTorch Usage Details
+
         PyTorch supports differentiation of Torch tensors or tuple of Torch tensors. It makes it easy to get the
         Jacobian of functions returning any mix of measurements.
 
@@ -492,6 +495,7 @@ def enable_return():
 
     .. details::
         :title: JAX Usage Details
+
         Higher-order derivatives can now be computed with the JAX interface:
 
         .. code-block:: python
