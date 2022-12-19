@@ -39,7 +39,7 @@ from .single_qubit_unitary import zyz_decomposition
 # - In Tensorflow, it sometimes works in limited cases (0, sometimes 1 CNOT), but
 #   for others it fails without output making it hard to pinpoint the cause.
 # - In JAX, we receive the TypeError:
-#       Can't differentiate w.r.t. type <class 'jaxlib.xla_extension.DeviceArray'>
+#       Can't differentiate w.r.t. type <class 'jaxlib.xla_extension.Array'>
 #
 ###################################################################################
 

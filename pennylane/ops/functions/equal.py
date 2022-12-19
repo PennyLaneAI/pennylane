@@ -52,7 +52,7 @@ def equal(
 
         The kwargs ``check_interface`` and ``check_trainability`` can only be set when
         comparing ``Operation`` objects. Comparisons of ``MeasurementProcess``
-        or ``Observable`` objects will use the defualt value of ``True`` for both, regardless
+        or ``Observable`` objects will use the default value of ``True`` for both, regardless
         of what the user specifies when calling the function. For subclasses of ``SymbolicOp``
         with an ``Operation`` as a base, the kwargs will be applied to the base comparison.
 

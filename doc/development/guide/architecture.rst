@@ -67,9 +67,9 @@ These four defining properties are accessible for all :class:`~.Operator` instan
 >>> op.name
 Rot
 >>> op.parameters
-[DeviceArray(0.1, dtype=float32, weak_type=True),
- DeviceArray(0.2, dtype=float32, weak_type=True),
- DeviceArray(0.3, dtype=float32, weak_type=True)]
+[Array(0.1, dtype=float32, weak_type=True),
+ Array(0.2, dtype=float32, weak_type=True),
+ Array(0.3, dtype=float32, weak_type=True)]
 >>> op.hyperparameters
 {}
 >>> op.wires
@@ -99,12 +99,14 @@ MeasurementProcess
 ******************
 
 While the :class:`~.Operator` class describes a physical system and its dynamics,
-the :class:`pennylane.measure.MeasurementProcess` class describes how we extract information from the quantum system.
-The measurement functions such as :func:`~pennylane.expval` create an instance of this class.
+the :class:`pennylane.measurement.MeasurementProcess` class describes how we extract information from the quantum system.
+Each measurement in pennylane has a specific class that inherits from :class:`pennylane.measurement.MeasurementProcess`.
+The measurement functions such as :func:`~pennylane.expval` create an instance of its corresponding
+class (:class:`pennylane.measurements.ExpectationMP`). 
 
 >>> m = qml.expval(qml.PauliZ("a"))
 >>> type(m)
-<class 'pennylane.measure.MeasurementProcess'>
+<class 'pennylane.measurements.expval.ExpectationMP'>
 
 An instance of the :class:`~.MeasurementProcess` class specifies the measured observables,
 which are themselves operators.
@@ -147,9 +149,9 @@ to the tape's ``measurement`` property.
 ...	    qfunc(params)
 
 >>> tape.operations
-[RX(DeviceArray(0.5, dtype=float32), wires=['b']),
+[RX(Array(0.5, dtype=float32), wires=['b']),
  CNOT(wires=['a', 'b']),
- RY(DeviceArray(0.2, dtype=float32), wires=['a'])]
+ RY(Array(0.2, dtype=float32), wires=['a'])]
 
 >>> tape.measurements
 [expval(PauliZ(wires=['b']))]
