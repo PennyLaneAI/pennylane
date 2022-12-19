@@ -1397,8 +1397,7 @@ class TestProdComparisons:
         op2 = qml.prod(qml.PauliY(1), qml.PauliX(0))
         assert qml.equal(op1, op2)
 
-    @pytest.mark.jax
-    @pytest.mark.torch
+    @pytest.mark.all_interfaces
     def test_prod_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
         import torch
@@ -1475,8 +1474,7 @@ class TestSumComparisons:
         op2 = qml.op_sum(qml.PauliY(1), qml.PauliX(0))
         assert qml.equal(op1, op2)
 
-    @pytest.mark.jax
-    @pytest.mark.torch
+    @pytest.mark.all_interfaces
     def test_sum_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
         import torch
