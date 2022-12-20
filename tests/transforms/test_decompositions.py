@@ -855,3 +855,65 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
+    def test_two_qubit_decomposition_jax_jit(self, U, wires):
+        """Test that a two-qubit operation is correctly decomposed with JAX-JIT ."""
+        import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+
+        def wrapped_decomposition(U):
+            # the jitted function cannot return objects like operators,
+            # so we cannot jit two_qubit_decomposition directly
+            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+
+            with qml.queuing.AnnotatedQueue() as q:
+                for op in obtained_decomposition:
+                    qml.apply(op)
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            obtained_matrix = qml.matrix(tape, wire_order=wires)
+
+            return obtained_matrix
+
+        jitted_matrix = jax.jit(wrapped_decomposition)(U)
+
+        assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("U_pair", samples_su2_su2)
+    def test_two_qubit_decomposition_tensor_products_jax_jit(self, U_pair, wires):
+        """Test that a two-qubit tensor product is correctly decomposed with JAX-JIT."""
+        import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
+        U2 = jax.numpy.array(U_pair[1], dtype=jax.numpy.complex128)
+        U = qml.math.kron(U1, U2)
+
+        def wrapped_decomposition(U):
+            # the jitted function cannot return objects like operators,
+            # so we cannot jit two_qubit_decomposition directly
+            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+
+            with qml.queuing.AnnotatedQueue() as q:
+                for op in obtained_decomposition:
+                    qml.apply(op)
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            obtained_matrix = qml.matrix(tape, wire_order=wires)
+
+            return obtained_matrix
+
+        jitted_matrix = jax.jit(wrapped_decomposition)(U)
+
+        assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)

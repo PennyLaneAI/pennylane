@@ -43,9 +43,40 @@
 * Added the `qml.TRX` qutrit operation, which applies an X rotation to a specified subspace.
   ([#2845](https://github.com/PennyLaneAI/pennylane/pull/2845))
 
+* The qchem workflow is modified to support both Autograd and JAX frameworks. 
+  [(#3458)](https://github.com/PennyLaneAI/pennylane/pull/3458)
+  [(#3462)](https://github.com/PennyLaneAI/pennylane/pull/3462)
+  [(#3495)](https://github.com/PennyLaneAI/pennylane/pull/3495)
+
+  The JAX interface is automatically used when the differentiable parameters are JAX objects. Here
+  is an example for computing the Hartree-Fock energy gradients with respect to the atomic
+  coordinates.
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+  import jax
+  
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+
+  mol = qml.qchem.Molecule(symbols, geometry)
+
+  args = [jax.numpy.array(mol.coordinates)]
+  ```
+
+  ```pycon
+  >>> jax.grad(qml.qchem.hf_energy(mol))(*args)
+  >>> DeviceArray([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]], dtype=float32)
+  ```
+
 <h3>Improvements</h3>
 
-* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
+* Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
+  [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
+
+
+* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of 
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
  [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
  
@@ -55,6 +86,9 @@
 * Updated `pennylane/utils.py:sparse_hamiltonian` to include a `level` keyword argument to 
   support Hamiltonians for systems with an arbitrary number of levels per wire (qutrits, etc).
   ([#2845](https://github.com/PennyLaneAI/pennylane/pull/2845))
+
+* Added support for two-qubit unitary decomposition with JAX-JIT.
+  [(#3569)](https://github.com/PennyLaneAI/pennylane/pull/3569)
 
 * Limit the `numpy` version to `<1.24`.
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
@@ -80,8 +114,12 @@
 This release contains contributions from (in alphabetical order):
 
 Ikko Ashimine
+Utkarsh Azad
 Lillian M. A. Frederiksen
+Soran Jahangiri
 Albert Mitjans Coma
+Romain Moyard
 Mudit Pandey
 Matthew Silverman
 Antal Száva
+
