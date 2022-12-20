@@ -410,10 +410,14 @@ class _MGroup:
             if group:
                 self._group_measurements()
             else:
-                self.mdata_groups = [
-                    mdata if isinstance(mdata, (list, tuple)) else [mdata]
-                    for mdata in self.queue.values()
-                ]
+                grouped_data = defaultdict(lambda: [])
+                non_grouped_data = []
+                for mdata in self.queue.values():
+                    if mdata.group is not None:
+                        grouped_data[mdata.group].append(mdata)
+                    else:
+                        non_grouped_data.append([mdata])
+                self.mdata_groups = list(grouped_data.values()) + non_grouped_data
 
         return [[mdata.m for mdata in m_group] for m_group in self.mdata_groups]
 
