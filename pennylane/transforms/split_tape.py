@@ -219,16 +219,6 @@ def _compute_result(result, data: dict):
     return results
 
 
-def _pauli_z(wires: Wires):
-    """Generate ``PauliZ`` operator.
-
-    Args:
-        wires (Wires): wires that the operator acts on"""
-    if len(wires) == 1:
-        return qml.PauliZ(wires[0])
-    return Tensor(*[qml.PauliZ(w) for w in wires])
-
-
 # pylint: disable=too-few-public-methods
 class _MGroup:
     """Utils class used to group measurements.
@@ -377,7 +367,7 @@ class _MGroup:
                 for o, c in zip(obs.ops, obs.data):
                     self._add(qml.expval(o), idx, c)
             else:
-                # Add the previously computed groups of "qwc" measurements
+                # Add the previously computed groups of qwc measurements
                 for indices in obs.grouping_indices:
                     m_group = tuple(qml.expval(obs.ops[i]) for i in indices)
                     c_group = tuple(qml.math.stack([obs.data[i] for i in indices]))
@@ -394,8 +384,7 @@ class _MGroup:
             self.queue[m_hash] = self.MData(measurement, {idx: coeff})
         else:
             mdata = self.queue[m_hash]
-            # Use qml.math.add because coeff might be a tuple of values (for Hamiltonian)
-            mdata.data[idx] = qml.math.add(mdata.data[idx], coeff) if idx in mdata.data else coeff
+            mdata.data[idx] = mdata.data[idx] + coeff if idx in mdata.data else coeff
 
     def _add_group_to_queue(
         self, m_group: Tuple[MeasurementProcess], idx: int, c_group: Tuple[float]
@@ -405,7 +394,7 @@ class _MGroup:
             if m_hash in self.queue:
                 mdata = self.queue[m_hash]  # remove measurement from the queue
                 # update the coefficient
-                mdata.data[idx] = qml.math.add(mdata.data[idx], c) if idx in mdata.data else c
+                mdata.data[idx] = mdata.data[idx] + c if idx in mdata.data else c
                 if mdata.group is None:
                     # update group information if the measurement didn't belong to any group
                     mdata.group = self._num_groups
@@ -451,7 +440,7 @@ class _MGroup:
 
         # group pauli measurements
         if len(pauli_m) > 1:
-            observables = [(mdata.m.obs or _pauli_z(mdata.m.wires)) for mdata in pauli_m]
+            observables = [(mdata.m.obs or self._pauli_z(mdata.m.wires)) for mdata in pauli_m]
             grouped_m = group_observables(observables=observables, coefficients=pauli_m)[1]
             all_m += grouped_m
         elif pauli_m:
@@ -480,3 +469,12 @@ class _MGroup:
                     qwc_groups.append((mdata.m.wires, [mdata]))
 
         self.mdata_groups = [group[1] for group in qwc_groups]
+
+    def _pauli_z(self, wires: Wires):
+        """Generate ``PauliZ`` operator.
+
+        Args:
+            wires (Wires): wires that the operator acts on"""
+        if len(wires) == 1:
+            return qml.PauliZ(wires[0])
+        return Tensor(*[qml.PauliZ(w) for w in wires])
