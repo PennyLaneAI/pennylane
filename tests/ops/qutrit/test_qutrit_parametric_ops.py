@@ -311,7 +311,7 @@ def test_control_wires(op, control_wires):
 
 
 subspace_error_data = [
-    ([1, 1], "Elements of the subspace list must be unique."),
+    ([1, 1], "Elements of subspace list must be unique."),
     ([-1], "The subspace must be a sequence"),
     (None, "The subspace must be a sequence"),
     ("a", "The subspace must be a sequence"),
