@@ -774,8 +774,9 @@ class QubitDevice(Device):
                 measurements = circuit.measurements
             else:
                 warnings.warn(
-                    message="Using a list of observables in ``QubitDevice.statistics`` is "
-                    "deprecated. Please use a ``QuantumTape`` instead.",
+                    message="Using a list of observables in ``QubitDevice.statistics`` is deprecated. "
+                    "Please use a ``QuantumTape`` instead. This should be passed to ``circuit``, "
+                    "as the ``observables`` argument is also deprecated.",
                     category=UserWarning,
                 )
                 measurements = observables
