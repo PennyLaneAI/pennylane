@@ -20,7 +20,7 @@ from pennylane import numpy as np
 
 
 def givens_matrix(a, b, left=True, tol=1e-8):
-    """Build a Given rotation matrix with a phase."""
+    """Build a Givens rotation matrix with a phase."""
     abs_a, abs_b = np.abs(a), np.abs(b)
     if abs_a < tol:
         cosine, sine, phase = 1.0, 0.0, 1.0
