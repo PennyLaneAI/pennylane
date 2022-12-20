@@ -860,88 +860,60 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
     def test_two_qubit_decomposition_jax_jit(self, U, wires):
-        """Test that the results of decomposing a two-qubit operation in JAX with and without jitting match."""
+        """Test that a two-qubit operation is correctly decomposed with JAX-JIT ."""
         import jax
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
-        dev = qml.device("default.qubit", wires=wires)
+        def wrapped_decomposition(U):
+            # the jitted function cannot return objects like operators,
+            # so we cannot jit two_qubit_decomposition directly
+            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        @jax.jit
-        @qml.qnode(dev, interface="jax")
-        def f_jit(U):
-            for g in qml.QubitUnitary(U, wires=wires, do_queue=False).decomposition():
-                qml.apply(g)
-            return (
-                qml.expval(qml.PauliX(wires[0])),
-                qml.expval(qml.PauliY(wires[0])),
-                qml.expval(qml.PauliZ(wires[0])),
-                qml.expval(qml.PauliX(wires[1])),
-                qml.expval(qml.PauliY(wires[1])),
-                qml.expval(qml.PauliZ(wires[1])),
-            )
+            with qml.queuing.AnnotatedQueue() as q:
+                for op in obtained_decomposition:
+                    qml.apply(op)
 
-        @qml.qnode(dev, interface="jax")
-        def f(U):
-            for g in qml.QubitUnitary(U, wires=wires, do_queue=False).decomposition():
-                qml.apply(g)
-            return (
-                qml.expval(qml.PauliX(wires[0])),
-                qml.expval(qml.PauliY(wires[0])),
-                qml.expval(qml.PauliZ(wires[0])),
-                qml.expval(qml.PauliX(wires[1])),
-                qml.expval(qml.PauliY(wires[1])),
-                qml.expval(qml.PauliZ(wires[1])),
-            )
+            tape = qml.tape.QuantumScript.from_queue(q)
+            obtained_matrix = qml.matrix(tape, wire_order=wires)
 
-        assert qml.math.allclose(f_jit(U), f(U), atol=0.0001)
+            return obtained_matrix
+
+        jitted_matrix = jax.jit(wrapped_decomposition)(U)
+
+        assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products_jax_jit(self, U_pair, wires):
-        """Test that a two-qubit tensor product in JAX with and without jitting match."""
+        """Test that a two-qubit tensor product is correctly decomposed with JAX-JIT."""
         import jax
         from jax.config import config
 
-        remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
         U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
         U2 = jax.numpy.array(U_pair[1], dtype=jax.numpy.complex128)
         U = qml.math.kron(U1, U2)
 
-        dev = qml.device("default.qubit", wires=wires)
+        def wrapped_decomposition(U):
+            # the jitted function cannot return objects like operators,
+            # so we cannot jit two_qubit_decomposition directly
+            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
 
-        @jax.jit
-        @qml.qnode(dev, interface="jax")
-        def f_jit(U):
-            for g in qml.QubitUnitary(U, wires=wires, do_queue=False).decomposition():
-                qml.apply(g)
-            return (
-                qml.expval(qml.PauliX(wires[0])),
-                qml.expval(qml.PauliY(wires[0])),
-                qml.expval(qml.PauliZ(wires[0])),
-                qml.expval(qml.PauliX(wires[1])),
-                qml.expval(qml.PauliY(wires[1])),
-                qml.expval(qml.PauliZ(wires[1])),
-            )
+            with qml.queuing.AnnotatedQueue() as q:
+                for op in obtained_decomposition:
+                    qml.apply(op)
 
-        @qml.qnode(dev, interface="jax")
-        def f(U):
-            for g in qml.QubitUnitary(U, wires=wires, do_queue=False).decomposition():
-                qml.apply(g)
-            return (
-                qml.expval(qml.PauliX(wires[0])),
-                qml.expval(qml.PauliY(wires[0])),
-                qml.expval(qml.PauliZ(wires[0])),
-                qml.expval(qml.PauliX(wires[1])),
-                qml.expval(qml.PauliY(wires[1])),
-                qml.expval(qml.PauliZ(wires[1])),
-            )
+            tape = qml.tape.QuantumScript.from_queue(q)
+            obtained_matrix = qml.matrix(tape, wire_order=wires)
 
-        assert qml.math.allclose(f_jit(U), f(U), atol=0.0001)
+            return obtained_matrix
+
+        jitted_matrix = jax.jit(wrapped_decomposition)(U)
+
+        assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
