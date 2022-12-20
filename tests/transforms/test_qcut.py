@@ -3866,6 +3866,8 @@ class TestCutCircuitTransform:
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform.
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
 
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
@@ -3898,6 +3900,9 @@ class TestCutCircuitTransform:
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the torch interface.
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         import torch
 
         dev = qml.device("default.qubit", wires=2)
@@ -3934,6 +3939,9 @@ class TestCutCircuitTransform:
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the TF interface.
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
@@ -3970,6 +3978,9 @@ class TestCutCircuitTransform:
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the Jax interface.
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         import jax
         import jax.numpy as jnp
 
@@ -4032,6 +4043,9 @@ class TestCutCircuitTransform:
         gradient for a simple circuit using the `cut_circuit` transform with the torch interface and
         using torch tracing.
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         import torch
 
         dev = qml.device("default.qubit", wires=2)
@@ -4099,6 +4113,9 @@ class TestCutCircuitTransform:
         gradient for a simple circuit using the `cut_circuit` transform with the TF interface and
         using JIT.
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
@@ -4171,6 +4188,9 @@ class TestCutCircuitTransform:
         gradient for a simple circuit using the `cut_circuit` transform with the Jax interface and
         using JIT.
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         import jax
         import jax.numpy as jnp
 
