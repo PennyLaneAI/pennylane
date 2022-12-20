@@ -15,7 +15,5 @@
 Swap network templates perform qubit routing with linear cost, providing a quadratic advantage in
 circuit depth for carrying out all pair-wise interactions between qubits.
 """
-from .ccl2 import TwoLocalSwapNetwork
 
-# from .trotter import TrotterStepSwapNetwork
-# from .cclk import GeneralizedSwapNetwork
+from .ccl2 import TwoLocalSwapNetwork

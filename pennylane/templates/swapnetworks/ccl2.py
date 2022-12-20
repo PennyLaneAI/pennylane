@@ -158,6 +158,26 @@ class TwoLocalSwapNetwork(Operation):
 
         Returns:
             list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        .. code-block:: python
+
+            >>> import pennylane as qml
+            >>> dev = qml.device('default.qubit', wires=5)
+            >>> acquaintances = lambda index, wires, param=None: qml.CNOT(index)
+            >>> qml.TwoLocalSwapNetwork.compute_decomposition(wires=dev.wires,
+            ...        acquaintances=acquaintances, fermionic=True, shift=False)
+            [CNOT(wires=[0, 1]), FermionicSWAP(3.141592653589793, wires=[0, 1]),
+             CNOT(wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[2, 3]),
+             CNOT(wires=[1, 2]), FermionicSWAP(3.141592653589793, wires=[1, 2]),
+             CNOT(wires=[3, 4]), FermionicSWAP(3.141592653589793, wires=[3, 4]),
+             CNOT(wires=[0, 1]), FermionicSWAP(3.141592653589793, wires=[0, 1]),
+             CNOT(wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[2, 3]),
+             CNOT(wires=[1, 2]), FermionicSWAP(3.141592653589793, wires=[1, 2]),
+             CNOT(wires=[3, 4]), FermionicSWAP(3.141592653589793, wires=[3, 4]),
+             CNOT(wires=[0, 1]), FermionicSWAP(3.141592653589793, wires=[0, 1]),
+             CNOT(wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[2, 3])]
         """
 
         if wires is None or len(wires) < 2:

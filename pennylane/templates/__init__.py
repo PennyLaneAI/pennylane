@@ -22,4 +22,4 @@ from .embeddings import *
 from .subroutines import *
 from .state_preparations import *
 from .tensornetworks import *
-from .swap_networks import *
+from .swapnetworks import *
