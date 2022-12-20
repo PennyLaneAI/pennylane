@@ -247,15 +247,21 @@ def sum_expand(tape: QuantumTape, group=True):
     >>> tapes, fn = qml.transforms.sum_expand(tape, group=False)
     >>> for tape in tapes:
     ...     print(tape.measurements)
-    [expval(PauliZ(wires=[0]))]
     [expval(PauliY(wires=[2]) @ PauliZ(wires=[1]))]
     [expval(PauliZ(wires=[2]))]
     [expval(PauliZ(wires=[1]))]
+    [expval(PauliZ(wires=[0]))]
     [expval(PauliX(wires=[1]))]
 
     Five tapes are generated: the first three contain the summands of the `Sum` operator,
     and the last two contain the remaining observables. Note that the scalars of the scalar products
-    have been removed. These values will be multiplied by the result obtained from the execution.
+    have been removed. In the processing function, these values will be multiplied by the result obtained
+    from executing the tapes.
+
+    Additionally, the observable expval(PauliZ(wires=[2])) occurs twice in the original tape, but only once
+    in the transformed tapes. When there are multipe identical measurements in the circuit, the measurement
+    is performed once and the outcome is copied when obtaining the final result. This will also be resolved
+    when the processing function is applied.
 
     We can evaluate these tapes on a device:
 
