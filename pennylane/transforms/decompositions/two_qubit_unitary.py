@@ -175,7 +175,7 @@ def _su2su2_to_tensor_products(U):
             a2 *= -1
     else:
         sign_is_correct = math.allclose(a1 * math.conj(a2), C12[0, 0])
-        sign = (-1) ** (sign_is_correct + 1)
+        sign = (-1) ** (sign_is_correct + 1)  # True + 1 = 2, False + 1 = 1
         a2 *= sign
 
     # Construct A
@@ -193,6 +193,7 @@ def _su2su2_to_tensor_products(U):
         B1 = C1 / math.cast_like(A[0, 0], 1j)
         B2 = C2 / math.cast_like(A[0, 1], 1j)
         B1_and_B2 = math.array([B1, B2], like="jax")
+        # jit does not like int(bool), but bool + 0 is a supported way of converting True/False to 1/0
         idx = math.allclose(A[0, 0], 0.0, atol=1e-6) + 0
         B = B1_and_B2[idx]
 
@@ -441,9 +442,11 @@ def _decomposition_3_cnots(U, wires):
     gammaU = math.dot(u, math.T(u))
     evs, _ = math.linalg.eig(gammaU)
 
-    # We will sort the angles so that results are consistent across interfaces.
     angles = [math.angle(ev) for ev in evs]
 
+    # We will sort the angles so that results are consistent across interfaces.
+    # This step is skipped when using JAX-JIT. It does not impact the validity of the
+    # resulting decomposition but may result in a different decompositions for jitting vs not.
     if not qml.math.is_abstract(U):
         angles = math.sort(angles)
 
