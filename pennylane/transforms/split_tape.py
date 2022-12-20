@@ -398,9 +398,9 @@ class _MGroup:
                 if mdata.group is None:
                     # update group information if the measurement didn't belong to any group
                     mdata.group = self._num_groups
-                    self._num_groups += 1
             else:
                 self.queue[m_hash] = self.MData(m, {idx: c}, group=self._num_groups)
+        self._num_groups += 1
 
     def get_measurements(self, group=False) -> List[List["_MGroup.MData"]]:
         """Returns a list of lists containing groups of qubit-wise commuting pauli-based
