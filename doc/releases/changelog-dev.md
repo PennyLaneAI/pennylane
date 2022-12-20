@@ -50,7 +50,7 @@
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
 
 * Removes qutrit operations use of in-place inversion in preparation for the
-  removal in in-place inversion.
+  removal of in-place inversion.
 
 <h3>Breaking changes</h3>
 
