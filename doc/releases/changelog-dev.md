@@ -71,7 +71,11 @@
 
 <h3>Improvements</h3>
 
-* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
+* Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
+  [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
+
+
+* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of 
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
  [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
 
@@ -106,3 +110,4 @@ Albert Mitjans Coma
 Romain Moyard
 Matthew Silverman
 Antal Száva
+
