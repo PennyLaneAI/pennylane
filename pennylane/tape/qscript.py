@@ -1293,10 +1293,10 @@ class QuantumScript:
 
         return qasm_str
 
-    @staticmethod
-    def from_queue(queue):
+    @classmethod
+    def from_queue(cls, queue):
         """Construct a QuantumScript from an AnnotatedQueue."""
-        return QuantumScript(*process_queue(queue))
+        return cls(*process_queue(queue))
 
 
 def make_qscript(fn):
