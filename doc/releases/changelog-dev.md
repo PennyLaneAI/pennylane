@@ -60,12 +60,11 @@
   mol = qml.qchem.Molecule(symbols, geometry)
 
   args = [jax.numpy.array(mol.coordinates)]
-
   ```
 
   ```pycon
-  >>> jax.grad(qchem.hf_energy(mol))(*args)
-  >>> array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]])
+  >>> jax.grad(qml.qchem.hf_energy(mol))(*args)
+  >>> DeviceArray([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]], dtype=float32)
   ```
 
 <h3>Improvements</h3>
