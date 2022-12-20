@@ -170,7 +170,6 @@ from .measurements import (
     MidMeasure,
     MutualInfo,
     ObservableReturnTypes,
-    Purity,
     Probability,
     Sample,
     SampleMeasurement,

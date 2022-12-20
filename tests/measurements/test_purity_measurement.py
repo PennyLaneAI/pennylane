@@ -3,6 +3,10 @@ import pytest
 import numpy as np
 import pennylane as qml
 
+from jax.config import config
+
+config.update("jax_enable_x64", True)
+
 
 def expected_purity_ising_xx(param):
     """Returns the analytical purity for subsystems of the IsingXX"""
@@ -45,7 +49,7 @@ class TestPurity:
     diff_methods = ["backprop", "finite-diff"]
     return_new = [True, False]
 
-    parameters = np.linspace(0, 2 * np.pi, 10)
+    parameters = np.linspace(0, 2 * np.pi, 3)
     probs = np.array([0.001, 0.01, 0.1, 0.2])
 
     wires_list = [([0], True), ([1], True), ([0, 1], False)]
@@ -323,52 +327,3 @@ class TestPurity:
         grad_purity = tape.gradient(purity, param)
 
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
-
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("return_new", return_new)
-    def test_qnode_entropy_no_custom_wires(self, device, return_new):
-        """Test that purity cannot be returned with custom wires."""
-
-        if return_new:
-            qml.enable_return()
-
-        dev = qml.device(device, wires=["a", 1])
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.IsingXX(x, wires=["a", 1])
-            return qml.purity(wires=["a"])
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Returning the purity is not supported when using custom wire labels",
-        ):
-            circuit(0.1)
-
-        if return_new:
-            qml.disable_return()
-
-    @pytest.mark.parametrize("return_new", return_new)
-    def test_shot_warnings(self, return_new):
-        """Tests the warning message when using shots"""
-
-        if return_new:
-            qml.enable_return()
-
-        dev = qml.device("default.qubit", wires=2, shots=1000)
-
-        @qml.qnode(device=dev)
-        def circuit(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.purity(wires=[0, 1])
-
-        with pytest.warns(
-            UserWarning,
-            match="Requested measurement PurityMP with finite shots; the returned "
-            "state information is analytic and is unaffected by sampling. To silence "
-            "this warning, set shots=None on the device.",
-        ):
-            circuit(0.5)
-
-        if return_new:
-            qml.disable_return()

@@ -16,12 +16,11 @@
 This module contains the qml.purity measurement.
 """
 
-import copy
 from typing import Sequence
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import StateMeasurement, Purity
+from .measurements import StateMeasurement
 
 
 def purity(wires):
@@ -81,10 +80,6 @@ class PurityMP(StateMeasurement):
     """
 
     @property
-    def return_type(self):
-        return Purity
-
-    @property
     def numeric_type(self):
         return float
 
@@ -103,11 +98,6 @@ class PurityMP(StateMeasurement):
         return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        if wire_order.labels != tuple(range(len(wire_order))):
-            raise qml.QuantumFunctionError(
-                "Returning the purity is not supported when using custom wire labels"
-            )
-        return qml.math.purity(state, indices=self.wires, c_dtype=state.dtype)
-
-    def __copy__(self):
-        return self.__class__(obs=copy.copy(self.obs), wires=self._wires, eigvals=self._eigvals)
+        wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
+        indices = [wire_map[w] for w in self.wires]
+        return qml.math.purity(state, indices=indices, c_dtype=state.dtype)
