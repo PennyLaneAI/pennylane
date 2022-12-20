@@ -17,10 +17,10 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops import Hamiltonian
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms import split_tape
-from pennylane.ops import Hamiltonian
 
 dev = qml.device("default.qubit", wires=4)
 """Defines the device used for all tests"""
@@ -183,6 +183,27 @@ class TestSplitTape:
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
+
+    def test_grouping_is_used(self):
+        """Test that the grouping in a Hamiltonian is used"""
+        H = qml.Hamiltonian(
+            [1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)], grouping_type="qwc"
+        )
+        assert H.grouping_indices is not None
+
+        with AnnotatedQueue() as q:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        tape = QuantumScript.from_queue(q)
+        tapes, _ = split_tape(tape, group=False)
+        assert len(tapes) == 2
+
+        qs = QuantumScript(tape.operations, tape.measurements)
+        tapes, _ = split_tape(qs, group=False)
+        assert len(tapes) == 2
 
     def test_number_of_tapes(self):
         """Tests the correct number of quantum tapes are produced."""
