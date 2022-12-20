@@ -302,23 +302,31 @@ class _MGroup:
     >>> m_group = _MGroup(circuit.tape.measurements)
     >>> m_group.get_measurements(group=False)
     [[expval(PauliX(wires=[0])), expval(PauliY(wires=[1]))],
-    [expval(PauliZ(wires=[0]))],
-    [expval(PauliX(wires=[0]))]]
+    [expval(PauliZ(wires=[0]))]]
 
-    ``PauliX(0)`` and ``PauliY(1)`` have been grouped together. Please note that when using
-    the Hamiltonian's grouping indices all the measurements are returned, without merging equal
-    measurements together.
+    ``PauliX(0)`` and ``PauliY(1)`` have been grouped together.
 
     Let's create a new QNode and group the measurements:
 
     .. code-block:: python
 
         H = 4 * qml.PauliX(0) + qml.PauliZ(0) + qml.PauliY(1)
-        S = qml.op_sum()
+        S = qml.op_sum(qml.s_prod(4, qml.PauliX(0)), qml.PauliZ(0), qml.PauliY(1))
 
         @qml.qnode(dev)
         def circuit():
-            return qml.expval(H), qml.expval(qml.PauliX(0))
+            return qml.expval(H), qml.expval(qml.PauliX(1)), qml.expval(S), qml.expval(H)
+
+    >>> circuit.construct((), {})  # construct tape
+    >>> m_group = _MGroup(circuit.tape.measurements)
+    >>> m_group.get_measurements(group=False)
+    [[expval(PauliX(wires=[0]))],
+    [expval(PauliZ(wires=[0]))],
+    [expval(PauliY(wires=[1]))],
+    [expval(PauliX(wires=[1]))]]
+    >>> m_group.get_measurements(group=True)
+    [[expval(PauliX(wires=[0])), expval(PauliY(wires=[1]))],
+    [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]]
     """
 
     @dataclass
@@ -406,18 +414,17 @@ class _MGroup:
         """Returns a list of lists containing groups of qubit-wise commuting pauli-based
         measurements and groups of non-overlapping wires non-pauli-based measurements."""
 
-        if self.mdata_groups is None:
-            if group:
-                self._group_measurements()
-            else:
-                grouped_data = defaultdict(lambda: [])
-                non_grouped_data = []
-                for mdata in self.queue.values():
-                    if mdata.group is not None:
-                        grouped_data[mdata.group].append(mdata)
-                    else:
-                        non_grouped_data.append([mdata])
-                self.mdata_groups = list(grouped_data.values()) + non_grouped_data
+        if group:
+            self._group_measurements()
+        else:
+            grouped_data = defaultdict(lambda: [])
+            non_grouped_data = []
+            for mdata in self.queue.values():
+                if mdata.group is not None:
+                    grouped_data[mdata.group].append(mdata)
+                else:
+                    non_grouped_data.append([mdata])
+            self.mdata_groups = list(grouped_data.values()) + non_grouped_data
 
         return [[mdata.m for mdata in m_group] for m_group in self.mdata_groups]
 
