@@ -20,6 +20,7 @@ from pennylane import numpy as pnp
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms import split_tape
+from pennylane.ops import Hamiltonian
 
 dev = qml.device("default.qubit", wires=4)
 """Defines the device used for all tests"""
@@ -159,6 +160,22 @@ class TestSplitTape:
     def test_no_grouping(self, tape, output):
         """Tests that the split_tape transform returns the correct value
         if we switch grouping off"""
+
+        tapes, fn = split_tape(tape, group=False)
+        tapes = [q.expand() for q in tapes]
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
+
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    def test_hamiltonian_grouping_indices(self, tape, output):
+        """Tests that the split_tape transform returns the correct value
+        if we switch grouping off"""
+
+        for m in tape.measurements:
+            if isinstance(m.obs, Hamiltonian):
+                m.obs.compute_grouping()
 
         tapes, fn = split_tape(tape, group=False)
         tapes = [q.expand() for q in tapes]
