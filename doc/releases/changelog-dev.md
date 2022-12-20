@@ -77,6 +77,9 @@
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
  [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
 
+* Added support for two-qubit unitary decomposition with JAX-JIT.
+  [(#3569)](https://github.com/PennyLaneAI/pennylane/pull/3569)
+
 * Limit the `numpy` version to `<1.24`.
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
 
