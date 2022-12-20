@@ -15,6 +15,7 @@
 unitary operations into elementary gates.
 """
 import numpy as np
+import jax
 
 import pennylane as qml
 from pennylane import math
@@ -183,19 +184,20 @@ def _su2su2_to_tensor_products(U):
 
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
-    # We use B1 unless division by 0 has caused all elements to be inf.
+    # We use B1 unless division by 0 would cause all elements to be inf.
+    use_B2 = math.allclose(A[0, 0], 0.0, atol=1e-6)
     if not math.is_abstract(A):
-        if not math.allclose(A[0, 0], 0.0, atol=1e-6):
+        if not use_B2:
             B = C1 / math.cast_like(A[0, 0], 1j)
         else:
             B = C2 / math.cast_like(A[0, 1], 1j)
     else:
-        B1 = C1 / math.cast_like(A[0, 0], 1j)
-        B2 = C2 / math.cast_like(A[0, 1], 1j)
-        B1_and_B2 = math.array([B1, B2], like="jax")
-        # jit does not like int(bool), but bool + 0 is a supported way of converting True/False to 1/0
-        idx = math.allclose(A[0, 0], 0.0, atol=1e-6) + 0
-        B = B1_and_B2[idx]
+        B = jax.lax.cond(
+            use_B2,
+            lambda x: C2 / math.cast_like(A[0, 1], 1j),
+            lambda x: C1 / math.cast_like(A[0, 0], 1j),
+            0,  # arbitrary value for x
+        )
 
     return math.convert_like(A, U), math.convert_like(B, U)
 
@@ -445,8 +447,9 @@ def _decomposition_3_cnots(U, wires):
     angles = [math.angle(ev) for ev in evs]
 
     # We will sort the angles so that results are consistent across interfaces.
-    # This step is skipped when using JAX-JIT. It does not impact the validity of the
-    # resulting decomposition but may result in a different decompositions for jitting vs not.
+    # This step is skipped when using JAX-JIT, because it cannot sort without making the
+    # magnitude of the angles concrete. This does not impact the validity of the resulting
+    # decomposition, but may result in a different decompositions for jitting vs not.
     if not qml.math.is_abstract(U):
         angles = math.sort(angles)
 
