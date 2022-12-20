@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def givens_matrix(a, b, left=True, inv=False, tol=1e-8):
+def givens_matrix(a, b, left=True, tol=1e-8):
     """Build a Given rotation matrix with a phase."""
     abs_a, abs_b = np.abs(a), np.abs(b)
     if abs_a < tol:
@@ -37,7 +37,7 @@ def givens_matrix(a, b, left=True, inv=False, tol=1e-8):
     else:
         givens_mat = np.array([[phase * cosine, -sine], [phase * sine, cosine]])
 
-    return givens_mat if not inv else givens_mat.T.conjugate()
+    return givens_mat
 
 
 def givens_rotate(unitary, grot_mat, indices, row=True):
@@ -57,6 +57,9 @@ def givens_decomposition(unitary):
     Based on the optimal construction given by Clements in Optica Vol. 3, Issue 12, pp. 1460-1465 (2016)."""
 
     unitary, (M, N) = unitary.copy(), unitary.shape
+    if M != N:
+        raise ValueError(f"The unitary matrix should be of shape NxN, got {unitary.shape}")
+
     left_givens, right_givens = [], []
     for i in range(1, N):
         if i % 2:
