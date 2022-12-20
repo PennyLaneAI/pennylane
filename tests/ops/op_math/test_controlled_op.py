@@ -608,7 +608,7 @@ class TestQueuing:
             op = Controlled(base, (0, 1))
 
         assert base not in q
-        assert q[0] == op
+        assert q.queue[0] == op
 
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if its defined outside the recording context."""
@@ -692,10 +692,11 @@ class TestMatrix:
         op = Controlled(base, control_wires, control_values=control_values)
 
         mat = op.matrix()
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             [qml.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
             Controlled(base, control_wires, control_values=[1, 1, 1])
             [qml.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
+        tape = qml.tape.QuantumScript.from_queue(q)
         decomp_mat = qml.matrix(tape, wire_order=op.wires)
 
         assert qml.math.allclose(mat, decomp_mat)

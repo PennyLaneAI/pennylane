@@ -23,6 +23,7 @@ from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
+from pennylane.measurements import ExpectationMP, ProbabilityMP, StateMP, VarianceMP
 
 from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts
@@ -60,7 +61,7 @@ def _grad_method(tape, idx):
 
     for m in tape.measurements:
 
-        if (m.return_type is qml.measurements.Probability) or (m.obs.ev_order not in (1, 2)):
+        if isinstance(m, ProbabilityMP) or (m.obs.ev_order not in (1, 2)):
             # Higher-order observables (including probability) only support finite differences.
             best.append("F")
             continue
@@ -85,12 +86,12 @@ def _grad_method(tape, idx):
 
         elif m.obs.ev_order == 2:
 
-            if m.return_type is qml.measurements.Expectation:
+            if isinstance(m, ExpectationMP):
                 # If the observable is second-order, we must use the second-order
                 # CV parameter shift rule
                 best_method = "A2"
 
-            elif m.return_type is qml.measurements.Variance:
+            elif isinstance(m, VarianceMP):
                 # we only support analytic variance gradients for
                 # first-order observables
                 best_method = "F"
@@ -197,13 +198,14 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
-        list of generated tapes, in addition to a post-processing
-        function to be applied to the evaluated tapes.
+        list of generated tapes, together with a post-processing
+        function to be applied to the results of the evaluated tapes
+        in order to obtain the Jacobian matrix.
     """
     argnum = argnum or tape.trainable_params
 
     # Determine the locations of any variance measurements in the measurement queue.
-    var_mask = [m.return_type is qml.measurements.Variance for m in tape.measurements]
+    var_mask = [isinstance(m, VarianceMP) for m in tape.measurements]
     var_idx = np.where(var_mask)[0]
 
     # Get <A>, the expectation value of the tape with unshifted parameters.
@@ -301,8 +303,9 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
-        list of generated tapes, in addition to a post-processing
-        function to be applied to the evaluated tapes.
+        list of generated tapes, together with a post-processing
+        function to be applied to the results of the evaluated tapes
+        in order to obtain the Jacobian matrix.
     """
     argnum = argnum or list(tape.trainable_params)
     gradient_recipes = gradient_recipes or [None] * len(argnum)
@@ -522,15 +525,16 @@ def param_shift_cv(
         force_order2 (bool): if True, use the order-2 method even if not necessary
 
     Returns:
-        tensor_like or tuple[list[QuantumTape], function]:
+        function or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode, a tensor
-          representing the output Jacobian matrix of size ``(number_outputs, number_gate_parameters)``
-          is returned.
+        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
+          that can be executed to obtain the Jacobian matrix.
+          The returned matrix is a tensor of size ``(number_outputs, number_gate_parameters)``
 
-        - If the input is a tape, a tuple containing a list of generated tapes,
-          in addition to a post-processing function to be applied to the
-          evaluated tapes.
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Jacobian matrix.
 
     This transform supports analytic gradients of Gaussian CV operations using
     the parameter-shift rule. This gradient method returns *exact* gradients,
@@ -651,7 +655,7 @@ def param_shift_cv(
     """
 
     # perform gradient method validation
-    if any(m.return_type is qml.measurements.State for m in tape.measurements):
+    if any(isinstance(m, StateMP) for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."
         )
@@ -683,7 +687,7 @@ def param_shift_cv(
         return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     method_map = choose_grad_methods(diff_methods, argnum)
-    var_present = any(m.return_type is qml.measurements.Variance for m in tape.measurements)
+    var_present = any(isinstance(m, VarianceMP) for m in tape.measurements)
 
     unsupported_params = []
     first_order_params = []

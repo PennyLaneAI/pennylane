@@ -517,6 +517,16 @@ class TestOperatorConstruction:
         assert op.wires == Wires([0, 1, 2])
         assert mapped_op.wires == Wires([10, 1, 12])
 
+    def test_default_pauli_rep(self):
+        """Test that the default _pauli_rep attribute is None"""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp(wires=0)
+        assert op._pauli_rep is None
+
 
 class TestOperationConstruction:
     """Test custom operations construction."""
@@ -625,7 +635,7 @@ class TestOperationConstruction:
 
         x = 0.654
         op = DummyOp(x, wires=0)
-        assert op.parameter_frequencies == (0.4,)
+        assert op.parameter_frequencies == [(0.4,)]
 
     def test_frequencies_default_multi_param(self):
         """Test that an operation with default parameter frequencies and multiple
@@ -1060,11 +1070,12 @@ class TestInverse:
             r"""Dummy custom Operation"""
             num_wires = 1
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
                 op = DummyOp(wires=[0]).inv()
             assert op.inverse is True
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert op.inverse is True
 
     def test_inverse_integration(self):
@@ -1163,16 +1174,16 @@ class TestTensor:
         op2 = qml.PauliY(1)
         T = Tensor(op1, op2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             T.queue()
 
-        assert len(tape.queue) == 1
-        assert tape.queue[0] is T
+        assert len(q.queue) == 1
+        assert q.queue[0] is T
 
     def test_queuing(self):
         """Test the queuing of a Tensor object."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.PauliX(0)
             op2 = qml.PauliY(1)
             T = Tensor(op1, op2)
@@ -1183,7 +1194,7 @@ class TestTensor:
     def test_queuing_observable_matmul(self):
         """Test queuing when tensor constructed with matmul."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.PauliX(0)
             op2 = qml.PauliY(1)
             t = op1 @ op2
@@ -1193,7 +1204,7 @@ class TestTensor:
     def test_queuing_tensor_matmul(self):
         """Tests the tensor-specific matmul method updates queuing metadata."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op1 = qml.PauliX(0)
             op2 = qml.PauliY(1)
             t = Tensor(op1, op2)

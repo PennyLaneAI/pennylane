@@ -50,10 +50,11 @@ class TestSingleTapeTransform:
         b = np.array([0.2, 0.3])
         x = 0.543
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         ops = my_transform(tape, a, b).operations
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
@@ -322,6 +323,15 @@ class TestQFuncTransforms:
             decorated_transform = qml.qfunc_transform(original_fn)
 
         assert original_fn is decorated_transform
+
+    def test_make_tape_is_deprecated(self):
+        """Test that make_tape is deprecated and points users to make_qscript."""
+
+        def circuit(x):
+            qml.RX(x, wires=0)
+
+        with pytest.warns(UserWarning, match="qml.tape.make_qscript"):
+            tape = qml.transforms.make_tape(circuit)(0.1)
 
 
 ############################################

@@ -22,11 +22,11 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, make_qscript
+from pennylane.tape import QuantumScript, make_qscript, QuantumTape
 
 
 def map_wires(
-    input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable],
+    input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable],
     wire_map: dict,
     queue=False,
     replace=False,
@@ -35,15 +35,15 @@ def map_wires(
     wire map.
 
     Args:
-        input (.Operator, pennylane.QNode, .QuantumScript, or Callable): an operator, quantum node,
-            quantum script, or function that applies quantum operations
+        input (.Operator, pennylane.QNode, .QuantumTape, or Callable): an operator, quantum node,
+            quantum tape, or function that applies quantum operations
         wire_map (dict): dictionary containing the old wires as keys and the new wires as values
         queue (bool): Whether or not to queue the object when recording. Defaults to False.
         replace (bool): When ``queue=True``, if ``replace=True`` the input operators will be
             replaced by its mapped version. Defaults to False.
 
     Returns:
-        (.Operator, pennylane.QNode, .QuantumScript, or Callable): input with changed wires
+        (.Operator, pennylane.QNode, .QuantumTape, or Callable): input with changed wires
 
     .. note::
 
@@ -103,7 +103,7 @@ def map_wires(
         measurements = [qml.map_wires(m, wire_map) for m in input.measurements]
         prep = [qml.map_wires(p, wire_map) for p in input._prep]  # pylint: disable=protected-access
 
-        return QuantumScript(ops=ops, measurements=measurements, prep=prep)
+        return input.__class__(ops=ops, measurements=measurements, prep=prep)
 
     if callable(input):
 

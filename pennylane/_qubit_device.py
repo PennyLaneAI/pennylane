@@ -23,6 +23,7 @@ import abc
 import contextlib
 import itertools
 import warnings
+from collections import defaultdict
 from typing import Union
 
 import numpy as np
@@ -34,33 +35,33 @@ from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
     AllCounts,
-    ClassicalShadow,
+    ClassicalShadowMP,
     Counts,
+    CountsMP,
     Expectation,
+    ExpectationMP,
     MeasurementProcess,
     MeasurementTransform,
     MutualInfo,
+    MutualInfoMP,
     Probability,
+    ProbabilityMP,
     Sample,
     SampleMeasurement,
+    SampleMP,
     Shadow,
     ShadowExpval,
+    ShadowExpvalMP,
     State,
     StateMeasurement,
+    StateMP,
     Variance,
+    VarianceMP,
     VnEntropy,
-    _Counts,
-    _Expectation,
-    _MutualInfo,
-    _Probability,
-    _Sample,
-    _ShadowExpval,
-    _State,
-    _Variance,
-    _VnEntropy,
+    VnEntropyMP,
 )
 from pennylane.operation import operation_derivative
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
 
@@ -73,7 +74,7 @@ class QubitDevice(Device):
       and perform the quantum computation.
 
     Devices that generate their own samples (such as hardware) may optionally
-    overwrite :meth:`~.probabilty`. This method otherwise automatically
+    overwrite :meth:`~.probability`. This method otherwise automatically
     computes the probabilities from the generated samples, and **must**
     overwrite the following method:
 
@@ -214,6 +215,49 @@ class QubitDevice(Device):
         "Prod",
     }
 
+    measurement_map = defaultdict(lambda: "")  # e.g. {SampleMP: "sample"}
+    """Mapping used to override the logic of measurement processes. The dictionary maps a
+    measurement class to a string containing the name of a device's method that overrides the
+    measurement process. The method defined by the device should have the following arguments:
+
+    * measurement (MeasurementProcess): measurement to override
+    * shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+        to use. If not specified, all samples are used.
+    * bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+        returns the measurement statistic separately over each bin. If not
+        provided, the entire shot range is treated as a single bin.
+
+    .. note::
+
+        When overriding the logic of a :class:`~pennylane.measurements.MeasurementTransform`, the
+        method defined by the device should only have a single argument:
+
+        * tape: quantum tape to transform
+
+    **Example:**
+
+    Let's create device that inherits from :class:`~pennylane.devices.DefaultQubit` and overrides the
+    logic of the `qml.sample` measurement. To do so we will need to update the ``measurement_map``
+    dictionary:
+
+    .. code-block:: python
+
+        class NewDevice(DefaultQubit):
+            def __init__(self, wires, shots):
+                super().__init__(wires=wires, shots=shots)
+                self.measurement_map[SampleMP] = "sample_measurement"
+
+            def sample_measurement(self, measurement, shot_range=None, bin_size=None):
+                return 2
+
+    >>> dev = NewDevice(wires=2, shots=1000)
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     return qml.sample()
+    >>> circuit()
+    tensor(2, requires_grad=True)
+    """
+
     def __init__(
         self, wires=1, shots=None, *, r_dtype=np.float64, c_dtype=np.complex128, analytic=None
     ):
@@ -353,7 +397,7 @@ class QubitDevice(Device):
 
         return results
 
-    def execute(self, circuit: QuantumScript, **kwargs):
+    def execute(self, circuit: QuantumTape, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
 
@@ -392,7 +436,7 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
 
         measurements = circuit.measurements
-        counts_exist = any(isinstance(m, _Counts) for m in measurements)
+        counts_exist = any(isinstance(m, CountsMP) for m in measurements)
 
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
@@ -403,7 +447,7 @@ class QubitDevice(Device):
         if not circuit.is_sampled:
 
             if len(measurements) == 1:
-                if isinstance(measurements[0], _State):
+                if isinstance(measurements[0], StateMP):
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
                 else:
@@ -411,7 +455,7 @@ class QubitDevice(Device):
                     with contextlib.suppress(TypeError):
                         # Feature for returning custom objects: if the type cannot be cast to float then we can still allow it as an output
                         results = self._asarray(results, dtype=self.R_DTYPE)
-            elif all(isinstance(m, (_Expectation, _Variance)) for m in measurements):
+            elif all(isinstance(m, (ExpectationMP, VarianceMP)) for m in measurements):
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
             elif not counts_exist:
@@ -434,7 +478,7 @@ class QubitDevice(Device):
 
         return results
 
-    def shot_vec_statistics(self, circuit: QuantumScript):
+    def shot_vec_statistics(self, circuit: QuantumTape):
         """Process measurement results from circuit execution using a device
         with a shot vector and return statistics.
 
@@ -456,7 +500,7 @@ class QubitDevice(Device):
         s1 = 0
 
         measurements = circuit.measurements
-        counts_exist = any(isinstance(m, _Counts) for m in measurements)
+        counts_exist = any(isinstance(m, CountsMP) for m in measurements)
         single_measurement = len(measurements) == 1
 
         for shot_tuple in self._shot_vector:
@@ -512,7 +556,7 @@ class QubitDevice(Device):
 
         return tuple(results)
 
-    def _multi_meas_with_counts_shot_vec(self, circuit: QuantumScript, shot_tuple, r):
+    def _multi_meas_with_counts_shot_vec(self, circuit: QuantumTape, shot_tuple, r):
         """Auxiliary function of the shot_vec_statistics and execute_new
         functions for post-processing the results of multiple measurements at
         least one of which was a counts measurement.
@@ -530,8 +574,8 @@ class QubitDevice(Device):
 
             for idx2, r_ in enumerate(r):
                 measurement_proc = circuit.measurements[idx2]
-                if isinstance(measurement_proc, _Probability) or (
-                    isinstance(measurement_proc, _Sample) and measurement_proc.obs
+                if isinstance(measurement_proc, ProbabilityMP) or (
+                    isinstance(measurement_proc, SampleMP) and measurement_proc.obs
                 ):
                     # Here, the result has a shape of (num_basis_states, shot_tuple.copies)
                     # Extract a single row -> shape (num_basis_states,)
@@ -539,7 +583,7 @@ class QubitDevice(Device):
                 else:
                     result = r_[idx]
 
-                if not isinstance(measurement_proc, _Counts):
+                if not isinstance(measurement_proc, CountsMP):
                     result = self._asarray(result.T)
 
                 result_group.append(result)
@@ -677,7 +721,7 @@ class QubitDevice(Device):
 
     # pylint: disable=too-many-statements
     def statistics(
-        self, observables=None, shot_range=None, bin_size=None, circuit: QuantumScript = None
+        self, observables=None, shot_range=None, bin_size=None, circuit: QuantumTape = None
     ):
         """Process measurement results from circuit execution and return statistics.
 
@@ -685,7 +729,7 @@ class QubitDevice(Device):
         density matrices.
 
         Args:
-            circuit (~.tape.QuantumScript): the quantum script currently being executed
+            circuit (~.tape.QuantumTape): the quantum tape currently being executed
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
@@ -726,11 +770,12 @@ class QubitDevice(Device):
         """
         if observables is not None:
             if isinstance(observables, QuantumScript):
-                measurements = observables.measurements
+                circuit = observables
+                measurements = circuit.measurements
             else:
                 warnings.warn(
                     message="Using a list of observables in ``QubitDevice.statistics`` is "
-                    "deprecated. Please use a ``QuantumScript`` instead.",
+                    "deprecated. Please use a ``QuantumTape`` instead.",
                     category=UserWarning,
                 )
                 measurements = observables
@@ -748,9 +793,15 @@ class QubitDevice(Device):
                 obs.return_type = m.return_type
             else:
                 obs = m
+            # Check if there is an overriden version of the measurement process
+            if method := getattr(self, self.measurement_map[type(m)], False):
+                if isinstance(m, MeasurementTransform):
+                    results.append(method(tape=circuit))
+                else:
+                    results.append(method(m, shot_range=shot_range, bin_size=bin_size))
             # TODO: Remove return_type when `observables` argument is removed from this method
             # Pass instances directly
-            if obs.return_type is Expectation:
+            elif obs.return_type is Expectation:
                 # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
                 results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
 
@@ -857,10 +908,7 @@ class QubitDevice(Device):
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
             elif isinstance(m, MeasurementTransform):
-                if method := getattr(self, m.method_name, False):
-                    results.append(method(qscript=circuit))
-                else:
-                    results.append(m.process(qscript=circuit, device=self))
+                results.append(m.process(tape=circuit, device=self))
 
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
                 results.append(self._measure(m, shot_range=shot_range, bin_size=bin_size))
@@ -895,8 +943,6 @@ class QubitDevice(Device):
         Returns:
             Union[float, dict, list[float]]: result of the measurement
         """
-        if method := getattr(self, measurement.method_name, False):
-            return method(measurement, shot_range=shot_range, bin_size=bin_size)
         if self.shots is None:
             if isinstance(measurement, StateMeasurement):
                 return measurement.process_state(state=self.state, wire_order=self.wires)
@@ -917,14 +963,14 @@ class QubitDevice(Device):
             samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
         )
 
-    def _statistics_new(self, circuit: QuantumScript, shot_range=None, bin_size=None):
+    def _statistics_new(self, circuit: QuantumTape, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
         density matrices.
 
         Args:
-            circuit (~.tape.QuantumScript): the quantum script currently being executed
+            circuit (~.tape.QuantumTape): the quantum tape currently being executed
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
@@ -973,25 +1019,31 @@ class QubitDevice(Device):
                 obs.return_type = m.return_type
             else:
                 obs = m
+            # Check if there is an overriden version of the measurement process
+            if method := getattr(self, self.measurement_map[type(m)], False):
+                if isinstance(m, MeasurementTransform):
+                    result = method(tape=circuit)
+                else:
+                    result = method(m, shot_range=shot_range, bin_size=bin_size)
             # 1. Based on the measurement type, compute statistics
             # Pass instances directly
-            if isinstance(m, _Expectation):
+            elif isinstance(m, ExpectationMP):
                 result = self.expval(obs, shot_range=shot_range, bin_size=bin_size)
 
-            elif isinstance(m, _Variance):
+            elif isinstance(m, VarianceMP):
                 result = self.var(obs, shot_range=shot_range, bin_size=bin_size)
 
-            elif isinstance(m, _Sample):
+            elif isinstance(m, SampleMP):
                 samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
                 result = self._asarray(qml.math.squeeze(samples))
 
-            elif isinstance(m, _Counts):
+            elif isinstance(m, CountsMP):
                 result = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
 
-            elif isinstance(m, _Probability):
+            elif isinstance(m, ProbabilityMP):
                 result = self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
 
-            elif isinstance(m, _State):
+            elif isinstance(m, StateMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination"
@@ -1011,7 +1063,7 @@ class QubitDevice(Device):
                 state = self.access_state(wires=obs.wires)
                 result = self._asarray(state, dtype=self.C_DTYPE)
 
-            elif isinstance(m, _VnEntropy):
+            elif isinstance(m, VnEntropyMP):
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
@@ -1032,7 +1084,7 @@ class QubitDevice(Device):
                     )
                 result = self.vn_entropy(wires=obs.wires, log_base=obs.log_base)
 
-            elif isinstance(m, _MutualInfo):
+            elif isinstance(m, MutualInfoMP):
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
@@ -1054,7 +1106,7 @@ class QubitDevice(Device):
                 wires0, wires1 = obs.raw_wires
                 result = self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
 
-            elif isinstance(m, ClassicalShadow):
+            elif isinstance(m, ClassicalShadowMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
@@ -1062,7 +1114,7 @@ class QubitDevice(Device):
                     )
                 result = self.classical_shadow(obs, circuit)
 
-            elif isinstance(m, _ShadowExpval):
+            elif isinstance(m, ShadowExpvalMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
                         "Classical shadows cannot be returned in combination"
@@ -1071,16 +1123,10 @@ class QubitDevice(Device):
                 result = self.shadow_expval(obs, circuit=circuit)
 
             elif isinstance(m, MeasurementTransform):
-                if method := getattr(self, m.method_name, False):
-                    result = method(qscript=circuit)
-                else:
-                    result = m.process(qscript=circuit, device=self)
+                result = m.process(tape=circuit, device=self)
 
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
-                if method := getattr(self, m.method_name, False):
-                    result = method(obs, shot_range=shot_range, bin_size=bin_size)
-                else:
-                    result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
+                result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -1089,7 +1135,15 @@ class QubitDevice(Device):
 
             # 2. Post-process statistics results (if need be)
             if isinstance(
-                m, (_Expectation, _Variance, _Probability, _VnEntropy, _MutualInfo, _ShadowExpval)
+                m,
+                (
+                    ExpectationMP,
+                    VarianceMP,
+                    ProbabilityMP,
+                    VnEntropyMP,
+                    MutualInfoMP,
+                    ShadowExpvalMP,
+                ),
             ):
                 # Result is a float
                 result = self._asarray(result, dtype=self.R_DTYPE)
@@ -1364,10 +1418,10 @@ class QubitDevice(Device):
         tapes containing randomized Pauli observables. Devices should override this
         if they can offer cleaner or faster implementations.
 
-        .. seealso:: :func:`~.classical_shadow`
+        .. seealso:: :func:`~pennylane.classical_shadow`
 
         Args:
-            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow measurement process
+            obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
         Returns:
@@ -1417,7 +1471,7 @@ class QubitDevice(Device):
         Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
 
         Args:
-            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow expectation
+            obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow expectation
                 value measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
@@ -1775,11 +1829,11 @@ class QubitDevice(Device):
 
         outcomes = []
 
-        if isinstance(obs, MeasurementProcess):
+        if isinstance(obs, CountsMP):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
 
-            if obs.return_type is AllCounts:
+            if obs.all_outcomes:
                 outcomes = self.generate_basis_states(num_wires)
                 outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
         elif obs.return_type is AllCounts:
@@ -1877,7 +1931,7 @@ class QubitDevice(Device):
         )
 
     def adjoint_jacobian(
-        self, tape: QuantumScript, starting_state=None, use_device_state=False
+        self, tape: QuantumTape, starting_state=None, use_device_state=False
     ):  # pylint: disable=too-many-statements
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
@@ -1897,7 +1951,7 @@ class QubitDevice(Device):
               :class:`~.Hamiltonian` or :class:`~.Hermitian`.
 
         Args:
-            tape (.QuantumScript): circuit that the function takes the gradient of
+            tape (.QuantumTape): circuit that the function takes the gradient of
 
         Keyword Args:
             starting_state (tensor_like): post-forward pass state to start execution with. It should be
@@ -1920,7 +1974,7 @@ class QubitDevice(Device):
         dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
-            if not isinstance(m, _Expectation):
+            if not isinstance(m, ExpectationMP):
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support"
                     f" measurement {m.__class__.__name__}"

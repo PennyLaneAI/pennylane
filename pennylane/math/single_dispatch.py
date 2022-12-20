@@ -414,7 +414,9 @@ ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
 
 def _to_numpy_torch(x):
-    if getattr(x, "is_conj", False) and x.is_conj():
+    if getattr(x, "is_conj", False) and x.is_conj():  # pragma: no cover
+
+        # The following line is only covered if using Torch <v1.10.0
         x = x.resolve_conj()
 
     return x.detach().cpu().numpy()
@@ -505,7 +507,9 @@ def _coerce_types_torch(tensors):
 
     # Extract existing set devices, if any
     device_set = set(t.device for t in tensors if isinstance(t, torch.Tensor))
-    if len(device_set) > 1:
+    if len(device_set) > 1:  # pragma: no cover
+
+        # GPU specific case
         device_names = ", ".join(str(d) for d in device_set)
         raise RuntimeError(
             f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
