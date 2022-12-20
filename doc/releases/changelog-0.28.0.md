@@ -22,9 +22,9 @@
 
   Within `qml.measurements` are new subclasses that allow for the possibility to create *custom* measurements:
 
-  - `SampleMeasurement`: represents a sample-based measurement
-  - `StateMeasurement`: represents a state-based measurement
-  - `MeasurementTransform`: represents a measurement process that requires the application of a batch transform
+  * `SampleMeasurement`: represents a sample-based measurement
+  * `StateMeasurement`: represents a state-based measurement
+  * `MeasurementTransform`: represents a measurement process that requires the application of a batch transform
 
   Creating a custom measurement involves making a class that inherits from one of the classes above. An example is given below. Here, the measurement computes the number of samples obtained of a given state:
   
@@ -79,7 +79,7 @@
 
   ZX diagrams are the medium for which we can envision a quantum circuit as a graph in the ZX-calculus language, showing properties of quantum protocols in a visually compact and logically complete fashion.
 
-  QNodes decorated with `@qml.transforms.to_zx` will return a PyZX graph that represents the computation in the ZX-calculus language. 
+  QNodes decorated with `@qml.transforms.to_zx` will return a PyZX graph that represents the computation in the ZX-calculus language.
 
   ```python
   dev = qml.device("default.qubit", wires=2)
@@ -98,6 +98,7 @@
       qml.SWAP(wires=[0, 1]),
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
   ```
+
   ```pycon
   >>> params = [5 / 4 * np.pi, 3 / 4 * np.pi, 0.1, 0.3]
   >>> circuit(params)
@@ -217,6 +218,7 @@
       qml.ops.op_math.Evolution(qml.PauliX(0), -.5 * phi)
       return qml.expval(qml.PauliZ(0))
   ```
+
   ```pycon
   >>> phi = np.array(1.2)
   >>> circuit(phi)
@@ -245,7 +247,7 @@
 
   The purity can be calculated in an analogous fashion to, say, the Von Neumann entropy:
 
-  - `qml.math.purity` can be used as an in-line function:
+  * `qml.math.purity` can be used as an in-line function:
 
     ```pycon
     >>> x = [1, 0, 0, 1] / np.sqrt(2)
@@ -259,7 +261,7 @@
     0.5
     ```
 
-  - `qml.qinfo.transforms.purity` can transform a QNode returning a state to a 
+  * `qml.qinfo.transforms.purity` can transform a QNode returning a state to a
     function that returns the purity:
 
     ```python3
@@ -322,7 +324,8 @@
       qml.cond(combined == 2, qml.RX)(1.3, wires=2)
       return qml.probs(wires=2)
   ```
-  ```pycon 
+
+  ```pycon
   >>> circuit()
   [0.90843735 0.09156265]  
   ```
@@ -332,19 +335,6 @@
 
 * `Operation` or `Hamiltonian` instances can now be generated from a `qml.PauliSentence` or `qml.PauliWord` via the new `operation()` and `hamiltonian()` methods.
   [(#3391)](https://github.com/PennyLaneAI/pennylane/pull/3391)
-
-  ```pycon
-  >>> pw = qml.pauli.PauliWord({0: 'X', 1: 'Y'})
-  >>> print(pw.operation())
-  PauliX(wires=[0]) @ PauliY(wires=[1])
-  >>> print(pw.hamiltonian())
-    (1) [X0 Y1]
-  >>> ps = qml.pauli.PauliSentence({pw: -1.23})
-  >>> print(ps.operation())
-  -1.23*(PauliX(wires=[0]) @ PauliY(wires=[1]))
-  >>> print(ps.hamiltonian())
-    (-1.23) [X0 Y1]
-  ```
 
 * A `sum_expand` function has been added for tapes, which splits a tape measuring a `Sum` expectation into mutliple tapes of summand expectations, and provides a function to recombine the results.
   [(#3230)](https://github.com/PennyLaneAI/pennylane/pull/3230)
@@ -455,8 +445,8 @@
   wires. Calling any of the aforementioned measurements with an empty wire list (e.g., `qml.sample(wires=[])`) will raise an error.
   [(#3299)](https://github.com/PennyLaneAI/pennylane/pull/3299)
 
-* Made `qml.gradients.finite_diff` more convenient to use with custom data type observables/devices by reducing the 
-  number of magic methods that need to be defined in the custom data type to support `finite_diff`. 
+* Made `qml.gradients.finite_diff` more convenient to use with custom data type observables/devices by reducing the
+  number of magic methods that need to be defined in the custom data type to support `finite_diff`.
   [(#3426)](https://github.com/PennyLaneAI/pennylane/pull/3426)
 
 * The `qml.ISWAP` gate is now natively supported on `default.mixed`, improving on its efficiency.
@@ -553,6 +543,9 @@
 * Updated `qml.transforms.cut_circuit` and `qml.transforms.cut_circuit_mc` to support the new return types.
   [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
 
+* Limit NumPy version to `<1.24`.
+  [(#3346)](https://github.com/PennyLaneAI/pennylane/pull/3346)
+
 <h3>Breaking changes 💔</h3>
 
 * Python 3.7 support is no longer maintained. PennyLane will be maintained for versions 3.8 and up.
@@ -576,7 +569,7 @@
 * The `qml.Operation.get_parameter_shift` method has been removed. The `gradients` module should be used for general parameter-shift rules instead.
   [(#3419)](https://github.com/PennyLaneAI/pennylane/pull/3419)
 
-* The signature of the `QubitDevice.statistics` method has been changed from 
+* The signature of the `QubitDevice.statistics` method has been changed from
 
   ```python
   def statistics(self, observables, shot_range=None, bin_size=None, circuit=None):
@@ -602,7 +595,7 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
   * `qml.tape.get_active_tape`: Use `qml.QueuingManager.active_context()` instead
   * `qml.transforms.qcut.remap_tape_wires`: Use `qml.map_wires` instead
   * `qml.tape.QuantumTape.inv()`: Use `qml.tape.QuantumTape.adjoint()` instead
-  * `qml.tape.stop_recording()`: Use `qml.QueuingManager.stop_recording()` instead 
+  * `qml.tape.stop_recording()`: Use `qml.QueuingManager.stop_recording()` instead
   * `qml.tape.QuantumTape.stop_recording()`: Use `qml.QueuingManager.stop_recording()` instead
   * `qml.QueuingContext` is now `qml.QueuingManager`
   * `QueuingManager.safe_update_info` and `AnnotatedQueue.safe_update_info`: Use `update_info` instead.
@@ -632,12 +625,12 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 * Developer documentation for the queuing module has been added.
   [(#3268)](https://github.com/PennyLaneAI/pennylane/pull/3268)
 
-* More mentions of diagonalizing gates for all relevant operations have been corrected. 
+* More mentions of diagonalizing gates for all relevant operations have been corrected.
   [(#3409)](https://github.com/PennyLaneAI/pennylane/pull/3409)
 
   The docstrings for `compute_eigvals` used to say that the diagonalizing gates implemented $U$, the unitary such that $O = U \Sigma U^{\dagger}$, where $O$ is the original observable and $\Sigma$ a diagonal matrix. However, the diagonalizing gates actually implement $U^{\dagger}$, since $\langle \psi | O | \psi \rangle = \langle \psi | U \Sigma U^{\dagger} | \psi \rangle$, making $U^{\dagger} | \psi \rangle$ the actual state being measured in the $Z$-basis.
 
-* A warning about using ``dill`` to pickle and unpickle datasets has been added. 
+* A warning about using ``dill`` to pickle and unpickle datasets has been added.
   [(#3505)](https://github.com/PennyLaneAI/pennylane/pull/3505)
 
 <h3>Bug fixes 🐛</h3>
@@ -679,33 +672,33 @@ Deprecations cycles are tracked at [doc/developement/deprecations.rst](https://d
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso, 
-Juan Miguel Arrazola, 
-Utkarsh Azad, 
-Samuel Banning, 
-Thomas Bromley, 
-Astral Cai, 
-Albert Mitjans Coma, 
+Guillermo Alonso,
+Juan Miguel Arrazola,
+Utkarsh Azad,
+Samuel Banning,
+Thomas Bromley,
+Astral Cai,
+Albert Mitjans Coma,
 Ahmed Darwish,
-Isaac De Vlugt, 
-Olivia Di Matteo, 
-Amintor Dusko, 
-Pieter Eendebak, 
-Lillian M. A. Frederiksen, 
-Diego Guala, 
-Katharine Hyatt, 
-Josh Izaac, 
-Soran Jahangiri, 
-Edward Jiang, 
-Korbinian Kottmann, 
-Christina Lee, 
-Romain Moyard, 
-Lee James O'Riordan, 
-Mudit Pandey, 
+Isaac De Vlugt,
+Olivia Di Matteo,
+Amintor Dusko,
+Pieter Eendebak,
+Lillian M. A. Frederiksen,
+Diego Guala,
+Katharine Hyatt,
+Josh Izaac,
+Soran Jahangiri,
+Edward Jiang,
+Korbinian Kottmann,
+Christina Lee,
+Romain Moyard,
+Lee James O'Riordan,
+Mudit Pandey,
 Kevin Shen,
-Matthew Silverman, 
-Jay Soni, 
-Antal Száva, 
+Matthew Silverman,
+Jay Soni,
+Antal Száva,
 David Wierichs,
-Moritz Willmann, and 
+Moritz Willmann, and
 Filippo Vicentini.
