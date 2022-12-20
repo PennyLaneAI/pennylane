@@ -3,10 +3,6 @@ import pytest
 import numpy as np
 import pennylane as qml
 
-from jax.config import config
-
-config.update("jax_enable_x64", True)
-
 
 def expected_purity_ising_xx(param):
     """Returns the analytical purity for subsystems of the IsingXX"""
