@@ -40,6 +40,35 @@
      DeviceArray(0.41614684, dtype=float64, weak_type=True))))
   ```
 
+* The qchem workflow is modified to support both Autograd and JAX frameworks. 
+  [(#3458)](https://github.com/PennyLaneAI/pennylane/pull/3458)
+  [(#3462)](https://github.com/PennyLaneAI/pennylane/pull/3462)
+  [(#3495)](https://github.com/PennyLaneAI/pennylane/pull/3495)
+
+  The JAX interface is automatically used when the differentiable parameters are JAX objects. Here
+  is an example for computing the Hartree Fock energy gradients with respect to the atomic
+  coordinates.
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+  import jax
+  from jax import numpy as jnp
+  
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True)
+
+  mol = qchem.Molecule(symbols, geometry)
+
+  args = [jax.numpy.array(mol.coordinates)]
+
+  jax.grad(qchem.hf_energy(mol))(*args)
+  ```
+
+  ```pycon
+  >>> array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]])
+  ```
+
 <h3>Improvements</h3>
 
 * The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
@@ -70,7 +99,10 @@
 This release contains contributions from (in alphabetical order):
 
 Ikko Ashimine
+Utkarsh Azad
 Lillian M. A. Frederiksen
+Soran Jahangiri
 Albert Mitjans Coma
+Romain Moyard
 Matthew Silverman
 Antal Száva
