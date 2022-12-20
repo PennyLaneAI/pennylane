@@ -17,14 +17,13 @@ This module contains the qml.equal function.
 # pylint: disable=too-many-arguments,too-many-return-statements
 from functools import singledispatch
 from typing import Union
-
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd
+from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
 
 
 def equal(
@@ -54,7 +53,8 @@ def equal(
         comparing ``Operation`` objects. Comparisons of ``MeasurementProcess``
         or ``Observable`` objects will use the default value of ``True`` for both, regardless
         of what the user specifies when calling the function. For subclasses of ``SymbolicOp``
-        with an ``Operation`` as a base, the kwargs will be applied to the base comparison.
+        or ``CompositeOp`` with an ``Operation`` as a base, the kwargs will be applied to the base
+        comparison.
 
     Args:
         op1 (.Operator or .MeasurementProcess): First object to compare
@@ -104,9 +104,10 @@ def equal(
         :title: Usage Details
 
         You can use the optional arguments to get more specific results. Additionally, they are
-        applied when comparing the base of ``SymbolicOp`` operators such as ``Controlled``, ``Pow``,
-        ``SProd``, etc., if the base is an ``Operation``. These arguments are, however, not used
-        for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        applied when comparing the base of ``SymbolicOp`` and ``CompositeOp`` operators such as
+        ``Controlled``, ``Pow``, ``SProd``, ``Prod``, etc., if the base is an ``Operation``. These arguments
+        are, however, not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor``
+        objects.
 
         Consider the following comparisons:
 
@@ -206,6 +207,21 @@ def _equal_operators(
                 return False
 
     return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
+
+
+@_equal.register
+# pylint: disable=unused-argument, protected-access
+def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
+    """Determine whether two Prod or Sum objects are equal"""
+
+    if len(op1.operands) != len(op2.operands):
+        return False
+
+    # organizes by wire indicies while respecting commutation relations
+    sorted_ops1 = op1._sort(op1.operands)
+    sorted_ops2 = op2._sort(op2.operands)
+
+    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(sorted_ops1, sorted_ops2))
 
 
 @_equal.register
