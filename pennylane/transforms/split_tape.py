@@ -327,6 +327,9 @@ class _MGroup:
     >>> m_group.get_measurements(group=True)
     [[expval(PauliX(wires=[0])), expval(PauliY(wires=[1]))],
     [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]]
+
+    The original tape contains a total of 10 measurements. These have been reduced to 4 measurements
+    distributed in two different tapes.
     """
 
     @dataclass
