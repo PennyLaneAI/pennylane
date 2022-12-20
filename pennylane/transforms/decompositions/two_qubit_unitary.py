@@ -187,10 +187,7 @@ def _su2su2_to_tensor_products(U):
     # We use B1 unless division by 0 would cause all elements to be inf.
     use_B2 = math.allclose(A[0, 0], 0.0, atol=1e-6)
     if not math.is_abstract(A):
-        if not use_B2:
-            B = C1 / math.cast_like(A[0, 0], 1j)
-        else:
-            B = C2 / math.cast_like(A[0, 1], 1j)
+        B = C2 / math.cast_like(A[0, 1], 1j) if use_B2 else C1 / math.cast_like(A[0, 0], 1j)
     else:
         B = jax.lax.cond(
             use_B2,
