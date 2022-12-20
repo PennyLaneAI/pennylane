@@ -15,7 +15,6 @@
 This module contains the functions needed for performing basis transformation defined by a set of fermionic ladder operators.
 """
 
-import pennylane as qml
 from pennylane import numpy as np
 
 
@@ -41,7 +40,7 @@ def givens_matrix(a, b, left=True, tol=1e-8):
 
 
 def givens_rotate(unitary, grot_mat, indices, row=True):
-    """Apply a Givens roation on the unitary on the given indices."""
+    """Apply in-place Givens roation on the unitary on the given indices."""
 
     if len(indices) != 2:
         raise ValueError(f"Indices must have length 2, got {len(indices)}")
