@@ -50,26 +50,37 @@ def test_givens_matrix(a, b, left):
     assert np.all(res1 == res2) and np.all(res1 == np.eye(2))
 
 
+@pytest.mark.parametrize("left", [True, False])
 @pytest.mark.parametrize("row", [True, False])
 @pytest.mark.parametrize("indices", [[0, 1], [2, 3], [1, 4], [0, 3]])
 @pytest.mark.parametrize("shape", [(5, 5), (6, 6)])
-def test_givens_rotate(shape, indices, row):
+def test_givens_rotate(shape, indices, row, left):
     r"""Test that Givens rotation is performed correctly."""
     matrix = np.random.rand(*shape) * 1j + np.random.rand(*shape)
     unitary, (i, j) = matrix.copy(), indices
     if row:
         a, b = matrix[indices, j - 1]
-        grot_mat = givens_matrix(a, b)
+        grot_mat = givens_matrix(a, b, left)
         givens_rotate(unitary, grot_mat, indices, row)
         res = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
-        assert np.isclose(unitary[indices[0], j - 1], 0.0) and np.isclose(
-            unitary[indices[1], j - 1], res
-        )
+        if left:
+            assert np.isclose(unitary[indices[0], j - 1], 0.0) and np.isclose(
+                unitary[indices[1], j - 1], res
+            )
+        else:
+            assert np.isclose(unitary[indices[0], j - 1], res) and np.isclose(
+                unitary[indices[1], j - 1], 0.0
+            )
     else:
         a, b = matrix[j - 1, indices].T
-        grot_mat = givens_matrix(a, b)
+        grot_mat = givens_matrix(a, b, left)
         givens_rotate(unitary, grot_mat, indices, row)
         res = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
-        assert np.isclose(unitary[j - 1, indices[0]], 0.0) and np.isclose(
-            unitary[j - 1, indices[1]], res
-        )
+        if left:
+            assert np.isclose(unitary[j - 1, indices[0]], 0.0) and np.isclose(
+                unitary[j - 1, indices[1]], res
+            )
+        else:
+            assert np.isclose(unitary[j - 1, indices[0]], res) and np.isclose(
+                unitary[j - 1, indices[1]], 0.0
+            )
