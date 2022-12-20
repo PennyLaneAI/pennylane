@@ -53,19 +53,18 @@
   import pennylane as qml
   from pennylane import numpy as np
   import jax
-  from jax import numpy as jnp
   
   symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True)
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
   mol = qchem.Molecule(symbols, geometry)
 
   args = [jax.numpy.array(mol.coordinates)]
 
-  jax.grad(qchem.hf_energy(mol))(*args)
   ```
 
   ```pycon
+  >>> jax.grad(qchem.hf_energy(mol))(*args)
   >>> array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]])
   ```
 
