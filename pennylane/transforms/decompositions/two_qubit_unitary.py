@@ -15,7 +15,6 @@
 unitary operations into elementary gates.
 """
 import numpy as np
-import jax
 
 import pennylane as qml
 from pennylane import math
@@ -188,12 +187,12 @@ def _su2su2_to_tensor_products(U):
     use_B2 = math.allclose(A[0, 0], 0.0, atol=1e-6)
     if not math.is_abstract(A):
         B = C2 / math.cast_like(A[0, 1], 1j) if use_B2 else C1 / math.cast_like(A[0, 0], 1j)
-    else:
-        B = jax.lax.cond(
+    elif qml.math.get_interface(A) == "jax":
+        B = qml.math.cond(
             use_B2,
             lambda x: C2 / math.cast_like(A[0, 1], 1j),
             lambda x: C1 / math.cast_like(A[0, 0], 1j),
-            0,  # arbitrary value for x
+            [0],  # arbitrary value for x
         )
 
     return math.convert_like(A, U), math.convert_like(B, U)
