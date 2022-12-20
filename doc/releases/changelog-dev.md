@@ -46,7 +46,7 @@
   [(#3495)](https://github.com/PennyLaneAI/pennylane/pull/3495)
 
   The JAX interface is automatically used when the differentiable parameters are JAX objects. Here
-  is an example for computing the Hartree Fock energy gradients with respect to the atomic
+  is an example for computing the Hartree-Fock energy gradients with respect to the atomic
   coordinates.
 
   ```python
@@ -57,7 +57,7 @@
   symbols = ["H", "H"]
   geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
-  mol = qchem.Molecule(symbols, geometry)
+  mol = qml.qchem.Molecule(symbols, geometry)
 
   args = [jax.numpy.array(mol.coordinates)]
 
