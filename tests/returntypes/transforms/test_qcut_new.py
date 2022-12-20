@@ -3302,6 +3302,7 @@ class TestContractTensors:
         """Test if the basic contraction is differentiable using the tf interface"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
+
         import tensorflow as tf
 
         params = tf.Variable(self.params)
@@ -3744,6 +3745,7 @@ class TestQCutProcessingFn:
         using a simple example"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
+
         import tensorflow as tf
 
         x = tf.Variable(0.9, dtype=tf.float64)
@@ -4011,6 +4013,9 @@ class TestCutCircuitTransform:
     def test_with_mid_circuit_measurement(self, mocker, use_opt_einsum):
         """Tests the full circuit cutting pipeline returns the correct value and gradient for a
         circuit that contains mid-circuit measurements, using the `cut_circuit` transform."""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
@@ -4248,6 +4253,8 @@ class TestCutCircuitTransform:
     def test_device_wires(self, use_opt_einsum):
         """Tests that a 3-qubit circuit is cut into two 2-qubit fragments such that both fragments
         can be run on a 2-qubit device"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
 
         def circuit():
             qml.RX(0.4, wires=0)
@@ -4282,6 +4289,9 @@ class TestCutCircuitTransform:
     def test_circuit_with_disconnected_components(self, use_opt_einsum, mocker):
         """Tests if a circuit that is fragmented into subcircuits such that some of the subcircuits
         are disconnected from the final terminal measurements is executed correctly"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev = qml.device("default.qubit", wires=3)
 
         @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
@@ -4301,6 +4311,9 @@ class TestCutCircuitTransform:
     def test_circuit_with_trivial_wire_cut(self, use_opt_einsum, mocker):
         """Tests that a circuit with a trivial wire cut (not separating the circuit into
         fragments) is executed correctly"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
@@ -4338,6 +4351,9 @@ class TestCutCircuitTransform:
         ╰C──────────────│─────────┤ ╰<Z@Z@Z>
         ────────────────╰C────────┤
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev_original = qml.device("default.qubit", wires=5)
 
         # We need a 4-qubit device to account for mid-circuit measurements
@@ -4403,6 +4419,9 @@ class TestCutCircuitTransform:
         2: ─╭U(M0)─────╰U(M2)─╭U(M3)────────┤ │
         3: ─╰U(M0)────────────╰U(M3)────────┤ ╰<Z@X>
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev_original = qml.device("default.qubit", wires=4)
 
         # We need a 3-qubit device
