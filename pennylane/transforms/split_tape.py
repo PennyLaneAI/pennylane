@@ -18,7 +18,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 # pylint: disable=protected-access
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess
@@ -377,36 +377,25 @@ class _MGroup:
                 for indices in obs.grouping_indices:
                     m_group = tuple(qml.expval(obs.ops[i]) for i in indices)
                     c_group = tuple(qml.math.stack([obs.data[i] for i in indices]))
-                    self._add_group_to_queue(m_group, idx, qml.math.dot(coeff, c_group))
+                    for m, c in zip(m_group, c_group):
+                        self._add_to_queue(m, idx, coeff * c, group=self._num_groups)
+                    self._num_groups += 1
 
         elif isinstance(obs, SProd) and isinstance(measurement, ExpectationMP):
             self._add(qml.expval(obs.base), idx, coeff * obs.scalar)
         else:
             self._add_to_queue(measurement, idx, coeff)
 
-    def _add_to_queue(self, measurement: MeasurementProcess, idx: int, coeff: float):
+    def _add_to_queue(self, measurement: MeasurementProcess, idx: int, coeff: float, group=None):
         m_hash = measurement.hash
         if m_hash not in self.queue:
-            self.queue[m_hash] = self.MData(measurement, {idx: coeff})
+            self.queue[m_hash] = self.MData(measurement, {idx: coeff}, group=group)
         else:
             mdata = self.queue[m_hash]
             mdata.data[idx] = mdata.data[idx] + coeff if idx in mdata.data else coeff
-
-    def _add_group_to_queue(
-        self, m_group: Tuple[MeasurementProcess], idx: int, c_group: Tuple[float]
-    ):
-        for m, c in zip(m_group, c_group):
-            m_hash = m.hash
-            if m_hash in self.queue:
-                mdata = self.queue[m_hash]  # remove measurement from the queue
-                # update the coefficient
-                mdata.data[idx] = mdata.data[idx] + c if idx in mdata.data else c
-                if mdata.group is None:
-                    # update group information if the measurement didn't belong to any group
-                    mdata.group = self._num_groups
-            else:
-                self.queue[m_hash] = self.MData(m, {idx: c}, group=self._num_groups)
-        self._num_groups += 1
+            if mdata.group is None:
+                # update group information if the measurement didn't belong to any group
+                mdata.group = group
 
     def get_measurements(self, group=False) -> List[List["_MGroup.MData"]]:
         """Returns a list of lists containing groups of qubit-wise commuting pauli-based
