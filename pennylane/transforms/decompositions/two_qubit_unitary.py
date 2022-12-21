@@ -15,6 +15,7 @@
 unitary operations into elementary gates.
 """
 import numpy as np
+import jax  # TODO: remove
 
 import pennylane as qml
 from pennylane import math
@@ -140,6 +141,56 @@ def _compute_num_cnots(U):
     # For the case with 3 CNOTs, the trace is a non-zero complex number
     # with both real and imaginary parts.
     return 3
+
+
+def _compute_num_cnots_jit(U):
+    r"""Compute the number of CNOTs required to implement a U in SU(4). This is based on
+    the trace of
+
+    .. math::
+
+        \gamma(U) = (E^\dag U E) (E^\dag U E)^T,
+
+    and follows the arguments of this paper: https://arxiv.org/abs/quant-ph/0308045.
+    """
+    u = math.dot(Edag, math.dot(U, E))
+    gammaU = math.dot(u, math.T(u))
+    trace = math.trace(gammaU)
+
+    # Case: 0 CNOTs (tensor product), the trace is +/- 4
+    # at most one of these conditions is true, so this will only return 1 or 0
+    no_cnots = (
+        math.allclose(trace, 4, atol=1e-7) + math.allclose(trace, -4, atol=1e-7) + 0
+    )  # adding 0 promotes to integer without casting (jit doesn't like casting), but maybe isn't neded_
+
+    # To distinguish between 1/2 CNOT cases, we need to look at the eigenvalues
+    evs = math.linalg.eigvals(gammaU)
+    sorted_evs = math.sort(math.imag(evs))
+
+    # Case: 1 CNOT, the trace is 0, AND the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
+    # Checking the eigenvalues is needed because of some special 2-CNOT cases that yield a trace 0.
+
+    two_conditions = [
+        math.allclose(trace, 0j, atol=1e-6),
+        math.allclose(sorted_evs, jax.numpy.array([-1, -1, 1, 1])),
+    ]  # should return 1 if BOTH these conditions are true, 0 otherwise
+    one_cnot = math.allclose(jax.numpy.array(two_conditions), jax.numpy.array([1, 1])) + 0
+
+    # Case: 2 CNOTs, the trace has only a real part (or is 0)
+    trace_is_real = math.allclose(math.imag(trace), 0.0, atol=1e-7) + 0
+    two_cnots = (
+        math.allclose(
+            jax.numpy.array([trace_is_real, one_cnot, no_cnots]), jax.numpy.array([1, 0, 0])
+        )
+        + 0
+    )
+
+    # # Otherwise 3 CNOTs
+    return (no_cnots + one_cnot * 2 + two_cnots * 3 + 7) % 4
+    # # 0, 0, 0, 7 --> mod 4 gives 3  : if 0, 1 and 2 CNOT are all wrong, decompose into 3 CNOTs
+    # # 1, 0, 0, 7 --> mod 4 gives 0
+    # # 0, 2, 0, 7 --> mod 4 gives 1
+    # # 0, 0, 3, 7 --> mod 4 gives 2
 
 
 def _su2su2_to_tensor_products(U):
@@ -419,6 +470,86 @@ def _decomposition_2_cnots(U, wires):
     return C_ops + D_ops + interior_decomp + A_ops + B_ops
 
 
+def _decomposition_2_cnots_jit(U, wires):
+    r"""If 2 CNOTs are required, we can write the circuit as
+     -╭U- = -A--╭X--RZ(d)--╭X--C-
+     -╰U- = -B--╰C--RX(p)--╰C--D-
+    We need to find the angles for the Z and X rotations such that the inner
+    part has the same spectrum as U, and then we can recover A, B, C, D.
+    """
+    # Compute the rotation angles
+    u = math.dot(Edag, math.dot(U, E))
+    gammaU = math.dot(u, math.T(u))
+    evs, _ = math.linalg.eig(gammaU)
+
+    # These choices are based on Proposition III.3 of
+    # https://arxiv.org/abs/quant-ph/0308045
+    # There is, however, a special case where the circuit has the form
+    # -╭U- = -A--╭C--╭X--C-
+    # -╰U- = -B--╰X--╰C--D-
+    #
+    # or some variant of this, where the two CNOTs are adjacent.
+    #
+    # What happens here is that the set of evs is -1, -1, 1, 1 and we can write
+    # -╭U- = -A--╭X--SZ--╭X--C-
+    # -╰U- = -B--╰C--SX--╰C--D-
+    # where SZ and SX are square roots of Z and X respectively. (This
+    # decomposition comes from using Hadamards to flip the direction of the
+    # first CNOT, and then decomposing them and merging single-qubit gates.) For
+    # some reason this case is not handled properly with the full algorithm, so
+    # we treat it separately.
+
+    # TODO: add the special decomp
+    # sorted_evs = math.sort(math.real(evs))
+
+    # interior_decomp = [
+    #     qml.CNOT(wires=[wires[1], wires[0]]),
+    #     qml.S(wires=wires[0]),
+    #     qml.SX(wires=wires[1]),
+    #     qml.CNOT(wires=[wires[1], wires[0]]),
+    # ]
+    #
+    # # S \otimes SX
+    # inner_matrix = S_SX
+
+    # For the non-special case, the eigenvalues come in conjugate pairs.
+    # We need to find two non-conjugate eigenvalues to extract the angles.
+    x = math.angle(evs[0])
+
+    # If option 1 is the conjugate, grab a different eigenvalue.
+    y_options = jax.numpy.array([math.angle(evs[1]), math.angle(evs[2])])
+    idx = math.allclose(x, -y_options[0]) + 0
+    y = y_options[idx]
+
+    delta = (x + y) / 2
+    phi = (x - y) / 2
+
+    interior_decomp = [
+        qml.CNOT(wires=[wires[1], wires[0]]),
+        qml.RZ(delta, wires=wires[0]),
+        qml.RX(phi, wires=wires[1]),
+        qml.CNOT(wires=[wires[1], wires[0]]),
+    ]
+
+    RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).matrix()
+    RXp = qml.RX(phi, wires=0).matrix()
+    inner_matrix = math.kron(RZd, RXp)
+
+    # We need the matrix representation of this interior part, V, in order to
+    # decompose U = (A \otimes B) V (C \otimes D)
+    V = math.dot(math.cast_like(CNOT10, U), math.dot(inner_matrix, math.cast_like(CNOT10, U)))
+
+    # Now we find the A, B, C, D in SU(2), and return the decomposition
+    A, B, C, D = _extract_su2su2_prefactors(U, V)
+
+    A_ops = zyz_decomposition(A, wires[0])
+    B_ops = zyz_decomposition(B, wires[1])
+    C_ops = zyz_decomposition(C, wires[0])
+    D_ops = zyz_decomposition(D, wires[1])
+
+    return C_ops + D_ops + interior_decomp + A_ops + B_ops
+
+
 def _decomposition_3_cnots(U, wires):
     r"""The most general form of this decomposition is U = (A \otimes B) V (C \otimes D),
     where V is as depicted in the circuit below:
@@ -610,17 +741,32 @@ def two_qubit_decomposition(U, wires):
     if not qml.math.is_abstract(U):
         num_cnots = _compute_num_cnots(U)
 
-    with qml.QueuingManager.stop_recording():
-        if qml.math.is_abstract(U):
-            decomp = _decomposition_3_cnots(U, wires)
-        elif num_cnots == 0:
-            decomp = _decomposition_0_cnots(U, wires)
-        elif num_cnots == 1:
-            decomp = _decomposition_1_cnot(U, wires)
-        elif num_cnots == 2:
-            decomp = _decomposition_2_cnots(U, wires)
-        else:
-            decomp = _decomposition_3_cnots(U, wires)
+        with qml.QueuingManager.stop_recording():
+            if num_cnots == 0:
+                decomp = _decomposition_0_cnots(U, wires)
+            elif num_cnots == 1:
+                decomp = _decomposition_1_cnot(U, wires)
+            elif num_cnots == 2:
+                decomp = _decomposition_2_cnots(U, wires)
+            else:
+                decomp = _decomposition_3_cnots(U, wires)
+    elif qml.math.get_interface(U) == "jax":
+        # TODO: Summary of the problem: idx is abstract, decomps is a list of PL operators, which aren't
+        #  JAX objects and can't be made abstract. How then can we proceed - we can't combine idx and decomps
+        #  in any way, because to do so would require making decomps abstract. Alternatively, we can use
+        #  pure_callback, which I think would make idx concrete. Can the operators be matrices when jitting?"""
+        idx = _compute_num_cnots_jit(U)
+        decomps = [
+            _decomposition_0_cnots(U, wires),
+            _decomposition_1_cnot(U, wires),
+            _decomposition_2_cnots_jit(U, wires),
+            _decomposition_3_cnots(U, wires),
+        ]
+        # import jax
+        # decomps = jax.numpy.array([[qml.matrix(op) for op in decomp] for decomp in decomps])
+        print(qml.math.is_abstract(idx))
+        print(qml.math.is_abstract(decomps))
+        # decomp = decomps[idx]
 
     # If there is an active tape, queue the decomposition so that expand works
     current_tape = qml.queuing.QueuingManager.active_context()
