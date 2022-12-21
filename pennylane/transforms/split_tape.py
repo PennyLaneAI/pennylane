@@ -197,15 +197,13 @@ def _pauli_z(wires: Wires):
     return Tensor(*[qml.PauliZ(w) for w in wires])
 
 
-def _compute_result(result, data: dict):
-    results = []
+def _compute_result_and_add_to_dict(res, data: dict, results: dict):
     for idx, coeff in data.items():
-        if coeff is not None:
-            tmp_res = qml.math.convert_like(qml.math.dot(coeff, result), result)
-            results.append((idx, tmp_res))
+        r = qml.math.convert_like(qml.math.dot(coeff, res), res) if coeff is not None else res
+        if idx in results:
+            results[idx] += r
         else:
-            results.append((idx, result))
-    return results
+            results[idx] = r
 
 
 # pylint: disable=too-few-public-methods
@@ -430,11 +428,15 @@ class _MGroup:
         pauli_m: List[_MGroup.MData] = []
         non_pauli_m: List[_MGroup.MData] = []
         for mdata in self.queue.values():
+            is_pauli = is_pauli_word(mdata.m.obs) or (mdata.m.obs is None and mdata.m.wires)
+            is_shadow = isinstance(mdata.m, (ShadowExpvalMP, ClassicalShadowMP))
             if mdata.group is not None:
                 hamiltonian_m[mdata.group].append(mdata)
-            elif is_pauli_word(mdata.m.obs) or (mdata.m.obs is None and mdata.m.wires):
+            elif not is_shadow and is_pauli:
                 # When m.obs is None the measurement acts on the basis states, and thus we can
                 # assume that the observable is ``qml.PauliZ`` for all measurement wires.
+                # Shadow measurements are not treated as pauli measurements because they cannot
+                # be executed with other measurements.
                 pauli_m.append(mdata)
             else:
                 non_pauli_m.append(mdata)
@@ -457,6 +459,9 @@ class _MGroup:
             if len(mdata.m.wires) == 0 or isinstance(mdata.m, (ClassicalShadowMP, ShadowExpvalMP)):
                 # If the measurement doesn't have wires, we assume it acts on all wires and that
                 # it won't commute with any other measurement
+                # Shadow measurements cannot be executed with other measurements because the
+                # `classical_shadow` implementation of the `DefaultQubit` class resets the state
+                # of the device.
                 qwc_groups.append(([], [mdata]))
             else:
                 op_added = False
@@ -483,36 +488,29 @@ class _MGroup:
         Returns:
             Sequence[float]: post-processed results
         """
-        results = []  # [(m_idx, result)]
+        results = {}  # {m_idx, result}
         for tape_res, m_group in zip(expanded_results, self.mdata_groups):
             if len(m_group) == 1:
                 # tape_res contains only one result
                 if not qml.active_return() and len(tape_res) == 1:
                     # old return types return a list when returning one result
                     tape_res = tape_res[0]
-                results.extend(_compute_result(tape_res, m_group[0].data))
+                _compute_result_and_add_to_dict(tape_res, m_group[0].data, results)
             elif self.tape.batch_size is not None and self.tape.batch_size > 1:
                 # when batching is used, the first dimension of tape_res corresponds to the
                 # batching dimension
                 for i, mdata in enumerate(m_group):
-                    results.extend(_compute_result([r[i] for r in tape_res], mdata.data))
+                    _compute_result_and_add_to_dict([r[i] for r in tape_res], mdata.data, results)
+
             else:
                 for res, mdata in zip(tape_res, m_group):
-                    results.extend(_compute_result(res, mdata.data))
-
-        # sum results by idx
-        res_dict = {}
-        for idx, res in results:
-            if idx in res_dict:
-                res_dict[idx] += res
-            else:
-                res_dict[idx] = res
+                    _compute_result_and_add_to_dict(res, mdata.data, results)
 
         # sort results by idx
-        results = tuple(res_dict[key] for key in sorted(res_dict))
+        results = tuple(results[key] for key in sorted(results))
 
-        if qml.math.requires_grad(expanded_results[0]):
+        if not qml.active_return() and qml.math.requires_grad(expanded_results[0]):
             # when computing gradients, we need to convert the tuple to a gradient box
-            return results[0] if len(results) == 1 else qml.math.stack(results)
+            results = qml.math.stack(results)
 
         return results[0] if len(results) == 1 else results
