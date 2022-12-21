@@ -197,15 +197,13 @@ def _pauli_z(wires: Wires):
     return Tensor(*[qml.PauliZ(w) for w in wires])
 
 
-def _compute_result(result, data: dict):
-    results = []
+def _compute_result_and_add_to_dict(res, data: dict, results: dict):
     for idx, coeff in data.items():
-        if coeff is not None:
-            tmp_res = qml.math.convert_like(qml.math.dot(coeff, result), result)
-            results.append((idx, tmp_res))
+        r = qml.math.convert_like(qml.math.dot(coeff, res), res) if coeff is not None else res
+        if idx in results:
+            results[idx] += r
         else:
-            results.append((idx, result))
-    return results
+            results[idx] = r
 
 
 # pylint: disable=too-few-public-methods
@@ -483,33 +481,26 @@ class _MGroup:
         Returns:
             Sequence[float]: post-processed results
         """
-        results = []  # [(m_idx, result)]
+        results = {}  # {m_idx, result}
         for tape_res, m_group in zip(expanded_results, self.mdata_groups):
             if len(m_group) == 1:
                 # tape_res contains only one result
                 if not qml.active_return() and len(tape_res) == 1:
                     # old return types return a list when returning one result
                     tape_res = tape_res[0]
-                results.extend(_compute_result(tape_res, m_group[0].data))
+                _compute_result_and_add_to_dict(tape_res, m_group[0].data, results)
             elif self.tape.batch_size is not None and self.tape.batch_size > 1:
                 # when batching is used, the first dimension of tape_res corresponds to the
                 # batching dimension
                 for i, mdata in enumerate(m_group):
-                    results.extend(_compute_result([r[i] for r in tape_res], mdata.data))
+                    _compute_result_and_add_to_dict([r[i] for r in tape_res], mdata.data, results)
+
             else:
                 for res, mdata in zip(tape_res, m_group):
-                    results.extend(_compute_result(res, mdata.data))
-
-        # sum results by idx
-        res_dict = {}
-        for idx, res in results:
-            if idx in res_dict:
-                res_dict[idx] += res
-            else:
-                res_dict[idx] = res
+                    _compute_result_and_add_to_dict(res, mdata.data, results)
 
         # sort results by idx
-        results = tuple(res_dict[key] for key in sorted(res_dict))
+        results = tuple(results[key] for key in sorted(results))
 
         if qml.math.requires_grad(expanded_results[0]):
             # when computing gradients, we need to convert the tuple to a gradient box
