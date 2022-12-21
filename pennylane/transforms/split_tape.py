@@ -31,13 +31,13 @@ from pennylane.wires import Wires
 
 # pylint: disable=too-many-branches, too-many-statements
 def split_tape(tape: QuantumTape, group=True):
-    """If the tape is measuring any Hamiltonian or Sum expectation, this method splits it into
-    multiple tapes of Pauli expectations and provides a function to recombine the results.
+    """Split the given tape into multiple tapes containing qubit-wise commuting measurements and/or
+    measurements with non-overlapping wires.
 
     Args:
-        tape (.QuantumTape): the tape used when calculating the expectation value
-            of the Hamiltonian
-        group (bool): Whether to compute disjoint groups of commuting Pauli observables, leading to fewer tapes.
+        tape (.QuantumTape): the original tape
+        group (bool): Whether to compute disjoint groups of commuting Pauli-based measurements
+            and/or groups of measurements with non-overlapping wires, leading to fewer tapes.
             If grouping information can be found in the Hamiltonian, it will be used even if group=False.
 
     Returns:
@@ -77,7 +77,7 @@ def split_tape(tape: QuantumTape, group=True):
     Applying the processing function results in the expectation value of the Hamiltonian:
 
     >>> fn(res)
-    -0.5
+    array(-0.5)
 
     Fewer tapes can be constructed by grouping commuting observables. This can be achieved
     by the ``group`` keyword argument:
@@ -129,8 +129,7 @@ def split_tape(tape: QuantumTape, group=True):
     post-processing function to speed-up the computation of the expectation value of the `Sum`.
 
     >>> tapes, fn = qml.transforms.split_tape(tape, group=False)
-    >>> for tape in tapes:
-    ...     print(tape.measurements)
+    >>> [tape.measurements for tape in tapes]
     [expval(PauliY(wires=[2]) @ PauliZ(wires=[1]))]
     [expval(PauliZ(wires=[2]))]
     [expval(PauliZ(wires=[1]))]
@@ -155,7 +154,7 @@ def split_tape(tape: QuantumTape, group=True):
     Applying the processing function results in the expectation value of the Hamiltonian:
 
     >>> fn(res)
-    [0.0, -0.5, 0.0, -0.9999999999999996]
+    (array(-0.5), array(0.), array(0.), array(-1.))
 
     Fewer tapes can be constructed by grouping observables acting on different wires. This can be achieved
     by the ``group`` keyword argument:
@@ -174,8 +173,7 @@ def split_tape(tape: QuantumTape, group=True):
     ``[qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1))]`` and ``[qml.s_prod(3, qml.PauliX(0))]``):
 
     >>> tapes, fn = qml.transforms.split_tape(tape, group=True)
-    >>> for tape in tapes:
-    ...     print(tape.measurements)
+    >>> [tape.measurements for tape in tapes]
     [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]
     [expval(PauliX(wires=[0]))]
     """
