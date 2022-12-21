@@ -169,9 +169,25 @@ class TestSplitTape:
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
-    def test_hamiltonian_grouping_indices(self, tape, output):
+    def test_hamiltonian_grouping_indices_and_grouping(self, tape, output):
         """Tests that the split_tape transform returns the correct value
-        if we switch grouping off"""
+        if we use ``Hamiltonian.grouping_indices`` and ``group=True``"""
+
+        for m in tape.measurements:
+            if isinstance(m.obs, Hamiltonian):
+                m.obs.compute_grouping()
+
+        tapes, fn = split_tape(tape, group=True)
+        tapes = [q.expand() for q in tapes]
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
+
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    def test_hamiltonian_grouping_indices_and_no_grouping(self, tape, output):
+        """Tests that the split_tape transform returns the correct value
+        if we use ``Hamiltonian.grouping_indices`` and ``group=False``"""
 
         for m in tape.measurements:
             if isinstance(m.obs, Hamiltonian):
