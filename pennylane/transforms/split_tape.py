@@ -182,12 +182,12 @@ def split_tape(tape: QuantumTape, group=True):
     m_grouping = _MGroup(measurements=tape.measurements)
 
     # Create the tapes, group observables if group==True
-    measurements = m_grouping.get_measurements(group=group)
+    measurements, mdata_groups = m_grouping.get_measurements(group=group)
     tapes = [QuantumTape(ops=tape._ops, measurements=m, prep=tape._prep) for m in measurements]
 
     def processing_fn(expanded_results):
         results = []  # [(m_idx, result)]
-        for tape_res, m_group in zip(expanded_results, m_grouping.mdata_groups):
+        for tape_res, m_group in zip(expanded_results, mdata_groups):
             # tape_res contains multiple results
             if tape.batch_size is not None and tape.batch_size > 1:
                 # when batching is used, the first dimension of tape_res corresponds to the
@@ -402,7 +402,7 @@ class _MGroup:
         measurements and groups of non-overlapping wires non-pauli-based measurements."""
 
         if group:
-            self._group_measurements()
+            mdata_groups = self._group_measurements()
         else:
             grouped_data = defaultdict(lambda: [])
             non_grouped_data = []
@@ -411,9 +411,9 @@ class _MGroup:
                     grouped_data[mdata.group].append(mdata)
                 else:
                     non_grouped_data.append([mdata])
-            self.mdata_groups = list(grouped_data.values()) + non_grouped_data
+            mdata_groups = list(grouped_data.values()) + non_grouped_data
 
-        return [[mdata.m for mdata in m_group] for m_group in self.mdata_groups]
+        return [[mdata.m for mdata in m_group] for m_group in mdata_groups], mdata_groups
 
     def _group_measurements(self):
         # Separate measurements into pauli, non-pauli words and previously computed groups
@@ -463,7 +463,7 @@ class _MGroup:
                 if not op_added:
                     qwc_groups.append((mdata.m.wires, [mdata]))
 
-        self.mdata_groups = [group[1] for group in qwc_groups]
+        return [group[1] for group in qwc_groups]
 
 
 def _pauli_z(wires: Wires):
