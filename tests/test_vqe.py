@@ -969,24 +969,7 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H2)
 
-        assert res[0] == circuit1()
-        assert res[1] == circuit2()
-
-    def test_error_multiple_expvals_same_wire(self):
-        """Tests that more than one Hamiltonian expval can be evaluated."""
-
-        coeffs = [1.0, 1.0, 1.0]
-        dev = qml.device("default.qubit", wires=4)
-        H1 = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
-        w = PARAMS
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.templates.StronglyEntanglingLayers(w, wires=range(4))
-            return qml.expval(H1), qml.expval(H1)
-
-        with pytest.raises(qml.QuantumFunctionError, match="Only observables that are qubit-wise"):
-            circuit()
+        assert qml.math.allclose(res, [circuit1(), circuit2()])
 
     def test_error_var_measurement(self):
         """Tests that error is thrown if var(H) is measured."""

@@ -493,7 +493,7 @@ class _MGroup:
             if len(m_group) == 1:
                 # tape_res contains only one result
                 if not qml.active_return() and len(tape_res) == 1:
-                    # old return types return a list when returning one result
+                    # old return types return a list when returning one result without broadcasting
                     tape_res = tape_res[0]
                 _compute_result_and_add_to_dict(tape_res, m_group[0].data, results)
             elif self.tape.batch_size is not None and self.tape.batch_size > 1:
