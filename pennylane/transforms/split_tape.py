@@ -428,11 +428,15 @@ class _MGroup:
         pauli_m: List[_MGroup.MData] = []
         non_pauli_m: List[_MGroup.MData] = []
         for mdata in self.queue.values():
+            is_pauli = is_pauli_word(mdata.m.obs) or (mdata.m.obs is None and mdata.m.wires)
+            is_shadow = isinstance(mdata.m, (ShadowExpvalMP, ClassicalShadowMP))
             if mdata.group is not None:
                 hamiltonian_m[mdata.group].append(mdata)
-            elif is_pauli_word(mdata.m.obs) or (mdata.m.obs is None and mdata.m.wires):
+            elif not is_shadow and is_pauli:
                 # When m.obs is None the measurement acts on the basis states, and thus we can
                 # assume that the observable is ``qml.PauliZ`` for all measurement wires.
+                # Shadow measurements are not treated as pauli measurements because they cannot
+                # be executed with other measurements.
                 pauli_m.append(mdata)
             else:
                 non_pauli_m.append(mdata)
@@ -455,6 +459,9 @@ class _MGroup:
             if len(mdata.m.wires) == 0 or isinstance(mdata.m, (ClassicalShadowMP, ShadowExpvalMP)):
                 # If the measurement doesn't have wires, we assume it acts on all wires and that
                 # it won't commute with any other measurement
+                # Shadow measurements cannot be executed with other measurements because the
+                # `classical_shadow` implementation of the `DefaultQubit` class resets the state
+                # of the device.
                 qwc_groups.append(([], [mdata]))
             else:
                 op_added = False
