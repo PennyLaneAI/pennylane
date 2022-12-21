@@ -217,9 +217,53 @@ class TestSplitTape:
         tapes, _ = split_tape(tape, group=False)
         assert len(tapes) == 2
 
-        qs = QuantumScript(tape.operations, tape.measurements)
-        tapes, _ = split_tape(qs, group=False)
+    def test_number_of_tapes_with_grouping(self):
+        """Test that that the correct number of tapes are generated."""
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+
+        with AnnotatedQueue() as q:
+            qml.expval(H)
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.op_sum(qml.PauliX(0), qml.PauliZ(0), qml.PauliX(1)))
+            qml.expval(H)
+            qml.probs(op=qml.PauliX(0))
+            qml.probs(op=qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape = QuantumScript.from_queue(q)
+        tapes, _ = split_tape(tape, group=True)
         assert len(tapes) == 2
+
+        grouped_measurements = [
+            [
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.PauliX(1)),
+                qml.probs(op=qml.PauliZ(0) @ qml.PauliX(1)),
+            ],
+            [qml.expval(qml.PauliX(0)), qml.probs(op=qml.PauliX(0))],
+        ]
+        for m1_list, m2_list in zip([tape.measurements for tape in tapes], grouped_measurements):
+            assert all(qml.equal(m1, m2) for m1, m2 in zip(m1_list, m2_list))
+
+        # When using ``Hamiltonian.grouping_indices``, we generate tapes for the previously computed
+        # groups, and then use the ``group_observables`` method with the remaining pauli observables.
+        # Consequently, we will obtain 4 tapes: 2 for the Hamiltonian groups and 2 for the
+        # remaining ``probs(PauliZ(0) @ PauliX(1))`` and ``probs(PauliX(0)) measurements.
+        # NOTE: The other expectation values have observables that are present in the Hamiltonian
+        # group, and thus we avoid measuring them twice.
+        H.compute_grouping()
+
+        tape = QuantumScript.from_queue(q)
+        tapes, _ = split_tape(tape, group=True)
+        assert len(tapes) == 4
+
+        grouped_measurements = [
+            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))],
+            [qml.expval(qml.PauliX(0))],
+            [qml.probs(op=qml.PauliX(0))],
+            [qml.probs(op=qml.PauliZ(0) @ qml.PauliX(1))],
+        ]
+        for m1_list, m2_list in zip([tape.measurements for tape in tapes], grouped_measurements):
+            assert all(qml.equal(m1, m2) for m1, m2 in zip(m1_list, m2_list))
 
     def test_number_of_tapes(self):
         """Tests the correct number of quantum tapes are produced."""
