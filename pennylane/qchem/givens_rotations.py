@@ -85,7 +85,7 @@ def givens_decomposition(unitary):
         if not np.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):
             raise ValueError("Failed to shift phase transposition.")
 
-        unitary[[i, i], [j, j]] = np.diag(nphase_mat)
+        unitary[i, i], unitary[j, j] = np.diag(nphase_mat)
         nleft_givens.append((givens_mat.conj(), (i, j)))
 
     phases, ordered_rotations = np.diag(unitary), []

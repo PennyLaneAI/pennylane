@@ -17,9 +17,11 @@ Unit tests for functions needed for performing givens decomposition of a unitary
 
 import pytest
 
+from scipy.stats import unitary_group
+
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.qchem.givens_rotations import givens_matrix, givens_rotate
+from pennylane.qchem.givens_rotations import givens_matrix, givens_rotate, givens_decomposition
 
 
 @pytest.mark.parametrize("left", [True, False])
@@ -84,3 +86,20 @@ def test_givens_rotate(shape, indices, row, left):
             assert np.isclose(unitary[j - 1, indices[0]], res) and np.isclose(
                 unitary[j - 1, indices[1]], 0.0
             )
+
+
+@pytest.mark.parametrize("shape", [2, 3, 7, 8, 15, 16])
+def test_givens_decomposition(shape):
+    r"""Test that Givens decomposition is performed correctly."""
+
+    matrix = unitary_group.rvs(shape)
+    phase_mat, ordered_rotations = givens_decomposition(matrix)
+    decomposed_matrix = np.diag(phase_mat)
+
+    for grot_mat, (i, j) in ordered_rotations:
+        rotation_matrix = np.eye(shape, dtype=complex)
+        rotation_matrix[i, i], rotation_matrix[j, j] = grot_mat[0, 0], grot_mat[1, 1]
+        rotation_matrix[i, j], rotation_matrix[j, i] = grot_mat[0, 1], grot_mat[1, 0]
+        decomposed_matrix = decomposed_matrix @ rotation_matrix
+
+    assert np.allclose(matrix, decomposed_matrix)
