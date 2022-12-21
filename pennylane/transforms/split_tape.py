@@ -446,7 +446,7 @@ class _MGroup:
 
         # group pauli measurements
         if len(pauli_m) > 1:
-            observables = [(mdata.m.obs or self._pauli_z(mdata.m.wires)) for mdata in pauli_m]
+            observables = [(mdata.m.obs or _pauli_z(mdata.m.wires)) for mdata in pauli_m]
             grouped_m = group_observables(observables=observables, coefficients=pauli_m)[1]
             all_m += grouped_m
         elif pauli_m:
@@ -476,11 +476,12 @@ class _MGroup:
 
         self.mdata_groups = [group[1] for group in qwc_groups]
 
-    def _pauli_z(self, wires: Wires):
-        """Generate ``PauliZ`` operator.
 
-        Args:
-            wires (Wires): wires that the operator acts on"""
-        if len(wires) == 1:
-            return qml.PauliZ(wires[0])
-        return Tensor(*[qml.PauliZ(w) for w in wires])
+def _pauli_z(wires: Wires):
+    """Generate ``PauliZ`` operator.
+
+    Args:
+        wires (Wires): wires that the operator acts on"""
+    if len(wires) == 1:
+        return qml.PauliZ(wires[0])
+    return Tensor(*[qml.PauliZ(w) for w in wires])
