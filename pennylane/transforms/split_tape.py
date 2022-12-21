@@ -481,6 +481,7 @@ class _MGroup:
                 for i, mdata in enumerate(m_group):
                     results.extend(_compute_result([r[i] for r in tape_res], mdata))
             elif len(m_group) == 1:
+                # tape_res contains only one result
                 if not qml.active_return() and len(tape_res) == 1:
                     # old return types return a list when returning one result
                     tape_res = tape_res[0]
