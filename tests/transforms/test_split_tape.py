@@ -149,7 +149,7 @@ class TestSplitTape:
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_tapes(self, tape, output):
         """Tests that the split_tape transform returns the correct value"""
-        tapes, fn = split_tape(tape)
+        tapes, fn = split_tape(tape, group=True)
         tapes = [q.expand() for q in tapes]
         results = dev.batch_execute(tapes)
         expval = fn(results)
