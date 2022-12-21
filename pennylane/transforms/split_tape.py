@@ -369,7 +369,9 @@ class _MGroup:
             # Use ``coeff=None`` when the measurement is not an expectation value.
             # In the `_compute_result` method we skip using ``qml.math.dot`` when coeff is None,
             # this way we avoid an error when having non tensor objects.
-            self._add_to_queue(measurement, idx, None)
+            if not isinstance(measurement, ExpectationMP):
+                coeff = None
+            self._add_to_queue(measurement, idx, coeff)
 
     def _add_to_queue(self, measurement: MeasurementProcess, idx: int, coeff: float, group=None):
         m_hash = measurement.hash
@@ -503,5 +505,9 @@ class _MGroup:
 
         # sort results by idx
         results = tuple(res_dict[key] for key in sorted(res_dict))
+
+        if qml.math.requires_grad(expanded_results[0]):
+            # when computing gradients, we need to convert the tuple to a gradient box
+            return results[0] if len(results) == 1 else qml.math.stack(results)
 
         return results[0] if len(results) == 1 else results
