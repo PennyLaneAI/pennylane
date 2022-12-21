@@ -502,8 +502,8 @@ class _MGroup:
         # sort results by idx
         results = tuple(results[key] for key in sorted(results))
 
-        if qml.math.requires_grad(expanded_results[0]):
+        if not qml.active_return() and qml.math.requires_grad(expanded_results[0]):
             # when computing gradients, we need to convert the tuple to a gradient box
-            return results[0] if len(results) == 1 else qml.math.stack(results)
+            results = qml.math.stack(results)
 
         return results[0] if len(results) == 1 else results
