@@ -475,12 +475,14 @@ class _MGroup:
         """
         results = []  # [(m_idx, result)]
         for tape_res, m_group in zip(expanded_results, self.mdata_groups):
-            # tape_res contains multiple results
             if self.tape.batch_size is not None and self.tape.batch_size > 1:
                 # when batching is used, the first dimension of tape_res corresponds to the
                 # batching dimension
                 for i, mdata in enumerate(m_group):
                     results.extend(_compute_result([r[i] for r in tape_res], mdata))
+            elif len(m_group) == 1:
+                # tape_res contains only one result
+                results.extend(_compute_result(tape_res, m_group[0].data))
             else:
                 for res, mdata in zip(tape_res, m_group):
                     results.extend(_compute_result(res, mdata.data))
