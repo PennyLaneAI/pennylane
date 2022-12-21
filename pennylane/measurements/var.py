@@ -135,10 +135,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
 
         eigvals = qml.math.asarray(self.obs.eigvals(), dtype=float)
 
-        # the probability vector must be permuted to account for the permuted wire order of the observable
-        new_obs_wires = self._permute_wires(self.obs.wires)
         # we use ``wires`` instead of ``op`` because the observable was
         # already applied to the state
-        prob = qml.probs(wires=new_obs_wires).process_state(state=state, wire_order=wire_order)
+        prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2
