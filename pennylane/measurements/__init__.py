@@ -156,6 +156,38 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     In PennyLane we use functions to define measurements (e.g. :func:`counts`). These
     functions will return an instance of the corresponding measurement process
     (e.g. :class:`CountsMP`). This decision is just for design purposes.
+
+Adding your new measurement to PennyLane
+----------------------------------------
+
+If you want to add this new measurement to PennyLane such that other users can benefit from it, you have to make a Pull Request
+creating a file with the name of your measurement (e.g. ``state.py``) and add it in
+``pennylane/measurements/``. This file should contain:
+
+* The measurement class with the appropriate ``process`` method defined.
+
+* A function with the same name as the created file that will be used to instantiate the
+  measurement class.
+
+.. note:
+
+  Please check the file ``pennylane/measurements/state.py`` for an example.
+
+
+The tests are added to a file of a similar name and location in ``tests/measurements/``.
+
+The class and the function need to be imported in ``pennylane/measurements/__init__.py``. The
+function needs to be imported in ``pennylane/__init__.py``.
+
+Here are a few more tips for adding measurements:
+
+* *Choose the name carefully.* Good names tell the user what the measurement is used for,
+  or what architecture it implements. Ask yourself if a measurement of a similar name could
+  be added soon in a different context.
+
+* *Write good docstrings.* Explain what your measurement does in a clear docstring with ample examples.
+
+You can find more about Pennylane standards in the guidelines on :doc:`/development/guide/documentation`.
 """
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
