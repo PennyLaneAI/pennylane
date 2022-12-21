@@ -21,7 +21,12 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 import pennylane as qml
-from pennylane.measurements import ExpectationMP, MeasurementProcess
+from pennylane.measurements import (
+    ClassicalShadowMP,
+    ExpectationMP,
+    MeasurementProcess,
+    ShadowExpvalMP,
+)
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, SProd, Sum
 from pennylane.pauli import group_observables, is_pauli_word
@@ -449,10 +454,10 @@ class _MGroup:
             (Wires.all_wires([mdata.m.wires for mdata in group]), group) for group in all_m
         ]
         for mdata in non_pauli_m:
-            if len(mdata.m.wires) == 0:
+            if len(mdata.m.wires) == 0 or isinstance(mdata.m, (ClassicalShadowMP, ShadowExpvalMP)):
                 # If the measurement doesn't have wires, we assume it acts on all wires and that
                 # it won't commute with any other measurement
-                qwc_groups.append((mdata.m.wires, [mdata]))
+                qwc_groups.append(([], [mdata]))
             else:
                 op_added = False
 
