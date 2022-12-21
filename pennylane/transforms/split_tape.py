@@ -366,7 +366,10 @@ class _MGroup:
         elif isinstance(obs, SProd) and isinstance(measurement, ExpectationMP):
             self._add(qml.expval(obs.base), idx, coeff * obs.scalar)
         else:
-            self._add_to_queue(measurement, idx, coeff)
+            # Use ``coeff=None`` when the measurement is not an expectation value.
+            # In the `_compute_result` method we skip using ``qml.math.dot`` when coeff is None,
+            # this way we avoid an error when having non tensor objects.
+            self._add_to_queue(measurement, idx, None)
 
     def _add_to_queue(self, measurement: MeasurementProcess, idx: int, coeff: float, group=None):
         m_hash = measurement.hash
