@@ -14,8 +14,11 @@
 """
 Contains the hamiltonian expand tape transform
 """
+from collections import defaultdict
+from dataclasses import dataclass
+
 # pylint: disable=protected-access
-from typing import List
+from typing import Dict, List
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -32,13 +35,16 @@ from pennylane.wires import Wires
 
 
 # pylint: disable=too-many-branches, too-many-statements
-def split_tape(tape: QuantumTape):
-    """If the tape is measuring any Hamiltonian or Sum expectation, this method splits it into
-    multiple tapes of Pauli expectations and provides a function to recombine the results.
+def split_tape(tape: QuantumTape, group=True):
+    """Split the given tape into multiple tapes containing qubit-wise commuting measurements and/or
+    measurements with non-overlapping wires.
 
     Args:
-        tape (.QuantumTape): the tape used when calculating the expectation value
-            of the Hamiltonian
+        tape (.QuantumTape): the original tape
+        group (bool): Whether to compute disjoint groups of commuting Pauli-based measurements
+            and/or groups of measurements with non-overlapping wires, leading to fewer tapes.
+            If grouping information can be found in the Hamiltonian, it will be used even if group=False.
+
     Returns:
         tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
@@ -76,7 +82,7 @@ def split_tape(tape: QuantumTape):
     Applying the processing function results in the expectation value of the Hamiltonian:
 
     >>> fn(res)
-    -0.5
+    array(-0.5)
 
     Fewer tapes can be constructed by grouping commuting observables. This can be achieved
     by the ``group`` keyword argument:
@@ -128,17 +134,22 @@ def split_tape(tape: QuantumTape):
     post-processing function to speed-up the computation of the expectation value of the `Sum`.
 
     >>> tapes, fn = qml.transforms.split_tape(tape, group=False)
-    >>> for tape in tapes:
-    ...     print(tape.measurements)
-    [expval(PauliZ(wires=[0]))]
+    >>> [tape.measurements for tape in tapes]
     [expval(PauliY(wires=[2]) @ PauliZ(wires=[1]))]
     [expval(PauliZ(wires=[2]))]
     [expval(PauliZ(wires=[1]))]
+    [expval(PauliZ(wires=[0]))]
     [expval(PauliX(wires=[1]))]
 
     Five tapes are generated: the first three contain the summands of the `Sum` operator,
     and the last two contain the remaining observables. Note that the scalars of the scalar products
-    have been removed. These values will be multiplied by the result obtained from the execution.
+    have been removed. In the processing function, these values will be multiplied by the result obtained
+    from executing the tapes.
+
+    Additionally, the observable expval(PauliZ(wires=[2])) occurs twice in the original tape, but only once
+    in the transformed tapes. When there are multiple identical measurements in the circuit, the measurement
+    is performed once and the outcome is copied when obtaining the final result. This will also be resolved
+    when the processing function is applied.
 
     We can evaluate these tapes on a device:
 
@@ -148,7 +159,7 @@ def split_tape(tape: QuantumTape):
     Applying the processing function results in the expectation value of the Hamiltonian:
 
     >>> fn(res)
-    [0.0, -0.5, 0.0, -0.9999999999999996]
+    (array(-0.5), array(0.), array(0.), array(-1.))
 
     Fewer tapes can be constructed by grouping observables acting on different wires. This can be achieved
     by the ``group`` keyword argument:
@@ -167,95 +178,327 @@ def split_tape(tape: QuantumTape):
     ``[qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1))]`` and ``[qml.s_prod(3, qml.PauliX(0))]``):
 
     >>> tapes, fn = qml.transforms.split_tape(tape, group=True)
-    >>> for tape in tapes:
-    ...     print(tape.measurements)
+    >>> [tape.measurements for tape in tapes]
     [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]
     [expval(PauliX(wires=[0]))]
     """
-    # Populate these 2 dictionaries with the unique measurement objects, the index of the
-    # initial measurement on the tape and the coefficient
-    # NOTE: expval(Sum) is expanded into the expectation of each summand
-    # NOTE: expval(SProd) is transformed into expval(SProd.base) and the coeff is updated
-    measurements_dict = {}  # {m_hash: measurement}
-    idxs_coeffs_dict = {}  # {m_hash: [(location_idx, coeff)]}
-    for idx, m in enumerate(tape.measurements):
-        obs = m.obs
-        if isinstance(obs, Sum) and isinstance(m, ExpectationMP):
+    m_grouping = _MGroup(tape=tape)
+
+    return m_grouping.get_tapes(group=group), m_grouping.processing_fn
+
+
+def _pauli_z(wires: Wires):
+    """Generate ``PauliZ`` operator.
+
+    Args:
+        wires (Wires): wires that the operator acts on"""
+    if len(wires) == 1:
+        return qml.PauliZ(wires[0])
+    return Tensor(*[qml.PauliZ(w) for w in wires])
+
+
+def _compute_result(result, data: dict):
+    results = []
+    for idx, coeff in data.items():
+        if coeff is not None:
+            tmp_res = qml.math.convert_like(qml.math.dot(coeff, result), result)
+            results.append((idx, tmp_res))
+        else:
+            results.append((idx, result))
+    return results
+
+
+# pylint: disable=too-few-public-methods
+class _MGroup:
+    """Utils class used to group measurements.
+
+    If the observables are pauli words, the groups contain observables that commute with each other.
+    All the other observables are grouped into groups with non overlapping wires.
+
+    Args:
+        measurements (List[MeasurementProcess]): List of measurements to group together.
+
+    Attributes:
+        queue (Dict[int, MData]): Dictionary containing the information of all the measurements.
+            It has the following structure:
+
+            - keys (int): hash of the measurement
+            - values (MData): object containing information about the measurement:
+                - m (MeasurementProcess): the measurement class
+                - data (dict):
+                    - keys (int): position of the measurement in the return statement of the
+                        original tape
+                    - values (float): coefficient that will be multiplied to the result obtained
+                        from the execution
+        mdata_groups ()
+
+    **Example:**
+    Let's define the following QNode:
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.transforms.split_tape import _MGroup
+
+        dev = qml.device("default.qubit", wires=2)
+
+        H = 3 * qml.PauliX(0) + qml.PauliZ(0) + qml.PauliX(0) + qml.PauliY(1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(H), qml.expval(qml.PauliX(0))
+
+    Now we can use the :class:`_MeasurementsGrouping` class to group the measurements together:
+
+    >>> circuit.construct((), {})  # construct tape
+    >>> m_group = _MGroup(circuit.tape)
+    >>> list(m_group.queue.values())  # we don't need to measurement hashes
+    [_MGroup.MData(m=expval(PauliX(wires=[0])), data={0: 4, 1: 1}, group=None),
+    _MGroup.MData(m=expval(PauliZ(wires=[0])), data={0: 1}, group=None),
+    _MGroup.MData(m=expval(PauliY(wires=[1])), data={0: 1}, group=None)]
+
+    The queue contains two items, one for each different measurement. Each item is an MData class
+    that contains a ``data`` attribute with multiple pairs index-coefficient. For
+    example, this attribute tells us that the ``expval(PauliX(0))`` measurement appears four times
+    in the first return value and once in the second.
+
+    The _MGroup class already groups equal measurements together during instantiation, reducing
+    the total amount of executed measurements. We can obtain these measurements by using the
+    ``get_measurements`` method, which returns a list of lists containing the grouped measurements.
+    Setting ``group=False`` will skip the expensive grouping logic and return the measurements
+    from the queue:
+
+    >>> tapes = m_group.get_tapes(group=False)
+    >>> [tape.measurements for tape in tapes]
+    [[expval(PauliX(wires=[0]))],
+    [expval(PauliZ(wires=[0]))],
+    [expval(PauliY(wires=[1]))]]
+
+    One must know that when computing expectation values of Hamiltonians, if the Hamiltonian
+    previously computed its qubit-wise commuting groups, this information will be used even if
+    ``group=False``:
+
+    >>> H.compute_grouping()
+    >>> m_group = _MGroup(circuit.tape)
+    >>> tapes = m_group.get_tapes(group=False)
+    >>> [tape.measurements for tape in tapes]
+    [[expval(PauliX(wires=[0])), expval(PauliY(wires=[1]))],
+    [expval(PauliZ(wires=[0]))]]
+
+    ``PauliX(0)`` and ``PauliY(1)`` have been grouped together.
+
+    Let's create a new QNode and group the measurements:
+
+    .. code-block:: python
+
+        H = 4 * qml.PauliX(0) + qml.PauliZ(0) + qml.PauliY(1)
+        S = qml.op_sum(qml.s_prod(4, qml.PauliX(0)), qml.PauliZ(0), qml.PauliY(1))
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(H), qml.expval(qml.PauliX(1)), qml.expval(S), qml.expval(H)
+
+    >>> circuit.construct((), {})  # construct tape
+    >>> m_group = _MGroup(circuit.tape)
+    >>> tapes = m_group.get_tapes(group=False)
+    >>> [tape.measurements for tape in tapes]
+    [[expval(PauliX(wires=[0]))],
+    [expval(PauliZ(wires=[0]))],
+    [expval(PauliY(wires=[1]))],
+    [expval(PauliX(wires=[1]))]]
+    >>> tapes = m_group.get_tapes(group=True)
+    >>> [tape.measurements for tape in tapes]
+    [[expval(PauliX(wires=[0])), expval(PauliY(wires=[1]))],
+    [expval(PauliZ(wires=[0])), expval(PauliX(wires=[1]))]]
+
+    The original tape contains a total of 10 measurements. These have been reduced to 4 measurements
+    distributed in two different tapes.
+    """
+
+    @dataclass
+    class MData:
+        """Dataclass containing all the needed information of a measurement."""
+
+        m: MeasurementProcess
+        data: dict  # {idx: coeff}
+        group: int = None
+
+    def __init__(self, tape: QuantumTape):
+        # {hash: {location_idx: (coeff, measurement), ...}, ...}
+        self.tape = tape
+        self.queue: Dict[int, _MGroup.MData] = {}
+        self.mdata_groups = None
+        self._num_groups = 1
+        self._generate_queue()
+
+    def _generate_queue(self):
+        for idx, m in enumerate(self.tape.measurements):
+            self._add(measurement=m, idx=idx)
+
+    def _add(self, measurement: MeasurementProcess, idx: int, coeff=1):
+        """Add operator to the measurement queue.
+
+        If the operator hash is already in the dictionary, the coefficient is increased instead.
+
+        Args:
+            summand (Operator): operator to add to the summands dictionary
+            coeff (int, optional): Coefficient of the operator. Defaults to 1.
+            op_hash (int, optional): Hash of the operator. Defaults to None.
+        """
+        obs = measurement.obs
+        if isinstance(obs, Sum) and isinstance(measurement, ExpectationMP):
             for summand in obs.operands:
                 coeff = 1
                 if isinstance(summand, SProd):
                     coeff = summand.scalar
                     summand = summand.base
-                s_m = qml.expval(summand)
-                if s_m.hash not in measurements_dict:
-                    measurements_dict[s_m.hash] = s_m
-                    idxs_coeffs_dict[s_m.hash] = [(idx, coeff)]
-                else:
-                    idxs_coeffs_dict[s_m.hash].append((idx, coeff))
-
-        elif isinstance(obs, Hamiltonian) and isinstance(m, ExpectationMP):
-            for o, coeff in zip(obs.ops, obs.data):
-                o_m = qml.expval(o)
-                if o_m.hash not in measurements_dict:
-                    measurements_dict[o_m.hash] = o_m
-                    idxs_coeffs_dict[o_m.hash] = [(idx, coeff)]
-                else:
-                    idxs_coeffs_dict[o_m.hash].append((idx, coeff))
-        else:
-            if isinstance(obs, SProd) and isinstance(m, ExpectationMP):
-                coeff = obs.scalar
-                m = qml.expval(obs.base)
-
-            if m.hash not in measurements_dict:
-                measurements_dict[m.hash] = m
-                idxs_coeffs_dict[m.hash] = [(idx, None)]
+                self._add(qml.expval(summand), idx, coeff)
+        elif isinstance(obs, Hamiltonian) and isinstance(measurement, ExpectationMP):
+            if obs.grouping_indices is None:
+                # If grouping_indices was not computed previously, add the individual hamiltonian
+                # observables to the dictionary to group them later.
+                for o, c in zip(obs.ops, obs.data):
+                    self._add(qml.expval(o), idx, c)
             else:
-                idxs_coeffs_dict[m.hash].append((idx, None))
+                # Add the previously computed groups of qwc measurements
+                for indices in obs.grouping_indices:
+                    m_group = tuple(qml.expval(obs.ops[i]) for i in indices)
+                    c_group = tuple(qml.math.stack([obs.data[i] for i in indices]))
+                    for m, c in zip(m_group, c_group):
+                        self._add_to_queue(m, idx, coeff * c, group=self._num_groups)
+                    self._num_groups += 1
 
-    # Cast the dictionaries into lists (we don't need the hashes anymore)
-    measurements = list(measurements_dict.values())
-    idxs_coeffs = list(idxs_coeffs_dict.values())
-
-    # Group observables and create the tapes
-    m_groups = _group_measurements(measurements)
-
-    if (
-        len(m_groups) == 1
-        and len(m_groups[0]) == len(tape.measurements)
-        and all(not isinstance(m, (Hamiltonian, Sum, SProd)) for m in tape.measurements)
-    ):
-        # no measurement was split, thus we can return the initial tape
-        return [tape], lambda res: res[0]
-
-    # Update ``idxs_coeffs`` list such that it tracks the new ``m_groups`` list of lists
-    tmp_idxs = []
-    for m_group in m_groups:
-        if len(m_group) == 1:
-            tmp_idxs.append(idxs_coeffs[measurements.index(m_group[0])])
+        elif isinstance(obs, SProd) and isinstance(measurement, ExpectationMP):
+            self._add(qml.expval(obs.base), idx, coeff * obs.scalar)
         else:
-            tmp_idxs.append([idxs_coeffs[measurements.index(m)] for m in m_group])
-    idxs_coeffs = tmp_idxs
-    tapes = [
-        QuantumTape(ops=tape._ops, measurements=m_group, prep=tape._prep) for m_group in m_groups
-    ]
+            # Use ``coeff=None`` when the measurement is not an expectation value.
+            # In the `_compute_result` method we skip using ``qml.math.dot`` when coeff is None,
+            # this way we avoid an error when having non tensor objects.
+            if not isinstance(measurement, ExpectationMP):
+                coeff = None
+            self._add_to_queue(measurement, idx, coeff)
 
-    def processing_fn(expanded_results):
+    def _add_to_queue(self, measurement: MeasurementProcess, idx: int, coeff: float, group=None):
+        m_hash = measurement.hash
+        if m_hash not in self.queue:
+            self.queue[m_hash] = self.MData(measurement, {idx: coeff}, group=group)
+        else:
+            mdata = self.queue[m_hash]
+            mdata.data[idx] = mdata.data[idx] + coeff if idx in mdata.data else coeff
+            if mdata.group is None:
+                # update group information if the measurement didn't belong to any group
+                mdata.group = group
+
+    def get_tapes(self, group=False) -> List[List["_MGroup.MData"]]:
+        """Splits the original tape into a list of tapes.
+
+        If ``group=False``, the original tape is split if and only if it contains the expectation
+        value of a ``Hamiltonian`` with its ``grouping_indices`` previously computed. If
+        ``group=True``, all the measurements of the original tape are grouped into:
+
+        * Qubit-wise commuting groups, if the observables are pauli words.
+        * Groups with non-overlapping wires, if the observables are not pauli words.
+
+        If the tape contains both pauli and non-pauli words, the two grouping techniques are applied.
+
+        Returns:
+            List[QuantumTape]: list of tapes
+        """
+
+        if group:
+            self._group_measurements()
+        else:
+            grouped_data = defaultdict(lambda: [])
+            non_grouped_data = []
+            for mdata in self.queue.values():
+                if mdata.group is not None:
+                    grouped_data[mdata.group].append(mdata)
+                else:
+                    non_grouped_data.append([mdata])
+            self.mdata_groups = list(grouped_data.values()) + non_grouped_data
+
+        measurements = [[mdata.m for mdata in m_group] for m_group in self.mdata_groups]
+        return [
+            QuantumTape(ops=self.tape._ops, measurements=m, prep=self.tape._prep)
+            for m in measurements
+        ]
+
+    def _group_measurements(self):
+        # Separate measurements into pauli, non-pauli words and previously computed groups
+        # of hamiltonian measurements
+        hamiltonian_m: List[_MGroup.MData] = defaultdict(lambda: [])  # {group_idx: [measurements]}
+        pauli_m: List[_MGroup.MData] = []
+        non_pauli_m: List[_MGroup.MData] = []
+        for mdata in self.queue.values():
+            if mdata.group is not None:
+                hamiltonian_m[mdata.group].append(mdata)
+            elif is_pauli_word(mdata.m.obs) or (mdata.m.obs is None and mdata.m.wires):
+                # When m.obs is None the measurement acts on the basis states, and thus we can
+                # assume that the observable is ``qml.PauliZ`` for all measurement wires.
+                pauli_m.append(mdata)
+            else:
+                non_pauli_m.append(mdata)
+
+        all_m = list(hamiltonian_m.values())
+
+        # group pauli measurements
+        if len(pauli_m) > 1:
+            observables = [(mdata.m.obs or _pauli_z(mdata.m.wires)) for mdata in pauli_m]
+            grouped_m = group_observables(observables=observables, coefficients=pauli_m)[1]
+            all_m += grouped_m
+        elif pauli_m:
+            all_m += [pauli_m]
+
+        # group remaining measurements into groups with non overlapping wires
+        qwc_groups = [
+            (Wires.all_wires([mdata.m.wires for mdata in group]), group) for group in all_m
+        ]
+        for mdata in non_pauli_m:
+            if len(mdata.m.wires) == 0 or isinstance(mdata.m, (ClassicalShadowMP, ShadowExpvalMP)):
+                # If the measurement doesn't have wires, we assume it acts on all wires and that
+                # it won't commute with any other measurement
+                qwc_groups.append(([], [mdata]))
+            else:
+                op_added = False
+
+                for idx, (wires, group) in enumerate(qwc_groups):
+                    # check overlapping wires
+                    if len(wires) > 0 and all(wire not in mdata.m.wires for wire in wires):
+                        qwc_groups[idx] = (wires + mdata.m.wires, group + [mdata])
+                        op_added = True
+                        break
+
+                if not op_added:
+                    qwc_groups.append((mdata.m.wires, [mdata]))
+
+        self.mdata_groups = [group[1] for group in qwc_groups]
+
+    def processing_fn(self, expanded_results):
+        """Processing function used to post-process the results from the execution of the tapes
+        generated by the ``get_tapes`` method.
+
+        Args:
+            expanded_results (Sequence[float]): execution results
+
+        Returns:
+            Sequence[float]: post-processed results
+        """
         results = []  # [(m_idx, result)]
-        for tape_res, tape_idxs in zip(expanded_results, idxs_coeffs):
-            if isinstance(tape_idxs[0], tuple):  # tape_res contains only one result
-                if not qml.active_return() and len(tape_res) == 1:  # old return types
-                    tape_res = tape_res[0]
-                results.extend(_compute_result_for_each_idx(tape_res, tape_idxs))
-                continue
-            # tape_res contains multiple results
-            if tape.batch_size is not None and tape.batch_size > 1:
+        for tape_res, m_group in zip(expanded_results, self.mdata_groups):
+            if self.tape.batch_size is not None and self.tape.batch_size > 1:
                 # when batching is used, the first dimension of tape_res corresponds to the
                 # batching dimension
-                for i, idxs in enumerate(tape_idxs):
-                    results.extend(_compute_result_for_each_idx([r[i] for r in tape_res], idxs))
+                for i, mdata in enumerate(m_group):
+                    results.extend(_compute_result([r[i] for r in tape_res], mdata))
+            elif len(m_group) == 1:
+                # tape_res contains only one result
+                if not qml.active_return() and len(tape_res) == 1:
+                    # old return types return a list when returning one result
+                    tape_res = tape_res[0]
+                results.extend(_compute_result(tape_res, m_group[0].data))
             else:
-                for res, idxs in zip(tape_res, tape_idxs):
-                    results.extend(_compute_result_for_each_idx(res, idxs))
+                for res, mdata in zip(tape_res, m_group):
+                    results.extend(_compute_result(res, mdata.data))
 
         # sum results by idx
         res_dict = {}
@@ -270,78 +513,6 @@ def split_tape(tape: QuantumTape):
 
         if qml.math.requires_grad(expanded_results[0]):
             # when computing gradients, we need to convert the tuple to a gradient box
-            return qml.math.stack(results)
+            return results[0] if len(results) == 1 else qml.math.stack(results)
 
         return results[0] if len(results) == 1 else results
-
-    return tapes, processing_fn
-
-
-def _compute_result_for_each_idx(result, idxs):
-    results = []
-    for idx, coeff in idxs:
-        if coeff is not None:
-            tmp_res = qml.math.convert_like(qml.math.dot(coeff, result), result)
-            results.append((idx, tmp_res))
-        else:
-            results.append((idx, result))
-    return results
-
-
-def _group_measurements(measurements: List[MeasurementProcess]) -> List[List[MeasurementProcess]]:
-    """Group observables of ``measurements`` into groups.
-
-    If the observables are pauli words, the groups contain observables that commute with each other.
-    All the other observables are grouped into groups with non overlapping wires.
-
-
-
-    Args:
-        measurements (List[MeasurementProcess]): list of measurement processes
-
-    Returns:
-        List[List[MeasurementProcess]]: list of groups of observables with non overlapping wires
-    """
-    qwc_groups = []  # [(wires (Wires), m_group (list), pauli_group (list))]
-    for m in measurements:
-        if len(m.wires) == 0 or isinstance(m, (ClassicalShadowMP, ShadowExpvalMP)):
-            # If the measurement doesn't have wires, we assume it acts on all wires and that
-            # it won't commute with any other measurement.
-            # The classical shadows implementation of `QubitDevice` resets the state of the
-            # device, and thus it cannot be used with other measurements.
-            qwc_groups.append(([], [m], []))
-        else:
-            op_added = False
-            # When m.obs is None the measurement acts on the basis states, and thus we can assume that
-            # the observable is ``qml.PauliZ`` for all measurement wires.
-            obs = m.obs or _pauli_z(m.wires)
-            for idx, (wires, group, pauli_group) in enumerate(qwc_groups):
-                # use pauli grouping functionality if all the elements in the group are pauli words
-                if (
-                    pauli_group
-                    and is_pauli_word(obs)
-                    and len(group_observables(pauli_group + [obs])) == 1
-                ):
-                    qwc_groups[idx] = (wires + m.wires, group + [m], pauli_group + [obs])
-                    op_added = True
-                    break
-                # check overlapping wires
-                if len(wires) > 0 and all(wire not in m.wires for wire in wires):
-                    qwc_groups[idx] = (wires + m.wires, group + [m], [])
-                    op_added = True
-                    break
-
-            if not op_added:
-                qwc_groups.append((m.wires, [m], [obs] if is_pauli_word(obs) else []))
-
-    return [group[1] for group in qwc_groups]
-
-
-def _pauli_z(wires: Wires):
-    """Generate ``PauliZ`` operator.
-
-    Args:
-        wires (Wires): wires that the operator acts on"""
-    if len(wires) == 1:
-        return qml.PauliZ(0)
-    return Tensor(*[qml.PauliZ(w) for w in wires])

@@ -17,6 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops import Hamiltonian
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms import split_tape
@@ -148,12 +149,121 @@ class TestSplitTape:
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_tapes(self, tape, output):
         """Tests that the split_tape transform returns the correct value"""
-        tapes, fn = split_tape(tape)
+        tapes, fn = split_tape(tape, group=True)
         tapes = [q.expand() for q in tapes]
         results = dev.batch_execute(tapes)
         expval = fn(results)
 
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
+
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    def test_no_grouping(self, tape, output):
+        """Tests that the split_tape transform returns the correct value
+        if we switch grouping off"""
+
+        tapes, fn = split_tape(tape, group=False)
+        tapes = [q.expand() for q in tapes]
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
+
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    def test_hamiltonian_grouping_indices_and_grouping(self, tape, output):
+        """Tests that the split_tape transform returns the correct value
+        if we use ``Hamiltonian.grouping_indices`` and ``group=True``"""
+
+        for m in tape.measurements:
+            if isinstance(m.obs, Hamiltonian):
+                m.obs.compute_grouping()
+
+        tapes, fn = split_tape(tape, group=True)
+        tapes = [q.expand() for q in tapes]
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
+
+    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    def test_hamiltonian_grouping_indices_and_no_grouping(self, tape, output):
+        """Tests that the split_tape transform returns the correct value
+        if we use ``Hamiltonian.grouping_indices`` and ``group=False``"""
+
+        for m in tape.measurements:
+            if isinstance(m.obs, Hamiltonian):
+                m.obs.compute_grouping()
+
+        tapes, fn = split_tape(tape, group=False)
+        tapes = [q.expand() for q in tapes]
+        results = dev.batch_execute(tapes)
+        expval = fn(results)
+
+        assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
+
+    def test_grouping_is_used(self):
+        """Test that the grouping in a Hamiltonian is used"""
+        H = qml.Hamiltonian(
+            [1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)], grouping_type="qwc"
+        )
+        assert H.grouping_indices is not None
+
+        with AnnotatedQueue() as q:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        tape = QuantumScript.from_queue(q)
+        tapes, _ = split_tape(tape, group=False)
+        assert len(tapes) == 2
+
+    def test_number_of_tapes_with_grouping(self):
+        """Test that that the correct number of tapes are generated."""
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+
+        with AnnotatedQueue() as q:
+            qml.expval(H)
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.op_sum(qml.PauliX(0), qml.PauliZ(0), qml.PauliX(1)))
+            qml.expval(H)
+            qml.probs(op=qml.PauliX(0))
+            qml.probs(op=qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape = QuantumScript.from_queue(q)
+        tapes, _ = split_tape(tape, group=True)
+        assert len(tapes) == 2
+
+        grouped_measurements = [
+            [
+                qml.expval(qml.PauliZ(0)),
+                qml.expval(qml.PauliX(1)),
+                qml.probs(op=qml.PauliZ(0) @ qml.PauliX(1)),
+            ],
+            [qml.expval(qml.PauliX(0)), qml.probs(op=qml.PauliX(0))],
+        ]
+        for m1_list, m2_list in zip([tape.measurements for tape in tapes], grouped_measurements):
+            assert all(qml.equal(m1, m2) for m1, m2 in zip(m1_list, m2_list))
+
+        # When using ``Hamiltonian.grouping_indices``, we generate tapes for the previously computed
+        # groups, and then use the ``group_observables`` method with the remaining pauli observables.
+        # Consequently, we will obtain 4 tapes: 2 for the Hamiltonian groups and 2 for the
+        # remaining ``probs(PauliZ(0) @ PauliX(1))`` and ``probs(PauliX(0)) measurements.
+        # NOTE: The other expectation values have observables that are present in the Hamiltonian
+        # group, and thus we avoid measuring them twice.
+        H.compute_grouping()
+
+        tape = QuantumScript.from_queue(q)
+        tapes, _ = split_tape(tape, group=True)
+        assert len(tapes) == 4
+
+        grouped_measurements = [
+            [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))],
+            [qml.expval(qml.PauliX(0))],
+            [qml.probs(op=qml.PauliX(0))],
+            [qml.probs(op=qml.PauliZ(0) @ qml.PauliX(1))],
+        ]
+        for m1_list, m2_list in zip([tape.measurements for tape in tapes], grouped_measurements):
+            assert all(qml.equal(m1, m2) for m1, m2 in zip(m1_list, m2_list))
 
     def test_number_of_tapes(self):
         """Tests the correct number of quantum tapes are produced."""

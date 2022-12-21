@@ -14,7 +14,6 @@
 """
 Unit tests for functions needed for computing the Hamiltonian.
 """
-import autograd
 import pytest
 
 import pennylane as qml
@@ -278,7 +277,7 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
 
 
 def test_gradient_expvalH():
-    r"""Test that the gradient of expval(H) computed with ``autograd.grad`` is equal to the value
+    r"""Test that the gradient of expval(H) computed with ``qml.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H"]
     geometry = (
@@ -305,7 +304,7 @@ def test_gradient_expvalH():
 
         return circuit
 
-    grad_autograd = autograd.grad(energy(mol), argnum=0)(*args)
+    grad_qml = qml.grad(energy(mol), argnum=0)(*args)
 
     alpha_1 = np.array(
         [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
@@ -322,4 +321,54 @@ def test_gradient_expvalH():
 
     grad_finitediff = (e_2 - e_1) / 0.0002
 
-    assert np.allclose(grad_autograd[0][0], grad_finitediff)
+    assert np.allclose(grad_qml[0][0], grad_finitediff)
+
+
+class TestJax:
+    @pytest.mark.jax
+    def test_gradient_expvalH(self):
+        r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
+        obtained with the finite difference method."""
+        import jax
+
+        symbols = ["H", "H"]
+        geometry = (
+            np.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], requires_grad=False)
+            / 0.529177210903
+        )
+        alpha = np.array(
+            [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+            requires_grad=True,
+        )
+
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha)
+        args = [jax.numpy.array(alpha)]
+        dev = qml.device("default.qubit", wires=4)
+
+        def energy(mol):
+            @qml.qnode(dev, interface="jax")
+            def circuit(*args):
+                qml.PauliX(0)
+                qml.PauliX(1)
+                qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
+                h_qubit = qchem.diff_hamiltonian(mol)(*args)
+                return qml.expval(h_qubit)
+
+            return circuit
+
+        grad_jax = jax.grad(energy(mol), argnums=0)(*args)
+
+        alpha_1 = np.array(
+            [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        )  # alpha[0][0] -= 0.0001
+
+        alpha_2 = np.array(
+            [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        )  # alpha[0][0] += 0.0001
+
+        e_1 = energy(mol)(*[alpha_1])
+        e_2 = energy(mol)(*[alpha_2])
+
+        grad_finitediff = (e_2 - e_1) / 0.0002
+
+        assert np.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)
