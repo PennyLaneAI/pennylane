@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the hamiltonian expand tape transform
+Contains the ``split_tape`` tape transform
 """
 from collections import defaultdict
 from dataclasses import dataclass
