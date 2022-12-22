@@ -2048,14 +2048,13 @@ class TestMCPostprocessing:
     gives the correct results.
     """
 
-    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
-    def test_sample_postprocess(self, interface):
+    @pytest.mark.autograd
+    def test_sample_postprocess_autograd(self):
         """
         Tests that the postprocessing for the generic sampling case gives the
         correct result
         """
-        lib = pytest.importorskip(interface)
-        fragment_tapes = [frag0, frag1]
+        import autograd
 
         communication_graph = MultiDiGraph(frag_edge_data)
         shots = 3
@@ -2068,7 +2067,9 @@ class TestMCPostprocessing:
             np.array([[0.0], [-1.0], [-1.0]]),
             np.array([[1.0], [1.0], [1.0]]),
         ]
-        convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
+        convert_fixed_samples = [
+            qml.math.convert_like(fs, autograd.numpy.ones(1)) for fs in fixed_samples
+        ]
 
         postprocessed = qcut.qcut_processing_fn_sample(
             convert_fixed_samples, communication_graph, shots
@@ -2078,14 +2079,13 @@ class TestMCPostprocessing:
         assert np.allclose(postprocessed[0], expected_postprocessed[0])
         assert type(convert_fixed_samples[0]) == type(postprocessed[0])
 
-    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
-    def test_mc_sample_postprocess(self, interface, mocker):
+    @pytest.mark.tf
+    def test_sample_postprocess_tf(self):
         """
         Tests that the postprocessing for the generic sampling case gives the
         correct result
         """
-        lib = pytest.importorskip(interface)
-        fragment_tapes = [frag0, frag1]
+        import tensorflow as tf
 
         communication_graph = MultiDiGraph(frag_edge_data)
         shots = 3
@@ -2098,7 +2098,280 @@ class TestMCPostprocessing:
             np.array([[0.0], [-1.0], [-1.0]]),
             np.array([[1.0], [1.0], [1.0]]),
         ]
-        convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
+        convert_fixed_samples = [qml.math.convert_like(fs, tf.ones(1)) for fs in fixed_samples]
+
+        postprocessed = qcut.qcut_processing_fn_sample(
+            convert_fixed_samples, communication_graph, shots
+        )
+        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+
+        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert type(convert_fixed_samples[0]) == type(postprocessed[0])
+
+    @pytest.mark.torch
+    def test_sample_postprocess_torch(self):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import torch
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [qml.math.convert_like(fs, torch.ones(1)) for fs in fixed_samples]
+
+        postprocessed = qcut.qcut_processing_fn_sample(
+            convert_fixed_samples, communication_graph, shots
+        )
+        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+
+        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert type(convert_fixed_samples[0]) == type(postprocessed[0])
+
+    @pytest.mark.jax
+    def test_sample_postprocess_jax(self):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import jax
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [
+            qml.math.convert_like(fs, jax.numpy.ones(1)) for fs in fixed_samples
+        ]
+
+        postprocessed = qcut.qcut_processing_fn_sample(
+            convert_fixed_samples, communication_graph, shots
+        )
+        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+
+        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert type(convert_fixed_samples[0]) == type(postprocessed[0])
+
+    @pytest.mark.autograd
+    def test_mc_sample_postprocess_autograd(self, mocker):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import autograd
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [
+            qml.math.convert_like(fs, autograd.numpy.ones(1)) for fs in fixed_samples
+        ]
+
+        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+
+        spy_prod = mocker.spy(np, "prod")
+        spy_hstack = mocker.spy(np, "hstack")
+
+        postprocessed = qcut.qcut_processing_fn_mc(
+            convert_fixed_samples, communication_graph, fixed_settings, shots, fn
+        )
+
+        expected = -85.33333333333333
+
+        prod_args = [
+            np.array([1.0, 1.0, -1.0, 1.0]),
+            [0.5, -0.5, 0.5, -0.5],
+            np.array([1.0, -1.0, -1.0, -1.0]),
+            [-0.5, -0.5, 0.5, 0.5],
+            np.array([1.0, -1.0, 1.0, 1.0]),
+            [0.5, 0.5, -0.5, 0.5],
+        ]
+
+        hstack_args = [
+            [np.array([1.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
+            [np.array([0.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
+            [np.array([0.0, 1.0]), np.array([1.0])],
+            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+        ]
+
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+            assert np.allclose(arg[0][0], expected_arg)
+
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
+            for arg, expected_arg in zip(args[0][0], expected_args):
+                assert np.allclose(arg, expected_arg)
+
+        assert np.isclose(postprocessed, expected)
+        assert type(convert_fixed_samples[0]) == type(postprocessed)
+
+    @pytest.mark.tf
+    def test_mc_sample_postprocess_tf(self, mocker):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import tensorflow as tf
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [qml.math.convert_like(fs, tf.ones(1)) for fs in fixed_samples]
+
+        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+
+        spy_prod = mocker.spy(np, "prod")
+        spy_hstack = mocker.spy(np, "hstack")
+
+        postprocessed = qcut.qcut_processing_fn_mc(
+            convert_fixed_samples, communication_graph, fixed_settings, shots, fn
+        )
+
+        expected = -85.33333333333333
+
+        prod_args = [
+            np.array([1.0, 1.0, -1.0, 1.0]),
+            [0.5, -0.5, 0.5, -0.5],
+            np.array([1.0, -1.0, -1.0, -1.0]),
+            [-0.5, -0.5, 0.5, 0.5],
+            np.array([1.0, -1.0, 1.0, 1.0]),
+            [0.5, 0.5, -0.5, 0.5],
+        ]
+
+        hstack_args = [
+            [np.array([1.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
+            [np.array([0.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
+            [np.array([0.0, 1.0]), np.array([1.0])],
+            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+        ]
+
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+            assert np.allclose(arg[0][0], expected_arg)
+
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
+            for arg, expected_arg in zip(args[0][0], expected_args):
+                assert np.allclose(arg, expected_arg)
+
+        assert np.isclose(postprocessed, expected)
+        assert type(convert_fixed_samples[0]) == type(postprocessed)
+
+    @pytest.mark.torch
+    def test_mc_sample_postprocess_torch(self, mocker):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import torch
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [qml.math.convert_like(fs, torch.ones(1)) for fs in fixed_samples]
+
+        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+
+        spy_prod = mocker.spy(np, "prod")
+        spy_hstack = mocker.spy(np, "hstack")
+
+        postprocessed = qcut.qcut_processing_fn_mc(
+            convert_fixed_samples, communication_graph, fixed_settings, shots, fn
+        )
+
+        expected = -85.33333333333333
+
+        prod_args = [
+            np.array([1.0, 1.0, -1.0, 1.0]),
+            [0.5, -0.5, 0.5, -0.5],
+            np.array([1.0, -1.0, -1.0, -1.0]),
+            [-0.5, -0.5, 0.5, 0.5],
+            np.array([1.0, -1.0, 1.0, 1.0]),
+            [0.5, 0.5, -0.5, 0.5],
+        ]
+
+        hstack_args = [
+            [np.array([1.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
+            [np.array([0.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
+            [np.array([0.0, 1.0]), np.array([1.0])],
+            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+        ]
+
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+            assert np.allclose(arg[0][0], expected_arg)
+
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
+            for arg, expected_arg in zip(args[0][0], expected_args):
+                assert np.allclose(arg, expected_arg)
+
+        assert np.isclose(postprocessed, expected)
+        assert type(convert_fixed_samples[0]) == type(postprocessed)
+
+    @pytest.mark.jax
+    def test_mc_sample_postprocess_jax(self, mocker):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import jax
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [
+            qml.math.convert_like(fs, jax.numpy.ones(1)) for fs in fixed_samples
+        ]
 
         fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
@@ -2528,27 +2801,19 @@ class TestCutCircuitMCTransform:
         assert res.shape == (shots, 2)
         assert type(res) == np.ndarray
 
-    @pytest.mark.parametrize(
-        "interface_import,interface",
-        [
-            ("autograd.numpy", "autograd"),
-            ("tensorflow", "tensorflow"),
-            ("torch", "torch"),
-            ("jax.numpy", "jax"),
-        ],
-    )
-    def test_all_interfaces_samples(self, interface_import, interface):
+    @pytest.mark.autograd
+    def test_samples_autograd(self):
         """
         Tests that `cut_circuit_mc` returns the correct type of sample
-        output value in all interfaces
+        output value in autograd
         """
-        lib = pytest.importorskip(interface_import)
+        import autograd
 
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="autograd")
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2564,34 +2829,26 @@ class TestCutCircuitMCTransform:
             return qml.sample(wires=[0, 2])
 
         v = 0.319
-        convert_input = qml.math.convert_like(v, lib.ones(1))
+        convert_input = qml.math.convert_like(v, autograd.numpy.ones(1))
 
         res = cut_circuit(convert_input)
 
         assert res.shape == (shots, 2)
         assert isinstance(res, type(convert_input))
 
-    @pytest.mark.parametrize(
-        "interface_import,interface",
-        [
-            ("autograd.numpy", "autograd"),
-            ("tensorflow", "tensorflow"),
-            ("torch", "torch"),
-            ("jax.numpy", "jax"),
-        ],
-    )
-    def test_all_interfaces_mc(self, interface_import, interface):
+    @pytest.mark.tf
+    def test_samples_tf(self):
         """
-        Tests that `cut_circuit_mc` returns the correct type of expectation
-        value output in all interfaces
+        Tests that `cut_circuit_mc` returns the correct type of sample
+        output value in tf
         """
-        lib = pytest.importorskip(interface_import)
+        import tensorflow as tf
 
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc(fn)
-        @qml.qnode(dev, interface=interface)
+        @qml.cut_circuit_mc
+        @qml.qnode(dev, interface="tf")
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2607,7 +2864,211 @@ class TestCutCircuitMCTransform:
             return qml.sample(wires=[0, 2])
 
         v = 0.319
-        convert_input = qml.math.convert_like(v, lib.ones(1))
+        convert_input = qml.math.convert_like(v, tf.ones(1))
+
+        res = cut_circuit(convert_input)
+
+        assert res.shape == (shots, 2)
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.torch
+    def test_samples_torch(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of sample
+        output value in torch
+        """
+        import torch
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev, interface="torch")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, torch.ones(1))
+
+        res = cut_circuit(convert_input)
+
+        assert res.shape == (shots, 2)
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.jax
+    def test_samples_jax(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of sample
+        output value in Jax
+        """
+        import jax
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev, interface="jax")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, jax.numpy.ones(1))
+
+        res = cut_circuit(convert_input)
+
+        assert res.shape == (shots, 2)
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.autograd
+    def test_mc_autograd(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of expectation
+        value output in autograd
+        """
+        import autograd
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev, interface="autograd")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, autograd.numpy.ones(1))
+        res = cut_circuit(convert_input)
+
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.tf
+    def test_mc_tf(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of expectation
+        value output in tf
+        """
+        import tensorflow as tf
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev, interface="tf")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, tf.ones(1))
+        res = cut_circuit(convert_input)
+
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.torch
+    def test_mc_torch(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of expectation
+        value output in torch
+        """
+        import torch
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev, interface="torch")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, torch.ones(1))
+        res = cut_circuit(convert_input)
+
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.jax
+    def test_mc_jax(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of expectation
+        value output in Jax
+        """
+        import jax
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev, interface="jax")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, jax.numpy.ones(1))
         res = cut_circuit(convert_input)
 
         assert isinstance(res, type(convert_input))
@@ -2841,6 +3302,7 @@ class TestContractTensors:
         """Test if the basic contraction is differentiable using the tf interface"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
+
         import tensorflow as tf
 
         params = tf.Variable(self.params)
@@ -2996,11 +3458,11 @@ class TestQCutProcessingFn:
         with pytest.raises(ValueError, match="should be a flat list of length 1024"):
             qcut._to_tensors(results, prepare_nodes, measure_nodes)
 
-    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
+    @pytest.mark.autograd
     @pytest.mark.parametrize("n", [1, 2])
-    def test_process_tensor(self, n, interface):
+    def test_process_tensor_autograd(self, n):
         """Test if the tensor returned by _process_tensor is equal to the expected value"""
-        lib = pytest.importorskip(interface)
+        import autograd
 
         U = unitary_group.rvs(2**n, random_state=1967)
 
@@ -3039,7 +3501,154 @@ class TestQCutProcessingFn:
             input = kron(*[states_pure[i] for i in inp])
             results.append(f(input, out))
 
-        results = qml.math.cast_like(np.concatenate(results), lib.ones(1))
+        results = qml.math.cast_like(np.concatenate(results), autograd.numpy.ones(1))
+
+        # Now apply _process_tensor
+        tensor = qcut._process_tensor(results, n, n)
+        assert np.allclose(tensor, target_tensor)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_process_tensor_tf(self, n):
+        """Test if the tensor returned by _process_tensor is equal to the expected value"""
+        import tensorflow as tf
+
+        U = unitary_group.rvs(2**n, random_state=1967)
+
+        # First, create target process tensor
+        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = itertools.product(range(4), repeat=n)
+
+        results = []
+
+        # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
+        # See Sec. II. A. of https://doi.org/10.1088/1367-2630/abd7bc, below Eq. (2).
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[basis[i] for i in inp])
+            output = kron(*[basis[i] for i in out])
+            results.append(np.trace(output @ U @ input @ U.conj().T))
+
+        target_tensor = np.array(results).reshape((4,) * (2 * n))
+
+        # Now, create the input results vector found from executing over the product of |0>, |1>,
+        # |+>, |+i> inputs and using the grouped Pauli terms for measurements
+        dev = qml.device("default.qubit", wires=n)
+
+        @qml.qnode(dev)
+        def f(state, measurement):
+            qml.QubitStateVector(state, wires=range(n))
+            qml.QubitUnitary(U, wires=range(n))
+            return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
+
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = qml.pauli.partition_pauli_group(n)
+
+        results = []
+
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[states_pure[i] for i in inp])
+            results.append(f(input, out))
+
+        results = qml.math.cast_like(np.concatenate(results), tf.ones(1))
+
+        # Now apply _process_tensor
+        tensor = qcut._process_tensor(results, n, n)
+        assert np.allclose(tensor, target_tensor)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_process_tensor_torch(self, n):
+        """Test if the tensor returned by _process_tensor is equal to the expected value"""
+        import torch
+
+        U = unitary_group.rvs(2**n, random_state=1967)
+
+        # First, create target process tensor
+        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = itertools.product(range(4), repeat=n)
+
+        results = []
+
+        # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
+        # See Sec. II. A. of https://doi.org/10.1088/1367-2630/abd7bc, below Eq. (2).
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[basis[i] for i in inp])
+            output = kron(*[basis[i] for i in out])
+            results.append(np.trace(output @ U @ input @ U.conj().T))
+
+        target_tensor = np.array(results).reshape((4,) * (2 * n))
+
+        # Now, create the input results vector found from executing over the product of |0>, |1>,
+        # |+>, |+i> inputs and using the grouped Pauli terms for measurements
+        dev = qml.device("default.qubit", wires=n)
+
+        @qml.qnode(dev)
+        def f(state, measurement):
+            qml.QubitStateVector(state, wires=range(n))
+            qml.QubitUnitary(U, wires=range(n))
+            return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
+
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = qml.pauli.partition_pauli_group(n)
+
+        results = []
+
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[states_pure[i] for i in inp])
+            results.append(f(input, out))
+
+        results = qml.math.cast_like(np.concatenate(results), torch.ones(1))
+
+        # Now apply _process_tensor
+        tensor = qcut._process_tensor(results, n, n)
+        assert np.allclose(tensor, target_tensor)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_process_tensor_jax(self, n):
+        """Test if the tensor returned by _process_tensor is equal to the expected value"""
+        import jax
+
+        U = unitary_group.rvs(2**n, random_state=1967)
+
+        # First, create target process tensor
+        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = itertools.product(range(4), repeat=n)
+
+        results = []
+
+        # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
+        # See Sec. II. A. of https://doi.org/10.1088/1367-2630/abd7bc, below Eq. (2).
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[basis[i] for i in inp])
+            output = kron(*[basis[i] for i in out])
+            results.append(np.trace(output @ U @ input @ U.conj().T))
+
+        target_tensor = np.array(results).reshape((4,) * (2 * n))
+
+        # Now, create the input results vector found from executing over the product of |0>, |1>,
+        # |+>, |+i> inputs and using the grouped Pauli terms for measurements
+        dev = qml.device("default.qubit", wires=n)
+
+        @qml.qnode(dev)
+        def f(state, measurement):
+            qml.QubitStateVector(state, wires=range(n))
+            qml.QubitUnitary(U, wires=range(n))
+            return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
+
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = qml.pauli.partition_pauli_group(n)
+
+        results = []
+
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[states_pure[i] for i in inp])
+            results.append(f(input, out))
+
+        results = qml.math.cast_like(np.concatenate(results), jax.numpy.ones(1))
 
         # Now apply _process_tensor
         tensor = qcut._process_tensor(results, n, n)
@@ -3095,6 +3704,7 @@ class TestQCutProcessingFn:
         result = qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
         assert np.allclose(result, expected_result)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_qcut_processing_fn_autograd(self, use_opt_einsum):
         """Test if qcut_processing_fn handles the gradient as expected in the autograd interface
@@ -3128,13 +3738,15 @@ class TestQCutProcessingFn:
 
         assert np.allclose(grad, expected_grad)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_qcut_processing_fn_tf(self, use_opt_einsum):
         """Test if qcut_processing_fn handles the gradient as expected in the TF interface
         using a simple example"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
-        tf = pytest.importorskip("tensorflow")
+
+        import tensorflow as tf
 
         x = tf.Variable(0.9, dtype=tf.float64)
 
@@ -3166,13 +3778,14 @@ class TestQCutProcessingFn:
 
         assert np.allclose(grad, expected_grad)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_qcut_processing_fn_torch(self, use_opt_einsum):
         """Test if qcut_processing_fn handles the gradient as expected in the torch interface
         using a simple example"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
-        torch = pytest.importorskip("torch")
+        import torch
 
         x = torch.tensor(0.9, requires_grad=True, dtype=torch.float64)
 
@@ -3205,14 +3818,15 @@ class TestQCutProcessingFn:
 
         assert np.allclose(grad.detach().numpy(), expected_grad)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_qcut_processing_fn_jax(self, use_opt_einsum):
         """Test if qcut_processing_fn handles the gradient as expected in the jax interface
         using a simple example"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
-        jax = pytest.importorskip("jax")
-        jnp = pytest.importorskip("jax.numpy")
+        import jax
+        import jax.numpy as jnp
 
         x = jnp.array(0.9)
 
@@ -3254,6 +3868,8 @@ class TestCutCircuitTransform:
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform.
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
 
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
@@ -3280,12 +3896,16 @@ class TestCutCircuitTransform:
 
         assert np.isclose(gradient, cut_gradient, atol=atol)
 
+    @pytest.mark.torch
     def test_simple_cut_circuit_torch(self, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the torch interface.
         """
-        torch = pytest.importorskip("torch")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -3315,12 +3935,16 @@ class TestCutCircuitTransform:
 
         assert np.isclose(grad, grad_expected)
 
+    @pytest.mark.tf
     def test_simple_cut_circuit_tf(self, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the TF interface.
         """
-        tf = pytest.importorskip("tensorflow")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -3350,12 +3974,16 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.isclose(grad, grad_expected)
 
+    @pytest.mark.jax
     def test_simple_cut_circuit_jax(self, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the Jax interface.
         """
-        jax = pytest.importorskip("jax")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
@@ -3385,6 +4013,9 @@ class TestCutCircuitTransform:
     def test_with_mid_circuit_measurement(self, mocker, use_opt_einsum):
         """Tests the full circuit cutting pipeline returns the correct value and gradient for a
         circuit that contains mid-circuit measurements, using the `cut_circuit` transform."""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
@@ -3410,13 +4041,17 @@ class TestCutCircuitTransform:
 
         assert np.isclose(gradient, cut_gradient)
 
+    @pytest.mark.torch
     def test_simple_cut_circuit_torch_trace(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the torch interface and
         using torch tracing.
         """
-        torch = pytest.importorskip("torch")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -3476,13 +4111,17 @@ class TestCutCircuitTransform:
 
         spy.assert_not_called()
 
+    @pytest.mark.tf
     def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the TF interface and
         using JIT.
         """
-        tf = pytest.importorskip("tensorflow")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -3554,7 +4193,10 @@ class TestCutCircuitTransform:
         gradient for a simple circuit using the `cut_circuit` transform with the Jax interface and
         using JIT.
         """
-        jax = pytest.importorskip("jax")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
@@ -3611,6 +4253,8 @@ class TestCutCircuitTransform:
     def test_device_wires(self, use_opt_einsum):
         """Tests that a 3-qubit circuit is cut into two 2-qubit fragments such that both fragments
         can be run on a 2-qubit device"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
 
         def circuit():
             qml.RX(0.4, wires=0)
@@ -3645,6 +4289,9 @@ class TestCutCircuitTransform:
     def test_circuit_with_disconnected_components(self, use_opt_einsum, mocker):
         """Tests if a circuit that is fragmented into subcircuits such that some of the subcircuits
         are disconnected from the final terminal measurements is executed correctly"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev = qml.device("default.qubit", wires=3)
 
         @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
@@ -3664,6 +4311,9 @@ class TestCutCircuitTransform:
     def test_circuit_with_trivial_wire_cut(self, use_opt_einsum, mocker):
         """Tests that a circuit with a trivial wire cut (not separating the circuit into
         fragments) is executed correctly"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
@@ -3701,6 +4351,9 @@ class TestCutCircuitTransform:
         ╰C──────────────│─────────┤ ╰<Z@Z@Z>
         ────────────────╰C────────┤
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev_original = qml.device("default.qubit", wires=5)
 
         # We need a 4-qubit device to account for mid-circuit measurements
@@ -3766,6 +4419,9 @@ class TestCutCircuitTransform:
         2: ─╭U(M0)─────╰U(M2)─╭U(M3)────────┤ │
         3: ─╰U(M0)────────────╰U(M3)────────┤ ╰<Z@X>
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev_original = qml.device("default.qubit", wires=4)
 
         # We need a 3-qubit device
