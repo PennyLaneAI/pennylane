@@ -99,6 +99,7 @@ class ControlledQubitUnitary(ControlledOp):
         control_values=None,
         do_queue=True,
         unitary_check=False,
+        work_wires=None,
     ):
         if getattr(base, "wires", False) and wires is not None:
             warnings.warn(
@@ -118,5 +119,6 @@ class ControlledQubitUnitary(ControlledOp):
             self.base,
             control_wires=ctrl_wires,
             control_values=values,
+            work_wires=self.work_wires,
         )
         return new_op.inv() if self.inverse else new_op
