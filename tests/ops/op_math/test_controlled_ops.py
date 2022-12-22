@@ -255,7 +255,6 @@ class TestControlledQubitUnitary:
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
         U = np.array([[0.94877869, 0.31594146], [-0.31594146, 0.94877869]])
-        res_static = qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1], u_wires=[0])
         res_dynamic = qml.ControlledQubitUnitary(U, control_wires=[1], wires=0).matrix()
         expected = np.array(
             [
@@ -265,7 +264,6 @@ class TestControlledQubitUnitary:
                 [0.0 + 0.0j, 0.0 + 0.0j, -0.31594146 + 0.0j, 0.94877869 + 0.0j],
             ]
         )
-        assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
     def test_matrix_representation_broadcasted(self, tol):
@@ -278,7 +276,6 @@ class TestControlledQubitUnitary:
             ]
         )
 
-        res_static = qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1], u_wires=[0])
         res_dynamic = qml.ControlledQubitUnitary(U, control_wires=[1], wires=0).matrix()
         expected = np.array(
             [
@@ -302,7 +299,6 @@ class TestControlledQubitUnitary:
                 ],
             ]
         )
-        assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
     @pytest.mark.parametrize("n", (2, -1, -2))
