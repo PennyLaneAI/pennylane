@@ -320,12 +320,6 @@ class Controlled(SymbolicOp):
 
     def matrix(self, wire_order=None):
 
-        if self.work_wires:
-            raise qml.operation.MatrixUndefinedError(
-                f"Matrix has not been defined for Controlled operation with "
-                f"work wires. Received work_wires={self.work_wires}"
-            )
-
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
 
