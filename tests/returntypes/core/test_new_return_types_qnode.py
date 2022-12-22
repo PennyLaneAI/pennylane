@@ -124,6 +124,7 @@ class TestIntegrationSingleReturn:
         assert isinstance(res, np.ndarray)
 
     @pytest.mark.xfail(reason="qml.execute shot vec support required with new return types")
+    @pytest.mark.filterwarnings("ignore:Requested Von Neumann entropy with finite shots")
     def test_vn_entropy_shot_vec_error(self):
         """Test an error is raised when using shot vectors with vn_entropy."""
         dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
@@ -156,6 +157,7 @@ class TestIntegrationSingleReturn:
         assert isinstance(res, np.ndarray)
 
     @pytest.mark.xfail(reason="qml.execute shot vec support required with new return types")
+    @pytest.mark.filterwarnings("ignore:Requested Von Neumann entropy with finite shots")
     def test_mutual_info_shot_vec_error(self):
         """Test an error is raised when using shot vectors with mutual_info."""
         dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
@@ -679,11 +681,14 @@ devices = ["default.qubit.jax", "default.mixed"]
 @pytest.mark.jax
 class TestIntegrationSingleReturnJax:
     """Test that single measurements return behavior does not change for Jax device."""
+    from jax.config import config
+    config.update("jax_enable_x64", True)
 
     @pytest.mark.parametrize("wires", wires)
     def test_state_default(self, wires):
         """Return state with default.qubit."""
         import jax
+
 
         dev = qml.device("default.qubit.jax", wires=wires)
 
@@ -1657,6 +1662,7 @@ class TestIntegrationMultipleReturnsTorch:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("wires", wires)
     @pytest.mark.parametrize("shot_vector", shot_vectors)
+    @pytest.mark.filterwarnings("ignore:The use of `x.T` on tensors of dimension")
     def test_list_multiple_expval(self, wires, device, shot_vector):
         """Return a comprehension list of multiple expvals."""
         import torch

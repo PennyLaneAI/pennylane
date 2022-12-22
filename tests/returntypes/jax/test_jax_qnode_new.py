@@ -431,12 +431,10 @@ class TestVectorValuedQNode:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        expected = np.array(
-            [
-                [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2],
-                [(1 + np.cos(x) * np.cos(y)) / 2, 0, (1 - np.cos(x) * np.cos(y)) / 2, 0],
-            ]
-        )
+        expected = [
+            [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2],
+            [(1 + np.cos(x) * np.cos(y)) / 2, 0, (1 - np.cos(x) * np.cos(y)) / 2, 0],
+        ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
         assert res[0].shape == (2,)

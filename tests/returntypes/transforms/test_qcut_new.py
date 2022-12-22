@@ -2743,6 +2743,8 @@ class TestCutCircuitMCTransform:
         ):
             cut_circuit(v)
 
+
+    @pytest.mark.filterwarnings("ignore:Detected 'shots'")
     def test_qnode_shots_arg_error(self):
         """
         Tests that if a shots argument is passed directly to the qnode when using
