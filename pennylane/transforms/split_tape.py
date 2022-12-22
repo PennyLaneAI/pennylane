@@ -525,4 +525,8 @@ class _MGroup:
             # when computing gradients, we need to convert the tuple to a gradient box
             results = qml.math.stack(results)
 
-        return qml.math.squeeze(results)
+        elif not qml.active_return():
+            # Convert results to array for the old return types
+            results = qml.math.convert_like(results, results[0])
+
+        return results[0] if len(results) == 1 else results
