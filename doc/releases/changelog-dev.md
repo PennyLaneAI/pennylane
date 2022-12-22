@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* `qml.purity` is added as a measurement process for purity 
+  [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
+
 * Added a new template that implements a canonical 2-complete linear (2-CCL) swap network
   described in [arXiv:1905.05118](https://arxiv.org/abs/1905.05118).
   [(#3447)](https://github.com/PennyLaneAI/pennylane/pull/3447)
@@ -130,6 +133,7 @@ This release contains contributions from (in alphabetical order):
 
 Ikko Ashimine
 Utkarsh Azad
+Astral Cai
 Lillian M. A. Frederiksen
 Soran Jahangiri
 Albert Mitjans Coma
