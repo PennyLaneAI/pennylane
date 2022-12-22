@@ -25,7 +25,7 @@ pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
-jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 test_multi_dispatch_stack_data = [
     [[1.0, 0.0], [2.0, 3.0]],
@@ -33,7 +33,7 @@ test_multi_dispatch_stack_data = [
     onp.array([[1.0, 0.0], [2.0, 3.0]]),
     anp.array([[1.0, 0.0], [2.0, 3.0]]),
     np.array([[1.0, 0.0], [2.0, 3.0]]),
-    jax.numpy.array([[1.0, 0.0], [2.0, 3.0]]),
+    jnp.array([[1.0, 0.0], [2.0, 3.0]]),
     tf.constant([[1.0, 0.0], [2.0, 3.0]]),
 ]
 
@@ -79,7 +79,7 @@ test_data0 = [
     anp.array([1, 2, 3]),
     np.array([1, 2, 3]),
     torch.tensor([1, 2, 3]),
-    jax.numpy.array([1, 2, 3]),
+    jnp.array([1, 2, 3]),
     tf.constant([1, 2, 3]),
 ]
 
@@ -104,7 +104,7 @@ test_data_values = [
     [onp.array([1, 2, 3]) for _ in range(5)],
     [anp.array([1, 2, 3]) for _ in range(5)],
     [torch.tensor([1, 2, 3]) for _ in range(5)],
-    [jax.numpy.array([1, 2, 3]) for _ in range(5)],
+    [jnp.array([1, 2, 3]) for _ in range(5)],
     [tf.constant([1, 2, 3]) for _ in range(5)],
 ]
 
@@ -168,3 +168,30 @@ def test_kron():
     assert np.allclose(expected_result, fn.kron(m1, m2, like="scipy"))
     with pytest.warns(DeprecationWarning):
         _ = s.kron(m1, m2)
+
+
+@pytest.mark.parametrize(
+    ("n", "t", "gamma_ref"),
+    [
+        (
+            0.1,
+            jnp.array([0.2, 0.3, 0.4]),
+            jnp.array([0.87941963, 0.90835799, 0.92757383]),
+        ),
+        (
+            0.1,
+            np.array([0.2, 0.3, 0.4]),
+            np.array([0.87941963, 0.90835799, 0.92757383]),
+        ),
+        (
+            0.1,
+            onp.array([0.2, 0.3, 0.4]),
+            onp.array([0.87941963, 0.90835799, 0.92757383]),
+        ),
+    ],
+)
+def test_gammainc(n, t, gamma_ref):
+    """Test that the lower incomplete Gamma function is computed correctly."""
+    gamma = fn.gammainc(n, t)
+
+    assert np.allclose(gamma, gamma_ref)

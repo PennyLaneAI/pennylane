@@ -156,7 +156,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     The drawback of the adjoint method is that it is only available on simulators and without
     shot simulations.
     """
-    if isinstance(circuit, qml.tape.QuantumTape):
+    if isinstance(circuit, qml.tape.QuantumScript):
         return _adjoint_metric_tensor_tape(circuit, device)
     if isinstance(circuit, (qml.QNode, qml.ExpvalCost)):
         return _adjoint_metric_tensor_qnode(circuit, device, hybrid)

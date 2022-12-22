@@ -65,6 +65,8 @@ def make_tape(fn):
     [RY(1.0, wires=[0])]
     """
 
+    warnings.warn("``make_tape`` is deprecated in favor of ``qml.tape.make_qscript``", UserWarning)
+
     def wrapper(*args, **kwargs):
         with qml.QueuingManager.stop_recording(), qml.tape.QuantumTape() as new_tape:
             fn(*args, **kwargs)
@@ -146,7 +148,7 @@ class single_tape_transform:
     def __call__(self, tape, *args, **kwargs):
         with qml.queuing.AnnotatedQueue() as q:
             self.transform_fn(tape, *args, **kwargs)
-        qs = qml.tape.QuantumScript(*qml.queuing.process_queue(q))
+        qs = qml.tape.QuantumScript.from_queue(q)
         for obj, info in q.items():
             qml.queuing.QueuingManager.append(obj, **info)
         return qs
@@ -173,6 +175,8 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
             f"The qfunc to transform, {fn}, does not appear "
             "to be a valid Python function or callable."
         )
+    if isinstance(fn, qml.QNode):
+        raise ValueError("QNodes cannot be declared as qfunc transforms.")
 
     @functools.wraps(fn)
     def internal_wrapper(*args, **kwargs):
@@ -333,15 +337,15 @@ def qfunc_transform(tape_transform):
 
             def transform(old_qfunc, params):
                 def new_qfunc(*args, **kwargs):
-                    # 1. extract the QuantumScript from the old qfunc, being
+                    # 1. extract the QuantumTape from the old qfunc, being
                     # careful *not* to have it queued.
-                    qscript = make_qscript(old_qfunc)(*args, **kwargs)
+                    tape = make_qscript(old_qfunc)(*args, **kwargs)
 
-                    # 2. transform the qscript
-                    new_script = tape_transform(qscript, params)
+                    # 2. transform the tape
+                    new_tape = tape_transform(tape, params)
 
-                    # 3. queue the *new* qscript to the active queuing context
-                    new_script.queue()
+                    # 3. queue the *new* tape to the active queuing context
+                    new_tape.queue()
                 return new_qfunc
 
         *Note: this is pseudocode; the actual implementation is significantly more complicated!*

@@ -47,7 +47,6 @@ class QubitUnitary(Operation):
 
     Raises:
         ValueError: if the number of wires doesn't fit the dimensions of the matrix
-        UserWarning: if the input matrix might not be unitary
 
     **Example**
 
@@ -163,17 +162,21 @@ class QubitUnitary(Operation):
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
         # or a single RZ for diagonal matrices.
         shape = qml.math.shape(U)
-        if shape == (2, 2):
+
+        is_batched = len(shape) == 3
+        shape_without_batch_dim = shape[1:] if is_batched else shape
+
+        if shape_without_batch_dim == (2, 2):
             return qml.transforms.decompositions.zyz_decomposition(U, Wires(wires)[0])
 
-        if shape == (4, 4):
-            return qml.transforms.two_qubit_decomposition(U, Wires(wires))
+        if shape_without_batch_dim == (4, 4):
+            # TODO[dwierichs]: Implement decomposition of broadcasted unitary
+            if is_batched:
+                raise DecompositionUndefinedError(
+                    "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
+                )
 
-        # TODO[dwierichs]: Implement decomposition of broadcasted unitary
-        if len(shape) == 3:
-            raise DecompositionUndefinedError(
-                "The decomposition of QubitUnitary does not support broadcasting."
-            )
+            return qml.transforms.two_qubit_decomposition(U, Wires(wires))
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
@@ -454,7 +457,7 @@ class DiagonalQubitUnitary(Operation):
     def compute_eigvals(D):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},

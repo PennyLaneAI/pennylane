@@ -21,10 +21,10 @@ try:
     import torch
 
     VERSION_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
-    if not VERSION_SUPPORT:
+    if not VERSION_SUPPORT:  # pragma: no cover
         raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
 
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
@@ -257,9 +257,11 @@ class DefaultQubitTorch(DefaultQubit):
     @staticmethod
     def _dot(x, y):
         if x.device != y.device:
-            if x.device != "cpu":
+
+            # GPU-specific cases
+            if x.device != "cpu":  # pragma: no cover
                 return torch.tensordot(x, y.to(x.device), dims=1)
-            if y.device != "cpu":
+            if y.device != "cpu":  # pragma: no cover
                 return torch.tensordot(x.to(y.device), y, dims=1)
 
         return torch.tensordot(x, y, dims=1)

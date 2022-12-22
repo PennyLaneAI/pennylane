@@ -29,7 +29,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.qcut import qcut
+from pennylane.transforms import qcut
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
@@ -48,7 +48,7 @@ states_pure = [
     np.array([1, 1j]) / np.sqrt(2),
 ]
 
-with qml.tape.QuantumTape() as tape:
+with qml.queuing.AnnotatedQueue() as q:
     qml.RX(0.432, wires=0)
     qml.RY(0.543, wires="a")
     qml.CNOT(wires=[0, "a"])
@@ -57,7 +57,8 @@ with qml.tape.QuantumTape() as tape:
     qml.RZ(0.133, wires="a")
     qml.expval(qml.PauliZ(wires=[0]))
 
-with qml.tape.QuantumTape() as multi_cut_tape:
+tape = qml.tape.QuantumScript.from_queue(q)
+with qml.queuing.AnnotatedQueue() as q_multi_cut_tape:
     qml.RX(0.432, wires=0)
     qml.RY(0.543, wires="a")
     qml.WireCut(wires=0)
@@ -72,6 +73,9 @@ with qml.tape.QuantumTape() as multi_cut_tape:
     qml.RY(0.543, wires=2)
     qml.RZ(0.876, wires=3)
     qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]))
+
+
+multi_cut_tape = qml.tape.QuantumScript.from_queue(q_multi_cut_tape)
 
 
 def kron(*args):
@@ -99,7 +103,7 @@ def fn(x):
 
 
 # tape containing mid-circuit measurements
-with qml.tape.QuantumTape() as mcm_tape:
+with qml.queuing.AnnotatedQueue() as q_mcm_tape:
     qml.Hadamard(wires=0)
     qml.RX(0.432, wires=0)
     qml.RY(0.543, wires=1)
@@ -117,7 +121,8 @@ with qml.tape.QuantumTape() as mcm_tape:
     qml.expval(qml.PauliZ(wires=[0]))
 
 
-with qml.tape.QuantumTape() as frag0:
+mcm_tape = qml.tape.QuantumScript.from_queue(q_mcm_tape)
+with qml.queuing.AnnotatedQueue() as q0:
     qml.Hadamard(wires=[0])
     qml.RX(0.432, wires=[0])
     qml.RY(0.543, wires=[1])
@@ -132,7 +137,8 @@ with qml.tape.QuantumTape() as frag0:
     qml.sample(qml.Projector([1], wires=[0]))
     qml.sample(qml.Projector([1], wires=[3]))
 
-with qml.tape.QuantumTape() as frag1:
+frag0 = qml.tape.QuantumScript.from_queue(q0)
+with qml.queuing.AnnotatedQueue() as q1:
     qcut.PrepareNode(wires=[0])
     qml.CNOT(wires=[0, 1])
     qcut.MeasureNode(wires=[0])
@@ -143,6 +149,7 @@ with qml.tape.QuantumTape() as frag1:
     qml.sample(qml.Projector([1], wires=[1]))
 
 
+frag1 = qml.tape.QuantumScript.from_queue(q1)
 frag_edge_data = [
     (0, 1, {"pair": (frag0.operations[4], frag1.operations[0])}),
     (1, 0, {"pair": (frag1.operations[2], frag0.operations[5])}),
@@ -356,7 +363,7 @@ class TestTapeToGraph:
         observables contained within the graph nodes
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=2)
             qml.CNOT(wires=[0, 1])
@@ -364,6 +371,7 @@ class TestTapeToGraph:
             qml.RZ(0.133, wires=1)
             qml.expval(obs)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         nodes = list(g.nodes)
 
@@ -389,7 +397,7 @@ class TestTapeToGraph:
         Tests that measurements are correctly converted
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=2)
             qml.CNOT(wires=[0, 1])
@@ -397,6 +405,7 @@ class TestTapeToGraph:
             qml.RZ(0.133, wires=1)
             qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         nodes = list(g.nodes)
 
@@ -410,7 +419,7 @@ class TestTapeToGraph:
         converted to a graph
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=2)
             qml.CNOT(wires=[0, 1])
@@ -419,6 +428,7 @@ class TestTapeToGraph:
             qml.expval(qml.PauliZ(wires=[0]))
             qml.expval(qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected_obs = [
             qml.expval(qml.PauliZ(wires=[0])),
             qml.expval(qml.PauliX(wires=[1])),
@@ -440,7 +450,7 @@ class TestTapeToGraph:
         correctly converted to a graph with a distinct node for each wire sampled
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -448,6 +458,7 @@ class TestTapeToGraph:
             qml.CNOT(wires=[1, 2])
             qml.sample(wires=[0, 1, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
 
         expected_nodes = [
@@ -475,7 +486,7 @@ class TestTapeToGraph:
         observables raises the correct error.
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -483,6 +494,7 @@ class TestTapeToGraph:
             qml.CNOT(wires=[1, 2])
             qml.sample(qml.PauliX(0) @ qml.PauliY(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="Sampling from tensor products of observables "):
             qcut.tape_to_graph(tape)
 
@@ -492,7 +504,7 @@ class TestTapeToGraph:
         over individual wires is supported.
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -502,6 +514,7 @@ class TestTapeToGraph:
             qml.sample(qml.PauliZ(1))
             qml.sample(qml.PauliZ(2))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
 
         expected_nodes = [
@@ -538,7 +551,7 @@ class TestReplaceWireCut:
 
         wire_cut_num = 1
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -550,6 +563,7 @@ class TestReplaceWireCut:
             qml.RY(0.543, wires=2)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
@@ -582,7 +596,7 @@ class TestReplaceWireCut:
         wire_cut_3 = 2
         wire_cut_num = [wire_cut_1, wire_cut_2, wire_cut_3]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires="a")
             qml.WireCut(wires=wire_cut_1)
@@ -598,6 +612,7 @@ class TestReplaceWireCut:
             qml.RZ(0.876, wires=3)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
@@ -630,7 +645,7 @@ class TestReplaceWireCut:
         """
         wire_cut_num = 1
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.RZ(0.133, wires=1)
@@ -639,6 +654,7 @@ class TestReplaceWireCut:
             qml.RY(0.543, wires=2)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
 
@@ -662,13 +678,14 @@ class TestReplaceWireCut:
         i.e if it has no predecessor
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
             qml.RX(0.432, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.RZ(0.133, wires=1)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
@@ -696,12 +713,13 @@ class TestReplaceWireCut:
         i.e if it has no successor
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.RZ(0.133, wires=1)
             qml.WireCut(wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
@@ -730,13 +748,14 @@ class TestReplaceWireCut:
         """
         wire_cut_num = 1
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.CNOT(wires=[0, "a"])
             qml.CNOT(wires=["a", 2])
             qml.WireCut(wires=[0, "a", 2])
             qml.CZ(wires=[0, 2])
             qml.Toffoli(wires=[0, "a", 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
 
@@ -874,7 +893,7 @@ class TestFragmentGraph:
         correct nodes and edges. Focuses on the case where fragmentation results in two fragments
         that are disconnected from the final measurements.
         """
-        with qml.tape.QuantumTape() as multi_cut_tape:
+        with qml.queuing.AnnotatedQueue() as q_multi_cut_tape:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires="a")
             qml.WireCut(wires=0)
@@ -890,6 +909,7 @@ class TestFragmentGraph:
             qml.RZ(0.876, wires=3)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        multi_cut_tape = qml.tape.QuantumScript.from_queue(q_multi_cut_tape)
         g = qcut.tape_to_graph(multi_cut_tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -966,12 +986,13 @@ class TestFragmentGraph:
         correctly
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires="a")
             qml.WireCut(wires="a")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1022,7 +1043,7 @@ class TestFragmentGraph:
         communication graph is the same each time.
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -1034,6 +1055,7 @@ class TestFragmentGraph:
             qml.RY(0.543, wires=2)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs_0, communication_graph_0 = qcut.fragment_graph(g)
@@ -1045,7 +1067,7 @@ class TestFragmentGraph:
     def test_contained_cut(self):
         """Tests that fragmentation ignores `MeasureNode` and `PrepareNode` pairs that do not
         result in a disconnection"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.WireCut(wires=0)
@@ -1053,6 +1075,7 @@ class TestFragmentGraph:
             qml.RX(0.4, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         fragments, communication_graph = qcut.fragment_graph(g)
@@ -1065,7 +1088,7 @@ class TestFragmentGraph:
         correctly
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -1073,6 +1096,7 @@ class TestFragmentGraph:
             qml.CNOT(wires=[1, 2])
             qml.sample(wires=[0, 1, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         fragments, communication_graph = qcut.fragment_graph(g)
@@ -1130,7 +1154,7 @@ class TestGraphToTape:
         Tests that directed multigraphs, containing MeasureNodes and
         PrepareNodes, are correctly converted to tapes
         """
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires="a")
             qml.WireCut(wires=[0, "a"])
@@ -1146,21 +1170,24 @@ class TestGraphToTape:
             qml.RZ(0.876, wires=3)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
 
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
 
-        with qml.tape.QuantumTape() as tape_0:
+        with qml.queuing.AnnotatedQueue() as q0:
             qml.RX(0.432, wires=[0])
             qcut.MeasureNode(wires=[0])
 
-        with qml.tape.QuantumTape() as tape_1:
+        tape_0 = qml.tape.QuantumScript.from_queue(q0)
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RY(0.543, wires=["a"])
             qcut.MeasureNode(wires=["a"])
 
-        with qml.tape.QuantumTape() as tape_2:
+        tape_1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qcut.PrepareNode(wires=[0])
             qcut.PrepareNode(wires=["a"])
             qml.CNOT(wires=[0, "a"])
@@ -1169,18 +1196,21 @@ class TestGraphToTape:
             qcut.MeasureNode(wires=["a"])
             qml.expval(qml.PauliZ(wires=[0]))
 
-        with qml.tape.QuantumTape() as tape_3:
+        tape_2 = qml.tape.QuantumScript.from_queue(q2)
+        with qml.queuing.AnnotatedQueue() as q3:
             qcut.PrepareNode(wires=["a"])
             qml.CNOT(wires=["a", 2])
             qml.RX(0.432, wires=["a"])
             qcut.MeasureNode(wires=[2])
 
-        with qml.tape.QuantumTape() as tape_4:
+        tape_3 = qml.tape.QuantumScript.from_queue(q3)
+        with qml.queuing.AnnotatedQueue() as q4:
             qcut.PrepareNode(wires=[2])
             qml.CNOT(wires=[2, 3])
             qml.RY(0.543, wires=[2])
             qml.RZ(0.876, wires=[3])
 
+        tape_4 = qml.tape.QuantumScript.from_queue(q4)
         expected_tapes = [tape_0, tape_1, tape_2, tape_3, tape_4]
 
         for tape, expected_tape in zip(tapes, expected_tapes):
@@ -1223,7 +1253,7 @@ class TestGraphToTape:
 
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
 
-        with qml.tape.QuantumTape() as tape_0:
+        with qml.queuing.AnnotatedQueue() as q0:
             qml.Hadamard(wires=[0])
             qml.RX(0.432, wires=[0])
             qml.RY(0.543, wires=[1])
@@ -1237,7 +1267,8 @@ class TestGraphToTape:
             qml.CNOT(wires=[0, 3])
             qml.expval(qml.PauliZ(wires=[0]))
 
-        with qml.tape.QuantumTape() as tape_1:
+        tape_0 = qml.tape.QuantumScript.from_queue(q0)
+        with qml.queuing.AnnotatedQueue() as q1:
             qcut.PrepareNode(wires=[1])
             qml.CNOT(wires=[1, 2])
             qcut.MeasureNode(wires=[1])
@@ -1246,6 +1277,7 @@ class TestGraphToTape:
             qml.CNOT(wires=[0, 2])
             qcut.MeasureNode(wires=[0])
 
+        tape_1 = qml.tape.QuantumScript.from_queue(q1)
         expected_tapes = [tape_0, tape_1]
 
         for tape, expected_tape in zip(tapes, expected_tapes):
@@ -1282,10 +1314,11 @@ class TestGraphToTape:
         graph returned by tape_to_graph, and then combining those nodes again into a single tensor
         product in the circuit returned by graph_to_tape"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
         tape_out = qcut.graph_to_tape(graph)
 
@@ -1296,13 +1329,14 @@ class TestGraphToTape:
         """Tests that the graph_to_tape function correctly swaps the wires of observables when
         the tape contains mid-circuit measurements"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.CNOT(wires=[0, 1])
             qcut.MeasureNode(wires=1)
             qcut.PrepareNode(wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
         tape_out = qcut.graph_to_tape(graph)
 
@@ -1317,7 +1351,7 @@ class TestGraphToTape:
         fragment tapes
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -1325,6 +1359,7 @@ class TestGraphToTape:
             qml.CNOT(wires=[1, 2])
             qml.sample(wires=[0, 1, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1354,7 +1389,7 @@ class TestGraphToTape:
         correctly converted into tapes
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=1)
@@ -1371,6 +1406,7 @@ class TestGraphToTape:
             qml.CNOT(wires=[0, 1])
             qml.sample(wires=[0, 1, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1414,7 +1450,7 @@ class TestGraphToTape:
         error message.
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PauliX(wires=1)
@@ -1423,6 +1459,7 @@ class TestGraphToTape:
             qml.sample(wires=[0, 1])
             qml.expval(qml.PauliZ(wires=2))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1437,10 +1474,11 @@ class TestGraphToTape:
         Tests that a subgraph containing an unsupported measurement raises the
         correct error message.
         """
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
             qml.var(qml.PauliZ(wires=0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1518,7 +1556,7 @@ class TestExpandFragmentTapes:
         Tests that a fragment tape expands correctly
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -1530,6 +1568,7 @@ class TestExpandFragmentTapes:
             qml.RY(0.543, wires=2)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=2))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -1550,51 +1589,58 @@ class TestExpandFragmentTapes:
             qml.RZ(0.133, wires=[1]),
         ]
 
-        with qml.tape.QuantumTape() as tape_00:
+        with qml.queuing.AnnotatedQueue() as q0:
             for op in frag_meas_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]))
             qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]))
 
-        with qml.tape.QuantumTape() as tape_01:
+        tape_00 = qml.tape.QuantumScript.from_queue(q0)
+        with qml.queuing.AnnotatedQueue() as q1:
             for op in frag_meas_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]))
 
-        with qml.tape.QuantumTape() as tape_02:
+        tape_01 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             for op in frag_meas_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]))
 
+        tape_02 = qml.tape.QuantumScript.from_queue(q2)
         frag_meas_expected_tapes = [tape_00, tape_01, tape_02]
 
         frag_prep_ops = [qml.CNOT(wires=[1, 2]), qml.RX(0.432, wires=[1]), qml.RY(0.543, wires=[2])]
 
-        with qml.tape.QuantumTape() as tape_10:
+        with qml.queuing.AnnotatedQueue() as q0:
             qml.Identity(wires=[1])
             for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[2]))
 
-        with qml.tape.QuantumTape() as tape_11:
+        tape_10 = qml.tape.QuantumScript.from_queue(q0)
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.PauliX(wires=[1])
             for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[2]))
 
-        with qml.tape.QuantumTape() as tape_12:
+        tape_11 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.Hadamard(wires=[1])
             for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[2]))
 
-        with qml.tape.QuantumTape() as tape_13:
+        tape_12 = qml.tape.QuantumScript.from_queue(q2)
+        with qml.queuing.AnnotatedQueue() as q3:
             qml.Hadamard(wires=[1])
             qml.S(wires=[1])
             for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[2]))
 
+        tape_13 = qml.tape.QuantumScript.from_queue(q3)
         frag_prep_expected_tapes = [tape_10, tape_11, tape_12, tape_13]
 
         for tape_meas, exp_tape_meas in zip(frag_tapes_meas, frag_meas_expected_tapes):
@@ -1609,7 +1655,7 @@ class TestExpandFragmentTapes:
         measurements after expansion
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=[0])
             qml.RX(0.432, wires=[0])
             qml.RY(0.543, wires=[1])
@@ -1623,6 +1669,7 @@ class TestExpandFragmentTapes:
             qml.CNOT(wires=[0, 3])
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # Here we have a fragment tape containing 2 MeasureNode and
         # PrepareNode pairs. This give 3**2 = 9 groups of Pauli measurements
         # and 4**2 = 16 preparations and thus 9*16 = 144 tapes.
@@ -1683,7 +1730,7 @@ class TestExpandFragmentTapes:
         preparation after expansion
         """
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=[0])
             qml.RX(0.432, wires=[0])
             qml.RY(0.543, wires=[1])
@@ -1697,6 +1744,7 @@ class TestExpandFragmentTapes:
             qml.CNOT(wires=[0, 3])
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         fragment_configurations = qcut.expand_fragment_tape(tape)
         frag_tapes = fragment_configurations[0]
 
@@ -1726,7 +1774,7 @@ class TestExpandFragmentTapes:
         configurations
         """
 
-        with qml.tape.QuantumTape() as frag:
+        with qml.queuing.AnnotatedQueue() as q_frag:
             qml.RY(0.543, wires=[1])
             qcut.PrepareNode(wires=[0])
             qml.CNOT(wires=[0, 1])
@@ -1734,6 +1782,7 @@ class TestExpandFragmentTapes:
             qml.RZ(0.133, wires=[1])
             qml.expval(qml.PauliZ(wires=[0]))
 
+        frag = qml.tape.QuantumScript.from_queue(q_frag)
         expanded_tapes, prep_nodes, meas_nodes = qcut.expand_fragment_tape(frag)
 
         ops = [
@@ -1743,31 +1792,35 @@ class TestExpandFragmentTapes:
             qml.expval(qml.PauliZ(wires=[0])),
         ]
 
-        with qml.tape.QuantumTape() as config1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.RY(0.543, wires=[1])
             qml.Identity(wires=[0])
             for optr in ops:
                 qml.apply(optr)
 
-        with qml.tape.QuantumTape() as config2:
+        config1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.RY(0.543, wires=[1])
             qml.PauliX(wires=[0])
             for optr in ops:
                 qml.apply(optr)
 
-        with qml.tape.QuantumTape() as config3:
+        config2 = qml.tape.QuantumScript.from_queue(q2)
+        with qml.queuing.AnnotatedQueue() as q3:
             qml.RY(0.543, wires=[1])
             qml.Hadamard(wires=[0])
             for optr in ops:
                 qml.apply(optr)
 
-        with qml.tape.QuantumTape() as config4:
+        config3 = qml.tape.QuantumScript.from_queue(q3)
+        with qml.queuing.AnnotatedQueue() as q4:
             qml.RY(0.543, wires=[1])
             qml.Hadamard(wires=[0])
             qml.S(wires=[0])
             for optr in ops:
                 qml.apply(optr)
 
+        config4 = qml.tape.QuantumScript.from_queue(q4)
         expected_configs = [config1, config2, config3, config4]
 
         for tape, config in zip(expanded_tapes, expected_configs):
@@ -1785,18 +1838,20 @@ class TestExpandFragmentTapesMC:
         Tests that fragment configurations are generated correctly using the
         `expand_fragment_tapes_mc` function.
         """
-        with qml.tape.QuantumTape() as tape0:
+        with qml.queuing.AnnotatedQueue() as q0:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             qcut.MeasureNode(wires=[1])
             qml.sample(qml.Projector([1], wires=[0]))
 
-        with qml.tape.QuantumTape() as tape1:
+        tape0 = qml.tape.QuantumScript.from_queue(q0)
+        with qml.queuing.AnnotatedQueue() as q1:
             qcut.PrepareNode(wires=[1])
             qml.CNOT(wires=[1, 2])
             qml.sample(qml.Projector([1], wires=[1]))
             qml.sample(qml.Projector([1], wires=[2]))
 
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
         tapes = [tape0, tape1]
 
         edge_data = {"pair": (tape0.operations[2], tape1.operations[0])}
@@ -1820,12 +1875,13 @@ class TestExpandFragmentTapesMC:
 
         expected_tapes_0 = []
         for meas in frag_0_expected_meas:
-            with qml.tape.QuantumTape() as expected_tape:
+            with qml.queuing.AnnotatedQueue() as q_expected_tape:
                 for op in frag_0_ops:
                     qml.apply(op)
                 for m in meas:
                     qml.apply(m)
 
+            expected_tape = qml.tape.QuantumScript.from_queue(q_expected_tape)
             expected_tapes_0.append(expected_tape)
 
         for tape, exp_tape in zip(fragment_configurations[0], expected_tapes_0):
@@ -1845,11 +1901,12 @@ class TestExpandFragmentTapesMC:
 
         expected_tapes_1 = []
         for preps in frag_1_expected_preps:
-            with qml.tape.QuantumTape() as expected_tape:
+            with qml.queuing.AnnotatedQueue() as q_expected_tape:
                 for prep in preps:
                     qml.apply(prep)
                 for op in frag_1_ops_and_meas:
                     qml.apply(op)
+            expected_tape = qml.tape.QuantumScript.from_queue(q_expected_tape)
             expected_tapes_1.append(expected_tape)
 
         for tape, exp_tape in zip(fragment_configurations[1], expected_tapes_1):
@@ -1878,7 +1935,7 @@ class TestExpandFragmentTapesMC:
 
         assert np.allclose(settings, fixed_choice)
 
-        with qml.tape.QuantumTape() as config1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.Hadamard(wires=[0])
             qml.RX(0.432, wires=[0])
             qml.RY(0.543, wires=[1])
@@ -1894,7 +1951,8 @@ class TestExpandFragmentTapesMC:
             qml.sample(qml.PauliY(wires=[1]))
             qml.sample(qml.Identity(wires=[2]))
 
-        with qml.tape.QuantumTape() as config2:
+        config1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.Hadamard(wires=[0])
             qml.RX(0.432, wires=[0])
             qml.RY(0.543, wires=[1])
@@ -1910,6 +1968,7 @@ class TestExpandFragmentTapesMC:
             qml.sample(qml.PauliZ(wires=[1]))
             qml.sample(qml.PauliX(wires=[2]))
 
+        config2 = qml.tape.QuantumScript.from_queue(q2)
         expected_configs = [config1, config2]
 
         # check first fragment configs only for brevity
@@ -1925,8 +1984,9 @@ class TestExpandFragmentTapesMC:
 
         tapes = []
         for M in qcut.MC_MEASUREMENTS:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 M(wire)
+            tape = qml.tape.QuantumScript.from_queue(q)
             tapes.append(tape)
 
         expected_measurements = [
@@ -1955,8 +2015,9 @@ class TestExpandFragmentTapesMC:
 
         tapes = []
         for S in qcut.MC_STATES:
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 S(wire)
+            tape = qml.tape.QuantumScript.from_queue(q)
             tapes.append(tape)
 
         expected_operations = [
@@ -1984,14 +2045,13 @@ class TestMCPostprocessing:
     gives the correct results.
     """
 
-    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
-    def test_sample_postprocess(self, interface):
+    @pytest.mark.autograd
+    def test_sample_postprocess_autograd(self):
         """
         Tests that the postprocessing for the generic sampling case gives the
         correct result
         """
-        lib = pytest.importorskip(interface)
-        fragment_tapes = [frag0, frag1]
+        import autograd
 
         communication_graph = MultiDiGraph(frag_edge_data)
         shots = 3
@@ -2004,7 +2064,9 @@ class TestMCPostprocessing:
             np.array([[0.0], [-1.0], [-1.0]]),
             np.array([[1.0], [1.0], [1.0]]),
         ]
-        convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
+        convert_fixed_samples = [
+            qml.math.convert_like(fs, autograd.numpy.ones(1)) for fs in fixed_samples
+        ]
 
         postprocessed = qcut.qcut_processing_fn_sample(
             convert_fixed_samples, communication_graph, shots
@@ -2014,14 +2076,13 @@ class TestMCPostprocessing:
         assert np.allclose(postprocessed[0], expected_postprocessed[0])
         assert type(convert_fixed_samples[0]) == type(postprocessed[0])
 
-    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
-    def test_mc_sample_postprocess(self, interface, mocker):
+    @pytest.mark.tf
+    def test_sample_postprocess_tf(self):
         """
         Tests that the postprocessing for the generic sampling case gives the
         correct result
         """
-        lib = pytest.importorskip(interface)
-        fragment_tapes = [frag0, frag1]
+        import tensorflow as tf
 
         communication_graph = MultiDiGraph(frag_edge_data)
         shots = 3
@@ -2034,7 +2095,280 @@ class TestMCPostprocessing:
             np.array([[0.0], [-1.0], [-1.0]]),
             np.array([[1.0], [1.0], [1.0]]),
         ]
-        convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
+        convert_fixed_samples = [qml.math.convert_like(fs, tf.ones(1)) for fs in fixed_samples]
+
+        postprocessed = qcut.qcut_processing_fn_sample(
+            convert_fixed_samples, communication_graph, shots
+        )
+        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+
+        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert type(convert_fixed_samples[0]) == type(postprocessed[0])
+
+    @pytest.mark.torch
+    def test_sample_postprocess_torch(self):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import torch
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [qml.math.convert_like(fs, torch.ones(1)) for fs in fixed_samples]
+
+        postprocessed = qcut.qcut_processing_fn_sample(
+            convert_fixed_samples, communication_graph, shots
+        )
+        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+
+        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert type(convert_fixed_samples[0]) == type(postprocessed[0])
+
+    @pytest.mark.jax
+    def test_sample_postprocess_jax(self):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import jax
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [
+            qml.math.convert_like(fs, jax.numpy.ones(1)) for fs in fixed_samples
+        ]
+
+        postprocessed = qcut.qcut_processing_fn_sample(
+            convert_fixed_samples, communication_graph, shots
+        )
+        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+
+        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert type(convert_fixed_samples[0]) == type(postprocessed[0])
+
+    @pytest.mark.autograd
+    def test_mc_sample_postprocess_autograd(self, mocker):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import autograd
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [
+            qml.math.convert_like(fs, autograd.numpy.ones(1)) for fs in fixed_samples
+        ]
+
+        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+
+        spy_prod = mocker.spy(np, "prod")
+        spy_hstack = mocker.spy(np, "hstack")
+
+        postprocessed = qcut.qcut_processing_fn_mc(
+            convert_fixed_samples, communication_graph, fixed_settings, shots, fn
+        )
+
+        expected = -85.33333333333333
+
+        prod_args = [
+            np.array([1.0, 1.0, -1.0, 1.0]),
+            [0.5, -0.5, 0.5, -0.5],
+            np.array([1.0, -1.0, -1.0, -1.0]),
+            [-0.5, -0.5, 0.5, 0.5],
+            np.array([1.0, -1.0, 1.0, 1.0]),
+            [0.5, 0.5, -0.5, 0.5],
+        ]
+
+        hstack_args = [
+            [np.array([1.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
+            [np.array([0.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
+            [np.array([0.0, 1.0]), np.array([1.0])],
+            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+        ]
+
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+            assert np.allclose(arg[0][0], expected_arg)
+
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
+            for arg, expected_arg in zip(args[0][0], expected_args):
+                assert np.allclose(arg, expected_arg)
+
+        assert np.isclose(postprocessed, expected)
+        assert type(convert_fixed_samples[0]) == type(postprocessed)
+
+    @pytest.mark.tf
+    def test_mc_sample_postprocess_tf(self, mocker):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import tensorflow as tf
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [qml.math.convert_like(fs, tf.ones(1)) for fs in fixed_samples]
+
+        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+
+        spy_prod = mocker.spy(np, "prod")
+        spy_hstack = mocker.spy(np, "hstack")
+
+        postprocessed = qcut.qcut_processing_fn_mc(
+            convert_fixed_samples, communication_graph, fixed_settings, shots, fn
+        )
+
+        expected = -85.33333333333333
+
+        prod_args = [
+            np.array([1.0, 1.0, -1.0, 1.0]),
+            [0.5, -0.5, 0.5, -0.5],
+            np.array([1.0, -1.0, -1.0, -1.0]),
+            [-0.5, -0.5, 0.5, 0.5],
+            np.array([1.0, -1.0, 1.0, 1.0]),
+            [0.5, 0.5, -0.5, 0.5],
+        ]
+
+        hstack_args = [
+            [np.array([1.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
+            [np.array([0.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
+            [np.array([0.0, 1.0]), np.array([1.0])],
+            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+        ]
+
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+            assert np.allclose(arg[0][0], expected_arg)
+
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
+            for arg, expected_arg in zip(args[0][0], expected_args):
+                assert np.allclose(arg, expected_arg)
+
+        assert np.isclose(postprocessed, expected)
+        assert type(convert_fixed_samples[0]) == type(postprocessed)
+
+    @pytest.mark.torch
+    def test_mc_sample_postprocess_torch(self, mocker):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import torch
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [qml.math.convert_like(fs, torch.ones(1)) for fs in fixed_samples]
+
+        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+
+        spy_prod = mocker.spy(np, "prod")
+        spy_hstack = mocker.spy(np, "hstack")
+
+        postprocessed = qcut.qcut_processing_fn_mc(
+            convert_fixed_samples, communication_graph, fixed_settings, shots, fn
+        )
+
+        expected = -85.33333333333333
+
+        prod_args = [
+            np.array([1.0, 1.0, -1.0, 1.0]),
+            [0.5, -0.5, 0.5, -0.5],
+            np.array([1.0, -1.0, -1.0, -1.0]),
+            [-0.5, -0.5, 0.5, 0.5],
+            np.array([1.0, -1.0, 1.0, 1.0]),
+            [0.5, 0.5, -0.5, 0.5],
+        ]
+
+        hstack_args = [
+            [np.array([1.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
+            [np.array([0.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
+            [np.array([0.0, 1.0]), np.array([1.0])],
+            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+        ]
+
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+            assert np.allclose(arg[0][0], expected_arg)
+
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
+            for arg, expected_arg in zip(args[0][0], expected_args):
+                assert np.allclose(arg, expected_arg)
+
+        assert np.isclose(postprocessed, expected)
+        assert type(convert_fixed_samples[0]) == type(postprocessed)
+
+    @pytest.mark.jax
+    def test_mc_sample_postprocess_jax(self, mocker):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        import jax
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [
+            qml.math.convert_like(fs, jax.numpy.ones(1)) for fs in fixed_samples
+        ]
 
         fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
@@ -2464,27 +2798,19 @@ class TestCutCircuitMCTransform:
         assert res.shape == (shots, 2)
         assert type(res) == np.ndarray
 
-    @pytest.mark.parametrize(
-        "interface_import,interface",
-        [
-            ("autograd.numpy", "autograd"),
-            ("tensorflow", "tensorflow"),
-            ("torch", "torch"),
-            ("jax.numpy", "jax"),
-        ],
-    )
-    def test_all_interfaces_samples(self, interface_import, interface):
+    @pytest.mark.autograd
+    def test_samples_autograd(self):
         """
         Tests that `cut_circuit_mc` returns the correct type of sample
-        output value in all interfaces
+        output value in autograd
         """
-        lib = pytest.importorskip(interface_import)
+        import autograd
 
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="autograd")
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2500,34 +2826,26 @@ class TestCutCircuitMCTransform:
             return qml.sample(wires=[0, 2])
 
         v = 0.319
-        convert_input = qml.math.convert_like(v, lib.ones(1))
+        convert_input = qml.math.convert_like(v, autograd.numpy.ones(1))
 
         res = cut_circuit(convert_input)
 
         assert res.shape == (shots, 2)
         assert isinstance(res, type(convert_input))
 
-    @pytest.mark.parametrize(
-        "interface_import,interface",
-        [
-            ("autograd.numpy", "autograd"),
-            ("tensorflow", "tensorflow"),
-            ("torch", "torch"),
-            ("jax.numpy", "jax"),
-        ],
-    )
-    def test_all_interfaces_mc(self, interface_import, interface):
+    @pytest.mark.tf
+    def test_samples_tf(self):
         """
-        Tests that `cut_circuit_mc` returns the correct type of expectation
-        value output in all interfaces
+        Tests that `cut_circuit_mc` returns the correct type of sample
+        output value in tf
         """
-        lib = pytest.importorskip(interface_import)
+        import tensorflow as tf
 
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc(fn)
-        @qml.qnode(dev, interface=interface)
+        @qml.cut_circuit_mc
+        @qml.qnode(dev, interface="tf")
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2543,7 +2861,211 @@ class TestCutCircuitMCTransform:
             return qml.sample(wires=[0, 2])
 
         v = 0.319
-        convert_input = qml.math.convert_like(v, lib.ones(1))
+        convert_input = qml.math.convert_like(v, tf.ones(1))
+
+        res = cut_circuit(convert_input)
+
+        assert res.shape == (shots, 2)
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.torch
+    def test_samples_torch(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of sample
+        output value in torch
+        """
+        import torch
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev, interface="torch")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, torch.ones(1))
+
+        res = cut_circuit(convert_input)
+
+        assert res.shape == (shots, 2)
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.jax
+    def test_samples_jax(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of sample
+        output value in Jax
+        """
+        import jax
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev, interface="jax")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, jax.numpy.ones(1))
+
+        res = cut_circuit(convert_input)
+
+        assert res.shape == (shots, 2)
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.autograd
+    def test_mc_autograd(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of expectation
+        value output in autograd
+        """
+        import autograd
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev, interface="autograd")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, autograd.numpy.ones(1))
+        res = cut_circuit(convert_input)
+
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.tf
+    def test_mc_tf(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of expectation
+        value output in tf
+        """
+        import tensorflow as tf
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev, interface="tf")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, tf.ones(1))
+        res = cut_circuit(convert_input)
+
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.torch
+    def test_mc_torch(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of expectation
+        value output in torch
+        """
+        import torch
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev, interface="torch")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, torch.ones(1))
+        res = cut_circuit(convert_input)
+
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.jax
+    def test_mc_jax(self):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of expectation
+        value output in Jax
+        """
+        import jax
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev, interface="jax")
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, jax.numpy.ones(1))
         res = cut_circuit(convert_input)
 
         assert isinstance(res, type(convert_input))
@@ -2569,7 +3091,7 @@ class TestCutCircuitMCTransform:
             qml.CNOT(wires=[0, 1])
             return qml.sample(wires=[0, 1])
 
-        spy = mocker.spy(qcut, "qcut_processing_fn_mc")
+        spy = mocker.spy(qcut.montecarlo, "qcut_processing_fn_mc")
         x = np.array(0.531, requires_grad=True)
         res = circuit(x)
 
@@ -2612,7 +3134,7 @@ class TestCutCircuitMCTransform:
             qml.CNOT(wires=[0, 1])
             return qml.sample(wires=[0, 1])
 
-        spy = mocker.spy(qcut, "qcut_processing_fn_mc")
+        spy = mocker.spy(qcut.montecarlo, "qcut_processing_fn_mc")
 
         x = 0.4
         res = circuit(x)
@@ -2671,7 +3193,7 @@ class TestCutCircuitMCTransform:
 
             return qml.sample(wires=[1, 2, 3])
 
-        spy = mocker.spy(qcut, "qcut_processing_fn_mc")
+        spy = mocker.spy(qcut.montecarlo, "qcut_processing_fn_mc")
 
         params = np.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
         res = circuit(params)
@@ -2777,6 +3299,7 @@ class TestContractTensors:
         """Test if the basic contraction is differentiable using the tf interface"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
+
         import tensorflow as tf
 
         params = tf.Variable(self.params)
@@ -2818,7 +3341,7 @@ class TestContractTensors:
         """Test if the contraction works as expected for a more complicated example based
         upon the circuit:
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QubitUnitary(np.eye(2 ** 3), wires=[0, 1, 2])
             qml.QubitUnitary(np.eye(2 ** 2), wires=[3, 4])
 
@@ -2832,6 +3355,7 @@ class TestContractTensors:
 
             qml.QubitUnitary(np.eye(2 ** 3), wires=[0, 1, 2])
             qml.QubitUnitary(np.eye(2 ** 2), wires=[3, 4])
+        tape = qml.tape.QuantumScript.from_queue(q)
         """
         if use_opt_einsum:
             opt_einsum = pytest.importorskip("opt_einsum")
@@ -2914,7 +3438,7 @@ class TestQCutProcessingFn:
             return qml.math.reshape(r, (4,) * (np + nm))
 
         with monkeypatch.context() as m:
-            m.setattr(qcut, "_process_tensor", mock_process_tensor)
+            m.setattr(qcut.processing, "_process_tensor", mock_process_tensor)
             tensors_out = qcut._to_tensors(results, prepare_nodes, measure_nodes)
 
         for t1, t2 in zip(tensors, tensors_out):
@@ -2931,11 +3455,11 @@ class TestQCutProcessingFn:
         with pytest.raises(ValueError, match="should be a flat list of length 1024"):
             qcut._to_tensors(results, prepare_nodes, measure_nodes)
 
-    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
+    @pytest.mark.autograd
     @pytest.mark.parametrize("n", [1, 2])
-    def test_process_tensor(self, n, interface):
+    def test_process_tensor_autograd(self, n):
         """Test if the tensor returned by _process_tensor is equal to the expected value"""
-        lib = pytest.importorskip(interface)
+        import autograd
 
         U = unitary_group.rvs(2**n, random_state=1967)
 
@@ -2974,7 +3498,154 @@ class TestQCutProcessingFn:
             input = kron(*[states_pure[i] for i in inp])
             results.append(f(input, out))
 
-        results = qml.math.cast_like(np.concatenate(results), lib.ones(1))
+        results = qml.math.cast_like(np.concatenate(results), autograd.numpy.ones(1))
+
+        # Now apply _process_tensor
+        tensor = qcut._process_tensor(results, n, n)
+        assert np.allclose(tensor, target_tensor)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_process_tensor_tf(self, n):
+        """Test if the tensor returned by _process_tensor is equal to the expected value"""
+        import tensorflow as tf
+
+        U = unitary_group.rvs(2**n, random_state=1967)
+
+        # First, create target process tensor
+        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = itertools.product(range(4), repeat=n)
+
+        results = []
+
+        # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
+        # See Sec. II. A. of https://doi.org/10.1088/1367-2630/abd7bc, below Eq. (2).
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[basis[i] for i in inp])
+            output = kron(*[basis[i] for i in out])
+            results.append(np.trace(output @ U @ input @ U.conj().T))
+
+        target_tensor = np.array(results).reshape((4,) * (2 * n))
+
+        # Now, create the input results vector found from executing over the product of |0>, |1>,
+        # |+>, |+i> inputs and using the grouped Pauli terms for measurements
+        dev = qml.device("default.qubit", wires=n)
+
+        @qml.qnode(dev)
+        def f(state, measurement):
+            qml.QubitStateVector(state, wires=range(n))
+            qml.QubitUnitary(U, wires=range(n))
+            return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
+
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = qml.pauli.partition_pauli_group(n)
+
+        results = []
+
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[states_pure[i] for i in inp])
+            results.append(f(input, out))
+
+        results = qml.math.cast_like(np.concatenate(results), tf.ones(1))
+
+        # Now apply _process_tensor
+        tensor = qcut._process_tensor(results, n, n)
+        assert np.allclose(tensor, target_tensor)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_process_tensor_torch(self, n):
+        """Test if the tensor returned by _process_tensor is equal to the expected value"""
+        import torch
+
+        U = unitary_group.rvs(2**n, random_state=1967)
+
+        # First, create target process tensor
+        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = itertools.product(range(4), repeat=n)
+
+        results = []
+
+        # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
+        # See Sec. II. A. of https://doi.org/10.1088/1367-2630/abd7bc, below Eq. (2).
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[basis[i] for i in inp])
+            output = kron(*[basis[i] for i in out])
+            results.append(np.trace(output @ U @ input @ U.conj().T))
+
+        target_tensor = np.array(results).reshape((4,) * (2 * n))
+
+        # Now, create the input results vector found from executing over the product of |0>, |1>,
+        # |+>, |+i> inputs and using the grouped Pauli terms for measurements
+        dev = qml.device("default.qubit", wires=n)
+
+        @qml.qnode(dev)
+        def f(state, measurement):
+            qml.QubitStateVector(state, wires=range(n))
+            qml.QubitUnitary(U, wires=range(n))
+            return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
+
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = qml.pauli.partition_pauli_group(n)
+
+        results = []
+
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[states_pure[i] for i in inp])
+            results.append(f(input, out))
+
+        results = qml.math.cast_like(np.concatenate(results), torch.ones(1))
+
+        # Now apply _process_tensor
+        tensor = qcut._process_tensor(results, n, n)
+        assert np.allclose(tensor, target_tensor)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_process_tensor_jax(self, n):
+        """Test if the tensor returned by _process_tensor is equal to the expected value"""
+        import jax
+
+        U = unitary_group.rvs(2**n, random_state=1967)
+
+        # First, create target process tensor
+        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = itertools.product(range(4), repeat=n)
+
+        results = []
+
+        # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
+        # See Sec. II. A. of https://doi.org/10.1088/1367-2630/abd7bc, below Eq. (2).
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[basis[i] for i in inp])
+            output = kron(*[basis[i] for i in out])
+            results.append(np.trace(output @ U @ input @ U.conj().T))
+
+        target_tensor = np.array(results).reshape((4,) * (2 * n))
+
+        # Now, create the input results vector found from executing over the product of |0>, |1>,
+        # |+>, |+i> inputs and using the grouped Pauli terms for measurements
+        dev = qml.device("default.qubit", wires=n)
+
+        @qml.qnode(dev)
+        def f(state, measurement):
+            qml.QubitStateVector(state, wires=range(n))
+            qml.QubitUnitary(U, wires=range(n))
+            return [qml.expval(qml.pauli.string_to_pauli_word(m)) for m in measurement]
+
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = qml.pauli.partition_pauli_group(n)
+
+        results = []
+
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[states_pure[i] for i in inp])
+            results.append(f(input, out))
+
+        results = qml.math.cast_like(np.concatenate(results), jax.numpy.ones(1))
 
         # Now apply _process_tensor
         tensor = qcut._process_tensor(results, n, n)
@@ -3030,6 +3701,7 @@ class TestQCutProcessingFn:
         result = qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
         assert np.allclose(result, expected_result)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_qcut_processing_fn_autograd(self, use_opt_einsum):
         """Test if qcut_processing_fn handles the gradient as expected in the autograd interface
@@ -3063,13 +3735,15 @@ class TestQCutProcessingFn:
 
         assert np.allclose(grad, expected_grad)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_qcut_processing_fn_tf(self, use_opt_einsum):
         """Test if qcut_processing_fn handles the gradient as expected in the TF interface
         using a simple example"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
-        tf = pytest.importorskip("tensorflow")
+
+        import tensorflow as tf
 
         x = tf.Variable(0.9, dtype=tf.float64)
 
@@ -3101,13 +3775,14 @@ class TestQCutProcessingFn:
 
         assert np.allclose(grad, expected_grad)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_qcut_processing_fn_torch(self, use_opt_einsum):
         """Test if qcut_processing_fn handles the gradient as expected in the torch interface
         using a simple example"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
-        torch = pytest.importorskip("torch")
+        import torch
 
         x = torch.tensor(0.9, requires_grad=True, dtype=torch.float64)
 
@@ -3140,14 +3815,15 @@ class TestQCutProcessingFn:
 
         assert np.allclose(grad.detach().numpy(), expected_grad)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_qcut_processing_fn_jax(self, use_opt_einsum):
         """Test if qcut_processing_fn handles the gradient as expected in the jax interface
         using a simple example"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
-        jax = pytest.importorskip("jax")
-        jnp = pytest.importorskip("jax.numpy")
+        import jax
+        import jax.numpy as jnp
 
         x = jnp.array(0.9)
 
@@ -3189,6 +3865,8 @@ class TestCutCircuitTransform:
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform.
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
 
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
@@ -3202,7 +3880,7 @@ class TestCutCircuitTransform:
             qml.RZ(0.133, wires=1)
             return qml.expval(qml.PauliZ(wires=[0]))
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         x = np.array(0.531, requires_grad=True)
         cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
 
@@ -3215,12 +3893,16 @@ class TestCutCircuitTransform:
 
         assert np.isclose(gradient, cut_gradient, atol=atol)
 
+    @pytest.mark.torch
     def test_simple_cut_circuit_torch(self, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the torch interface.
         """
-        torch = pytest.importorskip("torch")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -3250,12 +3932,16 @@ class TestCutCircuitTransform:
 
         assert np.isclose(grad, grad_expected)
 
+    @pytest.mark.tf
     def test_simple_cut_circuit_tf(self, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the TF interface.
         """
-        tf = pytest.importorskip("tensorflow")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -3285,12 +3971,16 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.isclose(grad, grad_expected)
 
+    @pytest.mark.jax
     def test_simple_cut_circuit_jax(self, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the Jax interface.
         """
-        jax = pytest.importorskip("jax")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
@@ -3320,6 +4010,9 @@ class TestCutCircuitTransform:
     def test_with_mid_circuit_measurement(self, mocker, use_opt_einsum):
         """Tests the full circuit cutting pipeline returns the correct value and gradient for a
         circuit that contains mid-circuit measurements, using the `cut_circuit` transform."""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
@@ -3333,7 +4026,7 @@ class TestCutCircuitTransform:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         x = np.array(0.531, requires_grad=True)
         cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
 
@@ -3345,13 +4038,17 @@ class TestCutCircuitTransform:
 
         assert np.isclose(gradient, cut_gradient)
 
+    @pytest.mark.torch
     def test_simple_cut_circuit_torch_trace(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the torch interface and
         using torch tracing.
         """
-        torch = pytest.importorskip("torch")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -3375,7 +4072,7 @@ class TestCutCircuitTransform:
         )
 
         # Run once with original value
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.processing, "qcut_processing_fn")
         res = cut_circuit_trace(x)
 
         spy.assert_not_called()
@@ -3411,13 +4108,17 @@ class TestCutCircuitTransform:
 
         spy.assert_not_called()
 
+    @pytest.mark.tf
     def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the TF interface and
         using JIT.
         """
-        tf = pytest.importorskip("tensorflow")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -3439,7 +4140,7 @@ class TestCutCircuitTransform:
         )
 
         # Run once with original value
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
 
         # Note we call the function twice but assert qcut_processing_fn is called once. We expect
         # qcut_processing_fn to be called once during JIT compilation, with subsequent calls to
@@ -3482,13 +4183,17 @@ class TestCutCircuitTransform:
 
         spy.assert_called_once()
 
+    @pytest.mark.jax
     def test_simple_cut_circuit_jax_jit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the Jax interface and
         using JIT.
         """
-        jax = pytest.importorskip("jax")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
@@ -3507,7 +4212,7 @@ class TestCutCircuitTransform:
         cut_circuit_jit = jax.jit(qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum))
 
         # Run once with original value
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
 
         # Note we call the function twice but assert qcut_processing_fn is called once. We expect
         # qcut_processing_fn to be called once during JIT compilation, with subsequent calls to
@@ -3545,6 +4250,8 @@ class TestCutCircuitTransform:
     def test_device_wires(self, use_opt_einsum):
         """Tests that a 3-qubit circuit is cut into two 2-qubit fragments such that both fragments
         can be run on a 2-qubit device"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
 
         def circuit():
             qml.RX(0.4, wires=0)
@@ -3579,6 +4286,9 @@ class TestCutCircuitTransform:
     def test_circuit_with_disconnected_components(self, use_opt_einsum, mocker):
         """Tests if a circuit that is fragmented into subcircuits such that some of the subcircuits
         are disconnected from the final terminal measurements is executed correctly"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev = qml.device("default.qubit", wires=3)
 
         @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
@@ -3598,6 +4308,9 @@ class TestCutCircuitTransform:
     def test_circuit_with_trivial_wire_cut(self, use_opt_einsum, mocker):
         """Tests that a circuit with a trivial wire cut (not separating the circuit into
         fragments) is executed correctly"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
@@ -3609,7 +4322,7 @@ class TestCutCircuitTransform:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=[0]))
 
-        spy = mocker.spy(qcut, "contract_tensors")
+        spy = mocker.spy(qcut.processing, "contract_tensors")
 
         x = 0.4
         res = circuit(x)
@@ -3635,6 +4348,9 @@ class TestCutCircuitTransform:
         ╰C──────────────│─────────┤ ╰<Z@Z@Z>
         ────────────────╰C────────┤
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev_original = qml.device("default.qubit", wires=5)
 
         # We need a 4-qubit device to account for mid-circuit measurements
@@ -3680,7 +4396,7 @@ class TestCutCircuitTransform:
         res_expected = circuit(params)
         grad_expected = qml.grad(circuit)(params)
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit(params)
         spy.assert_called_once()
         grad = qml.grad(cut_circuit)(params)
@@ -3700,6 +4416,9 @@ class TestCutCircuitTransform:
         2: ─╭U(M0)─────╰U(M2)─╭U(M3)────────┤ │
         3: ─╰U(M0)────────────╰U(M3)────────┤ ╰<Z@X>
         """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
         dev_original = qml.device("default.qubit", wires=4)
 
         # We need a 3-qubit device
@@ -3725,7 +4444,7 @@ class TestCutCircuitTransform:
 
         res_expected = circuit()
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit()
         spy.assert_called_once()
 
@@ -3740,20 +4459,22 @@ class TestCutCircuitTransformValidation:
         """Tests if a ValueError is raised when a tape with multiple measurements is requested
         to be cut"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
             qcut.cut_circuit(tape)
 
     def test_no_measurements_raises(self):
         """Tests if a ValueError is raised when a tape with no measurement is requested
         to be cut"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
             qcut.cut_circuit(tape)
 
@@ -3761,19 +4482,21 @@ class TestCutCircuitTransformValidation:
         """Tests if a ValueError is raised when a tape with measurements that are not expectation
         values is requested to be cut"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
             qml.var(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="workflow only supports circuits with expectation"):
             qcut.cut_circuit(tape)
 
     def test_fail_import(self, monkeypatch):
         """Test if an ImportError is raised when opt_einsum is requested but not installed"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.WireCut(wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with monkeypatch.context() as m:
             m.setitem(sys.modules, "opt_einsum", None)
 
@@ -3783,9 +4506,10 @@ class TestCutCircuitTransformValidation:
     def test_no_cuts_raises(self):
         """Tests if a ValueError is raised when circuit cutting is to be applied to a circuit
         without cuts"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
             qcut.cut_circuit(tape)
 
@@ -3802,47 +4526,57 @@ class TestCutCircuitExpansion:
     def test_no_expansion(self, mocker, cut_transform, measurement):
         """Test if no/trivial expansion occurs if WireCut operations are already present in the
         tape"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.3, wires=0)
             qml.WireCut(wires=0)
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
-        spy = mocker.spy(qcut, "_qcut_expand_fn")
+        tape = qml.tape.QuantumScript.from_queue(q)
+        spy = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
+        spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
 
         kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
         cut_transform(tape, device_wires=[0], **kwargs)
 
-        spy.assert_called_once()
+        assert spy.call_count == 1 or spy_mc.call_count == 1
 
+    @pytest.mark.skip("Nested tapes are being deprecated")
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion(self, mocker, cut_transform, measurement):
         """Test if expansion occurs if WireCut operations are present in a nested tape"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.3, wires=0)
             with qml.tape.QuantumTape() as _:
                 qml.WireCut(wires=0)
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
-        spy = mocker.spy(qcut, "_qcut_expand_fn")
+        tape = qml.tape.QuantumScript.from_queue(q)
+        spy = mocker.spy(qcut.tapes, "_qcut_expand_fn")
+        spy_cc = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
+        spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
 
         kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
         cut_transform(tape, device_wires=[0], **kwargs)
 
-        assert spy.call_count == 2
+        spy.assert_called_once()
+        assert spy_cc.call_count == 1 or spy_mc.call_count == 1
 
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion_error(self, cut_transform, measurement):
         """Test if a ValueError is raised if expansion continues beyond the maximum depth"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.3, wires=0)
-            with qml.tape.QuantumTape() as _:
-                with qml.tape.QuantumTape() as __:
+            with qml.queuing.AnnotatedQueue() as q__:
+                with qml.queuing.AnnotatedQueue() as q___:
                     qml.WireCut(wires=0)
+                __ = qml.tape.QuantumScript.from_queue(q___)
+            _ = qml.tape.QuantumScript.from_queue(q__)
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
             kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
             cut_transform(tape, device_wires=[0], **kwargs)
@@ -3872,9 +4606,13 @@ class TestCutCircuitExpansion:
         qnode = qml.QNode(circuit, dev_big)
         qnode_cut = qcut.cut_circuit(qml.QNode(circuit, dev_cut))
 
-        spy = mocker.spy(qcut, "_qcut_expand_fn")
+        spy_tapes = mocker.spy(qcut.tapes, "_qcut_expand_fn")
+        spy_cc = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
+
         res = qnode_cut(template_weights)
-        assert spy.call_count == 2
+
+        spy_tapes.assert_called_once()
+        spy_cc.assert_called_once()
 
         assert np.isclose(res, qnode(template_weights))
 
@@ -3901,9 +4639,13 @@ class TestCutCircuitExpansion:
 
         qnode_cut = qcut.cut_circuit_mc(qml.QNode(circuit, dev_cut))
 
-        spy = mocker.spy(qcut, "_qcut_expand_fn")
+        spy_tapes = mocker.spy(qcut.tapes, "_qcut_expand_fn")
+        spy_mc = mocker.spy(qcut.montecarlo, "_qcut_expand_fn")
+
         qnode_cut(template_weights)
-        assert spy.call_count == 2
+
+        spy_tapes.assert_called_once()
+        spy_mc.assert_called_once()
 
 
 class TestCutStrategy:
@@ -4112,7 +4854,7 @@ def make_weakly_connected_tape(
     """Helper function for making random weakly connected tapes."""
     rng = np.random.default_rng(seed)
     inter_fragment_gate_wires = inter_fragment_gate_wires or {}
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         for _ in range(repeats):
             for i, wire_size in enumerate(fragment_wire_sizes):
                 double_gates_per_fragment = int(double_gates_multiplier * wire_size)
@@ -4133,6 +4875,7 @@ def make_weakly_connected_tape(
                 qml.expval(qml.PauliZ(wires=[f"{i}-0"]))
             else:
                 qml.expval(qml.PauliZ(wires=[f"{i}-0"]) @ qml.PauliZ(wires=[f"{i}-{wire_size-1}"]))
+    tape = qml.tape.QuantumScript.from_queue(q)
     return tape
 
 
@@ -4266,7 +5009,7 @@ class TestKaHyPar:
     @pytest.mark.parametrize("dangling_measure", [False, True])
     def test_remove_existing_cuts(self, dangling_measure):
         """Test if ``WireCut`` and ``MeasureNode``/``PrepareNode`` are correctly removed."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires="a")
             qml.WireCut(wires="a")
             qml.RY(0.543, wires="a")
@@ -4277,6 +5020,7 @@ class TestKaHyPar:
             qml.RX(0.678, wires=0)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
         if dangling_measure:
             with pytest.warns(
@@ -4302,13 +5046,14 @@ class TestKaHyPar:
     def test_place_wire_cuts(self):
         """Test if ``WireCut`` are correctly placed with the correct order."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.432, wires="a")
             qml.RY(0.543, wires="a")
             qml.CNOT(wires=[0, "a"])
             qml.RX(0.678, wires=0)
             qml.expval(qml.PauliZ(wires=[0]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
         op0, op1, op2 = tape.operations[0], tape.operations[1], tape.operations[2]
         cut_edges = [e for e in graph.edges if e[0] is op0 and e[1] is op1]
@@ -4344,7 +5089,7 @@ class TestKaHyPar:
         """Integration tests for auto cutting pipeline."""
         pytest.importorskip("kahypar")
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.1, wires=0)
             qml.RY(0.2, wires=1)
             qml.RX(0.3, wires="a")
@@ -4360,6 +5105,7 @@ class TestKaHyPar:
             qml.RY(0.6, wires="b")
             qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         graph = qcut.tape_to_graph(tape)
 
         if cut_strategy is None:
@@ -4498,7 +5244,7 @@ class TestAutoCutCircuit:
         res_expected = circuit(params)
         grad_expected = qml.grad(circuit)(params)
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit(params)
         spy.assert_called_once()
         grad = qml.grad(cut_circuit)(params)
@@ -4541,7 +5287,7 @@ class TestAutoCutCircuit:
 
         res_expected = circuit()
 
-        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy = mocker.spy(qcut.cutcircuit, "qcut_processing_fn")
         res = cut_circuit()
         spy.assert_called_once()
 
@@ -4661,13 +5407,14 @@ class TestAutoCutCircuit:
         device_size = 2
         cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=device_size)
 
-        with qml.tape.QuantumTape() as tape0:
+        with qml.queuing.AnnotatedQueue() as q0:
             qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             if measure_all_wires:
                 qml.expval(qml.pauli.string_to_pauli_word("Z" * n_wires))
             else:
                 qml.expval(qml.PauliZ(wires=n_wires - 1))
 
+        tape0 = qml.tape.QuantumScript.from_queue(q0)
         tape = tape0.expand()
         graph = qcut.tape_to_graph(tape)
         cut_graph = qcut.find_and_place_cuts(

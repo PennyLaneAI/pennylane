@@ -103,6 +103,10 @@ TSHIFT = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])  # Qutrit right-shift gate
 
 TCLOCK = np.array([[1, 0, 0], [0, OMEGA, 0], [0, 0, OMEGA**2]])  # Qutrit clock gate
 
+TH = (-1j / np.sqrt(3)) * np.array(
+    [[1, 1, 1], [1, OMEGA, OMEGA**2], [1, OMEGA**2, OMEGA]]
+)  # hadamard gate
+
 TSWAP = np.array(
     [
         [1, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -700,3 +704,20 @@ def PSWAP(phi):
     """
     e = math.exp(1j * phi)
     return math.array([[1, 0, 0, 0], [0, 0, e, 0], [0, e, 0, 0], [0, 0, 0, 1]])
+
+
+def FermionicSWAP(phi):
+    r"""Fermionic SWAP rotation gate.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    c = math.cos(phi / 2)
+    s = math.sin(phi / 2)
+    g = math.exp(1j * phi / 2)
+    p = math.exp(1j * phi)
+    return math.array(
+        [[1, 0, 0, 0], [0, g * c, -1j * g * s, 0], [0, -1j * g * s, g * c, 0], [0, 0, 0, p]]
+    )

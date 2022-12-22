@@ -22,7 +22,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as npp
-from pennylane.measurements import MeasurementProcess, ObservableReturnTypes
+from pennylane.measurements import ExpectationMP
+from pennylane.ops.op_math import SymbolicOp, Controlled
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qml.RX,
@@ -150,8 +151,8 @@ PARAMETRIZED_MEASUREMENTS = [
             [1.0, 1.0], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         )
     ),
-    MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, -1]),
-    MeasurementProcess(ObservableReturnTypes.Expectation, eigvals=[1, 2]),
+    ExpectationMP(eigvals=[1, -1]),
+    ExpectationMP(eigvals=[1, 2]),
 ]
 PARAMETRIZED_MEASUREMENTS_COMBINATIONS = list(
     itertools.combinations(
@@ -1102,15 +1103,22 @@ class TestEqual:
         op2 = qml.prod(op1, qml.RY(0.25, wires=1))
         assert not qml.equal(op1, op2)
 
-    def test_equal_with_nested_operators_raises_error(self):
+    def test_equal_with_unsupported_nested_operators_raises_error(self):
         """Test that the equal method with two operators with the same arithmetic depth (>0) raises
-        an error."""
+        an error unless there is a singledispatch function specifically comparing that operator type."""
+
+        op1 = SymbolicOp(qml.PauliY(0))
+        op2 = SymbolicOp(qml.PauliY(0))
+
+        assert op1.arithmetic_depth == op2.arithmetic_depth
+        assert op1.arithmetic_depth > 0
+
         with pytest.raises(
             NotImplementedError,
             match="Comparison of operators with an arithmetic"
             + " depth larger than 0 is not yet implemented.",
         ):
-            qml.equal(qml.adjoint(qml.RX(1.2, 0)), qml.adjoint(qml.RX(1.2, 0)))
+            qml.equal(op1, op2)
 
     def test_equal_same_inversion(self):
         """Test operations are equal if they are both inverted."""
@@ -1196,3 +1204,301 @@ class TestObservablesComparisons:
 
         with pytest.raises(NotImplementedError, match="Comparison of"):
             qml.equal(dev, dev)
+
+
+class TestSymbolicOpComparison:
+    """Test comparison for subclasses of SymbolicOp"""
+
+    WIRES = [(5, 5, True), (6, 7, False)]
+
+    BASES = [
+        (qml.PauliX(0), qml.PauliX(0), True),
+        (qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1), True),
+        (qml.CRX(1.23, [0, 1]), qml.CRX(1.23, [0, 1]), True),
+        (qml.CRX(1.23, [1, 0]), qml.CRX(1.23, [0, 1]), False),
+        (qml.PauliY(1), qml.PauliY(0), False),
+        (qml.PauliX(1), qml.PauliY(1), False),
+        (qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(1) @ qml.PauliY(0), False),
+    ]
+
+    PARAMS = [(1.23, 1.23, True), (5, 5, True), (2, -2, False), (1.2, 1, False)]
+
+    def test_mismatched_arithmetic_depth(self):
+        """Test that comparing SymoblicOp operators of mismatched arithmetic depth returns False"""
+        base1 = qml.PauliX(0)
+        base2 = qml.prod(qml.PauliX(0), qml.PauliY(1))
+        op1 = Controlled(base1, control_wires=2)
+        op2 = Controlled(base2, control_wires=2)
+
+        assert op1.arithmetic_depth == 1
+        assert op2.arithmetic_depth == 2
+        assert qml.equal(op1, op2) == False
+
+    def test_comparison_of_base_not_implemented_error(self):
+        """Test that comparing SymbolicOps of base operators whose comparison is not yet implemented raises an error"""
+        base = SymbolicOp(qml.RX(1.2, 0))
+        op1 = Controlled(base, control_wires=2)
+        op2 = Controlled(base, control_wires=2)
+
+        with pytest.raises(NotImplementedError, match="Unable to compare base operators "):
+            qml.equal(op1, op2)
+
+    @pytest.mark.torch
+    @pytest.mark.jax
+    def test_kwargs_for_base_operator_comparison(self):
+        """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
+        import torch
+        import jax
+
+        base1 = qml.RX(torch.tensor(1.2), wires=0)
+        base2 = qml.RX(jax.numpy.array(1.2), wires=0)
+
+        op1 = Controlled(base1, control_wires=1)
+        op2 = Controlled(base2, control_wires=1)
+
+        assert not qml.equal(op1, op2)
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+
+    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
+    def test_controlled_comparison(self, base):
+        """Test that Controlled operators can be compared"""
+        op1 = Controlled(base, control_wires=7, control_values=0)
+        op2 = Controlled(base, control_wires=7, control_values=0)
+        assert qml.equal(op1, op2)
+
+    @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
+    def test_controlled_base_operator_wire_comparison(self, wire1, wire2, res):
+        """Test that equal compares operator wires for Controlled operators"""
+        base1 = qml.PauliX(wire1)
+        base2 = qml.PauliX(wire2)
+        op1 = Controlled(base1, control_wires=1)
+        op2 = Controlled(base2, control_wires=1)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(
+        ("base1", "base2", "res"),
+        [(qml.PauliX(0), qml.PauliX(0), True), (qml.PauliX(0), qml.PauliY(0), False)],
+    )
+    def test_controlled_base_operator_comparison(self, base1, base2, res):
+        """Test that equal compares base operators for Controlled operators"""
+        op1 = Controlled(base1, control_wires=1)
+        op2 = Controlled(base2, control_wires=1)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
+    def test_control_wires_comparison(self, wire1, wire2, res):
+        """Test that equal compares control_wires for Controlled operators"""
+        base1 = qml.Hadamard(0)
+        base2 = qml.Hadamard(0)
+        op1 = Controlled(base1, control_wires=wire1)
+        op2 = Controlled(base2, control_wires=wire2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
+    def test_controlled_work_wires_comparison(self, wire1, wire2, res):
+        """Test that equal compares work_wires for Controlled operators"""
+        base1 = qml.MultiRZ(1.23, [0, 1])
+        base2 = qml.MultiRZ(1.23, [0, 1])
+        op1 = Controlled(base1, control_wires=2, work_wires=wire1)
+        op2 = Controlled(base2, control_wires=2, work_wires=wire2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
+    def test_adjoint_comparison(self, base):
+        """Test that equal compares two objects of the Adjoint class"""
+        op1 = qml.adjoint(base)
+        op2 = qml.adjoint(base)
+        op3 = qml.adjoint(qml.PauliX(15))
+
+        assert qml.equal(op1, op2)
+        assert not qml.equal(op1, op3)
+
+    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
+    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
+    def test_pow_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+        """Test that equal compares two objects of the Pow class"""
+        op1 = qml.pow(base1, param1)
+        op2 = qml.pow(base2, param2)
+        assert qml.equal(op1, op2) == (bases_match and params_match)
+
+    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
+    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
+    def test_exp_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+        """Test that equal compares two objects of the Exp class"""
+        op1 = qml.exp(base1, param1)
+        op2 = qml.exp(base2, param2)
+        assert qml.equal(op1, op2) == (bases_match and params_match)
+
+    @pytest.mark.parametrize(("base1", "base2", "bases_match"), BASES)
+    @pytest.mark.parametrize(("param1", "param2", "params_match"), PARAMS)
+    def test_s_prod_comparison(self, base1, base2, bases_match, param1, param2, params_match):
+        """Test that equal compares two objects of the SProd class"""
+        op1 = qml.s_prod(param1, base1)
+        op2 = qml.s_prod(param2, base2)
+        assert qml.equal(op1, op2) == (bases_match and params_match)
+
+
+class TestProdComparisons:
+    """Tests comparisons between Prod operators"""
+
+    SINGLE_WIRE_BASES = [
+        ([qml.PauliX(0), qml.PauliY(1)], [qml.PauliX(0), qml.PauliY(1)], True),
+        ([qml.PauliX(0), qml.PauliY(1)], [qml.PauliY(1), qml.PauliX(0)], True),
+        (
+            [qml.RX(1.23, 0), qml.adjoint(qml.RY(1.23, 1))],
+            [qml.RX(1.23, 0), qml.adjoint(qml.RY(1.23, 1))],
+            True,
+        ),
+        ([qml.PauliX(1), qml.PauliY(0)], [qml.PauliY(1), qml.PauliX(0)], False),
+        (
+            [qml.PauliX(0), qml.PauliY(1), qml.PauliX(0), qml.PauliY(1)],
+            [qml.PauliX(0), qml.PauliX(0), qml.PauliY(1), qml.PauliY(1)],
+            True,
+        ),
+        (
+            [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0), qml.PauliY(1)],
+            [qml.PauliZ(0), qml.PauliX(0), qml.PauliY(1), qml.PauliY(1)],
+            False,
+        ),
+        ([qml.PauliZ(0), qml.PauliZ(1)], [qml.PauliZ(0), qml.PauliZ(1), qml.PauliY(2)], False),
+        ([qml.RX(1.23, 0), qml.RX(1.23, 1)], [qml.RX(2.34, 0), qml.RX(1.23, 1)], False),
+    ]
+
+    MULTI_WIRE_BASES = [
+        ([qml.CRX(1.23, [0, 1]), qml.PauliX(0)], [qml.CRX(1.23, [0, 1]), qml.PauliX(0)], True),
+        ([qml.CRX(1.23, [0, 1]), qml.PauliX(0)], [qml.PauliX(0), qml.CRX(1.23, [0, 1])], False),
+        ([qml.CRX(1.23, [0, 1]), qml.PauliX(2)], [qml.PauliX(2), qml.CRX(1.23, [0, 1])], True),
+        (
+            [qml.CRX(1.23, [1, 0]), qml.CRY(2.34, [1, 0])],
+            [qml.CRX(1.23, [1, 0]), qml.CRY(2.34, [1, 0])],
+            True,
+        ),
+        (
+            [qml.CRX(1.23, [1, 0]), qml.CRY(2.34, [1, 0])],
+            [qml.CRX(1.23, [1, 0]), qml.CRY(2.34, [0, 1])],
+            False,
+        ),
+        (
+            [qml.CRX(1.34, [1, 0]), qml.CRY(2.34, [1, 0])],
+            [qml.CRX(1.23, [1, 0]), qml.CRY(2.34, [1, 0])],
+            False,
+        ),
+    ]
+
+    def test_non_commuting_order_swap_not_equal(self):
+        """Test that changing the order of non-commuting operators is not equal"""
+        op1 = qml.prod(qml.PauliX(0), qml.PauliY(0))
+        op2 = qml.prod(qml.PauliY(0), qml.PauliX(0))
+        assert not qml.equal(op1, op2)
+
+    def test_commuting_order_swap_equal(self):
+        """Test that changing the order of commuting operators is equal"""
+        op1 = qml.prod(qml.PauliX(0), qml.PauliY(1))
+        op2 = qml.prod(qml.PauliY(1), qml.PauliX(0))
+        assert qml.equal(op1, op2)
+
+    @pytest.mark.all_interfaces
+    def test_prod_kwargs_used_for_base_operator_comparison(self):
+        """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
+        import torch
+        import jax
+
+        base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
+        base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
+
+        op1 = qml.prod(*base_list1)
+        op2 = qml.prod(*base_list2)
+
+        assert not qml.equal(op1, op2)
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+
+    @pytest.mark.parametrize(("base_list1", "base_list2", "res"), SINGLE_WIRE_BASES)
+    def test_prod_comparisons_single_wire_bases(self, base_list1, base_list2, res):
+        """Test comparison of products of operators where all operators have a single wire"""
+        op1 = qml.prod(*base_list1)
+        op2 = qml.prod(*base_list2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("base_list1", "base_list2", "res"), MULTI_WIRE_BASES)
+    def test_prod_with_multi_wire_bases(self, base_list1, base_list2, res):
+        """Test comparison of products of operators where some operators work on multiple wires"""
+        op1 = qml.prod(*base_list1)
+        op2 = qml.prod(*base_list2)
+        assert qml.equal(op1, op2) == res
+
+
+class TestSumComparisons:
+    """Tests comparisons between Sum operators"""
+
+    SINGLE_WIRE_BASES = [
+        ([qml.PauliX(0), qml.PauliY(1)], [qml.PauliX(0), qml.PauliY(1)], True),
+        ([qml.PauliX(0), qml.PauliY(1)], [qml.PauliY(1), qml.PauliX(0)], True),
+        (
+            [qml.RX(1.23, 0), qml.adjoint(qml.RY(1.23, 1))],
+            [qml.RX(1.23, 0), qml.adjoint(qml.RY(1.23, 1))],
+            True,
+        ),
+        ([qml.PauliX(1), qml.PauliY(0)], [qml.PauliY(1), qml.PauliX(0)], False),
+        (
+            [qml.PauliX(0), qml.PauliY(1), qml.PauliX(0), qml.PauliY(1)],
+            [qml.PauliX(0), qml.PauliX(0), qml.PauliY(1), qml.PauliY(1)],
+            True,
+        ),
+        ([qml.PauliZ(0), qml.PauliZ(1)], [qml.PauliZ(0), qml.PauliZ(1), qml.PauliY(2)], False),
+        ([qml.RX(1.23, 0), qml.RX(1.23, 1)], [qml.RX(2.34, 0), qml.RX(1.23, 1)], False),
+    ]
+
+    MULTI_WIRE_BASES = [
+        ([qml.CRX(1.23, [0, 1]), qml.PauliX(0)], [qml.CRX(1.23, [0, 1]), qml.PauliX(0)], True),
+        ([qml.CRX(1.23, [0, 1]), qml.PauliX(0)], [qml.PauliX(0), qml.CRX(1.23, [0, 1])], True),
+        (
+            [qml.CRX(1.23, [1, 0]), qml.CRY(2.34, [1, 0])],
+            [qml.CRX(1.23, [1, 0]), qml.CRY(2.34, [1, 0])],
+            True,
+        ),
+        (
+            [qml.CRX(1.23, [1, 0]), qml.CRY(2.34, [1, 0])],
+            [qml.CRX(1.23, [1, 0]), qml.CRY(2.34, [0, 1])],
+            False,
+        ),
+        (
+            [qml.CRX(1.34, [1, 0]), qml.CRY(2.34, [1, 0])],
+            [qml.CRX(1.23, [1, 0]), qml.CRY(2.34, [1, 0])],
+            False,
+        ),
+    ]
+
+    def test_sum_different_order_still_equal(self):
+        """Test that changing the order of the terms doesn't affect comparison of sums"""
+        op1 = qml.op_sum(qml.PauliX(0), qml.PauliY(1))
+        op2 = qml.op_sum(qml.PauliY(1), qml.PauliX(0))
+        assert qml.equal(op1, op2)
+
+    @pytest.mark.all_interfaces
+    def test_sum_kwargs_used_for_base_operator_comparison(self):
+        """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
+        import torch
+        import jax
+
+        base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
+        base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
+
+        op1 = qml.op_sum(*base_list1)
+        op2 = qml.op_sum(*base_list2)
+
+        assert not qml.equal(op1, op2)
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+
+    @pytest.mark.parametrize(("base_list1", "base_list2", "res"), SINGLE_WIRE_BASES)
+    def test_sum_comparisons_single_wire_bases(self, base_list1, base_list2, res):
+        """Test comparison of sums of operators where all operators have a single wire"""
+        op1 = qml.op_sum(*base_list1)
+        op2 = qml.op_sum(*base_list2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("base_list1", "base_list2", "res"), MULTI_WIRE_BASES)
+    def test_sum_with_multi_wire_operations(self, base_list1, base_list2, res):
+        """Test comparison of sums of operators where some operators act on multiple wires"""
+        op1 = qml.op_sum(*base_list1)
+        op2 = qml.op_sum(*base_list2)
+        assert qml.equal(op1, op2) == res

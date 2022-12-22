@@ -34,7 +34,7 @@ from pennylane import (
     Snapshot,
 )
 from pennylane import numpy as np
-from pennylane.measurements import Counts, AllCounts, MutualInfo, Sample, State, VnEntropy
+from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
@@ -86,6 +86,7 @@ class DefaultMixed(QubitDevice):
         "SX",
         "CNOT",
         "SWAP",
+        "ISWAP",
         "CSWAP",
         "Toffoli",
         "CCZ",
@@ -123,6 +124,7 @@ class DefaultMixed(QubitDevice):
         "QubitCarry",
         "QubitSum",
         "OrbitalRotation",
+        "FermionicSWAP",
         "QFT",
         "ThermalRelaxationError",
         "ECR",
@@ -579,23 +581,25 @@ class DefaultMixed(QubitDevice):
 
         if self.readout_err:
             wires_list = []
-            for obs in circuit.observables:
-                if obs.return_type is State:
+            for m in circuit.measurements:
+                if isinstance(m, StateMP):
                     # State: This returns pre-rotated state, so no readout error.
                     # Assumed to only be allowed if it's the only measurement.
                     self.measured_wires = []
                     return super().execute(circuit, **kwargs)
-                if obs.return_type in (Sample, Counts, AllCounts):
-                    if obs.name == "Identity" and obs.wires in (qml.wires.Wires([]), self.wires):
-                        # Sample, Counts: Readout error applied to all device wires when wires
-                        # not specified or all wires specified.
-                        self.measured_wires = self.wires
-                        return super().execute(circuit, **kwargs)
-                if obs.return_type in (VnEntropy, MutualInfo):
+                if isinstance(m, (SampleMP, CountsMP)) and m.wires in (
+                    qml.wires.Wires([]),
+                    self.wires,
+                ):
+                    # Sample, Counts: Readout error applied to all device wires when wires
+                    # not specified or all wires specified.
+                    self.measured_wires = self.wires
+                    return super().execute(circuit, **kwargs)
+                if isinstance(m, (VnEntropyMP, MutualInfoMP)):
                     # VnEntropy, MutualInfo: Computed for the state prior to measurement. So, readout
                     # error need not be applied on the corresponding device wires.
                     continue
-                wires_list.append(obs.wires)
+                wires_list.append(m.wires)
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)
         return super().execute(circuit, **kwargs)
 
