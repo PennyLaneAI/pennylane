@@ -741,9 +741,9 @@ class Device(abc.ABC):
 
         hamiltonian_unusable = not supports_hamiltonian or finite_shots
 
-        if (hamiltonian_in_obs and (hamiltonian_unusable or (use_grouping and grouping_known))) or (
-            expval_sum_in_obs
-        ):
+        if (
+            hamiltonian_in_obs and (hamiltonian_unusable or (use_grouping and grouping_known))
+        ) or expval_sum_in_obs:
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
