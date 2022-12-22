@@ -327,8 +327,9 @@ class TestSplitTape:
 
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
-            res = qml.execute([tape], dev, qml.gradients.param_shift)
-            return res
+            tapes, fn = split_tape(tape)
+            res = qml.execute(tapes, dev, qml.gradients.param_shift)
+            return fn(res)
 
         assert np.allclose(cost(var), output)
 
@@ -417,7 +418,9 @@ class TestSplitTape:
 
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
-            return qml.execute([tape], dev, qml.gradients.param_shift, interface="jax")[0]
+            tapes, fn = split_tape(tape)
+            res = qml.execute(tapes, dev, qml.gradients.param_shift, interface="jax")
+            return fn(res)
 
         assert np.isclose(cost(var), output)
 
