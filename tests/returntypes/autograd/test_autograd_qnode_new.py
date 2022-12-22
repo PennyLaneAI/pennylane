@@ -436,7 +436,7 @@ class TestQNode:
 
         gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
@@ -591,7 +591,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
@@ -624,7 +624,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
@@ -683,7 +683,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
@@ -729,7 +729,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
@@ -828,7 +828,7 @@ class TestQubitIntegration:
         is correct."""
         gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
         dev1 = qml.device(dev_name, wires=3)
 

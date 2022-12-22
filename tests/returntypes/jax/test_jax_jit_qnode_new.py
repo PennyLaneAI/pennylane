@@ -171,7 +171,7 @@ class TestQNode:
 
         gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
@@ -407,7 +407,7 @@ class TestVectorValuedQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
@@ -449,7 +449,7 @@ class TestVectorValuedQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=3)
@@ -526,7 +526,7 @@ class TestVectorValuedQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
@@ -635,7 +635,7 @@ class TestVectorValuedQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 20}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=3)
@@ -921,7 +921,7 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not second derivative.")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "num_directions": 10}
+            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=1)
