@@ -2025,7 +2025,7 @@ class TestHamiltonianSupportBroadcasted:
 
         circuit()
         # evaluated one expval altogether
-        assert spy.call_count == 2
+        assert spy.call_count == 1
 
     def test_split_finite_shots_broadcasted(self, mocker):
         """Tests that the Hamiltonian is split for finite shots."""
