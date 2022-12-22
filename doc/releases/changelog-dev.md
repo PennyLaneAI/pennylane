@@ -113,7 +113,12 @@
 * Limit the `numpy` version to `<1.24`.
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
 
-<h3>Breaking changes</h3>
+* Validation has been added on the `gradient_kwargs` when initializing a QNode, and if unexpected kwargs are passed, 
+  a `UserWarning` is raised. A list of the current expected gradient function kwargs has been added as 
+  `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
+  [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
+
+ <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
 
