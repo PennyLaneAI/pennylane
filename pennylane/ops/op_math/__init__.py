@@ -43,6 +43,7 @@ Symbolic Classes
     ~Controlled
     ~ControlledOp
     ~ControlledQubitUnitary
+    ~Evolution
     ~Exp
     ~Pow
     ~Prod
@@ -56,7 +57,8 @@ from .adjoint_class import Adjoint
 from .adjoint_constructor import adjoint
 from .controlled_class import Controlled, ControlledOp
 from .controlled_ops import ControlledQubitUnitary
-from .exp import exp, Exp
+from .exp import exp, Exp, Evolution
+
 
 from .prod import prod, Prod
 

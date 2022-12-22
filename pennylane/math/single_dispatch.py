@@ -87,6 +87,10 @@ def _cond(pred, true_fn, false_fn, args):
 ar.register_function("numpy", "cond", _cond)
 ar.register_function("builtins", "cond", _cond)
 
+ar.register_function("numpy", "gamma", lambda x: _i("scipy").special.gamma(x))
+
+ar.register_function("builtins", "gamma", lambda x: _i("scipy").special.gamma(x))
+
 # -------------------------------- Autograd --------------------------------- #
 
 
@@ -185,6 +189,8 @@ ar.register_function(
 
 ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
 ar.register_function("autograd", "cond", _cond)
+
+ar.register_function("autograd", "gamma", lambda x: _i("autograd.scipy").special.gamma(x))
 
 
 # -------------------------------- TensorFlow --------------------------------- #
@@ -414,7 +420,9 @@ ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
 
 def _to_numpy_torch(x):
-    if getattr(x, "is_conj", False) and x.is_conj():
+    if getattr(x, "is_conj", False) and x.is_conj():  # pragma: no cover
+
+        # The following line is only covered if using Torch <v1.10.0
         x = x.resolve_conj()
 
     return x.detach().cpu().numpy()
@@ -505,7 +513,9 @@ def _coerce_types_torch(tensors):
 
     # Extract existing set devices, if any
     device_set = set(t.device for t in tensors if isinstance(t, torch.Tensor))
-    if len(device_set) > 1:
+    if len(device_set) > 1:  # pragma: no cover
+
+        # GPU specific case
         device_names = ", ".join(str(d) for d in device_set)
         raise RuntimeError(
             f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
@@ -679,4 +689,8 @@ ar.register_function(
     "jax",
     "cond",
     lambda pred, true_fn, false_fn, args: _i("jax").lax.cond(pred, true_fn, false_fn, *args),
+)
+
+ar.register_function(
+    "jax", "gamma", lambda x: _i("jax").numpy.exp(_i("jax").scipy.special.gammaln(x))
 )

@@ -92,8 +92,16 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
               The output shape is a single two-dimensional tensor.
 
     Returns:
-        func: Function which accepts the same arguments as the QNode. When called, this
-        function will return the metric tensor.
+        function or tuple[list[QuantumTape], function]:
+
+        - If the input is a QNode, an object representing the metric tensor (function) of the
+          QNode that takes the same arguments as the QNode and can be executed to obtain the
+          metric tensor (matrix).
+
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the metric tensor.
 
     The block-diagonal part of the metric tensor always is computed using the
     covariance-based approach. If no approximation is selected,
@@ -494,10 +502,10 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
             control the controlled-generator operations
 
     Returns:
-        list[pennylane.tape.QuantumScript]: Transformed qscripts that compute the
+        list[pennylane.tape.QuantumTape]: Transformed tapes that compute the
             first term of the metric tensor for the off-diagonal block belonging
             to the input layers
-        list[tuple[int]]: 2-tuple indices assigning the qscripts to metric tensor
+        list[tuple[int]]: 2-tuple indices assigning the tapes to metric tensor
             entries
     """
 
