@@ -29,6 +29,12 @@ from .measurements import SampleMeasurement, StateMeasurement, Variance
 def var(op: Operator):
     r"""Variance of the supplied observable.
 
+    Args:
+        op (Observable): a quantum observable object
+
+    Returns:
+        VarianceMP: measurement process instance
+
     **Example:**
 
     .. code-block:: python3
@@ -46,12 +52,6 @@ def var(op: Operator):
 
     >>> circuit(0.5)
     0.7701511529340698
-
-    Args:
-        op (Observable): a quantum observable object
-
-    Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
@@ -59,9 +59,21 @@ def var(op: Operator):
 
 
 class VarianceMP(SampleMeasurement, StateMeasurement):
-    """Measurement process that computes the variance of the supplied observable."""
+    """Measurement process that computes the variance of the supplied observable.
 
-    method_name = "var"
+    Please refer to :func:`var` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
 
     @property
     def return_type(self):
@@ -123,10 +135,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
 
         eigvals = qml.math.asarray(self.obs.eigvals(), dtype=float)
 
-        # the probability vector must be permuted to account for the permuted wire order of the observable
-        new_obs_wires = self._permute_wires(self.obs.wires)
         # we use ``wires`` instead of ``op`` because the observable was
         # already applied to the state
-        prob = qml.probs(wires=new_obs_wires).process_state(state=state, wire_order=wire_order)
+        prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return qml.math.dot(prob, (eigvals**2)) - qml.math.dot(prob, eigvals) ** 2

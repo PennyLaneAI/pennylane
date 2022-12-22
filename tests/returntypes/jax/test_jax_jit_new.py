@@ -230,33 +230,6 @@ class TestJaxExecuteUnitTests:
         jax.grad(cost)(a)
         spy_gradients.assert_called()
 
-    def test_max_diff_error(self):
-        """Test that an error is being raised if max_diff > 1 for the JAX
-        interface."""
-        a = jax.numpy.array([0.1, 0.2])
-
-        dev = qml.device("default.qubit", wires=1)
-
-        with pytest.raises(
-            InterfaceUnsupportedError,
-            match="The JAX-JIT interface only supports first order derivatives.",
-        ):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.expval(qml.PauliZ(0))
-
-            tape = qml.tape.QuantumScript.from_queue(q)
-
-            execute(
-                [tape],
-                dev,
-                interface="jax-jit",
-                gradient_fn=param_shift,
-                gradient_kwargs={"shift": np.pi / 4},
-                max_diff=2,
-            )
-
 
 class TestCaching:
     """Test for caching behaviour"""

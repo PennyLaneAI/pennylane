@@ -523,7 +523,7 @@ def _expval_param_shift_tuple(
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
         # If no gradient tapes are returned (e.g. only unshifted term in recipe), batch_size=None
-        batch_size = g_tapes[0].batch_size if g_tapes else None
+        batch_size = g_tapes[0].batch_size if broadcast and g_tapes else None
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, batch_size))
 
     def processing_fn(results):
@@ -690,7 +690,7 @@ def expval_param_shift(
         # If broadcast=True, g_tapes only contains one tape. If broadcast=False, all returned
         # tapes will have the same batch_size=None. Thus we only use g_tapes[0].batch_size here.
         # If no gradient tapes are returned (e.g. only unshifted term in recipe), batch_size=None
-        batch_size = g_tapes[0].batch_size if g_tapes else None
+        batch_size = g_tapes[0].batch_size if broadcast and g_tapes else None
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, batch_size))
 
     def processing_fn(results):
@@ -1340,7 +1340,7 @@ def _param_shift_new(
     ...     return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    (DeviceArray([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32), DeviceArray([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
+    (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32), Array([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
 
     .. note::
 

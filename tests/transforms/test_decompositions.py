@@ -42,6 +42,7 @@ single_qubit_decomps = [
     (qml.RZ(0.3, wires=0).matrix(), qml.RZ, [0.3]),
     (qml.RZ(-0.5, wires=0).matrix(), qml.RZ, [-0.5]),
     # Next set of gates are non-diagonal and decomposed as Rots
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), qml.Rot, [0.2, 0.5, -0.3]),
     (
         np.array(
             [
@@ -54,11 +55,21 @@ single_qubit_decomps = [
     ),
     (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
     (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), qml.Rot, [0.2, 0.5, -0.3]),
     (
         np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
         qml.Rot,
         [-1.0, 2.0, -3.0],
+    ),
+    # Add two instances of broadcasted unitaries, one coming from RZ and another from Rot
+    (
+        qml.QubitUnitary(qml.RZ.compute_matrix(np.array([np.pi, np.pi / 2])), wires=0).matrix(),
+        qml.Rot,
+        [[np.pi / 2, np.pi / 4], [0.0, 0.0], [np.pi / 2, np.pi / 4]],
+    ),
+    (
+        qml.Rot(np.array([1.2, 2.3]), np.array([1.2, 2.3]), np.array([1.2, 2.3]), wires=0).matrix(),
+        qml.Rot,
+        [[1.2, 2.3], [1.2, 2.3], [1.2, 2.3]],
     ),
 ]
 
@@ -66,34 +77,7 @@ single_qubit_decomps = [
 class TestQubitUnitaryZYZDecomposition:
     """Test that the decompositions are correct."""
 
-    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
-    def test_zyz_decomposition(self, U, expected_gate, expected_params):
-        """Test that a one-qubit matrix in isolation is correctly decomposed."""
-        obtained_gates = zyz_decomposition(U, Wires("a"))
-
-        assert len(obtained_gates) == 1
-        assert isinstance(obtained_gates[0], expected_gate)
-        assert obtained_gates[0].wires == Wires("a")
-
-        assert qml.math.allclose(obtained_gates[0].parameters, expected_params, atol=1e-7)
-
-        if obtained_gates[0].num_params == 1:
-            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).matrix()
-        else:
-            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix()
-
-        assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
-
-    @pytest.mark.torch
-    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
-    def test_zyz_decomposition_torch(self, U, expected_gate, expected_params):
-        """Test that a one-qubit operation in Torch is correctly decomposed."""
-        import torch
-
-        U = torch.tensor(U, dtype=torch.complex128)
-
-        obtained_gates = zyz_decomposition(U, wire="a")
-
+    def _run_assertions(self, U, expected_gate, expected_params, obtained_gates):
         assert len(obtained_gates) == 1
         assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
@@ -107,7 +91,33 @@ class TestQubitUnitaryZYZDecomposition:
         else:
             obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix()
 
-        assert check_matrix_equivalence(obtained_mat, qml.math.unwrap(U), atol=1e-7)
+        if len(obtained_mat.shape) == 2:
+            U = [U]
+            obtained_mat = [obtained_mat]
+
+        assert all(
+            check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
+            for curr_obtained_mat, curr_U in zip(obtained_mat, qml.math.unwrap(U))
+        )
+
+    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
+    def test_zyz_decomposition(self, U, expected_gate, expected_params):
+        """Test that a one-qubit matrix in isolation is correctly decomposed."""
+        obtained_gates = zyz_decomposition(U, Wires("a"))
+
+        self._run_assertions(U, expected_gate, expected_params, obtained_gates)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
+    def test_zyz_decomposition_torch(self, U, expected_gate, expected_params):
+        """Test that a one-qubit operation in Torch is correctly decomposed."""
+        import torch
+
+        U = torch.tensor(U, dtype=torch.complex128)
+
+        obtained_gates = zyz_decomposition(U, wire="a")
+
+        self._run_assertions(U, expected_gate, expected_params, obtained_gates)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
@@ -119,19 +129,7 @@ class TestQubitUnitaryZYZDecomposition:
 
         obtained_gates = zyz_decomposition(U, wire="a")
 
-        assert len(obtained_gates) == 1
-        assert isinstance(obtained_gates[0], expected_gate)
-        assert obtained_gates[0].wires == Wires("a")
-
-        assert qml.math.allclose(qml.math.unwrap(obtained_gates[0].parameters), expected_params)
-
-        if obtained_gates[0].num_params == 1:
-            # With TF and RZ, need to cast since can't just unwrap
-            obtained_mat = qml.RZ(obtained_gates[0].parameters[0].numpy(), wires=0).matrix()
-        else:
-            obtained_mat = qml.Rot(*qml.math.unwrap(obtained_gates[0].parameters), wires=0).matrix()
-
-        assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
+        self._run_assertions(U, expected_gate, expected_params, obtained_gates)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
@@ -149,20 +147,7 @@ class TestQubitUnitaryZYZDecomposition:
 
         obtained_gates = zyz_decomposition(U, wire="a")
 
-        assert len(obtained_gates) == 1
-        assert isinstance(obtained_gates[0], expected_gate)
-        assert obtained_gates[0].wires == Wires("a")
-
-        assert qml.math.allclose(
-            qml.math.unwrap(obtained_gates[0].parameters), expected_params, atol=1e-7
-        )
-
-        if obtained_gates[0].num_params == 1:
-            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).matrix()
-        else:
-            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix()
-
-        assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
+        self._run_assertions(U, expected_gate, expected_params, obtained_gates)
 
 
 # Randomly generated set (scipy.unitary_group) of five U(4) operations.
@@ -870,3 +855,65 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
+    def test_two_qubit_decomposition_jax_jit(self, U, wires):
+        """Test that a two-qubit operation is correctly decomposed with JAX-JIT ."""
+        import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+
+        def wrapped_decomposition(U):
+            # the jitted function cannot return objects like operators,
+            # so we cannot jit two_qubit_decomposition directly
+            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+
+            with qml.queuing.AnnotatedQueue() as q:
+                for op in obtained_decomposition:
+                    qml.apply(op)
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            obtained_matrix = qml.matrix(tape, wire_order=wires)
+
+            return obtained_matrix
+
+        jitted_matrix = jax.jit(wrapped_decomposition)(U)
+
+        assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("U_pair", samples_su2_su2)
+    def test_two_qubit_decomposition_tensor_products_jax_jit(self, U_pair, wires):
+        """Test that a two-qubit tensor product is correctly decomposed with JAX-JIT."""
+        import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
+        U2 = jax.numpy.array(U_pair[1], dtype=jax.numpy.complex128)
+        U = qml.math.kron(U1, U2)
+
+        def wrapped_decomposition(U):
+            # the jitted function cannot return objects like operators,
+            # so we cannot jit two_qubit_decomposition directly
+            obtained_decomposition = two_qubit_decomposition(U, wires=wires)
+
+            with qml.queuing.AnnotatedQueue() as q:
+                for op in obtained_decomposition:
+                    qml.apply(op)
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            obtained_matrix = qml.matrix(tape, wire_order=wires)
+
+            return obtained_matrix
+
+        jitted_matrix = jax.jit(wrapped_decomposition)(U)
+
+        assert check_matrix_equivalence(U, jitted_matrix, atol=1e-7)

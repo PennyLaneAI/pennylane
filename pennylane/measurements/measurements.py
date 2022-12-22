@@ -11,13 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
-# pylint: disable=too-many-instance-attributes
 import contextlib
 import copy
 import functools
@@ -122,26 +120,6 @@ class MeasurementProcess(ABC):
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
-        log_base (float): Base for the logarithm.
-    """
-
-    method_name = ""
-    """Devices can override the logic of a measurement process by defining a method with the
-    name ``method_name`` of the corresponding class. The method should have the following signature:
-
-    .. code-block:: python
-
-        def method_name(self, measurement: MeasurementProcess, shot_range=None, bin_size=None):
-            '''Device's custom measurement implementation.
-
-            Args:
-                measurement (MeasurementProcess): measurement to override
-                shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
-                    to use. If not specified, all samples are used.
-                bin_size (int): Divides the shot range into bins of size ``bin_size``, and
-                    returns the measurement statistic separately over each bin. If not
-                    provided, the entire shot range is treated as a single bin.
-            '''
     """
 
     # pylint: disable=too-many-arguments
@@ -313,7 +291,7 @@ class MeasurementProcess(ABC):
             return f"{self.return_type.value}(wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        if self.obs.return_type is None:
+        if getattr(self.obs, "return_type", None) is None:
             return f"{self.return_type.value}({self.obs})"
 
         return f"{self.obs}"
@@ -397,10 +375,10 @@ class MeasurementProcess(ABC):
         rotation and a measurement in the computational basis.
 
         Returns:
-            .QuantumScript: a quantum script containing the operations
+            .QuantumTape: a quantum tape containing the operations
             required to diagonalize the observable
 
-        **Example**
+        **Example:**
 
         Consider a measurement process consisting of the expectation
         value of an Hermitian observable:
@@ -411,18 +389,18 @@ class MeasurementProcess(ABC):
 
         Expanding this out:
 
-        >>> qscript = m.expand()
+        >>> tape = m.expand()
 
-        We can see that the resulting script has the qubit unitary applied,
+        We can see that the resulting tape has the qubit unitary applied,
         and a measurement process with no observable, but the eigenvalues
         specified:
 
-        >>> print(qscript.operations)
+        >>> print(tape.operations)
         [QubitUnitary(array([[-0.89442719,  0.4472136 ],
               [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(qscript.measurements[0].eigvals())
+        >>> print(tape.measurements[0].eigvals())
         [0. 5.]
-        >>> print(qscript.measurements[0].obs)
+        >>> print(tape.measurements[0].obs)
         None
         """
         if self.obs is None:
@@ -483,6 +461,7 @@ class MeasurementProcess(ABC):
         """
         return self if self.obs is None else self.__class__(obs=self.obs.simplify())
 
+    # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
         the given wire map.
@@ -500,63 +479,39 @@ class MeasurementProcess(ABC):
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
 
-    def _permute_wires(self, wires: Wires):
-        r"""Given an observable which acts on multiple wires, permute the wires to
-          be consistent with the device wire order.
-
-          Suppose we are given an observable :math:`\hat{O} = \Identity \otimes \Identity \otimes \hat{Z}`.
-          This observable can be represented in many ways:
-
-        .. code-block:: python
-
-              O_1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
-              O_2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
-
-          Notice that while the explicit tensor product matrix representation of :code:`O_1` and :code:`O_2` is
-          different, the underlying operator is identical due to the wire labelling (assuming the labels in
-          ascending order are {0,1,2}). If we wish to compute the expectation value of such an observable, we must
-          ensure it is identical in both cases. To facilitate this, we permute the wires in our state vector such
-          that they are consistent with this swapping of order in the tensor observable.
-
-        .. code-block:: python
-
-              >>> print(O_1.wires)
-              <Wires = [0, 1, 2]>
-              >>> print(O_2.wires)
-              <Wires = [2, 0, 1]>
-
-          We might naively think that we must permute our state vector to match the wire order of our tensor observable.
-          We must be careful and realize that the wire order of the terms in the tensor observable DOES NOT match the
-          permutation of the terms themselves. As an example we directly compare :code:`O_1` and :code:`O_2`:
-
-          The first term in :code:`O_1` (:code:`qml.Identity(wires=0)`) became the second term in :code:`O_2`.
-          By similar comparison we see that each term in the tensor product was shifted one position forward
-          (i.e 0 --> 1, 1 --> 2, 2 --> 0). The wires in our permuted quantum state should follow their respective
-          terms in the tensor product observable.
-
-          Thus, the correct wire ordering should be :code:`permuted_wires = <Wires = [1, 2, 0]>`. But if we had
-          taken the naive approach we would have permuted our state according to
-          :code:`permuted_wires = <Wires = [2, 0, 1]>` which is NOT correct.
-
-          This function uses the observable wires and the global device wire ordering in order to determine the
-          permutation of the wires in the observable required such that if our quantum state vector is
-          permuted accordingly then the amplitudes of the state will match the matrix representation of the observable.
-
-          Args:
-              observable (Observable): the observable whose wires are to be permuted.
-
-          Returns:
-              permuted_wires (Wires): permuted wires object
-        """
-        wire_map = dict(zip(wires, range(len(wires))))
-        ordered_obs_wire_lst = sorted(self.wires.tolist(), key=lambda label: wire_map[label])
-        mapped_wires = [wire_map[w] for w in self.wires]
-        permutation = qml.math.argsort(mapped_wires)  # extract permutation via argsort
-        return Wires([ordered_obs_wire_lst[index] for index in permutation])
-
 
 class SampleMeasurement(MeasurementProcess):
-    """Sample-based measurement process."""
+    """Sample-based measurement process.
+
+    Any class inheriting from ``SampleMeasurement`` should define its own ``process_samples`` method,
+    which should have the following arguments:
+
+    * samples (Sequence[complex]): computational basis samples generated for all wires
+    * wire_order (Wires): wires determining the subspace that ``samples`` acts on
+    * shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+        to use. If not specified, all samples are used.
+    * bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+        returns the measurement statistic separately over each bin. If not
+        provided, the entire shot range is treated as a single bin.
+
+    **Example:**
+
+    Let's create a measurement that returns the sum of all samples of the given wires.
+
+    >>> class MyMeasurement(SampleMeasurement):
+    ...     def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
+    ...         return qml.math.sum(samples[..., self.wires])
+
+    We can now execute it in a QNode:
+
+    >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     qml.PauliX(0)
+    ...     return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+    >>> circuit()
+    tensor([1000,    0], requires_grad=True)
+    """
 
     @abstractmethod
     def process_samples(
@@ -580,7 +535,37 @@ class SampleMeasurement(MeasurementProcess):
 
 
 class StateMeasurement(MeasurementProcess):
-    """State-based measurement process."""
+    """State-based measurement process.
+
+    Any class inheriting from ``StateMeasurement`` should define its own ``process_state`` method,
+    which should have the following arguments:
+
+    * state (Sequence[complex]): quantum state
+    * wire_order (Wires): wires determining the subspace that ``state`` acts on; a matrix of
+        dimension :math:`2^n` acts on a subspace of :math:`n` wires
+
+    **Example:**
+
+    Let's create a measurement that returns the diagonal of the reduced density matrix.
+
+    >>> class MyMeasurement(StateMeasurement):
+    ...     def process_state(self, state, wire_order):
+    ...         # use the already defined `qml.density_matrix` measurement to compute the
+    ...         # reduced density matrix from the given state
+    ...         density_matrix = qml.density_matrix(wires=self.wires).process_state(state, wire_order)
+    ...         return qml.math.diagonal(qml.math.real(density_matrix))
+
+    We can now execute it in a QNode:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @qml.qnode(dev)
+    ... def circuit():
+    ...     qml.Hadamard(0)
+    ...     qml.CNOT([0, 1])
+    ...     return MyMeasurement(wires=[0])
+    >>> circuit()
+    tensor([0.5, 0.5], requires_grad=True)
+    """
 
     @abstractmethod
     def process_state(self, state: Sequence[complex], wire_order: Wires):
@@ -594,55 +579,21 @@ class StateMeasurement(MeasurementProcess):
 
 
 class MeasurementTransform(MeasurementProcess):
-    """Measurement process that applies a transform into the given quantum script. This transform
+    """Measurement process that applies a transform into the given quantum tape. This transform
     is carried out inside the gradient black box, thus is not tracked by the gradient transform.
 
-    Any class inheriting from this class should define its own ``process`` method, which takes a
-    device instance and a quantum script and returns the result of the measurement process.
-    """
+    Any class inheriting from ``MeasurementTransform`` should define its own ``process`` method,
+    which should have the following arguments:
 
-    method_name = ""
-    """Devices can override the logic of a measurement process by defining a method with the
-    name ``method_name`` of the corresponding class. The method should have the following signature:
-
-    .. code-block:: python
-
-        def method_name(self, qscript: QuantumScript):
-            '''Device's custom measurement implementation.
-
-            Args:
-                qscript: quantum script to transform
-            '''
-    """
-
-    method_name = ""
-    """Devices can override the logic of a measurement process by defining a method with the
-    name ``method_name`` of the corresponding class. The method should have the following signature:
-
-    .. code-block:: python
-
-        def method_name(self, qscript: QuantumScript):
-            '''Device's custom measurement implementation.
-
-            Args:
-                qscript: quantum script to transform
-            '''
-    """
-
-    method_name = ""
-    """Devices can override the logic of a measurement process by defining a method with the
-    name ``method_name`` of the corresponding class. The method should have the following signature:
-
-    .. code-block:: python
-
-        def method_name(self, qscript: QuantumScript):
-            '''Device's custom measurement implementation.
-
-            Args:
-                qscript: quantum script to transform
-            '''
+    * tape (QuantumTape): quantum tape to transform
+    * device (Device): device used to transform the quantum tape
     """
 
     @abstractmethod
-    def process(self, qscript, device):
-        """Process the given quantum script."""
+    def process(self, tape, device):
+        """Process the given quantum tape.
+
+        Args:
+            tape (QuantumTape): quantum tape to transform
+            device (Device): device used to transform the quantum tape
+        """

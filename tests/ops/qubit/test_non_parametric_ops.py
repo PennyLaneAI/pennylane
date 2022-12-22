@@ -1323,7 +1323,7 @@ class TestControlledMethod:
         assert qml.equal(out, qml.CZ(("a", 0)))
 
     def test_Hadamard(self):
-        """Test the PauliZ _controlled method."""
+        """Test the Hadamard _controlled method."""
         out = qml.Hadamard(0)._controlled("a")
         assert qml.equal(out, qml.CH(("a", 0)))
 
@@ -1454,3 +1454,16 @@ def test_adjoint_method(op, tol):
         adj_op = adj_op.adjoint()
 
         assert adj_op.name == op.name
+
+
+op_pauli_rep = (
+    (qml.PauliX(wires=0), qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X"}): 1})),
+    (qml.PauliY(wires="a"), qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1})),
+    (qml.PauliZ(wires=4), qml.pauli.PauliSentence({qml.pauli.PauliWord({4: "Z"}): 1})),
+    (qml.Identity(wires="target"), qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),
+)
+
+
+@pytest.mark.parametrize("op, rep", op_pauli_rep)
+def test_pauli_rep(op, rep):
+    assert op._pauli_rep == rep
