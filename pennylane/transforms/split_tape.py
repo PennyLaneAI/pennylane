@@ -201,7 +201,7 @@ def _pauli_z(wires: Wires):
 
 def _compute_result_and_add_to_dict(res, data: dict, results: dict):
     for idx, coeff in data.items():
-        r = qml.math.dot(res, coeff) if coeff is not None else res
+        r = qml.math.convert_like(qml.math.dot(res, coeff), res) if coeff is not None else res
         if idx in results:
             results[idx] += r
         else:
