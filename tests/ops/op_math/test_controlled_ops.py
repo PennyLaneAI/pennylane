@@ -371,12 +371,15 @@ class TestControlledQubitUnitary:
 
     def test_noninteger_pow_broadcasted(self):
         """Test that a ControlledQubitUnitary raised to a non-integer power raises an error."""
-        U1 = np.array(
-            [
-                [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
-                [-0.24979544 - 0.1350197j, 0.95278437 + 0.1075819j],
-            ]
-            * 3
+        U1 = np.tensordot(
+            np.array([1j, -1.0, 1j]),
+            np.array(
+                [
+                    [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
+                    [-0.24979544 - 0.1350197j, 0.95278437 + 0.1075819j],
+                ]
+            ),
+            axes=0,
         )
 
         op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
