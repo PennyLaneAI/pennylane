@@ -47,7 +47,6 @@ class ObservableReturnTypes(Enum):
     MidMeasure = "measure"
     VnEntropy = "vnentropy"
     MutualInfo = "mutualinfo"
-    EntanglementEntropy = "entanglemententropy"
     Shadow = "shadow"
     ShadowExpval = "shadowexpval"
 
@@ -92,9 +91,6 @@ VnEntropy = ObservableReturnTypes.VnEntropy
 
 MutualInfo = ObservableReturnTypes.MutualInfo
 """Enum: An enumeration which represents returning the mutual information before measurements."""
-
-EntanglementEntropy = ObservableReturnTypes.EntanglementEntropy
-"""Enum: An enumeration which represents returning the entanglement entropy before measurements."""
 
 Shadow = ObservableReturnTypes.Shadow
 """Enum: An enumeration which represents returning the bitstrings and recipes from

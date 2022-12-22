@@ -310,9 +310,9 @@ def vn_entanglement_entropy(qnode, wires0, wires1, base=None):
         # Construct tape
         qnode.construct(args, kwargs)
 
-        # Check return type
-        return_type = qnode.tape.observables[0].return_type
-        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+        # Check qfunc
+        measurements = qnode.tape.measurements
+        if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
             raise ValueError("The qfunc return type needs to be a state.")
 
         state_built = qnode(*args, **kwargs)
