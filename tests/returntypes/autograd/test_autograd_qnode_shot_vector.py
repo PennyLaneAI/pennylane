@@ -490,7 +490,7 @@ class TestReturnShotVectorHessian:
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if diff_method == "spsa":
-            pytest.skip("SPSA does not support iterated differentiation.")
+            pytest.skip("SPSA does not support iterated differentiation in Autograd.")
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = np.array(0.1)
@@ -523,7 +523,7 @@ class TestReturnShotVectorHessian:
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
         if diff_method == "spsa":
-            pytest.skip("SPSA does not support iterated differentiation.")
+            pytest.skip("SPSA does not support iterated differentiation in Autograd.")
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 

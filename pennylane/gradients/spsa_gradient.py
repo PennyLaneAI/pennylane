@@ -349,7 +349,7 @@ def _spsa_grad_new(
             grads.append(tuple(qml.math.convert_like(g, grad) for g in grad))
 
         if num_trainable_params == 1:
-            return grads[0]
+            return tuple(g[0] for g in grads)
         return tuple(grads)
 
     def processing_fn(results):
