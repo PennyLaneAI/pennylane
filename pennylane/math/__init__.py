@@ -43,6 +43,7 @@ from .multi_dispatch import (
     einsum,
     eye,
     frobenius_inner_product,
+    gammainc,
     get_trainable_indices,
     ones_like,
     scatter,
