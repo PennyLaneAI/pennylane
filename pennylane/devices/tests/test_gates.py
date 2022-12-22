@@ -18,6 +18,7 @@ works correctly an a device.
 # pylint: disable=no-self-use
 # pylint: disable=too-many-arguments
 # pylint: disable=pointless-statement
+# pylint: disable=unnecessary-lambda-assignment
 from cmath import exp
 from math import cos, sin, sqrt
 
@@ -116,6 +117,7 @@ all_available_ops = qml.ops._qubit__ops__.copy()  # pylint: disable=protected-ac
 all_available_ops.remove("CPhase")  # CPhase is an alias of ControlledPhaseShift
 all_available_ops.remove("SQISW")  # SQISW is an alias of SISWAP
 all_available_ops.add("QFT")  # QFT was recently moved to being a template, but let's keep it here
+all_available_ops.add("ControlledQubitUnitary")
 
 symbolic_ops = {"Adjoint(S)", "Adjoint(T)", "Adjoint(SX)", "Adjoint(ISWAP)", "Adjoint(SISWAP)"}
 
