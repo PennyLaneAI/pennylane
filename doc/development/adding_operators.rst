@@ -14,6 +14,10 @@ while all other operations are found in ``pennylane/ops/``.
 The base classes to construct new operators, :class:`~.Operator` and
 corresponding subclasses, are found in ``pennylane/operations.py``.
 
+.. note::
+
+  Check :doc:`/code/qml_measurements` for documentation on how to create new measurements.
+
 Abstraction
 ###########
 
