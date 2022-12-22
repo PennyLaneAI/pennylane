@@ -288,7 +288,7 @@ class TestSplitTape:
         # Old return types return a list for a single value:
         # e.g. qml.expval(qml.PauliX(0)) = [1.23]
         res = [[1.23]]
-        assert fn(res) == [1.23]
+        assert fn(res) == (1.23,)
 
     @pytest.mark.autograd
     def test_dif_autograd(self, tol):
@@ -327,9 +327,8 @@ class TestSplitTape:
 
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
-            tapes, fn = split_tape(tape)
-            res = qml.execute(tapes, dev, qml.gradients.param_shift)
-            return fn(res)
+            res = qml.execute([tape], dev, qml.gradients.param_shift)
+            return res
 
         assert np.allclose(cost(var), output)
 
@@ -418,9 +417,7 @@ class TestSplitTape:
 
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
-            tapes, fn = split_tape(tape)
-            res = qml.execute(tapes, dev, qml.gradients.param_shift, interface="jax")
-            return fn(res)
+            return qml.execute([tape], dev, qml.gradients.param_shift, interface="jax")[0]
 
         assert np.isclose(cost(var), output)
 
