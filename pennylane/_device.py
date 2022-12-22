@@ -25,8 +25,18 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import Expectation, MidMeasureMP, Probability, Sample, State, Variance
+from pennylane.measurements import (
+    Expectation,
+    ExpectationMP,
+    MidMeasureMP,
+    Probability,
+    Sample,
+    ShadowExpvalMP,
+    State,
+    Variance,
+)
 from pennylane.operation import Observable, Operation, Tensor
+from pennylane.ops import Hamiltonian, Sum
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import WireError, Wires
 
@@ -712,8 +722,41 @@ class Device(abc.ABC):
             the sequence of circuits to be executed, and a post-processing function
             to be applied to the list of evaluated circuit results.
         """
+        supports_hamiltonian = self.supports_observable("Hamiltonian")
+        finite_shots = self.shots is not None
+        grouping_known = all(
+            obs.grouping_indices is not None
+            for obs in circuit.observables
+            if isinstance(obs, Hamiltonian)
+        )
+        # device property present in braket plugin
+        use_grouping = getattr(self, "use_grouping", True)
 
-        circuits, hamiltonian_fn = qml.transforms.split_tape(circuit)
+        hamiltonian_in_obs = any(isinstance(obs, Hamiltonian) for obs in circuit.observables)
+        expval_sum_in_obs = any(
+            isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
+        )
+
+        is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
+
+        hamiltonian_unusable = not supports_hamiltonian or (finite_shots and not is_shadow)
+
+        if (
+            (hamiltonian_in_obs and (hamiltonian_unusable or (use_grouping and grouping_known)))
+            or (expval_sum_in_obs and not is_shadow)
+            or (len(circuit._obs_sharing_wires) > 0 and not hamiltonian_in_obs)
+        ):
+            # If the observable contains a Hamiltonian and the device does not
+            # support Hamiltonians, or if the simulation uses finite shots, or
+            # if the Hamiltonian explicitly specifies an observable grouping,
+            # split tape into multiple tapes of diagonalizable known observables.
+            circuits, hamiltonian_fn = qml.transforms.split_tape(circuit, group=True)
+        else:
+            # otherwise, return the output of an identity transform
+            circuits = [circuit]
+
+            def hamiltonian_fn(res):
+                return res[0]
 
         # Check whether the circuit was broadcasted (then the Hamiltonian-expanded
         # ones will be as well) and whether broadcasting is supported
