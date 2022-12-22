@@ -90,6 +90,7 @@ class ControlledQubitUnitary(ControlledOp):
     grad_method = None
     """Gradient computation method."""
 
+    # pylint: disable= too-many-arguments
     def __init__(
         self,
         base,
@@ -98,7 +99,6 @@ class ControlledQubitUnitary(ControlledOp):
         control_values=None,
         do_queue=True,
         unitary_check=False,
-        **kwargs,  # pylint: disable=unused-argument, too-many-arguments
     ):
         if getattr(base, "wires", False) and wires is not None:
             warnings.warn(
