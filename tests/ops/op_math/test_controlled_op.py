@@ -650,13 +650,15 @@ class TestMatrix:
     """Tests of Controlled.matrix and Controlled.sparse_matrix"""
 
     def test_raises_error_if_batching(self):
-        """Test a MatrixUndefinedError is raised if the base is batched."""
+        """Test batching returns a matrix of the correct dimensions"""
         x = np.array([1.0, 2.0, 3.0])
         base = qml.RX(x, 0)
         op = Controlled(base, 1)
 
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            op.matrix()
+        matrix = op.matrix()
+
+        assert matrix.shape == (3, 4, 4)
+        assert matrix.shape[-2:] == (4, 4)
 
     @pytest.mark.parametrize("base, num_control, mat", base_num_control_mats)
     def test_matrix_compare_with_gate_data(self, base, num_control, mat):
