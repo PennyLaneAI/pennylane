@@ -34,7 +34,6 @@ from pennylane.measurements import (
     ProbabilityMP,
     Sample,
     SampleMP,
-    ShadowExpvalMP,
     State,
     Variance,
 )
@@ -740,12 +739,10 @@ class Device(abc.ABC):
             isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
         )
 
-        is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
-
-        hamiltonian_unusable = not supports_hamiltonian or (finite_shots and not is_shadow)
+        hamiltonian_unusable = not supports_hamiltonian or finite_shots
 
         if (hamiltonian_in_obs and (hamiltonian_unusable or (use_grouping and grouping_known))) or (
-            expval_sum_in_obs and not is_shadow
+            expval_sum_in_obs
         ):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
