@@ -285,10 +285,8 @@ class TestSplitTape:
 
         assert len(tapes) == 1
         assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
-        # Old return types return a list for a single value:
-        # e.g. qml.expval(qml.PauliX(0)) = [1.23]
-        res = [[1.23]]
-        assert fn(res) == (1.23,)
+        res = [1.23]
+        assert fn(res) == 1.23
 
     @pytest.mark.autograd
     def test_dif_autograd(self, tol):

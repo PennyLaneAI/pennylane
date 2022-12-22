@@ -184,7 +184,9 @@ def split_tape(tape: QuantumTape, group=True):
     """
     m_grouping = _MGroup(tape=tape)
 
-    return m_grouping.get_tapes(group=group), m_grouping.processing_fn
+    tapes, processing_fn = m_grouping.get_tapes(group=group)
+
+    return tapes, processing_fn
 
 
 def _pauli_z(wires: Wires):
@@ -416,10 +418,18 @@ class _MGroup:
             self.mdata_groups = list(grouped_data.values()) + non_grouped_data
 
         measurements = [[mdata.m for mdata in m_group] for m_group in self.mdata_groups]
-        return [
+        tapes = [
             QuantumTape(ops=self.tape._ops, measurements=m, prep=self.tape._prep)
             for m in measurements
         ]
+
+        no_split = len(measurements) == 1 and all(
+            len(mdata.data) == 1 and list(mdata.data.values())[0] in (1, None)
+            for mdata in self.mdata_groups[0]
+        )
+        processing_fn = (lambda res: res[0]) if no_split else self.processing_fn
+
+        return tapes, processing_fn
 
     def _group_measurements(self):
         # Separate measurements into pauli, non-pauli words and previously computed groups
