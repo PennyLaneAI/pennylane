@@ -903,7 +903,7 @@ class QNode:
         if isinstance(self._qfunc_output, ClassicalShadowMP):
             # if classical shadows is returned, then don't squeeze the
             # last axis corresponding to the number of qubits
-            return res
+            return qml.math.squeeze(res, axis=0)
 
         # Squeeze arraylike outputs
         return qml.math.squeeze(res)
