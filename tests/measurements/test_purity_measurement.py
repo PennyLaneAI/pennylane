@@ -43,7 +43,6 @@ class TestPurity:
     mix_supported_devices = ["default.mixed"]
 
     diff_methods = ["backprop", "finite-diff"]
-    return_new = [True, False]
 
     parameters = np.linspace(0, 2 * np.pi, 3)
     probs = np.array([0.001, 0.01, 0.1, 0.2])
@@ -323,3 +322,19 @@ class TestPurity:
         grad_purity = tape.gradient(purity, param)
 
         assert qml.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
+
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("param", parameters)
+    def test_qnode_entropy_custom_wires(self, device, param):
+        """Test that purity cannot be returned with custom wires."""
+
+        dev = qml.device(device, wires=["a", 1])
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=["a", 1])
+            return qml.purity(wires=["a"])
+
+        purity = circuit(param)
+        expected_purity = expected_purity_ising_xx(param)
+        assert qml.math.allclose(purity, expected_purity)

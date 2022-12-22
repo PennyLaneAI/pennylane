@@ -45,7 +45,6 @@ class ObservableReturnTypes(Enum):
     Probability = "probs"
     State = "state"
     MidMeasure = "measure"
-    Purity = "purity"
     VnEntropy = "vnentropy"
     MutualInfo = "mutualinfo"
     Shadow = "shadow"
