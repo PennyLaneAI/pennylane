@@ -242,6 +242,18 @@ class Controlled(SymbolicOp):
     def has_matrix(self):
         return self.base.has_matrix if self.base.batch_size is None else False
 
+    # pylint: disable=protected-access
+    def _check_batching(self, params):
+        self.base._check_batching(params)
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
+
     # Properties on the control values ######################
     @property
     def control_values(self):
@@ -308,23 +320,40 @@ class Controlled(SymbolicOp):
 
     def matrix(self, wire_order=None):
 
-        if self.base.batch_size is not None:
-            raise qml.operation.MatrixUndefinedError
+        if self.work_wires:
+            raise qml.operation.MatrixUndefinedError(
+                f"Matrix has not been defined for Controlled operation with "
+                f"work wires. Received work_wires={self.work_wires}"
+            )
 
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
 
-        num_target_states = 2 ** len(self.target_wires)
-        num_control_states = 2 ** len(self.control_wires)
-        total_matrix_size = num_control_states * num_target_states
+        target_dim = 2 ** len(self.target_wires)
 
-        padding_left = self._control_int * num_target_states
-        padding_right = total_matrix_size - padding_left - num_target_states
+        # check shape is either (dim, dim), or (batch_size, dim, dim)
+        shape = qml.math.shape(base_matrix)
+        if not (len(shape) in {2, 3} and shape[-2:] == (target_dim, target_dim)):
+            raise ValueError(
+                f"Input unitary must be of shape {(target_dim, target_dim)} or "
+                f"(batch_size, {target_dim}, {target_dim})."
+            )
+
+        num_control_states = 2 ** len(self.control_wires)
+        total_matrix_size = num_control_states * target_dim
+
+        padding_left = self._control_int * target_dim
+        padding_right = total_matrix_size - padding_left - target_dim
 
         left_pad = qmlmath.cast_like(qmlmath.eye(padding_left, like=interface), 1j)
         right_pad = qmlmath.cast_like(qmlmath.eye(padding_right, like=interface), 1j)
 
-        canonical_matrix = qmlmath.block_diag([left_pad, base_matrix, right_pad])
+        if len(shape) == 3:  # stack if batching
+            canonical_matrix = qml.math.stack(
+                [qml.math.block_diag([left_pad, _U, right_pad]) for _U in base_matrix]
+            )
+        else:
+            canonical_matrix = qmlmath.block_diag([left_pad, base_matrix, right_pad])
 
         if wire_order is None or self.wires == Wires(wire_order):
             return qml.math.expand_matrix(
