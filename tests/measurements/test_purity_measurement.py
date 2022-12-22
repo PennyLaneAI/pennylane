@@ -326,7 +326,7 @@ class TestPurity:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     def test_qnode_entropy_custom_wires(self, device, param):
-        """Test that purity cannot be returned with custom wires."""
+        """Test that purity can be returned with custom wires."""
 
         dev = qml.device(device, wires=["a", 1])
 
