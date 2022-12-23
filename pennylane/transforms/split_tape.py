@@ -533,34 +533,33 @@ class _MGroup:
         results = {}  # {m_idx, result}
         for tape_res, m_group in zip(expanded_results, self.mdata_groups):
             batching = self.tape.batch_size is not None and self.tape.batch_size > 1
-            if len(m_group) == 1 and not batching:
+            if len(m_group) == 1:
+                shot_vector = isinstance(tape_res, tuple)
                 # new return types return a scalar when returning one result without broadcasting
-                tape_res = [tape_res]
-            shot_vector = len(m_group) != len(tape_res) and not batching
+                tape_res = (tape_res,)
+            else:
+                shot_vector = isinstance(tape_res[0], tuple)
             if shot_vector or batching:
                 # When batching is used, the first dimension of tape_res corresponds to the
                 # batching dimension.
                 # When a shot vector is used, the first dimension of tape_res corresponds to the
                 # shot vector dimension. The results need to be transposed. The transpose is done
                 # right before the return statement.
-                if len(m_group) == 1:
-                    # When using a shot vector or batching and a single measurement we don't
-                    # have the extra dimension that we have with multiple measurements.
-                    _compute_result_and_add_to_dict(tape_res, m_group[0].data, results)
-                else:
-                    for i, mdata in enumerate(m_group):
-                        res = [r[i] for r in tape_res] if len(m_group) > 1 else tape_res[0]
-                        _compute_result_and_add_to_dict(res, mdata.data, results)
+                for i, mdata in enumerate(m_group):
+                    res = tuple(r[i] for r in tape_res) if len(m_group) > 1 else tape_res[0]
+                    _compute_result_and_add_to_dict_new(res, mdata.data, results)
             else:
                 for res, mdata in zip(tape_res, m_group):
-                    _compute_result_and_add_to_dict(res, mdata.data, results)
+                    _compute_result_and_add_to_dict_new(res, mdata.data, results)
 
         # sort results by idx
         results = tuple(results[key] for key in sorted(results))
 
         if shot_vector:
             # transpose for new return types
+            results = tuple(_Dict(r) if isinstance(r, dict) else r for r in results)
             results = tuple(zip(*results))
+            results = tuple(r.d if isinstance(r, _Dict) else r for r in results)
 
         return results[0] if len(results) == 1 else results
 
@@ -582,3 +581,21 @@ def _compute_result_and_add_to_dict(res, data: dict, results: dict):
             results[idx] += r
         else:
             results[idx] = r
+
+
+def _compute_result_and_add_to_dict_new(res, data: dict, results: dict):
+    for idx, coeff in data.items():
+        if isinstance(res, tuple):
+            r = tuple(qml.math.convert_like(r * coeff, r) if coeff is not None else r for r in res)
+        else:
+            r = qml.math.convert_like(res * coeff, res) if coeff is not None else res
+
+        if idx in results:
+            results[idx] += r
+        else:
+            results[idx] = r
+
+
+class _Dict:
+    def __init__(self, d: dict):
+        self.d = d
