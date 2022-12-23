@@ -2743,7 +2743,6 @@ class TestCutCircuitMCTransform:
         ):
             cut_circuit(v)
 
-
     @pytest.mark.filterwarnings("ignore:Detected 'shots'")
     def test_qnode_shots_arg_error(self):
         """
@@ -3863,6 +3862,7 @@ class TestCutCircuitTransform:
     Tests for the cut_circuit transform
     """
 
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
     def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots):

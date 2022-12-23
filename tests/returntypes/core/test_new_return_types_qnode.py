@@ -681,14 +681,15 @@ devices = ["default.qubit.jax", "default.mixed"]
 @pytest.mark.jax
 class TestIntegrationSingleReturnJax:
     """Test that single measurements return behavior does not change for Jax device."""
+
     from jax.config import config
+
     config.update("jax_enable_x64", True)
 
     @pytest.mark.parametrize("wires", wires)
     def test_state_default(self, wires):
         """Return state with default.qubit."""
         import jax
-
 
         dev = qml.device("default.qubit.jax", wires=wires)
 

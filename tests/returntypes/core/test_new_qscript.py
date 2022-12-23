@@ -52,6 +52,7 @@ warnings_matches = {
     MutualInfo: "Requested mutual information with finite shots",
 }
 
+
 class TestMeasurementProcess:
     """Tests for the shape and numeric type of a measurement process"""
 
