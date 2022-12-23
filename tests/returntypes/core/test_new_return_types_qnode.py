@@ -682,13 +682,11 @@ devices = ["default.qubit.jax", "default.mixed"]
 class TestIntegrationSingleReturnJax:
     """Test that single measurements return behavior does not change for Jax device."""
 
-    from jax.config import config
-
-    config.update("jax_enable_x64", True)
-
     @pytest.mark.parametrize("wires", wires)
     def test_state_default(self, wires):
         """Return state with default.qubit."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device("default.qubit.jax", wires=wires)
@@ -707,6 +705,8 @@ class TestIntegrationSingleReturnJax:
     @pytest.mark.parametrize("wires", wires)
     def test_state_mixed(self, wires):
         """Return state with default.mixed."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device("default.mixed", wires=wires)
@@ -726,6 +726,8 @@ class TestIntegrationSingleReturnJax:
     @pytest.mark.parametrize("d_wires", wires)
     def test_density_matrix(self, d_wires, device):
         """Return density matrix."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=4)
@@ -744,6 +746,8 @@ class TestIntegrationSingleReturnJax:
     @pytest.mark.parametrize("device", devices)
     def test_expval(self, device):
         """Return a single expval."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -762,6 +766,8 @@ class TestIntegrationSingleReturnJax:
     @pytest.mark.parametrize("device", devices)
     def test_var(self, device):
         """Return a single var."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -780,6 +786,8 @@ class TestIntegrationSingleReturnJax:
     @pytest.mark.parametrize("device", devices)
     def test_vn_entropy(self, device):
         """Return a single vn entropy."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -798,6 +806,8 @@ class TestIntegrationSingleReturnJax:
     @pytest.mark.parametrize("device", devices)
     def test_mutual_info(self, device):
         """Return a single mutual information."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -825,6 +835,8 @@ class TestIntegrationSingleReturnJax:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, device):
         """Return a single prob."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=3)
@@ -849,6 +861,8 @@ class TestIntegrationSingleReturnJax:
     )
     def test_sample(self, measurement, device, shots=100):
         """Test the sample measurement."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         if device == "default.mixed":
@@ -877,6 +891,8 @@ class TestIntegrationSingleReturnJax:
     )
     def test_counts(self, measurement, device, shots=100):
         """Test the counts measurement."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2, shots=shots)
@@ -1711,6 +1727,8 @@ class TestIntegrationMultipleReturnJax:
     @pytest.mark.parametrize("device", devices)
     def test_multiple_expval(self, device):
         """Return multiple expvals."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -1735,6 +1753,8 @@ class TestIntegrationMultipleReturnJax:
     @pytest.mark.parametrize("device", devices)
     def test_multiple_var(self, device):
         """Return multiple vars."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -1772,6 +1792,8 @@ class TestIntegrationMultipleReturnJax:
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
         """Return multiple probs."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -1804,6 +1826,8 @@ class TestIntegrationMultipleReturnJax:
     @pytest.mark.parametrize("wires3, wires4", wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -1846,6 +1870,8 @@ class TestIntegrationMultipleReturnJax:
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
     def test_expval_sample(self, measurement, device, shots=100):
         """Test the expval and sample measurements together."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         if device == "default.mixed":
@@ -1873,6 +1899,8 @@ class TestIntegrationMultipleReturnJax:
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_expval_counts(self, measurement, device, shots=100):
         """Test the expval and counts measurements together."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         if device == "default.mixed":
@@ -1902,6 +1930,8 @@ class TestIntegrationMultipleReturnJax:
     @pytest.mark.parametrize("wires", wires)
     def test_list_one_expval(self, wires, device):
         """Return a comprehension list of one expvals."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=wires)
@@ -1926,6 +1956,8 @@ class TestIntegrationMultipleReturnJax:
     @pytest.mark.parametrize("shot_vector", shot_vectors)
     def test_list_multiple_expval(self, wires, device, shot_vector):
         """Return a comprehension list of multiple expvals."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         if device == "default.mixed" and shot_vector:
@@ -2766,6 +2798,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_multiple_expval_jax(self, interface, device):
         """Return Jacobian of multiple expvals."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -2792,6 +2826,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_multiple_expval_jax_jit(self, interface, device):
         """Return Jacobian of multiple expvals with Jitting."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -2897,6 +2933,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_multiple_probs_jax(self, interface, device):
         """Return Jacobian of multiple probs."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -2924,6 +2962,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_multiple_probs_jax_jit(self, interface, device):
         """Return Jacobian of multiple probs with Jax jit."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -3039,6 +3079,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_multiple_meas_jax(self, interface, device):
         """Return Jacobian of multiple measurements."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
@@ -3071,6 +3113,8 @@ class TestIntegrationJacobianBackpropMultipleReturns:
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_multiple_meas_jax_jit(self, interface, device):
         """Return Jacobian of multiple measurements with Jax jit."""
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         import jax
 
         dev = qml.device(device, wires=2)
