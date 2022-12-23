@@ -401,20 +401,20 @@ class _MGroup:
             self.mdata_groups = list(grouped_data.values()) + non_grouped_data
 
         measurements = [[mdata.m for mdata in m_group] for m_group in self.mdata_groups]
+        if (
+            len(measurements) == 1
+            and len(measurements[0]) == len(self.tape.measurements)
+            and all(qml.equal(m1, m2) for m1, m2 in zip(measurements[0], self.tape.measurements))
+        ):
+            # no split is applied to the tape measurements
+            return [self.tape], lambda res: res[0]
+
         tapes = [
             QuantumTape(ops=self.tape._ops, measurements=m, prep=self.tape._prep)
             for m in measurements
         ]
 
-        no_split = len(tapes) == 1 and all(
-            all(
-                len(mdata.data) == 1 and list(mdata.data.values())[0] in (1, None)
-                for mdata in group
-            )
-            for group in self.mdata_groups
-        )
-
-        return tapes, (lambda res: res[0]) if no_split else self.processing_fn
+        return tapes, self.processing_fn
 
     def _group_measurements(self):
         # Separate measurements into pauli, non-pauli words and previously computed groups
