@@ -285,7 +285,7 @@ class TestSplitTape:
 
         assert len(tapes) == 1
         assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
-        res = [[1.23]]
+        res = [1.23]
         assert fn(res) == 1.23
 
     @pytest.mark.autograd
