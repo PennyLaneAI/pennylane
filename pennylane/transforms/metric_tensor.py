@@ -479,7 +479,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
     except KeyError as e:
         if allow_nonunitary:
-            mat = qml.matrix(qml.generator(op, format="observable"))
+            mat = qml.matrix(qml.generator(op)[0])
             return qml.ControlledQubitUnitary(mat, control_wires=aux_wire, wires=op.wires)
 
         raise ValueError(
@@ -567,6 +567,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
         list[pennylane.tape.QuantumTape]: Tapes to evaluate the metric tensor
         callable: processing function to obtain the metric tensor from the tape results
     """
+    print(tape.operations)
     # Get tapes and processing function for the block-diagonal metric tensor,
     # as well as the generator observables and generator coefficients for each diff'ed operation
     diag_tapes, diag_proc_fn, obs_list, coeffs = _metric_tensor_cov_matrix(tape, diag_approx=False)
