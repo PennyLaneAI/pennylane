@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """ Tests for the transform ``qml.transform.split_non_commuting()`` """
+import numpy as np
+
 # pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error
 import pytest
-import numpy as np
+
 import pennylane as qml
 import pennylane.numpy as pnp
-
 from pennylane.transforms import split_non_commuting
-from pennylane.qinfo.transforms import _make_probs, _compute_cfim
 
 ### example tape with 3 commuting groups [[0,3],[1,4],[2,5]]
 with qml.queuing.AnnotatedQueue() as q3:
@@ -58,7 +58,6 @@ class TestUnittestSplitNonCommuting:
             qml.PauliZ(0)
             qml.Hadamard(0)
             qml.CNOT((0, 1))
-            qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
             qml.expval(qml.PauliZ(2))
@@ -127,16 +126,6 @@ class TestUnittestSplitNonCommuting:
         for new_tape in split:
             for meas in new_tape.measurements:
                 assert meas.return_type == the_return_type
-
-    def test_raise_not_supported(self):
-        """Test that NotImplementedError is raised when probabilities or samples are called"""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=0)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(NotImplementedError, match="non-commuting observables are used"):
-            split_non_commuting(tape)
 
 
 class TestIntegration:
