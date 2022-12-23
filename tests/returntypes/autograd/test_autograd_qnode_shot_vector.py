@@ -25,9 +25,9 @@ shots_and_num_copies = [(((5, 2), 1, 10), 4), ((1, 10, (5, 2)), 4)]
 shots_and_num_copies_hess = [(((5, 1), 10), 2), ((10, (5, 1)), 2)]
 
 qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", {"h": 10e-2}],
+    ["default.qubit", "finite-diff", {"h": 0.05}],
     ["default.qubit", "parameter-shift", {}],
-    ["default.qubit", "spsa", {"h": 10e-2, "num_directions": 20}],
+    ["default.qubit", "spsa", {"h": 0.05, "num_directions": 20}],
 ]
 
 TOLS = {
@@ -562,6 +562,7 @@ class TestReturnShotVectorIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
+        np.random.seed(42)
         dev = qml.device(dev_name, wires=2, shots=shots)
         x = np.array(0.543)
         y = np.array(-0.654)
