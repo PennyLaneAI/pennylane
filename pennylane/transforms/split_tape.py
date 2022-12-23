@@ -493,9 +493,8 @@ class _MGroup:
                     _compute_result_and_add_to_dict(tape_res, m_group[0].data, results)
                 else:
                     for i, mdata in enumerate(m_group):
-                        _compute_result_and_add_to_dict(
-                            [r[i] for r in tape_res], mdata.data, results
-                        )
+                        res = [r[i] for r in tape_res] if len(m_group) > 1 else tape_res[0]
+                        _compute_result_and_add_to_dict(res, mdata.data, results)
             else:
                 for res, mdata in zip(tape_res, m_group):
                     _compute_result_and_add_to_dict(res, mdata.data, results)
