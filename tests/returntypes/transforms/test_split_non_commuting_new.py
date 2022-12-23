@@ -121,12 +121,6 @@ class TestUnittestSplitNonCommuting:
             for meas in new_tape.measurements:
                 assert meas.return_type == the_return_type
 
-        qs = qml.tape.QuantumScript(tape.operations, tape.measurements)
-        split, _ = split_non_commuting(qs)
-        for new_tape in split:
-            for meas in new_tape.measurements:
-                assert meas.return_type == the_return_type
-
 
 class TestIntegration:
     """Integration tests for ``qml.transforms.split_non_commuting()``"""
