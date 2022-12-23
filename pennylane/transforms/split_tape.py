@@ -490,15 +490,11 @@ class _MGroup:
         """
         results = {}  # {m_idx, result}
         for tape_res, m_group in zip(expanded_results, self.mdata_groups):
-            if len(m_group) == 1:
-                # tape_res contains only one result
-                if not qml.active_return() and qml.math.ndim(tape_res) > 0 and len(tape_res) == 1:
-                    # old return types return a list when returning one result without broadcasting
-                    # usually batch transforms return a scalar if there is only one output
-                    # to allow for stacked batched transforms, we need to check that tape_res.ndim > 0
-                    tape_res = tape_res[0]
-                _compute_result_and_add_to_dict(tape_res, m_group[0].data, results)
-            elif self.tape.batch_size is not None and self.tape.batch_size > 1:
+            if qml.active_return() and qml.math.ndim(tape_res) == 0:
+                # new return types return a scalar when returning one result without broadcasting
+                tape_res = [tape_res]
+
+            if self.tape.batch_size is not None and self.tape.batch_size > 1:
                 # when batching is used, the first dimension of tape_res corresponds to the
                 # batching dimension
                 for i, mdata in enumerate(m_group):
