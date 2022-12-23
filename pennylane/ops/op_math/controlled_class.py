@@ -323,12 +323,12 @@ class Controlled(SymbolicOp):
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
 
-        target_dim = 2 ** len(self.target_wires)
+        num_target_states = 2 ** len(self.target_wires)
         num_control_states = 2 ** len(self.control_wires)
-        total_matrix_size = num_control_states * target_dim
+        total_matrix_size = num_control_states * num_target_states
 
-        padding_left = self._control_int * target_dim
-        padding_right = total_matrix_size - padding_left - target_dim
+        padding_left = self._control_int * num_target_states
+        padding_right = total_matrix_size - padding_left - num_target_states
 
         left_pad = qmlmath.cast_like(qmlmath.eye(padding_left, like=interface), 1j)
         right_pad = qmlmath.cast_like(qmlmath.eye(padding_right, like=interface), 1j)
