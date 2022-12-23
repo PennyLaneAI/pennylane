@@ -273,10 +273,7 @@ class TestSplitTape:
 
         qs = QuantumScript(measurements=[qml.expval(H), qml.expval(S)])
 
-        tapes, _ = split_tape(qs, group=False)
-        assert len(tapes) == 3
-
-        tapes, _ = split_tape(qs, group=True)
+        tapes, _ = split_tape(qs)
         assert len(tapes) == 2
 
     def test_non_ham_and_non_sum_tape(self):
@@ -288,9 +285,7 @@ class TestSplitTape:
 
         assert len(tapes) == 1
         assert isinstance(list(tapes[0])[0].obs, qml.PauliZ)
-        # Old return types return a list for a single value:
-        # e.g. qml.expval(qml.PauliX(0)) = [1.23]
-        res = [1.23] if qml.active_return() else [[1.23]]
+        res = [1.23]
         assert fn(res) == 1.23
 
     @pytest.mark.autograd
