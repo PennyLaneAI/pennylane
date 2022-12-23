@@ -187,25 +187,6 @@ def split_tape(tape: QuantumTape, group=True):
     return m_grouping.get_tapes(group=group), m_grouping.processing_fn
 
 
-def _pauli_z(wires: Wires):
-    """Generate ``PauliZ`` operator.
-
-    Args:
-        wires (Wires): wires that the operator acts on"""
-    if len(wires) == 1:
-        return qml.PauliZ(wires[0])
-    return Tensor(*[qml.PauliZ(w) for w in wires])
-
-
-def _compute_result_and_add_to_dict(res, data: dict, results: dict):
-    for idx, coeff in data.items():
-        r = qml.math.convert_like(qml.math.dot(res, coeff), res) if coeff is not None else res
-        if idx in results:
-            results[idx] += r
-        else:
-            results[idx] = r
-
-
 # pylint: disable=too-few-public-methods
 class _MGroup:
     """Utils class used to group measurements.
@@ -490,13 +471,22 @@ class _MGroup:
         """
         results = {}  # {m_idx, result}
         for tape_res, m_group in zip(expanded_results, self.mdata_groups):
-            if qml.active_return() and qml.math.ndim(tape_res) == 0:
+
+            if qml.math.ndim(tape_res) == 0:
                 # new return types return a scalar when returning one result without broadcasting
+                # nested batch_transforms might also return a scalar
                 tape_res = [tape_res]
 
-            if self.tape.batch_size is not None and self.tape.batch_size > 1:
-                # when batching is used, the first dimension of tape_res corresponds to the
-                # batching dimension
+            shot_vector_is_used = len(m_group) != len(tape_res)
+
+            if shot_vector_is_used or (
+                self.tape.batch_size is not None and self.tape.batch_size > 1
+            ):
+                # When batching is used, the first dimension of tape_res corresponds to the
+                # batching dimension.
+                # When a shot vector is used, the first dimension of tape_res corresponds to the
+                # shot vector dimension. The results need to be transposed. The transpose is done
+                # right before the return statement.
                 for i, mdata in enumerate(m_group):
                     _compute_result_and_add_to_dict([r[i] for r in tape_res], mdata.data, results)
 
@@ -515,4 +505,26 @@ class _MGroup:
             # Convert results to array for the old return types
             results = qml.math.convert_like(results, results[0])
 
+        if shot_vector_is_used:
+            results = qml.math.transpose(results)
+
         return results[0] if len(results) == 1 else results
+
+
+def _pauli_z(wires: Wires):
+    """Generate ``PauliZ`` operator.
+
+    Args:
+        wires (Wires): wires that the operator acts on"""
+    if len(wires) == 1:
+        return qml.PauliZ(wires[0])
+    return Tensor(*[qml.PauliZ(w) for w in wires])
+
+
+def _compute_result_and_add_to_dict(res, data: dict, results: dict):
+    for idx, coeff in data.items():
+        r = qml.math.convert_like(qml.math.dot(res, coeff), res) if coeff is not None else res
+        if idx in results:
+            results[idx] += r
+        else:
+            results[idx] = r

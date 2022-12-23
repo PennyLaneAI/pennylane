@@ -71,7 +71,7 @@ class TestUnittestSplitNonCommuting:
 
         assert len(split) == 1
         assert all(isinstance(t, qml.tape.QuantumScript) for t in split)
-        assert fn([[0.5]]) == 0.5
+        assert qml.math.allequal(fn([[0.5, 0.5, 0.5, 0.5]]), [0.5, 0.5, 0.5, 0.5])
 
         spy.assert_not_called()
 
