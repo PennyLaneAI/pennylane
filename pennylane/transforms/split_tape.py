@@ -184,26 +184,9 @@ def split_tape(tape: QuantumTape, group=True):
     """
     m_grouping = _MGroup(tape=tape)
 
-    return m_grouping.get_tapes(group=group), m_grouping.processing_fn
+    tapes, processing_fn = m_grouping.get_tapes_and_processing_fn(group=group)
 
-
-def _pauli_z(wires: Wires):
-    """Generate ``PauliZ`` operator.
-
-    Args:
-        wires (Wires): wires that the operator acts on"""
-    if len(wires) == 1:
-        return qml.PauliZ(wires[0])
-    return Tensor(*[qml.PauliZ(w) for w in wires])
-
-
-def _compute_result_and_add_to_dict(res, data: dict, results: dict):
-    for idx, coeff in data.items():
-        r = qml.math.dot(res, coeff) if coeff is not None else res
-        if idx in results:
-            results[idx] += r
-        else:
-            results[idx] = r
+    return tapes, processing_fn
 
 
 # pylint: disable=too-few-public-methods
@@ -387,8 +370,9 @@ class _MGroup:
                 # update group information if the measurement didn't belong to any group
                 mdata.group = group
 
-    def get_tapes(self, group=False) -> List[List["_MGroup.MData"]]:
-        """Splits the original tape into a list of tapes.
+    def get_tapes_and_processing_fn(self, group=False) -> List[List["_MGroup.MData"]]:
+        """Splits the original tape into a list of tapes. Returns the list of tapes and a function
+        to postprocess the results of the tapes' execution.
 
         If ``group=False``, the original tape is split if and only if it contains the expectation
         value of a ``Hamiltonian`` with its ``grouping_indices`` previously computed. If
@@ -401,6 +385,7 @@ class _MGroup:
 
         Returns:
             List[QuantumTape]: list of tapes
+            Callable: postprocessing function
         """
 
         if group:
@@ -416,10 +401,20 @@ class _MGroup:
             self.mdata_groups = list(grouped_data.values()) + non_grouped_data
 
         measurements = [[mdata.m for mdata in m_group] for m_group in self.mdata_groups]
-        return [
+        if (
+            len(measurements) == 1
+            and len(measurements[0]) == len(self.tape.measurements)
+            and all(qml.equal(m1, m2) for m1, m2 in zip(measurements[0], self.tape.measurements))
+        ):
+            # no split is applied to the tape measurements
+            return [self.tape], lambda res: res[0]
+
+        tapes = [
             QuantumTape(ops=self.tape._ops, measurements=m, prep=self.tape._prep)
             for m in measurements
         ]
+
+        return tapes, self.processing_fn
 
     def _group_measurements(self):
         # Separate measurements into pauli, non-pauli words and previously computed groups
@@ -488,18 +483,25 @@ class _MGroup:
         Returns:
             Sequence[float]: post-processed results
         """
+        if qml.active_return():
+            return self._processing_fn_new(expanded_results)
         results = {}  # {m_idx, result}
         for tape_res, m_group in zip(expanded_results, self.mdata_groups):
-            if qml.active_return() and qml.math.ndim(tape_res) == 0:
-                # new return types return a scalar when returning one result without broadcasting
-                tape_res = [tape_res]
-
-            if self.tape.batch_size is not None and self.tape.batch_size > 1:
-                # when batching is used, the first dimension of tape_res corresponds to the
-                # batching dimension
+            batching = self.tape.batch_size is not None and self.tape.batch_size > 1
+            shot_vector = len(m_group) != len(tape_res) and not batching
+            if len(m_group) == 1 and shot_vector:
+                # When using a shot vector and a single measurement we don't have the extra
+                # dimension that we have with multiple measurements.
+                _compute_result_and_add_to_dict(tape_res, m_group[0].data, results)
+            elif shot_vector or batching:
+                # When batching is used, the first dimension of tape_res corresponds to the
+                # batching dimension.
+                # When a shot vector is used, the first dimension of tape_res corresponds to the
+                # shot vector dimension. The results need to be transposed. The transpose is done
+                # right before the return statement.
                 for i, mdata in enumerate(m_group):
-                    _compute_result_and_add_to_dict([r[i] for r in tape_res], mdata.data, results)
-
+                    res = [r[i] for r in tape_res] if len(m_group) > 1 else tape_res[0]
+                    _compute_result_and_add_to_dict(res, mdata.data, results)
             else:
                 for res, mdata in zip(tape_res, m_group):
                     _compute_result_and_add_to_dict(res, mdata.data, results)
@@ -510,5 +512,73 @@ class _MGroup:
         if any(qml.math.requires_grad(res) for res in results):
             # when computing gradients, we need to convert the tuple to a gradient box
             results = qml.math.stack(results)
+        elif shot_vector:
+            results = qml.math.transpose(results)
+        else:
+            # Convert results to array for the old return types
+            results = qml.math.convert_like(results, results[0])
 
-        return qml.math.squeeze(results)
+        return results[0] if len(results) == 1 else results
+
+    def _processing_fn_new(self, expanded_results):
+        """Processing function used to post-process the results from the execution of the tapes
+        generated by the ``get_tapes`` method.
+
+        Args:
+            expanded_results (Sequence[float]): execution results
+
+        Returns:
+            Sequence[float]: post-processed results
+        """
+        results = {}  # {m_idx, result}
+        for tape_res, m_group in zip(expanded_results, self.mdata_groups):
+            if len(m_group) == 1 and qml.math.ndim(tape_res) == 0:
+                # new return types return a scalar when returning one result without broadcasting
+                tape_res = [tape_res]
+            batching = self.tape.batch_size is not None and self.tape.batch_size > 1
+            shot_vector = len(m_group) != len(tape_res) and not batching
+            if shot_vector or batching:
+                # When batching is used, the first dimension of tape_res corresponds to the
+                # batching dimension.
+                # When a shot vector is used, the first dimension of tape_res corresponds to the
+                # shot vector dimension. The results need to be transposed. The transpose is done
+                # right before the return statement.
+                if len(m_group) == 1:
+                    # When using a shot vector or batching and a single measurement we don't
+                    # have the extra dimension that we have with multiple measurements.
+                    _compute_result_and_add_to_dict(tape_res, m_group[0].data, results)
+                else:
+                    for i, mdata in enumerate(m_group):
+                        res = [r[i] for r in tape_res] if len(m_group) > 1 else tape_res[0]
+                        _compute_result_and_add_to_dict(res, mdata.data, results)
+            else:
+                for res, mdata in zip(tape_res, m_group):
+                    _compute_result_and_add_to_dict(res, mdata.data, results)
+
+        # sort results by idx
+        results = tuple(results[key] for key in sorted(results))
+
+        if shot_vector:
+            # transpose for new return types
+            results = tuple(zip(*results))
+
+        return results[0] if len(results) == 1 else results
+
+
+def _pauli_z(wires: Wires):
+    """Generate ``PauliZ`` operator.
+
+    Args:
+        wires (Wires): wires that the operator acts on"""
+    if len(wires) == 1:
+        return qml.PauliZ(wires[0])
+    return Tensor(*[qml.PauliZ(w) for w in wires])
+
+
+def _compute_result_and_add_to_dict(res, data: dict, results: dict):
+    for idx, coeff in data.items():
+        r = qml.math.convert_like(qml.math.dot(res, coeff), res) if coeff is not None else res
+        if idx in results:
+            results[idx] += r
+        else:
+            results[idx] = r
