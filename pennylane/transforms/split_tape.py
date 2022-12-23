@@ -486,10 +486,15 @@ class _MGroup:
                 # shot vector dimension. The results need to be transposed. The transpose is done
                 # right before the return statement.
                 if shot_vector and len(m_group) == 1:
-                    # when using a shot vector with one measurement we must add an extra dimension
-                    tape_res = [tape_res]
-                for i, mdata in enumerate(m_group):
-                    _compute_result_and_add_to_dict([r[i] for r in tape_res], mdata.data, results)
+                    # when using a shot vector with one measurement we only have two dimensions:
+                    # the length of the shot vector + the dimension of the result, thus we lack the
+                    # dimension of the number of measurements
+                    _compute_result_and_add_to_dict(tape_res, m_group[0].data, results)
+                else:
+                    for i, mdata in enumerate(m_group):
+                        _compute_result_and_add_to_dict(
+                            [r[i] for r in tape_res], mdata.data, results
+                        )
             else:
                 for res, mdata in zip(tape_res, m_group):
                     _compute_result_and_add_to_dict(res, mdata.data, results)
