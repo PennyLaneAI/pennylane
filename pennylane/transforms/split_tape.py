@@ -518,7 +518,7 @@ class _MGroup:
         """
         results = {}  # {m_idx, result}
         for tape_res, m_group in zip(expanded_results, self.mdata_groups):
-            if qml.math.ndim(tape_res) == 0:
+            if len(m_group) == 1 and qml.math.ndim(tape_res) == 0:
                 # new return types return a scalar when returning one result without broadcasting
                 tape_res = [tape_res]
             batching = self.tape.batch_size is not None and self.tape.batch_size > 1
