@@ -106,6 +106,9 @@
   ``decomposition``, ``expand``, and ``sparse_matrix`` are now defined rather than raising an error.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
+* Parameter broadcasting support is added for the Controlled class if the base operator supports 
+  broadcasting.
+  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
 * The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of 
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
