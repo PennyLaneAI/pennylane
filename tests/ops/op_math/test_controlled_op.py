@@ -218,14 +218,6 @@ class TestProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.has_matrix is value
 
-    def test_no_matrix_if_batching(self):
-        """Test that has_matrix is false if the base operator has batching."""
-
-        x = np.array([1.2, 3.4, 5.6])
-        base = qml.RX(x, wires=0)
-        op = Controlled(base, 1)
-        assert op.has_matrix is False
-
     @pytest.mark.parametrize("cwires, cvalues", [(0, [0]), ([3, 0, 2], [1, 1, 0])])
     def test_has_decomposition_true_via_control_values(self, cwires, cvalues):
         """Test that Controlled claims `has_decomposition` to be true if there are
@@ -649,7 +641,7 @@ base_num_control_mats = [
 class TestMatrix:
     """Tests of Controlled.matrix and Controlled.sparse_matrix"""
 
-    def test_raises_error_if_batching(self):
+    def test_correct_matrix_dimenions_with_batching(self):
         """Test batching returns a matrix of the correct dimensions"""
         x = np.array([1.0, 2.0, 3.0])
         base = qml.RX(x, 0)
