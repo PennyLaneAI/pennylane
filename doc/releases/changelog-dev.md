@@ -102,11 +102,11 @@
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
 
-* Reorganize ``ControlledQubitUnitary`` to inherit from ``ControlledOp``. The class methods 
-  ``decomposition``, ``expand``, and ``sparse_matrix`` are now defined rather than raising an error.
+* Reorganize `ControlledQubitUnitary` to inherit from `ControlledOp`. The class methods 
+  `decomposition`, `expand`, and `sparse_matrix` are now defined rather than raising an error.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
-* Parameter broadcasting support is added for the Controlled class if the base operator supports 
+* Parameter broadcasting support is added for the `Controlled` class if the base operator supports 
   broadcasting.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
@@ -127,8 +127,8 @@
 
  <h3>Breaking changes</h3>
 
-* The target wires of the unitary for ``ControlledQubitUnitary`` are no longer available via ``op.hyperparameters["u_wires"]``. 
-  Instead, they can be accesses via ``op.base.wires`` or ``op.target_wires``.
+* The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`. 
+  Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
 <h3>Deprecations</h3>
