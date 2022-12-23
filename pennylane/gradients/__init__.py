@@ -318,7 +318,7 @@ from . import parameter_shift_hessian
 from . import finite_difference
 from . import spsa_gradient
 
-from .gradient_transform import gradient_transform
+from .gradient_transform import gradient_transform, SUPPORTED_GRADIENT_KWARGS
 from .hessian_transform import hessian_transform
 from .finite_difference import finite_diff, finite_diff_coeffs
 from .parameter_shift import param_shift
