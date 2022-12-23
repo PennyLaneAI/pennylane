@@ -473,12 +473,6 @@ class _MGroup:
             return self._processing_fn_new(expanded_results)
         results = {}  # {m_idx, result}
         for tape_res, m_group in zip(expanded_results, self.mdata_groups):
-
-            if qml.math.ndim(tape_res) == 0:
-                # new return types return a scalar when returning one result without broadcasting
-                # nested batch_transforms might also return a scalar
-                tape_res = [tape_res]
-
             batching = self.tape.batch_size is not None and self.tape.batch_size > 1
             shot_vector = len(m_group) != len(tape_res) and not batching
             if len(m_group) == 1 and shot_vector:
@@ -524,12 +518,9 @@ class _MGroup:
         """
         results = {}  # {m_idx, result}
         for tape_res, m_group in zip(expanded_results, self.mdata_groups):
-
             if qml.math.ndim(tape_res) == 0:
                 # new return types return a scalar when returning one result without broadcasting
-                # nested batch_transforms might also return a scalar
                 tape_res = [tape_res]
-
             batching = self.tape.batch_size is not None and self.tape.batch_size > 1
             shot_vector = len(m_group) != len(tape_res) and not batching
             if shot_vector or batching:
