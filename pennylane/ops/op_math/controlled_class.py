@@ -324,15 +324,6 @@ class Controlled(SymbolicOp):
         interface = qmlmath.get_interface(base_matrix)
 
         target_dim = 2 ** len(self.target_wires)
-
-        # check shape is either (dim, dim), or (batch_size, dim, dim)
-        shape = qml.math.shape(base_matrix)
-        if not (len(shape) in {2, 3} and shape[-2:] == (target_dim, target_dim)):
-            raise ValueError(
-                f"Input unitary must be of shape {(target_dim, target_dim)} or "
-                f"(batch_size, {target_dim}, {target_dim})."
-            )
-
         num_control_states = 2 ** len(self.control_wires)
         total_matrix_size = num_control_states * target_dim
 
@@ -342,6 +333,7 @@ class Controlled(SymbolicOp):
         left_pad = qmlmath.cast_like(qmlmath.eye(padding_left, like=interface), 1j)
         right_pad = qmlmath.cast_like(qmlmath.eye(padding_right, like=interface), 1j)
 
+        shape = qml.math.shape(base_matrix)
         if len(shape) == 3:  # stack if batching
             canonical_matrix = qml.math.stack(
                 [qml.math.block_diag([left_pad, _U, right_pad]) for _U in base_matrix]
