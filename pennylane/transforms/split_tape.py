@@ -477,18 +477,19 @@ class _MGroup:
                 # nested batch_transforms might also return a scalar
                 tape_res = [tape_res]
 
-            shot_vector = len(m_group) != len(tape_res)
-
-            if shot_vector or (self.tape.batch_size is not None and self.tape.batch_size > 1):
+            batching = self.tape.batch_size is not None and self.tape.batch_size > 1
+            shot_vector = len(m_group) != len(tape_res) and not batching
+            if shot_vector or batching:
                 # When batching is used, the first dimension of tape_res corresponds to the
                 # batching dimension.
                 # When a shot vector is used, the first dimension of tape_res corresponds to the
                 # shot vector dimension. The results need to be transposed. The transpose is done
                 # right before the return statement.
-                if shot_vector and len(m_group) == 1:
-                    # when using a shot vector with one measurement we only have two dimensions:
-                    # the length of the shot vector + the dimension of the result, thus we lack the
-                    # dimension of the number of measurements
+                if len(m_group) == 1 and (shot_vector or qml.active_return()):
+                    # Old return types:
+                    # When using a shot vector and a single measurement we don't have the extra
+                    # dimension of the multiple measurements.
+                    # New return types: same when using batching or shot vector
                     _compute_result_and_add_to_dict(tape_res, m_group[0].data, results)
                 else:
                     for i, mdata in enumerate(m_group):
