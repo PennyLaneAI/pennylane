@@ -240,7 +240,7 @@ class Controlled(SymbolicOp):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return True
+        return self.base.has_matrix
 
     # pylint: disable=protected-access
     def _check_batching(self, params):
