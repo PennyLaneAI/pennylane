@@ -35,6 +35,14 @@ class TestControlledQubitUnitary:
         ):
             qml.ControlledQubitUnitary(X, control_wires=[0, 2], wires=2)
 
+    def test_wires_specified_twice_warning(self):
+        base = qml.QubitUnitary(X, 0)
+        with pytest.warns(
+            UserWarning,
+            match="base operator already has wires; values specified through wires kwarg will be ignored.",
+        ):
+            qml.ControlledQubitUnitary(base, control_wires=[1, 2], wires=3)
+
     def test_wrong_shape(self):
         """Test if ControlledQubitUnitary raises a ValueError if a unitary of shape inconsistent
         with wires is provided"""

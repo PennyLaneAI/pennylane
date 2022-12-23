@@ -218,6 +218,17 @@ class TestProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.has_matrix is value
 
+    @pytest.mark.parametrize("value", ((0,), (1,), (2,), (0, 0, 0)))
+    def test_ndim_params(self, value):
+        """Test that Controlled defers to base ndim_params"""
+
+        class DummyOp(Operator):
+            num_wires = 1
+            ndim_params = value
+
+        op = Controlled(DummyOp(0), 1)
+        assert op.ndim_params is value
+
     @pytest.mark.parametrize("cwires, cvalues", [(0, [0]), ([3, 0, 2], [1, 1, 0])])
     def test_has_decomposition_true_via_control_values(self, cwires, cvalues):
         """Test that Controlled claims `has_decomposition` to be true if there are
