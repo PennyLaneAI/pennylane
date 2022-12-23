@@ -218,16 +218,14 @@ class TestProperties:
         op = Controlled(DummyOp(1), 0)
         assert op.has_matrix is value
 
-    @pytest.mark.parametrize("value", ((0,), (1,), (2,), (0, 0, 0)))
-    def test_ndim_params(self, value):
+    @pytest.mark.parametrize(
+        "base", (qml.RX(1.23, 0), qml.Rot(1.2, 2.3, 3.4, 0), qml.QubitUnitary([[0, 1], [1, 0]], 0))
+    )
+    def test_ndim_params(self, base):
         """Test that Controlled defers to base ndim_params"""
 
-        class DummyOp(Operator):
-            num_wires = 1
-            ndim_params = value
-
-        op = Controlled(DummyOp(0), 1)
-        assert op.ndim_params is value
+        op = Controlled(base, 1)
+        assert op.ndim_params == base.ndim_params
 
     @pytest.mark.parametrize("cwires, cvalues", [(0, [0]), ([3, 0, 2], [1, 1, 0])])
     def test_has_decomposition_true_via_control_values(self, cwires, cvalues):
