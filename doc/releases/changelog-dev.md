@@ -126,6 +126,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug in `qml.transforms.metric_tensor` where prefactors of operation generators were taken
+  into account multiple times, leading to wrong outputs for non-standard operations.
+  [(#35xx)](https://github.com/PennyLaneAI/pennylane/pull/35xx)
+
 * Child classes of `QuantumScript` now return their own type when using `SomeChildClass.from_queue`.
   [(#3501)](https://github.com/PennyLaneAI/pennylane/pull/3501)
 
@@ -145,4 +149,5 @@ Albert Mitjans Coma
 Romain Moyard
 Matthew Silverman
 Antal Száva
+David Wierichs
 
