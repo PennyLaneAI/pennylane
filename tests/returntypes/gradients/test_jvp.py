@@ -438,12 +438,15 @@ class TestJVP:
 
         expected = [
             -1 * np.sin(x),
-            np.array([
-                -(np.cos(y / 2) ** 2 * np.sin(x)) - (np.cos(x / 2) ** 2 * np.sin(y)),
-                -(np.sin(x) * np.sin(y / 2) ** 2) + (np.cos(x / 2) ** 2 * np.sin(y)),
-                (np.sin(x) * np.sin(y / 2) ** 2) + (np.sin(x / 2) ** 2 * np.sin(y)),
-                (np.cos(y / 2) ** 2 * np.sin(x)) - (np.sin(x / 2) ** 2 * np.sin(y)),
-            ]) / 2,
+            np.array(
+                [
+                    -(np.cos(y / 2) ** 2 * np.sin(x)) - (np.cos(x / 2) ** 2 * np.sin(y)),
+                    -(np.sin(x) * np.sin(y / 2) ** 2) + (np.cos(x / 2) ** 2 * np.sin(y)),
+                    (np.sin(x) * np.sin(y / 2) ** 2) + (np.sin(x / 2) ** 2 * np.sin(y)),
+                    (np.cos(y / 2) ** 2 * np.sin(x)) - (np.sin(x / 2) ** 2 * np.sin(y)),
+                ]
+            )
+            / 2,
         ]
 
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)

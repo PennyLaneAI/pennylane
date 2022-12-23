@@ -2184,6 +2184,7 @@ class TestParameterShiftRule:
         """Test computing the gradient of a tape that contains multiple
         measurements omits no warnings."""
         import warnings
+
         dev = qml.device("default.qubit", wires=4)
 
         par1 = qml.numpy.array(0.3)

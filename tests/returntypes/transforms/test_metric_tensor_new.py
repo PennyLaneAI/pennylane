@@ -124,12 +124,11 @@ class TestMetricTensor:
         assert isinstance(tapes[1].operations[3], qml.Hadamard)
 
         # third parameter subcircuit
-        assert len(tapes[2].operations) == 4
+        assert len(tapes[2].operations) == 3
         assert isinstance(tapes[2].operations[0], qml.RX)
         assert isinstance(tapes[2].operations[1], qml.RY)
         assert isinstance(tapes[2].operations[2], qml.CNOT)
-        # Phase shift generator
-        assert isinstance(tapes[2].operations[3], qml.QubitUnitary)
+        # No decomposition for operator that is diagonal in computational basis
 
     def test_construct_subcircuit_layers(self):
         """Test correct subcircuits constructed
@@ -1084,6 +1083,7 @@ class TestDifferentiability:
     dev = qml.device("default.qubit", wires=3)
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_autograd_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1111,6 +1111,7 @@ class TestDifferentiability:
             assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_autograd(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
