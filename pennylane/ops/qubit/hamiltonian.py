@@ -20,12 +20,15 @@ import itertools
 import numbers
 from collections.abc import Iterable
 from copy import copy
+import scipy
+import functools
 from typing import List
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
+from pennylane.math import expand_matrix
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
@@ -341,6 +344,87 @@ class Hamiltonian(Observable):
             self._grouping_indices = _compute_grouping_indices(
                 self.ops, grouping_type=grouping_type, method=method
             )
+
+    def sparse_matrix(self, wire_order=None):
+        r"""Computes the sparse matrix representation of a Hamiltonian in the computational basis.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires.
+                If not provided, the default order of the wires (self.wires) of the Hamiltonian is used.
+
+        Returns:
+            csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
+            :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+
+        **Example:**
+
+        >>> coeffs = [1, -0.45]
+        >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
+        >>> H = qml.Hamiltonian(coeffs, obs)
+        >>> H_sparse = H.sparse_matrix()
+        >>> H_sparse
+        <4x4 sparse matrix of type '<class 'numpy.complex128'>'
+	        with 8 stored elements in Compressed Sparse Row format>
+
+        The resulting sparse matrix can be either used directly or transformed into a numpy array:
+
+        >>> H_sparse.toarray()
+        array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
+               [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
+               [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
+               [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
+        """
+
+        n = len(self.wires)
+        matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+
+        coeffs = qml.math.toarray(self.data)
+
+        temp_mats = []
+        for coeff, op in zip(coeffs, self.ops):
+            obs = []
+            for o in qml.operation.Tensor(op).obs:
+                if len(o.wires) > 1:
+                    # todo: deal with operations created from multi-qubit operations such as Hermitian
+                    raise ValueError(
+                        f"Can only sparsify Hamiltonians whose constituent observables consist of "
+                        f"(tensor products of) single-qubit operators; got {op}."
+                    )
+                obs.append(o.matrix())
+
+            # Array to store the single-wire observables which will be Kronecker producted together
+            mat = []
+            # i_count tracks the number of consecutive single-wire identity matrices encountered
+            # in order to avoid unnecessary Kronecker products, since I_n x I_m = I_{n+m}
+            i_count = 0
+            for wire_lab in self.wires:
+                if wire_lab in op.wires:
+                    if i_count > 0:
+                        mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+                    i_count = 0
+                    idx = op.wires.index(wire_lab)
+                    # obs is an array storing the single-wire observables which
+                    # make up the full Hamiltonian term
+                    sp_obs = scipy.sparse.coo_matrix(obs[idx])
+                    mat.append(sp_obs)
+                else:
+                    i_count += 1
+
+            if i_count > 0:
+                mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+
+            red_mat = functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
+
+            temp_mats.append(red_mat.tocsr())
+            # Value of 100 arrived at empirically to balance time savings vs memory use. At this point
+            # the `temp_mats` are summed into the final result and the temporary storage array is
+            # cleared.
+            if (len(temp_mats) % 100) == 0:
+                matrix += sum(temp_mats)
+                temp_mats = []
+
+        matrix += sum(temp_mats)       
+        return expand_matrix(matrix, wires=self.wires, wire_order=wire_order)
 
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
