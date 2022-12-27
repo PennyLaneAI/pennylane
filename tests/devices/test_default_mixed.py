@@ -372,15 +372,7 @@ class TestApplyChannel:
         target_state = np.reshape(x[2], [2] * 2 * nr_wires)
         dev = qml.device("default.mixed", wires=nr_wires)
         kraus = dev._get_kraus(op)
-        fn = getattr(dev, apply_method)
-        if (
-            op.name == "CNOT"
-            or op.name == "ISWAP"
-            or (isinstance(op, PauliError) and nr_wires == 2)
-        ):
-            fn(kraus, wires=Wires([0, 1]))
-        else:
-            fn(kraus, wires=Wires(0))
+        getattr(dev, apply_method)(kraus, wires=op.wires)
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -418,15 +410,7 @@ class TestApplyChannel:
         max_mixed = np.reshape(max_mixed_state(nr_wires), [2] * 2 * nr_wires)
         dev._state = max_mixed
         kraus = dev._get_kraus(op)
-        fn = getattr(dev, apply_method)
-        if (
-            op.name == "CNOT"
-            or op.name == "ISWAP"
-            or (isinstance(op, PauliError) and nr_wires == 2)
-        ):
-            fn(kraus, wires=Wires([0, 1]))
-        else:
-            fn(kraus, wires=Wires(0))
+        getattr(dev, apply_method)(kraus, wires=op.wires)
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -501,16 +485,7 @@ class TestApplyChannel:
         root = np.reshape(root_state(nr_wires), [2] * 2 * nr_wires)
         dev._state = root
         kraus = dev._get_kraus(op)
-        fn = getattr(dev, apply_method)
-        if (
-            op.name == "CNOT"
-            or op.name == "ISWAP"
-            or (isinstance(op, PauliError) and nr_wires == 2)
-        ):
-            fn(kraus, wires=Wires([0, 1]))
-        else:
-            fn(kraus, wires=Wires(0))
-
+        getattr(dev, apply_method)(kraus, wires=op.wires)
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
     ops = [
@@ -546,8 +521,7 @@ class TestApplyChannel:
         target_state = qml.math.sum([k @ init_state @ k.conj().T for k in full_kraus], axis=0)
         target_state = qml.math.reshape(target_state, [2] * (2 * num_dev_wires))
 
-        fn = getattr(dev, apply_method)
-        fn(kraus, wires=op.wires)
+        getattr(dev, apply_method)(kraus, wires=op.wires)
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
