@@ -348,9 +348,12 @@ class DefaultMixed(QubitDevice):
         num_ch_wires = len(channel_wires)
 
         # Shape kraus operators
-        kraus = qnp.stack(kraus)
-        kraus_shape = [len(kraus)] + [2] * (num_ch_wires * 2)
-        kraus = qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+        # kraus = qnp.stack(kraus)
+        # kraus_shape = [len(kraus)] + [2] * (num_ch_wires * 2)
+        # kraus = qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+        kraus_shape = [2] * (num_ch_wires * 2)
+        kraus = [qnp.cast(qnp.reshape(k, kraus_shape), dtype=self.C_DTYPE) for k in kraus]
+        # kraus_dagger = qnp.conj(qnp.moveaxis(kraus, list(range(1, num_ch_wires+1)), list(range(num_ch_wires+1, 2 * num_ch_wires+1))))
 
         # row indices of the quantum state affected by this operation
         row_wires_list = channel_wires.tolist()
@@ -358,14 +361,15 @@ class DefaultMixed(QubitDevice):
         col_wires_list = [w + self.num_wires for w in row_wires_list]
 
         axes_left = [list(range(num_ch_wires, 2 * num_ch_wires)), row_wires_list]
-        axes_right = [col_wires_list, list(range(num_ch_wires))]
-        self._state = qnp.sum(
-            [
-                qnp.tensordot(
-                    qnp.tensordot(k, self._state, axes_left), qnp.conj(qnp.transpose(k)), axes_right
-                )
-                for k in kraus
-            ],
+        axes_right = [col_wires_list, list(range(num_ch_wires, 2 * num_ch_wires))]
+        _state = qnp.sum(
+            qnp.stack(
+                [
+                    qnp.tensordot(qnp.tensordot(k, self._state, axes_left), qnp.conj(k), axes_right)
+                    for k in kraus
+                    # for k, k_d in zip(kraus, kraus_dagger)
+                ]
+            ),
             axis=0,
         )
 
@@ -376,7 +380,7 @@ class DefaultMixed(QubitDevice):
         dest_left = row_wires_list
         source_right = list(range(-num_ch_wires, 0))
         dest_right = col_wires_list
-        self._state = qnp.moveaxis(self._state, source_left + source_right, dest_left + dest_right)
+        self._state = qnp.moveaxis(_state, source_left + source_right, dest_left + dest_right)
 
     def _apply_diagonal_unitary(self, eigvals, wires):
         r"""Apply a diagonal unitary gate specified by a list of eigenvalues. This method uses
