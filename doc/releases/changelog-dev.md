@@ -101,7 +101,7 @@
 
 * The `default.mixed` device received a performance improvement for multi-qubit operations.
   This also allows to apply channels that act on more than seven qubits, which was not possible before.
-  [(#3583)](https://github.com/PennyLaneAI/pennylane/pull/3583)
+  [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
 
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
