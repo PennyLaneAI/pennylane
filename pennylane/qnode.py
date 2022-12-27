@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
-from pennylane.tape import QuantumScript, make_qscript
+from pennylane.tape import QuantumTape, make_qscript
 
 
 class QNode:
@@ -36,7 +36,7 @@ class QNode:
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`~.QuantumScript` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
     the quantum circuit.
 
     Args:
@@ -60,7 +60,7 @@ class QNode:
 
             * ``"jax"``: Allows JAX to backpropagate
               through the QNode. The QNode accepts and returns
-              JAX ``DeviceArray`` objects.
+              JAX ``Array`` objects.
 
             * ``None``: The QNode accepts default Python types
               (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
@@ -381,6 +381,19 @@ class QNode:
         else:
             self._qfunc_uses_shots_arg = False
 
+        for kwarg in gradient_kwargs:
+            if kwarg in ["gradient_fn", "grad_method"]:
+                warnings.warn(
+                    f"It appears you may be trying to set the method of differentiation via the kwarg "
+                    f"{kwarg}. This is not supported in qnode and will defualt to backpropogation. Use "
+                    f"diff_method instead."
+                )
+            elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
+                warnings.warn(
+                    f"Received gradient_kwarg {kwarg}, which is not included in the list of standard qnode "
+                    f"gradient kwargs."
+                )
+
         # input arguments
         self.func = func
         self.device = device
@@ -699,7 +712,7 @@ class QNode:
         )
 
     @property
-    def tape(self) -> QuantumScript:
+    def tape(self) -> QuantumTape:
         """The quantum tape"""
         return self._tape
 

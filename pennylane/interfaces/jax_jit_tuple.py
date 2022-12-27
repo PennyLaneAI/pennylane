@@ -21,9 +21,8 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _compute_jvps
-from pennylane.interfaces.jax_jit import _validate_jax_version, _numeric_type_to_dtype
+from pennylane.interfaces.jax_jit import _numeric_type_to_dtype, _validate_jax_version
 
 dtype = jnp.float64
 
@@ -108,9 +107,9 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
             during the forward pass. This function must return a tuple ``(results, jacobians)``.
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
             compute the gradients during the backwards pass.
+        gradient_fn (callable): the gradient function to use to compute quantum gradients
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
-        gradient_fn (callable): the gradient function to use to compute quantum gradients
         _n (int): a positive integer used to track nesting of derivatives, for example
             if the nth-order derivative is requested.
         max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
@@ -123,10 +122,6 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
         the returned list corresponds in order to the provided tapes.
     """
     # pylint: disable=unused-argument
-    if max_diff > 1:
-        raise InterfaceUnsupportedError(
-            "The JAX-JIT interface only supports first order derivatives."
-        )
 
     if any(
         m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
@@ -164,6 +159,7 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
         gradient_fn=gradient_fn,
         gradient_kwargs=gradient_kwargs,
         _n=_n,
+        max_diff=max_diff,
     )
 
 
@@ -175,6 +171,7 @@ def _execute_bwd_tuple(
     gradient_fn=None,
     gradient_kwargs=None,
     _n=1,
+    max_diff=2,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     @jax.custom_jvp
     def execute_wrapper(params):
@@ -214,15 +211,39 @@ def _execute_bwd_tuple(
         # Backward: branch off based on the gradient function is a device method.
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             # Gradient function is a gradient transform
+            if _n == max_diff:
 
-            res_from_callback = _grad_transform_jac_via_callback(params, device)
-            if len(tapes) == 1:
-                res_from_callback = [res_from_callback]
+                res_from_callback = _grad_transform_jac_via_callback(params, device)
+                if len(tapes) == 1:
+                    res_from_callback = [res_from_callback]
 
-            jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
+                jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
+            else:
+
+                new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
+
+                all_jacs = []
+                for new_t in new_tapes:
+                    jvp_tapes, res_processing_fn = gradient_fn(
+                        new_t, shots=device.shots, **gradient_kwargs
+                    )
+                    jacs = execute_tuple(
+                        jvp_tapes,
+                        device,
+                        execute_fn,
+                        gradient_fn,
+                        gradient_kwargs,
+                        _n=_n + 1,
+                        max_diff=max_diff,
+                    )
+                    jacs = res_processing_fn(jacs)
+                    all_jacs.append(jacs)
+
+                jvps = _compute_jvps(all_jacs, tangents[0], multi_measurements)
         else:
             # Gradient function is a device method
             res_from_callback = _device_method_jac_via_callback(params, device)
+
             if len(tapes) == 1:
                 res_from_callback = [res_from_callback]
 
@@ -332,9 +353,9 @@ def _execute_fwd_tuple(
         return res, jacs
 
     @execute_wrapper.defjvp
-    def execute_wrapper_jvp(primal, tangents):
+    def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
-        res, jacs = execute_wrapper(primal[0])
+        res, jacs = execute_wrapper(primals[0])
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
         if len(tapes) == 1:
