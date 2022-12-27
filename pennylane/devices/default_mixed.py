@@ -347,32 +347,28 @@ class DefaultMixed(QubitDevice):
         rho_dim = 2 * self.num_wires
         num_ch_wires = len(channel_wires)
 
-        # Computes K^\dagger, needed for the transformation K \rho K^\dagger
-        kraus_dagger = [qnp.conj(qnp.transpose(k)) for k in kraus]
-
-        kraus = qnp.stack(kraus)
-        kraus_dagger = qnp.stack(kraus_dagger)
-
         # Shape kraus operators
+        kraus = qnp.stack(kraus)
         kraus_shape = [len(kraus)] + [2] * (num_ch_wires * 2)
         kraus = qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
-        kraus_dagger = qnp.cast(qnp.reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
 
         # row indices of the quantum state affected by this operation
         row_wires_list = channel_wires.tolist()
-
         # column indices are shifted by the number of wires
         col_wires_list = [w + self.num_wires for w in row_wires_list]
 
         axes_left = [list(range(num_ch_wires, 2 * num_ch_wires)), row_wires_list]
         axes_right = [col_wires_list, list(range(num_ch_wires))]
         self._state = qnp.sum([
-                qnp.tensordot(qnp.tensordot(k, self._state, axes_left), k_d, axes_right)
-                for k, k_d in zip(kraus, kraus_dagger)
+                qnp.tensordot(qnp.tensordot(k, self._state, axes_left), qnp.conj(qnp.transpose(k)), axes_right)
+                for k in kraus
             ],
             axis=0,
         )
 
+        # Permute the affected axes to their destination places.
+        # The row indices of the kraus operators are moved from the beginning to the original
+        # target row locations, the column indices from the end to the target column locations
         source_left = list(range(num_ch_wires))
         dest_left = row_wires_list
         source_right = list(range(-num_ch_wires, 0))
@@ -588,10 +584,10 @@ class DefaultMixed(QubitDevice):
         if operation in diagonal_in_z_basis:
             self._apply_diagonal_unitary(matrices, wires)
         else:
-            #if len(wires) > 7:
-            self._apply_channel_tensordot(matrices, wires)
-            #else:
-            #self._apply_channel(matrices, wires)
+            if len(wires) > 7:
+                self._apply_channel_tensordot(matrices, wires)
+            else:
+                self._apply_channel(matrices, wires)
 
     # pylint: disable=arguments-differ
 

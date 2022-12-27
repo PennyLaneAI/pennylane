@@ -26,11 +26,13 @@ from pennylane.ops import (
     PauliX,
     Hadamard,
     CNOT,
+    SWAP,
     ISWAP,
     AmplitudeDamping,
     DepolarizingChannel,
     ResetError,
     PauliError,
+    MultiControlledX,
 )
 from pennylane.wires import Wires
 
@@ -60,6 +62,13 @@ def root_state(nr_wires):
     dim = 2**nr_wires
     ket = [np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)]
     return np.outer(ket, np.conj(ket))
+
+def random_state(num_wires):
+    shape = (2**num_wires, 2**num_wires)
+    state = np.random.random(shape) + 1j * np.random.random(shape)
+    state = state @ state.T.conj()
+    state /= np.trace(state)
+    return state
 
 
 @pytest.mark.parametrize("nr_wires", [1, 2, 3])
@@ -500,6 +509,46 @@ class TestApplyChannel:
             fn(kraus, wires=Wires([0, 1]))
         else:
             fn(kraus, wires=Wires(0))
+
+        assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
+
+    ops = [
+        PauliX(wires=0),
+        PauliX(wires=2),
+        Hadamard(wires=0),
+        CNOT(wires=[0, 1]),
+        ISWAP(wires=[0, 1]),
+        SWAP(wires=[2, 0]),
+        MultiControlledX(wires=[0, 1, 2]),
+        MultiControlledX(wires=[2, 0, 1]),
+        AmplitudeDamping(0.5, wires=0),
+        DepolarizingChannel(0.5, wires=0),
+        ResetError(0.1, 0.5, wires=0),
+        PauliError("Z", 0.3, wires=0),
+        PauliError("XY", 0.5, wires=[0, 1]),
+        PauliError("XZY", 0.1, wires=[0, 2, 1]),
+    ]
+
+    @pytest.mark.parametrize("op", ops)
+    @pytest.mark.parametrize("num_dev_wires", [1, 2, 3])
+    def test_channel_against_matmul(self, num_dev_wires, op, apply_method, tol):
+        if num_dev_wires < max(op.wires) + 1:
+            pytest.skip("Need at least as many wires in the device as in the operation.")
+        np.random.seed(52)
+        dev = qml.device("default.mixed", wires=num_dev_wires)
+        init_state = random_state(num_dev_wires)
+        dev._state = qml.math.reshape(init_state, [2] * (2 * num_dev_wires))
+
+        kraus = dev._get_kraus(op)
+        full_kraus = [
+            qml.math.expand_matrix(k, op.wires, wire_order=dev.wires) for k in kraus
+        ]
+
+        target_state = qml.math.sum([k @ init_state @ k.conj().T for k in full_kraus], axis=0)
+        target_state = qml.math.reshape(target_state, [2] * (2 * num_dev_wires))
+
+        fn = getattr(dev, apply_method)
+        fn(kraus, wires=op.wires)
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
