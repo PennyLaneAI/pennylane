@@ -344,30 +344,27 @@ class DefaultMixed(QubitDevice):
             wires (Wires): target wires
         """
         channel_wires = self.map_wires(wires)
-        rho_dim = 2 * self.num_wires
         num_ch_wires = len(channel_wires)
 
-        # Shape kraus operators
-        # kraus = qnp.stack(kraus)
-        # kraus_shape = [len(kraus)] + [2] * (num_ch_wires * 2)
-        # kraus = qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+        # Shape kraus operators and cast them to complex data type
         kraus_shape = [2] * (num_ch_wires * 2)
         kraus = [qnp.cast(qnp.reshape(k, kraus_shape), dtype=self.C_DTYPE) for k in kraus]
-        # kraus_dagger = qnp.conj(qnp.moveaxis(kraus, list(range(1, num_ch_wires+1)), list(range(num_ch_wires+1, 2 * num_ch_wires+1))))
 
         # row indices of the quantum state affected by this operation
         row_wires_list = channel_wires.tolist()
         # column indices are shifted by the number of wires
         col_wires_list = [w + self.num_wires for w in row_wires_list]
 
-        axes_left = [list(range(num_ch_wires, 2 * num_ch_wires)), row_wires_list]
-        axes_right = [col_wires_list, list(range(num_ch_wires, 2 * num_ch_wires))]
+        channel_col_ids = list(range(num_ch_wires, 2 * num_ch_wires))
+        axes_left = [channel_col_ids, row_wires_list]
+        # Use column indices instead or rows to incorporate transposition of K^\dagger
+        axes_right = [col_wires_list, channel_col_ids]
+        # Apply the Kraus operators, and sum over all Kraus operators afterwards
         _state = qnp.sum(
             qnp.stack(
                 [
                     qnp.tensordot(qnp.tensordot(k, self._state, axes_left), qnp.conj(k), axes_right)
                     for k in kraus
-                    # for k, k_d in zip(kraus, kraus_dagger)
                 ]
             ),
             axis=0,
