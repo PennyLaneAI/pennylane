@@ -20,16 +20,6 @@ Pending deprecations
   - Still accessible in v0.28
   - Will be removed in v0.29
 
-* The ``grouping`` module is deprecated. The functionality has been moved and
-  reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
-
-  - Still accessible in v0.27, v0.28
-  - Will be removed in v0.29
-
-  The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
-  ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
-  have been consolidated in the ``pauli/grouping/`` directory.
-
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
   use ``qml.adjoint`` or ``qml.pow`` instead. 
 
@@ -109,6 +99,16 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``grouping`` module is removed. The functionality has been moved and
+  reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
+
+  - Still accessible in v0.28
+  - Removed in v0.29
+
+  The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
+  ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
+  have been consolidated in the ``pauli/grouping/`` directory.
 
 * The ``qml.utils.decompose_hamiltonian()`` method is removed. Please
   use ``qml.pauli_decompose()``.
