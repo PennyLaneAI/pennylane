@@ -63,6 +63,7 @@ def root_state(nr_wires):
     ket = [np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)]
     return np.outer(ket, np.conj(ket))
 
+
 def random_state(num_wires):
     shape = (2**num_wires, 2**num_wires)
     state = np.random.random(shape) + 1j * np.random.random(shape)
@@ -540,9 +541,7 @@ class TestApplyChannel:
         dev._state = qml.math.reshape(init_state, [2] * (2 * num_dev_wires))
 
         kraus = dev._get_kraus(op)
-        full_kraus = [
-            qml.math.expand_matrix(k, op.wires, wire_order=dev.wires) for k in kraus
-        ]
+        full_kraus = [qml.math.expand_matrix(k, op.wires, wire_order=dev.wires) for k in kraus]
 
         target_state = qml.math.sum([k @ init_state @ k.conj().T for k in full_kraus], axis=0)
         target_state = qml.math.reshape(target_state, [2] * (2 * num_dev_wires))

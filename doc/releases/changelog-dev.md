@@ -99,9 +99,12 @@
 
 <h3>Improvements</h3>
 
+* The `default.mixed` device received a performance improvement for operations that act on many qubits.
+  This also allows to apply channels that act on more than seven qubits, which was not possible before.
+  [(#3583)](https://github.com/PennyLaneAI/pennylane/pull/3583)
+
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
-
 
 * The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of 
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
@@ -145,4 +148,5 @@ Albert Mitjans Coma
 Romain Moyard
 Matthew Silverman
 Antal Száva
+David Wierichs
 

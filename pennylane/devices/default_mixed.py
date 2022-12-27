@@ -359,8 +359,11 @@ class DefaultMixed(QubitDevice):
 
         axes_left = [list(range(num_ch_wires, 2 * num_ch_wires)), row_wires_list]
         axes_right = [col_wires_list, list(range(num_ch_wires))]
-        self._state = qnp.sum([
-                qnp.tensordot(qnp.tensordot(k, self._state, axes_left), qnp.conj(qnp.transpose(k)), axes_right)
+        self._state = qnp.sum(
+            [
+                qnp.tensordot(
+                    qnp.tensordot(k, self._state, axes_left), qnp.conj(qnp.transpose(k)), axes_right
+                )
                 for k in kraus
             ],
             axis=0,
@@ -373,7 +376,7 @@ class DefaultMixed(QubitDevice):
         dest_left = row_wires_list
         source_right = list(range(-num_ch_wires, 0))
         dest_right = col_wires_list
-        self._state = qnp.moveaxis(self._state, source_left+source_right, dest_left+dest_right)
+        self._state = qnp.moveaxis(self._state, source_left + source_right, dest_left + dest_right)
 
     def _apply_diagonal_unitary(self, eigvals, wires):
         r"""Apply a diagonal unitary gate specified by a list of eigenvalues. This method uses
