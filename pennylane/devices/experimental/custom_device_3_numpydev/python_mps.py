@@ -13,15 +13,12 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
+
 class NumpyMPSSimulator:
     """
 
     Current Restrictions:
-    * No batching
-
-    * No support for state preparation yet
-    * No sampling yet
-    * restricted measurement types
+    * (geometrically) local operations
 
     Preprocessing restrictions:
     * Quantum Script wires must be adjacent integers starting from zero
@@ -31,15 +28,16 @@ class NumpyMPSSimulator:
 
     """
 
-    name = "PlainNumpy"
+    name = "PlainMPS"
 
-    def __init__(self):
-        pass
+    def __init__(self, chi_max=100, eps=1e-10):
+        self.chi_max = chi_max
+        self.eps = eps
 
     @classmethod
     def execute(cls, qs: QuantumScript, dtype=np.complex128):
         num_indices = len(qs.wires)
-        state = cls.create_zeroes_state(num_indices, dtype=dtype)
+        state = cls.init_MPS(num_indices)
         for op in qs._ops:
             state = cls.apply_operation(state, op)
 
@@ -47,12 +45,13 @@ class NumpyMPSSimulator:
         return measurements[0] if len(measurements) == 1 else measurements
 
     @staticmethod
-    def create_zeroes_state(num_indices, dtype=np.complex128):
-
-        state = np.zeros(2**num_indices, dtype=dtype)
-        state[0] = 1
-        state.shape = [2] * num_indices
-        return state
+    def init_MPS(L, up=0, dtype=np.complex128):
+        """Initialize a product MPS of all up (0) or all down (1)"""
+        B_init = np.zeros((1, 2, 1), dtype=dtype)
+        B_init[:, up, :] = 1.
+        Bs = [B_init for _ in range(L)] #.copy() copy is taken care of in SimpleMPS
+        Ss = [np.array([1.]) for _ in range(L)]
+        return SimpleMPS(Bs, Ss)
 
     @staticmethod
     def create_state_vector_state(num_indices, statevector, indices):
@@ -61,78 +60,27 @@ class NumpyMPSSimulator:
             return statevector
         raise NotImplementedError
 
-    @classmethod
-    def apply_operation(cls, state, operation):
-        """ """
-        matrix = operation.matrix()
-        if len(operation.wires) < 3:
-            return cls.apply_matrix_einsum(state, matrix, operation.wires)
-        return cls.apply_matrix_tensordot(state, matrix, operation.wires)
-
-    @classmethod
-    def apply_matrix(cls, state, matrix, indices):
-        if len(indices) < 3:
-            return cls.apply_matrix_einsum(state, matrix, indices)
-        return cls.apply_matrix_tensordot(state, matrix, indices)
-
     @staticmethod
-    def apply_matrix_tensordot(state, matrix, indices):
-        """ """
-        total_indices = len(state.shape)
-        num_indices = len(indices)
-        reshaped_mat = np.reshape(matrix, [2] * (num_indices * 2))
-        axes = (tuple(range(num_indices, 2 * num_indices)), indices)
-
-        tdot = np.tensordot(reshaped_mat, state, axes=axes)
-
-        unused_idxs = [i for i in range(total_indices) if i not in indices]
-        perm = list(indices) + unused_idxs
-        inv_perm = np.argsort(perm)
-
-        return np.transpose(tdot, inv_perm)
-
-    @staticmethod
-    def apply_matrix_einsum(state, matrix, indices):
-        """
-        Args:
-            state (array[complex]): input state
-            mat (array): matrix to multiply
-            indices (Iterable[integer]): indices to apply the matrix on
-
-        Returns:
-            array[complex]: output_state
-        """
-        total_indices = len(state.shape)
-        num_indices = len(indices)
-
-        state_indices = ABC[:total_indices]
-        affected_indices = "".join(ABC[i] for i in indices)
-
-        new_indices = ABC[total_indices : total_indices + num_indices]
-
-        new_state_indices = state_indices
-        for old, new in zip(affected_indices, new_indices):
-            new_state_indices = new_state_indices.replace(old, new)
-
-        einsum_indices = f"{new_indices}{affected_indices},{state_indices}->{new_state_indices}"
-
-        reshaped_mat = np.reshape(matrix, [2] * (num_indices * 2))
-
-        return np.einsum(einsum_indices, reshaped_mat, state)
+    def apply_operation(state, operation, chi_max=100, eps=1e-10):
+        # TODO: figure out how to handle accessing chi_max and eps from self
+        wires = operation.wires
+        matrix = qml.matrix(operation, wire_order=range(len(wires)))
+        if len(wires) == 2:
+            U_bond = matrix.reshape((2, 2, 2, 2))
+            return update_bond(state, i=operation.wires[0], U_bond=U_bond, chi_max=chi_max, eps=eps)
+        raise NotImplementedError
 
     @classmethod
     def measure_state(cls, state, measurementprocess):
-        if isinstance(measurementprocess, qml.measurements.StateMeasurement):
-            total_indices = len(state.shape)
-            wires = qml.wires.Wires(range(total_indices))
-            if (
-                measurementprocess.obs is not None
-                and measurementprocess.obs.has_diagonalizing_gates
-            ):
-                for op in measurementprocess.obs.diagonalizing_gates():
-                    state = cls.apply_operation(state, op)
-            return measurementprocess.process_state(state.flatten(), wires)
-        return state
+        wires = measurementprocess.wires
+        i = wires[0]
+        op = qml.matrix(measurementprocess.obs)
+        if len(wires) == 1:
+            return state.site_expectation_value(op, i)
+        elif len(wires) == 2:
+            return state.bond_expectation_value(op, i)
+        raise NotImplementedError
+
 
     @classmethod
     def generate_samples(cls, state, rng, shots=1):
@@ -218,25 +166,21 @@ class SimpleMPS:
         """Return bond dimensions."""
         return [self.Bs[i].shape[2] for i in range(self.nbonds)]
 
-    def site_expectation_value(self, op):
+    def site_expectation_value(self, op, i):
         """Calculate expectation values of a local operator at each site."""
-        result = []
-        for i in range(self.L):
-            theta = self.get_theta1(i)  # vL i vR
-            op_theta = np.tensordot(op, theta, axes=(1, 1))  # i [i*], vL [i] vR
-            result.append(np.tensordot(theta.conj(), op_theta, [[0, 1, 2], [1, 0, 2]]))
-            # [vL*] [i*] [vR*], [i] [vL] [vR]
+        theta = self.get_theta1(i)  # vL i vR
+        op_theta = np.tensordot(op, theta, axes=(1, 1))  # i [i*], vL [i] vR
+        result = np.tensordot(theta.conj(), op_theta, [[0, 1, 2], [1, 0, 2]])
+        # [vL*] [i*] [vR*], [i] [vL] [vR]
         return np.real_if_close(result)
 
-    def bond_expectation_value(self, op):
+    def bond_expectation_value(self, op, i):
         """Calculate expectation values of a local operator at each bond."""
-        result = []
-        for i in range(self.nbonds):
-            theta = self.get_theta2(i)  # vL i j vR
-            op_theta = np.tensordot(op[i], theta, axes=([2, 3], [1, 2]))
-            # i j [i*] [j*], vL [i] [j] vR
-            result.append(np.tensordot(theta.conj(), op_theta, [[0, 1, 2, 3], [2, 0, 1, 3]]))
-            # [vL*] [i*] [j*] [vR*], [i] [j] [vL] [vR]
+        theta = self.get_theta2(i)  # vL i j vR
+        op_theta = np.tensordot(op[i], theta, axes=([2, 3], [1, 2]))
+        # i j [i*] [j*], vL [i] [j] vR
+        result = np.tensordot(theta.conj(), op_theta, [[0, 1, 2, 3], [2, 0, 1, 3]])
+        # [vL*] [i*] [j*] [vR*], [i] [j] [vL] [vR]
         return np.real_if_close(result)
 
     def entanglement_entropy(self):
@@ -251,52 +195,52 @@ class SimpleMPS:
             result.append(-np.sum(S2 * np.log(S2)))
         return np.array(result)
 
-    def correlation_length(self):
-        """Diagonalize transfer matrix to obtain the correlation length."""
-        from scipy.sparse.linalg import eigs
-        if self.get_chi()[0] > 100:
-            warnings.warn("Skip calculating correlation_length() for large chi: could take long")
-            return -1.
-        assert self.bc == 'infinite'  # works only in the infinite case
-        B = self.Bs[0]  # vL i vR
-        chi = B.shape[0]
-        T = np.tensordot(B, np.conj(B), axes=(1, 1))  # vL [i] vR, vL* [i*] vR*
-        T = np.transpose(T, [0, 2, 1, 3])  # vL vL* vR vR*
-        for i in range(1, self.L):
-            B = self.Bs[i]
-            T = np.tensordot(T, B, axes=(2, 0))  # vL vL* [vR] vR*, [vL] i vR
-            T = np.tensordot(T, np.conj(B), axes=([2, 3], [0, 1]))
-            # vL vL* [vR*] [i] vR, [vL*] [i*] vR*
-        T = np.reshape(T, (chi**2, chi**2))
-        # Obtain the 2nd largest eigenvalue
-        eta = eigs(T, k=2, which='LM', return_eigenvectors=False, ncv=20)
-        xi =  -self.L / np.log(np.min(np.abs(eta)))
-        if xi > 1000.:
-            return np.inf
-        return xi
+    # def correlation_length(self):
+    #     """Diagonalize transfer matrix to obtain the correlation length."""
+    #     from scipy.sparse.linalg import eigs
+    #     if self.get_chi()[0] > 100:
+    #         warnings.warn("Skip calculating correlation_length() for large chi: could take long")
+    #         return -1.
+    #     assert self.bc == 'infinite'  # works only in the infinite case
+    #     B = self.Bs[0]  # vL i vR
+    #     chi = B.shape[0]
+    #     T = np.tensordot(B, np.conj(B), axes=(1, 1))  # vL [i] vR, vL* [i*] vR*
+    #     T = np.transpose(T, [0, 2, 1, 3])  # vL vL* vR vR*
+    #     for i in range(1, self.L):
+    #         B = self.Bs[i]
+    #         T = np.tensordot(T, B, axes=(2, 0))  # vL vL* [vR] vR*, [vL] i vR
+    #         T = np.tensordot(T, np.conj(B), axes=([2, 3], [0, 1]))
+    #         # vL vL* [vR*] [i] vR, [vL*] [i*] vR*
+    #     T = np.reshape(T, (chi**2, chi**2))
+    #     # Obtain the 2nd largest eigenvalue
+    #     eta = eigs(T, k=2, which='LM', return_eigenvectors=False, ncv=20)
+    #     xi =  -self.L / np.log(np.min(np.abs(eta)))
+    #     if xi > 1000.:
+    #         return np.inf
+    #     return xi
 
-    def correlation_function(self, op_i, i, op_j, j):
-        """Correlation function between two distant operators on sites i < j.
+    # def correlation_function(self, op_i, i, op_j, j):
+    #     """Correlation function between two distant operators on sites i < j.
 
-        Note: calling this function in a loop over `j` is inefficient for large j >> i.
-        The optimization is left as an exercise to the user.
-        Hint: Re-use the partial contractions up to but excluding site `j`.
-        """
-        assert i < j
-        theta = self.get_theta1(i) # vL i vR
-        C = np.tensordot(op_i, theta, axes=(1, 1)) # i [i*], vL [i] vR
-        C = np.tensordot(theta.conj(), C, axes=([0, 1], [1, 0]))  # [vL*] [i*] vR*, [i] [vL] vR
-        for k in range(i + 1, j):
-            k = k % self.L
-            B = self.Bs[k]  # vL k vR
-            C = np.tensordot(C, B, axes=(1, 0)) # vR* [vR], [vL] k vR
-            C = np.tensordot(B.conj(), C, axes=([0, 1], [0, 1])) # [vL*] [k*] vR*, [vR*] [k] vR
-        j = j % self.L
-        B = self.Bs[j]  # vL k vR
-        C = np.tensordot(C, B, axes=(1, 0)) # vR* [vR], [vL] j vR
-        C = np.tensordot(op_j, C, axes=(1, 1))  # j [j*], vR* [j] vR
-        C = np.tensordot(B.conj(), C, axes=([0, 1, 2], [1, 0, 2])) # [vL*] [j*] [vR*], [j] [vR*] [vR]
-        return C
+    #     Note: calling this function in a loop over `j` is inefficient for large j >> i.
+    #     The optimization is left as an exercise to the user.
+    #     Hint: Re-use the partial contractions up to but excluding site `j`.
+    #     """
+    #     assert i < j
+    #     theta = self.get_theta1(i) # vL i vR
+    #     C = np.tensordot(op_i, theta, axes=(1, 1)) # i [i*], vL [i] vR
+    #     C = np.tensordot(theta.conj(), C, axes=([0, 1], [1, 0]))  # [vL*] [i*] vR*, [i] [vL] vR
+    #     for k in range(i + 1, j):
+    #         k = k % self.L
+    #         B = self.Bs[k]  # vL k vR
+    #         C = np.tensordot(C, B, axes=(1, 0)) # vR* [vR], [vL] k vR
+    #         C = np.tensordot(B.conj(), C, axes=([0, 1], [0, 1])) # [vL*] [k*] vR*, [vR*] [k] vR
+    #     j = j % self.L
+    #     B = self.Bs[j]  # vL k vR
+    #     C = np.tensordot(C, B, axes=(1, 0)) # vR* [vR], [vL] j vR
+    #     C = np.tensordot(op_j, C, axes=(1, 1))  # j [j*], vR* [j] vR
+    #     C = np.tensordot(B.conj(), C, axes=([0, 1, 2], [1, 0, 2])) # [vL*] [j*] [vR*], [j] [vR*] [vR]
+    #     return C
 
 def split_truncate_theta(theta, chi_max, eps):
     """Split and truncate a two-site wave function in mixed canonical form.
@@ -328,7 +272,7 @@ def split_truncate_theta(theta, chi_max, eps):
     """
     chivL, dL, dR, chivR = theta.shape
     theta = np.reshape(theta, [chivL * dL, dR * chivR])
-    X, Y, Z = svd(theta, full_matrices=False)
+    X, Y, Z = svd(theta, full_matrices=False) #TODO switch to qml.math.svd
     # truncate
     chivC = min(chi_max, np.sum(Y > eps))
     assert chivC >= 1
@@ -356,3 +300,4 @@ def update_bond(psi, i, U_bond, chi_max, eps):
     psi.Bs[i] = np.tensordot(Gi, np.diag(Sj), axes=(2, 0))  # vL i [vC], [vC] vC
     psi.Ss[j] = Sj  # vC
     psi.Bs[j] = Bj  # vC j vR
+    return psi
