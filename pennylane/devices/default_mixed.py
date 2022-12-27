@@ -587,7 +587,7 @@ class DefaultMixed(QubitDevice):
         if operation in diagonal_in_z_basis:
             self._apply_diagonal_unitary(matrices, wires)
         else:
-            if len(wires) > 7:
+            if len(wires) > 1:
                 self._apply_channel_tensordot(matrices, wires)
             else:
                 self._apply_channel(matrices, wires)
