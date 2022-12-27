@@ -335,6 +335,50 @@ class DefaultMixed(QubitDevice):
 
         self._state = qnp.einsum(einsum_indices, kraus, self._state, kraus_dagger)
 
+    def _apply_channel_tensordot(self, kraus, wires):
+        r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
+        quantum state. For a unitary gate, there is a single Kraus operator.
+
+        Args:
+            kraus (list[array]): Kraus operators
+            wires (Wires): target wires
+        """
+        channel_wires = self.map_wires(wires)
+        rho_dim = 2 * self.num_wires
+        num_ch_wires = len(channel_wires)
+
+        # Computes K^\dagger, needed for the transformation K \rho K^\dagger
+        kraus_dagger = [qnp.conj(qnp.transpose(k)) for k in kraus]
+
+        kraus = qnp.stack(kraus)
+        kraus_dagger = qnp.stack(kraus_dagger)
+
+        # Shape kraus operators
+        kraus_shape = [len(kraus)] + [2] * (num_ch_wires * 2)
+        kraus = qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+        kraus_dagger = qnp.cast(qnp.reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
+
+        # row indices of the quantum state affected by this operation
+        row_wires_list = channel_wires.tolist()
+
+        # column indices are shifted by the number of wires
+        col_wires_list = [w + self.num_wires for w in row_wires_list]
+
+        axes_left = [list(range(num_ch_wires, 2 * num_ch_wires)), row_wires_list]
+        axes_right = [col_wires_list, list(range(num_ch_wires))]
+        self._state = qnp.sum([
+                qnp.tensordot(qnp.tensordot(k, self._state, axes_left), k_d, axes_right)
+                for k, k_d in zip(kraus, kraus_dagger)
+            ],
+            axis=0,
+        )
+
+        source_left = list(range(num_ch_wires))
+        dest_left = row_wires_list
+        source_right = list(range(-num_ch_wires, 0))
+        dest_right = col_wires_list
+        self._state = qnp.moveaxis(self._state, source_left+source_right, dest_left+dest_right)
+
     def _apply_diagonal_unitary(self, eigvals, wires):
         r"""Apply a diagonal unitary gate specified by a list of eigenvalues. This method uses
         the fact that the unitary is diagonal for a more efficient implementation.
@@ -544,7 +588,10 @@ class DefaultMixed(QubitDevice):
         if operation in diagonal_in_z_basis:
             self._apply_diagonal_unitary(matrices, wires)
         else:
-            self._apply_channel(matrices, wires)
+            #if len(wires) > 7:
+            self._apply_channel_tensordot(matrices, wires)
+            #else:
+            #self._apply_channel(matrices, wires)
 
     # pylint: disable=arguments-differ
 

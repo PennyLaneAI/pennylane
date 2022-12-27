@@ -330,6 +330,7 @@ class TestKrausOps:
         assert np.allclose(dev._get_kraus(ops[0]), ops[1], atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("apply_method", ["_apply_channel", "_apply_channel_tensordot"])
 class TestApplyChannel:
     """Unit tests for the method `_apply_channel()`"""
 
@@ -354,21 +355,22 @@ class TestApplyChannel:
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_init)
-    def test_channel_init(self, x, tol):
+    def test_channel_init(self, x, tol, apply_method):
         """Tests that channels are correctly applied to the default initial state"""
         nr_wires = x[0]
         op = x[1]
         target_state = np.reshape(x[2], [2] * 2 * nr_wires)
         dev = qml.device("default.mixed", wires=nr_wires)
         kraus = dev._get_kraus(op)
+        fn = getattr(dev, apply_method)
         if (
             op.name == "CNOT"
             or op.name == "ISWAP"
             or (isinstance(op, PauliError) and nr_wires == 2)
         ):
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
+            fn(kraus, wires=Wires([0, 1]))
         else:
-            dev._apply_channel(kraus, wires=Wires(0))
+            fn(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -397,7 +399,7 @@ class TestApplyChannel:
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_mixed)
-    def test_channel_mixed(self, x, tol):
+    def test_channel_mixed(self, x, tol, apply_method):
         """Tests that channels are correctly applied to the maximally mixed state"""
         nr_wires = x[0]
         op = x[1]
@@ -406,14 +408,15 @@ class TestApplyChannel:
         max_mixed = np.reshape(max_mixed_state(nr_wires), [2] * 2 * nr_wires)
         dev._state = max_mixed
         kraus = dev._get_kraus(op)
+        fn = getattr(dev, apply_method)
         if (
             op.name == "CNOT"
             or op.name == "ISWAP"
             or (isinstance(op, PauliError) and nr_wires == 2)
         ):
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
+            fn(kraus, wires=Wires([0, 1]))
         else:
-            dev._apply_channel(kraus, wires=Wires(0))
+            fn(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -479,7 +482,7 @@ class TestApplyChannel:
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_root)
-    def test_channel_root(self, x, tol):
+    def test_channel_root(self, x, tol, apply_method):
         """Tests that channels are correctly applied to root state"""
         nr_wires = x[0]
         op = x[1]
@@ -488,14 +491,15 @@ class TestApplyChannel:
         root = np.reshape(root_state(nr_wires), [2] * 2 * nr_wires)
         dev._state = root
         kraus = dev._get_kraus(op)
+        fn = getattr(dev, apply_method)
         if (
             op.name == "CNOT"
             or op.name == "ISWAP"
             or (isinstance(op, PauliError) and nr_wires == 2)
         ):
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
+            fn(kraus, wires=Wires([0, 1]))
         else:
-            dev._apply_channel(kraus, wires=Wires(0))
+            fn(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
