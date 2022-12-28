@@ -30,18 +30,19 @@ class NumpyMPSSimulator:
 
     name = "PlainMPS"
 
-    def __init__(self, chi_max=100, eps=1e-10):
-        self.chi_max = chi_max
-        self.eps = eps
+    def __init__(self):
+        pass
 
     @classmethod
-    def execute(cls, qs: QuantumScript, dtype=np.complex128):
+    def execute(cls, qs: QuantumScript, dtype=np.complex128, chi_max=20, eps=1e-10):
         num_indices = len(qs.wires)
         state = cls.init_MPS(num_indices)
         for i,op in enumerate(qs._ops):
             #print(i, op)
-            state = cls.apply_operation(state, op)
+            state = cls.apply_operation(state, op, chi_max, eps)
 
+        bond_dim = np.max(state.get_chi())
+        print(f"bond dimension = {bond_dim}")
         measurements = tuple(cls.measure_state(state, m) for m in qs.measurements)
         return measurements[0] if len(measurements) == 1 else measurements
 
@@ -55,8 +56,7 @@ class NumpyMPSSimulator:
         return SimpleMPS(Bs, Ss)
 
     @staticmethod
-    def apply_operation(state, operation, chi_max=100, eps=1e-10):
-        # TODO: figure out how to handle accessing chi_max and eps from self
+    def apply_operation(state, operation, chi_max, eps):
         wires = operation.wires
         matrix = qml.matrix(operation)
         if len(wires) == 1:
@@ -68,15 +68,19 @@ class NumpyMPSSimulator:
 
     @classmethod
     def measure_state(cls, state, measurementprocess):
-        wires = measurementprocess.wires
-        i = wires[0]
-        op = qml.matrix(measurementprocess.obs)
-        if len(wires) == 1:
-            return state.site_expectation_value(op, i)
-        elif len(wires) == 2:
-            op = op.reshape((2, 2, 2, 2))
-            return state.bond_expectation_value(op, i)
-        raise NotImplementedError
+        # hacky solution to return state
+        if not measurementprocess.return_type == qml.measurements.State:
+            wires = measurementprocess.wires
+            i = wires[0]
+            op = qml.matrix(measurementprocess.obs)
+            if len(wires) == 1:
+                return state.site_expectation_value(op, i)
+            elif len(wires) == 2:
+                op = op.reshape((2, 2, 2, 2))
+                return state.bond_expectation_value(op, i)
+            elif len(wires) > 2:
+                raise NotImplementedError
+        return state
 
 
 
@@ -288,17 +292,39 @@ def update_bond(psi, i, U_bond, chi_max, eps):
     psi.Bs[j] = Bj  # vC j vR
     return psi
 
+# def update_site(psi, i, U_site, chi_max, eps):
+#     """Apply `U_site` acting on site i to `psi`"""
+#     # Conctract Theta and U
+#     # restore B-form by left-multiplying inverse singular values
+#     theta = psi.get_theta1(i)
+#     Utheta = np.tensordot(U_site, theta, axes=([1], [1]))  # i [i*], vL [i] vR
+#     Utheta = np.transpose(Utheta, [1, 0, 2])  # i vL vR >> vL i vR
+
+#     # no truncation (unsure atm)
+
+#     # put back into B form
+#     Gi = np.tensordot(np.diag(psi.Ss[i]**(-1)), Utheta, axes=(1, 0))  # vL [vL*], [vL] i vC
+#     psi.Bs[i] = np.tensordot(Gi, np.diag(psi.Ss[(i+1) %psi.L]), axes=(2, 0))  # vL i [vC], [vC] vC
+#     return psi
+
 def update_site(psi, i, U_site, chi_max, eps):
     """Apply `U_site` acting on site i to `psi`"""
+
     # Conctract Theta and U
     # restore B-form by left-multiplying inverse singular values
     theta = psi.get_theta1(i)
     Utheta = np.tensordot(U_site, theta, axes=([1], [1]))  # i [i*], vL [i] vR
     Utheta = np.transpose(Utheta, [1, 0, 2])  # i vL vR >> vL i vR
 
-    # no truncation (unsure atm)
+    # making this effectively a two-site update because I am only sure here how to do it
+    j = (i+1) % psi.L
+    Utheta = np.tensordot(Utheta, psi.Bs[j], [2, 0])  # vL i [vR], [vL] j vR
 
-    # put back into B form
-    Gi = np.tensordot(np.diag(psi.Ss[i]**(-1)), Utheta, axes=(1, 0))  # vL [vL*], [vL] i vC
-    psi.Bs[i] = np.tensordot(Gi, np.diag(psi.Ss[(i+1) %psi.L]), axes=(2, 0))  # vL i [vC], [vC] vC
+    # split and truncate
+    Ai, Sj, Bj = split_truncate_theta(Utheta, chi_max, eps)
+    # put back into MPS
+    Gi = np.tensordot(np.diag(psi.Ss[i]**(-1)), Ai, axes=(1, 0))  # vL [vL*], [vL] i vC
+    psi.Bs[i] = np.tensordot(Gi, np.diag(Sj), axes=(2, 0))  # vL i [vC], [vC] vC
+    psi.Ss[j] = Sj  # vC
+    psi.Bs[j] = Bj  # vC j vR
     return psi
