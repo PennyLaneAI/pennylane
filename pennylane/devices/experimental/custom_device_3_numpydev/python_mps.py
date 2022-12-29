@@ -41,8 +41,8 @@ class NumpyMPSSimulator:
             #print(i, op)
             state = cls.apply_operation(state, op, chi_max, eps)
 
-        bond_dim = np.max(state.get_chi())
-        print(f"bond dimension = {bond_dim}")
+        #bond_dim = np.max(state.get_chi())
+        #print(f"bond dimension = {bond_dim}")
         measurements = tuple(cls.measure_state(state, m) for m in qs.measurements)
         return measurements[0] if len(measurements) == 1 else measurements
 
@@ -275,8 +275,9 @@ def split_truncate_theta(theta, chi_max, eps):
     B = np.reshape(Z, [chivC, dR, chivR])
     return A, S, B
 
-def update_bond(psi, i, U_bond, chi_max, eps):
+def update_bond(state, i, U_bond, chi_max, eps):
     """Apply `U_bond` acting on i,j=(i+1) to `psi`."""
+    psi = state.copy() # This is currently necessary for gradients but probably overkill!
     j = (i + 1) % psi.L
     # construct theta matrix
     theta = psi.get_theta2(i)  # vL i j vR
@@ -307,9 +308,10 @@ def update_bond(psi, i, U_bond, chi_max, eps):
 #     psi.Bs[i] = np.tensordot(Gi, np.diag(psi.Ss[(i+1) %psi.L]), axes=(2, 0))  # vL i [vC], [vC] vC
 #     return psi
 
-def update_site(psi, i, U_site, chi_max, eps):
+def update_site(state, i, U_site, chi_max, eps):
     """Apply `U_site` acting on site i to `psi`"""
-
+    psi = state.copy()    # This is currently necessary for gradients but probably overkill!
+    
     # Conctract Theta and U
     # restore B-form by left-multiplying inverse singular values
     theta = psi.get_theta1(i)

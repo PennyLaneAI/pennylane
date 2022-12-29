@@ -57,7 +57,7 @@ class TestDeviceMPSSim(AbstractDevice):
 
         return res, [grads]
 
-    def gradient(self, qscript: QuantumScript, order: int = 1):
+    def gradient(self, qscript: QuantumScript, order: int = 1, chi_max=20, eps=1e-10):
         if order != 1:
             raise NotImplementedError
 
@@ -68,22 +68,60 @@ class TestDeviceMPSSim(AbstractDevice):
         sim = NumpyMPSSimulator()
         state = sim.init_MPS(qscript.num_wires)
         for op in qscript.operations:
-            state = sim.apply_operation(state, op)
-        bra = sim.apply_operation(state, qscript.measurements[0].obs)
+            state = sim.apply_operation(state, op, chi_max=chi_max, eps=eps)
+        bra = sim.apply_operation(state, qscript.measurements[0].obs, chi_max=chi_max, eps=eps)
         ket = state
 
         grads = []
         for op in reversed(qscript.operations):
             adj_op = adjoint(op)
-            ket = sim.apply_operation(ket, adj_op)
+            ket = sim.apply_operation(ket, adj_op, chi_max=chi_max, eps=eps)
 
             if op.num_params != 0:
-                dU = operation_derivative(op)
-                ket_temp = sim.apply_matrix(ket, dU, op.wires)
-                dM = 2 * np.real(np.vdot(bra, ket_temp))
+                # The factor 2 is a hacky solution for the generators being
+                # non-unitary due to their 0.5 factor
+                dU = 2 * operation_derivative(op)
+                dU = qml.QubitUnitary(dU, wires=op.wires)
+                ket_temp = sim.apply_operation(ket, dU, chi_max=chi_max, eps=eps)
+                dM = np.real(overlap(bra, ket_temp, is_adjoint=True)) # missing factor 2 accordingly
                 grads.append(dM)
 
-            bra = sim.apply_operation(bra, adj_op)
+            bra = sim.apply_operation(bra, adj_op, chi_max=chi_max, eps=eps)
 
         grads = grads[::-1]
         return grads
+
+def overlap(state1, state2, is_adjoint=False):
+    """
+    Compute overlap <bra|ket> of two MPS
+
+    state1: first mps
+    state2: second mps
+    is_adjoint: whether or not the second state is already adjoint
+    """
+    # TODO make this more clever, 
+    # i.e. vectorize first step and 
+    # in the second contract from both ends.
+
+    B1 = state1.Bs
+    B2 = state2.Bs
+
+    assert len(B1) == len(B2)
+
+    if not is_adjoint:
+        B2 = [_.conj() for _ in B2]
+
+    # contract all physical indices
+    res = []
+    for i in range(len(B1)):
+        res.append(np.tensordot(B1[i], B2[i], ([1], [1]))) # vL [d] vR - vL* [d*] vR*
+
+    if len(B1) == 1:
+        return qml.math.squeeze(res)
+
+    # contract from left to right
+    result = np.tensordot(res[0], res[1], ([1, 3], [0, 2])) # vL [vR] vL* {vR*} - [vL] vR {vL*} vR*
+    for i in range(2, len(res)):
+        result = np.tensordot(result, res[i], ([2, 3], [0, 2])) # vL vL* [vR] {vR*} - [vL] vR {vL*} vR*
+
+    return qml.math.squeeze(result)
