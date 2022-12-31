@@ -254,6 +254,17 @@ def metric_tensor(tape, argnum=None, approx=None, allow_nonunitary=True, aux_wir
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
         return [], lambda _: ()
+    
+    if argnum is None:
+        argnum = tape.trainable_params
+    if isinstance(argnum, int):
+        argnum = [argnum]
+    if any([i not in tape.trainable_params for i in argnum]):
+        warnings.warn(
+            "Some parameters specified in argnum are not in the "
+            f"trainable parameters {tape.trainable_params} of the tape "
+            "and will be ignored."
+        )
 
     # pylint: disable=too-many-arguments
     if approx in {"diag", "block-diag"}:
@@ -406,17 +417,6 @@ def _metric_tensor_cov_matrix(tape: QuantumTape, argnum, diag_approx):
     params_list = []
     in_argnum_list = []
 
-    if argnum is None:
-        argnum = tape.trainable_params
-    if isinstance(argnum, int):
-        argnum = [argnum]
-    if any([i not in tape.trainable_params for i in argnum]):
-        warnings.warn(
-            "Some parameters specified in argnum are not in the "
-            f"trainable parameters {tape.trainable_params} of the tape "
-            "and will be ignored."
-        )
-
     for queue, curr_ops, param_idx, _ in graph.iterate_parametrized_layers():
         params_list.append(param_idx)
         in_argnum_list.append([p in argnum for p in param_idx])
@@ -461,7 +461,7 @@ def _metric_tensor_cov_matrix(tape: QuantumTape, argnum, diag_approx):
             if not any(params_in_argnum):
                 # there is no tape and no probs associated to this layer
                 dim = len(params_in_argnum)
-                gs.append(np.zeros((dim, dim)))
+                gs.append(math.zeros((dim, dim)))
                 # TODO: Could it be a problem that we can't infer a tensor type
                 # and dtype for this block?
                 continue
@@ -478,15 +478,15 @@ def _metric_tensor_cov_matrix(tape: QuantumTape, argnum, diag_approx):
                 # fill in rows and columns of zeros where a parameter was not in argnum
                 if not in_argnum:
                     dim = g.shape[0]
-                    g = math.concatenate((g[:i], np.zeros((1, dim)), g[i:]))
-                    g = math.concatenate((g[:, :i], np.zeros((dim+1, 1)), g[:, i:]), axis=1)
+                    g = math.concatenate((g[:i], math.zeros((1, dim)), g[i:]))
+                    g = math.concatenate((g[:, :i], math.zeros((dim+1, 1)), g[:, i:]), axis=1)
             gs.append(g)
             probs_idx += 1
 
         # create the block diagonal metric tensor
         return math.block_diag(gs)
 
-    return metric_tensor_tapes, processing_fn, obs_list, coeffs_list
+    return metric_tensor_tapes, processing_fn, obs_list, coeffs_list, in_argnum_list
 
 
 @functools.lru_cache()
@@ -615,20 +615,30 @@ def _metric_tensor_hadamard(tape: QuantumTape, argnum, allow_nonunitary, aux_wir
     """
     # Get tapes and processing function for the block-diagonal metric tensor,
     # as well as the generator observables and generator coefficients for each diff'ed operation
-    diag_tapes, diag_proc_fn, obs_list, coeffs = _metric_tensor_cov_matrix(tape, argnum, diag_approx=False)
+    diag_tapes, diag_proc_fn, obs_list, coeffs_list, in_argnum_list = _metric_tensor_cov_matrix(tape, argnum, diag_approx=False)
 
     # Obtain layers of parametrized operations and account for the discrepancy between trainable
     # and non-trainable parameter indices
     graph = tape.graph
     par_idx_to_trainable_idx = {idx: i for i, idx in enumerate(sorted(tape.trainable_params))}
     layers = []
-    for layer in graph.iterate_parametrized_layers():
-        layers.append(LayerData(
-            layer.pre_ops,
-            layer.ops,
-            tuple(par_idx_to_trainable_idx[idx] for idx in layer[2]),
-            layer.post_ops,
-        ))
+
+    for layer, in_argnum in zip(graph.iterate_parametrized_layers(), in_argnum_list):
+        if not any(in_argnum):
+            # no tapes need to be constructed for this layer
+            continue
+
+        pre_ops, ops, param_idx, post_ops = layer
+        new_ops = []
+        new_param_idx = []
+
+        for o, idx, param_in_argnum in zip(ops, param_idx, in_argnum):
+            if param_in_argnum:
+                new_ops.append(o)
+                new_param_idx.append(par_idx_to_trainable_idx[idx])
+
+        layers.append(LayerData(pre_ops, new_ops, new_param_idx, post_ops))
+
     if len(layers) <= 1:
         return diag_tapes, diag_proc_fn
 
@@ -651,7 +661,12 @@ def _metric_tensor_hadamard(tape: QuantumTape, argnum, allow_nonunitary, aux_wir
     # Combine block-diagonal and off block-diagonal tapes
     tapes = diag_tapes + first_term_tapes
     # prepare off block-diagonal mask
-    mask = 1 - math.block_diag([math.ones((bsize, bsize)) for bsize in block_sizes])
+    blocks = []
+    for in_argnum in in_argnum_list:
+        d = len(in_argnum)
+        blocks.append(math.ones((d, d)))
+    mask = 1 - math.block_diag(blocks)
+    # mask = 1 - math.block_diag([math.ones((bsize, bsize)) for bsize in block_sizes])
     # Required for slicing in processing_fn
     num_diag_tapes = len(diag_tapes)
 
@@ -681,13 +696,28 @@ def _metric_tensor_hadamard(tape: QuantumTape, argnum, allow_nonunitary, aux_wir
         # Second terms of off block-diagonal metric tensor
         expvals = math.zeros_like(first_term[0])
         idx = 0
-        for prob, obs in zip(diag_res, obs_list):
-            for o in obs:
+        layer_i = 0
+        for in_argnum in in_argnum_list:
+            obs_i = 0
+            if not any(in_argnum):
+                idx += len(in_argnum)
+                continue
+
+            for param_in_argnum in in_argnum:
+                if not param_in_argnum:
+                    idx += 1
+                    continue
+
+                prob = diag_res[layer_i]
+                o = obs_list[layer_i][obs_i]
                 l = math.cast(o.eigvals(), dtype=np.float64)
                 w = tape.wires.indices(o.wires)
                 p = math.marginal_prob(prob, w)
                 expvals = math.scatter_element_add(expvals, (idx,), math.dot(l, p))
                 idx += 1
+                obs_i +=1
+
+            layer_i += 1
 
         # Construct <\partial_i\psi|\psi><\psi|\partial_j\psi> and mask it
         second_term = math.tensordot(expvals, expvals, axes=0) * mask
@@ -696,8 +726,16 @@ def _metric_tensor_hadamard(tape: QuantumTape, argnum, allow_nonunitary, aux_wir
         off_diag_mt = first_term - second_term
 
         # Rescale first and second term
-        _coeffs = math.hstack(coeffs)
-        scale = math.convert_like(math.tensordot(_coeffs, _coeffs, axes=0), results[0])
+        coeffs_gen = (c for c in math.hstack(coeffs_list))
+        extended_coeffs_list = []  # flattened but also with 0s where parameters are not in argnum
+
+        for param_in_argnum in math.hstack(in_argnum_list):
+            if param_in_argnum:
+                extended_coeffs_list.append(coeffs_gen.__next__())
+            else:
+                extended_coeffs_list.append(0.)
+
+        scale = math.convert_like(math.tensordot(extended_coeffs_list, extended_coeffs_list, axes=0), results[0])
         off_diag_mt = scale * off_diag_mt
 
         # Combine block-diagonal and off block-diagonal
