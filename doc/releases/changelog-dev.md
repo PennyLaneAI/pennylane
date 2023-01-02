@@ -121,6 +121,7 @@
 * Added `argnum` argument to `metric_tensor`. By passing a list of indices referring to trainable tape parameters,
   the metric tensor is only computed with respect to these parameters. This reduces the number of tapes that have to
   be run.
+  [(#3587)](https://github.com/PennyLaneAI/pennylane/pull/3587)
 
  <h3>Breaking changes</h3>
 
