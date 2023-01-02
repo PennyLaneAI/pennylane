@@ -579,6 +579,44 @@ class TestMetricTensor:
         G_expected = block_diag(G1, G3, G2)
         assert qml.math.allclose(G, G_expected, atol=tol, rtol=0)
 
+    def test_argnum_metric_tensor(self, tol):
+        """Test that argnum successfully reduces the number of tapes and gives
+        the desired outcome."""
+        dev = qml.device("default.qubit", wires=3)
+
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(weights[2], wires=1)
+            qml.RZ(weights[3], wires=0)
+
+        weights = np.array([.1, .2, .3, .5], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            circuit(weights)
+
+        tapes, proc_fn = qml.metric_tensor(tape)
+        res = qml.execute(tapes, dev, None)
+        mt = proc_fn(res)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=(0, 1, 3))
+        res = qml.execute(tapes, dev, None)
+        mt013 = proc_fn(res)
+
+        assert len(tapes) == 6
+        assert mt.shape == mt013.shape
+        assert qml.math.allclose(mt[:2, :2], mt013[:2, :2], atol=tol, rtol=0)
+        assert qml.math.allclose(mt[3, 3], mt013[3, 3], atol=tol, rtol=0)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
+        res = qml.execute(tapes, dev, None)
+        mt23 = proc_fn(res)
+
+        assert len(tapes) == 1
+        assert mt.shape == mt23.shape
+        assert qml.math.allclose(mt[2:, 2:], mt23[2:, 2:], atol=tol, rtol=0)
+
     def test_multi_qubit_gates(self):
         """Test that a tape with Ising gates has the correct metric tensor tapes."""
 
