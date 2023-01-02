@@ -76,5 +76,6 @@ from .tapering import (
     taper_operation,
 )
 from .givens_rotations import (
+    givens_matrix,
     givens_decomposition,
 )

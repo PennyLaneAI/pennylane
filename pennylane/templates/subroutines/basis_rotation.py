@@ -35,7 +35,7 @@ class BasisRotation(Operation):
     `Clements et al. <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_ (2016).
 
     Args:
-        wires (Any or Iterable[Any]): wires that the operator acts on
+        wires (Iterable[Any]): wires that the operator acts on
         unitary_matrix (array): matrix specifying the basis trasformation
         check (bool): test unitarity of the provided `unitary_matrix`
 
@@ -81,7 +81,7 @@ class BasisRotation(Operation):
         that is defined by the linear combination of fermionic ladder operators:
 
         .. math::
-            U(u) ^ \dagger a_p^\dagger U(u) = b_p^\dagger,
+            U(u) a_p^\dagger U(u)^\dagger = b_p^\dagger,
 
         where :math:`a_p^\dagger` and :math:`b_p^\dagger` are the originial and transformed creation operators, respectively,
         are related to each other by the following relation:

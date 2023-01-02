@@ -205,7 +205,7 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`Basis Rotation<../code/api/pennylane.BasisRotation>`
-    :figure: _static/templates/swap_networks/ccl2.jpeg
+    :figure: _static/templates/subroutines/basis_rotation.jpeg
 
 .. gallery-item::
     :description: :doc:`FermionicSingleExcitation <../code/api/pennylane.FermionicSingleExcitation>`
