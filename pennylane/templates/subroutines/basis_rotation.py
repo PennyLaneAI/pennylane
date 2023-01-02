@@ -22,7 +22,74 @@ from pennylane.qchem.givens_rotations import givens_decomposition
 
 # pylint: disable-msg=too-many-arguments
 class BasisRotation(Operation):
-    r"""Implement a circuit that provides the unitary that can be used to do an exact single-body basis rotation"""
+    r"""Implement a circuit that provides the unitary that can be used to do an exact single-body basis rotation
+
+    The `BasisRotation` template performs a unitary transformation :math:`U(u)` determined by the single-particle fermionic
+    generators as:
+
+    .. math::
+        U(u) = \exp{\left( \sum_{pq} \left[\log u \right]_{pq} (a_p^\dagger a_q - a_q^\dagger a_p) \right)}
+
+    This :math:`U(u)` is implemented efficiently by performing its Givens decomposition into a sequence of
+    :class:`~.PhaseShift` and :class:`~.SingleExcitation` gates using the optimal construction given by
+    `Clements et al. <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_ (2016).
+
+    Args:
+        wires (Any or Iterable[Any]): wires that the operator acts on
+        unitary_matrix (array): matrix specifying the basis trasformation
+        check (bool): test unitarity of the provided `unitary_matrix`
+
+    Raises:
+        ValueError: if the provided matrix is not square.
+
+    .. details::
+
+        **Usage Details**
+
+        The `BasisRotation` template can be used to implement evolution :math:`e^{iH}` where the Hamiltonian
+        :math:`H = \sum_{pq} V_{pq} a^\dagger_p a_q` and :math:`V` is an `NxN` hermitation matrix. The unitary
+        matrix :math:`u` in this case will be the transformation matrix that diagonalizes :math:`V` such that:
+
+        .. math::
+            e^{i \sum_{pq} V_{pq} a^\dagger_p a_q} = U(u)^\dagger \prod_k e^{i\lambda_k \sigma_z^k} U(u),
+
+        where the :math:`\lambda_k` are the eigenvalues of the Hamiltonian :math:`H`.
+
+        >>> V = np.array([[ 0.53672126+0.j        , -0.1126064 -2.41479668j],
+        ...               [-0.1126064 +2.41479668j,  1.48694623+0.j        ]])
+        >>> eigen_vals, eigen_vecs = np.linalg.eigh(V)
+        >>> umat = eigen_vecs.T
+        >>> wires = range(len(umat))
+        >>> dev = qml.device("default.qubit", wires=wires)
+        >>> @qml.qnode(dev)
+        ... def circuit():
+        ...    qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=umat))
+        ...    for idx, eigenval in enumerate(eigen_vals):
+        ...        qml.RZ(eigenval, wires=[idx])
+        ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
+        ...    return qml.state()
+        >>> circ_unitary = qml.matrix(circuit)()
+        >>> np.round(circ_unitary/circ_unitary[0][0], 3)
+        tensor([[ 1.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+                [ 0.   +0.j   , -0.516-0.596j, -0.302-0.536j,  0.   +0.j   ],
+                [ 0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j,  0.   +0.j   ],
+                [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
+
+        **Theory**
+
+        The overall effect of :math:`U(u)` can be realized as perfoming a transformation to set of new basis
+        that is defined by the linear combination of fermionic ladder operators:
+
+        .. math::
+            U(u) ^ \dagger a_p^\dagger U(u) = b_p^\dagger,
+
+        where :math:`a_p^\dagger` and :math:`b_p^\dagger` are the originial and transformed creation operators, respectively,
+        are related to each other by the following relation:
+
+        .. math::
+            b_p^\dagger = \sum_{q}u_{pq} a_p^\dagger.
+
+    """
 
     num_wires = AnyWires
     grad_method = None

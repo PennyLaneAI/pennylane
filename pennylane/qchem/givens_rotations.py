@@ -31,6 +31,16 @@ def givens_matrix(a, b, left=True, tol=1e-8):
 
     where :math:`\theta \in [0, \pi/2]` is the angle of rotation in the :math:`\{|01\rangle, |10\rangle \}` subspace,
     and :math:`\phi \in [0, 2 \pi]` represents the phase shift at the first wire.
+
+    Args:
+        a (float or complex): first element of the vector for which givens matrix is being computed
+        b (float or complex): second element of the vector for which givens matrix is being computed
+        left (bool): determines if the givens matrix is being applied from the left side or right side.
+        tol (float): detemrines tolerance limits for `|a|` and `|b|` under which they are considered as zero.
+    
+    Returns:
+        np.ndarray (or tensor): Givens rotation matrix
+
     """
     abs_a, abs_b = np.abs(a), np.abs(b)
     if abs_a < tol:
@@ -62,6 +72,14 @@ def givens_rotate(unitary, grot_mat, indices, row=True):
         &|10\rangle \mapsto e^{i \phi} \sin(\theta) |01\rangle + \cos(\theta) |10\rangle\\
         &|11\rangle \mapsto |11\rangle.
 
+    Args:
+        unitary (tensor): unitary matrix on which Givens rotation is to be applied
+        grot_mat (tensor): Givens roation matrix that has to be applied on the unitary
+        indices (list or tuple): list of indices [i, j] of the `unitary` on which Given rotation is applied
+        row (bool): determines whether Givens rotation is applied across rows or coloumns
+
+    Raises:
+        ValueError: if more than two indices are provided.
     """
 
     if len(indices) != 2:
@@ -74,8 +92,26 @@ def givens_rotate(unitary, grot_mat, indices, row=True):
 
 
 def givens_decomposition(unitary):
-    """Decompose a unitary into sequence of Givens Rotation gates and a diagonal Phase matrix.
-    Based on the optimal construction given by Clements in Optica Vol. 3, Issue 12, pp. 1460-1465 (2016)."""
+    r"""Decompose a unitary into sequence of Givens Rotation gates with phase shifts and a diagonal phase matrix.
+
+    This decomposition is based on the optimal construction given by `Clements et al. <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_ (2016),
+    which allows one to write any unitary matrix :math:`U` as:
+
+    .. math::
+        U = D \left(\prod_{(m, n) \in G} T_{m, n}\right),
+
+    where :math:`D` is a diagonal phase matrix, :math:`T` is the Givens Rotation gates with phase shifts and :math:`G` defines the
+    specific ordered sequence of the Givens rotation gates.
+
+    Args:
+        unitary (tensor): unitary matrix on which decomposition will be performed
+
+    Returns:
+        (np.ndarray, list[(np.ndarray, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with thier indices.
+
+    Raises:
+        ValueError: if the provided matrix is not square.
+    """
 
     unitary, (M, N) = qml.math.toarray(unitary).copy(), unitary.shape
     if M != N:

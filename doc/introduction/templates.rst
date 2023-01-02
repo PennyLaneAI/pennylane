@@ -204,6 +204,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/interferometer.png
 
 .. gallery-item::
+    :description: :doc:`Basis Rotation<../code/api/pennylane.BasisRotation>`
+    :figure: _static/templates/swap_networks/ccl2.jpeg
+
+.. gallery-item::
     :description: :doc:`FermionicSingleExcitation <../code/api/pennylane.FermionicSingleExcitation>`
     :figure: _static/templates/subroutines/single_excitation_unitary.png
 
