@@ -20,7 +20,7 @@ from pennylane import numpy as np
 from pennylane.operation import Operation, AnyWires
 from pennylane.qchem.givens_rotations import givens_decomposition
 
-
+# pylint: disable-msg=too-many-arguments
 class BasisRotation(Operation):
     r"""Implement a circuit that provides the unitary that can be used to do an exact single-body basis rotation"""
 
