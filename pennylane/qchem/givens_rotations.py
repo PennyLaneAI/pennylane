@@ -37,7 +37,7 @@ def givens_matrix(a, b, left=True, tol=1e-8):
         b (float or complex): second element of the vector for which givens matrix is being computed
         left (bool): determines if the givens matrix is being applied from the left side or right side.
         tol (float): detemrines tolerance limits for `|a|` and `|b|` under which they are considered as zero.
-    
+
     Returns:
         np.ndarray (or tensor): Givens rotation matrix
 
