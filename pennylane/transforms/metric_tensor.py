@@ -25,7 +25,9 @@ from pennylane.circuit_graph import LayerData
 from .batch_transform import batch_transform
 
 
-def expand_fn(tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
+def expand_fn(
+    tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
     if not allow_nonunitary and approx is None:  # pragma: no cover
@@ -34,7 +36,9 @@ def expand_fn(tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=No
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
+def metric_tensor(
+    tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+):
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     The metric tensor convention we employ here has the following form:
@@ -256,7 +260,7 @@ def metric_tensor(tape, argnum=None, approx=None, allow_nonunitary=True, aux_wir
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
         return [], lambda _: ()
-    
+
     if argnum is None:
         argnum = tape.trainable_params
     if isinstance(argnum, int):
@@ -485,7 +489,9 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
                 if not in_argnum:
                     dim = g.shape[0]
                     g = qml.math.concatenate((g[:i], qml.math.zeros((1, dim)), g[i:]))
-                    g = qml.math.concatenate((g[:, :i], qml.math.zeros((dim+1, 1)), g[:, i:]), axis=1)
+                    g = qml.math.concatenate(
+                        (g[:, :i], qml.math.zeros((dim + 1, 1)), g[:, i:]), axis=1
+                    )
             gs.append(g)
             probs_idx += 1
 
@@ -622,7 +628,9 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
     """
     # Get tapes and processing function for the block-diagonal metric tensor,
     # as well as the generator observables and generator coefficients for each diff'ed operation
-    diag_tapes, diag_proc_fn, obs_list, coeffs_list, in_argnum_list = _metric_tensor_cov_matrix(tape, argnum, diag_approx=False)
+    diag_tapes, diag_proc_fn, obs_list, coeffs_list, in_argnum_list = _metric_tensor_cov_matrix(
+        tape, argnum, diag_approx=False
+    )
 
     # Obtain layers of parametrized operations and account for the discrepancy between trainable
     # and non-trainable parameter indices
@@ -722,7 +730,7 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
                 p = qml.math.marginal_prob(prob, w)
                 expvals = qml.math.scatter_element_add(expvals, (idx,), qml.math.dot(l, p))
                 idx += 1
-                obs_i +=1
+                obs_i += 1
 
             layer_i += 1
 
@@ -740,9 +748,11 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
             if param_in_argnum:
                 extended_coeffs_list.append(coeffs_gen.__next__())
             else:
-                extended_coeffs_list.append(0.)
+                extended_coeffs_list.append(0.0)
 
-        scale = qml.math.convert_like(qml.math.tensordot(extended_coeffs_list, extended_coeffs_list, axes=0), results[0])
+        scale = qml.math.convert_like(
+            qml.math.tensordot(extended_coeffs_list, extended_coeffs_list, axes=0), results[0]
+        )
         off_diag_mt = scale * off_diag_mt
 
         # Combine block-diagonal and off block-diagonal

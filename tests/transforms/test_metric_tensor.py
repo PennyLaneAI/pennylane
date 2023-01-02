@@ -591,7 +591,7 @@ class TestMetricTensor:
             qml.RZ(weights[2], wires=1)
             qml.RZ(weights[3], wires=0)
 
-        weights = np.array([.1, .2, .3, .5], requires_grad=True)
+        weights = np.array([0.1, 0.2, 0.3, 0.5], requires_grad=True)
 
         with qml.tape.QuantumTape() as tape:
             circuit(weights)
