@@ -1,0 +1,68 @@
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for the dot function
+"""
+import pytest
+import pennylane as qml
+from pennylane.ops import dot, Hamiltonian, Sum, SProd
+
+coeffs_and_ops_list = [
+    ([1.0], [qml.PauliX(0)]),
+    ([1.1, 2.2], [qml.PauliX(0), qml.PauliY(1)]),
+    ([1.1, 2.2, 3.3], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
+]
+
+
+class TestDot:
+    """Unittests for the dot function."""
+
+    def test_dot_returns_hamiltonian(self):
+        """Test that the dot function returns a Hamiltonian class."""
+        coeffs = [1.0, 2.0, 3.0]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        H = dot(coeffs, ops)
+        assert isinstance(H, Hamiltonian)
+        assert qml.math.allequal(H.coeffs, coeffs)
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(H.ops, ops))
+
+    def test_dot_returns_sum(self):
+        """Test that the dot function returns a Sum operator when ``hamiltonian=False``."""
+        coeffs = [1.0, 2.0, 3.0]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        S = dot(coeffs, ops, hamiltonian=False)
+        assert isinstance(S, Sum)
+        for summand, coeff, op in zip(S.operands, coeffs, ops):
+            if coeff != 1:
+                assert isinstance(summand, SProd)
+                assert summand.scalar == coeff
+            else:
+                assert isinstance(summand, type(op))
+
+    def test_dot_returns_sprod(self):
+        """Test that the dot function returns a SProd operator when only one operator is input."""
+        coeffs = [2.0]
+        ops = [qml.PauliX(0)]
+        O = dot(coeffs, ops, hamiltonian=False)
+        assert isinstance(O, SProd)
+        assert O.scalar == 2
+
+    def test_raises_value_error(self):
+        """Test that a ValueError is raised when the number of coefficients and operators does
+        not match."""
+        with pytest.raises(
+            ValueError,
+            match="Number of coefficients and operators does not match",
+        ):
+            dot([1.0], [qml.PauliX(0), qml.PauliY(1)], hamiltonian=False)

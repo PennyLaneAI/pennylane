@@ -27,7 +27,7 @@ def dot(
 ) -> Operator | Hamiltonian:
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
-    This dot product returns the following linear combination: :math:`\sum_{k=0}^{N-1} c_k O_k`, where
+    This function returns the following linear combination: :math:`\sum_{k=0}^{N-1} c_k O_k`, where
     :math:`c_k` and :math:`O_k` are the elements inside the ``coeffs`` and ``ops`` arguments respectively.
 
     Args:
