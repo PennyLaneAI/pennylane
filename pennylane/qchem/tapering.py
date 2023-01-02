@@ -18,9 +18,10 @@ This module contains the functions needed for tapering qubits using symmetries.
 
 import functools
 import itertools
-import autograd.numpy as anp
-import scipy
+
 import numpy
+import scipy
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli import simplify
@@ -351,7 +352,7 @@ def taper(h, generators, paulixops, paulix_sector):
             )
         )
 
-    c = anp.multiply(val, h.terms()[0])
+    c = qml.math.multiply(val, h.terms()[0])
     c = qml.math.stack(c)
 
     tapered_ham = simplify(qml.Hamiltonian(c, o))
@@ -574,9 +575,8 @@ def _build_generator(operation, wire_order, op_gen=None):
     if op_gen is None:
         if operation.num_params < 1:  # Non-parameterized gates
             gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
-            op_gen = qml.Hamiltonian(
-                *qml.utils.decompose_hamiltonian(gen_mat, wire_order=wire_order, hide_identity=True)
-            )
+            op_gen = qml.pauli_decompose(gen_mat, wire_order=wire_order, hide_identity=True)
+
             qml.simplify(op_gen)
             if op_gen.ops[0].label() == qml.Identity(wires=[wire_order[0]]).label():
                 op_gen -= qml.Hamiltonian([op_gen.coeffs[0]], [qml.Identity(wires=wire_order[0])])

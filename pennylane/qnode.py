@@ -25,7 +25,8 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.tape import QuantumTape
+from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
+from pennylane.tape import QuantumTape, make_qscript
 
 
 class QNode:
@@ -59,7 +60,7 @@ class QNode:
 
             * ``"jax"``: Allows JAX to backpropagate
               through the QNode. The QNode accepts and returns
-              JAX ``DeviceArray`` objects.
+              JAX ``Array`` objects.
 
             * ``None``: The QNode accepts default Python types
               (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
@@ -148,15 +149,200 @@ class QNode:
     >>> @qml.qnode(dev)
     ... def circuit(x):
     ...     qml.RX(x, wires=0)
-    ...     return expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.PauliZ(0))
 
     or by instantiating the class directly:
 
     >>> def circuit(x):
     ...     qml.RX(x, wires=0)
-    ...     return expval(qml.PauliZ(0))
+    ...     return qml.expval(qml.PauliZ(0))
     >>> dev = qml.device("default.qubit", wires=1)
     >>> qnode = qml.QNode(circuit, dev)
+
+    .. details::
+        :title: Parameter broadcasting
+        :href: parameter-broadcasting
+
+        QNodes can be executed simultaneously for multiple parameter settings, which is called
+        *parameter broadcasting* or *parameter batching*.
+        We start with a simple example and briefly look at the scenarios in which broadcasting is
+        possible and useful. Finally we give rules and conventions regarding the usage of
+        broadcasting, together with some more complex examples.
+        Also see the :class:`~.pennylane.operation.Operator` documentation for implementation
+        details.
+
+        **Example**
+
+        Again consider the following ``circuit``:
+
+        >>> dev = qml.device("default.qubit", wires=1)
+        >>> @qml.qnode(dev)
+        ... def circuit(x):
+        ...     qml.RX(x, wires=0)
+        ...     return qml.expval(qml.PauliZ(0))
+
+        If we want to execute it at multiple values ``x``,
+        we may pass those as a one-dimensional array to the QNode:
+
+        >>> x = np.array([np.pi / 6, np.pi * 3 / 4, np.pi * 7 / 6])
+        >>> circuit(x)
+        tensor([ 0.8660254 , -0.70710678, -0.8660254 ], requires_grad=True)
+
+        The resulting array contains the QNode evaluations at the single values:
+
+        >>> [circuit(x_val) for x_val in x]
+        [tensor(0.8660254, requires_grad=True),
+         tensor(-0.70710678, requires_grad=True),
+         tensor(-0.8660254, requires_grad=True)]
+
+        In addition to the results being stacked into one ``tensor`` already, the broadcasted
+        execution actually is performed in one simulation of the quantum circuit, instead of
+        three sequential simulations.
+
+        **Benefits & Supported QNodes**
+
+        Parameter broadcasting can be useful to simplify the execution syntax with QNodes. More
+        importantly though, the simultaneous execution via broadcasting can be significantly
+        faster than iterating over parameters manually. If we compare the execution time for the
+        above QNode ``circuit`` between broadcasting and manual iteration for an input size of
+        ``100``, we find a speedup factor of about :math:`30`.
+        This speedup is a feature of classical simulators, but broadcasting may reduce
+        the communication overhead for quantum hardware devices as well.
+
+        A QNode supports broadcasting if all operators that receive broadcasted parameters do so.
+        (Operators that are used in the circuit but do not receive broadcasted inputs do not need
+        to support it.) A list of supporting operators is available in
+        :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting`.
+        Whether or not broadcasting delivers an increased performance will depend on whether the
+        used device is a classical simulator and natively supports this. The latter can be checked
+        with the capabilities of the device:
+
+        >>> dev.capabilities()["supports_broadcasting"]
+        True
+
+        If a device does not natively support broadcasting, it will execute broadcasted QNode calls
+        by expanding the input arguments into separate executions. That is, every device can
+        execute QNodes with broadcasting, but only supporting devices will benefit from it.
+
+        **Usage**
+
+        The first example above is rather simple. Broadcasting is possible in more complex
+        scenarios as well, for which it is useful to understand the concept in more detail.
+        The following rules and conventions apply:
+
+        *There is at most one broadcasting axis*
+
+        The broadcasted input has (exactly) one more axis than the operator(s) which receive(s)
+        it would usually expect. For example, most operators expect a single scalar input and the
+        *broadcasted* input correspondingly is a 1D array:
+
+        >>> x = np.array([1., 2., 3.])
+        >>> op = qml.RX(x, wires=0) # Additional axis of size 3.
+
+        An operator ``op`` that supports broadcasting indicates the expected number of
+        axes--or dimensions--in its attribute ``op.ndim_params``. This attribute is a tuple with
+        one integer per argument of ``op``. The batch size of a broadcasted operator is stored
+        in ``op.batch_size``:
+
+        >>> op.ndim_params # RX takes one scalar input.
+        (0,)
+        >>> op.batch_size # The broadcasting axis has size 3.
+        3
+
+        The broadcasting axis is always the leading axis of an argument passed to an operator:
+
+        >>> from scipy.stats import unitary_group
+        >>> U = np.stack([unitary_group.rvs(4) for _ in range(3)])
+        >>> U.shape # U stores three two-qubit unitaries, each of shape 4x4
+        (3, 4, 4)
+        >>> op = qml.QubitUnitary(U, wires=[0, 1])
+        >>> op.batch_size
+        3
+
+        Stacking multiple broadcasting axes is *not* supported.
+
+        *Multiple operators are broadcasted simultaneously*
+
+        It is possible to broadcast multiple parameters simultaneously. In this case, the batch
+        size of the broadcasting axes must match, and the parameters are combined like in Python's
+        ``zip`` function. Non-broadcasted parameters do not need
+        to be augmented manually but can simply be used as one would in individual QNode
+        executions:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=4)
+            @qml.qnode(dev)
+            def circuit(x, y, U):
+                qml.QubitUnitary(U, wires=[0, 1, 2, 3])
+                qml.RX(x, wires=0)
+                qml.RY(y, wires=1)
+                qml.RX(x, wires=2)
+                qml.RY(y, wires=3)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliZ(3))
+
+
+            x = np.array([0.4, 2.1, -1.3])
+            y = 2.71
+            U = np.stack([unitary_group.rvs(16) for _ in range(3)])
+
+        This circuit takes three arguments, and the first two are used twice each. ``x`` and
+        ``U`` will lead to a batch size of ``3`` for the ``RX`` rotations and the multi-qubit
+        unitary, respectively. The input ``y`` is a ``float`` value and will be used together with
+        all three values in ``x`` and ``U``. We obtain three output values:
+
+        >>> circuit(x, y, U)
+        tensor([-0.06939911,  0.26051235, -0.20361048], requires_grad=True)
+
+        This is equivalent to iterating over all broadcasted arguments using ``zip``:
+
+        >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)]
+        [tensor(-0.06939911, requires_grad=True),
+         tensor(0.26051235, requires_grad=True),
+         tensor(-0.20361048, requires_grad=True)]
+
+        In the same way it is possible to broadcast multiple arguments of a single operator,
+        for example:
+
+        >>> qml.Rot.ndim_params # Rot takes three scalar arguments
+        (0, 0, 0)
+        >>> x = np.array([0.4, 2.3, -0.1]) # Broadcast the first argument with size 3
+        >>> y = 1.6 # Do not broadcast the second argument
+        >>> z = np.array([1.2, -0.5, 2.5]) # Broadcast the third argument with size 3
+        >>> op = qml.Rot(x, y, z, wires=0)
+        >>> op.batch_size
+        3
+
+        *Broadcasting does not modify classical processing*
+
+        Note that classical processing in QNodes will happen *before* broadcasting is taken into
+        account. This means, that while *operators* always interpret the first axis as the
+        broadcasting axis, QNodes do not necessarily do so:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit_unpacking(x):
+                qml.RX(x[0], wires=0)
+                qml.RY(x[1], wires=1)
+                qml.RZ(x[2], wires=1)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+            x = np.array([[1, 2], [3, 4], [5, 6]])
+
+        The prepared parameter ``x`` has shape ``(3, 2)``, corresponding to the three operations
+        and a batch size of ``2``:
+
+        >>> circuit_unpacking(x)
+        tensor([0.02162852, 0.30239696], requires_grad=True)
+
+        If we were to iterate manually over the parameter settings, we probably would put the
+        batching axis in ``x`` first. This is not the behaviour with parameter broadcasting
+        because it does not modify the unpacking step within the QNode, so that ``x`` is
+        unpacked *first* and the unpacked elements are expected to contain the
+        broadcasted parameters for each operator individually;
+        if we attempted to put the broadcasting axis of size ``2`` first, the
+        indexing of ``x`` would fail in the ``RZ`` rotation within the QNode.
     """
 
     def __init__(
@@ -194,6 +380,19 @@ class QNode:
             self._qfunc_uses_shots_arg = True
         else:
             self._qfunc_uses_shots_arg = False
+
+        for kwarg in gradient_kwargs:
+            if kwarg in ["gradient_fn", "grad_method"]:
+                warnings.warn(
+                    f"It appears you may be trying to set the method of differentiation via the kwarg "
+                    f"{kwarg}. This is not supported in qnode and will defualt to backpropogation. Use "
+                    f"diff_method instead."
+                )
+            elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
+                warnings.warn(
+                    f"Received gradient_kwarg {kwarg}, which is not included in the list of standard qnode "
+                    f"gradient kwargs."
+                )
 
         # input arguments
         self.func = func
@@ -522,11 +721,10 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self._tape = qml.tape.QuantumTape()
-
-        with self.tape:
-            self._qfunc_output = self.func(*args, **kwargs)
-        self._tape._qfunc_output = self._qfunc_output
+        self._tape = make_qscript(self.func)(*args, **kwargs)
+        self._tape._queue_category = "_ops"
+        self._qfunc_output = self.tape._qfunc_output
+        qml.QueuingManager.append(self.tape)
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -547,7 +745,7 @@ class QNode:
             )
 
         terminal_measurements = [
-            m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
+            m for m in self.tape.measurements if not isinstance(m, MidMeasureMP)
         ]
         if any(ret != m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
@@ -577,10 +775,7 @@ class QNode:
         # operations
         # 2. Move this expansion to Device (e.g., default_expand_fn or
         # batch_transform method)
-        if any(
-            getattr(obs, "return_type", None) == qml.measurements.MidMeasure
-            for obs in self.tape.operations
-        ):
+        if any(isinstance(m, MidMeasureMP) for m in self.tape.operations):
             self._tape = qml.defer_measurements(self._tape)
 
         if self.expansion_strategy == "device":
@@ -689,9 +884,8 @@ class QNode:
 
             res = res[0]
 
-        if not isinstance(self._qfunc_output, Sequence) and self._qfunc_output.return_type in (
-            qml.measurements.Counts,
-            qml.measurements.AllCounts,
+        if not isinstance(self._qfunc_output, Sequence) and isinstance(
+            self._qfunc_output, CountsMP
         ):
             if self.device._has_partitioned_shots():
                 return tuple(res)
@@ -700,8 +894,7 @@ class QNode:
             return res[0]
 
         if isinstance(self._qfunc_output, Sequence) and any(
-            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-            for m in self._qfunc_output
+            isinstance(m, CountsMP) for m in self._qfunc_output
         ):
 
             # If Counts was returned with other measurements, then apply the
@@ -720,7 +913,7 @@ class QNode:
         ):
             return res
 
-        if self._qfunc_output.return_type is qml.measurements.Shadow:
+        if isinstance(self._qfunc_output, ClassicalShadowMP):
             # if classical shadows is returned, then don't squeeze the
             # last axis corresponding to the number of qubits
             return qml.math.squeeze(res, axis=0)

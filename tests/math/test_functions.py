@@ -975,6 +975,17 @@ def test_numpy(t):
     assert isinstance(res, onp.ndarray)
 
 
+@pytest.mark.parametrize("t", test_data)
+def test_numpy_arraybox(t):
+    """Test that the to_numpy method correctly converts the input
+    ArrayBox into a NumPy array."""
+    val = np.array(5.0)
+    t = ArrayBox(val, None, None)
+    res = fn.to_numpy(t)
+    assert res == val
+    assert isinstance(res, type(val))
+
+
 def test_numpy_jax_jit():
     """Test that the to_numpy() method raises an exception
     if used inside the JAX JIT"""
@@ -986,6 +997,13 @@ def test_numpy_jax_jit():
 
     with pytest.raises(ValueError, match="not supported when using the JAX JIT"):
         cost(jnp.array(0.1))
+
+
+def test_numpy_torch():
+    """Test that the to_numpy method correctly converts the input
+    Torch tensor into a NumPy array."""
+    x = torch.tensor([1.0, 2.0, 3.0])
+    fn.to_numpy(x)
 
 
 class TestOnesLike:
@@ -1042,7 +1060,7 @@ class TestRequiresGrad:
 
     @pytest.mark.slow
     def test_jax(self):
-        """JAX DeviceArrays differentiability depends on the argnums argument"""
+        """JAX Arrays differentiability depends on the argnums argument"""
         res = None
 
         def cost_fn(t, s):
@@ -1138,7 +1156,7 @@ class TestInBackprop:
 
     @pytest.mark.slow
     def test_jax(self):
-        """The value of in_backprop for JAX DeviceArrays depends on the argnums argument"""
+        """The value of in_backprop for JAX Arrays depends on the argnums argument"""
         res = None
 
         def cost_fn(t, s):
@@ -1681,7 +1699,7 @@ class TestScatterElementAdd:
             return fn.scatter_element_add(weights[0], self.index, weights[1] ** 2)
 
         res = cost([x, y])
-        assert isinstance(res, jax.interpreters.xla.DeviceArray)
+        assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
         grad = jax.grad(lambda weights: cost(weights)[self.index[0], self.index[1]])([x, y])
@@ -1698,7 +1716,7 @@ class TestScatterElementAdd:
             return fn.scatter_element_add(weight_0, self.index, weight_1**2)
 
         res = cost_multi(x, y)
-        assert isinstance(res, jax.interpreters.xla.DeviceArray)
+        assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
         jac = jax.jacobian(lambda *weights: cost_multi(*weights), argnums=[0, 1])(x, y)
@@ -1794,7 +1812,7 @@ class TestScatterElementAddMultiValue:
             )
 
         res = cost([x, y])
-        assert isinstance(res, jax.interpreters.xla.DeviceArray)
+        assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
         scalar_cost = (
