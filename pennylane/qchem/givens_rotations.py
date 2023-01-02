@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,11 +15,23 @@
 This module contains the functions needed for performing basis transformation defined by a set of fermionic ladder operators.
 """
 
+import pennylane as qml
 from pennylane import numpy as np
 
 
 def givens_matrix(a, b, left=True, tol=1e-8):
-    """Build a Givens rotation matrix with a phase."""
+    r"""Build a Givens rotation matrix :math:`T(\theta, \phi)`.
+
+    .. math:: T(\theta, \phi) = \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & e^{i \phi} \cos(\theta) & -\sin(\theta) & 0 \\
+                0 & e^{i \phi} \sin(\theta) & \cos(\theta) & 0 \\
+                0 & 0 & 0 & 1
+            \end{bmatrix},
+
+    where :math:`\theta \in [0, \pi/2]` is the angle of rotation in the :math:`\{|01\rangle, |10\rangle \}` subspace,
+    and :math:`\phi \in [0, 2 \pi]` represents the phase shift at the first wire.
+    """
     abs_a, abs_b = np.abs(a), np.abs(b)
     if abs_a < tol:
         cosine, sine, phase = 1.0, 0.0, 1.0
@@ -40,7 +52,17 @@ def givens_matrix(a, b, left=True, tol=1e-8):
 
 
 def givens_rotate(unitary, grot_mat, indices, row=True):
-    """Apply in-place Givens roation on the unitary on the given indices."""
+    r"""Apply in-place Givens roation on the unitary on the specified indices
+
+    This is equivalent to the following transformation of basis states:
+
+    .. math::
+        &|00\rangle \mapsto |00\rangle\\
+        &|01\rangle \mapsto e^{i \phi} \cos(\theta) |01\rangle - \sin(\theta) |10\rangle\\
+        &|10\rangle \mapsto e^{i \phi} \sin(\theta) |01\rangle + \cos(\theta) |10\rangle\\
+        &|11\rangle \mapsto |11\rangle.
+
+    """
 
     if len(indices) != 2:
         raise ValueError(f"Indices must have length 2, got {len(indices)}")
@@ -48,14 +70,14 @@ def givens_rotate(unitary, grot_mat, indices, row=True):
     if row:
         unitary[indices] = grot_mat @ unitary[indices]
     else:
-        unitary[:, indices] = (grot_mat @ unitary[:, indices].T).T
+        unitary[:, indices] = unitary[:, indices] @ grot_mat.T
 
 
 def givens_decomposition(unitary):
-    """Decomposes a unitary into sequence of Givens Rotation gates and a diagonal Phase matrix.
+    """Decompose a unitary into sequence of Givens Rotation gates and a diagonal Phase matrix.
     Based on the optimal construction given by Clements in Optica Vol. 3, Issue 12, pp. 1460-1465 (2016)."""
 
-    unitary, (M, N) = unitary.copy(), unitary.shape
+    unitary, (M, N) = qml.math.toarray(unitary).copy(), unitary.shape
     if M != N:
         raise ValueError(f"The unitary matrix should be of shape NxN, got {unitary.shape}")
 
@@ -82,7 +104,7 @@ def givens_decomposition(unitary):
         nphase_mat = decomp_mat @ givens_mat.T
 
         # check for T_{m,n}^{-1} x D = D x T.
-        if not np.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):
+        if not np.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):  # pragma: no cover
             raise ValueError("Failed to shift phase transposition.")
 
         unitary[i, i], unitary[j, j] = np.diag(nphase_mat)
@@ -90,7 +112,7 @@ def givens_decomposition(unitary):
 
     phases, ordered_rotations = np.diag(unitary), []
     for (grot_mat, (i, j)) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
-        if not np.all(np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])):
+        if not np.all(np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])):  # pragma: no cover
             raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
         ordered_rotations.append((grot_mat, (i, j)))
 
