@@ -26,12 +26,7 @@ from .batch_transform import batch_transform
 
 
 def expand_fn(
-        tape,
-        argnum=None,
-        approx=None,
-        allow_nonunitary=True,
-        aux_wire=None,
-        device_wires=None
+    tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
 ):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
@@ -42,12 +37,7 @@ def expand_fn(
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
 def metric_tensor(
-        tape,
-        argnum=None,
-        approx=None,
-        allow_nonunitary=True,
-        aux_wire=None,
-        device_wires=None
+    tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
 ):
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
@@ -613,13 +603,7 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
     return tapes, ids
 
 
-def _metric_tensor_hadamard(
-        tape,
-        argnum,
-        allow_nonunitary,
-        aux_wire,
-        device_wires
-):
+def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires):
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
     and combine them with the covariance matrix-based block-diagonal tapes.
