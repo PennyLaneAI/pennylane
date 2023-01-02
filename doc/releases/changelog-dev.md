@@ -118,6 +118,10 @@
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
 
+* Added `argnum` argument to `metric_tensor`. By passing a list of indeces referring to trainable tape parameters,
+  the metric tensor is only computed with respect to these parameters. This reduces the number of tapes that have to
+  be run.
+
  <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -145,4 +149,5 @@ Albert Mitjans Coma
 Romain Moyard
 Matthew Silverman
 Antal Száva
+Frederik Wilde
 
