@@ -60,7 +60,11 @@ def metric_tensor(tape, argnum=None, approx=None, allow_nonunitary=True, aux_wir
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
-        argnum (int or list[int] or None):
+        argnum (int or list[int] or None): Trainable tape-parameter indices with respect to which
+            the metric tensor is computed. If not provided, the metric tensor with respect to all
+            trainable parameters is returned. Excluding tape-parameter indeces from this list reduces
+            the computational cost and the corresponding metric-tensor elements will be 0.
+
         approx (str): Which approximation of the metric tensor to compute.
 
             - If ``None``, the full metric tensor is computed
@@ -391,7 +395,8 @@ def _metric_tensor_cov_matrix(tape: QuantumTape, argnum, diag_approx):
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
-        argnum (int or list[int] or None):
+        argnum (list[int]): Trainable tape-parameter indices with respect to which the metric tensor
+            is computed.
         diag_approx (bool): if True, use the diagonal approximation. If ``False`` , a
             block-diagonal approximation of the metric tensor is computed.
     Returns:
@@ -403,6 +408,9 @@ def _metric_tensor_cov_matrix(tape: QuantumTape, argnum, diag_approx):
             corresponding to one tape in the first return value
         list[list[float]]: Coefficients to scale the results for each observable, one inner list
             corresponding to one tape in the first return value
+        list[list[bool]]: Each inner list corresponds to one tape and therefore also one parametrized
+            layer and its elements determine whether a trainable parameter in that layer are
+            contained in the ``argnum`` argument.
 
     This method assumes the ``generator`` of all parametrized operations with respect to
     which the tensor is computed to be Hermitian. This is the case for unitary single-parameter
@@ -598,7 +606,8 @@ def _metric_tensor_hadamard(tape: QuantumTape, argnum, allow_nonunitary, aux_wir
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
-        argnum (int or list[int] or None):
+        argnum (list[int]): Trainable tape-parameter indices with respect to which the metric tensor
+            is computed.
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
             created by the transform. Only relevant if ``approx`` is ``None``
             Should be set to ``True`` if possible to reduce cost.
