@@ -22,9 +22,7 @@ from pennylane.operation import Operator
 from pennylane.ops import Hamiltonian
 
 
-def dot(
-    coeffs: Sequence[float], ops: Sequence[Operator], hamiltonian=True
-) -> Operator | Hamiltonian:
+def dot(coeffs: Sequence[float], ops: Sequence[Operator], hamiltonian=True):
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
     This function returns the following linear combination: :math:`\sum_{k=0}^{N-1} c_k O_k`, where
