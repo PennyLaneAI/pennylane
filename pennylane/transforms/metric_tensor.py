@@ -26,7 +26,12 @@ from .batch_transform import batch_transform
 
 
 def expand_fn(
-    tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+        tape,
+        argnum=None,
+        approx=None,
+        allow_nonunitary=True,
+        aux_wire=None,
+        device_wires=None
 ):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
@@ -37,7 +42,12 @@ def expand_fn(
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
 def metric_tensor(
-    tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+        tape,
+        argnum=None,
+        approx=None,
+        allow_nonunitary=True,
+        aux_wire=None,
+        device_wires=None
 ):
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
@@ -265,7 +275,7 @@ def metric_tensor(
         argnum = tape.trainable_params
     if isinstance(argnum, int):
         argnum = [argnum]
-    if any([i not in tape.trainable_params for i in argnum]):
+    if any(i not in tape.trainable_params for i in argnum):
         warnings.warn(
             "Some parameters specified in argnum are not in the "
             f"trainable parameters {tape.trainable_params} of the tape "
@@ -603,7 +613,13 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
     return tapes, ids
 
 
-def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires):
+def _metric_tensor_hadamard(
+        tape,
+        argnum,
+        allow_nonunitary,
+        aux_wire,
+        device_wires
+):
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
     and combine them with the covariance matrix-based block-diagonal tapes.
@@ -746,7 +762,7 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
 
         for param_in_argnum in qml.math.hstack(in_argnum_list):
             if param_in_argnum:
-                extended_coeffs_list.append(coeffs_gen.__next__())
+                extended_coeffs_list.append(next(coeffs_gen))
             else:
                 extended_coeffs_list.append(0.0)
 
