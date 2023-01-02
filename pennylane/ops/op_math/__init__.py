@@ -58,7 +58,7 @@ from .controlled_class import Controlled, ControlledOp
 from .exp import exp, Exp, Evolution
 
 from .prod import prod, Prod
-
+from .dot import dot
 from .sum import op_sum, Sum
 
 from .sprod import s_prod, SProd
