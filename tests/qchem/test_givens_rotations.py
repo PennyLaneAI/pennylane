@@ -103,3 +103,61 @@ def test_givens_decomposition(shape):
 
     # check if U = D x Π T_{m, n}
     assert np.allclose(matrix, decomposed_matrix)
+
+
+@pytest.mark.parametrize(
+    ("unitary_matrix", "msg_match"),
+    [
+        (
+            np.array(
+                [
+                    [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+                    [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                ]
+            ),
+            "The unitary matrix should be of shape NxN",
+        ),
+        (
+            np.array(
+                [
+                    [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+                    [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                ]
+            ).T,
+            "The unitary matrix should be of shape NxN",
+        ),
+    ],
+)
+def test_givens_decomposition_exceptions(unitary_matrix, msg_match):
+    """Test that givens_decomposition throws an exception if the parameters have illegal shapes."""
+
+    with pytest.raises(ValueError, match=msg_match):
+        givens_decomposition(unitary_matrix)
+
+
+@pytest.mark.parametrize(
+    ("indices", "msg_match"),
+    [
+        (
+            [0],
+            "Indices must have length 2",
+        ),
+        (
+            [0, 1, 2],
+            "Indices must have length 2",
+        ),
+    ],
+)
+def test_givens_rotate_exceptions(indices, msg_match):
+    """Test that givens_decomposition throws an exception if the parameters have illegal shapes."""
+
+    unitary = np.array(
+        [
+            [-0.77228482 + 0.0j, -0.02959195 + 0.63458685j],
+            [0.63527644 + 0.0j, -0.03597397 + 0.77144651j],
+        ]
+    )
+    grot_mat = givens_matrix(1, 0)
+
+    with pytest.raises(ValueError, match=msg_match):
+        givens_rotate(unitary, grot_mat, indices)

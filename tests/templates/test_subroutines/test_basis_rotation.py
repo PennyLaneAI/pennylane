@@ -250,7 +250,6 @@ class TestDecomposition:
             return qml.state()
 
         assert np.allclose([qml.math.fidelity(circuit(), exp_state)], [1.0], atol=1e-6)
-        # , 1.0   #qml.math.allclose(circuit(), exp_state, atol=1e-8)
 
 
 class TestInputs:
@@ -295,11 +294,16 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix)
+            qml.BasisRotation(wires=wires, unitary_matrix=unitary_matrix, check=True)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()
+
+        with pytest.raises(ValueError, match=msg_match):
+            qml.BasisRotation.compute_decomposition(
+                wires=wires, unitary_matrix=unitary_matrix, check=True
+            )
 
     def test_id(self):
         """Test that the id attribute can be set."""

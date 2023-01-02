@@ -27,17 +27,18 @@ class BasisRotation(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, wires, unitary_matrix, do_queue=True, id=None):
+    def __init__(self, wires, unitary_matrix, check=False, do_queue=True, id=None):
 
-        umat = qml.math.toarray(unitary_matrix)
-        M, N = umat.shape
+        M, N = unitary_matrix.shape
         if M != N:
             raise ValueError(
                 f"The unitary matrix should be of shape NxN, got {unitary_matrix.shape}"
             )
 
-        if not np.allclose(umat @ umat.conj().T, np.eye(M, dtype=complex), atol=1e-6):
-            raise ValueError("The provided transformation matrix should be unitary.")
+        if check:
+            umat = qml.math.toarray(unitary_matrix)
+            if not np.allclose(umat @ umat.conj().T, np.eye(M, dtype=complex), atol=1e-6):
+                raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
             raise ValueError(f"This template requries at least two wires, got {len(wires)}")
@@ -53,7 +54,9 @@ class BasisRotation(Operation):
         return 0
 
     @staticmethod
-    def compute_decomposition(wires, unitary_matrix):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        wires, unitary_matrix, check=False
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -62,7 +65,8 @@ class BasisRotation(Operation):
 
         Args:
             wires (Any or Iterable[Any]): wires that the operator acts on
-            unitary (array): matrix specifying the basis trasformation
+            unitary_matrix (array): matrix specifying the basis trasformation
+            check (bool): test unitarity of the provided `unitary_matrix`
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -74,8 +78,10 @@ class BasisRotation(Operation):
                 f"The unitary matrix should be of shape NxN, got {unitary_matrix.shape}"
             )
 
-        # if not np.allclose(unitary_matrix @ unitary_matrix.conj().T, np.eye(M, dtype=complex)):
-        #    raise ValueError("The provided transformation matrix should be unitary.")
+        if check:
+            umat = qml.math.toarray(unitary_matrix)
+            if not np.allclose(umat @ umat.conj().T, np.eye(M, dtype=complex), atol=1e-4):
+                raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
             raise ValueError(f"This template requries at least two wires, got {len(wires)}")
