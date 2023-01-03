@@ -119,7 +119,6 @@ class PauliWord(dict):
     def __reduce__(self):
         """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
         would cause __setitem__ to be called, which is forbidden on PauliWord.
-        
         For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
         """
         return (PauliWord, (dict(self),))
