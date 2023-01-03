@@ -120,6 +120,9 @@
 
  <h3>Breaking changes</h3>
 
+* The tape constructed by a QNode is no longer queued to surrounding contexts.
+  [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
