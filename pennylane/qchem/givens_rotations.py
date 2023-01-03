@@ -20,17 +20,17 @@ from pennylane import numpy as np
 
 
 def givens_matrix(a, b, left=True, tol=1e-8):
-    r"""Build a Givens rotation matrix :math:`T(\theta, \phi)`.
+    r"""Build a :math:`2` x :math:`2` Givens rotation matrix :math:`G`.
 
-    .. math:: T(\theta, \phi) = \begin{bmatrix}
-                1 & 0 & 0 & 0 \\
-                0 & e^{i \phi} \cos(\theta) & -\sin(\theta) & 0 \\
-                0 & e^{i \phi} \sin(\theta) & \cos(\theta) & 0 \\
-                0 & 0 & 0 & 1
-            \end{bmatrix},
+    When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
 
-    where :math:`\theta \in [0, \pi/2]` is the angle of rotation in the :math:`\{|01\rangle, |10\rangle \}` subspace,
-    and :math:`\phi \in [0, 2 \pi]` represents the phase shift at the first wire.
+    .. math::
+        \begin{align}
+            G \times \begin{bmatrix} a \\ b \end{bmatrix} = \begin{bmatrix} 0 \\ r \end{bmatrix}, \\
+            \begin{bmatrix} a \\ b \end{bmatrix} \times G = \begin{bmatrix} r \\ 0 \end{bmatrix},
+        \end{align}
+
+    where :math:`r` is a complex number.
 
     Args:
         a (float or complex): first element of the vector for which givens matrix is being computed
@@ -67,6 +67,7 @@ def givens_rotate(unitary, grot_mat, indices, row=True):
     This is equivalent to the following transformation of basis states:
 
     .. math::
+
         &|00\rangle \mapsto |00\rangle\\
         &|01\rangle \mapsto e^{i \phi} \cos(\theta) |01\rangle - \sin(\theta) |10\rangle\\
         &|10\rangle \mapsto e^{i \phi} \sin(\theta) |01\rangle + \cos(\theta) |10\rangle\\
@@ -94,10 +95,11 @@ def givens_rotate(unitary, grot_mat, indices, row=True):
 def givens_decomposition(unitary):
     r"""Decompose a unitary into sequence of Givens Rotation gates with phase shifts and a diagonal phase matrix.
 
-    This decomposition is based on the optimal construction given by `Clements et al. <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_ (2016),
+    This decomposition is based on the construction scheme given by `W. Clements et al. <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_ (2016),
     which allows one to write any unitary matrix :math:`U` as:
 
     .. math::
+
         U = D \left(\prod_{(m, n) \in G} T_{m, n}\right),
 
     where :math:`D` is a diagonal phase matrix, :math:`T` is the Givens Rotation gates with phase shifts and :math:`G` defines the
@@ -111,6 +113,40 @@ def givens_decomposition(unitary):
 
     Raises:
         ValueError: if the provided matrix is not square.
+
+    .. details::
+
+        **Decomposition**
+
+        The Givens rotation matrix :math:`T(\theta, \phi)` appearing in the decomposition is of the following form:
+
+        .. math:: T(\theta, \phi) = \begin{bmatrix}
+                                        1 & 0 & 0 & 0 \\
+                                        0 & e^{i \phi} \cos(\theta) & -\sin(\theta) & 0 \\
+                                        0 & e^{i \phi} \sin(\theta) & \cos(\theta) & 0 \\
+                                        0 & 0 & 0 & 1
+                                    \end{bmatrix},
+
+        where :math:`\theta \in [0, \pi/2]` is the angle of rotation in the :math:`\{|01\rangle, |10\rangle \}` subspace,
+        and :math:`\phi \in [0, 2 \pi]` represents the phase shift at the first wire.
+
+        **Pseudocode**
+
+        The algorithm that implements the decomposition is the following:
+
+        .. code-block:: python
+
+            def givens_decomposition(U):
+                for i in range(1, N):
+                    if i % 2:
+                        for j in range(0, i):
+                            # Find a T^-1(i-j, i-j+1) matrix that nulls element (N - j, i - j) of U
+                            # Update U = U @ T^-1(i-j, i-j+1)
+                    else:
+                        for j in range(1, i):
+                            # Find a T(N+j-i-1, N+j-i) matrix that nulls element (N+j-i, j) of U
+                            # Update U = T(N+j-i-1, N+j-i) @ U
+
     """
 
     unitary, (M, N) = qml.math.toarray(unitary).copy(), unitary.shape

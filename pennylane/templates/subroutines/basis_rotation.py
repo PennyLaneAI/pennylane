@@ -28,11 +28,12 @@ class BasisRotation(Operation):
     generators as:
 
     .. math::
+
         U(u) = \exp{\left( \sum_{pq} \left[\log u \right]_{pq} (a_p^\dagger a_q - a_q^\dagger a_p) \right)}
 
     This :math:`U(u)` is implemented efficiently by performing its Givens decomposition into a sequence of
-    :class:`~.PhaseShift` and :class:`~.SingleExcitation` gates using the optimal construction given by
-    `Clements et al. <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_ (2016).
+    :class:`~.PhaseShift` and :class:`~.SingleExcitation` gates using the construction scheme given by
+    `W. Clements et al. <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_ (2016).
 
     Args:
         wires (Iterable[Any]): wires that the operator acts on
@@ -47,10 +48,11 @@ class BasisRotation(Operation):
         **Usage Details**
 
         The `BasisRotation` template can be used to implement evolution :math:`e^{iH}` where the Hamiltonian
-        :math:`H = \sum_{pq} V_{pq} a^\dagger_p a_q` and :math:`V` is an `NxN` hermitation matrix. The unitary
-        matrix :math:`u` in this case will be the transformation matrix that diagonalizes :math:`V` such that:
+        :math:`H = \sum_{pq} V_{pq} a^\dagger_p a_q` and :math:`V` is an :math:`N` x :math:`N` hermitation matrix.
+        The unitary matrix :math:`u` in this case will be the transformation matrix that diagonalizes :math:`V` such that:
 
         .. math::
+
             e^{i \sum_{pq} V_{pq} a^\dagger_p a_q} = U(u)^\dagger \prod_k e^{i\lambda_k \sigma_z^k} U(u),
 
         where the :math:`\lambda_k` are the eigenvalues of the Hamiltonian :math:`H`.
@@ -81,12 +83,14 @@ class BasisRotation(Operation):
         that is defined by the linear combination of fermionic ladder operators:
 
         .. math::
+
             U(u) a_p^\dagger U(u)^\dagger = b_p^\dagger,
 
         where :math:`a_p^\dagger` and :math:`b_p^\dagger` are the originial and transformed creation operators, respectively,
         are related to each other by the following relation:
 
         .. math::
+
             b_p^\dagger = \sum_{q}u_{pq} a_p^\dagger.
 
     """
