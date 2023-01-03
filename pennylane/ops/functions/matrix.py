@@ -122,7 +122,7 @@ def matrix(op, *, wire_order=None):
         op = 1.0 * op  # convert to a Hamiltonian
 
     if isinstance(op, qml.Hamiltonian):
-        return qml.utils.sparse_hamiltonian(op, wires=wire_order).toarray()
+        return op.sparse_matrix(wire_order=wire_order).toarray()
 
     return op.matrix(wire_order=wire_order)
 
