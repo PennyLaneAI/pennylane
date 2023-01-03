@@ -20,15 +20,14 @@ from pennylane import numpy as np
 
 
 def givens_matrix(a, b, left=True, tol=1e-8):
-    r"""Build a :math:`2` x :math:`2` Givens rotation matrix :math:`G`.
+    r"""Build a :math:`2\ x\ 2` Givens rotation matrix :math:`G`.
 
     When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
 
     .. math::
-        \begin{align}
-            G \times \begin{bmatrix} a \\ b \end{bmatrix} = \begin{bmatrix} 0 \\ r \end{bmatrix}, \\
-            \begin{bmatrix} a \\ b \end{bmatrix} \times G = \begin{bmatrix} r \\ 0 \end{bmatrix},
-        \end{align}
+
+            G \times \begin{bmatrix} a \\ b \end{bmatrix} = \begin{bmatrix} 0 \\ r \end{bmatrix}, \quad \quad \quad \begin{bmatrix} a \\ b \end{bmatrix} \times G = \begin{bmatrix} r \\ 0 \end{bmatrix},
+
 
     where :math:`r` is a complex number.
 
@@ -118,7 +117,7 @@ def givens_decomposition(unitary):
 
         **Decomposition**
 
-        The Givens rotation matrix :math:`T(\theta, \phi)` appearing in the decomposition is of the following form:
+        The Givens rotation unitary :math:`T(\theta, \phi)` appearing in the decomposition is of the following form:
 
         .. math:: T(\theta, \phi) = \begin{bmatrix}
                                         1 & 0 & 0 & 0 \\
@@ -128,7 +127,7 @@ def givens_decomposition(unitary):
                                     \end{bmatrix},
 
         where :math:`\theta \in [0, \pi/2]` is the angle of rotation in the :math:`\{|01\rangle, |10\rangle \}` subspace,
-        and :math:`\phi \in [0, 2 \pi]` represents the phase shift at the first wire.
+        and :math:`\phi \in [0, 2 \pi]` represents the phase shift at the first wire. Whereas, the 
 
         **Pseudocode**
 
@@ -140,11 +139,11 @@ def givens_decomposition(unitary):
                 for i in range(1, N):
                     if i % 2:
                         for j in range(0, i):
-                            # Find a T^-1(i-j, i-j+1) matrix that nulls element (N - j, i - j) of U
+                            # Find T^-1(i-j, i-j+1) matrix that nulls element (N-j, i-j) of U
                             # Update U = U @ T^-1(i-j, i-j+1)
                     else:
                         for j in range(1, i):
-                            # Find a T(N+j-i-1, N+j-i) matrix that nulls element (N+j-i, j) of U
+                            # Find T(N+j-i-1, N+j-i) matrix that nulls element (N+j-i, j) of U
                             # Update U = T(N+j-i-1, N+j-i) @ U
 
     """
