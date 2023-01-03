@@ -28,7 +28,6 @@ def givens_matrix(a, b, left=True, tol=1e-8):
 
             G \times \begin{bmatrix} a \\ b \end{bmatrix} = \begin{bmatrix} 0 \\ r \end{bmatrix}, \quad \quad \quad \begin{bmatrix} a \\ b \end{bmatrix} \times G = \begin{bmatrix} r \\ 0 \end{bmatrix},
 
-
     where :math:`r` is a complex number.
 
     Args:
