@@ -96,6 +96,10 @@
   >>> jax.grad(qml.qchem.hf_energy(mol))(*args)
   >>> DeviceArray([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]], dtype=float32)
   ```
+  
+* The function `load_basisset` is added to extract qchem basis set data from the Basis Set Exchange
+  library. 
+  [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
 
 <h3>Improvements</h3>
 
@@ -142,6 +146,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Juan Miguel Arrazola
 Ikko Ashimine
 Utkarsh Azad
 Astral Cai
