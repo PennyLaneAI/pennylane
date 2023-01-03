@@ -15,8 +15,6 @@
 from functools import singledispatch
 from string import ascii_letters as ABC
 
-import numpy as np
-
 import pennylane as qml
 
 from pennylane import math
@@ -32,7 +30,7 @@ def _get_slice(index, axis, num_axes):
 
 
 def apply_operation_einsum(op: qml.operation.Operator, state):
-    """Apply ``Operator`` to ``state`` using ``np.einsum``. This is more efficent at lower qubit
+    """Apply ``Operator`` to ``state`` using ``matheinsum``. This is more efficent at lower qubit
     numbers.
 
     Args:
@@ -64,7 +62,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state):
 
 
 def apply_matrix_tensordot(op: qml.operation.Operator, state):
-    """Apply ``Operator`` to ``state`` using ``np.tensordot``. This is more efficent at higher qubit
+    """Apply ``Operator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
     numbers.
 
     Args:
@@ -121,7 +119,7 @@ def apply_operation(op: qml.operation.Operator, state):
 @apply_operation.register
 def apply_x(op: qml.PauliX, state):
     """Apply paulix operator to state"""
-    return np.roll(state, 1, op.wires[0])
+    return math.roll(state, 1, op.wires[0])
 
 
 @apply_operation.register
@@ -166,10 +164,10 @@ def apply_hadamard(op: qml.Hadamard, state):
 @apply_operation.register
 def apply_cnot(op: qml.CNOT, state):
     """Apply cnot gate to state."""
-    ndim = np.ndim(state)
+    ndim = math.ndim(state)
     sl_0 = _get_slice(0, op.wires[0], ndim)
     sl_1 = _get_slice(1, op.wires[0], ndim)
 
     target_axes = [op.wires[1] - 1] if op.wires[1] > op.wires[0] else [op.wires[1]]
-    state_x = np.roll(state[sl_1], 1, target_axes)
-    return np.stack([state[sl_0], state_x], axis=op.wires[0])
+    state_x = math.roll(state[sl_1], 1, target_axes)
+    return math.stack([state[sl_0], state_x], axis=op.wires[0])

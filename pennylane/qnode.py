@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.devices.experimental import AbstractDevice
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
+from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
 from pennylane.tape import QuantumScript, make_qscript
 from pennylane.workflow import ExecutionConfig
 
@@ -724,7 +725,7 @@ class QNode:
         )
 
     @property
-    def tape(self) -> QuantumTape:
+    def tape(self) -> QuantumScript:
         """The quantum tape"""
         return self._tape
 
