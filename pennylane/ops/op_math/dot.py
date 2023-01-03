@@ -54,5 +54,7 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], hamiltonian=True):
         return Hamiltonian(coeffs=coeffs, observables=ops)
     if qml.math.shape(coeffs)[0] != len(ops):
         raise ValueError("Number of coefficients and operators does not match.")
-    operands = [qml.s_prod(coeff, op) if coeff != 1 else op for coeff, op in zip(coeffs, ops)]
+    operands = []
+    for coeff, op in zip(coeffs, ops):
+        operands.append(op if coeff == 1 else qml.s_prod(coeff, op))
     return qml.op_sum(*operands) if len(operands) > 1 else operands[0]
