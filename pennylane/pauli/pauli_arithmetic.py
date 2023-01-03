@@ -116,6 +116,13 @@ class PauliWord(dict):
                 del mapping[wire]
         super().__init__(mapping)
 
+    def __reduce__(self):
+        """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
+        would cause __setitem__ to be called, which is forbidden on PauliWord.
+        For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
+        """
+        return (PauliWord, (dict(self),))
+
     def __copy__(self):
         """Copy the PauliWord instance."""
         return PauliWord(dict(self.items()))
