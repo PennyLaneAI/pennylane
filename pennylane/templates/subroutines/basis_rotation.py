@@ -48,7 +48,7 @@ class BasisRotation(Operation):
         **Usage Details**
 
         The `BasisRotation` template can be used to implement evolution :math:`e^{iH}` where the Hamiltonian
-        :math:`H = \sum_{pq} V_{pq} a^\dagger_p a_q` and :math:`V` is an :math:`N\ x\ N` hermitation matrix.
+        :math:`H = \sum_{pq} V_{pq} a^\dagger_p a_q` and :math:`V` is an :math:`N \times N` hermitation matrix.
         The unitary matrix :math:`u` in this case will be the transformation matrix that diagonalizes :math:`V` such that:
 
         .. math::
