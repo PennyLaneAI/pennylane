@@ -543,7 +543,7 @@ class TestPauliSentence:
             ps5.hamiltonian()
 
     def test_pickling(self):
-        """Check that pauliwords can be pickled and unpickled."""
+        """Check that paulisentences can be pickled and unpickled."""
         pw1 = PauliWord({2: "X", 3: "Y", 4: "Z"})
         pw2 = PauliWord({2: "Y", 3: "Z"})
         ps = PauliSentence({pw1: 1.5, pw2: -0.5})

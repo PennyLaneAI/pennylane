@@ -117,11 +117,10 @@ class PauliWord(dict):
         super().__init__(mapping)
 
     def __reduce__(self):
-        """Defining this method allows PauliWord to be pickle-able. Otherwise, un-pickling
+        """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
         would cause __setitem__ to be called, which is forbidden on PauliWord.
-
+        
         For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
-
         """
         return (PauliWord, (dict(self),))
 
