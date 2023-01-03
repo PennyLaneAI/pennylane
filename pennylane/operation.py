@@ -656,7 +656,7 @@ class Operator(abc.ABC):
     def compute_eigvals(*params, **hyperparams):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -679,7 +679,7 @@ class Operator(abc.ABC):
     def eigvals(self):
         r"""Eigenvalues of the operator in the computational basis.
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`, the operator
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`, the operator
         can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1314,13 +1314,13 @@ class Operator(abc.ABC):
         raise ValueError("Can only perform tensor products between operators.")
 
     def __sub__(self, other):
-        """The substraction operation of Operator-Operator objects and Operator-scalar."""
+        """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, (Operator, numbers.Number)):
             return self + (-other)
-        raise ValueError(f"Cannot substract {type(other)} from Operator.")
+        raise ValueError(f"Cannot subtract {type(other)} from Operator.")
 
     def __rsub__(self, other):
-        """The reverse substraction operation of Operator-Operator objects and Operator-scalar."""
+        """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
         return -self + other
 
     def __neg__(self):

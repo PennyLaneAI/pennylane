@@ -43,7 +43,8 @@ Pending deprecations
     tape = qml.tape.QuantumTape.from_queue(q)
 
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
-  instead.
+  instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
+  ``QuantumTape`` instead.
 
   - Still accessible in v0.28
   - Will be removed in v0.29

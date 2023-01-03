@@ -174,6 +174,20 @@ can be broadcast with the shape and connectivity of tensor networks.
 
         <div style='clear:both'></div>
 
+Swap networks
+--------------
+
+Swap network templates perform qubit routing with linear cost, providing a quadratic advantage in
+circuit depth for carrying out all pair-wise interactions between qubits.
+
+.. gallery-item::
+    :description: :doc:`Canonical 2-Complete Linear Swap Network <../code/api/pennylane.TwoLocalSwapNetwork>`
+    :figure: _static/templates/swap_networks/ccl2.jpeg
+
+.. raw:: html
+
+        <div style='clear:both'></div>
+
 .. _intro_ref_temp_qchem:
 
 Other subroutines
