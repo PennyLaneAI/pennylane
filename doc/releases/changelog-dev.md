@@ -127,6 +127,7 @@
 <h3>Bug fixes</h3>
 
 * `qml.pauli.PauliWord` is now pickle-able.
+  [(#3588)](https://github.com/PennyLaneAI/pennylane/pull/3588)
 
 * Child classes of `QuantumScript` now return their own type when using `SomeChildClass.from_queue`.
   [(#3501)](https://github.com/PennyLaneAI/pennylane/pull/3501)
