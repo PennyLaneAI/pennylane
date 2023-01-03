@@ -20,13 +20,13 @@ from pennylane import numpy as np
 
 
 def givens_matrix(a, b, left=True, tol=1e-8):
-    r"""Build a :math:`2\ x\ 2` Givens rotation matrix :math:`G`.
+    r"""Build a :math:`2 \times 2` Givens rotation matrix :math:`G`.
 
     When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
 
     .. math::
 
-            G \times \begin{bmatrix} a \\ b \end{bmatrix} = \begin{bmatrix} 0 \\ r \end{bmatrix}, \quad \quad \quad \begin{bmatrix} a \\ b \end{bmatrix} \times G = \begin{bmatrix} r \\ 0 \end{bmatrix},
+            G \times \begin{bmatrix} a \\ b \end{bmatrix} = \begin{bmatrix} 0 \\ r \end{bmatrix} \quad \quad \quad \begin{bmatrix} a \\ b \end{bmatrix} \times G = \begin{bmatrix} r \\ 0 \end{bmatrix},
 
     where :math:`r` is a complex number.
 
