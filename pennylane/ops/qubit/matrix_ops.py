@@ -175,8 +175,8 @@ class QubitUnitary(Operation):
                 raise DecompositionUndefinedError(
                     "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
                 )
-
-            return qml.transforms.two_qubit_decomposition(U, Wires(wires))
+            decomp, idx = qml.transforms.two_qubit_decomposition(U, Wires(wires))
+            return decomp[idx]
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 

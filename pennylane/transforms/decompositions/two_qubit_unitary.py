@@ -645,7 +645,7 @@ def _decomposition_3_cnots(U, wires):
     return C_ops + D_ops + interior_decomp + A_ops + B_ops
 
 
-def two_qubit_decomposition(U, wires):
+def two_qubit_decomposition(U, wires=None):
     r"""Decompose a two-qubit unitary :math:`U` in terms of elementary operations.
 
     It is known that an arbitrary two-qubit operation can be implemented using a
@@ -732,6 +732,8 @@ def two_qubit_decomposition(U, wires):
      Rot(tensor(-3.78673588, requires_grad=True), tensor(2.03936812, requires_grad=True), tensor(-2.46956972, requires_grad=True), wires=[0])]
 
     """
+    if wires is None:
+        wires = [0, 1]
     # First, we note that this method works only for SU(4) gates, meaning that
     # we need to rescale the matrix by its determinant.
     U = _convert_to_su4(U)
@@ -740,39 +742,38 @@ def two_qubit_decomposition(U, wires):
     # the form of the decomposition.
     if not qml.math.is_abstract(U):
         num_cnots = _compute_num_cnots(U)
+        idx = 0
 
         with qml.QueuingManager.stop_recording():
             if num_cnots == 0:
-                decomp = _decomposition_0_cnots(U, wires)
+                decomp = [_decomposition_0_cnots(U, wires)]
             elif num_cnots == 1:
-                decomp = _decomposition_1_cnot(U, wires)
+                decomp = [_decomposition_1_cnot(U, wires)]
             elif num_cnots == 2:
-                decomp = _decomposition_2_cnots(U, wires)
+                decomp = [_decomposition_2_cnots(U, wires)]
             else:
-                decomp = _decomposition_3_cnots(U, wires)
+                decomp = [_decomposition_3_cnots(U, wires)]
     elif qml.math.get_interface(U) == "jax":
         # TODO: Summary of the problem: idx is abstract, decomps is a list of PL operators, which aren't
         #  JAX objects and can't be made abstract. How then can we proceed - we can't combine idx and decomps
         #  in any way, because to do so would require making decomps abstract. Alternatively, we can use
         #  pure_callback, which I think would make idx concrete. Can the operators be matrices when jitting?"""
         idx = _compute_num_cnots_jit(U)
-        decomps = [
+        decomp = [
             _decomposition_0_cnots(U, wires),
             _decomposition_1_cnot(U, wires),
             _decomposition_2_cnots_jit(U, wires),
             _decomposition_3_cnots(U, wires),
         ]
-        # import jax
-        # decomps = jax.numpy.array([[qml.matrix(op) for op in decomp] for decomp in decomps])
-        print(qml.math.is_abstract(idx))
-        print(qml.math.is_abstract(decomps))
-        # decomp = decomps[idx]
 
-    # If there is an active tape, queue the decomposition so that expand works
-    current_tape = qml.queuing.QueuingManager.active_context()
+        # decomp = _decomposition_3_cnots(U, wires)
+    print(qml.math.is_abstract(decomp))
+    print(qml.math.is_abstract((idx)))
+    # # If there is an active tape, queue the decomposition so that expand works
+    # current_tape = qml.queuing.QueuingManager.active_context()
+    #
+    # if current_tape is not None:
+    #     for op in decomp:
+    #         qml.apply(op, context=current_tape)
 
-    if current_tape is not None:
-        for op in decomp:
-            qml.apply(op, context=current_tape)
-
-    return decomp
+    return decomp, idx
