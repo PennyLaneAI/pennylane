@@ -38,7 +38,7 @@ class TestCommuteControlled:
         transformed_qfunc = commute_controlled(direction="sideways")(qfunc)
 
         with pytest.raises(ValueError, match="must be 'left' or 'right'"):
-            ops = qml.transforms.make_tape(transformed_qfunc)().operations
+            ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
     @pytest.mark.parametrize("direction", [("left"), ("right")])
     def test_gate_with_no_basis(self, direction):
@@ -51,7 +51,7 @@ class TestCommuteControlled:
 
         transformed_qfunc = commute_controlled(direction=direction)(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["PauliX", "ControlledQubitUnitary", "PauliX"]
         wires_expected = [Wires(2), Wires([0, 2]), Wires(2)]
@@ -68,7 +68,7 @@ class TestCommuteControlled:
 
         transformed_qfunc = commute_controlled(direction=direction)(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["PauliZ", "CNOT", "PauliY"]
         wires_expected = [Wires("b"), Wires([2, "b"]), Wires("b")]
@@ -88,7 +88,7 @@ class TestCommuteControlled:
 
         transformed_qfunc = commute_controlled()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CNOT", "Toffoli", "PauliX", "RX", "CRX", "SX", "PauliX"]
         wires_expected = [
@@ -116,7 +116,7 @@ class TestCommuteControlled:
 
         transformed_qfunc = commute_controlled(direction="left")(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = [
             "PauliX",
@@ -150,7 +150,7 @@ class TestCommuteControlled:
 
         transformed_qfunc = commute_controlled(direction=direction)(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["PauliX", "CNOT", "RX", "Toffoli"]
         wires_expected = [Wires("a"), Wires(["a", "c"]), Wires("a"), Wires(["c", "a", "b"])]
@@ -168,7 +168,7 @@ class TestCommuteControlled:
 
         transformed_qfunc = commute_controlled()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CRY", "PauliY", "CNOT", "CY", "RY"]
         wires_expected = [Wires(["a", 2]), Wires(2), Wires([1, 2]), Wires(["a", 1]), Wires(1)]
@@ -186,7 +186,7 @@ class TestCommuteControlled:
 
         transformed_qfunc = commute_controlled(direction="left")(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["PauliY", "CRY", "CNOT", "RY", "CY"]
         wires_expected = [Wires(2), Wires(["a", 2]), Wires([1, 2]), Wires(1), Wires(["a", 1])]
@@ -205,7 +205,7 @@ class TestCommuteControlled:
 
         transformed_qfunc = commute_controlled()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CRY", "PauliY", "CNOT", "CY", "RY"]
         wires_expected = [Wires(["a", 2]), Wires("a"), Wires([1, 2]), Wires(["a", 1]), Wires("a")]
@@ -228,7 +228,7 @@ class TestCommuteControlled:
 
         transformed_qfunc = commute_controlled()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CZ", "PauliZ", "CNOT", "PhaseShift", "CRZ", "S", "T", "PauliZ"]
         wires_expected = (
@@ -255,7 +255,7 @@ class TestCommuteControlled:
 
         transformed_qfunc = commute_controlled(direction="left")(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["PauliZ", "S", "RZ", "T", "PauliZ", "CZ", "CNOT", "CRZ"]
         wires_expected = [Wires(2), Wires(0), Wires(2), Wires(0), Wires(0), Wires([0, 2])] + [
@@ -287,8 +287,8 @@ class TestCommuteControlled:
 
         transformed_qfunc = commute_controlled()(qfunc)
 
-        original_ops = qml.transforms.make_tape(qfunc)().operations
-        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        original_ops = qml.tape.make_qscript(qfunc)().operations
+        transformed_ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(original_ops) == len(transformed_ops)
 

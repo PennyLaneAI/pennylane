@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
-from pennylane.wires import Wires
-
 import pennylane as qml
+from pennylane.measurements import MidMeasureMP
 from pennylane.ops.op_math import ctrl
-from pennylane.transforms import qfunc_transform
 from pennylane.queuing import apply
+from pennylane.transforms import qfunc_transform
+from pennylane.wires import Wires
 
 
 @qfunc_transform
@@ -48,7 +48,7 @@ def defer_measurements(tape):
     .. note::
 
         When applying the transform on a quantum function that returns
-        :func:`~.state` as the terminal measurement or contains the
+        :func:`~pennylane.state` as the terminal measurement or contains the
         :class:`~.Snapshot` instruction, state information corresponding to
         simulating the transformed circuit will be obtained. No
         post-measurement states are considered.
@@ -100,25 +100,22 @@ def defer_measurements(tape):
                 f"Cannot apply operations on {op.wires} as the following wires have been measured already: {op_wires_measured}."
             )
 
-        if (
-            isinstance(op, qml.measurements.MeasurementProcess)
-            and op.return_type == qml.measurements.MidMeasure
-        ):
+        if isinstance(op, MidMeasureMP):
             measured_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
-            control_wire = [measured_wires[m_id] for m_id in op.meas_val.measurements]
-            for value in op.meas_val.branches.values():
-                if value == op.meas_val.control_value:
-                    if op.meas_val.control_value == 0:
-                        qml.PauliX(Wires(control_wire))
-
-                    ctrl(
-                        lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
-                        control=Wires(control_wire),
-                    )()
-
-                    if op.meas_val.control_value == 0:
-                        qml.PauliX(Wires(control_wire))
+            _add_control_gate(op, measured_wires)
         else:
             apply(op)
+
+
+def _add_control_gate(op, measured_wires):
+    """Helper function to add control gates"""
+    control = [measured_wires[m_id] for m_id in op.meas_val.measurement_ids]
+    for branch, value in op.meas_val._items():  # pylint: disable=protected-access
+        if value:
+            ctrl(
+                lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
+                control=Wires(control),
+                control_values=branch,
+            )()

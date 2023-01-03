@@ -21,6 +21,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from autograd.numpy.numpy_boxes import ArrayBox
+from pennylane.numpy.tensor import tensor_to_arraybox
 
 
 class TestExtractTensors:
@@ -104,6 +106,12 @@ class TestTensor:
         assert x[0, 0].requires_grad is grad
         assert x[0, 0].shape == tuple()
         assert x[0, 0].item() == 0
+
+    def test_numpy_to_arraybox(self):
+        """Test converting a PennyLane NumPy array to an ArrayBox object"""
+        x = onp.array(0)
+        res = tensor_to_arraybox(x, None, None)
+        assert isinstance(res, ArrayBox)
 
 
 # The following NumPy functions all create
@@ -402,6 +410,22 @@ class TestNumpyIntegration:
         assert isinstance(res, np.tensor)
         assert res.requires_grad
 
+    def test_multi_output_array_ufunc(self):
+        """Test that a tensor is returned if the array ufunc method returns
+        multiple results."""
+
+        class _ufunc:
+            def __init__(self, *args, **kwargs):
+                self.nout = 2
+
+            def __call__(self, *args, **kwargs):
+                return [True, True]
+
+        x = np.array([[1, 2], [3, 4]], requires_grad=False)
+        res = x.__array_ufunc__(_ufunc(), "__call__")
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
 
 class TestAutogradIntegration:
     """Test autograd works with the new tensor subclass"""
@@ -497,7 +521,7 @@ class TestNumpyConversion:
         assert isinstance(res, np.ndarray)
         assert not isinstance(res, np.tensor)
 
-    def test_single_gate_parameter(self, monkeypatch):
+    def test_single_gate_parameter(self):
         """Test that when supplied a PennyLane tensor, a QNode passes an
         unwrapped tensor as the argument to a gate taking a single parameter"""
         dev = qml.device("default.qubit", wires=4)
@@ -511,13 +535,14 @@ class TestNumpyConversion:
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
 
-        with qml.tape.OperationRecorder() as rec:
-            circuit(phi=phi)
+        circuit(phi=phi)
 
-        for i in range(phi.shape[1]):
+        ops = circuit.tape.operations
+        assert len(ops) == 4
+        for op, p in zip(ops, phi[0]):
             # Test each rotation applied
-            assert rec.queue[0].name == "RX"
-            assert len(rec.queue[0].parameters) == 1
+            assert op.name == "RX"
+            assert op.parameters == [p]
 
     def test_multiple_gate_parameter(self):
         """Test that when supplied a PennyLane tensor, a QNode passes arguments
@@ -532,9 +557,10 @@ class TestNumpyConversion:
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643]])
 
-        with qml.tape.OperationRecorder() as rec:
-            circuit(phi=phi)
+        circuit(phi=phi)
 
         # Test the rotation applied
-        assert rec.queue[0].name == "Rot"
-        assert len(rec.queue[0].parameters) == 3
+        ops = circuit.tape.operations
+        assert len(ops) == 1
+        assert ops[0].name == "Rot"
+        assert np.array_equal(ops[0].parameters, phi[0])
