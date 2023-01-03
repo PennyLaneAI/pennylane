@@ -1132,6 +1132,21 @@ class TestIntegration:
         with pytest.raises(ValueError, match="wires have been measured already: {1}"):
             qnode()
 
+    def test_qnode_does_not_support_nested_queuing(self):
+        """Test that operators in QNodes are not queued to surrounding contexts."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def qnode():
+            qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qnode()
+
+        assert q.queue == []
+        assert len(qnode.tape.operations) == 1
+
 
 class TestShots:
     """Unit tests for specifying shots per call."""
