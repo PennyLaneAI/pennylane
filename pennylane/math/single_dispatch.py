@@ -87,6 +87,10 @@ def _cond(pred, true_fn, false_fn, args):
 ar.register_function("numpy", "cond", _cond)
 ar.register_function("builtins", "cond", _cond)
 
+ar.register_function("numpy", "gamma", lambda x: _i("scipy").special.gamma(x))
+
+ar.register_function("builtins", "gamma", lambda x: _i("scipy").special.gamma(x))
+
 # -------------------------------- Autograd --------------------------------- #
 
 
@@ -185,6 +189,8 @@ ar.register_function(
 
 ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
 ar.register_function("autograd", "cond", _cond)
+
+ar.register_function("autograd", "gamma", lambda x: _i("autograd.scipy").special.gamma(x))
 
 
 # -------------------------------- TensorFlow --------------------------------- #
@@ -683,4 +689,8 @@ ar.register_function(
     "jax",
     "cond",
     lambda pred, true_fn, false_fn, args: _i("jax").lax.cond(pred, true_fn, false_fn, *args),
+)
+
+ar.register_function(
+    "jax", "gamma", lambda x: _i("jax").numpy.exp(_i("jax").scipy.special.gammaln(x))
 )
