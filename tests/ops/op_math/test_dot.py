@@ -58,7 +58,7 @@ class TestDot:
         assert isinstance(O, SProd)
         assert O.scalar == 2
 
-    def test_raises_value_error(self):
+    def test_dot_different_number_of_coeffs_and_ops(self):
         """Test that a ValueError is raised when the number of coefficients and operators does
         not match."""
         with pytest.raises(
@@ -66,3 +66,12 @@ class TestDot:
             match="Number of coefficients and operators does not match",
         ):
             dot([1.0], [qml.PauliX(0), qml.PauliY(1)])
+
+    def test_dot_empty_coeffs_or_ops(self):
+        """Test that a ValueError is raised when the number of coefficients and operators does
+        not match."""
+        with pytest.raises(
+            ValueError,
+            match="Cannot compute the dot product of an empty sequence",
+        ):
+            dot([], [])

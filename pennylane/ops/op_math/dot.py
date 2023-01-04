@@ -52,8 +52,8 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     """
     if qml.math.shape(coeffs)[0] != len(ops):
         raise ValueError("Number of coefficients and operators does not match.")
-    if len(coeffs) == 0 or len(ops) == 0:
-        raise ValueError("Cannot compute the dot product of an empty list.")
+    if len(coeffs) == 0 and len(ops) == 0:
+        raise ValueError("Cannot compute the dot product of an empty sequence.")
 
     if pauli:
         return qml.pauli.dot(coeffs, ops)
