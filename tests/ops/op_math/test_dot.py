@@ -94,13 +94,13 @@ class TestDotSum:
         """Test the dot function with the torch interface."""
         import torch
 
-        c = torch.array([1.0, 2.0, 3.0])
+        c = torch.tensor([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
             qml.PauliX(0),
-            SProd(torch.array(2.0), qml.PauliY(1)),
-            SProd(torch.array(3.0), qml.PauliZ(2)),
+            SProd(torch.tensor(2.0), qml.PauliY(1)),
+            SProd(torch.tensor(3.0), qml.PauliZ(2)),
         )
         assert qml.equal(op_sum, op_sum_2)
 
@@ -200,13 +200,13 @@ class TestDotPauliSentence:
         """Test the dot function with the torch interface."""
         import torch
 
-        c = torch.array([1.0, 2.0, 3.0])
+        c = torch.tensor([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = dot(c, o, pauli=True)
         op_sum = Sum(
             qml.PauliX(0),
-            SProd(torch.array(2.0), qml.PauliY(1)),
-            SProd(torch.array(3.0), qml.PauliZ(2)),
+            SProd(torch.tensor(2.0), qml.PauliY(1)),
+            SProd(torch.tensor(3.0), qml.PauliZ(2)),
         )
         ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
