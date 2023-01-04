@@ -15,8 +15,10 @@
 Unit tests for the dot function
 """
 import pytest
+
 import pennylane as qml
-from pennylane.ops import dot, Hamiltonian, Sum, SProd
+from pennylane.ops import SProd, Sum, dot
+from pennylane.pauli.pauli_arithmetic import PauliSentence
 
 coeffs_and_ops_list = [
     ([1.0], [qml.PauliX(0)]),
@@ -28,20 +30,21 @@ coeffs_and_ops_list = [
 class TestDot:
     """Unittests for the dot function."""
 
-    def test_dot_returns_hamiltonian(self):
-        """Test that the dot function returns a Hamiltonian class."""
+    def test_dot_returns_pauli_sentence(self):
+        """Test that the dot function returns a PauliSentence class when ``pauli=True``."""
         coeffs = [1.0, 2.0, 3.0]
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        H = dot(coeffs, ops)
-        assert isinstance(H, Hamiltonian)
-        assert qml.math.allequal(H.coeffs, coeffs)
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(H.ops, ops))
+        ps = dot(coeffs, ops, pauli=True)
+        assert isinstance(ps, PauliSentence)
+        h = ps.hamiltonian()
+        assert qml.math.allequal(h.coeffs, coeffs)
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(h.ops, ops))
 
     def test_dot_returns_sum(self):
-        """Test that the dot function returns a Sum operator when ``hamiltonian=False``."""
+        """Test that the dot function returns a Sum operator when ``pauli=False``."""
         coeffs = [1.0, 2.0, 3.0]
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        S = dot(coeffs, ops, hamiltonian=False)
+        S = dot(coeffs, ops)
         assert isinstance(S, Sum)
         for summand, coeff, op in zip(S.operands, coeffs, ops):
             if coeff != 1:
@@ -54,7 +57,7 @@ class TestDot:
         """Test that the dot function returns a SProd operator when only one operator is input."""
         coeffs = [2.0]
         ops = [qml.PauliX(0)]
-        O = dot(coeffs, ops, hamiltonian=False)
+        O = dot(coeffs, ops)
         assert isinstance(O, SProd)
         assert O.scalar == 2
 
@@ -65,4 +68,4 @@ class TestDot:
             ValueError,
             match="Number of coefficients and operators does not match",
         ):
-            dot([1.0], [qml.PauliX(0), qml.PauliY(1)], hamiltonian=False)
+            dot([1.0], [qml.PauliX(0), qml.PauliY(1)])
