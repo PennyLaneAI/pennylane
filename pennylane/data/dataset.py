@@ -22,6 +22,8 @@ import os
 from pennylane import Hamiltonian
 from pennylane.pauli import string_to_pauli_word, pauli_word_to_string
 
+condensed_hamiltonians = {"hamiltonian", "tapered_hamiltonian"}
+
 
 def _import_zstd_dill():
     """Import zstd and dill."""
@@ -116,7 +118,7 @@ class Dataset(ABC):
         if not os.path.exists(self._fullfile):
             self._fullfile = None
 
-        for f in glob(f"{self._folder}{os.path.sep}*.dat"):
+        for f in glob(self._prefix.format("*")):
             self.read(f, lazy=True)
 
     def __base_init__(self, **kwargs):
@@ -186,9 +188,19 @@ class Dataset(ABC):
         if attribute == "full":
             data = self._read_file(filepath)
             for attr, value in data.items():
-                setattr(self, f"{attr}", None if lazy else value)
+                if lazy:
+                    data = None
+                elif attr in condensed_hamiltonians:
+                    data = dict_to_hamiltonian(value["terms"], value["wire_map"])
+                else:
+                    data = value
+                setattr(self, f"{attr}", data)
         else:
-            data = None if lazy else self._read_file(filepath)
+            data = None
+            if not lazy:
+                data = self._read_file(filepath)
+                if attribute in condensed_hamiltonians:
+                    data = dict_to_hamiltonian(data["terms"], data["wire_map"])
             setattr(self, f"{attribute}", data)
 
     @staticmethod
@@ -215,8 +227,8 @@ class Dataset(ABC):
         if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
         attrs = self.attrs
-        for h in {"hamiltonian", "tapered_hamiltonian"}.intersection(attrs):
-            attrs[h] = hamiltonian_to_dict(attrs[h])
+        for h in condensed_hamiltonians.intersection(attrs):
+            attrs[h] = hamiltonian_to_dict(getattr(self, h))
         self._write_file(attrs, filepath, protocol=protocol)
 
     def list_attributes(self):
@@ -269,7 +281,7 @@ class Dataset(ABC):
                 if name not in value:
                     raise
                 value = value[name]
-            if name in ["hamiltonian", "tapered_hamiltonian"]:
+            if name in condensed_hamiltonians:
                 value = dict_to_hamiltonian(value["terms"], value["wire_map"])
             setattr(self, name, value)
             return value
