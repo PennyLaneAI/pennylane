@@ -29,7 +29,7 @@ Constructor Functions
     ~pow
     ~prod
     ~s_prod
-    ~dot
+    ~ops.dot
 
 Symbolic Classes
 ~~~~~~~~~~~~~~~~
