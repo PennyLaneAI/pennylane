@@ -33,7 +33,8 @@ import pennylane.math
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
-from pennylane import pauli
+import pennylane.pauli
+from pennylane.pauli import pauli_decompose
 import pennylane.resource
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
@@ -58,6 +59,7 @@ from pennylane.measurements import (
     state,
     var,
     vn_entropy,
+    purity,
     mutual_info,
     classical_shadow,
     shadow_expval,
@@ -68,6 +70,7 @@ from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
 from pennylane.templates.tensornetworks import *
+from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
@@ -348,7 +351,7 @@ def __getattr__(name):
     if name == "grouping":
         warnings.warn(
             "The qml.grouping module is deprecated, please use qml.pauli instead.",
-            DeprecationWarning,
+            UserWarning,
         )
         import pennylane.grouping as grouping  # pylint:disable=import-outside-toplevel,consider-using-from-import
 

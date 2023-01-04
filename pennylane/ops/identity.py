@@ -49,6 +49,7 @@ class Identity(CVObservable, Operation):
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
         self._hyperparameters = {"n_wires": len(self.wires)}
+        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
@@ -57,7 +58,7 @@ class Identity(CVObservable, Operation):
     def compute_eigvals(n_wires=1):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},

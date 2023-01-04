@@ -14,23 +14,24 @@
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
-import pennylane as qml
 
-from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
+import pennylane as qml
 from pennylane.devices import DefaultQubit
+from pennylane.measurements import StateMP
+from pennylane.transforms import adjoint_metric_tensor, batch_transform, metric_tensor
 
 
 def reduced_dm(qnode, wires):
     """Compute the reduced density matrix from a :class:`~.QNode` returning
-    :func:`~.state`.
+    :func:`~pennylane.state`.
 
     Args:
-        qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
+        qnode (QNode): A :class:`~.QNode` returning :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
 
     Returns:
-        func: Function which wraps the QNode and accepts the same arguments. When called, this function will
-        return the density matrix.
+        func: Function which wraps the QNode and accepts the same arguments. When called,
+        this function will return the density matrix.
 
     **Example**
 
@@ -53,9 +54,9 @@ def reduced_dm(qnode, wires):
 
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
-        return_type = qnode.tape.observables[0].return_type
-        if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
-            raise ValueError("The qfunc return type needs to be a state.")
+        measurements = qnode.tape.measurements
+        if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
+            raise ValueError("The qfunc measurement needs to be State.")
 
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
@@ -67,23 +68,90 @@ def reduced_dm(qnode, wires):
     return wrapper
 
 
+def purity(qnode, wires):
+    r"""Compute the purity of a :class:`~.QNode` returning :func:`~pennylane.state`.
+
+    .. math::
+        \gamma = \text{Tr}(\rho^2)
+
+    where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
+    :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
+    A pure state has a purity of 1.
+
+    It is possible to compute the purity of a sub-system from a given state. To find the purity of
+    the overall state, include all wires in the ``wires`` argument.
+
+    Args:
+        qnode (pennylane.QNode): A :class:`.QNode` objeect returning a :func:`~pennylane.state`.
+        wires (Sequence(int)): List of wires in the considered subsystem.
+
+    Returns:
+        function: A function that computes the purity of the wrapped circuit and accepts the same
+        arguments.
+
+    **Example**
+
+    .. code-block:: python
+
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev)
+        def noisy_circuit(p):
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.BitFlip(p, wires=0)
+            qml.BitFlip(p, wires=1)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+    >>> purity(noisy_circuit, wires=[0, 1])(0.2)
+    0.5648000000000398
+    >>> purity(circuit, wires=[0])(np.pi / 2)
+    0.5
+    >>> purity(circuit, wires=[0, 1])(np.pi / 2)
+    1.0
+
+    .. seealso:: :func:`pennylane.math.purity`
+    """
+
+    def wrapper(*args, **kwargs):
+
+        # Construct tape
+        qnode.construct(args, kwargs)
+
+        # Check measurement
+        measurements = qnode.tape.measurements
+        if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
+            raise ValueError("The qfunc return type needs to be a state.")
+
+        state_built = qnode(*args, **kwargs)
+        return qml.math.purity(state_built, wires, c_dtype=qnode.device.C_DTYPE)
+
+    return wrapper
+
+
 def vn_entropy(qnode, wires, base=None):
-    r"""Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
+    r"""Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~pennylane.state`.
 
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
     Args:
-        qnode (tensor_like): A :class:`.QNode` returning a :func:`~.state`.
+        qnode (tensor_like): A :class:`.QNode` returning a :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
         base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
     Returns:
-        float: Von Neumann entropy of the considered subsystem.
+        function: A function that computes the Von Neumann entropy of the considered subsystem
+        for the wrapped circuit and accepts the same arguments.
 
     **Example**
 
-    It is possible to obtain the entropy of a subsystem from a :class:`.QNode` returning a :func:`~.state`.
+    It is possible to obtain the entropy of a subsystem from a :class:`.QNode` returning a :func:`~pennylane.state`.
 
     .. code-block:: python
 
@@ -111,8 +179,8 @@ def vn_entropy(qnode, wires, base=None):
         # If pure state directly return 0.
         if len(wires) == len(qnode.device.wires):
             qnode.construct(args, kwargs)
-            return_type = qnode.tape.observables[0].return_type
-            if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+            measurements = qnode.tape.measurements
+            if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
                 raise ValueError("The qfunc return type needs to be a state.")
             density_matrix = qnode(*args, **kwargs)
             if density_matrix.shape == (density_matrix.shape[0],):
@@ -128,7 +196,7 @@ def vn_entropy(qnode, wires, base=None):
 
 
 def mutual_info(qnode, wires0, wires1, base=None):
-    r"""Compute the mutual information from a :class:`.QNode` returning a :func:`~.state`:
+    r"""Compute the mutual information from a :class:`.QNode` returning a :func:`~pennylane.state`:
 
     .. math::
 
@@ -141,19 +209,19 @@ def mutual_info(qnode, wires0, wires1, base=None):
     one system by measuring the other system.
 
     Args:
-        qnode (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        qnode (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
         wires0 (Sequence(int)): List of wires in the first subsystem.
         wires1 (Sequence(int)): List of wires in the second subsystem.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
-        func: A function with the same arguments as the QNode that returns
-        the mutual information from its output state.
+        function: A function that computes the mutual information from the output state
+        of the QNode and accepts the same arguments.
 
     **Example**
 
     It is possible to obtain the mutual information of two subsystems from a
-    :class:`.QNode` returning a :func:`~.state`.
+    :class:`.QNode` returning a :func:`~pennylane.state`.
 
     .. code-block:: python
 
@@ -237,21 +305,20 @@ def _compute_cfim(p, dp):
 
 @batch_transform
 def _make_probs(tape, wires=None, post_processing_fn=None):
-    """Ignores the return types of any qnode and creates a new one that outputs probabilities"""
-    if wires is None:
-        wires = tape.wires
-
-    with qml.tape.QuantumTape() as new_tape:
-        for op in tape.operations:
-            qml.apply(op)
-        qml.probs(wires=wires)
+    """Ignores the return types of the provided circuit and creates a new one
+    that outputs probabilities"""
+    qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(wires=wires or tape.wires)])
 
     if post_processing_fn is None:
 
-        def post_processing_fn(x):
-            return qml.math.squeeze(qml.math.stack(x))
+        def post_processing_fn(res):
+            if qml.active_return():
+                # only a single probs measurement, so no stacking needed
+                return res[0]
 
-    return [new_tape], post_processing_fn
+            return qml.math.squeeze(qml.math.stack(res))
+
+    return [qscript], post_processing_fn
 
 
 def classical_fisher(qnode, argnums=0):
@@ -397,7 +464,7 @@ def classical_fisher(qnode, argnums=0):
             [2.16840434e-18, 2.81967252e-01]]]))
 
     """
-    new_qnode = _make_probs(qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.stack(x)))
+    new_qnode = _make_probs(qnode)
 
     interface = qnode.interface
 
@@ -457,7 +524,7 @@ def quantum_fisher(qnode, *args, **kwargs):
         *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
 
     Returns:
-        func: The function that computes the quantum fisher information matrix.
+        func: A function that computes the quantum fisher information matrix.
 
     .. note::
 
@@ -534,7 +601,7 @@ def quantum_fisher(qnode, *args, **kwargs):
 
 
 def fidelity(qnode0, qnode1, wires0, wires1):
-    r"""Compute the fidelity for two :class:`.QNode` returning a :func:`~.state` (a state can be a state vector
+    r"""Compute the fidelity for two :class:`.QNode` returning a :func:`~pennylane.state` (a state can be a state vector
     or a density matrix, depending on the device) acting on quantum systems with the same size.
 
     The fidelity for two mixed states given by density matrices :math:`\rho` and :math:`\sigma`
@@ -560,8 +627,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         of the interface of the first state.
 
     Args:
-        state0 (QNode): A :class:`.QNode` returning a :func:`~.state`.
-        state1 (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        state0 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
+        state1 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
         wires0 (Sequence[int]): the wires of the first subsystem
         wires1 (Sequence[int]): the wires of the second subsystem
 
@@ -732,7 +799,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
 def relative_entropy(qnode0, qnode1, wires0, wires1):
     r"""
-    Compute the relative entropy for two :class:`.QNode` returning a :func:`~.state` (a state can be a state vector
+    Compute the relative entropy for two :class:`.QNode` returning a :func:`~pennylane.state` (a state can be a state vector
     or a density matrix, depending on the device) acting on quantum systems with the same size.
 
     .. math::
@@ -743,8 +810,8 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
     quantum states. It is the quantum mechanical analog of relative entropy.
 
     Args:
-        qnode0 (QNode): A :class:`.QNode` returning a :func:`~.state`.
-        qnode1 (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        qnode0 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
+        qnode1 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
         wires0 (Sequence[int]): the subsystem of the first QNode
         wires1 (Sequence[int]): the subsystem of the second QNode
 

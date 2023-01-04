@@ -47,9 +47,10 @@ def test_single_wire_error(bad_wires):
 def test_do_queue():
     """Assert do_queue=False is not queued"""
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.GroverOperator(wires=(0, 1), do_queue=False)
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     assert len(tape.operations) == 0
 
 

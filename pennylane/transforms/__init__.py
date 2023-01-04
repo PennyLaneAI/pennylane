@@ -83,6 +83,8 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.pattern_matching
+    ~transforms.to_zx
+    ~transforms.from_zx
 
 There are also utility functions that take a circuit and return a DAG.
 
@@ -125,7 +127,6 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.replace_wire_cut_nodes
     ~transforms.qcut.fragment_graph
     ~transforms.qcut.graph_to_tape
-    ~transforms.qcut.remap_tape_wires
     ~transforms.qcut.expand_fragment_tape
     ~transforms.qcut.expand_fragment_tapes_mc
     ~transforms.qcut.qcut_processing_fn
@@ -149,6 +150,7 @@ more tapes as well as a classical processing function.
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
     ~transforms.sign_expand
+    ~transforms.sum_expand
 
 Decorators and utility functions
 --------------------------------
@@ -195,8 +197,8 @@ from .condition import cond, Conditional
 from .compile import compile
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
-from .hamiltonian_expand import hamiltonian_expand
 from .sign_expand import sign_expand
+from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
@@ -234,4 +236,5 @@ from .tape_expand import (
 from .transpile import transpile
 from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
+from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand

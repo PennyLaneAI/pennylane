@@ -18,6 +18,7 @@ the necessary information to perform a Hartree-Fock calculation for a given mole
 """
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 import itertools
+import collections
 
 from pennylane import numpy as np
 
@@ -43,6 +44,7 @@ class Molecule:
             values of ``mult`` are :math:`1, 2, 3, \ldots`.
         basis_name (str): Atomic basis set used to represent the molecular orbitals. Currently, the
             only supported basis sets are 'STO-3G', '6-31G', '6-311G' and 'CC-PVDZ'.
+        load_data (bool): flag to load data from the basis-set-exchange library
         l (tuple[int]): angular momentum quantum numbers of the basis function
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
@@ -66,6 +68,7 @@ class Molecule:
         charge=0,
         mult=1,
         basis_name="sto-3g",
+        load_data=False,
         l=None,
         alpha=None,
         coeff=None,
@@ -80,7 +83,8 @@ class Molecule:
         ]:
             raise ValueError(
                 "Currently, the only supported basis sets are 'sto-3g', '6-31g', '6-311g' and"
-                " 'cc-pvdz'."
+                " 'cc-pvdz'. Please consider using `load_data=True` to download the basis set from"
+                " an external library that can be installed with: pip install basis-set-exchange."
             )
 
         if set(symbols) - set(atomic_numbers):
@@ -92,7 +96,7 @@ class Molecule:
         self.mult = mult
         self.basis_name = basis_name.lower()
 
-        self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols)
+        self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
 
         if l is None:
             l = [i[0] for i in self.basis_data]
@@ -129,6 +133,17 @@ class Molecule:
         self.n_electrons = sum(np.array(self.nuclear_charges)) - self.charge
 
         self.mo_coefficients = None
+
+    def __repr__(self):
+        """Returns the molecule representation in string format"""
+
+        elements, counter, flags = set(self.symbols), collections.Counter(self.symbols), []
+        if counter["C"]:  # Hill Notation
+            flags = ["C", "H"] if counter["H"] else ["C"]
+        ordered_elems = flags + list(sorted(elements.difference(set(flags))))
+        formula = "".join([x + str(counter[x]) if counter[x] > 1 else x for x in ordered_elems])
+
+        return f"<Molecule = {formula}, Charge: {self.charge}, Basis: {self.basis_name.upper()}, Orbitals: {self.n_orbitals}, Electrons: {self.n_electrons}>"
 
     def atomic_orbital(self, index):
         r"""Return a function that evaluates an atomic orbital at a given position.

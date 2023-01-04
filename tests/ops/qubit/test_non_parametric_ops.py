@@ -19,7 +19,26 @@ import itertools
 
 import numpy as np
 import pytest
-from gate_data import CNOT, CSWAP, CZ, ECR, ISWAP, SISWAP, SWAP, H, I, S, T, Toffoli, X, Y, Z
+
+from gate_data import (
+    CNOT,
+    CSWAP,
+    CZ,
+    CCZ,
+    ECR,
+    ISWAP,
+    SISWAP,
+    SWAP,
+    H,
+    I,
+    S,
+    T,
+    Toffoli,
+    X,
+    Y,
+    Z,
+    CH,
+)
 from scipy.sparse import csr_matrix
 from scipy.stats import unitary_group
 
@@ -36,11 +55,13 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.ISWAP, ISWAP),
     (qml.SISWAP, SISWAP),
     (qml.CZ, CZ),
+    (qml.CCZ, CCZ),
     (qml.S, S),
     (qml.T, T),
     (qml.CSWAP, CSWAP),
     (qml.Toffoli, Toffoli),
     (qml.ECR, ECR),
+    (qml.CH, CH),
 ]
 
 SPARSE_MATRIX_SUPPORTED_OPERATIONS = (
@@ -226,6 +247,24 @@ class TestDecompositions:
         decomposed_matrix = np.linalg.multi_dot(mats)
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    def test_CH_decomposition(self, tol):
+        """Tests that the decomposition of the CH gate is correct"""
+        op = qml.CH(wires=[0, 1])
+        res = op.decomposition()
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), i.matrix()))
+            elif i.wires == Wires([0, 1]) and i.name == "CZ":
+                mats.append(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]))
+            else:
+                raise Exception("Unexpected gate in decomposition.")
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
     def test_ISWAP_decomposition(self, tol):
         """Tests that the decomposition of the ISWAP gate is correct"""
         op = qml.ISWAP(wires=[0, 1])
@@ -381,6 +420,48 @@ class TestDecompositions:
                         ]
                     )
                 )
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+    def test_ccz_decomposition(self, tol):
+        """Tests that the decomposition of the CCZ gate is correct"""
+        op = qml.CCZ(wires=[0, 1, 2])
+        res = op.decomposition()
+
+        assert len(res) == 15
+
+        mats = []
+
+        for i in reversed(res):
+            if i.wires == Wires([2]):
+                mats.append(np.kron(np.eye(4), i.matrix()))
+            elif i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), np.kron(i.matrix(), np.eye(2))))
+            elif i.wires == Wires([0]):
+                mats.append(np.kron(i.matrix(), np.eye(4)))
+            elif i.wires == Wires([0, 1]) and i.name == "CNOT":
+                mats.append(np.kron(i.matrix(), np.eye(2)))
+            elif i.wires == Wires([1, 2]) and i.name == "CNOT":
+                mats.append(np.kron(np.eye(2), i.matrix()))
+            elif i.wires == Wires([0, 2]) and i.name == "CNOT":
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                        ]
+                    )
+                )
+            else:
+                raise Exception("Unexpected gate in decomposition.")
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
@@ -623,6 +704,14 @@ class TestBarrier:
         op = qml.Barrier(wires=(0, 1, 2, 3), only_visual=False)
         assert op.simplify() is op
 
+    def test_qml_matrix_fails(self):
+        """Test that qml.matrix(op) and op.matrix() both fail."""
+        op = qml.Barrier(0)
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            qml.matrix(op)
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.matrix()
+
 
 class TestWireCut:
     """Tests for the WireCut operator"""
@@ -652,6 +741,14 @@ class TestWireCut:
             ValueError, match="WireCut: wrong number of wires. At least one wire has to be given."
         ):
             qml.WireCut(wires=[])
+
+    def test_qml_matrix_fails(self):
+        """Test that qml.matrix(op) and op.matrix() both fail."""
+        op = qml.WireCut(0)
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            qml.matrix(op)
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.matrix()
 
 
 class TestMultiControlledX:
@@ -861,10 +958,11 @@ class TestMultiControlledX:
 
         dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX._decomposition_with_many_workers(
                 control_wires, target_wire, work_wires
             )
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert all(isinstance(op, qml.Toffoli) for op in tape.operations)
 
         @qml.qnode(dev)
@@ -891,10 +989,11 @@ class TestMultiControlledX:
 
         dev = qml.device("default.qubit", wires=n_ctrl_wires + 2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX._decomposition_with_one_worker(
                 control_wires, target_wire, work_wires
             )
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=1)
         assert all(
             isinstance(op, qml.Toffoli) or isinstance(op, qml.CNOT) for op in tape.operations
@@ -945,12 +1044,13 @@ class TestMultiControlledX:
         spy = mocker.spy(qml.MultiControlledX, "decomposition")
         dev = qml.device("default.qubit", wires=2 * n_ctrl_wires + 1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(
                 wires=control_target_wires,
                 work_wires=work_wires,
                 control_values=control_values,
             )
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=1)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
@@ -980,8 +1080,9 @@ class TestMultiControlledX:
         spy = mocker.spy(qml.MultiControlledX, "decomposition")
         dev = qml.device("default.qubit", wires=all_wires)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=2)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
@@ -1012,8 +1113,9 @@ class TestMultiControlledX:
         spy = mocker.spy(qml.MultiControlledX, "decomposition")
         dev = qml.device("default.qubit", wires=n_all_wires)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
+        tape = qml.tape.QuantumScript.from_queue(q)
         tape = tape.expand(depth=1)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
@@ -1051,9 +1153,11 @@ period_two_ops = (
     qml.CNOT(wires=(0, 1)),
     qml.CZ(wires=(0, 1)),
     qml.CY(wires=(0, 1)),
+    qml.CH(wires=(0, 1)),
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
     qml.ECR(wires=(0, 1)),
+    qml.CCZ(wires=(0, 1, 2)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
@@ -1218,6 +1322,11 @@ class TestControlledMethod:
         out = qml.PauliZ(0)._controlled("a")
         assert qml.equal(out, qml.CZ(("a", 0)))
 
+    def test_Hadamard(self):
+        """Test the Hadamard _controlled method."""
+        out = qml.Hadamard(0)._controlled("a")
+        assert qml.equal(out, qml.CH(("a", 0)))
+
     def test_CNOT(self):
         """Test the CNOT _controlled method"""
         out = qml.CNOT((0, 1))._controlled("a")
@@ -1233,6 +1342,11 @@ class TestControlledMethod:
         original = qml.Barrier((0, 1, 2), only_visual=True)
         out = original._controlled("a")
         assert qml.equal(original, out)
+
+    def test_CZ(self):
+        """Test the PauliZ _controlled method."""
+        out = qml.CZ(wires=[0, 1])._controlled("a")
+        assert qml.equal(out, qml.CCZ(("a", 0, 1)))
 
 
 class TestSparseMatrix:
@@ -1258,11 +1372,13 @@ label_data = [
     (qml.CNOT(wires=(0, 1)), "X", "X"),
     (qml.CZ(wires=(0, 1)), "Z", "Z"),
     (qml.CY(wires=(0, 1)), "Y", "Y"),
+    (qml.CH(wires=(0, 1)), "H", "H"),
     (qml.SWAP(wires=(0, 1)), "SWAP", "SWAP⁻¹"),
     (qml.ISWAP(wires=(0, 1)), "ISWAP", "ISWAP⁻¹"),
     (qml.ECR(wires=(0, 1)), "ECR", "ECR⁻¹"),
     (qml.SISWAP(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
+    (qml.CCZ(wires=(0, 1, 2)), "Z", "Z"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "X", "X"),
     (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X", "X"),
@@ -1295,7 +1411,9 @@ control_data = [
     (qml.CNOT(wires=(0, 1)), Wires(0)),
     (qml.CZ(wires=(0, 1)), Wires(0)),
     (qml.CY(wires=(0, 1)), Wires(0)),
+    (qml.CH(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
+    (qml.CCZ(wires=(0, 1, 2)), Wires([0, 1])),
     (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
     (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
 ]
@@ -1317,9 +1435,11 @@ involution_ops = [  # ops who are their own inverses
     qml.CNOT((0, 1)),
     qml.CZ((0, 1)),
     qml.CY((0, 1)),
+    qml.CH((0, 1)),
     qml.SWAP((0, 1)),
     qml.ECR((0, 1)),
     qml.CSWAP((0, 1, 2)),
+    qml.CCZ((0, 1, 2)),
     qml.Toffoli((0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
     qml.Barrier(0),
@@ -1334,3 +1454,16 @@ def test_adjoint_method(op, tol):
         adj_op = adj_op.adjoint()
 
         assert adj_op.name == op.name
+
+
+op_pauli_rep = (
+    (qml.PauliX(wires=0), qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X"}): 1})),
+    (qml.PauliY(wires="a"), qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1})),
+    (qml.PauliZ(wires=4), qml.pauli.PauliSentence({qml.pauli.PauliWord({4: "Z"}): 1})),
+    (qml.Identity(wires="target"), qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),
+)
+
+
+@pytest.mark.parametrize("op, rep", op_pauli_rep)
+def test_pauli_rep(op, rep):
+    assert op._pauli_rep == rep

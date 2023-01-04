@@ -5,7 +5,7 @@ on:
 
 env:
   TF_VERSION: 2.10.0
-  TORCH_VERSION: 1.11.0+cpu
+  TORCH_VERSION: 1.13.0
 
 
 jobs:
@@ -16,22 +16,20 @@ jobs:
     strategy:
       matrix:
         config:
-          - {python-version: 3.7, suite: 'torch'}
-          - {python-version: 3.7, suite: 'tf'}
           - {python-version: 3.8, suite: 'tf'}
           - {python-version: '3.10', suite: 'tf'}
           - {python-version: 3.8, suite: 'torch'}
-          - {python-version: '3.10', suite: 'torch'}
+          - {python-version: '3.11', suite: 'torch'}
           - {python-version: 3.8, suite: 'jax'}
-          - {python-version: '3.10', suite: 'jax'}
-          - {python-version: 3.7, suite: 'autograd'}
+          - {python-version: '3.11', suite: 'jax'}
           - {python-version: 3.8, suite: 'autograd'}
           - {python-version: 3.9, suite: 'autograd'}
           - {python-version: '3.10', suite: 'autograd'}
-          - {python-version: 3.7, suite: 'core'}
+          - {python-version: '3.11', suite: 'autograd'}
           - {python-version: 3.8, suite: 'core'}
           - {python-version: 3.9, suite: 'core'}
           - {python-version: '3.10', suite: 'core'}
+          - {python-version: '3.11', suite: 'core'}
 
     env:
       SUITE: ${{ matrix.config.suite }}
@@ -250,6 +248,20 @@ jobs:
   return-tests:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        config:
+          - { loc: "tests/returntypes/jax"}
+          - { loc: "tests/returntypes/tf"}
+          - { loc: "tests/returntypes/torch"}
+          - { loc: "tests/returntypes/autograd"}
+          - { loc: "tests/returntypes/gradients"}
+          - { loc: "tests/returntypes/transforms"}
+          - { loc: "tests/returntypes/paramshift"}
+          - { loc: "tests/returntypes/finitediff"}
+          - { loc: "tests/returntypes/core"}
+          - { loc: "tests/returntypes/optimizers"}
+
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.4.1
@@ -287,7 +299,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/returntypes -n auto
+          python -m pytest ${{ matrix.config.loc }} -n auto
 
   device-tests:
     runs-on: ubuntu-latest
