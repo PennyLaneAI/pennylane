@@ -195,6 +195,29 @@ def test_hamiltonian_is_loaded_properly(tmp_path):
     assert qml.equal(qml.PauliZ(0), ops[1])
 
 
+def test_hamiltonian_write_preserves_wire_map(tmp_path):
+    """Test that writing hamiltonians to file converts to the condensed format."""
+    filename = str(tmp_path / "myset_hamiltonian.dat")
+    qml.data.Dataset._write_file(
+        {"terms": {"XIY": 0.1, "ZZZ": 0.2}, "wire_map": {"a": 0, "b": 1, "c": 2}}, filename
+    )
+    dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
+    ham = dataset.hamiltonian
+    assert isinstance(ham, qml.Hamiltonian)
+
+    filename = str(tmp_path / "myset_full.dat")
+    dataset.write(filename)
+    terms_and_wiremap = qml.data.Dataset._read_file(filename)["hamiltonian"]
+    assert terms_and_wiremap == {
+        "terms": {"XIY": 0.1, "ZZZ": 0.2},
+        "wire_map": {"a": 0, "b": 1, "c": 2},
+    }
+
+    new_ham = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True).hamiltonian
+    assert qml.equal(new_ham, ham)
+    assert new_ham.wires.tolist() == ["a", "b", "c"]
+
+
 def test_import_zstd_dill(monkeypatch):
     """Test if an ImportError is raised by _import_zstd_dill function."""
 

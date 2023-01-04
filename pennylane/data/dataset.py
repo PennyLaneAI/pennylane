@@ -20,7 +20,7 @@ from glob import glob
 import os
 
 from pennylane import Hamiltonian
-from pennylane.pauli import string_to_pauli_word
+from pennylane.pauli import string_to_pauli_word, pauli_word_to_string
 
 
 def _import_zstd_dill():
@@ -195,6 +195,12 @@ class Dataset(ABC):
     def _write_file(data, filepath, protocol=4):
         """General method to write data to a file."""
         zstd, dill = _import_zstd_dill()
+
+        if isinstance(data, dict):
+            h = data.get("hamiltonian")
+            if h is not None:
+                data["hamiltonian"] = Dataset.__hamiltonian_to_dict(h)
+
         pickled_data = dill.dumps(data, protocol=protocol)
         compressed_pickle = zstd.compress(pickled_data)
         with open(filepath, "wb") as f:
@@ -255,14 +261,14 @@ class Dataset(ABC):
             ops.append(string_to_pauli_word(key, wire_map))
         return Hamiltonian(coeffs, ops)
 
-    # TODO: validate this and add to _write_file (if 'hamiltonian' in data))
-    # @staticmethod
-    # def __hamiltonian_to_dict(hamiltonian, wire_map):
-    #     hamil_dict = {}
-    #     coeffs, ops = hamiltonian.terms()
-    #     for coeff, op in zip(coeffs, ops):
-    #         hamil_dict.update({pauli_word_to_string(op, wire_map): coeff})
-    #     return hamil_dict
+    @staticmethod
+    def __hamiltonian_to_dict(hamiltonian):
+        coeffs, ops = hamiltonian.terms()
+        wire_map = {w: i for i, w in enumerate(hamiltonian.wires)}
+        return {
+            "terms": {pauli_word_to_string(op, wire_map): coeff for coeff, op in zip(coeffs, ops)},
+            "wire_map": wire_map,
+        }
 
     def __getattribute__(self, name):
         try:
