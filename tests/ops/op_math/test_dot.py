@@ -79,13 +79,13 @@ class TestDotSum:
         """Test the dot function with the tensorflow interface."""
         import tensorflow as tf
 
-        c = tf.Variable([1.0, 2.0, 3.0])
+        c = tf.constant([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
             qml.PauliX(0),
-            SProd(tf.Variable(2.0), qml.PauliY(1)),
-            SProd(tf.Variable(3.0), qml.PauliZ(2)),
+            SProd(tf.constant(2.0), qml.PauliY(1)),
+            SProd(tf.constant(3.0), qml.PauliZ(2)),
         )
         assert qml.equal(op_sum, op_sum_2)
 
@@ -184,13 +184,13 @@ class TestDotPauliSentence:
         """Test the dot function with the tensorflow interface."""
         import tensorflow as tf
 
-        c = tf.Variable([1.0, 2.0, 3.0])
+        c = tf.constant([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = dot(c, o, pauli=True)
         op_sum = Sum(
             qml.PauliX(0),
-            SProd(tf.Variable(2.0), qml.PauliY(1)),
-            SProd(tf.Variable(3.0), qml.PauliZ(2)),
+            SProd(tf.constant(2.0), qml.PauliY(1)),
+            SProd(tf.constant(3.0), qml.PauliZ(2)),
         )
         ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
