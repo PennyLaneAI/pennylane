@@ -116,6 +116,7 @@ class TestSignExpand:
         # as these are approximations, these are only correct up to finite precision
 
     def test_hamiltonian_error(self):
+        """Tests if wrong observables get caught in the test"""
 
         with pennylane.tape.QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
@@ -124,6 +125,8 @@ class TestSignExpand:
             tapes, fn = qml.transforms.sign_expand(tape)
 
     def test_hamiltonian_error_not_jointly_measurable(self):
+        """Test if hamiltonians that are not jointly measurable throw an error"""
+
         with pennylane.tape.QuantumTape() as tape:
             H_mult = 1.5 * qml.PauliZ(0) + 2 * qml.PauliZ(1) + 0.3 * qml.PauliX(0)
             qml.expval(H_mult)
@@ -179,16 +182,20 @@ class TestSignExpand:
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
-        def cost_trad(x):
+        def cost_param_shift(x):
             tape.set_parameters(x, trainable_only=False)
             tapes, fn = qml.transforms.hamiltonian_expand(tape)
             res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
-        print(cost(var))
-        print(cost_trad(var))
-        # assert 4==5
-        assert np.isclose(cost(var), cost_trad(var), 0.05)
+        def cost_finite_diff(x):
+            tape.set_parameters(x, trainable_only=False)
+            tapes, fn = qml.transforms.hamiltonian_expand(tape)
+            res = qml.execute(tapes, dev, qml.gradients.finite_diff)
+            return fn(res)
+
+        assert np.isclose(cost(var), cost_param_shift(var), 0.05)
+        assert np.isclose(cost(var), cost_finite_diff(var), 0.05)
 
         # TODO: This does not work yet due to qml.utils.sparse_hamiltonian does not allow autograd to push gradients through
         # grad = qml.grad(cost)(var)
