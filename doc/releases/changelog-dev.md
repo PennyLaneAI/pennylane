@@ -96,6 +96,10 @@
   >>> jax.grad(qml.qchem.hf_energy(mol))(*args)
   >>> DeviceArray([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]], dtype=float32)
   ```
+  
+* The function `load_basisset` is added to extract qchem basis set data from the Basis Set Exchange
+  library. 
+  [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
 
 * Added `qml.ops.dot` function to compute the dot product between a vector and a list of operators.
 
@@ -131,6 +135,9 @@
 
  <h3>Breaking changes</h3>
 
+* The tape constructed by a QNode is no longer queued to surrounding contexts.
+  [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
@@ -150,6 +157,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Juan Miguel Arrazola
 Ikko Ashimine
 Utkarsh Azad
 Astral Cai

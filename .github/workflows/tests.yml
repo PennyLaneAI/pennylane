@@ -336,6 +336,9 @@ jobs:
       - name: Install openfermionpyscf
         run: pip3 install openfermionpyscf
 
+      - name: Install basis-set-exchange
+        run: pip3 install basis-set-exchange
+
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel
