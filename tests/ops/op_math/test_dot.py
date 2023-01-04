@@ -20,12 +20,6 @@ import pennylane as qml
 from pennylane.ops import SProd, Sum, dot
 from pennylane.pauli.pauli_arithmetic import PauliSentence
 
-coeffs_and_ops_list = [
-    ([1.0], [qml.PauliX(0)]),
-    ([1.1, 2.2], [qml.PauliX(0), qml.PauliY(1)]),
-    ([1.1, 2.2, 3.3], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]),
-]
-
 
 class TestDot:
     """Unittests for the dot function."""
