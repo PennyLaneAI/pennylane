@@ -241,11 +241,9 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator]):
 
     >>> coeffs = np.array([1.1, 2.2])
     >>> ops = [qml.PauliX(0), qml.PauliY(0)]
-    >>> qml.ops.dot(coeffs, ops)
-    (1.1) [X0]
-    + (2.2) [Y0]
-    >>> qml.ops.dot(coeffs, ops, hamiltonian=False)
-    (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+    >>> qml.pauli.dot(coeffs, ops)
+    1.1 * X(0)
+    + 2.2 * Y(0)
     """
     pauli_words = defaultdict(lambda: 0)
     for coeff, op in zip(coeffs, ops):

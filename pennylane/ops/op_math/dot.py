@@ -45,10 +45,10 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     >>> coeffs = np.array([1.1, 2.2])
     >>> ops = [qml.PauliX(0), qml.PauliY(0)]
     >>> qml.ops.dot(coeffs, ops)
-    (1.1) [X0]
-    + (2.2) [Y0]
-    >>> qml.ops.dot(coeffs, ops, hamiltonian=False)
     (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+    >>> qml.ops.dot(coeffs, ops, pauli=True)
+    1.1 * X(0)
+    + 2.2 * Y(0)
     """
     if qml.math.shape(coeffs)[0] != len(ops):
         raise ValueError("Number of coefficients and operators does not match.")
