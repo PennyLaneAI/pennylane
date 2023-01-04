@@ -813,6 +813,7 @@ def molecular_hamiltonian(
     args=None,
     grouping_type=None,
     grouping_method="rlf",
+    load_data=False,
     convert_tol=1e012,
 ):  # pylint:disable=too-many-arguments
     r"""Generate the qubit Hamiltonian of a molecule.
@@ -853,7 +854,7 @@ def molecular_hamiltonian(
         method (str): Quantum chemistry method used to solve the
             mean field electronic structure problem. Available options are ``method="dhf"``
             to specify the built-in differentiable Hartree-Fock solver, or ``method="pyscf"``
-            to use the OpenFermion-PySCF plugin (this requires that ``openfermionpyscf`` be installed).
+            to use the OpenFermion-PySCF plugin (this requires ``openfermionpyscf`` to be installed).
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals
@@ -871,6 +872,7 @@ def molecular_hamiltonian(
         grouping_type (str): method to group commuting observables
         grouping_method (str): the graph coloring heuristic to use in solving minimum clique cover
             for grouping
+        load_data (bool): flag to load data from the basis-set-exchange library
         convert_tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
             for the imaginary part of the Hamiltonian coefficients created by openfermion.
             Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
@@ -926,6 +928,7 @@ def molecular_hamiltonian(
             charge=charge,
             mult=mult,
             basis_name=basis,
+            load_data=load_data,
             alpha=alpha,
             coeff=coeff,
         )
