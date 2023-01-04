@@ -67,6 +67,7 @@ from .quantum import (
     sqrt_matrix,
     fidelity,
     relative_entropy,
+    max_entropy,
 )
 
 from .utils import (

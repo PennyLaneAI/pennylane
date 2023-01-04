@@ -1032,3 +1032,22 @@ def _check_state_vector(state_vector):
     if not is_abstract(norm):
         if not allclose(norm, 1.0, atol=1e-10):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+
+def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
+    density_matrix = reduced_dm(state, indices, check_state, c_dtype)
+    max_entropy = _compute_max_entropy(density_matrix, base)
+
+    return max_entropy
+
+def _compute_max_entropy(density_matrix, base):
+    # Change basis if necessary
+    if base:
+        div_base = np.log(base)
+    else:
+        div_base = 1
+    
+    rank = np.linalg.matrix_rank(density_matrix)
+    max_entropy = np.log(rank) / div_base
+    
+    return max_entropy
