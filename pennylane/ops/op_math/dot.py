@@ -19,10 +19,9 @@ from typing import Sequence
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.ops import Hamiltonian
 
 
-def dot(coeffs: Sequence[float], ops: Sequence[Operator], hamiltonian=True):
+def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
     This function returns the following linear combination: :math:`\sum_{k=0}^{N-1} c_k O_k`, where
@@ -31,14 +30,15 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], hamiltonian=True):
     Args:
         coeffs (Sequence[float]): sequence containing the coefficients of the linear combination
         ops (Sequence[Operator]): sequence containing the operators of the linear combination
-        hamiltonian (bool, optional): If True, a :class:`Hamiltonian` operator is used to represent
-            linear combination. If False, a :class:`Sum` operator is returned. Defaults to True.
+        pauli (bool, optional): If True, a :class:`pennylane.pauli.pauli_arithmetic.PauliSentence`
+            operator is used to represent the linear combination. If False, a :class:`Sum` operator
+            is returned. Defaults to False.
 
     Raises:
-        ValueError: if the number of coefficients and operators does not match
+        ValueError: if the number of coefficients and operators does not match or if they are empty
 
     Returns:
-        .Hamiltonian | .Sum | .Operator: operator describing the linear combination
+        .Sum | .Operator: operator describing the linear combination
 
     **Example**
 
@@ -50,10 +50,14 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], hamiltonian=True):
     >>> qml.ops.dot(coeffs, ops, hamiltonian=False)
     (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
     """
-    if hamiltonian:
-        return Hamiltonian(coeffs=coeffs, observables=ops)
     if qml.math.shape(coeffs)[0] != len(ops):
         raise ValueError("Number of coefficients and operators does not match.")
+    if len(coeffs) == 0 or len(ops) == 0:
+        raise ValueError("Cannot compute the dot product of an empty list.")
+
+    if pauli:
+        return qml.pauli.dot(coeffs, ops)
+
     operands = []
     for coeff, op in zip(coeffs, ops):
         operands.append(op if coeff == 1 else qml.s_prod(coeff, op))
