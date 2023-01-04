@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
 """
 Utility functions to convert between ``~.PauliSentence`` and other PennyLane operators.
 """
-from collections import defaultdict
 from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
-from typing import Sequence, Union
+from typing import Union
 
 import numpy as np
 
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, mat_map, op_map
@@ -222,33 +221,3 @@ def _(op: Hamiltonian):
 def _(op: Sum):
     summands = (pauli_sentence(summand) for summand in op)
     return reduce(lambda a, b: a + b, summands)
-
-
-def dot(coeffs: Sequence[float], ops: Sequence[Operator]):
-    r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of pauli operator.
-
-    This function returns the following linear combination: :math:`\sum_{k=0}^{N-1} c_k O_k`, where
-    :math:`c_k` and :math:`O_k` are the elements inside the ``coeffs`` and ``ops`` arguments respectively.
-
-    Args:
-        coeffs (Sequence[float]): sequence containing the coefficients of the linear combination
-        ops (Sequence[Operator]): sequence containing the pauli operators of the linear combination
-
-    Returns:
-        .PauliSentence: pauli sentence describing the linear combination of
-
-    **Example**
-
-    >>> coeffs = np.array([1.1, 2.2])
-    >>> ops = [qml.PauliX(0), qml.PauliY(0)]
-    >>> qml.pauli.dot(coeffs, ops)
-    1.1 * X(0)
-    + 2.2 * Y(0)
-    """
-    pauli_words = defaultdict(lambda: 0)
-    for coeff, op in zip(coeffs, ops):
-        sentence = pauli_sentence(op)
-        for pw in sentence:
-            pauli_words[pw] += sentence[pw] * coeff
-
-    return PauliSentence(pauli_words)

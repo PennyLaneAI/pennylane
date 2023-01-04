@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +13,14 @@
 # limitations under the License.
 """Unit tests for utility functions of Pauli arithmetic."""
 
-import numpy as np
 import pytest
 
+import numpy as np
 import pennylane as qml
 from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ
-from pennylane.pauli import PauliSentence, PauliWord, dot, pauli_sentence
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ
+from pennylane.pauli import pauli_sentence, PauliWord, PauliSentence
+
 
 test_hamiltonians = [
     np.array([[2.5, -0.5], [-0.5, 2.5]]),
@@ -275,47 +276,3 @@ class TestPauliSentence:
             ValueError, match="Op must be a linear combination of Pauli operators only, got:"
         ):
             pauli_sentence(op)
-
-
-coeffs = [0.12345, 1.2345, 12.345, 123.45, 1234.5, 12345]
-ops = [
-    qml.PauliX(0),
-    qml.PauliY(1),
-    qml.PauliZ(2),
-    qml.PauliX(3),
-    qml.PauliY(4),
-    qml.PauliZ(5),
-]
-
-
-class TestDot:
-    """Unittest for the dot function"""
-
-    def test_dot_returns_pauli_sentence(self):
-        """Test that the dot function returns a PauliSentence class."""
-        ps = dot(coeffs, ops)
-        assert isinstance(ps, PauliSentence)
-
-    def test_coeffs_and_ops(self):
-        """Test that the coefficients and operators of the returned PauliSentence are correct."""
-        ps = dot(coeffs, ops)
-        h = ps.hamiltonian()
-        assert qml.math.allequal(h.coeffs, coeffs)
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(h.ops, ops))
-
-    def test_dot_simplifies_linear_combination(self):
-        """Test that the dot function groups equal pauli words."""
-        ps = dot(coeffs=[0.12, 1.2, 12], ops=[qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)])
-        assert len(ps) == 1
-        h = ps.hamiltonian()
-        assert len(h.ops) == 1
-        assert qml.equal(h.ops[0], qml.PauliX(0))
-
-    def test_dot_returns_hamiltonian_simplified(self):
-        """Test that hamiltonian computed from the PauliSentence created by the dot function is equal
-        to the simplified hamiltonian."""
-        ps = dot(coeffs, ops)
-        h_ps = ps.hamiltonian()
-        h = Hamiltonian(coeffs, ops)
-        h.simplify()
-        assert qml.equal(h_ps, h)
