@@ -9,8 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""This module contains decompositions for (numerically-specified) arbitrary
-unitary operations into sequences of elementary operations.
-"""
+r"""Contains the sign expand function and the according data inside the json"""
 
 from .sign_expand import sign_expand
