@@ -199,7 +199,7 @@ class Dataset(ABC):
         if isinstance(data, dict):
             h = data.get("hamiltonian")
             if h is not None:
-                data["hamiltonian"] = Dataset.__hamiltonian_to_dict(h)
+                data["hamiltonian"] = hamiltonian_to_dict(h)
 
         pickled_data = dill.dumps(data, protocol=protocol)
         compressed_pickle = zstd.compress(pickled_data)
@@ -253,23 +253,6 @@ class Dataset(ABC):
     def __get_attribute_from_filename(self, filename):
         return os.path.basename(filename)[self._prefix_len : -4]
 
-    @staticmethod
-    def __dict_to_hamiltonian(hamil_dict, wire_map):
-        coeffs, ops = [], []
-        for key, val in hamil_dict.items():
-            coeffs.append(val)
-            ops.append(string_to_pauli_word(key, wire_map))
-        return Hamiltonian(coeffs, ops)
-
-    @staticmethod
-    def __hamiltonian_to_dict(hamiltonian):
-        coeffs, ops = hamiltonian.terms()
-        wire_map = {w: i for i, w in enumerate(hamiltonian.wires)}
-        return {
-            "terms": {pauli_word_to_string(op, wire_map): coeff for coeff, op in zip(coeffs, ops)},
-            "wire_map": wire_map,
-        }
-
     def __getattribute__(self, name):
         try:
             val = super().__getattribute__(name)
@@ -290,6 +273,25 @@ class Dataset(ABC):
                     raise
                 value = value[name]
             if name == "hamiltonian":
-                value = self.__dict_to_hamiltonian(value["terms"], value["wire_map"])
+                value = dict_to_hamiltonian(value["terms"], value["wire_map"])
             setattr(self, name, value)
             return value
+
+
+def dict_to_hamiltonian(terms, wire_map):
+    """Converts a dict of terms and a wire map into a Hamiltonian instance."""
+    coeffs, ops = [], []
+    for pauli_string, coeff in terms.items():
+        coeffs.append(coeff)
+        ops.append(string_to_pauli_word(pauli_string, wire_map))
+    return Hamiltonian(coeffs, ops)
+
+
+def hamiltonian_to_dict(hamiltonian):
+    """Converts a hamiltonian instance into a dict containing pauli-string terms and a wire map."""
+    coeffs, ops = hamiltonian.terms()
+    wire_map = {w: i for i, w in enumerate(hamiltonian.wires)}
+    return {
+        "terms": {pauli_word_to_string(op, wire_map): coeff for coeff, op in zip(coeffs, ops)},
+        "wire_map": wire_map,
+    }
