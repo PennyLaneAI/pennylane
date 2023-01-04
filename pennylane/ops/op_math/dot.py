@@ -15,10 +15,12 @@
 This file contains the definition of the dot function, which computes the dot product between
 a vector and a list of operators.
 """
+from collections import defaultdict
 from typing import Sequence
 
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.pauli.pauli_arithmetic import PauliSentence
 
 
 def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
@@ -56,9 +58,19 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
         raise ValueError("Cannot compute the dot product of an empty sequence.")
 
     if pauli:
-        return qml.pauli.dot(coeffs, ops)
+        return _pauli_dot(coeffs, ops)
 
     operands = []
     for coeff, op in zip(coeffs, ops):
         operands.append(op if coeff == 1 else qml.s_prod(coeff, op))
     return qml.op_sum(*operands) if len(operands) > 1 else operands[0]
+
+
+def _pauli_dot(coeffs: Sequence[float], ops: Sequence[Operator]):
+    pauli_words = defaultdict(lambda: 0)
+    for coeff, op in zip(coeffs, ops):
+        sentence = qml.pauli.pauli_sentence(op)
+        for pw in sentence:
+            pauli_words[pw] += sentence[pw] * coeff
+
+    return PauliSentence(pauli_words)

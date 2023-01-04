@@ -17,25 +17,16 @@ Unit tests for the dot function
 import pytest
 
 import pennylane as qml
-from pennylane.ops import SProd, Sum, dot
+from pennylane.ops import Hamiltonian, SProd, Sum, dot
 from pennylane.pauli.pauli_arithmetic import PauliSentence
 
 
-class TestDot:
-    """Unittests for the dot function."""
-
-    def test_dot_returns_pauli_sentence(self):
-        """Test that the dot function returns a PauliSentence class when ``pauli=True``."""
-        coeffs = [1.0, 2.0, 3.0]
-        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        ps = dot(coeffs, ops, pauli=True)
-        assert isinstance(ps, PauliSentence)
+class TestDotSum:
+    """Unittests for the dot function when ``pauli=False``."""
 
     def test_dot_returns_sum(self):
         """Test that the dot function returns a Sum operator when ``pauli=False``."""
-        coeffs = [1.0, 2.0, 3.0]
-        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        S = dot(coeffs, ops)
+        S = dot(coeffs=[1.0, 2.0, 3.0], ops=[qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)])
         assert isinstance(S, Sum)
         for summand, coeff, op in zip(S.operands, coeffs, ops):
             if coeff != 1:
@@ -46,9 +37,7 @@ class TestDot:
 
     def test_dot_returns_sprod(self):
         """Test that the dot function returns a SProd operator when only one operator is input."""
-        coeffs = [2.0]
-        ops = [qml.PauliX(0)]
-        O = dot(coeffs, ops)
+        O = dot(coeffs=[2.0], ops=[qml.PauliX(0)])
         assert isinstance(O, SProd)
         assert O.scalar == 2
 
@@ -69,3 +58,61 @@ class TestDot:
             match="Cannot compute the dot product of an empty sequence",
         ):
             dot([], [])
+
+    @pytest.mark.autograd
+    def test_dot_autograd(self):
+        """Test the dot function with the autograd interface."""
+        c = qml.numpy.array([1.0, 2.0, 3.0])
+        o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        S = dot(c, o)
+        assert isinstance(S, Sum)
+        for summand, coeff, op in zip(S.operands, coeffs, ops):
+            if coeff != 1:
+                assert isinstance(summand, SProd)
+                assert summand.scalar == coeff
+            else:
+                assert isinstance(summand, type(op))
+
+
+coeffs = [0.12345, 1.2345, 12.345, 123.45, 1234.5, 12345]
+ops = [
+    qml.PauliX(0),
+    qml.PauliY(1),
+    qml.PauliZ(2),
+    qml.PauliX(3),
+    qml.PauliY(4),
+    qml.PauliZ(5),
+]
+
+
+class TestDotPauliSentence:
+    """Unittest for the dot function when ``pauli=True``"""
+
+    def test_dot_returns_pauli_sentence(self):
+        """Test that the dot function returns a PauliSentence class."""
+        ps = dot(coeffs, ops)
+        assert isinstance(ps, PauliSentence)
+
+    def test_coeffs_and_ops(self):
+        """Test that the coefficients and operators of the returned PauliSentence are correct."""
+        ps = dot(coeffs, ops)
+        h = ps.hamiltonian()
+        assert qml.math.allequal(h.coeffs, coeffs)
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(h.ops, ops))
+
+    def test_dot_simplifies_linear_combination(self):
+        """Test that the dot function groups equal pauli words."""
+        ps = dot(coeffs=[0.12, 1.2, 12], ops=[qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)])
+        assert len(ps) == 1
+        h = ps.hamiltonian()
+        assert len(h.ops) == 1
+        assert qml.equal(h.ops[0], qml.PauliX(0))
+
+    def test_dot_returns_hamiltonian_simplified(self):
+        """Test that hamiltonian computed from the PauliSentence created by the dot function is equal
+        to the simplified hamiltonian."""
+        ps = dot(coeffs, ops)
+        h_ps = ps.hamiltonian()
+        h = Hamiltonian(coeffs, ops)
+        h.simplify()
+        assert qml.equal(h_ps, h)
