@@ -195,13 +195,6 @@ class Dataset(ABC):
     def _write_file(data, filepath, protocol=4):
         """General method to write data to a file."""
         zstd, dill = _import_zstd_dill()
-
-        if isinstance(data, dict):
-            for attr in ["hamiltonian", "tapered_hamiltonian"]:
-                ham = data.get(attr)
-                if ham is not None:
-                    data[attr] = hamiltonian_to_dict(ham)
-
         pickled_data = dill.dumps(data, protocol=protocol)
         compressed_pickle = zstd.compress(pickled_data)
         with open(filepath, "wb") as f:
@@ -221,7 +214,10 @@ class Dataset(ABC):
         dirname = os.path.dirname(filepath)
         if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
-        self._write_file(self.attrs, filepath, protocol=protocol)
+        attrs = self.attrs
+        for h in {"hamiltonian", "tapered_hamiltonian"}.intersection(attrs):
+            attrs[h] = hamiltonian_to_dict(attrs[h])
+        self._write_file(attrs, filepath, protocol=protocol)
 
     def list_attributes(self):
         """List the attributes saved on the Dataset"""
