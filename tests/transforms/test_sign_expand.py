@@ -196,9 +196,3 @@ class TestSignExpand:
 
         assert np.isclose(cost(var), cost_param_shift(var), 0.05)
         assert np.isclose(cost(var), cost_finite_diff(var), 0.05)
-
-        # TODO: This does not work yet due to qml.utils.sparse_hamiltonian does not allow autograd to push gradients through
-        # grad = qml.grad(cost)(var)
-        # assert len(grad) == len(output2)
-        # for g, o in zip(grad, output2):
-        #     assert np.allclose(g, o, atol=tol)
