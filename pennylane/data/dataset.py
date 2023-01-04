@@ -115,11 +115,12 @@ class Dataset(ABC):
         self.__doc__ = docstring
 
         self._fullfile = self._prefix.format("full")
-        if not os.path.exists(self._fullfile):
+        if os.path.exists(self._fullfile):
+            self.read(self._fullfile, lazy=True)
+        else:
             self._fullfile = None
-
-        for f in glob(self._prefix.format("*")):
-            self.read(f, lazy=True)
+            for f in glob(self._prefix.format("*")):
+                self.read(f, lazy=True)
 
     def __base_init__(self, **kwargs):
         """Constructor for user-defined datasets."""
@@ -226,9 +227,13 @@ class Dataset(ABC):
         dirname = os.path.dirname(filepath)
         if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
+        # if some values are still lazy-loaded to None, this will load them before writing
+        if self._is_standard:
+            for attr in self.attrs:
+                _ = getattr(self, attr)
         attrs = self.attrs
         for h in condensed_hamiltonians.intersection(attrs):
-            attrs[h] = hamiltonian_to_dict(getattr(self, h))
+            attrs[h] = hamiltonian_to_dict(attrs[h])
         self._write_file(attrs, filepath, protocol=protocol)
 
     def list_attributes(self):
