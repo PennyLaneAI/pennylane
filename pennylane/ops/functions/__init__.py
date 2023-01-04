@@ -38,3 +38,4 @@ from .is_unitary import is_unitary
 from .map_wires import map_wires
 from .matrix import matrix
 from .simplify import simplify
+from .dot import dot

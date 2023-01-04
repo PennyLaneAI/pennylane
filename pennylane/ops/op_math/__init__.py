@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ from .controlled_class import Controlled, ControlledOp
 from .exp import exp, Exp, Evolution
 
 from .prod import prod, Prod
-from .dot import dot
+
 from .sum import op_sum, Sum
 
 from .sprod import s_prod, SProd
