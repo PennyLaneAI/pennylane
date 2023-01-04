@@ -154,7 +154,10 @@ def _compute_num_cnots_jit(U):
     and follows the arguments of this paper: https://arxiv.org/abs/quant-ph/0308045.
     """
 
-    # ToDo: could this also just use that lax_cond thing?
+    # ToDo: could this also just use lax_cond and be simpler to read/think about?
+    #  Currently gets a True/False (1/0) value for each of three variables (no_cnot, one_cnot, two_cnots)
+    #  then converts this to a number of CNOTS (0, 1, 2, or 3)
+
     u = math.dot(Edag, math.dot(U, E))
     gammaU = math.dot(u, math.T(u))
     trace = math.trace(gammaU)
@@ -163,7 +166,7 @@ def _compute_num_cnots_jit(U):
     # at most one of these conditions is true, so this will only return 1 or 0
     no_cnots = (
         math.allclose(trace, 4, atol=1e-7) + math.allclose(trace, -4, atol=1e-7) + 0
-    )  # adding 0 promotes to integer without casting (jit doesn't like casting), but maybe isn't neded_
+    )  # adding 0 promotes to integer without casting (jit doesn't like casting)
 
     # To distinguish between 1/2 CNOT cases, we need to look at the eigenvalues
     evs = math.linalg.eigvals(gammaU)
@@ -171,15 +174,16 @@ def _compute_num_cnots_jit(U):
 
     # Case: 1 CNOT, the trace is 0, AND the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
     # Checking the eigenvalues is needed because of some special 2-CNOT cases that yield a trace 0.
-
-    two_conditions = [
+    both_conditions = [
         math.allclose(trace, 0j, atol=1e-6),
         math.allclose(sorted_evs, jax.numpy.array([-1, -1, 1, 1])),
-    ]  # should return 1 if BOTH these conditions are true, 0 otherwise
-    one_cnot = math.allclose(jax.numpy.array(two_conditions), jax.numpy.array([1, 1])) + 0
+    ]
+    # one_cnot = 1 if BOTH these conditions are true, 0 otherwise
+    one_cnot = math.allclose(jax.numpy.array(both_conditions), jax.numpy.array([1, 1])) + 0
 
     # Case: 2 CNOTs, the trace has only a real part (or is 0)
     trace_is_real = math.allclose(math.imag(trace), 0.0, atol=1e-7) + 0
+    # two_cnots = 1 if trace_is_real condition is met and there is no valid 0 or 1 CNOT decomposition, else 0
     two_cnots = (
         math.allclose(
             jax.numpy.array([trace_is_real, one_cnot, no_cnots]), jax.numpy.array([1, 0, 0])
@@ -187,12 +191,13 @@ def _compute_num_cnots_jit(U):
         + 0
     )
 
-    # # Otherwise 3 CNOTs
+    # now no_cnots, one_cnot, and two_cnots should now all have values 0 or 1
+    # Transforming no_cnots, one_cnot, and two_cnots into num_cnots:
     return (no_cnots + one_cnot * 2 + two_cnots * 3 + 7) % 4
-    # # 0, 0, 0, 7 --> mod 4 gives 3  : if 0, 1 and 2 CNOT are all wrong, decompose into 3 CNOTs
-    # # 1, 0, 0, 7 --> mod 4 gives 0
-    # # 0, 2, 0, 7 --> mod 4 gives 1
-    # # 0, 0, 3, 7 --> mod 4 gives 2
+    # 0, 0, 0 --> sum(0, 0, 0, 7) mod 4 --> 3  : if 0, 1 and 2 CNOT are all wrong, decompose into 3 CNOTs
+    # 1, 0, 0 --> sum(1, 0, 0, 7) mod 4 --> 0
+    # 0, 1, 0 --> sum(0, 2, 0, 7) mod 4 --> 1
+    # 0, 0, 1 --> sum(0, 0, 3, 7) mod 4 --> 2
 
 
 def _su2su2_to_tensor_products(U):
