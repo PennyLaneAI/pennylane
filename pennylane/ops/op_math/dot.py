@@ -20,7 +20,6 @@ from typing import Sequence
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.pauli.pauli_arithmetic import PauliSentence
 
 
 def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
@@ -73,4 +72,4 @@ def _pauli_dot(coeffs: Sequence[float], ops: Sequence[Operator]):
         for pw in sentence:
             pauli_words[pw] += sentence[pw] * coeff
 
-    return PauliSentence(pauli_words)
+    return qml.pauli.PauliSentence(pauli_words)

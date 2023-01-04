@@ -56,6 +56,7 @@ from .adjoint_class import Adjoint
 from .adjoint_constructor import adjoint
 from .controlled_class import Controlled, ControlledOp
 from .exp import exp, Exp, Evolution
+from .dot import dot
 
 from .prod import prod, Prod
 
