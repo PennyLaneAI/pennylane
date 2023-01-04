@@ -152,7 +152,7 @@ def test_none_attribute_value(tmp_path):
     standard_dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
     standard_dataset.molecule = None  # wouldn't usually happen
     with pytest.raises(
-        AttributeError,
+        FileNotFoundError,
         match="Dataset has a 'molecule' attribute, but it is None and no data file was found",
     ):
         _ = standard_dataset.molecule

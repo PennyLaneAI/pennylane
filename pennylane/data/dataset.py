@@ -268,28 +268,33 @@ class Dataset(ABC):
         return os.path.basename(filename)[self._prefix_len : -4]
 
     def __getattribute__(self, name):
+        attr_error = None
         try:
-            val = super().__getattribute__(name)
-            if val is None and self._is_standard and name in self.attrs:
-                raise AttributeError(
-                    f"Dataset has a '{name}' attribute, but it is None and no data file was found"
-                )
-            return val
-        except AttributeError:
+            value = super().__getattribute__(name)
+            if value is not None or not self._is_standard or name not in self.attrs:
+                return value
+        except AttributeError as e:
             if not self._is_standard:
                 raise
-            filepath = self.__get_filename_for_attribute(name)
-            if not os.path.exists(filepath):  # TODO: download the file here?
-                raise
-            value = self._read_file(filepath)
-            if filepath == self._fullfile:
-                if name not in value:
-                    raise
-                value = value[name]
-            if name in condensed_hamiltonians:
-                value = dict_to_hamiltonian(value["terms"], value["wire_map"])
-            setattr(self, name, value)
-            return value
+            attr_error = e
+
+        filepath = self.__get_filename_for_attribute(name)
+        missing_file_error = FileNotFoundError(
+            f"Dataset has a '{name}' attribute, but it is None and no data file was found"
+        )
+        if not os.path.exists(filepath):
+            raise attr_error or missing_file_error
+
+        value = self._read_file(filepath)
+        if filepath == self._fullfile:
+            if name not in value:
+                raise attr_error or missing_file_error
+            value = value[name]
+        if name in condensed_hamiltonians:
+            value = dict_to_hamiltonian(value["terms"], value["wire_map"])
+
+        setattr(self, name, value)
+        return value
 
 
 def dict_to_hamiltonian(terms, wire_map):
