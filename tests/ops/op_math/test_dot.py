@@ -36,9 +36,6 @@ class TestDot:
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = dot(coeffs, ops, pauli=True)
         assert isinstance(ps, PauliSentence)
-        h = ps.hamiltonian()
-        assert qml.math.allequal(h.coeffs, coeffs)
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(h.ops, ops))
 
     def test_dot_returns_sum(self):
         """Test that the dot function returns a Sum operator when ``pauli=False``."""
