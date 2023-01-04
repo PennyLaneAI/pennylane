@@ -305,3 +305,80 @@ class TestRelativeEntropy:
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             qml.math.relative_entropy(state0, state1)
+
+
+class TestMaxEntropy:
+    """Tests for computing the maximum entropy of a given state."""
+    
+    state_vector = [([1, 0, 0, 1] / np.sqrt(2), False), ([1, 0, 0, 0], True)]
+
+    single_wires_list = [
+        [0],
+        [1],
+    ]
+
+    base = [2, np.exp(1), 10]
+
+    check_state = [True, False]
+
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("state_vector,pure", state_vector)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_state_vector_max_entropy_without_base(
+        self, state_vector, wires, check_state, pure, interface
+    ):
+        """Test maximum entropy for different state vectors without base for log."""
+        if interface:
+            state_vector = qml.math.asarray(state_vector, like=interface)
+
+        max_entropy = qml.math.max_entropy(state_vector, wires, check_state=check_state)
+
+        if pure:
+            expected_max_entropy = 0
+        else:
+            expected_max_entropy = np.log(2)
+        assert qml.math.allclose(max_entropy, expected_max_entropy)
+        
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("state_vector,pure", state_vector)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_state_vector_max_entropy(self, state_vector, wires, base, check_state, pure, interface):
+        """Test maximum entropy for different state vectors and log bases."""
+        if interface:
+            state_vector = qml.math.asarray(state_vector, like=interface)
+        max_entropy = qml.math.max_entropy(state_vector, wires, base, check_state)
+
+        if pure:
+            expected_max_entropy = 0
+        else:
+            expected_max_entropy = np.log(2) / np.log(base)
+
+        assert qml.math.allclose(max_entropy, expected_max_entropy)
+        
+    density_matrices = [
+        ([[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]], False),
+        ([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], True),
+    ]
+
+    @pytest.mark.parametrize("density_matrix,pure", density_matrices)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
+    def test_density_matrices_max_entropy(
+        self, density_matrix, pure, wires, base, check_state, interface
+    ):
+        """Test maximum entropy for different density matrices."""
+        if interface:
+            density_matrix = qml.math.asarray(density_matrix, like=interface)
+        max_entropy = qml.math.max_entropy(density_matrix, wires, base, check_state)
+
+        if pure:
+            expected_max_entropy = 0
+        else:
+            expected_max_entropy = np.log(2) / np.log(base)
+
+        assert qml.math.allclose(max_entropy, expected_max_entropy)
