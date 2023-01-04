@@ -31,11 +31,8 @@ class TestDotSum:
         S = dot(coeffs=c, ops=o)
         assert isinstance(S, Sum)
         for summand, coeff, op in zip(S.operands, c, o):
-            if coeff != 1:
-                assert isinstance(summand, SProd)
-                assert summand.scalar == coeff
-            else:
-                assert isinstance(summand, type(op))
+            assert isinstance(summand, SProd)
+            assert summand.scalar == coeff
 
     def test_dot_returns_sprod(self):
         """Test that the dot function returns a SProd operator when only one operator is input."""
@@ -68,7 +65,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            qml.PauliX(0),
+            SProd(qml.numpy.array(1.0), qml.PauliX(0)),
             SProd(qml.numpy.array(2.0), qml.PauliY(1)),
             SProd(qml.numpy.array(3.0), qml.PauliZ(2)),
         )
@@ -83,7 +80,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            qml.PauliX(0),
+            SProd(tf.constant(1.0), qml.PauliX(0)),
             SProd(tf.constant(2.0), qml.PauliY(1)),
             SProd(tf.constant(3.0), qml.PauliZ(2)),
         )
@@ -98,7 +95,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            qml.PauliX(0),
+            SProd(torch.tensor(1.0), qml.PauliX(0)),
             SProd(torch.tensor(2.0), qml.PauliY(1)),
             SProd(torch.tensor(3.0), qml.PauliZ(2)),
         )
@@ -113,7 +110,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            qml.PauliX(0),
+            SProd(jax.numpy.array(1.0), qml.PauliX(0)),
             SProd(jax.numpy.array(2.0), qml.PauliY(1)),
             SProd(jax.numpy.array(3.0), qml.PauliZ(2)),
         )
@@ -172,7 +169,7 @@ class TestDotPauliSentence:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = dot(c, o, pauli=True)
         op_sum = Sum(
-            qml.PauliX(0),
+            SProd(qml.numpy.array(1.0), qml.PauliX(0)),
             SProd(qml.numpy.array(2.0), qml.PauliY(1)),
             SProd(qml.numpy.array(3.0), qml.PauliZ(2)),
         )
@@ -188,7 +185,7 @@ class TestDotPauliSentence:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = dot(c, o, pauli=True)
         op_sum = Sum(
-            qml.PauliX(0),
+            SProd(tf.constant(1.0), qml.PauliX(0)),
             SProd(tf.constant(2.0), qml.PauliY(1)),
             SProd(tf.constant(3.0), qml.PauliZ(2)),
         )
@@ -204,7 +201,7 @@ class TestDotPauliSentence:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = dot(c, o, pauli=True)
         op_sum = Sum(
-            qml.PauliX(0),
+            SProd(torch.tensor(1.0), qml.PauliX(0)),
             SProd(torch.tensor(2.0), qml.PauliY(1)),
             SProd(torch.tensor(3.0), qml.PauliZ(2)),
         )
@@ -220,7 +217,7 @@ class TestDotPauliSentence:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = dot(c, o, pauli=True)
         op_sum = Sum(
-            qml.PauliX(0),
+            SProd(jax.numpy.array(1.0), qml.PauliX(0)),
             SProd(jax.numpy.array(2.0), qml.PauliY(1)),
             SProd(jax.numpy.array(3.0), qml.PauliZ(2)),
         )
