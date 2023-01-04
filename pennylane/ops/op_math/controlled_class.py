@@ -292,9 +292,8 @@ class Controlled(SymbolicOp):
         new_base = self.base.map_wires(wire_map=wire_map)
         new_control_wires = Wires([wire_map.get(wire, wire) for wire in self.control_wires])
         new_work_wires = Wires([wire_map.get(wire, wire) for wire in self.work_wires])
-        cls = self.__class__
 
-        return cls(
+        return self.__class__(
             base=new_base,
             control_wires=new_control_wires,
             control_values=self.control_values,
@@ -433,8 +432,7 @@ class Controlled(SymbolicOp):
         return self.base.has_adjoint
 
     def adjoint(self):
-        cls = self.__class__
-        return cls(
+        return self.__class__(
             self.base.adjoint(),
             self.control_wires,
             control_values=self.control_values,
@@ -443,9 +441,8 @@ class Controlled(SymbolicOp):
 
     def pow(self, z):
         base_pow = self.base.pow(z)
-        cls = self.__class__
         return [
-            cls(
+            self.__class__(
                 op,
                 self.control_wires,
                 control_values=self.control_values,
@@ -455,16 +452,15 @@ class Controlled(SymbolicOp):
         ]
 
     def simplify(self) -> "Controlled":
-        cls = self.__class__
         if isinstance(self.base, Controlled):
             base = self.base.base.simplify()
-            return cls(
+            return self.__class__(
                 base,
                 control_wires=self.control_wires + self.base.control_wires,
                 control_values=self.control_values + self.base.control_values,
                 work_wires=self.work_wires + self.base.work_wires,
             )
-        return cls(
+        return self.__class__(
             base=self.base.simplify(),
             control_wires=self.control_wires,
             control_values=self.control_values,

@@ -659,7 +659,6 @@ class TestMatrix:
         matrix = op.matrix()
 
         assert matrix.shape == (3, 4, 4)
-        assert matrix.shape[-2:] == (4, 4)
 
     @pytest.mark.parametrize("base, num_control, mat", base_num_control_mats)
     def test_matrix_compare_with_gate_data(self, base, num_control, mat):
