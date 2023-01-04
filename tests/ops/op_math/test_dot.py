@@ -68,7 +68,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            SProd(qml.numpy.array(1.0), qml.PauliX(0)),
+            qml.PauliX(0),
             SProd(qml.numpy.array(2.0), qml.PauliY(1)),
             SProd(qml.numpy.array(3.0), qml.PauliZ(2)),
         )
@@ -83,7 +83,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            SProd(tf.Variable(1.0), qml.PauliX(0)),
+            qml.PauliX(0),
             SProd(tf.Variable(2.0), qml.PauliY(1)),
             SProd(tf.Variable(3.0), qml.PauliZ(2)),
         )
@@ -98,7 +98,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            SProd(torch.array(1.0), qml.PauliX(0)),
+            qml.PauliX(0),
             SProd(torch.array(2.0), qml.PauliY(1)),
             SProd(torch.array(3.0), qml.PauliZ(2)),
         )
@@ -113,7 +113,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            SProd(jax.numpy.array(1.0), qml.PauliX(0)),
+            qml.PauliX(0),
             SProd(jax.numpy.array(2.0), qml.PauliY(1)),
             SProd(jax.numpy.array(3.0), qml.PauliZ(2)),
         )
@@ -172,7 +172,9 @@ class TestDotPauliSentence:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = dot(c, o, pauli=True)
         op_sum = Sum(
-            SProd(1.0, qml.PauliX(0)), SProd(2.0, qml.PauliY(1)), SProd(3.0, qml.PauliZ(2))
+            qml.PauliX(0),
+            SProd(qml.numpy.array(2.0), qml.PauliY(1)),
+            SProd(qml.numpy.array(3.0), qml.PauliZ(2)),
         )
         ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
@@ -186,7 +188,9 @@ class TestDotPauliSentence:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = dot(c, o, pauli=True)
         op_sum = Sum(
-            SProd(1.0, qml.PauliX(0)), SProd(2.0, qml.PauliY(1)), SProd(3.0, qml.PauliZ(2))
+            qml.PauliX(0),
+            SProd(tf.Variable(2.0), qml.PauliY(1)),
+            SProd(tf.Variable(3.0), qml.PauliZ(2)),
         )
         ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
@@ -200,7 +204,9 @@ class TestDotPauliSentence:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = dot(c, o, pauli=True)
         op_sum = Sum(
-            SProd(1.0, qml.PauliX(0)), SProd(2.0, qml.PauliY(1)), SProd(3.0, qml.PauliZ(2))
+            qml.PauliX(0),
+            SProd(torch.array(2.0), qml.PauliY(1)),
+            SProd(torch.array(3.0), qml.PauliZ(2)),
         )
         ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
@@ -214,7 +220,9 @@ class TestDotPauliSentence:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ps = dot(c, o, pauli=True)
         op_sum = Sum(
-            SProd(1.0, qml.PauliX(0)), SProd(2.0, qml.PauliY(1)), SProd(3.0, qml.PauliZ(2))
+            qml.PauliX(0),
+            SProd(jax.numpy.array(2.0), qml.PauliY(1)),
+            SProd(jax.numpy.array(3.0), qml.PauliZ(2)),
         )
         ps_2 = qml.pauli.pauli_sentence(op_sum)
         assert ps == ps_2
