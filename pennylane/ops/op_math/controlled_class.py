@@ -180,11 +180,7 @@ class Controlled(SymbolicOp):
                     "Specifying control values as a string is deprecated. Please use Sequence[Bool]",
                     UserWarning,
                 )
-
-                if not set(control_values).issubset({"0", "1"}):
-                    raise ValueError("String of control values can contain only '0' or '1'.")
-
-                control_values = [(x == "1") for x in control_values]
+                control_values = [(x != "0") for x in control_values]
 
             control_values = (
                 [bool(control_values)]
