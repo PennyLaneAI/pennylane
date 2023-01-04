@@ -197,9 +197,10 @@ class Dataset(ABC):
         zstd, dill = _import_zstd_dill()
 
         if isinstance(data, dict):
-            h = data.get("hamiltonian")
-            if h is not None:
-                data["hamiltonian"] = hamiltonian_to_dict(h)
+            for attr in ["hamiltonian", "tapered_hamiltonian"]:
+                ham = data.get(attr)
+                if ham is not None:
+                    data[attr] = hamiltonian_to_dict(ham)
 
         pickled_data = dill.dumps(data, protocol=protocol)
         compressed_pickle = zstd.compress(pickled_data)
@@ -272,7 +273,7 @@ class Dataset(ABC):
                 if name not in value:
                     raise
                 value = value[name]
-            if name == "hamiltonian":
+            if name in ["hamiltonian", "tapered_hamiltonian"]:
                 value = dict_to_hamiltonian(value["terms"], value["wire_map"])
             setattr(self, name, value)
             return value
