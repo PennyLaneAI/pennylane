@@ -31,10 +31,10 @@ def givens_matrix(a, b, left=True, tol=1e-8):
     where :math:`r` is a complex number.
 
     Args:
-        a (float or complex): first element of the vector for which givens matrix is being computed
-        b (float or complex): second element of the vector for which givens matrix is being computed
-        left (bool): determines if the givens matrix is being applied from the left side or right side.
-        tol (float): detemrines tolerance limits for `|a|` and `|b|` under which they are considered as zero.
+        a (float or complex): first element of the vector for which the Givens matrix is being computed
+        b (float or complex): second element of the vector for which the Givens matrix is being computed
+        left (bool): determines if the Givens matrix is being applied from the left side or right side.
+        tol (float): determines tolerance limits for `|a|` and `|b|` under which they are considered as zero.
 
     Returns:
         np.ndarray (or tensor): Givens rotation matrix
@@ -91,7 +91,7 @@ def givens_rotate(unitary, grot_mat, indices, row=True):
 
 
 def givens_decomposition(unitary):
-    r"""Decompose a unitary into sequence of Givens Rotation gates with phase shifts and a diagonal phase matrix.
+    r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
 
     This decomposition is based on the construction scheme given by `W. Clements et al. <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_ (2016),
     which allows one to write any unitary matrix :math:`U` as:
@@ -100,14 +100,14 @@ def givens_decomposition(unitary):
 
         U = D \left(\prod_{(m, n) \in G} T_{m, n}\right),
 
-    where :math:`D` is a diagonal phase matrix, :math:`T` is the Givens Rotation gates with phase shifts and :math:`G` defines the
+    where :math:`D` is a diagonal phase matrix, :math:`T` is the Givens rotation gates with phase shifts and :math:`G` defines the
     specific ordered sequence of the Givens rotation gates.
 
     Args:
         unitary (tensor): unitary matrix on which decomposition will be performed
 
     Returns:
-        (np.ndarray, list[(np.ndarray, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with thier indices.
+        (np.ndarray, list[(np.ndarray, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices.
 
     Raises:
         ValueError: if the provided matrix is not square.

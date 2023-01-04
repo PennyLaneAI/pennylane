@@ -22,14 +22,14 @@ from pennylane.qchem.givens_rotations import givens_decomposition
 
 # pylint: disable-msg=too-many-arguments
 class BasisRotation(Operation):
-    r"""Implement a circuit that provides the unitary that can be used to do an exact single-body basis rotation
+    r"""Implement a circuit that provides the unitary that can be used to do an exact single-body basis rotation.
 
     The `BasisRotation` template performs a unitary transformation :math:`U(u)` determined by the single-particle fermionic
     generators as:
 
     .. math::
 
-        U(u) = \exp{\left( \sum_{pq} \left[\log u \right]_{pq} (a_p^\dagger a_q - a_q^\dagger a_p) \right)}
+        U(u) = \exp{\left( \sum_{pq} \left[\log u \right]_{pq} (a_p^\dagger a_q - a_q^\dagger a_p) \right)}.
 
     This :math:`U(u)` is implemented efficiently by performing its Givens decomposition into a sequence of
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` gates using the construction scheme given by
@@ -37,7 +37,7 @@ class BasisRotation(Operation):
 
     Args:
         wires (Iterable[Any]): wires that the operator acts on
-        unitary_matrix (array): matrix specifying the basis trasformation
+        unitary_matrix (array): matrix specifying the basis transformation
         check (bool): test unitarity of the provided `unitary_matrix`
 
     Raises:
@@ -47,8 +47,8 @@ class BasisRotation(Operation):
 
         **Usage Details**
 
-        The `BasisRotation` template can be used to implement evolution :math:`e^{iH}` where the Hamiltonian
-        :math:`H = \sum_{pq} V_{pq} a^\dagger_p a_q` and :math:`V` is an :math:`N \times N` hermitation matrix.
+        The `BasisRotation` template can be used to implement the evolution :math:`e^{iH}`, where the Hamiltonian
+        :math:`H = \sum_{pq} V_{pq} a^\dagger_p a_q` and :math:`V` is an :math:`N \times N` Hermitian matrix.
         The unitary matrix :math:`u` in this case will be the transformation matrix that diagonalizes :math:`V` such that:
 
         .. math::
@@ -79,14 +79,14 @@ class BasisRotation(Operation):
 
         **Theory**
 
-        The overall effect of :math:`U(u)` can be realized as perfoming a transformation to set of new basis
+        The overall effect of :math:`U(u)` can be viewed as performing a transformation from one basis to a new basis
         that is defined by the linear combination of fermionic ladder operators:
 
         .. math::
 
             U(u) a_p^\dagger U(u)^\dagger = b_p^\dagger,
 
-        where :math:`a_p^\dagger` and :math:`b_p^\dagger` are the originial and transformed creation operators, respectively,
+        where :math:`a_p^\dagger` and :math:`b_p^\dagger` are the original and transformed creation operators, respectively,
         are related to each other by the following relation:
 
         .. math::
@@ -112,7 +112,7 @@ class BasisRotation(Operation):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
-            raise ValueError(f"This template requries at least two wires, got {len(wires)}")
+            raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
         self._hyperparameters = {
             "unitary_matrix": unitary_matrix,
@@ -155,7 +155,7 @@ class BasisRotation(Operation):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
-            raise ValueError(f"This template requries at least two wires, got {len(wires)}")
+            raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
         op_list = []
         phase_list, givens_list = givens_decomposition(unitary_matrix)

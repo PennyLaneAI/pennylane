@@ -282,7 +282,7 @@ class TestInputs:
             (
                 [0],
                 np.array([[1.0]]),
-                "This template requries at least two wires",
+                "This template requires at least two wires",
             ),
         ],
     )
