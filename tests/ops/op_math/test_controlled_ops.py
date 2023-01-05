@@ -25,7 +25,9 @@ class TestControlledQubitUnitary:
 
     def test_no_control(self):
         """Test if ControlledQubitUnitary raises an error if control wires are not specified"""
-        with pytest.raises(ValueError, match="Must specify control wires"):
+        with pytest.raises(
+            TypeError, match="missing 1 required positional argument: 'control_wires'"
+        ):
             qml.ControlledQubitUnitary(X, wires=2)
 
     def test_shared_control(self):
@@ -170,24 +172,20 @@ class TestControlledQubitUnitary:
 
         assert np.allclose(state_1, state_2)
 
-    @pytest.mark.parametrize(
-        "control_wires,wires,control_values,expected_error_message",
-        [
-            ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
-            ([0, 1], 2, "011", "control_values should be the same length as control_wires"),
-        ],
-    )
-    def test_invalid_mixed_polarity_controls(
-        self, control_wires, wires, control_values, expected_error_message
-    ):
+    def test_mismatched_control_value_length(self):
         """Test if ControlledQubitUnitary properly handles invalid mixed-polarity
         control values."""
+        control_wires = [0, 1]
+        wires = 2
+        control_values = "011"
         target_wires = Wires(wires)
 
-        with pytest.raises(ValueError, match=expected_error_message):
+        with pytest.raises(
+            ValueError, match="control_values should be the same length as control_wires"
+        ):
             qml.ControlledQubitUnitary(
                 X, control_wires=control_wires, wires=target_wires, control_values=control_values
-            ).matrix()
+            )
 
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",
