@@ -1342,7 +1342,7 @@ class TestCtrlTransformDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
         def circuit(b):
-            init_state = np.array([1.0, -1.0]) / np.sqrt(2)
+            init_state = onp.array([1.0, -1.0]) / onp.sqrt(2)
             qml.QubitStateVector(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
