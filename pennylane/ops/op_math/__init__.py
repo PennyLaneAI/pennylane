@@ -53,21 +53,13 @@ Symbolic Classes
 
 """
 
-from .adjoint_class import Adjoint
-from .adjoint_constructor import adjoint
-from .controlled_class import Controlled, ControlledOp
-from .exp import exp, Exp, Evolution
-from .dot import dot
-
-from .prod import prod, Prod
-
-from .sum import op_sum, Sum
-
-from .sprod import s_prod, SProd
-
-from .control import ctrl
-from .pow import pow, Pow
-
-from .symbolicop import SymbolicOp
-
+from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
+from .controlled import Controlled, ControlledOp, ctrl
+from .dot import dot
+from .exp import Evolution, Exp, exp
+from .pow import Pow, pow
+from .prod import Prod, prod
+from .sprod import SProd, s_prod
+from .sum import Sum, op_sum
+from .symbolicop import SymbolicOp
