@@ -47,6 +47,24 @@ def test_write_dataset(tmp_path):
     test_dataset.write(p)
 
 
+def test_write_standard_loads_before_writing(tmp_path):
+    """Test that the write method loads values before writing if they were None (lazy-loaded)."""
+    filepath = tmp_path / "myset_full.dat"
+    qml.data.Dataset._write_file({"molecule": 1, "hf_state": 2}, str(filepath))
+    dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
+    assert dataset.attrs == {"molecule": None, "hf_state": None}
+
+    dest_file = str(tmp_path / "written.dat")
+    dataset.write(dest_file)
+    # these were None before - calling write() loaded them!
+    assert dataset.attrs == {"molecule": 1, "hf_state": 2}
+
+    # read is never lazy, so this should have data loaded immediately
+    read_dataset = qml.data.Dataset()
+    read_dataset.read(dest_file)
+    assert read_dataset.attrs == {"molecule": 1, "hf_state": 2}
+
+
 def test_read_dataset(tmp_path):
     """Test that datasets are loaded correctly."""
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
