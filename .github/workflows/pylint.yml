@@ -23,10 +23,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v1
 
+      - name: Read test files that pass pylint
+        id: tests_to_lint
+        run: echo "testfiles=$(cat .github/data/tests_passing_pylint.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
       - name: Run pylint
         uses: ricardochaves/python-lint@v1.4.0
         with:
-          python-root-list: "pennylane"
+          python-root-list: "pennylane ${{ steps.tests_to_lint.outputs.testfiles }}"
           use-pylint: True
           use-pycodestyle: false
           use-flake8: false
