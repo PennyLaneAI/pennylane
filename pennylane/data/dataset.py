@@ -116,11 +116,13 @@ class Dataset(ABC):
 
         self._fullfile = self._prefix.format("full")
         if os.path.exists(self._fullfile):
-            self.read(self._fullfile, lazy=True)
+            for attr in self._read_file(self._fullfile):
+                setattr(self, f"{attr}", None)
         else:
             self._fullfile = None
             for f in glob(self._prefix.format("*")):
-                self.read(f, lazy=True)
+                attribute = self.__get_attribute_from_filename(f)
+                setattr(self, f"{attribute}", None)
 
     def __base_init__(self, **kwargs):
         """Constructor for user-defined datasets."""
@@ -172,37 +174,26 @@ class Dataset(ABC):
         depressed_pickle = zstd.decompress(compressed_pickle)
         return dill.loads(depressed_pickle)
 
-    def read(self, filepath, lazy=False):
+    def read(self, filepath):
         """Loads data from a saved file to the current dataset.
 
         Args:
             filepath (string): The desired location and filename to load, e.g. './path/to/file/file_name.dat'.
-            lazy (bool): Indicates if only the key of the attribute should be saved to the Dataset instance
 
         **Example**
 
         >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
         >>> new_dataset.read('./path/to/file/file_name.dat')
         """
+        data = self._read_file(filepath)
         # set 'full' for non-standard datasets so they read keys too
         attribute = self.__get_attribute_from_filename(filepath) if self._is_standard else "full"
-        if attribute == "full":
-            data = self._read_file(filepath)
-            for attr, value in data.items():
-                if lazy:
-                    data = None
-                elif attr in condensed_hamiltonians:
-                    data = dict_to_hamiltonian(value["terms"], value["wire_map"])
-                else:
-                    data = value
-                setattr(self, f"{attr}", data)
-        else:
-            data = None
-            if not lazy:
-                data = self._read_file(filepath)
-                if attribute in condensed_hamiltonians:
-                    data = dict_to_hamiltonian(data["terms"], data["wire_map"])
-            setattr(self, f"{attribute}", data)
+        if attribute != "full":
+            data = {attribute: data}
+        for attr, value in data.items():
+            if attr in condensed_hamiltonians:
+                value = dict_to_hamiltonian(value["terms"], value["wire_map"])
+            setattr(self, f"{attr}", value)
 
     @staticmethod
     def _write_file(data, filepath, protocol=4):
