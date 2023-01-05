@@ -871,10 +871,13 @@ class TestAdjointConstructorPreconstructedOp:
             base = qml.PauliX(0) @ qml.PauliY(1)
             out = adjoint(base)
 
-        assert len(q) == 0
+        assert len(q) == 1
         assert q.queue[0] is out
         assert out.base is base
         assert isinstance(out, Adjoint)
+
+        qs = qml.tape.QuantumScript.from_queue(q)
+        assert len(qs) == 0
 
 
 class TestAdjointConstructorDifferentCallableTypes:
@@ -962,11 +965,8 @@ class TestAdjointConstructorNonLazyExecution:
             base = qml.RX(x, wires="b")
             out = adjoint(base, lazy=False)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(tape) == 1
-        assert out is tape[0]
-        assert q.get_info(base) == {"owner": out}
-        assert q.get_info(out) == {"owns": base}
+        assert len(q) == 1
+        assert q.queue[0] is out
 
         assert isinstance(out, qml.RX)
         assert out.data == [-1.23]
@@ -977,12 +977,8 @@ class TestAdjointConstructorNonLazyExecution:
             base = qml.S(0)
             out = adjoint(base, lazy=False)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(tape) == 1
-        assert out is tape[0]
-        assert len(q) == 2
-        assert q.get_info(base) == {"owner": out}
-        assert q.get_info(out) == {"owns": base}
+        assert len(q) == 1
+        assert q.queue[0] is out
 
         assert isinstance(out, Adjoint)
         assert isinstance(out.base, qml.S)
