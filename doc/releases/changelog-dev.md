@@ -150,6 +150,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed the wires for the Y decomposition in the ZX calculus transform.
+  [(#3598)](https://github.com/PennyLaneAI/pennylane/pull/3598)
+* 
 * `qml.pauli.PauliWord` is now pickle-able.
   [(#3588)](https://github.com/PennyLaneAI/pennylane/pull/3588)
 
