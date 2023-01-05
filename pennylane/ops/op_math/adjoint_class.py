@@ -15,7 +15,7 @@
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
 import pennylane as qml
-from pennylane.math import conj, transpose, moveaxis
+from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation
 
 from .symbolicop import SymbolicOp
@@ -200,14 +200,6 @@ class Adjoint(SymbolicOp):
 
     def __repr__(self):
         return f"Adjoint({self.base})"
-
-    # pylint: disable=protected-access
-    def _check_batching(self, params):
-        self.base._check_batching(params)
-
-    @property
-    def batch_size(self):
-        return self.base.batch_size
 
     @property
     def ndim_params(self):

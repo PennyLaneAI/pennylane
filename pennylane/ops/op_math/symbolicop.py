@@ -102,6 +102,14 @@ class SymbolicOp(Operator):
     def has_matrix(self):
         return self.base.has_matrix
 
+    # pylint: disable=protected-access
+    def _check_batching(self, params):
+        self.base._check_batching(params)
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
     @property
     def is_hermitian(self):
         return self.base.is_hermitian
