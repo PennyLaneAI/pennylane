@@ -17,7 +17,7 @@ import json
 from os import path
 import pennylane as qml
 from pennylane import numpy as np
-from ..batch_transform import batch_transform
+from pennylane.transforms.batch_transform import batch_transform
 
 
 def ControlledPauliEvolution(theta, wires, pauli_word, controls):
