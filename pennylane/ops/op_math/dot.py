@@ -56,12 +56,20 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     if len(coeffs) == 0 and len(ops) == 0:
         raise ValueError("Cannot compute the dot product of an empty sequence.")
 
+    if pauli:
+        return _pauli_dot(coeffs, ops)
+
+    operands = []
+    for coeff, op in zip(coeffs, ops):
+        operands.append(op if coeff == 1 else qml.s_prod(coeff, op))
+    return qml.op_sum(*operands) if len(operands) > 1 else operands[0]
+
+
+def _pauli_dot(coeffs: Sequence[float], ops: Sequence[Operator]):
     pauli_words = defaultdict(lambda: 0)
     for coeff, op in zip(coeffs, ops):
         sentence = qml.pauli.pauli_sentence(op)
         for pw in sentence:
             pauli_words[pw] += sentence[pw] * coeff
 
-    pauli_sentence = qml.pauli.PauliSentence(pauli_words)
-
-    return pauli_sentence if pauli else pauli_sentence.operation()
+    return qml.pauli.PauliSentence(pauli_words)
