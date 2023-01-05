@@ -212,3 +212,20 @@ class TestEntanglementEntropies:
         actual = tape.gradient(entropy, params)
 
         assert qml.math.allclose(actual, expected)
+
+    def test_qnode_transform_not_state(self):
+        """Test the qnode transform needs a QNode returning state."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(theta):
+            qml.RY(theta, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(wires=0))
+
+        with pytest.raises(
+            ValueError,
+            match="The qfunc return type needs to be a state.",
+        ):
+            qml.qinfo.vn_entanglement_entropy(circuit, wires0=[0], wires1=[1])(0.1)
