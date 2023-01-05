@@ -23,10 +23,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v1
 
-      - name: Read test files that pass pylint
-        id: tests_to_lint
-        run: echo "testfiles=$(cat .github/data/tests_passing_pylint.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
-
       - name: Run pylint
         uses: ricardochaves/python-lint@v1.4.0
         with:
@@ -38,6 +34,27 @@ jobs:
           use-mypy: false
           use-isort: false
           extra-pylint-options: "--rcfile .pylintrc"
+          extra-pycodestyle-options: ""
+          extra-flake8-options: ""
+          extra-black-options: ""
+          extra-mypy-options: ""
+          extra-isort-options: ""
+
+      - name: Read whitelisted test files that pass pylint
+        id: tests_to_lint
+        run: echo "testfiles=$(cat .github/tests/tests_passing_pylint.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
+      - name: Run pylint for whitelisted tests
+        uses: ricardochaves/python-lint@v1.4.0
+        with:
+          python-root-list: "${{ steps.tests_to_lint.outputs.testfiles }}"
+          use-pylint: True
+          use-pycodestyle: false
+          use-flake8: false
+          use-black: false
+          use-mypy: false
+          use-isort: false
+          extra-pylint-options: "--rcfile .github/tests/.pylintrc"
           extra-pycodestyle-options: ""
           extra-flake8-options: ""
           extra-black-options: ""
