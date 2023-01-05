@@ -14,83 +14,125 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
+from functools import wraps
+
 import pennylane as qml
-from pennylane.math import conj, transpose, moveaxis
-from pennylane.operation import Observable, Operation
+from pennylane.math import conj, moveaxis, transpose
+from pennylane.operation import Observable, Operation, Operator
+from pennylane.queuing import QueuingManager
+from pennylane.tape import make_qscript
 
 from .symbolicop import SymbolicOp
 
 
 # pylint: disable=no-member
-class AdjointOperation(Operation):
-    """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class
-    is an ``Operation``.
+def adjoint(fn, lazy=True):
+    """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
 
-    .. warning::
-        This mixin class should never be initialized independent of ``Adjoint``.
+    Args:
+        fn (function or :class:`~.operation.Operator`): A single operator or a quantum function that
+            applies quantum operations.
 
-    Overriding the dunder method ``__new__`` in ``Adjoint`` allows us to customize the creation of
-    an instance and dynamically add in parent classes.
+    Keyword Args:
+        lazy=True (bool): If the transform is behaving lazily, all operations are wrapped in a ``Adjoint`` class
+            and handled later. If ``lazy=False``, operation-specific adjoint decompositions are first attempted.
 
-    .. note:: Once the ``Operation`` class does not contain any unique logic any more, this mixin
-    class can be removed.
+    Returns:
+        (function or :class:`~.operation.Operator`): If an Operator is provided, returns an Operator that is the adjoint.
+        If a function is provided, returns a function with the same call signature that returns the Adjoint of the
+        provided function.
+
+    .. note::
+
+        The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and observables may have different adjoint and inverse operators.
+
+    .. seealso:: :class:`~.ops.op_math.Adjoint` and :meth:`.Operator.adjoint`
+
+    **Example**
+
+    The adjoint transform can accept a single operator.
+
+    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    ... def circuit2(y):
+    ...     qml.adjoint(qml.RY(y, wires=0))
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> print(qml.draw(circuit2)("y"))
+    0: ──RY(y)†─┤  <Z>
+    >>> print(qml.draw(circuit2, expansion_strategy="device")(0.1))
+    0: ──RY(-0.10)─┤  <Z>
+
+    The adjoint transforms can also be used to apply the adjoint of
+    any quantum function.  In this case, ``adjoint`` accepts a single function and returns
+    a function with the same call signature.
+
+    We can create a QNode that applies the ``my_ops`` function followed by its adjoint:
+
+    .. code-block:: python3
+
+        def my_ops(a, wire):
+            qml.RX(a, wires=wire)
+            qml.SX(wire)
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            my_ops(a, wire=0)
+            qml.adjoint(my_ops)(a, wire=0)
+            return qml.expval(qml.PauliZ(0))
+
+    Printing this out, we can see that the inverse quantum
+    function has indeed been applied:
+
+    >>> print(qml.draw(circuit)(0.2))
+    0: ──RX(0.20)──SX──SX†──RX(0.20)†─┤  <Z>
+
+    .. details::
+        :title: Lazy Evaluation
+
+        When ``lazy=False``, the function first attempts operation-specific decomposition of the
+        adjoint via the :meth:`.Operator.adjoint` method. Only if an Operator doesn't have
+        an :meth:`.Operator.adjoint` method is the object wrapped with the :class:`~.ops.op_math.Adjoint`
+        wrapper class.
+
+        >>> qml.adjoint(qml.PauliZ(0), lazy=False)
+        PauliZ(wires=[0])
+        >>> qml.adjoint(qml.RX, lazy=False)(1.0, wires=0)
+        RX(-1.0, wires=[0])
+        >>> qml.adjoint(qml.S, lazy=False)(0)
+        Adjoint(S)(wires=[0])
+
     """
+    if isinstance(fn, Operator):
+        return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
+    if not callable(fn):
+        raise ValueError(
+            f"The object {fn} of type {type(fn)} is not callable. "
+            "This error might occur if you apply adjoint to a list "
+            "of operations instead of a function or template."
+        )
 
-    # This inverse behavior only needs to temporarily patch behavior until in-place inversion is
-    # removed.
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        qscript = make_qscript(fn)(*args, **kwargs)
+        if lazy:
+            adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
+        else:
+            adjoint_ops = [_single_op_eager(op) for op in reversed(qscript.operations)]
 
-    @property
-    def _inverse(self):
-        return self.base._inverse  # pylint: disable=protected-access
+        return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
 
-    @_inverse.setter
-    def _inverse(self, boolean):
-        self.base._inverse = boolean  # pylint: disable=protected-access
-        # refresh name as base_name got updated.
-        self._name = f"Adjoint({self.base.name})"
+    return wrapper
 
-    def inv(self):
-        self.base.inv()
-        # refresh name as base_name got updated.
-        self._name = f"Adjoint({self.base.name})"
-        return self
 
-    @property
-    def base_name(self):
-        return self._name
-
-    @property
-    def name(self):
-        return self._name
-
-    # pylint: disable=missing-function-docstring
-    @property
-    def basis(self):
-        return self.base.basis
-
-    @property
-    def control_wires(self):
-        return self.base.control_wires
-
-    def single_qubit_rot_angles(self):
-        omega, theta, phi = self.base.single_qubit_rot_angles()
-        return [-phi, -theta, -omega]
-
-    @property
-    def grad_method(self):
-        return self.base.grad_method
-
-    # pylint: disable=missing-function-docstring
-    @property
-    def grad_recipe(self):
-        return self.base.grad_recipe
-
-    @property
-    def parameter_frequencies(self):
-        return self.base.parameter_frequencies
-
-    def generator(self):
-        return -1.0 * self.base.generator()
+def _single_op_eager(op, update_queue=False):
+    if op.has_adjoint:
+        adj = op.adjoint()
+        if update_queue:
+            QueuingManager.update_info(op, owner=adj)
+            QueuingManager.append(adj, owns=op)
+        return adj
+    return Adjoint(op)
 
 
 # pylint: disable=too-many-public-methods
@@ -266,3 +308,75 @@ class Adjoint(SymbolicOp):
         if self.base.has_adjoint:
             return base.adjoint().simplify()
         return Adjoint(base=base.simplify())
+
+
+# pylint: disable=no-member
+class AdjointOperation(Operation):
+    """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class
+    is an ``Operation``.
+
+    .. warning::
+        This mixin class should never be initialized independent of ``Adjoint``.
+
+    Overriding the dunder method ``__new__`` in ``Adjoint`` allows us to customize the creation of
+    an instance and dynamically add in parent classes.
+
+    .. note:: Once the ``Operation`` class does not contain any unique logic any more, this mixin
+    class can be removed.
+    """
+
+    # This inverse behavior only needs to temporarily patch behavior until in-place inversion is
+    # removed.
+
+    @property
+    def _inverse(self):
+        return self.base._inverse  # pylint: disable=protected-access
+
+    @_inverse.setter
+    def _inverse(self, boolean):
+        self.base._inverse = boolean  # pylint: disable=protected-access
+        # refresh name as base_name got updated.
+        self._name = f"Adjoint({self.base.name})"
+
+    def inv(self):
+        self.base.inv()
+        # refresh name as base_name got updated.
+        self._name = f"Adjoint({self.base.name})"
+        return self
+
+    @property
+    def base_name(self):
+        return self._name
+
+    @property
+    def name(self):
+        return self._name
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def basis(self):
+        return self.base.basis
+
+    @property
+    def control_wires(self):
+        return self.base.control_wires
+
+    def single_qubit_rot_angles(self):
+        omega, theta, phi = self.base.single_qubit_rot_angles()
+        return [-phi, -theta, -omega]
+
+    @property
+    def grad_method(self):
+        return self.base.grad_method
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def grad_recipe(self):
+        return self.base.grad_recipe
+
+    @property
+    def parameter_frequencies(self):
+        return self.base.parameter_frequencies
+
+    def generator(self):
+        return -1.0 * self.base.generator()
