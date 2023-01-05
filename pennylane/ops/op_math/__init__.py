@@ -29,6 +29,7 @@ Constructor Functions
     ~pow
     ~prod
     ~s_prod
+    ~ops.dot
 
 Symbolic Classes
 ~~~~~~~~~~~~~~~~
@@ -55,6 +56,7 @@ Symbolic Classes
 from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
 from .controlled import Controlled, ControlledOp, ctrl
+from .dot import dot
 from .exp import Evolution, Exp, exp
 from .pow import Pow, pow
 from .prod import Prod, prod
