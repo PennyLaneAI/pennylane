@@ -2266,7 +2266,7 @@ class Tensor(Observable):
             # Return a single Identity as the tensor only contains Identities
             obs = qml.Identity(self.wires[0])
         elif len(self.non_identity_obs) == 1:
-            obs = self.non_identity_obs[0].queue()
+            obs = self.non_identity_obs[0]
         else:
             obs = Tensor(*self.non_identity_obs)
 
