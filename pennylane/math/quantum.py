@@ -1106,7 +1106,9 @@ def _compute_max_entropy(density_matrix, base):
     else:
         div_base = 1
 
-    rank = np.linalg.matrix_rank(density_matrix)
-    maximum_entropy = np.log(rank) / div_base
+    evs, _ = qml.math.linalg.eigh(density_matrix)
+    evs = qml.math.real(evs)
+    rank = qml.math.sum(evs / qml.math.where(evs > 1e-8, evs, 1.0))
+    maximum_entropy = qml.math.log(rank) / div_base
 
     return maximum_entropy
