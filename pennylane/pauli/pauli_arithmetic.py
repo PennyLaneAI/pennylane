@@ -365,9 +365,10 @@ class PauliSentence(dict):
                 raise ValueError("Can't get the operation for an empty PauliSentence.")
             return Identity(wires=wire_order)
 
-        summands = [
-            s_prod(coeff, pw.operation(wire_order=list(self.wires))) for pw, coeff in self.items()
-        ]
+        summands = []
+        for pw, coeff in self.items():
+            pw_op = pw.operation(wire_order=list(self.wires))
+            summands.append(pw_op if coeff == 1 else s_prod(coeff, pw_op))
         return summands[0] if len(summands) == 1 else op_sum(*summands)
 
     def hamiltonian(self, wire_order=None):

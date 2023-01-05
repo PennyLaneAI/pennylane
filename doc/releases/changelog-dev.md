@@ -135,6 +135,10 @@
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
 
+* Improve the `PauliSentence.operation()` method to avoid instantiating an `SProd` operator when
+  the coefficient is equal to 1.
+  [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
+
  <h3>Breaking changes</h3>
 
 * The tape constructed by a QNode is no longer queued to surrounding contexts.
