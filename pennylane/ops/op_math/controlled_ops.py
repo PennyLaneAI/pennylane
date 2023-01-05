@@ -116,7 +116,13 @@ class ControlledQubitUnitary(ControlledOp):
         if isinstance(base, Iterable):
             base = QubitUnitary(base, wires=wires, unitary_check=unitary_check)
 
-        super().__init__(base, control_wires, control_values=control_values, do_queue=do_queue)
+        super().__init__(
+            base,
+            control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            do_queue=do_queue,
+        )
         self._name = "ControlledQubitUnitary"
 
     def _controlled(self, wire):
