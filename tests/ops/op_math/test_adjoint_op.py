@@ -1185,7 +1185,7 @@ class TestAdjointConstructorIntegration:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))
-    def test_gradient_torch(self, diff_method):
+    def test_gradient_tf(self, diff_method):
         """Test gradients through the adjoint transform with tensorflow."""
 
         import tensorflow as tf
