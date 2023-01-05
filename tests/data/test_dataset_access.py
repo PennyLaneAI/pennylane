@@ -605,7 +605,7 @@ class TestLoadInteractive:
     )
     def test_load_interactive_success(
         self, mock_input, mock_load, mock_sleep, side_effect, data_name, kwargs, sleep_call_count
-    ):
+    ):  # pylint:disable=too-many-arguments
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
