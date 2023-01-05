@@ -20,9 +20,10 @@ from typing import Iterable
 
 from pennylane.operation import AnyWires
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
-from .controlled_class import ControlledOp
+from .controlled import ControlledOp
 
 
+# pylint: disable=too-few-public-methods
 class ControlledQubitUnitary(ControlledOp):
     r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
     Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
