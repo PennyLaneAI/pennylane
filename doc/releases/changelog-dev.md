@@ -101,6 +101,20 @@
   library.
   [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
 
+* Added `qml.ops.dot` function to compute the dot product between a vector and a list of operators.
+
+  ```pycon
+  >>> coeffs = np.array([1.1, 2.2])
+  >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+  >>> qml.ops.dot(coeffs, ops)
+  (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+  >>> qml.ops.dot(coeffs, ops, pauli=True)
+  1.1 * X(0)
+  + 2.2 * Y(0)
+  ```
+
+  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
+
 <h3>Improvements</h3>
 
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
