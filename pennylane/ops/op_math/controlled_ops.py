@@ -134,4 +134,4 @@ class ControlledQubitUnitary(ControlledOp):
             control_values=values,
             work_wires=self.work_wires,
         )
-        return new_op.inv() if self.inverse else new_op
+        return new_op
