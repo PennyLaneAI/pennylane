@@ -14,7 +14,6 @@
 """
 This module provides the PennyLane :class:`~.tensor` class.
 """
-import contextlib
 import numpy as onp
 from autograd import numpy as _np
 from autograd.core import VSpace
@@ -311,28 +310,6 @@ def tensor_to_arraybox(x, *args):
 
     return ArrayBox(x, *args)
 
-
-# pylint: disable=import-outside-toplevel
-def union_of_tensor_types():
-    """Creates a Union of all available tensor-like types for type-hinting, skipping those that come from
-    packages not availabe in the current environment"""
-    tensor_types = tensor
-    with contextlib.suppress(ImportError):
-        import jax
-
-        tensor_types = tensor_types | jax.Array
-    with contextlib.suppress(ImportError):
-        import torch
-
-        tensor_types = tensor_types | torch.Tensor
-    with contextlib.suppress(ImportError):
-        import tensorflow
-
-        tensor_types = tensor_types | tensorflow.Tensor
-    return tensor_types
-
-
-tensor_like = union_of_tensor_types()
 
 Box.type_mappings[tensor] = tensor_to_arraybox
 VSpace.mappings[tensor] = lambda x: ComplexArrayVSpace(x) if onp.iscomplexobj(x) else ArrayVSpace(x)

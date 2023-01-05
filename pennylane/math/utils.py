@@ -13,7 +13,7 @@
 # limitations under the License.
 """Utility functions"""
 import warnings
-
+import contextlib
 import autoray as ar
 import numpy as _np
 
@@ -524,3 +524,26 @@ def in_backprop(tensor, interface=None):
         return False
 
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
+
+
+# pylint: disable=import-outside-toplevel
+def union_of_tensor_types():
+    """Creates a Union of all available tensor-like types for type-hinting, skipping any types from
+    packages not available in the current environment"""
+    tensor_types = type(_np.ndarray(1))  # autograd numpy
+    with contextlib.suppress(ImportError):
+        import jax
+
+        tensor_types = tensor_types | jax.Array
+    with contextlib.suppress(ImportError):
+        import torch
+
+        tensor_types = tensor_types | torch.Tensor
+    with contextlib.suppress(ImportError):
+        import tensorflow
+
+        tensor_types = tensor_types | tensorflow.Tensor
+    return tensor_types
+
+
+tensor_like = union_of_tensor_types()
