@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
+import pickle
 import pytest
 from copy import copy, deepcopy
 
@@ -217,6 +218,13 @@ class TestPauliWord:
         cast to a Hamiltonian."""
         with pytest.raises(ValueError, match="Can't get the Hamiltonian for an empty PauliWord."):
             pw4.hamiltonian()
+
+    def test_pickling(self):
+        """Check that pauliwords can be pickled and unpickled."""
+        pw = PauliWord({2: "X", 3: "Y", 4: "Z"})
+        serialization = pickle.dumps(pw)
+        new_pw = pickle.loads(serialization)
+        assert pw == new_pw
 
 
 class TestPauliSentence:
@@ -471,9 +479,12 @@ class TestPauliSentence:
             full_ps_op.operands[1],
             full_op.operands[1],
         )  # testing that the identity term is constructed well
-        assert ps_op.scalar == op.scalar
+        if op.scalar != 1:
+            assert ps_op.scalar == op.scalar
+            ps_base, op_base = (ps_op.base, op.base)
+        else:
+            ps_base, op_base = ps_op, op.base
 
-        ps_base, op_base = (ps_op.base, op.base)
         assert ps_base.name == op_base.name
         assert set(ps_base.wires) == set(op_base.wires)
         # in constructing the identity wires are cast from set -> list and the order is not preserved
@@ -533,3 +544,13 @@ class TestPauliSentence:
             ValueError, match="Can't get the Hamiltonian for an empty PauliSentence."
         ):
             ps5.hamiltonian()
+
+    def test_pickling(self):
+        """Check that paulisentences can be pickled and unpickled."""
+        pw1 = PauliWord({2: "X", 3: "Y", 4: "Z"})
+        pw2 = PauliWord({2: "Y", 3: "Z"})
+        ps = PauliSentence({pw1: 1.5, pw2: -0.5})
+
+        serialization = pickle.dumps(ps)
+        new_ps = pickle.loads(serialization)
+        assert ps == new_ps
