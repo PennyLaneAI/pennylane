@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* `qml.purity` is added as a measurement process for purity 
+* `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
 * Added a new template that implements a canonical 2-complete linear (2-CCL) swap network
@@ -70,7 +70,7 @@
      DeviceArray(0.41614684, dtype=float64, weak_type=True))))
   ```
 
-* The qchem workflow is modified to support both Autograd and JAX frameworks. 
+* The qchem workflow is modified to support both Autograd and JAX frameworks.
   [(#3458)](https://github.com/PennyLaneAI/pennylane/pull/3458)
   [(#3462)](https://github.com/PennyLaneAI/pennylane/pull/3462)
   [(#3495)](https://github.com/PennyLaneAI/pennylane/pull/3495)
@@ -98,7 +98,7 @@
   ```
   
 * The function `load_basisset` is added to extract qchem basis set data from the Basis Set Exchange
-  library. 
+  library.
   [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
 
 <h3>Improvements</h3>
@@ -106,8 +106,7 @@
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
 
-
-* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of 
+* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
  [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
 
@@ -117,10 +116,14 @@
 * Limit the `numpy` version to `<1.24`.
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
 
-* Validation has been added on the `gradient_kwargs` when initializing a QNode, and if unexpected kwargs are passed, 
-  a `UserWarning` is raised. A list of the current expected gradient function kwargs has been added as 
+* Validation has been added on the `gradient_kwargs` when initializing a QNode, and if unexpected kwargs are passed,
+  a `UserWarning` is raised. A list of the current expected gradient function kwargs has been added as
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
+
+* Improve the `PauliSentence.operation()` method to avoid instantiating an `SProd` operator when
+  the coefficient is equal to 1.
+  [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
 
  <h3>Breaking changes</h3>
 
@@ -157,4 +160,3 @@ Albert Mitjans Coma
 Romain Moyard
 Matthew Silverman
 Antal Száva
-
