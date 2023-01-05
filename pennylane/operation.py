@@ -604,7 +604,7 @@ class Operator(abc.ABC):
         """
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
-        if wire_order is None or self.wires == Wires(wire_order):
+        if wire_order is None or self.wires == Wires(wire_order) or self.name in qml.ops.qubit.attributes.symmetric_over_all_wires:
             return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
