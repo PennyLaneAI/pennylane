@@ -17,7 +17,6 @@ accept a hermitian or an unitary matrix as a parameter.
 """
 # pylint:disable=arguments-differ
 import warnings
-
 import numpy as np
 
 import pennylane as qml
