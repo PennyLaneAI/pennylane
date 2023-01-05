@@ -77,34 +77,33 @@ class QubitUnitary(Operation):
         # For pure QubitUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
 
-        if not isinstance(self, qml.ControlledQubitUnitary):
-            wires = Wires(wires)
+        wires = Wires(wires)
 
-            U_shape = qml.math.shape(U)
+        U_shape = qml.math.shape(U)
 
-            dim = 2 ** len(wires)
+        dim = 2 ** len(wires)
 
-            if len(U_shape) not in {2, 3} or U_shape[-2:] != (dim, dim):
-                raise ValueError(
-                    f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
-                    f"to act on {len(wires)} wires."
-                )
+        if len(U_shape) not in {2, 3} or U_shape[-2:] != (dim, dim):
+            raise ValueError(
+                f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
+                f"to act on {len(wires)} wires."
+            )
 
-            # Check for unitarity; due to variable precision across the different ML frameworks,
-            # here we issue a warning to check the operation, instead of raising an error outright.
-            if unitary_check and not (
-                qml.math.is_abstract(U)
-                or qml.math.allclose(
-                    qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
-                    qml.math.eye(dim),
-                    atol=1e-6,
-                )
-            ):
-                warnings.warn(
-                    f"Operator {U}\n may not be unitary."
-                    "Verify unitarity of operation, or use a datatype with increased precision.",
-                    UserWarning,
-                )
+        # Check for unitarity; due to variable precision across the different ML frameworks,
+        # here we issue a warning to check the operation, instead of raising an error outright.
+        if unitary_check and not (
+            qml.math.is_abstract(U)
+            or qml.math.allclose(
+                qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
+                qml.math.eye(dim),
+                atol=1e-6,
+            )
+        ):
+            warnings.warn(
+                f"Operator {U}\n may not be unitary."
+                "Verify unitarity of operation, or use a datatype with increased precision.",
+                UserWarning,
+            )
 
         super().__init__(U, wires=wires, do_queue=do_queue, id=id)
 
