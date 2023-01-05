@@ -43,11 +43,14 @@ class ControlledQubitUnitary(ControlledOp):
     * Gradient recipe: None
 
     Args:
-        U (Union[array[complex], QubitUnitary]): square unitary matrix or a QubitUnitary operation
+        U (Union[array[complex], QubitUnitary]): square unitary matrix or a QubitUnitary operation. If passing a matrix,
+          this will be used to construct a QubitUnitary operator that will be used as the base operator. If providing
+          a ``qml.QubitUnitary``, this will be used as the base directly.
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the unitary acts on (optional if U is provided as a QubitUnitary)
         control_values (List[int, bool]): a list providing the state of the control qubits to control on (default is the all 1s state)
         unitary_check (bool): whether to check whether an array U is unitary when creating the operator (default False)
+        do_queue (bool): indicates whether the operator should be recorded when created in a tape context
 
     **Example**
 
@@ -56,11 +59,15 @@ class ControlledQubitUnitary(ControlledOp):
 
     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1], wires=2)
+    Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
+       [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
 
     Alternatively, the same operator can be constructed with a QubitUnitary:
 
     >>> base = qml.QubitUnitary(U, wires=2)
     >>> qml.ControlledQubitUnitary(base, control_wires=[0, 1])
+    Controlled(QubitUnitary(array([[ 0.94877869,  0.31594146],
+       [-0.31594146,  0.94877869]]), wires=[2]), control_wires=[0, 1])
 
     Typically controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where

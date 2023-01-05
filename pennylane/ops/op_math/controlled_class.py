@@ -65,6 +65,8 @@ class Controlled(SymbolicOp):
             length as ``control_wires``. Defaults to ``True`` for all control wires.
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
+        do_queue(bool):  indicates whether the operator should be
+            recorded when created in a tape context
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
@@ -157,7 +159,7 @@ class Controlled(SymbolicOp):
 
     # pylint: disable=unused-argument
     def __new__(cls, base, *_, **__):
-        """If base is an ``Operation``, then the a ``ControlledOp`` should be used instead."""
+        """If base is an ``Operation``, then a ``ControlledOp`` should be used instead."""
         if isinstance(base, operation.Operation):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
@@ -178,6 +180,7 @@ class Controlled(SymbolicOp):
                     "Specifying control values as a string is deprecated. Please use Sequence[Bool]",
                     UserWarning,
                 )
+                # All values not 0 are cast as true. Assumes a string of 1s and 0s.
                 control_values = [(x != "0") for x in control_values]
 
             control_values = (
