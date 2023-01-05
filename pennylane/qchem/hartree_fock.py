@@ -17,7 +17,7 @@ This module contains the functions needed for performing the self-consistent-fie
 
 import itertools
 
-import autograd.numpy as anp
+import pennylane as qml
 
 from .matrices import core_matrix, mol_density_matrix, overlap_matrix, repulsion_tensor
 
@@ -123,7 +123,7 @@ def scf(mol, n_steps=50, tol=1e-8):
 
         if r.requires_grad:
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
-            args_ = [*args] + [anp.vstack(list(itertools.chain(*args_r)))]
+            args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
             rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
             s = overlap_matrix(basis_functions)(*args_[1:])
             h_core = core_matrix(basis_functions, charges, r)(*args_)
@@ -132,30 +132,33 @@ def scf(mol, n_steps=50, tol=1e-8):
             s = overlap_matrix(basis_functions)(*args)
             h_core = core_matrix(basis_functions, charges, r)(*args)
 
-        s = s + anp.diag(anp.random.rand(len(s)) * 1.0e-12)
+        qml.math.random.seed(2030)
+        s = s + qml.math.diag(qml.math.random.rand(len(s)) * 1.0e-12)
 
-        w, v = anp.linalg.eigh(s)
-        x = v @ anp.diag(anp.array([1 / anp.sqrt(i) for i in w])) @ v.T
+        w, v = qml.math.linalg.eigh(s)
+        x = v @ qml.math.diag(1.0 / qml.math.sqrt(w)) @ v.T
 
-        eigvals, w_fock = anp.linalg.eigh(x.T @ h_core @ x)  # initial guess for the scf problem
+        eigvals, w_fock = qml.math.linalg.eigh(
+            x.T @ h_core @ x
+        )  # initial guess for the scf problem
         coeffs = x @ w_fock
 
         p = mol_density_matrix(n_electron, coeffs)
 
         for _ in range(n_steps):
 
-            j = anp.einsum("pqrs,rs->pq", rep_tensor, p)
-            k = anp.einsum("psqr,rs->pq", rep_tensor, p)
+            j = qml.math.einsum("pqrs,rs->pq", rep_tensor, p)
+            k = qml.math.einsum("psqr,rs->pq", rep_tensor, p)
 
             fock_matrix = h_core + 2 * j - k
 
-            eigvals, w_fock = anp.linalg.eigh(x.T @ fock_matrix @ x)
+            eigvals, w_fock = qml.math.linalg.eigh(x.T @ fock_matrix @ x)
 
             coeffs = x @ w_fock
 
             p_update = mol_density_matrix(n_electron, coeffs)
 
-            if anp.linalg.norm(p_update - p) <= tol:
+            if qml.math.linalg.norm(p_update - p) <= tol:
                 break
 
             p = p_update
@@ -210,10 +213,10 @@ def nuclear_energy(charges, r):
             coor = args[0]
         else:
             coor = r
-        e = anp.array([0.0])
+        e = qml.math.array([0.0])
         for i, r1 in enumerate(coor):
             for j, r2 in enumerate(coor[i + 1 :]):
-                e = e + (charges[i] * charges[i + j + 1] / anp.linalg.norm(r1 - r2))
+                e = e + (charges[i] * charges[i + j + 1] / qml.math.linalg.norm(r1 - r2))
         return e
 
     return _nuclear_energy
@@ -251,9 +254,10 @@ def hf_energy(mol):
         """
         _, coeffs, fock_matrix, h_core, _ = scf(mol)(*args)
         e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
-        e_elec = anp.einsum(
+        e_elec = qml.math.einsum(
             "pq,qp", fock_matrix + h_core, mol_density_matrix(mol.n_electrons, coeffs)
         )
-        return e_elec + e_rep
+        energy = e_elec + e_rep
+        return energy.reshape(())
 
     return _hf_energy

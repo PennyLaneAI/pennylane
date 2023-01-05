@@ -1301,7 +1301,8 @@ def simplify(h, cutoff=1.0e-12):
             c[o.index(op)] += h.coeffs[i]
 
     coeffs, ops = [], []
-    nonzero_ind = np.argwhere(abs(np.array(c)) > cutoff).flatten()
+    c = qml.math.convert_like(c, c[0])
+    nonzero_ind = qml.math.argwhere(abs(c) > cutoff).flatten()
     for i in nonzero_ind:
         coeffs.append(c[i])
         ops.append(qml.pauli.string_to_pauli_word(o[i], wire_map=wiremap))
@@ -1311,7 +1312,7 @@ def simplify(h, cutoff=1.0e-12):
     except ValueError:
         pass
 
-    return qml.Hamiltonian(np.array(coeffs), ops)
+    return qml.Hamiltonian(qml.math.array(coeffs), ops)
 
 
 def _pauli_mult(p1, p2):
