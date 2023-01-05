@@ -81,7 +81,7 @@ def evolve_under(ops, coeffs, time, controls):
     return ops_temp
 
 
-def calculate_Xi_decomposition(hamiltonian):
+def calculate_xi_decomposition(hamiltonian):
     r"""
     Calculates the Xi-decomposition from the given Hamiltonian by constructing the sparse matrix
     representing the Hamiltonian, finding its spectrum and then construct projectors and
