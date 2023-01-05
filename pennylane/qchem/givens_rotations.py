@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the functions needed for performing basis transformation defined by a set of fermionic ladder operators.
+This module contains the functions needed for performing basis transformations defined by a set of fermionic ladder operators.
 """
 
 import pennylane as qml
@@ -51,12 +51,10 @@ def givens_matrix(a, b, left=True, tol=1e-8):
         sine = abs_a / hypot
         phase = 1.0 * b / abs_b * a.conjugate() / abs_a
 
-    if not left:
-        givens_mat = np.array([[phase * sine, cosine], [-phase * cosine, sine]])
-    else:
-        givens_mat = np.array([[phase * cosine, -sine], [phase * sine, cosine]])
+    if left:
+        return np.array([[phase * cosine, -sine], [phase * sine, cosine]])
 
-    return givens_mat
+    return np.array([[phase * sine, cosine], [-phase * cosine, sine]])
 
 
 def givens_rotate(unitary, grot_mat, indices, row=True):
