@@ -15,7 +15,7 @@
 from copy import copy
 from functools import partial
 
-import numpy as np
+import numpy as onp
 import pytest
 from gate_data import CNOT, CSWAP, CZ, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
@@ -987,7 +987,7 @@ class TestDifferentiation:
 
         @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
         def circuit(b):
-            init_state = np.array([1.0, -1.0]) / np.sqrt(2)
+            init_state = onp.array([1.0, -1.0]) / np.sqrt(2)
             qml.QubitStateVector(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
@@ -1184,11 +1184,11 @@ def test_ctrl_within_ctrl():
 def test_diagonal_ctrl():
     """Test ctrl on diagonal gates."""
     with qml.queuing.AnnotatedQueue() as q_tape:
-        ctrl(qml.DiagonalQubitUnitary, 1)(np.array([-1.0, 1.0j]), wires=0)
+        ctrl(qml.DiagonalQubitUnitary, 1)(onp.array([-1.0, 1.0j]), wires=0)
     tape = QuantumScript.from_queue(q_tape)
     tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
     assert qml.equal(
-        tape[0], qml.DiagonalQubitUnitary(np.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])
+        tape[0], qml.DiagonalQubitUnitary(onp.array([1.0, 1.0, -1.0, 1.0j]), wires=[1, 0])
     )
 
 
