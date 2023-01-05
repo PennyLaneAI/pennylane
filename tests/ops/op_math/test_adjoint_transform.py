@@ -57,13 +57,10 @@ class TestPreconstructedOp:
         with qml.queuing.AnnotatedQueue() as q:
             out = adjoint(base, lazy=False)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         assert isinstance(out, qml.RX)
         assert out.data == [-1.2]
         assert len(q) == 1
-        assert q[0] is out
-
-        assert len(q) == 1
+        assert q.queue[0] is out
 
     def test_single_observable(self):
         """Test passing a single preconstructed observable in a queuing context."""

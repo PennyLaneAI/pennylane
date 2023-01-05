@@ -178,7 +178,8 @@ class TestQueuing:
             op = SymbolicOp(base)
 
         assert base not in q
-        assert q[0] is op
+        assert q.queue[0] is op
+        assert len(q) == 1
 
     def test_queuing_base_defined_outside(self):
         """Test symbolic op queues without adding base to the queue if it isn't already in the queue."""
@@ -188,7 +189,7 @@ class TestQueuing:
             op = SymbolicOp(base)
 
         assert len(q) == 1
-        assert q[0] is op
+        assert q.queue[0] is op
 
     def test_do_queue_false(self):
         """Test that queuing can be avoided if `do_queue=False`."""

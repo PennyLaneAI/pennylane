@@ -560,7 +560,7 @@ class TestQueueing:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Pow(base, 1.2)
 
-        assert q[0] is op
+        assert q.queue[0] is op
         assert len(q) == 1
 
     def test_queueing_base_defined_outside(self):
@@ -571,7 +571,7 @@ class TestQueueing:
             op = Pow(base, 3.4)
 
         assert len(q) == 1
-        assert q[0] is op
+        assert q.queue[0] is op
 
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""

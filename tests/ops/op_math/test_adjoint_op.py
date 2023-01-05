@@ -571,7 +571,7 @@ class TestQueueing:
         assert base not in q.queue
         assert len(q) == 1
 
-    def test_queueing_base_defined_outside(self):
+    def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
@@ -579,7 +579,7 @@ class TestQueueing:
             op = Adjoint(base)
 
         assert len(q) == 1
-        assert q[0] == op
+        assert q.queue[0] == op
 
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""

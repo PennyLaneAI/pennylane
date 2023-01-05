@@ -618,7 +618,7 @@ class TestQueuing:
             op = Controlled(base, ("a", "b"))
 
         assert len(q) == 1
-        assert q[0] is op
+        assert q.queue[0] is op
 
     def test_do_queue_false(self):
         """Test that when `do_queue=False` is specified, the controlled op is not queued."""
