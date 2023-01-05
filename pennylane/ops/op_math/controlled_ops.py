@@ -94,7 +94,7 @@ class ControlledQubitUnitary(ControlledOp):
     def __init__(
         self,
         base,
-        control_wires=None,
+        control_wires,
         wires=None,
         control_values=None,
         do_queue=True,
