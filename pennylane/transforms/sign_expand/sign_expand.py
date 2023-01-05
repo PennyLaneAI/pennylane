@@ -298,7 +298,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     if len(hamiltonian.grouping_indices) != 1:
         raise ValueError("Passed hamiltonian must be jointly measurable")
 
-    dEs, mus, times, projs = calculate_Xi_decomposition(hamiltonian)
+    dEs, mus, times, projs = calculate_xi_decomposition(hamiltonian)
 
     if circuit:
         tapes = construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls)
