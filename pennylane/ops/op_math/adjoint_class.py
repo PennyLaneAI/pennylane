@@ -201,6 +201,14 @@ class Adjoint(SymbolicOp):
     def __repr__(self):
         return f"Adjoint({self.base})"
 
+    # pylint: disable=protected-access
+    def _check_batching(self, params):
+        self.base._check_batching(params)
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
     @property
     def ndim_params(self):
         return self.base.ndim_params
