@@ -412,8 +412,9 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
         list[list[float]]: Coefficients to scale the results for each observable, one inner list
             corresponding to one tape in the first return value
         list[list[bool]]: Each inner list corresponds to one tape and therefore also one parametrized
-            layer and its elements determine whether a trainable parameter in that layer are
-            contained in the ``argnum`` argument.
+            layer and its elements determine whether a trainable parameter in that layer is
+            contained in ``argnum``.
+
 
     This method assumes the ``generator`` of all parametrized operations with respect to
     which the tensor is computed to be Hermitian. This is the case for unitary single-parameter
