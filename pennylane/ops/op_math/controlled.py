@@ -16,6 +16,7 @@ This submodule defines the symbolic operation that indicates the control of an o
 """
 import warnings
 from copy import copy
+from functools import wraps
 from inspect import signature
 from typing import List
 
@@ -25,31 +26,105 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import operation
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
 
 
-# pylint: disable=protected-access
-def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Operator"]:
-    """Provides a decomposition without considering control values.  Returns None if
-    no decomposition.
+def ctrl(op, control, control_values=None, work_wires=None):
+    """Create a method that applies a controlled version of the provided op.
+
+    Args:
+        op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
+        control (Wires): The control wire(s).
+        control_values (bool or list[bool]): The value(s) the control wire(s) should take.
+            Integers other than 0 or 1 will be treated as ``int(bool(x))``.
+        work_wires (Any): Any auxiliary wires that can be used in the decomposition
+
+    Returns:
+        (function or :class:`~.operation.Operator`): If an Operator is provided, returns a Controlled version of the Operator.
+        If a function is provided, returns a function with the same call signature that creates a controlled version of the
+        provided function.
+
+    .. seealso:: :class:`~.Controlled`.
+
+    **Example**
+
+    .. code-block:: python3
+
+        @qml.qnode(qml.device('default.qubit', wires=range(4)))
+        def circuit(x):
+            qml.PauliX(2)
+            qml.ctrl(qml.RX, (1,2,3), control_values=(0,1,0))(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+    >>> print(qml.draw(circuit)("x"))
+    0: ────╭RX(x)─┤  <Z>
+    1: ────├○─────┤
+    2: ──X─├●─────┤
+    3: ────╰○─────┤
+    >>> x = np.array(1.2)
+    >>> circuit(x)
+    tensor(0.36235775, requires_grad=True)
+    >>> qml.grad(circuit)(x)
+    -0.9320390859672264
+
+    :func:`~.ctrl` works on both callables like ``qml.RX`` or a quantum function
+    and individual :class:`~.operation.Operator`'s.
+
+    >>> qml.ctrl(qml.PauliX(0), (1,2))
+    Controlled(PauliX(wires=[0]), control_wires=[1, 2])
+    >>> qml.ctrl(qml.PauliX(0), (1,2)).decomposition()
+    [Toffoli(wires=[1, 2, 0])]
+
+    Controlled operations work with all other forms of operator math and simplification:
+
+    >>> op = qml.ctrl(qml.RX(1.2, wires=0) ** 2 @ qml.RY(0.1, wires=0), control=1)
+    >>> qml.simplify(qml.adjoint(op))
+    Controlled(RY(12.466370614359173, wires=[0]) @ RX(10.166370614359172, wires=[0]), control_wires=[1])
+
     """
-    if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
-        return [op.base._controlled(op.control_wires[0])]
-    if isinstance(op.base, qml.PauliX):
-        if len(op.control_wires) == 2:
-            return [qml.Toffoli(op.active_wires)]
-        return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
+    control_values = [control_values] if isinstance(control_values, int) else control_values
+    control = qml.wires.Wires(control)
 
-    if not op.base.has_decomposition:
-        return None
+    if isinstance(op, Operator):
+        return Controlled(
+            op, control_wires=control, control_values=control_values, work_wires=work_wires
+        )
+    if not callable(op):
+        raise ValueError(
+            f"The object {op} of type {type(op)} is not an Operator or callable. "
+            "This error might occur if you apply ctrl to a list "
+            "of operations instead of a function or Operator."
+        )
 
-    # Need to use expand because of in-place inversion
-    # revert to decomposition once in-place inversion removed
-    base_decomp = op.base.expand().circuit
+    @wraps(op)
+    def wrapper(*args, **kwargs):
+        qscript = qml.tape.make_qscript(op)(*args, **kwargs)
 
-    return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
+        # flip control_values == 0 wires here, so we don't have to do it for each individual op.
+        flip_control_on_zero = (len(qscript) > 1) and (control_values is not None)
+        op_control_values = None if flip_control_on_zero else control_values
+        if flip_control_on_zero:
+            _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
+
+        _ = [
+            Controlled(
+                op, control_wires=control, control_values=op_control_values, work_wires=work_wires
+            )
+            for op in qscript.operations
+        ]
+
+        if flip_control_on_zero:
+            _ = [qml.PauliX(w) for w, val in zip(control, control_values) if not val]
+
+        if qml.QueuingManager.recording():
+            _ = [qml.apply(m) for m in qscript.measurements]
+
+        return qscript.measurements
+
+    return wrapper
 
 
 # pylint: disable=too-many-arguments, too-many-public-methods
@@ -440,6 +515,28 @@ class Controlled(SymbolicOp):
             control_values=self.control_values,
             work_wires=self.work_wires,
         )
+
+
+# pylint: disable=protected-access
+def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Operator"]:
+    """Provides a decomposition without considering control values.  Returns None if
+    no decomposition.
+    """
+    if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
+        return [op.base._controlled(op.control_wires[0])]
+    if isinstance(op.base, qml.PauliX):
+        if len(op.control_wires) == 2:
+            return [qml.Toffoli(op.active_wires)]
+        return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
+
+    if not op.base.has_decomposition:
+        return None
+
+    # Need to use expand because of in-place inversion
+    # revert to decomposition once in-place inversion removed
+    base_decomp = op.base.expand().circuit
+
+    return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
 
 class ControlledOp(Controlled, operation.Operation):
