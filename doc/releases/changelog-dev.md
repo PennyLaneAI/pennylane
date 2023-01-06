@@ -142,8 +142,8 @@
 * Write Hamiltonians to file in a condensed format when using the data module.
   [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
 
-* Clean up the `Dataset.read()` method to only contain what is required.
-  [(#3593)](https://github.com/PennyLaneAI/pennylane/pull/3593)
+* Improve lazy-loading in `Dataset.read()` so it is more universally supported.
+  [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
 <h3>Breaking changes</h3>
 
@@ -169,7 +169,7 @@
   [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
 
 * `Dataset.write()` now ensures that any lazy-loaded values are loaded before writing to file.
-  [(#3593)](https://github.com/PennyLaneAI/pennylane/pull/3593)
+  [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
 <h3>Contributors</h3>
 
