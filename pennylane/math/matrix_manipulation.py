@@ -22,9 +22,10 @@ from scipy.sparse import csr_matrix, eye, kron
 
 import pennylane as qml
 from pennylane.wires import Wires
+from pennylane.math.utils import tensor_like
 
 
-def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
+def expand_matrix(mat: tensor_like, wires, wire_order=None, sparse_format="csr"):
     # pylint: disable=too-many-branches
     """Re-express a matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
