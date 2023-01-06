@@ -579,7 +579,8 @@ class TestMetricTensor:
         G_expected = block_diag(G1, G3, G2)
         assert qml.math.allclose(G, G_expected, atol=tol, rtol=0)
 
-    def test_argnum_metric_tensor(self, tol):
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    def test_argnum_metric_tensor(self, tol, interface):
         """Test that argnum successfully reduces the number of tapes and gives
         the desired outcome."""
         dev = qml.device("default.qubit", wires=3)
@@ -602,7 +603,7 @@ class TestMetricTensor:
         zeros = qml.math.zeros_like(mt)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(0, 1, 3))
-        res = qml.execute(tapes, dev, None)
+        res = qml.execute(tapes, dev, None, interface=interface)
         mt013 = proc_fn(res)
 
         assert len(tapes) == 6
@@ -613,7 +614,7 @@ class TestMetricTensor:
         assert qml.math.allclose(zeros[:, 2], mt013[:, 2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
-        res = qml.execute(tapes, dev, None)
+        res = qml.execute(tapes, dev, None, interface=interface)
         mt23 = proc_fn(res)
 
         assert len(tapes) == 1
@@ -623,7 +624,7 @@ class TestMetricTensor:
         assert qml.math.allclose(zeros[:, :2], mt23[:, :2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=0)
-        res = qml.execute(tapes, dev, None)
+        res = qml.execute(tapes, dev, None, interface=interface)
         mt0 = proc_fn(res)
 
         assert len(tapes) == 1
@@ -639,7 +640,7 @@ class TestMetricTensor:
         ])
         with pytest.warns(UserWarning, match=warning):
             tapes, proc_fn = qml.metric_tensor(tape, argnum=4)
-        res = qml.execute(tapes, dev, None)
+        res = qml.execute(tapes, dev, None, interface=interface)
         mt4 = proc_fn(res)
         assert qml.math.allclose(zeros, mt4, atol=tol, rtol=0)
 

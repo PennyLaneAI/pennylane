@@ -474,8 +474,6 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
                 # there is no tape and no probs associated to this layer
                 dim = len(params_in_argnum)
                 gs.append(qml.math.zeros((dim, dim)))
-                # TODO: Could it be a problem that we can't infer a tensor type
-                # and dtype for this block?
                 continue
 
             coeffs = coeffs_list[probs_idx]
