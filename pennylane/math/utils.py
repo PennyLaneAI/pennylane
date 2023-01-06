@@ -536,7 +536,7 @@ def union_of_tensor_types():
     with contextlib.suppress(ImportError):
         import jax
 
-        tensor_types = tensor_types | jax.Array
+        tensor_types = tensor_types | type(jax.numpy.array(1))  # similar to above
     with contextlib.suppress(ImportError):
         import torch
 
