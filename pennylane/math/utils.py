@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -530,7 +530,9 @@ def in_backprop(tensor, interface=None):
 def union_of_tensor_types():
     """Creates a Union of all available tensor-like types for type-hinting, skipping any types from
     packages not available in the current environment"""
-    tensor_types = type(_np.ndarray(1))  # autograd numpy
+    # for some reason np.ndarray is interpreted as a functools.partial rather than a type
+    # when importing pennylane, causing a TypeError on import - hence type(np.ndarray(1))
+    tensor_types = type(np.ndarray(1))  # standard numpy ndarray, includes pnp.tensor
     with contextlib.suppress(ImportError):
         import jax
 
