@@ -599,6 +599,7 @@ class TestMetricTensor:
         tapes, proc_fn = qml.metric_tensor(tape)
         res = qml.execute(tapes, dev, None)
         mt = proc_fn(res)
+        zeros = qml.math.zeros_like(mt)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(0, 1, 3))
         res = qml.execute(tapes, dev, None)
@@ -608,6 +609,8 @@ class TestMetricTensor:
         assert mt.shape == mt013.shape
         assert qml.math.allclose(mt[:2, :2], mt013[:2, :2], atol=tol, rtol=0)
         assert qml.math.allclose(mt[3, 3], mt013[3, 3], atol=tol, rtol=0)
+        assert qml.math.allclose(zeros[2, :], mt013[2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(zeros[:, 2], mt013[:, 2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
         res = qml.execute(tapes, dev, None)
@@ -616,6 +619,29 @@ class TestMetricTensor:
         assert len(tapes) == 1
         assert mt.shape == mt23.shape
         assert qml.math.allclose(mt[2:, 2:], mt23[2:, 2:], atol=tol, rtol=0)
+        assert qml.math.allclose(zeros[:2, :], mt23[:2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(zeros[:, :2], mt23[:, :2], atol=tol, rtol=0)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=0)
+        res = qml.execute(tapes, dev, None)
+        mt0 = proc_fn(res)
+
+        assert len(tapes) == 1
+        assert mt.shape == mt0.shape
+        assert qml.math.allclose(mt[0, 0], mt0[0, 0], atol=tol, rtol=0)
+        assert qml.math.allclose(zeros[1:, :], mt0[1:, :], atol=tol, rtol=0)
+        assert qml.math.allclose(zeros[:, 1:], mt0[:, 1:], atol=tol, rtol=0)
+
+        warning = ''.join([
+            "Some parameters specified in argnum are not in the ",
+            "trainable parameters \[0, 1, 2, 3\] of the tape ",
+            "and will be ignored."
+        ])
+        with pytest.warns(UserWarning, match=warning):
+            tapes, proc_fn = qml.metric_tensor(tape, argnum=4)
+        res = qml.execute(tapes, dev, None)
+        mt4 = proc_fn(res)
+        assert qml.math.allclose(zeros, mt4, atol=tol, rtol=0)
 
     def test_multi_qubit_gates(self):
         """Test that a tape with Ising gates has the correct metric tensor tapes."""
