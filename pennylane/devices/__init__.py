@@ -18,10 +18,14 @@ and CV circuit simulators that can be used with PennyLane without the need for a
 dependencies. They may also be used in the PennyLane test suite in order
 to verify and test quantum gradient computations.
 
+:class:`~.AbstractDevice` in an experimantal interface for the next generation of devices that
+will eventually replace :class:`~.Device` and :class:`~.QubitDevice`.
+
 .. currentmodule:: pennylane.devices
 .. autosummary::
     :toctree: api
 
+    AbstractDevice
     default_qubit
     default_qubit_jax
     default_qubit_torch
@@ -32,6 +36,9 @@ to verify and test quantum gradient computations.
     default_qutrit
     tests
 """
+
+from .device_interface import AbstractDevice
+
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are
 # not PennyLane core dependencies

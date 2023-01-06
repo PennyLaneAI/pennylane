@@ -115,6 +115,10 @@
 
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
+*Next generation device interface:*
+
+* New Abstract Base Class for devices `AbstractDevice` is added to the `devices` module.
+
 <h3>Improvements</h3>
 
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
