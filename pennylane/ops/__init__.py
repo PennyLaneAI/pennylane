@@ -42,7 +42,7 @@ from .qubit import obs as _qubit__obs__
 # we would like these to just live in .qubit, but can't because of circular imports
 from .op_math import controlled_qubit_ops as _controlled_qubit__ops__
 
-_qubit__ops = _qubit__ops__ | _controlled_qubit__ops__
+_qubit__ops__ = _qubit__ops__ | _controlled_qubit__ops__
 _qubit__all__ = _qubit__all__ + list(_controlled_qubit__ops__)
 
 
