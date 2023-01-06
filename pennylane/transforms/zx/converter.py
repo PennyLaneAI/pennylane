@@ -314,10 +314,10 @@ def _to_zx(tape, expand_measurements=False):
         if op.name == "RY":
             theta = op.data[0]
             decomp = [
-                qml.RX(np.pi / 2, wires=0),
-                qml.RZ(theta + np.pi, wires=0),
-                qml.RX(np.pi / 2, wires=0),
-                qml.RZ(3 * np.pi, wires=0),
+                qml.RX(np.pi / 2, wires=op.wires),
+                qml.RZ(theta + np.pi, wires=op.wires),
+                qml.RX(np.pi / 2, wires=op.wires),
+                qml.RZ(3 * np.pi, wires=op.wires),
             ]
             expanded_operations.extend(decomp)
         else:
