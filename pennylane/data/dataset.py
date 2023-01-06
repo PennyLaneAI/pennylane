@@ -39,6 +39,10 @@ def _import_zstd_dill():
     return zstd, dill
 
 
+class DatasetLoadError(Exception):
+    """Error raised when a Dataset has trouble finding a lazy-loaded attribute."""
+
+
 # pylint: disable=too-many-instance-attributes
 class Dataset(ABC):
     """Create a dataset object to store a collection of information describing
@@ -110,19 +114,19 @@ class Dataset(ABC):
         self._dtype = data_name
         self._folder = folder.rstrip(os.path.sep)
         self._prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
-        self._prefix_len = len(attr_prefix) + 1
         self._description = os.path.join(data_name, self._folder.split(data_name)[-1][1:])
         self.__doc__ = docstring
 
         self._fullfile = self._prefix.format("full")
         if os.path.exists(self._fullfile):
-            for attr in self._read_file(self._fullfile):
-                setattr(self, f"{attr}", None)
+            self.read(self._fullfile, lazy=True)
         else:
             self._fullfile = None
+            prefix_len = len(attr_prefix) + 1
             for f in glob(self._prefix.format("*")):
-                attribute = self.__get_attribute_from_filename(f)
+                attribute = os.path.basename(f)[prefix_len:-4]
                 setattr(self, f"{attribute}", None)
+                self._attr_filemap[attribute] = f
 
     def __base_init__(self, **kwargs):
         """Constructor for user-defined datasets."""
@@ -131,6 +135,7 @@ class Dataset(ABC):
 
     def __init__(self, *args, standard=False, **kwargs):
         """Dispatching constructor for direct invocation with kwargs or from qml.data.load()"""
+        self._attr_filemap = {}
         if standard:
             if len(args) != len(self._standard_argnames):
                 raise TypeError(
@@ -174,11 +179,12 @@ class Dataset(ABC):
         depressed_pickle = zstd.decompress(compressed_pickle)
         return dill.loads(depressed_pickle)
 
-    def read(self, filepath):
+    def read(self, filepath, lazy=False):
         """Loads data from a saved file to the current dataset.
 
         Args:
             filepath (string): The desired location and filename to load, e.g. './path/to/file/file_name.dat'.
+            lazy (bool): Indicates if only the key of the attribute should be saved to the Dataset instance
 
         **Example**
 
@@ -186,11 +192,12 @@ class Dataset(ABC):
         >>> new_dataset.read('./path/to/file/file_name.dat')
         """
         data = self._read_file(filepath)
-        # set 'full' for non-standard datasets so they read keys too
-        attribute = self.__get_attribute_from_filename(filepath) if self._is_standard else "full"
-        if attribute != "full":
-            data = {attribute: data}
-        for attr, value in data.items():
+        if lazy:
+            for attr in data:
+                setattr(self, f"{attr}", None)
+                self._attr_filemap[attr] = filepath
+            return
+        for attr, value in data.items():  # pylint:disable=no-member
             if attr in condensed_hamiltonians:
                 value = dict_to_hamiltonian(value["terms"], value["wire_map"])
             setattr(self, f"{attr}", value)
@@ -236,55 +243,55 @@ class Dataset(ABC):
         cls = self.__class__
 
         if not self._is_standard:
-            return cls(**self.attrs)
+            copied = cls(**self.attrs)
+            copied._attr_filemap = self._attr_filemap.copy()
+            return copied
 
         copied = cls.__new__(cls)
         copied._is_standard = True
         copied._dtype = self._dtype
         copied._folder = self._folder
         copied._prefix = self._prefix
-        copied._prefix_len = self._prefix_len
         copied._fullfile = self._fullfile
+        copied._description = self._description
+        copied._attr_filemap = self._attr_filemap.copy()
         copied.__doc__ = self.__doc__
         for key, val in self.attrs.items():
             setattr(copied, f"{key}", val)
 
         return copied
 
-    # The methods below are intended for use only by standard Dataset objects
-    def __get_filename_for_attribute(self, attribute):
-        return self._fullfile or self._prefix.format(attribute)
-
-    def __get_attribute_from_filename(self, filename):
-        return os.path.basename(filename)[self._prefix_len : -4]
-
     def __getattribute__(self, name):
-        attr_error = None
-        try:
-            value = super().__getattribute__(name)
-            if value is not None or not self._is_standard or name not in self.attrs:
-                return value
-        except AttributeError as e:
-            if not self._is_standard:
-                raise
-            attr_error = e
+        value = super().__getattribute__(name)
+        if value is not None or name not in self.attrs:
+            return value
 
-        filepath = self.__get_filename_for_attribute(name)
-        missing_file_error = FileNotFoundError(
-            f"Dataset has a '{name}' attribute, but it is None and no data file was found"
-        )
+        filepath = self._attr_filemap.get(name)
+        if not filepath:  # this is (hopefully) an attribute that was directly set to None
+            return None
         if not os.path.exists(filepath):
-            raise attr_error or missing_file_error
+            raise DatasetLoadError(
+                f"Dataset lazy-loaded a '{name}' attribute, but the file originally containing it ({filepath}) was not found."
+            )
 
         value = self._read_file(filepath)
-        if filepath == self._fullfile:
+        # if this is a standard dataset getting the attribute from a special single-attribute
+        # file, then `value` is already set to the value of the attribute
+        if not (
+            self._is_standard
+            and os.path.exists(self._prefix.format(name))
+            and os.path.samefile(filepath, self._prefix.format(name))
+        ):
             if name not in value:
-                raise attr_error or missing_file_error
+                raise DatasetLoadError(
+                    f"Dataset lazy-loaded a '{name}' attribute from {filepath}, but it no longer appears to be in the file."
+                )
             value = value[name]
         if name in condensed_hamiltonians:
             value = dict_to_hamiltonian(value["terms"], value["wire_map"])
 
         setattr(self, name, value)
+        del self._attr_filemap[name]
         return value
 
 
