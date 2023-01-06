@@ -21,7 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math.controlled_class import ControlledOp
+from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 
 
