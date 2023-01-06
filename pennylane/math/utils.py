@@ -14,7 +14,6 @@
 """Utility functions"""
 import warnings
 import contextlib
-import typing
 import autoray as ar
 import numpy as _np
 
@@ -536,19 +535,19 @@ def union_of_tensor_types():
     # for some reason np.ndarray is interpreted as a functools.partial rather than a type
     # when importing pennylane, causing a TypeError on import - hence type(np.ndarray(1))
     tensor_types = type(np.ndarray(1))  # standard numpy ndarray, includes pnp.tensor
-    if typing.TYPE_CHECKING:
-        with contextlib.suppress(ImportError):
-            import jax
+    # if typing.TYPE_CHECKING:
+    with contextlib.suppress(ImportError):
+        import jax
 
-            tensor_types = tensor_types | type(jax.numpy.array(1))  # similar to above
-        with contextlib.suppress(ImportError):
-            import torch
+        tensor_types = tensor_types | type(jax.numpy.array(1))  # similar to above
+    with contextlib.suppress(ImportError):
+        import torch
 
-            tensor_types = tensor_types | torch.Tensor
-        with contextlib.suppress(ImportError):
-            import tensorflow
+        tensor_types = tensor_types | torch.Tensor
+    with contextlib.suppress(ImportError):
+        import tensorflow
 
-            tensor_types = tensor_types | tensorflow.Tensor
+        tensor_types = tensor_types | tensorflow.Tensor
     return tensor_types
 
 
