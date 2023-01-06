@@ -264,7 +264,7 @@ def metric_tensor(
 
     if argnum is None:
         argnum = tape.trainable_params
-    if isinstance(argnum, int):
+    elif isinstance(argnum, int):
         argnum = [argnum]
     if any(i not in tape.trainable_params for i in argnum):
         warnings.warn(
