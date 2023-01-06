@@ -58,12 +58,14 @@ The change in interface can be described by this function which modifies a new d
 
 import abc
 
+from numbers import Number
 from typing import Callable, Union, Sequence, Tuple
 
 from pennylane.tape import QuantumScript
 from pennylane import Tracker
 
 QScriptBatch = Sequence[QuantumScript]
+QScript_or_QScriptBatch = Union[QuantumScript, QScriptBatch]
 
 # pylint: disable=unused-argument, no-self-use
 class AbstractDevice(abc.ABC):
@@ -101,7 +103,7 @@ class AbstractDevice(abc.ABC):
         self.tracker = Tracker()
 
     def preprocess(
-        self, qscript: QuantumScript | QScriptBatch, execution_config=None
+        self, qscript: QScript_or_QScriptBatch, execution_config=None
     ) -> Tuple[QScriptBatch, Callable]:
         """Device preprocessing function.
 
@@ -117,6 +119,8 @@ class AbstractDevice(abc.ABC):
 
         Raises:
             Exception: An exception is raised if the input cannot be converted into a form supported by the device.
+
+        This function is tracked by machine learning interfaces and should be fully differentiable.
 
         Preprocessing steps may include:
         - expansion to :class:`~.Operator`'s and :class:`~.MeasurementProcess` objects supported by the device.
@@ -146,7 +150,7 @@ class AbstractDevice(abc.ABC):
         return qscript_batch, blank_postprocessing_fn
 
     @abc.abstractmethod
-    def execute(self, qscripts: QuantumScript | QScriptBatch, execution_config=None):
+    def execute(self, qscripts: QScript_or_QScriptBatch, execution_config=None):
         """Execute a Quantum Script and turn it into a result.
 
         Args:
@@ -167,6 +171,13 @@ class AbstractDevice(abc.ABC):
         * An Iterable of ``ExecutionConfig``'s of the same length as the the qscripts input: Each quantum script
           has its own set of configuration parameters. For example, every script can be executed with a different
           number of shots.
+
+        **Interface parameters:**
+
+        Note that the parameters contained within the quantum script may contain interface-specific data types, such as
+        ``torch.tensor`` or ``tensorflow.Variable``. If the device does not wish to handle interface-specific parameters, they
+        can implement an optional "internal preprocessing" step that converts all parameters to vanilla numpy. A convenience
+        transform implementing this will be provided.
 
         **Return shape:**
 
@@ -229,12 +240,27 @@ class AbstractDevice(abc.ABC):
         >>> dev.supports_gradient_with_configuration(config)
         False
 
+        **Backpropagation:**
+
+        This method is also used to validate support for backpropagation derivatives. Backpropagation
+        is only supported if the devices is transparent to the interface from start to finish. The device
+        does not need to make any other changes to support backpropagation derivatives.
+
+        >>> config = ExecutionConfig(diff_method="backprop", interface="torch")
+        >>> python_device.supports_gradient_with_configuration(config)
+        True
+        >>> cpp_device.supports_gradient_with_configuration(config)
+        False
+
         """
-        return cls.gradient != AbstractDevice.gradient if execution_config.order == 1 else False
+        if getattr(execution_config, "diff_method", None) == "backprop":
+            return False
+        order = getattr(execution_config, "order", 1)
+        return cls.gradient != AbstractDevice.gradient if order == 1 else False
 
     def gradient(
         self,
-        qscript: QuantumScript | QScriptBatch,
+        qscript: QScript_or_QScriptBatch,
         execution_config=None,
     ):
         """Calculate the gradient of either a single or a batch of Quantum Scripts.
@@ -259,16 +285,12 @@ class AbstractDevice(abc.ABC):
         If a batch of quantum scripts is provided, this method should return a tuple with each entry being the gradient of
         each individual quantum script. If the batch is of length 1, then the return tuple should still be of length 1, not squeezed.
 
-
-
-
-
         """
         raise NotImplementedError
 
     def execute_and_gradients(
         self,
-        qscripts: QuantumScript | QScriptBatch,
+        qscripts: QScript_or_QScriptBatch,
         execution_config=None,
     ):
         """Compute the results and gradients of QuantumScripts at the same time.
@@ -292,8 +314,8 @@ class AbstractDevice(abc.ABC):
 
     def vjp(
         self,
-        qscript: Union[QuantumScript, QScriptBatch],
-        dy,
+        qscript: QScript_or_QScriptBatch,
+        tangents: Tuple[Number],
         execution_config=None,
     ):
         """The vector jacobian product.
@@ -310,8 +332,64 @@ class AbstractDevice(abc.ABC):
         """
         raise NotImplementedError
 
+    def execute_and_vjp(
+        self,
+        qscripts: QScript_or_QScriptBatch,
+        tangents: Tuple[Number],
+        execution_config=None,
+    ):
+        """
+        docstring
+        """
+        return self.execute(qscripts, execution_config), self.vjp(
+            qscripts, tangents, execution_config
+        )
+
     @classmethod
     def supports_vjp(cls, execution_config=None) -> bool:
+        """Whether or not a given device defines a custom vector jacobian product.
+
+        Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
+
+
+        """
+        return cls.vjp != AbstractDevice.vjp
+
+    def jvp(
+        self,
+        qscript: QScript_or_QScriptBatch,
+        tangents: Tuple[Number],
+        execution_config=None,
+    ):
+        """The jacobian vector product.
+
+        Args:
+            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            dy (tensor-like): Gradient-output vector. Must have shape matching the output shape of the
+                corresponding qscript
+            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
+
+        Returns:
+            tensor-like: A numeric result of computing the jacobian vector product
+
+        """
+        raise NotImplementedError
+
+    def execute_and_jvp(
+        self,
+        qscripts: QScript_or_QScriptBatch,
+        cotangents: Tuple[Number],
+        execution_config=None,
+    ):
+        """
+        docstring
+        """
+        return self.execute(qscripts, execution_config), self.jvp(
+            qscripts, cotangents, execution_config
+        )
+
+    @classmethod
+    def supports_jvp(cls, execution_config=None) -> bool:
         """Whether or not a given device defines a custom vector jacobian product.
 
         Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
