@@ -744,13 +744,12 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
 
         # Rescale first and second term
         coeffs_gen = (c for c in qml.math.hstack(coeffs_list))
-        extended_coeffs_list = []  # flattened but also with 0s where parameters are not in argnum
-
-        for param_in_argnum in qml.math.hstack(in_argnum_list):
-            if param_in_argnum:
-                extended_coeffs_list.append(next(coeffs_gen))
-            else:
-                extended_coeffs_list.append(0.0)
+        # flattened coeffs_list but also with 0s where parameters are not in argnum
+        extended_coeffs_list = [
+            next(coeffs_gen)
+            if param_in_argnum else 0.0
+            for param_in_argnum in qml.math.hstack(in_argnum_list)
+        ]
 
         scale = qml.math.convert_like(
             qml.math.tensordot(extended_coeffs_list, extended_coeffs_list, axes=0), results[0]
