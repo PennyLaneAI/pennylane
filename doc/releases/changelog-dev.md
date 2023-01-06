@@ -106,7 +106,6 @@
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
 
-
 * The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of 
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
  [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
@@ -121,6 +120,9 @@
   a `UserWarning` is raised. A list of the current expected gradient function kwargs has been added as 
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
+
+* Added a type alias `tensor_like` that indicates an interface independent array, to support type-hinting.
+  [(#3604)](https://github.com/PennyLaneAI/pennylane/pull/3604)
 
  <h3>Breaking changes</h3>
 
