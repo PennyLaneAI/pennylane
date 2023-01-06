@@ -62,7 +62,8 @@ def metric_tensor(
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
-        argnum (int or list[int] or None): Trainable tape-parameter indices with respect to which
+        argnum (int or Sequence[int] or None): Trainable tape-parameter indices with respect to which
+
             the metric tensor is computed. If not provided, the metric tensor with respect to all
             trainable parameters is returned. Excluding tape-parameter indices from this list reduces
             the computational cost and the corresponding metric-tensor elements will be 0.
