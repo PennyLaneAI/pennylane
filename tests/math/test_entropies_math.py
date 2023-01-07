@@ -19,11 +19,11 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-# pytestmark = pytest.mark.all_interfaces
+pytestmark = pytest.mark.all_interfaces
 
-# tf = pytest.importorskip("tensorflow", minversion="2.1")
-# torch = pytest.importorskip("torch")
-# jax = pytest.importorskip("jax")
+tf = pytest.importorskip("tensorflow", minversion="2.1")
+torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
 
 
 class TestPurity:
