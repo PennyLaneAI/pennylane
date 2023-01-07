@@ -1078,7 +1078,7 @@ def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
     >>> vn_entropy(x, indices=[0])
     0.6931472
 
-    However, in less entangled states, the Von Neumann entropy is lower:
+    However, in general, the Von Neumann entropy is lower:
 
     >>> x = [np.cos(np.pi/8), 0, 0, -1j*np.sin(np.pi/8)]
     >>> vn_entropy(x, indices=[1])
