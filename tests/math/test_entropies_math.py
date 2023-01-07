@@ -384,3 +384,79 @@ class TestMaxEntropy:
             expected_max_entropy = np.log(2) / np.log(base)
 
         assert qml.math.allclose(entropy, expected_max_entropy)
+
+    parameters = [
+        ([1, 0, 0, 1] / np.sqrt(2), True),
+        ([[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]], False),
+    ]
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("params,is_statevector", parameters)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_state)
+    def test_max_entropy_grad(self, params, is_statevector, wires, base, check_state):
+        """Test `max_entropy` differentiability with autograd."""
+        params = np.tensor(params)
+
+        gradient = qml.grad(qml.math.max_entropy)(params, wires, base, check_state)
+
+        assert qml.math.allclose(gradient, 0.0)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("params,is_statevector", parameters)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_state)
+    def test_max_entropy_grad_torch(self, params, is_statevector, wires, base, check_state):
+        """Test `max_entropy` differentiability with torch interface."""
+        import torch
+
+        params = torch.tensor(params, requires_grad=True)
+
+        max_entropy = qml.math.max_entropy(params, wires, base, check_state)
+        max_entropy.backward()
+        gradient = params.grad
+
+        assert qml.math.allclose(gradient, 0.0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("params,is_statevector", parameters)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_state)
+    def test_max_entropy_grad_tf(self, params, is_statevector, wires, base, check_state):
+        """Test `max_entropy` differentiability with tensorflow interface."""
+        import tensorflow as tf
+
+        params = tf.Variable(params)
+
+        with tf.GradientTape() as tape:
+            max_entropy = qml.math.max_entropy(params, wires, base, check_state)
+
+        gradient = tape.gradient(max_entropy, params)
+
+        assert qml.math.allclose(gradient, 0.0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("params,is_statevector", parameters)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("base", base)
+    @pytest.mark.parametrize("check_state", check_state)
+    @pytest.mark.parametrize("jit", [True, False])
+    def test_max_entropy_grad_jax(self, params, is_statevector, wires, base, check_state, jit):
+        """Test `max_entropy` differentiability with jax."""
+        import jax
+        import jax.numpy as jnp
+
+        params = jnp.array(params)
+
+        max_entropy_grad = jax.grad(qml.math.max_entropy)
+        if jit:
+            max_entropy_grad = jax.jit(
+                max_entropy_grad, static_argnames=["indices", "base", "check_state", "c_dtype"]
+            )
+
+        gradient = max_entropy_grad(params, wires, base, check_state)
+
+        assert qml.math.allclose(gradient, 0.0)
