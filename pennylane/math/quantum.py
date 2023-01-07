@@ -1053,7 +1053,7 @@ def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
 
     **Example**
 
-    The maximum entropy of a subsystem for any state vectors can be obtained. Here is an example for the
+    The maximum entropy of a subsystem for any state vector can be obtained. Here is an example for the
     maximally entangled state, where the subsystem entropy is maximal (default base for log is exponential).
 
 
@@ -1070,6 +1070,20 @@ def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
 
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
     >>> max_entropy(x, indices=[0])
+    0.6931472
+
+    The maximum entropy is always greater or equal to the Von Neumann entropy. In this maximally
+    entangled example, they are equal:
+
+    >>> vn_entropy(x, indices=[0])
+    0.6931472
+
+    However, in less entangled states, the Von Neumann entropy is lower:
+
+    >>> x = [np.cos(np.pi/8), 0, 0, -1j*np.sin(np.pi/8)]
+    >>> vn_entropy(x, indices=[1])
+    0.4164955
+    >>> max_entropy(x, indices=[1])
     0.6931472
 
     """
