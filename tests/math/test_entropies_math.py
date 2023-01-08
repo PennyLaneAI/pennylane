@@ -443,7 +443,7 @@ class TestMaxEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_state)
-    def test_max_entropy_grad_jax(self, params, wires, base, check_state, jit):
+    def test_max_entropy_grad_jax(self, params, wires, base, check_state):
         """Test `max_entropy` differentiability with jax."""
         import jax
         import jax.numpy as jnp
