@@ -122,6 +122,7 @@ __all__ = [
     "is_abstract",
     "is_independent",
     "marginal_prob",
+    "max_entropy",
     "mutual_info",
     "ones_like",
     "purity",
