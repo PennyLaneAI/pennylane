@@ -509,7 +509,7 @@ class TestVJPGradients:
         params_np = np.array([0.543, -0.654], requires_grad=True)
         params = jnp.array(params_np)
 
-        @partial(jax.jit, static_argnums=1)
+        @partial(jax.jit)
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
                 ansatz(x[0], x[1])
