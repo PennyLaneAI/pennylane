@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -22,7 +21,7 @@ from pennylane.operation import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
 )
-from pennylane.ops.op_math import Exp, Evolution
+from pennylane.ops.op_math import Evolution, Exp
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -134,9 +133,30 @@ class TestProperties:
         with pytest.raises(NotImplementedError):
             op.inv()
 
+    def test_batching_properties(self):
+        """Test the batching properties and methods."""
+
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = Exp(base)
+        assert op.batch_size == 3
+        assert op.ndim_params == (0,)
+
+        op._check_batching([np.array([1.2, 2.3])])
+        assert op.batch_size == base.batch_size == 2
+
 
 class TestMatrix:
     """Test the matrix method."""
+
+    def test_batching_support(self):
+        """Test that adjoint matrix has batching support."""
+        x = np.array([-1, -2, -3])
+        op = Exp(qml.PauliX(0), -0.5j * x)
+        rx = qml.RX(x, wires=0)
+        mat = op.matrix()
+
+        assert qml.math.allclose(mat, rx.matrix())
+        assert mat.shape == (3, 2, 2)
 
     def test_tensor_base_isingxx(self):
         """Test that isingxx can be created with a tensor base."""
@@ -630,6 +650,21 @@ class TestIntegration:
         qml.drawer.tape_text(tape)
 
         assert "0: ──Exp─┤  "
+
+    def test_exp_batching(self):
+        """Test execution of a batched Exp operator."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            Exp(qml.PauliX(0), 0.5j * x)
+            return qml.expval(qml.PauliY(0))
+
+        x = qml.numpy.array([1.234, 2.34, 3.456])
+        res = circuit(x)
+
+        expected = np.sin(x)
+        assert qml.math.allclose(res, expected)
 
 
 class TestDifferentiation:

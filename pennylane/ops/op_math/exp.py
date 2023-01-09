@@ -16,20 +16,21 @@ This submodule defines the symbolic operation that stands for an exponential of 
 """
 from copy import copy
 from warnings import warn
-from scipy.sparse.linalg import expm as sparse_expm
+
 import numpy as np
+from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import (
     DecompositionUndefinedError,
-    expand_matrix,
-    OperatorPropertyUndefined,
     GeneratorUndefinedError,
+    Operation,
+    OperatorPropertyUndefined,
     Tensor,
+    expand_matrix,
 )
 from pennylane.wires import Wires
-from pennylane.operation import Operation
 
 from .symbolicop import SymbolicOp
 
@@ -181,12 +182,21 @@ class Exp(SymbolicOp, Operation):
         return self.base.num_params + 1
 
     @property
+    def ndim_params(self):
+        self._check_batching(self.data)
+        return self._ndim_params
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size or 1 * math.size(self.coeff)
+
+    @property
     def is_hermitian(self):
-        return self.base.is_hermitian and math.imag(self.coeff) == 0
+        return self.base.is_hermitian and math.allequal(math.imag(self.coeff), 0)
 
     @property
     def _queue_category(self):
-        if self.base.is_hermitian and math.real(self.coeff) == 0:
+        if self.base.is_hermitian and math.allequal(math.real(self.coeff), 0):
             return "_ops"
         return None
 
@@ -250,6 +260,15 @@ class Exp(SymbolicOp, Operation):
         string_base = qml.pauli.pauli_word_to_string(self.base)
         return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
 
+    @property
+    def _batched_coeff(self):
+        """Returns a boolean specifying whether the ``self.coeff`` is broadcasted or not.
+
+        Returns:
+            bool: if True, ``self.coeff`` is broadcasted
+        """
+        return math.size(self.coeff) > 1
+
     def matrix(self, wire_order=None):
 
         coeff_interface = math.get_interface(self.coeff)
@@ -260,11 +279,14 @@ class Exp(SymbolicOp, Operation):
             # This won't catch situations when the base matrix is autograd,
             # but at least this provides as much trainablility as possible
             try:
+                eigvals = self.eigvals()
+                if self._batched_coeff:
+                    eigvals_mat = math.stack(math.diag(e) for e in eigvals)
+                else:
+                    eigvals_mat = math.diag(eigvals)
                 if len(self.diagonalizing_gates()) == 0:
-                    eigvals_mat = math.diag(self.eigvals())
                     return expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
                 diagonalizing_mat = qml.matrix(self.diagonalizing_gates, wire_order=self.wires)()
-                eigvals_mat = math.diag(self.eigvals())
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
                 return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
             except OperatorPropertyUndefined:
@@ -316,6 +338,9 @@ class Exp(SymbolicOp, Operation):
         """
         base_eigvals = math.convert_like(self.base.eigvals(), self.coeff)
         base_eigvals = math.cast_like(base_eigvals, self.coeff)
+        if self._batched_coeff:
+            # exp coeff is broadcasted
+            return qml.math.stack([qml.math.exp(c * base_eigvals) for c in self.coeff])
         return qml.math.exp(self.coeff * base_eigvals)
 
     def label(self, decimals=None, base_label=None, cache=None):
