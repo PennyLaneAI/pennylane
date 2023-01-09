@@ -2453,3 +2453,51 @@ class TestExpm:
         exp_mat = qml.math.expm(orig_mat)
 
         assert qml.math.allclose(exp_mat, self.get_compare_mat(), atol=1e-4)
+
+
+class TestSize:
+
+    array_and_size = [
+        ([], 0),
+        (1, 1),
+        ([0, 1, 2, 3, 4, 5], 6),
+        ([[0, 1, 2], [3, 4, 5]], 6),
+        ([[0, 1], [2, 3], [4, 5]], 6),
+        ([[0], [1], [2], [3], [4], [5]], 6),
+    ]
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize(("array", "size"), array_and_size)
+    def test_size_autograd(self, array, size):
+        """Test size function with the autograd interface."""
+        from autograd import numpy as np
+
+        r = fn.size(np.array(array))
+        assert r == size
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(("array", "size"), array_and_size)
+    def test_size_jax(self, array, size):
+        """Test size function with the jax interface."""
+        from jax import numpy as np
+
+        r = fn.size(np.array(array))
+        assert r == size
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize(("array", "size"), array_and_size)
+    def test_size_torch(self, array, size):
+        """Test size function with the torch interface."""
+        import torch
+
+        r = fn.size(torch.tensor(array))
+        assert r == size
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize(("array", "size"), array_and_size)
+    def test_size_tensorflow(self, array, size):
+        """Test size function with the tensorflow interface."""
+        import tensorflow as tf
+
+        r = fn.size(tf.constant(array))
+        assert r == size

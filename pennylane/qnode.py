@@ -722,9 +722,7 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
         self._tape = make_qscript(self.func)(*args, **kwargs)
-        self._tape._queue_category = "_ops"
         self._qfunc_output = self.tape._qfunc_output
-        qml.QueuingManager.append(self.tape)
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
