@@ -17,14 +17,13 @@ This module contains the qml.equal function.
 # pylint: disable=too-many-arguments,too-many-return-statements
 from functools import singledispatch
 from typing import Union
-
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
-from pennylane.measurements.classical_shadow import _ShadowExpval
-from pennylane.measurements.mutual_info import _MutualInfo
-from pennylane.measurements.vn_entropy import _VnEntropy
+from pennylane.measurements.classical_shadow import ShadowExpvalMP
+from pennylane.measurements.mutual_info import MutualInfoMP
+from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.operation import Observable, Operator, Tensor
-from pennylane.ops import Hamiltonian, Controlled
+from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
 
 
 def equal(
@@ -39,17 +38,23 @@ def equal(
 
     .. Warning::
 
-        The equal function does **not** check if the matrix representation
-        of a :class:`~.Hermitian` observable is equal to an equivalent
-        observable expressed in terms of Pauli matrices, or as a
-        linear combination of Hermitians.
-        To do so would require the matrix form of Hamiltonians and Tensors
-        be calculated, which may drastically increase runtime.
+        The ``qml.equal`` function is based on a comparison of the type and attributes
+        of the measurement or operator, not a mathematical representation. While
+        comparisons between some classes, such as ``Tensor`` and ``Hamiltonian``, are
+        supported, mathematically equivalent operators defined via different classes
+        may return False when compared via ``qml.equal``.
+
+        To be more thorough would require the matrix forms to be calculated, which may
+        drastically increase runtime.
+
+    .. Warning::
 
         The kwargs ``check_interface`` and ``check_trainability`` can only be set when
-        comparing ``Operation`` objects. Comparisons of ``MeasurementProcess`` or ``Observable``
-        objects will use the defualt value of ``True`` for both, regardless of what the user
-        specifies when calling the function.
+        comparing ``Operation`` objects. Comparisons of ``MeasurementProcess``
+        or ``Observable`` objects will use the default value of ``True`` for both, regardless
+        of what the user specifies when calling the function. For subclasses of ``SymbolicOp``
+        or ``CompositeOp`` with an ``Operation`` as a base, the kwargs will be applied to the base
+        comparison.
 
     Args:
         op1 (.Operator or .MeasurementProcess): First object to compare
@@ -95,14 +100,14 @@ def equal(
     >>> qml.equal(qml.classical_shadow(wires=[0,1]), qml.classical_shadow(wires=[0,1]) )
     True
 
-
-
     .. details::
         :title: Usage Details
 
-        You can use the optional arguments to get more specific results. These arguments are, however, not used
-        for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects. Additionally, they are
-        applied only to the base operator of `Controlled` operators.
+        You can use the optional arguments to get more specific results. Additionally, they are
+        applied when comparing the base of ``SymbolicOp`` and ``CompositeOp`` operators such as
+        ``Controlled``, ``Pow``, ``SProd``, ``Prod``, etc., if the base is an ``Operation``. These arguments
+        are, however, not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor``
+        objects.
 
         Consider the following comparisons:
 
@@ -205,6 +210,21 @@ def _equal_operators(
 
 
 @_equal.register
+# pylint: disable=unused-argument, protected-access
+def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
+    """Determine whether two Prod or Sum objects are equal"""
+
+    if len(op1.operands) != len(op2.operands):
+        return False
+
+    # organizes by wire indicies while respecting commutation relations
+    sorted_ops1 = op1._sort(op1.operands)
+    sorted_ops2 = op2._sort(op2.operands)
+
+    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(sorted_ops1, sorted_ops2))
+
+
+@_equal.register
 def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
     # wires are ordered [control wires, operator wires, work wires]
@@ -221,6 +241,41 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
         raise NotImplementedError(
             f"Unable to compare base operators {op1.base} and {op2.base}."
         ) from e
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_pow(op1: Pow, op2: Pow, **kwargs):
+    """Determine whether two Pow objects are equal"""
+    if op1.z != op2.z:
+        return False
+    return qml.equal(op1.base, op2.base)
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
+    """Determine whether two Adjoint objects are equal"""
+    # first line of top-level equal function already confirms both are Adjoint - only need to compare bases
+    return qml.equal(op1.base, op2.base)
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_exp(op1: Exp, op2: Exp, **kwargs):
+    """Determine whether two Exp objects are equal"""
+    if op1.coeff != op2.coeff:
+        return False
+    return qml.equal(op1.base, op2.base)
+
+
+@_equal.register
+# pylint: disable=unused-argument
+def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
+    """Determine whether two SProd objects are equal"""
+    if op1.scalar != op2.scalar:
+        return False
+    return qml.equal(op1.base, op2.base)
 
 
 @_equal.register
@@ -254,7 +309,6 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwar
 
     """Determine whether two MeasurementProcess objects are equal"""
 
-    return_types_match = op1.return_type == op2.return_type
     if op1.obs is not None and op2.obs is not None:
         observables_match = equal(op1.obs, op2.obs)
     # check obs equality when either one is None (False) or both are None (True)
@@ -263,12 +317,12 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwar
     wires_match = op1.wires == op2.wires
     eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
 
-    return return_types_match and observables_match and wires_match and eigvals_match
+    return observables_match and wires_match and eigvals_match
 
 
 @_equal.register
 # pylint: disable=unused-argument
-def _(op1: _VnEntropy, op2: _VnEntropy, **kwargs):
+def _(op1: VnEntropyMP, op2: VnEntropyMP, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
     eq_m = _equal_measurements(op1, op2)
     log_base_match = op1.log_base == op2.log_base
@@ -277,7 +331,7 @@ def _(op1: _VnEntropy, op2: _VnEntropy, **kwargs):
 
 @_equal.register
 # pylint: disable=unused-argument
-def _(op1: _MutualInfo, op2: _MutualInfo, **kwargs):
+def _(op1: MutualInfoMP, op2: MutualInfoMP, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
     eq_m = _equal_measurements(op1, op2)
     log_base_match = op1.log_base == op2.log_base
@@ -286,12 +340,11 @@ def _(op1: _MutualInfo, op2: _MutualInfo, **kwargs):
 
 @_equal.register
 # pylint: disable=unused-argument
-def _equal_shadow_measurements(op1: _ShadowExpval, op2: _ShadowExpval, **kwargs):
-    """Determine whether two ClassicalShadow objects are equal"""
+def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **kwargs):
+    """Determine whether two ShadowExpvalMP objects are equal"""
 
-    return_types_match = op1.return_type == op2.return_type
     wires_match = op1.wires == op2.wires
     H_match = op1.H == op2.H
     k_match = op1.k == op2.k
 
-    return return_types_match and wires_match and H_match and k_match
+    return wires_match and H_match and k_match

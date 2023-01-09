@@ -116,9 +116,21 @@ class PauliWord(dict):
                 del mapping[wire]
         super().__init__(mapping)
 
+    def __reduce__(self):
+        """Defines how to pickle and unpickle a PauliWord. Otherwise, un-pickling
+        would cause __setitem__ to be called, which is forbidden on PauliWord.
+        For more information, see: https://docs.python.org/3/library/pickle.html#object.__reduce__
+        """
+        return (PauliWord, (dict(self),))
+
     def __copy__(self):
         """Copy the PauliWord instance."""
         return PauliWord(dict(self.items()))
+
+    def __deepcopy__(self, memo):
+        res = self.__copy__()
+        memo[id(self)] = res
+        return res
 
     def __setitem__(self, key, item):
         """Restrict setting items after instantiation."""
@@ -205,7 +217,7 @@ class PauliWord(dict):
         return reduce(kron, (matrix_map[self[w]] for w in wire_order))
 
     def operation(self, wire_order=None):
-        """Returns a native PennyLane``~.Operator`` representing the PauliWord."""
+        """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the operation for an empty PauliWord.")
@@ -215,7 +227,7 @@ class PauliWord(dict):
         return factors[0] if len(factors) == 1 else prod(*factors)
 
     def hamiltonian(self, wire_order=None):
-        """Return ~.Hamiltonian representing the PauliWord"""
+        """Return :class:`~pennylane.Hamiltonian` representing the PauliWord"""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
@@ -254,10 +266,28 @@ class PauliSentence(dict):
 
         return larger_ps
 
+    def __copy__(self):
+        """Copy the PauliSentence instance."""
+        copied_ps = {}
+        for pw, coeff in self.items():
+            copied_ps[copy(pw)] = coeff
+        return PauliSentence(copied_ps)
+
+    def __deepcopy__(self, memo):
+        res = self.__copy__()
+        memo[id(self)] = res
+        return res
+
     def __mul__(self, other):
         """Multiply two Pauli sentences by iterating over each sentence and multiplying
         the Pauli words pair-wise"""
         final_ps = PauliSentence()
+
+        if len(self) == 0:
+            return copy(other)
+
+        if len(other) == 0:
+            return copy(self)
 
         for pw1 in self:
             for pw2 in other:
@@ -329,19 +359,20 @@ class PauliSentence(dict):
         return math.expand_matrix(reduced_mat, result_wire_order, wire_order=wire_order)
 
     def operation(self, wire_order=None):
-        """Returns a native PennyLane``~.Operator`` representing the PauliSentence."""
+        """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the operation for an empty PauliSentence.")
             return Identity(wires=wire_order)
 
-        summands = [
-            s_prod(coeff, pw.operation(wire_order=list(self.wires))) for pw, coeff in self.items()
-        ]
+        summands = []
+        for pw, coeff in self.items():
+            pw_op = pw.operation(wire_order=list(self.wires))
+            summands.append(pw_op if coeff == 1 else s_prod(coeff, pw_op))
         return summands[0] if len(summands) == 1 else op_sum(*summands)
 
     def hamiltonian(self, wire_order=None):
-        """Returns a native PennyLane ~.Hamiltonian representing the PauliSentence."""
+        """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")

@@ -99,7 +99,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
           Note also that this makes the metric tensor strictly real-valued.
 
     Args:
-        circuit (.QuantumScript or .QNode): Circuit to compute the metric tensor of
+        circuit (.QuantumTape or .QNode): Circuit to compute the metric tensor of
         device (.Device): Device to use for the adjoint method
         hybrid (bool): Whether to take classical preprocessing into account. Ignored if
             ``circuit`` is a tape.
@@ -161,7 +161,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     if isinstance(circuit, (qml.QNode, qml.ExpvalCost)):
         return _adjoint_metric_tensor_qnode(circuit, device, hybrid)
 
-    raise qml.QuantumFunctionError("The passed object is not a QuantumScript or QNode.")
+    raise qml.QuantumFunctionError("The passed object is not a QuantumTape or QNode.")
 
 
 def _adjoint_metric_tensor_tape(tape, device):

@@ -57,6 +57,8 @@ Operator to Operator functions
     ~pennylane.prod
     ~pennylane.s_prod
     ~pennylane.generator
+    ~pennylane.map_wires
+    ~pennylane.ops.dot
 
 These operator functions act on operators to produce new operators.
 
@@ -432,6 +434,7 @@ Qutrit non-parametrized gates
 
     ~pennylane.TShift
     ~pennylane.TClock
+    ~pennylane.THadamard
     ~pennylane.TAdd
     ~pennylane.TSWAP
 

@@ -15,12 +15,12 @@
 This module contains the :class:`OperationRecorder`.
 """
 # pylint: disable=too-many-arguments
-from pennylane.queuing import QueuingManager
+from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
-from .tape import QuantumTape, QuantumScript
+from .tape import QuantumScript
 
 
-class OperationRecorder(QuantumTape):
+class OperationRecorder(QuantumScript, AnnotatedQueue):
     """A template and quantum function inspector,
     allowing easy introspection of operators that have been
     applied without requiring a QNode.
@@ -45,15 +45,24 @@ class OperationRecorder(QuantumTape):
 
     def __init__(
         self, ops=None, measurements=None, prep=None, name=None, do_queue=False, _update=True
-    ):
-        super().__init__(
-            ops, measurements, prep=prep, name=name, do_queue=do_queue, _update=_update
-        )
+    ):  # pylint: disable=unused-argument
+        AnnotatedQueue.__init__(self)
+        QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
         self.ops = None
         self.obs = None
 
-    def _process_queue(self):
-        super()._process_queue()
+    def __enter__(self):
+        return AnnotatedQueue.__enter__(self)
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        AnnotatedQueue.__exit__(self, exception_type, exception_value, traceback)
+        # After other optimizations in #2963, #2986 and follow-up work, we should check whether
+        # calling `_process_queue` only if there is no `exception_type` saves time. This would
+        # be done via the following:
+        # if exception_type is None:
+        #    self._process_queue()
+        self._ops, self._measurements, self._prep = process_queue(self)
+        self._update()
 
         for obj, info in self.items():
             QueuingManager.append(obj, **info)
@@ -63,20 +72,33 @@ class OperationRecorder(QuantumTape):
         self.obs = new_tape.observables
 
     def __str__(self):
-        output = ""
-        output += "Operations\n"
-        output += "==========\n"
-        for op in self.ops:
-            output += repr(op) + "\n"
-
-        output += "\n"
-        output += "Observables\n"
-        output += "===========\n"
-        for op in self.obs:
-            output += repr(op) + "\n"
-
-        return output
+        return "\n".join(
+            [
+                "Operations",
+                "==========",
+                *[repr(op) for op in self.ops],
+                "",
+                "Observables",
+                "===========",
+                *[repr(op) for op in self.obs],
+                "",
+            ]
+        )
 
     @property
     def queue(self):
         return self.ops + self.obs
+
+    def __getitem__(self, key):
+        """
+        Overrides the default because OperationRecorder is both a QuantumScript and an AnnotatedQueue.
+
+        If key is an int, the caller is likely indexing the backing QuantumScript. Otherwise, the
+        caller is likely indexing the backing AnnotatedQueue.
+        """
+        if isinstance(key, int):
+            return QuantumScript.__getitem__(self, key)
+        return AnnotatedQueue.__getitem__(self, key)
+
+    def __setitem__(self, key, val):
+        AnnotatedQueue.__setitem__(self, key, val)

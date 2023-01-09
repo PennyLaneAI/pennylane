@@ -145,6 +145,50 @@ jobs:
           name: all-interfaces-coverage
           path: ./coverage.xml
 
+  zx-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install PyZx
+        run: pip3 install git+https://github.com/Quantomatic/pyzx.git@master
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m zx -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: zx-coverage
+          path: ./coverage.xml
+
   qcut-tests:
     runs-on: ubuntu-latest
 
@@ -202,6 +246,20 @@ jobs:
   return-tests:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        config:
+          - { loc: "tests/returntypes/jax", suite: 'jax'}
+          - { loc: "tests/returntypes/tf", suite: 'tf'}
+          - { loc: "tests/returntypes/torch", suite: 'torch'}
+          - { loc: "tests/returntypes/autograd", suite: 'autograd'}
+          - { loc: "tests/returntypes/gradients", suite: 'gradients'}
+          - { loc: "tests/returntypes/transforms", suite: 'transforms'}
+          - { loc: "tests/returntypes/paramshift", suite: 'paramshift'}
+          - { loc: "tests/returntypes/finitediff", suite: 'finitediff'}
+          - { loc: "tests/returntypes/core", suite: 'core'}
+          - { loc: "tests/returntypes/optimizers", suite: 'optimizers'}
+
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.4.1
@@ -239,14 +297,14 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/returntypes --cov=pennylane $COVERAGE_FLAGS -n auto
+          python -m pytest ${{ matrix.config.loc }} --cov=pennylane $COVERAGE_FLAGS -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - uses: actions/upload-artifact@v2
         with:
-          name: return-coverage
+          name: return-coverage-${{ matrix.config.suite }}
           path: ./coverage.xml
 
   qchem-tests:
@@ -277,6 +335,9 @@ jobs:
 
       - name: Install openfermionpyscf
         run: pip3 install openfermionpyscf
+
+      - name: Install basis-set-exchange
+        run: pip3 install basis-set-exchange
 
       - name: Install PennyLane
         run: |
@@ -408,7 +469,7 @@ jobs:
           path: ./coverage.xml
 
   upload-to-codecov:
-      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, return-tests, qchem-tests, data-tests, device-tests]
+      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, return-tests, qchem-tests, data-tests, device-tests, zx-tests]
       runs-on: ubuntu-latest
       steps:
         - name: Checkout

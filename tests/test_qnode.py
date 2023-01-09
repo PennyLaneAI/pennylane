@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript
 
 
 def dummyfunc():
@@ -491,6 +491,41 @@ class TestValidation:
             grad = qml.grad(circuit)(0.5)
 
         assert np.allclose(grad, 0)
+
+    def test_unrecognized_kwargs_raise_warning(self):
+        """Test that passing gradient_kwargs not included in qml.gradients.SUPPORTED_GRADIENT_KWARGS raises warning"""
+        dev = qml.device("default.qubit", wires=2)
+
+        with warnings.catch_warnings(record=True) as w:
+
+            @qml.qnode(dev, random_kwarg=qml.gradients.finite_diff)
+            def circuit(params):
+                qml.RX(params[0], wires=0)
+                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+
+            assert len(w) == 1
+            assert "not included in the list of standard qnode gradient kwargs" in str(w[0].message)
+
+    def test_incorrect_diff_method_kwargs_raise_warning(self):
+        """Tests that using one of the incorrect kwargs previously used in some examples in PennyLane
+        (grad_method, gradient_fn) to set the qnode diff_method raises a warning"""
+        dev = qml.device("default.qubit", wires=2)
+
+        with warnings.catch_warnings(record=True) as w:
+
+            @qml.qnode(dev, grad_method=qml.gradients.finite_diff)
+            def circuit(params):
+                qml.RX(params[0], wires=0)
+                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+
+            @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
+            def circuit(params):
+                qml.RX(params[0], wires=0)
+                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+
+        assert len(w) == 2
+        assert "Use diff_method instead" in str(w[0].message)
+        assert "Use diff_method instead" in str(w[1].message)
 
 
 class TestTapeConstruction:
@@ -1097,6 +1132,21 @@ class TestIntegration:
         with pytest.raises(ValueError, match="wires have been measured already: {1}"):
             qnode()
 
+    def test_qnode_does_not_support_nested_queuing(self):
+        """Test that operators in QNodes are not queued to surrounding contexts."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def qnode():
+            qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qnode()
+
+        assert q.queue == []
+        assert len(qnode.tape.operations) == 1
+
 
 class TestShots:
     """Unit tests for specifying shots per call."""
@@ -1243,10 +1293,11 @@ class TestShots:
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = qml.device("default.qubit", wires=1, shots=5)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RZ(0.3, wires=0)
             qml.expval(qml.PauliZ(0))
 
+        tape = QuantumScript.from_queue(q)
         # no warning on the first execution
         cache = {}
         qml.execute([tape], dev, None, cache=cache)
@@ -1359,8 +1410,9 @@ class TestTapeExpansion:
             num_wires = 1
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RX(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method=diff_method, mode=mode)
@@ -1394,8 +1446,9 @@ class TestTapeExpansion:
             grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RX(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method="parameter-shift", max_diff=2)
@@ -1435,8 +1488,9 @@ class TestTapeExpansion:
             grad_method = None
 
             def expand(self):
-                with qml.tape.QuantumTape() as tape:
+                with qml.queuing.AnnotatedQueue() as q:
                     qml.RY(3 * self.data[0], wires=self.wires)
+                tape = QuantumScript.from_queue(q)
                 return tape
 
         @qnode(dev, diff_method="parameter-shift", max_diff=2)
