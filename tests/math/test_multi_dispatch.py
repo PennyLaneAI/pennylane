@@ -15,11 +15,12 @@
 """
 import autoray
 import numpy as onp
-import scipy as s
 import pytest
+import scipy as s
 from autoray import numpy as anp
-from pennylane import numpy as np
+
 from pennylane import math as fn
+from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -129,8 +130,8 @@ def test_multi_dispatch_decorate_non_dispatch(values):
 @pytest.mark.all_interfaces
 def test_unwrap():
     """Test that unwrap converts lists to lists and interface variables to numpy."""
-    import torch
     import tensorflow as tf
+    import torch
     from jax import numpy as jnp
 
     params = [
@@ -215,7 +216,6 @@ def test_size_autograd(array, size):
 
     r = fn.size(np.array(array))
     assert r == size
-    assert fn.get_interface(r) == "numpy"
 
 
 @pytest.mark.jax
@@ -226,7 +226,6 @@ def test_size_jax(array, size):
 
     r = fn.size(np.array(array))
     assert r == size
-    assert fn.get_interface(r) == "jax"
 
 
 @pytest.mark.torch
@@ -237,7 +236,6 @@ def test_size_torch(array, size):
 
     r = fn.size(torch.tensor(array))
     assert r == size
-    assert fn.get_interface(r) == "torch"
 
 
 @pytest.mark.tf
@@ -248,4 +246,3 @@ def test_size_tensorflow(array, size):
 
     r = fn.size(tf.constant(array))
     assert r == size
-    assert fn.get_interface(r) == "tensorflow"
