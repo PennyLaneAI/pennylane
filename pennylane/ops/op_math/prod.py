@@ -182,11 +182,6 @@ class Prod(CompositeOp):
         return [1.0], [self]
 
     @property
-    def batch_size(self):
-        """Batch size of input parameters."""
-        return next((op.batch_size for op in self if op.batch_size is not None), None)
-
-    @property
     def is_hermitian(self):
         """Check if the product operator is hermitian.
 
@@ -266,7 +261,7 @@ class Prod(CompositeOp):
                     )
 
                     reduced_mat, _ = math.reduce_matrices(
-                        mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+                        mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.matmul
                     )
 
                     yield reduced_mat
