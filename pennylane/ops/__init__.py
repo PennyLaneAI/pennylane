@@ -39,7 +39,6 @@ from .qutrit import obs as _qutrit__obs__
 
 from .channel import __all__ as _channel__ops__
 
-
 __all__ = _cv__all__ + _qubit__all__ + _qutrit__all__ + _channel__ops__
 __all_ops__ = list(_cv__ops__ | _qubit__ops__ | _qutrit__ops__)
 __all_obs__ = list(_cv__obs__ | _qubit__obs__ | _qutrit__obs__)

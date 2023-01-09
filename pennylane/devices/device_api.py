@@ -53,29 +53,8 @@ class QuantumDevice(abc.ABC):
     measurements, then ``preprocess`` should apply :func:`~.defer_measurements`.  A set of default preprocessing steps will be available
     to make a seemless transition to the new interface.
 
-    Naming and versioning will be clarified as time progresses.
-
-    The change in interface can be described by this function which modifies a new device to match the old interface:
-
-    .. code-block:: python
-
-        def backward_patch_interface(dev):
-            # map the execute function
-            dev.batch_execute = dev.execute
-
-            # map the preprocessing steps
-            dev.batch_transform = dev.preprocess
-            dev.expand_fn = lambda circuit, max_expansion: circuit
-
-            # give dummy shots. We will be moving these out of the class
-            dev.shots = None
-            dev._shot_vector = []  # pylint: disable=protected-access
-            dev.shot_vector = None
-
-            # short name needed for validation in one place
-            dev.short_name = "testpython"
-            dev.capabilities = lambda: {}
-            return dev
+    Versioning should be specified by the package containing the device. If an external package includes a PennyLane device,
+    then the package requirements should specify the minimium PennyLane version required to work with the device.
     """
 
     tracker: Tracker = Tracker()
@@ -181,6 +160,24 @@ class QuantumDevice(abc.ABC):
 
         The result for each :class:`~.QuantumScript` must match the shape specified by :class:`~.QuantumScript.shape`.
 
+        The level of priority for dimensions from outer dimension to inner dimension is:
+
+        1) Quantum Script in batch
+        2) Shot choice in a shot vector
+        3) Measurement in the quantum script
+        4) Parameter broadcasting
+        5) Measurement shape for array-valued measurements like probabilities
+
+        For a batch of quantum scripts with multiple measurements, a shot vector, and parameter broadcasting:
+
+        * ``result[0]``: the results for the first script
+        * ``result[0][0]``: the first shot number in the shot vector
+        * ``result[0][0][0]``: the first measurement in the quantum script
+        * ``result[0][0][0][0]``: the first parameter broadcasting choice
+        * ``result[0][0][0][0][0]``: the first value for an array-valued measurement
+
+        With the exception of quantum script batches, dimensions with only a single component should be eliminated.
+
         For example:
 
         With a single script and a single measurement process, execute should return just the
@@ -212,7 +209,7 @@ class QuantumDevice(abc.ABC):
         raise NotImplementedError
 
     @classmethod
-    def supports_gradient_with_configuration(cls, execution_config=None) -> bool:
+    def supports_jacobian_with_configuration(cls, execution_config=None) -> bool:
         """Determine whether or not a gradient is available with a given execution configuration.
 
         Default behaviour assumes first order derivatives exist if :meth:`~.gradient` is overriden.
@@ -241,10 +238,9 @@ class QuantumDevice(abc.ABC):
         **Backpropagation:**
 
         This method is also used to validate support for backpropagation derivatives. Backpropagation
-        is only supported if the devices is transparent to the interface from start to finish. The device
-        does not need to make any other changes to support backpropagation derivatives.
+        is only supported if the devices is transparent to the machine learning framework from start to finish.
 
-        >>> config = ExecutionConfig(diff_method="backprop", interface="torch")
+        >>> config = ExecutionConfig(diff_method="backprop", framework="torch")
         >>> python_device.supports_gradient_with_configuration(config)
         True
         >>> cpp_device.supports_gradient_with_configuration(config)
@@ -254,28 +250,28 @@ class QuantumDevice(abc.ABC):
         if getattr(execution_config, "diff_method", None) == "backprop":
             return False
         order = getattr(execution_config, "order", 1)
-        return cls.gradient != QuantumDevice.gradient if order == 1 else False
+        return cls.compute_jacobian != QuantumDevice.compute_jacobian if order == 1 else False
 
-    def gradient(
+    def compute_jacobian(
         self,
         qscript: QScript_or_QScriptBatch,
         execution_config=None,
     ):
-        """Calculate the gradient of either a single or a batch of Quantum Scripts.
+        """Calculate the jacobian of either a single or a batch of Quantum Scripts.
 
         Args:
             qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
-            Tuple: The gradient for each trainable parameter
+            Tuple: The jacobian for each trainable parameter
 
-        See also :meth:`~.supports_gradient_with_configuration` and :meth:`~.execute_and_gradients`.
+        See also :meth:`~.supports_jacobian_with_configuration` and :meth:`~.execute_and_compute_jacobian`.
 
         **Execution Config:**
 
         The execution config has an ``order`` property that describes the order of gradient requested. If the requested order
-        of gradient is not provided, the device should raise a ``NotImplementedError``. The :meth:`~.supports_gradient_with_configuration`
+        of gradient is not provided, the device should raise a ``NotImplementedError``. The :meth:`~.supports_jacobian_with_configuration`
         method can pre-validate supported orders.
 
         **Return Shape:**
@@ -286,12 +282,12 @@ class QuantumDevice(abc.ABC):
         """
         raise NotImplementedError
 
-    def execute_and_gradients(
+    def execute_and_compute_jacobian(
         self,
         qscripts: QScript_or_QScriptBatch,
         execution_config=None,
     ):
-        """Compute the results and gradients of QuantumScripts at the same time.
+        """Compute the results and jacobians of QuantumScripts at the same time.
 
         Args:
             qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript or batch to be executed
@@ -300,7 +296,7 @@ class QuantumDevice(abc.ABC):
         Returns:
             tuple, tuple: A numeric result of the computation and the gradient.
 
-        See :meth:`~.execute` and :meth:`~.gradient` for more information about return shapes and behaviour. If :meth:`~.gradient`
+        See :meth:`~.execute` and :meth:`~.compute_jacobian` for more information about return shapes and behaviour. If :meth:`~.calculate_jacobian`
         is defined, this method should be as well.
 
         This method can be used when the result and execution need to be computed at the same time, such as
@@ -308,83 +304,9 @@ class QuantumDevice(abc.ABC):
         diff gradients, calculating the result and gradient at the same can save computational work.
 
         """
-        return self.execute(qscripts, execution_config), self.gradient(qscripts, execution_config)
-
-    def vjp(
-        self,
-        qscript: QScript_or_QScriptBatch,
-        cotangents: Tuple[Number],
-        execution_config=None,
-    ):
-        r"""The vector jacobian product used in reversed mode differentiation.
-
-        Args:
-            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
-            cotangents Tuple[Number]: Gradient-output vector. Must have shape matching the output shape of the
-                corresponding qscript
-            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
-
-        Returns:
-            tensor-like: A numeric result of computing the vector jacobian product
-
-        **Definition of vjp:**
-
-        If we have a function:
-
-        .. math::
-
-            \vec{y} = f(\vec{x}) \qquad f: \mathbb{R}^n \rangle \mathbb{R}^m
-
-        That maps from a the :math:`x` variable in :math:`\mathbb{R}^n` to the :math:`y`
-        variable in :math:`\mathbb{R}^m`.  Then the jacobian is the two dimensional matrix
-
-        .. math::
-
-            J_{i,j} = \frac{\partial y_i}{\partial x_j}
-
-
-        The vector Jacobian product is a dot product with the derivatives of :math:`x`, yielding
-        only the derivatives of the output :math:`y`:
-
-        .. math::
-
-            \text{d}x_i = \Sum_{i} \text{d}y_i J_{i,j}
-
-        **Shape of cotangents:**
-
-        """
-        raise NotImplementedError
-
-    def execute_and_vjp(
-        self,
-        qscripts: QScript_or_QScriptBatch,
-        tangents: Tuple[Number],
-        execution_config=None,
-    ):
-        r"""Calculate both the results and the vector jacobian product used in reversed mode differentiation.
-
-        Args:
-            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
-            cotangents Tuple[Number]: Gradient-output vector. Must have shape matching the output shape of the
-                corresponding qscript
-            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
-
-        Returns:
-            Tuple, Tuple: the result of executing the scripts and the numeric result of computing the vector jacobian product
-
-        See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.vjp` for more information.
-        """
-        return self.execute(qscripts, execution_config), self.vjp(
-            qscripts, tangents, execution_config
+        return self.execute(qscripts, execution_config), self.compute_jacobian(
+            qscripts, execution_config
         )
-
-    @classmethod
-    def supports_vjp(cls, execution_config=None) -> bool:
-        """Whether or not a given device defines a custom vector jacobian product.
-
-        Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
-        """
-        return cls.vjp != QuantumDevice.vjp
 
     def jvp(
         self,
@@ -404,26 +326,18 @@ class QuantumDevice(abc.ABC):
 
         **Definition of jvp:**
 
-        If we have a function:
+        If we have a function with jacobian:
 
         .. math::
 
-            \vec{y} = f(\vec{x}) \qquad f: \mathbb{R}^n \rangle \mathbb{R}^m
+            \vec{y} = f(\vec{x}) \qquad J_{i,j} = \frac{\partial y_i}{\partial x_j}
 
-        That maps from a the :math:`x` variable in :math:`\mathbb{R}^n` to the :math:`y`
-        variable in :math:`\mathbb{R}^m`.  Then the jacobian is the two dimensional matrix
-
-        .. math::
-
-            J_{i,j} = \frac{\partial y_i}{\partial x_j}
-
-
-        The Jacobian vector product is a dot product with the derivatives of :math:`x`, yielding
+        The Jacobian vector product is the inner product with the derivatives of :math:`x`, yielding
         only the derivatives of the output :math:`y`:
 
         .. math::
 
-            \text{d}y_i = \Sum_{j} J_{i,j} \text{d}x_j
+            \text{d}y_i = \Sigma_{j} J_{i,j} \text{d}x_j
 
         **Shape of tangents:**
 
@@ -463,3 +377,71 @@ class QuantumDevice(abc.ABC):
 
         """
         return cls.jvp != QuantumDevice.jvp
+
+    def vjp(
+        self,
+        qscript: QScript_or_QScriptBatch,
+        cotangents: Tuple[Number],
+        execution_config=None,
+    ):
+        r"""The vector jacobian product used in reversed mode differentiation.
+
+        Args:
+            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            cotangents (Tuple[Number]): Gradient-output vector. Must have shape matching the output shape of the
+                corresponding qscript
+            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
+
+        Returns:
+            tensor-like: A numeric result of computing the vector jacobian product
+
+        **Definition of vjp:**
+
+        If we have a function with jacobian:
+
+        .. math::
+
+            \vec{y} = f(\vec{x}) \qquad J_{i,j} = \frac{\partial y_i}{\partial x_j}
+
+        The vector jacobian product is the inner product of the derivatives of the output ``y`` with the
+        Jacobian matrix. The derivatives of the output vector are sometimes called the **cotangents**.
+
+        .. math::
+
+            \text{d}x_i = \Sigma_{i} \text{d}y_i J_{i,j}
+
+        **Shape of cotangents:**
+
+        """
+        raise NotImplementedError
+
+    def execute_and_vjp(
+        self,
+        qscripts: QScript_or_QScriptBatch,
+        tangents: Tuple[Number],
+        execution_config=None,
+    ):
+        r"""Calculate both the results and the vector jacobian product used in reversed mode differentiation.
+
+        Args:
+            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            cotangents Tuple[Number]: Gradient-output vector. Must have shape matching the output shape of the
+                corresponding qscript
+            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
+
+        Returns:
+            Tuple, Tuple: the result of executing the scripts and the numeric result of computing the vector jacobian product
+
+        See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.vjp` for more information.
+        """
+        return self.execute(qscripts, execution_config), self.vjp(
+            qscripts, tangents, execution_config
+        )
+
+    @classmethod
+    def supports_vjp(cls, execution_config=None) -> bool:
+        """Whether or not a given device defines a custom vector jacobian product.
+
+        Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
+        """
+        return cls.vjp != QuantumDevice.vjp
