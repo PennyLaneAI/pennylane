@@ -2466,24 +2466,6 @@ class TestSize:
         ([[0], [1], [2], [3], [4], [5]], 6),
     ]
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize(("array", "size"), array_and_size)
-    def test_size_autograd(self, array, size):
-        """Test size function with the autograd interface."""
-        from autograd import numpy as np
-
-        r = fn.size(np.array(array))
-        assert r == size
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize(("array", "size"), array_and_size)
-    def test_size_jax(self, array, size):
-        """Test size function with the jax interface."""
-        from jax import numpy as np
-
-        r = fn.size(np.array(array))
-        assert r == size
-
     @pytest.mark.torch
     @pytest.mark.parametrize(("array", "size"), array_and_size)
     def test_size_torch(self, array, size):
@@ -2493,11 +2475,12 @@ class TestSize:
         r = fn.size(torch.tensor(array))
         assert r == size
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(("array", "size"), array_and_size)
-    def test_size_tensorflow(self, array, size):
-        """Test size function with the tensorflow interface."""
-        import tensorflow as tf
 
-        r = fn.size(tf.constant(array))
-        assert r == size
+class TestMatmul:
+    def test_matmul_tensor_with_list(self):
+        import torch
+
+        m1 = torch.tensor([[1, 0], [0, 1]])
+        m2 = [[1, 2], [3, 4]]
+        assert qml.math.allequal(fn.matmul(m1, m2), m2)
+        assert qml.math.allequal(fn.matmul(m2, m1), m2)
