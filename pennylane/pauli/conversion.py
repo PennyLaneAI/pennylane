@@ -14,18 +14,18 @@
 """
 Utility functions to convert between ``~.PauliSentence`` and other PennyLane operators.
 """
-from typing import Union
-from operator import matmul
-from itertools import product
 from functools import reduce, singledispatch
+from itertools import product
+from operator import matmul
+from typing import Union
 
 import numpy as np
 
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 
+from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, mat_map, op_map
 from .utils import is_pauli_word
-from .pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z, mat_map, op_map
 
 
 def pauli_decompose(
@@ -52,22 +52,22 @@ def pauli_decompose(
 
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
-    >>> H = pauli_decompose(A)
+    >>> H = qml.pauli_decompose(A)
     >>> print(H)
-    (-1.0) [I0 I1]
-    + (-1.5) [X1]
-    + (-0.5) [Y1]
-    + (-1.0) [Z1]
-    + (-1.5) [X0]
+    (-1.5) [I0 X1]
+    + (-1.5) [X0 I1]
+    + (-1.0) [I0 I1]
+    + (-1.0) [I0 Z1]
     + (-1.0) [X0 X1]
+    + (-0.5) [I0 Y1]
     + (-0.5) [X0 Z1]
-    + (1.0) [Y0 Y1]
     + (-0.5) [Z0 X1]
     + (-0.5) [Z0 Y1]
+    + (1.0) [Y0 Y1]
 
     We can return a ``~.PauliSentence`` instance by using the keyword argument ``pauli=True``:
 
-    >>> ps = pauli_decompose(A, pauli=True)
+    >>> ps = qml.pauli_decompose(A, pauli=True)
     >>> print(ps)
     -1.0 * I
     + -1.5 * X(1)
@@ -82,7 +82,7 @@ def pauli_decompose(
 
     We can also set custom wires using the ``wire_order`` argument:
 
-    >>> ps = pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
+    >>> ps = qml.pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
     >>> print(ps)
     -1.0 * I
     + -1.5 * X(b)
@@ -153,7 +153,8 @@ def pauli_sentence(op):
     Raises:
         ValueError: Op must be a linear combination of Pauli operators
 
-    Returns ~.PauliSentence
+    Returns:
+        .PauliSentence: the PauliSentence representation of an arithmetic operator or Hamiltonian
     """
     raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 

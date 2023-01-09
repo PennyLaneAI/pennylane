@@ -381,6 +381,19 @@ class QNode:
         else:
             self._qfunc_uses_shots_arg = False
 
+        for kwarg in gradient_kwargs:
+            if kwarg in ["gradient_fn", "grad_method"]:
+                warnings.warn(
+                    f"It appears you may be trying to set the method of differentiation via the kwarg "
+                    f"{kwarg}. This is not supported in qnode and will defualt to backpropogation. Use "
+                    f"diff_method instead."
+                )
+            elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
+                warnings.warn(
+                    f"Received gradient_kwarg {kwarg}, which is not included in the list of standard qnode "
+                    f"gradient kwargs."
+                )
+
         # input arguments
         self.func = func
         self.device = device
@@ -709,9 +722,7 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
         self._tape = make_qscript(self.func)(*args, **kwargs)
-        self._tape._queue_category = "_ops"
         self._qfunc_output = self.tape._qfunc_output
-        qml.QueuingManager.append(self.tape)
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
