@@ -568,22 +568,18 @@ class TestQueueing:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Adjoint(base)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert q.get_info(base)["owner"] is op
-        assert q.get_info(op)["owns"] is base
-        assert tape.operations == [op]
+        assert base not in q.queue
+        assert len(q) == 1
 
-    def test_queueing_base_defined_outside(self):
+    def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
         with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(tape) == 1
-        assert q.get_info(op)["owns"] is base
-        assert tape.operations == [op]
+        assert len(q) == 1
+        assert q.queue[0] == op
 
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""
@@ -591,8 +587,7 @@ class TestQueueing:
         with qml.queuing.AnnotatedQueue() as q:
             op = Adjoint(base, do_queue=False)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(tape) == 0
+        assert len(q) == 0
 
 
 class TestMatrix:
@@ -856,13 +851,8 @@ class TestAdjointConstructorPreconstructedOp:
             base.queue()
             out = adjoint(base)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert isinstance(out, Adjoint)
-        assert out.base is base
-        assert len(tape) == 1
-        assert len(q) == 2
-        assert q.get_info(base) == {"owner": out}
-        assert q.get_info(out) == {"owns": base}
+        assert len(q) == 1
+        assert q.queue[0] is out
 
     def test_single_op_defined_outside_queue_eager(self):
         """Test if base is defined outside context and the function eagerly simplifies
@@ -871,14 +861,8 @@ class TestAdjointConstructorPreconstructedOp:
         with qml.queuing.AnnotatedQueue() as q:
             out = adjoint(base, lazy=False)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert isinstance(out, qml.RX)
-        assert out.data == [-1.2]
-        assert len(tape) == 1
-        assert tape[0] is out
-
         assert len(q) == 1
-        assert q.get_info(out) == {"owns": base}
+        assert q.queue[0] is out
 
     def test_single_observable(self):
         """Test passing a single preconstructed observable in a queuing context."""
@@ -887,10 +871,13 @@ class TestAdjointConstructorPreconstructedOp:
             base = qml.PauliX(0) @ qml.PauliY(1)
             out = adjoint(base)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(tape) == 0
+        assert len(q) == 1
+        assert q.queue[0] is out
         assert out.base is base
         assert isinstance(out, Adjoint)
+
+        qs = qml.tape.QuantumScript.from_queue(q)
+        assert len(qs) == 0
 
 
 class TestAdjointConstructorDifferentCallableTypes:
@@ -978,11 +965,8 @@ class TestAdjointConstructorNonLazyExecution:
             base = qml.RX(x, wires="b")
             out = adjoint(base, lazy=False)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(tape) == 1
-        assert out is tape[0]
-        assert q.get_info(base) == {"owner": out}
-        assert q.get_info(out) == {"owns": base}
+        assert len(q) == 1
+        assert q.queue[0] is out
 
         assert isinstance(out, qml.RX)
         assert out.data == [-1.23]
@@ -993,12 +977,8 @@ class TestAdjointConstructorNonLazyExecution:
             base = qml.S(0)
             out = adjoint(base, lazy=False)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(tape) == 1
-        assert out is tape[0]
-        assert len(q) == 2
-        assert q.get_info(base) == {"owner": out}
-        assert q.get_info(out) == {"owns": base}
+        assert len(q) == 1
+        assert q.queue[0] is out
 
         assert isinstance(out, Adjoint)
         assert isinstance(out.base, qml.S)
