@@ -129,8 +129,8 @@ def _single_op_eager(op, update_queue=False):
     if op.has_adjoint:
         adj = op.adjoint()
         if update_queue:
-            QueuingManager.update_info(op, owner=adj)
-            QueuingManager.append(adj, owns=op)
+            QueuingManager.remove(op)
+            QueuingManager.append(adj)
         return adj
     return Adjoint(op)
 
