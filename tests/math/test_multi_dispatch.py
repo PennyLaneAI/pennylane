@@ -195,3 +195,49 @@ def test_gammainc(n, t, gamma_ref):
     gamma = fn.gammainc(n, t)
 
     assert np.allclose(gamma, gamma_ref)
+
+
+array_and_size = [
+    ([], 0),
+    (1, 1),
+    ([0, 1, 2, 3, 4, 5], 6),
+    ([[0, 1, 2], [3, 4, 5]], 6),
+    ([[0, 1], [2, 3], [4, 5]], 6),
+    ([[0], [1], [2], [3], [4], [5]], 6),
+]
+
+
+@pytest.mark.autograd
+@pytest.mark.parametrize(("array", "size"), array_and_size)
+def test_size_autograd(array, size):
+    """Test that the lower incomplete Gamma function is computed correctly."""
+    from autograd import numpy as np
+
+    assert fn.size(np.array(array)) == size
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize(("array", "size"), array_and_size)
+def test_size_jax(array, size):
+    """Test that the lower incomplete Gamma function is computed correctly."""
+    from jax import numpy as np
+
+    assert fn.size(np.array(array)) == size
+
+
+@pytest.mark.torch
+@pytest.mark.parametrize(("array", "size"), array_and_size)
+def test_size_torch(array, size):
+    """Test that the lower incomplete Gamma function is computed correctly."""
+    import torch
+
+    assert fn.size(torch.tensor(array)) == size
+
+
+@pytest.mark.tf
+@pytest.mark.parametrize(("array", "size"), array_and_size)
+def test_size_tensorflow(array, size):
+    """Test that the lower incomplete Gamma function is computed correctly."""
+    import tensorflow as tf
+
+    assert fn.size(tf.constant(array)) == size
