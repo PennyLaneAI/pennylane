@@ -15,7 +15,7 @@
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
 import pennylane as qml
-from pennylane.math import conj, moveaxis, transpose
+from pennylane.math import conj, transpose, moveaxis
 from pennylane.operation import Observable, Operation
 
 from .symbolicop import SymbolicOp
