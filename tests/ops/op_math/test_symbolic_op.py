@@ -177,10 +177,9 @@ class TestQueuing:
             base = TempOperator("a")
             op = SymbolicOp(base)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert q.get_info(base)["owner"] is op
-        assert q.get_info(op)["owns"] is base
-        assert tape.operations == [op]
+        assert base not in q
+        assert q.queue[0] is op
+        assert len(q) == 1
 
     def test_queuing_base_defined_outside(self):
         """Test symbolic op queues without adding base to the queue if it isn't already in the queue."""
@@ -189,10 +188,8 @@ class TestQueuing:
         with qml.queuing.AnnotatedQueue() as q:
             op = SymbolicOp(base)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(q) == 1
-        assert q.get_info(op)["owns"] is base
-        assert tape.operations == [op]
+        assert q.queue[0] is op
 
     def test_do_queue_false(self):
         """Test that queuing can be avoided if `do_queue=False`."""
@@ -201,4 +198,4 @@ class TestQueuing:
         with qml.queuing.AnnotatedQueue() as q:
             op = SymbolicOp(base, do_queue=False)
 
-        assert len(q.queue) == 0
+        assert len(q) == 0
