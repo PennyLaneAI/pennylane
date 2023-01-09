@@ -13,47 +13,6 @@
 # limitations under the License.
 """This module contains the Abstract Base Class for the next generation of devices.
 
-**Porting to this interface from old devices:**
-
-:meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.AbstractDevice.execute`
-
-:meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.AbstractDevice.preprocess`
-
-Shot information is no longer stored on the device, but instead provided by a runtime argument, the ``ExecutionConfig``. Devices
-may define their own default values in the absence of specified values in the execution config.
-
-The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characterisitics of the devices and controlled various
-preprocessing and validation steps, such as ``"supports_broadcasting"``.  These capabilites should now be handled by the
-:meth:`~.AbstractDevice.preprocess` method. For example, if a device does not support broadcasting, ``preprocess`` should
-split a quantum script with broadcasted parameters into a batch of quantum scripts. If the device does not support mid circuit
-measurements, then ``preprocess`` should apply :func:`~.defer_measurements`.  A set of default preprocessing steps will be available
-to make a seemless transition to the new interface.
-
-Naming and versioning will be clarified as time progresses.
-
-The change in interface can be described by this function which modifies a new device to match the old interface:
-
-.. code-block:: python
-
-    def backward_patch_interface(dev):
-        # map the execute function
-        dev.batch_execute = dev.execute
-
-        # map the preprocessing steps
-        dev.batch_transform = dev.preprocess
-        dev.expand_fn = lambda circuit, max_expansion: circuit
-
-        # give dummy shots. We will be moving these out of the class
-        dev.shots = None
-        dev._shot_vector = []  # pylint: disable=protected-access
-        dev.shot_vector = None
-
-        # short name needed for validation in one place
-        dev.short_name = "testpython"
-        dev.capabilities = lambda: {}
-        return dev
-
-
 """
 
 import abc
@@ -68,7 +27,7 @@ QScriptBatch = Sequence[QuantumScript]
 QScript_or_QScriptBatch = Union[QuantumScript, QScriptBatch]
 
 # pylint: disable=unused-argument, no-self-use
-class AbstractDevice(abc.ABC):
+class QuantumDevice(abc.ABC):
     """An experimental PennyLane device.
 
     The child classes can define any number of class specific arguments and keyword arguments.
@@ -78,6 +37,45 @@ class AbstractDevice(abc.ABC):
 
     Only the ``execute`` function must be defined to construct a device.
 
+    **Porting to this interface from old devices:**
+
+    :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.QuantumDevice.execute`
+
+    :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.QuantumDevice.preprocess`
+
+    Shot information is no longer stored on the device, but instead provided by a runtime argument, the ``ExecutionConfig``. Devices
+    may define their own default values in the absence of specified values in the execution config.
+
+    The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characterisitics of the devices and controlled various
+    preprocessing and validation steps, such as ``"supports_broadcasting"``.  These capabilites should now be handled by the
+    :meth:`~.QuantumDevice.preprocess` method. For example, if a device does not support broadcasting, ``preprocess`` should
+    split a quantum script with broadcasted parameters into a batch of quantum scripts. If the device does not support mid circuit
+    measurements, then ``preprocess`` should apply :func:`~.defer_measurements`.  A set of default preprocessing steps will be available
+    to make a seemless transition to the new interface.
+
+    Naming and versioning will be clarified as time progresses.
+
+    The change in interface can be described by this function which modifies a new device to match the old interface:
+
+    .. code-block:: python
+
+        def backward_patch_interface(dev):
+            # map the execute function
+            dev.batch_execute = dev.execute
+
+            # map the preprocessing steps
+            dev.batch_transform = dev.preprocess
+            dev.expand_fn = lambda circuit, max_expansion: circuit
+
+            # give dummy shots. We will be moving these out of the class
+            dev.shots = None
+            dev._shot_vector = []  # pylint: disable=protected-access
+            dev.shot_vector = None
+
+            # short name needed for validation in one place
+            dev.short_name = "testpython"
+            dev.capabilities = lambda: {}
+            return dev
     """
 
     tracker: Tracker = Tracker()
@@ -135,7 +133,7 @@ class AbstractDevice(abc.ABC):
         """
 
         def blank_postprocessing_fn(res):
-            """Identity postprocessing function created in AbstractDevice preprocessing.
+            """Identity postprocessing function created in QuantumDevice preprocessing.
 
             Args:
                 res (tensor-like): A result object
@@ -256,7 +254,7 @@ class AbstractDevice(abc.ABC):
         if getattr(execution_config, "diff_method", None) == "backprop":
             return False
         order = getattr(execution_config, "order", 1)
-        return cls.gradient != AbstractDevice.gradient if order == 1 else False
+        return cls.gradient != QuantumDevice.gradient if order == 1 else False
 
     def gradient(
         self,
@@ -300,7 +298,7 @@ class AbstractDevice(abc.ABC):
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
-            tensor-like, tensor-like: A numeric result of the computation and the gradient.
+            tuple, tuple: A numeric result of the computation and the gradient.
 
         See :meth:`~.execute` and :meth:`~.gradient` for more information about return shapes and behaviour. If :meth:`~.gradient`
         is defined, this method should be as well.
@@ -315,19 +313,44 @@ class AbstractDevice(abc.ABC):
     def vjp(
         self,
         qscript: QScript_or_QScriptBatch,
-        tangents: Tuple[Number],
+        cotangents: Tuple[Number],
         execution_config=None,
     ):
-        """The vector jacobian product.
+        r"""The vector jacobian product used in reversed mode differentiation.
 
         Args:
             qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
-            dy (tensor-like): Gradient-output vector. Must have shape matching the output shape of the
+            cotangents Tuple[Number]: Gradient-output vector. Must have shape matching the output shape of the
                 corresponding qscript
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
             tensor-like: A numeric result of computing the vector jacobian product
+
+        **Definition of vjp:**
+
+        If we have a function:
+
+        .. math::
+
+            \vec{y} = f(\vec{x}) \qquad f: \mathbb{R}^n \rangle \mathbb{R}^m
+
+        That maps from a the :math:`x` variable in :math:`\mathbb{R}^n` to the :math:`y`
+        variable in :math:`\mathbb{R}^m`.  Then the jacobian is the two dimensional matrix
+
+        .. math::
+
+            J_{i,j} = \frac{\partial y_i}{\partial x_j}
+
+
+        The vector Jacobian product is a dot product with the derivatives of :math:`x`, yielding
+        only the derivatives of the output :math:`y`:
+
+        .. math::
+
+            \text{d}x_i = \Sum_{i} \text{d}y_i J_{i,j}
+
+        **Shape of cotangents:**
 
         """
         raise NotImplementedError
@@ -338,8 +361,18 @@ class AbstractDevice(abc.ABC):
         tangents: Tuple[Number],
         execution_config=None,
     ):
-        """
-        docstring
+        r"""Calculate both the results and the vector jacobian product used in reversed mode differentiation.
+
+        Args:
+            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            cotangents Tuple[Number]: Gradient-output vector. Must have shape matching the output shape of the
+                corresponding qscript
+            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
+
+        Returns:
+            Tuple, Tuple: the result of executing the scripts and the numeric result of computing the vector jacobian product
+
+        See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.vjp` for more information.
         """
         return self.execute(qscripts, execution_config), self.vjp(
             qscripts, tangents, execution_config
@@ -350,10 +383,8 @@ class AbstractDevice(abc.ABC):
         """Whether or not a given device defines a custom vector jacobian product.
 
         Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
-
-
         """
-        return cls.vjp != AbstractDevice.vjp
+        return cls.vjp != QuantumDevice.vjp
 
     def jvp(
         self,
@@ -361,16 +392,43 @@ class AbstractDevice(abc.ABC):
         tangents: Tuple[Number],
         execution_config=None,
     ):
-        """The jacobian vector product.
+        r"""The jacobian vector product used in forward mode calculation of derivatives.
 
         Args:
             qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
-            dy (tensor-like): Gradient-output vector. Must have shape matching the output shape of the
-                corresponding qscript
+            tangents (tensor-like): Gradient vector for input parameters.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
-            tensor-like: A numeric result of computing the jacobian vector product
+            Tuple[tensor-like]: A numeric result of computing the jacobian vector product
+
+        **Definition of jvp:**
+
+        If we have a function:
+
+        .. math::
+
+            \vec{y} = f(\vec{x}) \qquad f: \mathbb{R}^n \rangle \mathbb{R}^m
+
+        That maps from a the :math:`x` variable in :math:`\mathbb{R}^n` to the :math:`y`
+        variable in :math:`\mathbb{R}^m`.  Then the jacobian is the two dimensional matrix
+
+        .. math::
+
+            J_{i,j} = \frac{\partial y_i}{\partial x_j}
+
+
+        The Jacobian vector product is a dot product with the derivatives of :math:`x`, yielding
+        only the derivatives of the output :math:`y`:
+
+        .. math::
+
+            \text{d}y_i = \Sum_{j} J_{i,j} \text{d}x_j
+
+        **Shape of tangents:**
+
+        The ``tangents`` tuple should be the same length as ``qscript.get_parameters()`` and have a single number per
+        parameter. If a number is zero, then the gradient with respect to that parameter does not need to be computed.
 
         """
         raise NotImplementedError
@@ -378,22 +436,30 @@ class AbstractDevice(abc.ABC):
     def execute_and_jvp(
         self,
         qscripts: QScript_or_QScriptBatch,
-        cotangents: Tuple[Number],
+        tangents: Tuple[Number],
         execution_config=None,
     ):
-        """
-        docstring
+        """Execute a batch of quantum scripts and compute their jacobian vector products.
+
+        Args:
+            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            tangents (tensor-like): Gradient vector for input parameters.
+            execution_config (ExecutionConfig): a datastructure with all additional information required for execution
+
+        Returns:
+            Tuple[tensor-like], Tuple[tensor-like]: A numeric result of computing the jacobian vector product
+
+        See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.jvp` for more information on each method.
         """
         return self.execute(qscripts, execution_config), self.jvp(
-            qscripts, cotangents, execution_config
+            qscripts, tangents, execution_config
         )
 
     @classmethod
     def supports_jvp(cls, execution_config=None) -> bool:
-        """Whether or not a given device defines a custom vector jacobian product.
+        """Whether or not a given device defines a custom jacobian vector product.
 
-        Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
-
+        Default behaviour assumes this to be ``True`` if :meth:`~.jvp` is overridden.
 
         """
-        return cls.vjp != AbstractDevice.vjp
+        return cls.jvp != QuantumDevice.jvp
