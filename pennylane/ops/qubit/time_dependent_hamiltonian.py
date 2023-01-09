@@ -2,7 +2,6 @@
 This submodule contains the time-dependent hamiltonian class
 """
 
-import numbers
 from jax import numpy as jnp
 
 import pennylane as qml
@@ -117,7 +116,7 @@ class TDHamiltonian(Observable):
             )
 
         self.H_drift = self._H_drift
-        self.H_ts = {"functions": self.H_ts_fs, "observables": self.H_ts_ops}
+        self.H_ts = self._H_ts
 
         # do we want this?
         self._hyperparameters = {"ops": self._ops}
@@ -134,35 +133,38 @@ class TDHamiltonian(Observable):
             wire_order = self.wires
 
         if len(self.H_ts_ops) == 1:
-            f = self.H_ts_fs[0]
-            op = self.H_ts_ops[0]
             H = jnp.array(
                 [qml.matrix(self.H_drift, wire_order=wire_order)]
-                + [f(params, t) * op.matrix(wire_order=wire_order)]
+                + [qml.matrix(self.H_ts(params, t), wire_order=wire_order)]
             )
-            print(H)
             return jnp.sum(H, axis=0)
 
         H = jnp.array(
             [qml.matrix(self.H_drift, wire_order=wire_order)]
-            + [
-                f(params, t) * op.matrix(wire_order=wire_order)
-                for f, op in zip(self.H_ts_fs, self.H_ts_ops)
-            ]
+            + [qml.matrix(self.H_ts(params, t), wire_order=wire_order)]
         )
-        print(H)
         return jnp.sum(H, axis=0)
 
-    @property
-    def _H_drift(self):
-        terms_list = [
-            qml.s_prod(coeff, ob) for coeff, ob in zip(self.H_drift_coeffs, self.H_drift_ops)
-        ]
+    @staticmethod
+    def _get_terms(coeffs, obs):
+        terms_list = [qml.s_prod(coeff, ob) for coeff, ob in zip(coeffs, obs)]
         if len(terms_list) == 0:
             return None
         if len(terms_list) == 1:
             return terms_list[0]
         return qml.op_sum(*terms_list)
+
+    @property
+    def _H_drift(self):
+        return self._get_terms(self.H_drift_coeffs, self.H_drift_ops)
+
+    @property
+    def _H_ts(self):
+        def snapshot(params, t):
+            coeffs = [f(params, t) for f in self.H_ts_fs]
+            return self._get_terms(coeffs, self.H_ts_ops)
+
+        return snapshot
 
     @property
     def coeffs(self):
@@ -191,9 +193,6 @@ class TDHamiltonian(Observable):
         Hamiltonian or time-dependent Hamiltonian."""
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
-
-        if isinstance(H, numbers.Number) and H == 0:
-            return self
 
         if isinstance(H, (Hamiltonian, TDHamiltonian)):
             coeffs.extend(H.coeffs.copy())
