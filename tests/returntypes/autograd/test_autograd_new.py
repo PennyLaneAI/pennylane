@@ -521,6 +521,7 @@ class TestAutogradExecuteIntegration:
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_tape_no_parameters(self, execute_kwargs, tol):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
@@ -567,6 +568,7 @@ class TestAutogradExecuteIntegration:
         expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_tapes_with_different_return_size(self, execute_kwargs, tol):
         """Test that tapes wit different can be executed and differentiated."""
         dev = qml.device("default.qubit", wires=2)
