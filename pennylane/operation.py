@@ -99,9 +99,10 @@ import functools
 import itertools
 import numbers
 import warnings
+import inspect
 from enum import IntEnum
 from typing import List
-from inspect import isfunction
+
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -111,7 +112,6 @@ import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
-from pennylane.ops.qubit.time_dependent_hamiltonian import TDHamiltonian
 
 from .utils import pauli_eigs
 
@@ -1784,8 +1784,8 @@ class Observable(Operator):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
             return qml.Hamiltonian([a], [self], simplify=True)
-        if isfunction(a):
-            return TDHamiltonian([a], [self])
+        if inspect.isfunction(a):
+            return qml.ops.TDHamiltonian([a], [self])  # pylint: disable=no-member
         try:
             return super().__mul__(other=a)
         except ValueError as e:
