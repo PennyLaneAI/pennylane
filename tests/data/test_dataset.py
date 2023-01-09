@@ -290,7 +290,7 @@ def test_hamiltonian_write_preserves_wire_map(tmp_path):
     dataset.write(filename)
 
     # ensure that the non-standard dataset wrote the Hamiltonian in condensed format
-    terms_and_wiremap = qml.data.Dataset._read_file(filename)["hamiltonian"]
+    terms_and_wiremap = dataset.get_file_contents(filename)["hamiltonian"]
     assert terms_and_wiremap == {
         "terms": {"XIY": 0.1, "ZZZ": 0.2},
         "wire_map": {"a": 0, "b": 1, "c": 2},

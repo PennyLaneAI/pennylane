@@ -166,11 +166,11 @@ class Dataset(ABC):
         return {k: v for k, v in vars(self).items() if k[0] != "_"}
 
     @staticmethod
-    def _read_file(filepath):
-        """Read data from a saved file.
+    def get_file_contents(filepath):
+        """Reads data from a saved file.
 
         Returns:
-            A data value for non-standard datasets or full files, otherwise a dictionary
+            A dictionary for non-standard datasets or full files, otherwise a data value
         """
         with open(filepath, "rb") as f:
             compressed_pickle = f.read()
@@ -182,6 +182,8 @@ class Dataset(ABC):
     def read(self, filepath, lazy=False):
         """Loads data from a saved file to the current dataset.
 
+        Note that this method assumes that the file contents are of the form ``{attribute_name: attribute_value,}``.
+
         Args:
             filepath (string): The desired location and filename to load, e.g. './path/to/file/file_name.dat'.
             lazy (bool): Indicates if only the key of the attribute should be saved to the Dataset instance
@@ -191,7 +193,7 @@ class Dataset(ABC):
         >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
         >>> new_dataset.read('./path/to/file/file_name.dat')
         """
-        data = self._read_file(filepath)
+        data = self.get_file_contents(filepath)
         if lazy:
             for attr in data:
                 setattr(self, f"{attr}", None)
@@ -274,7 +276,7 @@ class Dataset(ABC):
                 f"Dataset lazy-loaded a '{name}' attribute, but the file originally containing it ({filepath}) was not found."
             )
 
-        value = self._read_file(filepath)
+        value = self.get_file_contents(filepath)
         # if this is a standard dataset getting the attribute from a special single-attribute
         # file, then `value` is already set to the value of the attribute
         if not (
