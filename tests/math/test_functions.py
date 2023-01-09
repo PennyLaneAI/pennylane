@@ -2481,6 +2481,6 @@ class TestMatmul:
         import torch
 
         m1 = torch.tensor([[1, 0], [0, 1]])
-        m2 = [[1, 2], [3, 4]]
+        m2 = np.array([[1, 2], [3, 4]])
         assert qml.math.allequal(fn.matmul(m1, m2), m2)
         assert qml.math.allequal(fn.matmul(m2, m1), m2)
