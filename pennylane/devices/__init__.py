@@ -37,7 +37,7 @@ will eventually replace :class:`~.Device` and :class:`~.QubitDevice`.
     tests
 """
 
-from .device_interface import QuantumDevice
+from .device_api import QuantumDevice
 
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are
