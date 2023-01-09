@@ -47,7 +47,8 @@ jobs:
           list-files: shell
           filters: |
             testsAdded:
-              - added: 'tests/**'
+              - added: 'tests/**/test_*.py'
+              - added: 'tests/test_*.py'
 
       - name: Ensure new test files are whitelisted if there are any
         if: steps.test_files_added.outputs.testsAdded == 'true'
