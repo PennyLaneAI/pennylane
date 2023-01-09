@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* `qml.purity` is added as a measurement process for purity 
+* `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
 * Added a new template that implements a canonical 2-complete linear (2-CCL) swap network
@@ -41,20 +41,20 @@
   import pennylane as qml
   import jax
   from jax import numpy as jnp
-  
+
   jax.config.update("jax_enable_x64", True)
-  
+
   qml.enable_return()
-  
+
   dev = qml.device("lightning.qubit", wires=2)
-  
+
   @jax.jit
   @qml.qnode(dev, interface="jax-jit", diff_method="parameter-shift", max_diff=2)
   def circuit(a, b):
       qml.RY(a, wires=0)
       qml.RX(b, wires=1)
       return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-  
+
   a, b = jnp.array(1.0), jnp.array(2.0)
   ```
 
@@ -70,7 +70,7 @@
      DeviceArray(0.41614684, dtype=float64, weak_type=True))))
   ```
 
-* The qchem workflow is modified to support both Autograd and JAX frameworks. 
+* The qchem workflow is modified to support both Autograd and JAX frameworks.
   [(#3458)](https://github.com/PennyLaneAI/pennylane/pull/3458)
   [(#3462)](https://github.com/PennyLaneAI/pennylane/pull/3462)
   [(#3495)](https://github.com/PennyLaneAI/pennylane/pull/3495)
@@ -83,7 +83,7 @@
   import pennylane as qml
   from pennylane import numpy as np
   import jax
-  
+
   symbols = ["H", "H"]
   geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
@@ -103,7 +103,7 @@
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
 
 
-* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of 
+* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
  [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
 
@@ -113,8 +113,8 @@
 * Limit the `numpy` version to `<1.24`.
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
 
-* Validation has been added on the `gradient_kwargs` when initializing a QNode, and if unexpected kwargs are passed, 
-  a `UserWarning` is raised. A list of the current expected gradient function kwargs has been added as 
+* Validation has been added on the `gradient_kwargs` when initializing a QNode, and if unexpected kwargs are passed,
+  a `UserWarning` is raised. A list of the current expected gradient function kwargs has been added as
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
 
@@ -132,6 +132,9 @@
 * Fixed typo in calculation error message and comment in operation.py
   [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
 
+* Improve efficiency of matrix calculation when operator is symmetric over wires
+  [(#3565)](https://github.com/PennyLaneAI/pennylane/pull/3565)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -145,4 +148,4 @@ Albert Mitjans Coma
 Romain Moyard
 Matthew Silverman
 Antal Száva
-
+Xiaoran Li

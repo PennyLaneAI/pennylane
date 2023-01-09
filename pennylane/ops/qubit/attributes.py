@@ -160,7 +160,24 @@ self_inverses = Attribute(
 """Attribute: Operations that are their own inverses."""
 
 
-symmetric_over_all_wires = Attribute(["CZ", "CCZ", "SWAP", "IsingXX", "Identity", "ISWAP", "SISWAP","SQISW", "MultiRZ", "PauliRot", "IsingXY", "IsingYY", "IsingZZ", "PSWAP"])
+symmetric_over_all_wires = Attribute(
+    [
+        "CZ",
+        "CCZ",
+        "SWAP",
+        "IsingXX",
+        "Identity",
+        "ISWAP",
+        "SISWAP",
+        "SQISW",
+        "MultiRZ",
+        "PauliRot",
+        "IsingXY",
+        "IsingYY",
+        "IsingZZ",
+        "PSWAP",
+    ]
+)
 """Attribute: Operations that are the same if you exchange the order of wires.
 
 For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,
