@@ -243,10 +243,6 @@ class Adjoint(SymbolicOp):
     def __repr__(self):
         return f"Adjoint({self.base})"
 
-    # pylint: disable=protected-access
-    def _check_batching(self, params):
-        self.base._check_batching(params)
-
     def label(self, decimals=None, base_label=None, cache=None):
         base_label = self.base.label(decimals, base_label, cache=cache)
         return f"({base_label})†" if self.base.arithmetic_depth > 0 else f"{base_label}†"
