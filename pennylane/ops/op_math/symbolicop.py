@@ -102,6 +102,19 @@ class SymbolicOp(Operator):
     def has_matrix(self):
         return self.base.has_matrix
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
+
     @property
     def is_hermitian(self):
         return self.base.is_hermitian

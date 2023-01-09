@@ -247,14 +247,6 @@ class Adjoint(SymbolicOp):
     def _check_batching(self, params):
         self.base._check_batching(params)
 
-    @property
-    def batch_size(self):
-        return self.base.batch_size
-
-    @property
-    def ndim_params(self):
-        return self.base.ndim_params
-
     def label(self, decimals=None, base_label=None, cache=None):
         base_label = self.base.label(decimals, base_label, cache=cache)
         return f"({base_label})†" if self.base.arithmetic_depth > 0 else f"{base_label}†"
@@ -286,11 +278,6 @@ class Adjoint(SymbolicOp):
     def eigvals(self):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``
         return conj(self.base.eigvals())
-
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_diagonalizing_gates(self):
-        return self.base.has_diagonalizing_gates
 
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
