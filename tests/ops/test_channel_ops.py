@@ -41,17 +41,18 @@ ch_list = [
 class TestChannels:
     """Tests for the quantum channels"""
 
-    @pytest.mark.parametrize("interface", 
+    @pytest.mark.parametrize(
+        "interface",
         [
             None,
             pytest.param("autograd", marks=pytest.mark.autograd),
             pytest.param("tensorflow", marks=pytest.mark.tf),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
-        ]
+        ],
     )
     @pytest.mark.parametrize("op", ch_list)
-    @pytest.mark.parametrize("p", [0., 0.1, 1.])
+    @pytest.mark.parametrize("p", [0.0, 0.1, 1.0])
     @pytest.mark.parametrize("tr_args", [[100e-6, 100e-6, 20e-9], [100e-6, 120e-6, 20e-9]])
     def test_kraus_matrices_sum_identity(self, op, p, tr_args, interface, tol):
         """Test channels are trace-preserving"""
@@ -96,7 +97,7 @@ class TestAmplitudeDamping:
             channel.AmplitudeDamping(1.5, wires=0).kraus_matrices()
 
     expected_jac_fn = lambda self, gamma: [
-        qml.math.array([[0, 0], [0, -1 / (2 * qml.math.sqrt(1-gamma))]]),
+        qml.math.array([[0, 0], [0, -1 / (2 * qml.math.sqrt(1 - gamma))]]),
         qml.math.array([[0, 1 / (2 * qml.math.sqrt(gamma))], [0, 0]]),
     ]
 
@@ -137,6 +138,7 @@ class TestAmplitudeDamping:
         jac = jac_fn(gamma)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
+
 class TestGeneralizedAmplitudeDamping:
     """Tests for the quantum channel GeneralizedAmplitudeDamping"""
 
@@ -170,15 +172,18 @@ class TestGeneralizedAmplitudeDamping:
 
     expected_jac_fn = lambda self, gamma, p: (
         [
-            qml.math.sqrt(p) * qml.math.array([[0, 0], [0, -1 / (2 * qml.math.sqrt(1-gamma))]]),
+            qml.math.sqrt(p) * qml.math.array([[0, 0], [0, -1 / (2 * qml.math.sqrt(1 - gamma))]]),
             qml.math.sqrt(p) * qml.math.array([[0, 1 / (2 * qml.math.sqrt(gamma))], [0, 0]]),
-            qml.math.sqrt(1 - p) * qml.math.array([[-1 / (2 * qml.math.sqrt(1-gamma)), 0], [0, 0]]),
+            qml.math.sqrt(1 - p)
+            * qml.math.array([[-1 / (2 * qml.math.sqrt(1 - gamma)), 0], [0, 0]]),
             qml.math.sqrt(1 - p) * qml.math.array([[0, 0], [1 / (2 * qml.math.sqrt(gamma)), 0]]),
         ],
         [
-            1 / (2 * qml.math.sqrt(p)) * qml.math.array([[1, 0], [0, qml.math.sqrt(1-gamma)]]),
+            1 / (2 * qml.math.sqrt(p)) * qml.math.array([[1, 0], [0, qml.math.sqrt(1 - gamma)]]),
             1 / (2 * qml.math.sqrt(p)) * qml.math.array([[0, qml.math.sqrt(gamma)], [0, 0]]),
-            -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.array([[qml.math.sqrt(1-gamma), 0], [0, 1]]),
+            -1
+            / (2 * qml.math.sqrt(1 - p))
+            * qml.math.array([[qml.math.sqrt(1 - gamma), 0], [0, 1]]),
             -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.array([[0, 0], [qml.math.sqrt(gamma), 0]]),
         ],
     )
@@ -187,7 +192,9 @@ class TestGeneralizedAmplitudeDamping:
     def test_kraus_jac_autograd(self):
         gamma = pnp.array(0.43, requires_grad=True)
         p = pnp.array(0.3, requires_grad=True)
-        fn = lambda gamma, p: qml.math.stack(channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices())
+        fn = lambda gamma, p: qml.math.stack(
+            channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices()
+        )
         jac_fn = qml.jacobian(fn)
         jac = jac_fn(gamma, p)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma, p))
@@ -198,7 +205,9 @@ class TestGeneralizedAmplitudeDamping:
 
         gamma = torch.tensor(0.43, requires_grad=True)
         p = torch.tensor(0.3, requires_grad=True)
-        fn = lambda gamma, p: qml.math.stack(channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices())
+        fn = lambda gamma, p: qml.math.stack(
+            channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices()
+        )
         jac = torch.autograd.functional.jacobian(fn, (gamma, p))
         exp_jac = self.expected_jac_fn(gamma.detach().numpy(), p.detach().numpy())
         assert len(jac) == len(exp_jac) == 2
@@ -212,7 +221,9 @@ class TestGeneralizedAmplitudeDamping:
         gamma = tf.Variable(0.43)
         p = tf.Variable(0.3)
         with tf.GradientTape() as tape:
-            out = qml.math.stack(channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices())
+            out = qml.math.stack(
+                channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices()
+            )
         jac = tape.jacobian(out, (gamma, p))
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma, p))
 
@@ -222,7 +233,9 @@ class TestGeneralizedAmplitudeDamping:
 
         gamma = jax.numpy.array(0.43)
         p = jax.numpy.array(0.3)
-        fn = lambda gamma, p: qml.math.stack(channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices())
+        fn = lambda gamma, p: qml.math.stack(
+            channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices()
+        )
         jac_fn = jax.jacobian(fn, argnums=[0, 1])
         jac = jac_fn(gamma, p)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma, p))
@@ -251,7 +264,7 @@ class TestPhaseDamping:
             channel.PhaseDamping(1.5, wires=0).kraus_matrices()
 
     expected_jac_fn = lambda self, gamma: [
-        qml.math.array([[0, 0], [0, -1 / (2 * qml.math.sqrt(1-gamma))]]),
+        qml.math.array([[0, 0], [0, -1 / (2 * qml.math.sqrt(1 - gamma))]]),
         qml.math.array([[0, 0], [0, 1 / (2 * qml.math.sqrt(gamma))]]),
     ]
 
@@ -293,7 +306,6 @@ class TestPhaseDamping:
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
 
-
 class TestBitFlip:
     """Tests for the quantum channel BitFlipChannel"""
 
@@ -331,7 +343,7 @@ class TestBitFlip:
             channel.BitFlip(1.5, wires=0).kraus_matrices()
 
     expected_jac_fn = lambda self, p: [
-        -1 / (2 * qml.math.sqrt(1-p)) * qml.math.eye(2),
+        -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.eye(2),
         1 / (2 * qml.math.sqrt(p)) * qml.math.array([[0, 1], [1, 0]]),
     ]
 
@@ -410,7 +422,7 @@ class TestPhaseFlip:
             channel.PhaseFlip(1.5, wires=0).kraus_matrices()
 
     expected_jac_fn = lambda self, p: [
-        -1 / (2 * qml.math.sqrt(1-p)) * qml.math.eye(2),
+        -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.eye(2),
         1 / (2 * qml.math.sqrt(p)) * qml.math.diag([1, -1]),
     ]
 
@@ -491,7 +503,7 @@ class TestDepolarizingChannel:
             qml.DepolarizingChannel(1.5, wires=0).kraus_matrices()
 
     expected_jac_fn = lambda self, p: [
-        -1 / (2 * qml.math.sqrt(1-p)) * qml.math.eye(2),
+        -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.eye(2),
         1 / (6 * qml.math.sqrt(p / 3)) * qml.math.array([[0, 1], [1, 0]]),
         1 / (6 * qml.math.sqrt(p / 3)) * qml.math.array([[0, -1j], [1j, 0]]),
         1 / (6 * qml.math.sqrt(p / 3)) * qml.math.diag([1, -1]),
@@ -500,8 +512,12 @@ class TestDepolarizingChannel:
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p = pnp.array(0.43, requires_grad=True)
-        fn_real = lambda x: qml.math.real(qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices()))
-        fn_imag = lambda x: qml.math.imag(qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices()))
+        fn_real = lambda x: qml.math.real(
+            qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
+        )
+        fn_imag = lambda x: qml.math.imag(
+            qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
+        )
         jac_fn_real = qml.jacobian(fn_real)
         jac_fn_imag = qml.jacobian(fn_imag)
         jac = jac_fn_real(p) + 1j * jac_fn_imag(p)
@@ -512,11 +528,15 @@ class TestDepolarizingChannel:
         import torch
 
         p = torch.tensor(0.43, requires_grad=True)
-        fn_real = lambda x: qml.math.real(qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices()))
-        fn_imag = lambda x: qml.math.imag(qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices()))
+        fn_real = lambda x: qml.math.real(
+            qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
+        )
+        fn_imag = lambda x: qml.math.imag(
+            qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
+        )
         jac_real = torch.autograd.functional.jacobian(fn_real, p).detach().numpy()
         jac_imag = torch.autograd.functional.jacobian(fn_imag, p).detach().numpy()
-        assert qml.math.allclose(jac_real+1j*jac_imag, self.expected_jac_fn(p.detach().numpy()))
+        assert qml.math.allclose(jac_real + 1j * jac_imag, self.expected_jac_fn(p.detach().numpy()))
 
     @pytest.mark.tf
     def test_kraus_jac_tf(self):
@@ -770,11 +790,11 @@ class TestPauliError:
 
     expected_jac_fn = {
         "X": lambda p: [
-            -1 / (2 * qml.math.sqrt(1-p)) * qml.math.eye(2),
+            -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.eye(2),
             1 / (2 * qml.math.sqrt(p)) * qml.math.array([[0, 1], [1, 0]]),
         ],
         "XY": lambda p: [
-            -1 / (2 * qml.math.sqrt(1-p)) * qml.math.eye(4),
+            -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.eye(4),
             1 / (2 * qml.math.sqrt(p)) * (qml.math.diag([1j, -1j, 1j, -1j])[::-1]),
         ],
     }
@@ -784,8 +804,12 @@ class TestPauliError:
     def test_kraus_jac_autograd(self, ops):
         p = pnp.array(0.43, requires_grad=True)
         wires = list(range(len(ops)))
-        fn_real = lambda x: qml.math.real(qml.math.stack(channel.PauliError(ops, x, wires=wires).kraus_matrices()))
-        fn_imag = lambda x: qml.math.imag(qml.math.stack(channel.PauliError(ops, x, wires=wires).kraus_matrices()))
+        fn_real = lambda x: qml.math.real(
+            qml.math.stack(channel.PauliError(ops, x, wires=wires).kraus_matrices())
+        )
+        fn_imag = lambda x: qml.math.imag(
+            qml.math.stack(channel.PauliError(ops, x, wires=wires).kraus_matrices())
+        )
         jac_fn_real = qml.jacobian(fn_real)
         jac_fn_imag = qml.jacobian(fn_imag)
         jac = jac_fn_real(p) + 1j * jac_fn_imag(p)
@@ -798,11 +822,17 @@ class TestPauliError:
 
         p = torch.tensor(0.43, requires_grad=True)
         wires = list(range(len(ops)))
-        fn_real = lambda x: qml.math.real(qml.math.stack(channel.PauliError(ops, x, wires=wires).kraus_matrices()))
-        fn_imag = lambda x: qml.math.imag(qml.math.stack(channel.PauliError(ops, x, wires=wires).kraus_matrices()))
+        fn_real = lambda x: qml.math.real(
+            qml.math.stack(channel.PauliError(ops, x, wires=wires).kraus_matrices())
+        )
+        fn_imag = lambda x: qml.math.imag(
+            qml.math.stack(channel.PauliError(ops, x, wires=wires).kraus_matrices())
+        )
         jac_real = torch.autograd.functional.jacobian(fn_real, p).detach().numpy()
         jac_imag = torch.autograd.functional.jacobian(fn_imag, p).detach().numpy()
-        assert qml.math.allclose(jac_real+1j*jac_imag, self.expected_jac_fn[ops](p.detach().numpy()))
+        assert qml.math.allclose(
+            jac_real + 1j * jac_imag, self.expected_jac_fn[ops](p.detach().numpy())
+        )
 
     @pytest.mark.parametrize("ops", ["X", "XY"])
     @pytest.mark.tf

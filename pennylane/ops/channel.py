@@ -83,7 +83,9 @@ class AmplitudeDamping(Channel):
             raise ValueError("gamma must be in the interval [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma + np.eps)])
-        K1 = np.sqrt(gamma + np.eps) * np.convert_like(np.cast_like(np.array([[0, 1], [0, 0]]), gamma), gamma)
+        K1 = np.sqrt(gamma + np.eps) * np.convert_like(
+            np.cast_like(np.array([[0, 1], [0, 0]]), gamma), gamma
+        )
         return [K0, K1]
 
 
@@ -167,9 +169,17 @@ class GeneralizedAmplitudeDamping(Channel):
             raise ValueError("p must be in the interval [0,1].")
 
         K0 = np.sqrt(p + np.eps) * np.diag([1, np.sqrt(1 - gamma + np.eps)])
-        K1 = np.sqrt(p + np.eps) * np.sqrt(gamma) * np.convert_like(np.cast_like(np.array([[0, 1], [0, 0]]), gamma), gamma)
+        K1 = (
+            np.sqrt(p + np.eps)
+            * np.sqrt(gamma)
+            * np.convert_like(np.cast_like(np.array([[0, 1], [0, 0]]), gamma), gamma)
+        )
         K2 = np.sqrt(1 - p + np.eps) * np.diag([np.sqrt(1 - gamma + np.eps), 1])
-        K3 = np.sqrt(1 - p + np.eps) * np.sqrt(gamma) * np.convert_like(np.cast_like(np.array([[0, 0], [1, 0]]), gamma), gamma)
+        K3 = (
+            np.sqrt(1 - p + np.eps)
+            * np.sqrt(gamma)
+            * np.convert_like(np.cast_like(np.array([[0, 0], [1, 0]]), gamma), gamma)
+        )
         return [K0, K1, K2, K3]
 
 
@@ -325,8 +335,12 @@ class DepolarizingChannel(Channel):
 
         K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.eye(2, dtype=complex), p)
         K1 = np.sqrt(p / 3 + np.eps) * np.convert_like(np.array([[0, 1], [1, 0]], dtype=complex), p)
-        K2 = np.sqrt(p / 3 + np.eps) * np.convert_like(np.array([[0, -1j], [1j, 0]], dtype=complex), p)
-        K3 = np.sqrt(p / 3 + np.eps) * np.convert_like(np.array([[1, 0], [0, -1]], dtype=complex), p)
+        K2 = np.sqrt(p / 3 + np.eps) * np.convert_like(
+            np.array([[0, -1j], [1j, 0]], dtype=complex), p
+        )
+        K3 = np.sqrt(p / 3 + np.eps) * np.convert_like(
+            np.array([[1, 0], [0, -1]], dtype=complex), p
+        )
         return [K0, K1, K2, K3]
 
 
@@ -485,10 +499,18 @@ class ResetError(Channel):
         interface = np.get_interface([p_0, p_1])
         p_0, p_1 = np.coerce([p_0, p_1], like=interface)
         K0 = np.sqrt(1 - p_0 - p_1 + np.eps) * np.convert_like(np.cast_like(np.eye(2), p_0), p_0)
-        K1 = np.sqrt(p_0 + np.eps) * np.convert_like(np.cast_like(np.array([[1, 0], [0, 0]]), p_0), p_0)
-        K2 = np.sqrt(p_0 + np.eps) * np.convert_like(np.cast_like(np.array([[0, 1], [0, 0]]), p_0), p_0)
-        K3 = np.sqrt(p_1 + np.eps) * np.convert_like(np.cast_like(np.array([[0, 0], [1, 0]]), p_0), p_0)
-        K4 = np.sqrt(p_1 + np.eps) * np.convert_like(np.cast_like(np.array([[0, 0], [0, 1]]), p_0), p_0)
+        K1 = np.sqrt(p_0 + np.eps) * np.convert_like(
+            np.cast_like(np.array([[1, 0], [0, 0]]), p_0), p_0
+        )
+        K2 = np.sqrt(p_0 + np.eps) * np.convert_like(
+            np.cast_like(np.array([[0, 1], [0, 0]]), p_0), p_0
+        )
+        K3 = np.sqrt(p_1 + np.eps) * np.convert_like(
+            np.cast_like(np.array([[0, 0], [1, 0]]), p_0), p_0
+        )
+        K4 = np.sqrt(p_1 + np.eps) * np.convert_like(
+            np.cast_like(np.array([[0, 0], [0, 1]]), p_0), p_0
+        )
 
         return [K0, K1, K2, K3, K4]
 
@@ -592,9 +614,9 @@ class PauliError(Channel):
         K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2**nq), p), p)
 
         interface = np.get_interface(p)
-        if interface=="tensorflow" or "Y" in operators:
-            if interface=='numpy':
-                p *= 1+0j
+        if interface == "tensorflow" or "Y" in operators:
+            if interface == "numpy":
+                p *= 1 + 0j
             else:
                 p = np.cast_like(p, 1j)
 
