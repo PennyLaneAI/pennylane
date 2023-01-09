@@ -703,7 +703,7 @@ class TestMetricTensor:
         assert res == ()
 
 
-fixed_pars = np.array([-0.2, 0.2, 0.5, 0.3, 0.7], requires_grad=False)
+fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 
 
 def fubini_ansatz0(params, wires=None):
