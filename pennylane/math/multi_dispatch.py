@@ -16,10 +16,10 @@
 import functools
 from collections.abc import Sequence
 
-import autoray as ar
-import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
+import autoray as ar
 from autoray import numpy as np
+import numpy as onp
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
@@ -796,12 +796,6 @@ def iscomplex(tensor, like=None):
         return False
 
     return np.iscomplex(tensor)
-
-
-@multi_dispatch()
-def size(tensor, like=None):
-    """Return the size of the tensor."""
-    return tensor.numel() if like == "torch" else np.size(tensor)
 
 
 @multi_dispatch()

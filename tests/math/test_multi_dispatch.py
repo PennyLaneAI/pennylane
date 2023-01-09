@@ -15,12 +15,11 @@
 """
 import autoray
 import numpy as onp
-import pytest
 import scipy as s
+import pytest
 from autoray import numpy as anp
-
-from pennylane import math as fn
 from pennylane import numpy as np
+from pennylane import math as fn
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -130,8 +129,8 @@ def test_multi_dispatch_decorate_non_dispatch(values):
 @pytest.mark.all_interfaces
 def test_unwrap():
     """Test that unwrap converts lists to lists and interface variables to numpy."""
-    import tensorflow as tf
     import torch
+    import tensorflow as tf
     from jax import numpy as jnp
 
     params = [
@@ -196,53 +195,3 @@ def test_gammainc(n, t, gamma_ref):
     gamma = fn.gammainc(n, t)
 
     assert np.allclose(gamma, gamma_ref)
-
-
-array_and_size = [
-    ([], 0),
-    (1, 1),
-    ([0, 1, 2, 3, 4, 5], 6),
-    ([[0, 1, 2], [3, 4, 5]], 6),
-    ([[0, 1], [2, 3], [4, 5]], 6),
-    ([[0], [1], [2], [3], [4], [5]], 6),
-]
-
-
-@pytest.mark.autograd
-@pytest.mark.parametrize(("array", "size"), array_and_size)
-def test_size_autograd(array, size):
-    """Test size function with the autograd interface."""
-    from autograd import numpy as np
-
-    r = fn.size(np.array(array))
-    assert r == size
-
-
-@pytest.mark.jax
-@pytest.mark.parametrize(("array", "size"), array_and_size)
-def test_size_jax(array, size):
-    """Test size function with the jax interface."""
-    from jax import numpy as np
-
-    r = fn.size(np.array(array))
-    assert r == size
-
-
-@pytest.mark.torch
-@pytest.mark.parametrize(("array", "size"), array_and_size)
-def test_size_torch(array, size):
-    """Test size function with the torch interface."""
-    import torch
-
-    r = fn.size(torch.tensor(array))
-    assert r == size
-
-
-@pytest.mark.tf
-@pytest.mark.parametrize(("array", "size"), array_and_size)
-def test_size_tensorflow(array, size):
-    """Test size function with the tensorflow interface."""
-    import tensorflow as tf
-
-    r = fn.size(tf.constant(array))
-    assert r == size
