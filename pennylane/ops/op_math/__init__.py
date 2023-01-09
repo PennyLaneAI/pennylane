@@ -52,7 +52,7 @@ Symbolic Classes
     ~SymbolicOp
 
 Controlled Operator Classes
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ~ControlledQubitUnitary
 
 """
