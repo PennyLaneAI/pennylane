@@ -115,9 +115,9 @@
 
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
-*Next generation device interface:*
+*Next generation device API:*
 
-* New Abstract Base Class for devices `AbstractDevice` is added to the `devices` module.
+* New Abstract Base Class for devices `QuantumDevice` is added to the `devices` module.
 
 <h3>Improvements</h3>
 
