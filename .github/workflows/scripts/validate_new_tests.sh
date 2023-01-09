@@ -2,7 +2,7 @@
 missing_files=()
 for file in $@
 do
-    if grep -Fxq $file .github/tests/tests_passing_pylint.txt
+    if grep -Fxq $file tests/tests_passing_pylint.txt
     then
         :
     else
