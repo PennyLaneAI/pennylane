@@ -145,6 +145,9 @@
 * Write Hamiltonians to file in a condensed format when using the data module.
   [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
 
+* Introduce the `ExecutionConfig` data class in the new `workflow` module.
+  [(#3614)](https://github.com/PennyLaneAI/pennylane/pull/3614)
+
 <h3>Breaking changes</h3>
 
 * The tape constructed by a QNode is no longer queued to surrounding contexts.
