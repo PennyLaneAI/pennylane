@@ -360,15 +360,23 @@ class DefaultMixed(QubitDevice):
         # Use column indices instead or rows to incorporate transposition of K^\dagger
         axes_right = [col_wires_list, channel_col_ids]
         # Apply the Kraus operators, and sum over all Kraus operators afterwards
-        _state = qnp.sum(
-            qnp.stack(
-                [
-                    qnp.tensordot(qnp.tensordot(k, self._state, axes_left), qnp.conj(k), axes_right)
-                    for k in kraus
-                ]
-            ),
-            axis=0,
-        )
+        print(f"len(kraus)={len(kraus)}")
+        if len(kraus) == 1:
+            _state = qnp.tensordot(
+                qnp.tensordot(kraus[0], self._state, axes_left), qnp.conj(kraus[0]), axes_right
+            )
+        else:
+            _state = qnp.sum(
+                qnp.stack(
+                    [
+                        qnp.tensordot(
+                            qnp.tensordot(k, self._state, axes_left), qnp.conj(k), axes_right
+                        )
+                        for k in kraus
+                    ]
+                ),
+                axis=0,
+            )
 
         # Permute the affected axes to their destination places.
         # The row indices of the kraus operators are moved from the beginning to the original
@@ -589,6 +597,7 @@ class DefaultMixed(QubitDevice):
             self._apply_diagonal_unitary(matrices, wires)
         else:
             if len(wires) > 1:
+                print(operation)
                 self._apply_channel_tensordot(matrices, wires)
             else:
                 self._apply_channel(matrices, wires)

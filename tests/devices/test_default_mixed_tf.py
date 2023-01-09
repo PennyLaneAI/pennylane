@@ -298,16 +298,27 @@ class TestPassthruIntegration:
         res = tape.jacobian(res, p_tf)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "op, wire_ids, exp_fn",
+        [
+            (qml.RY, [0], lambda a: -np.sin(a)),
+            (qml.AmplitudeDamping, [0], lambda a: -2),
+            (qml.DepolarizingChannel, [-1], lambda a: -4 / 3),
+            (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2),
+            (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0),
+        ],
+    )
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
-    def test_state_differentiability(self, decorator, interface, wires, tol):
+    def test_state_differentiability(self, decorator, interface, wires, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
         dev = qml.device("default.mixed", wires=wires)
 
         @decorator
         @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit(a):
-            qml.RY(a, wires=wires[0])
+            qml.PauliX(wires[wire_ids[0]])
+            op(a, wires=[wires[idx] for idx in wire_ids])
             return qml.state()
 
         a = tf.Variable(0.54, trainable=True)
@@ -318,7 +329,7 @@ class TestPassthruIntegration:
             res = res[1][1] - res[0][0]
 
         grad = tape.gradient(res, a)
-        expected = np.sin(a)
+        expected = exp_fn(a)
 
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 

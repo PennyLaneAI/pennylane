@@ -290,14 +290,27 @@ class TestPassthruIntegration:
         res = decorator(jacobian_fn(circuit1, 0))(p_jax)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "op, wire_ids, exp_fn",
+        [
+            (qml.RY, [0], lambda a: -jnp.sin(a)),
+            (qml.AmplitudeDamping, [0], lambda a: -2),
+            (qml.DepolarizingChannel, [-1], lambda a: -4 / 3),
+            (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2),
+            (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0),
+        ],
+    )
     @pytest.mark.parametrize("decorator", decorators)
-    def test_state_differentiability(self, decorator, tol):
+    def test_state_differentiability(self, decorator, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
+        config.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.mixed", wires=1)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(a):
-            qml.RY(a, wires=0)
+            qml.PauliX(dev.wires[wire_ids[0]])
+            op(a, wires=[dev.wires[idx] for idx in wire_ids])
             return qml.state()
 
         a = jnp.array(0.54)
@@ -307,7 +320,7 @@ class TestPassthruIntegration:
             return res[1][1] - res[0][0]
 
         grad = decorator(jax.grad(cost))(a)
-        expected = np.sin(a)
+        expected = exp_fn(a)
 
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 

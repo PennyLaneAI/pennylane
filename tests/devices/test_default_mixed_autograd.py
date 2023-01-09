@@ -315,17 +315,28 @@ class TestPassthruIntegration:
         res = grad_fn(p)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "op, wire_ids, exp_fn",
+        [
+            (qml.RY, [0], lambda a: -np.sin(a)),
+            (qml.AmplitudeDamping, [0], lambda a: -2),
+            (qml.DepolarizingChannel, [-1], lambda a: -4 / 3),
+            (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2),
+            (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0),
+        ],
+    )
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
-    def test_state_differentiability(self, wires, tol):
+    def test_state_differentiability(self, wires, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
         dev = qml.device("default.mixed", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
         def circuit(a):
-            qml.RY(a, wires=wires[0])
+            qml.PauliX(wires[wire_ids[0]])
+            op(a, wires=[wires[idx] for idx in wire_ids])
             return qml.state()
 
-        a = np.array(0.54, requires_grad=True)
+        a = np.array(0.23, requires_grad=True)
 
         def cost(a):
             """A function of the device quantum state, as a function
@@ -335,7 +346,7 @@ class TestPassthruIntegration:
             return res[1][1] - res[0][0]
 
         grad = qml.grad(cost)(a)
-        expected = np.sin(a)
+        expected = exp_fn(a)
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("wires", [range(2), [-12.32, "abc"]])
