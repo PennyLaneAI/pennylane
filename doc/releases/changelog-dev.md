@@ -139,12 +139,15 @@
   the coefficient is equal to 1.
   [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
 
-* `Adjoint` and `Pow` now support batching if the base operation supports batching.
-  [(#3168)](https://github.com/PennyLaneAI/pennylane/pull/3168)
+* Write Hamiltonians to file in a condensed format when using the data module.
+  [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
+
+* `Pow` now support batching if the base operation supports batching.
   [(#3250)](https://github.com/PennyLaneAI/pennylane/pull/3250)
 
 <h3>Breaking changes</h3>
 
+* The tape constructed by a QNode is no longer queued to surrounding contexts.
   [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
 
 <h3>Deprecations</h3>
@@ -155,7 +158,7 @@
 
 * Fixed the wires for the Y decomposition in the ZX calculus transform.
   [(#3598)](https://github.com/PennyLaneAI/pennylane/pull/3598)
-*
+
 * `qml.pauli.PauliWord` is now pickle-able.
   [(#3588)](https://github.com/PennyLaneAI/pennylane/pull/3588)
 
