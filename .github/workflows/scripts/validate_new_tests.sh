@@ -15,6 +15,6 @@ if [ ${#missing_files[@]} -eq 0 ]; then
     exit 0
 fi
 
-echo "Please add the following test files to ~/.github/tests/tests_passing_pylint.txt:"
+echo "Please add the following test files to tests/tests_passing_pylint.txt:"
 for file in ${missing_files[@]}; do echo $file; done
 exit 1

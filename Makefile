@@ -81,4 +81,4 @@ lint:
 
 .PHONY: lint-test
 lint-test:
-	pylint tests pennylane/devices/tests --rcfile .github/tests/.pylintrc
+	pylint tests pennylane/devices/tests --rcfile tests/.pylintrc
