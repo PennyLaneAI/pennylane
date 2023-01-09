@@ -801,8 +801,7 @@ def iscomplex(tensor, like=None):
 @multi_dispatch()
 def size(tensor, like=None):
     """Return the size of the tensor."""
-    s = tensor.numel() if like == "torch" else np.size(tensor)
-    return np.array(s, like=like)
+    return tensor.numel() if like == "torch" else np.size(tensor)
 
 
 @multi_dispatch()
