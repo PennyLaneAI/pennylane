@@ -139,16 +139,26 @@
   the coefficient is equal to 1.
   [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
 
- <h3>Breaking changes</h3>
+* Write Hamiltonians to file in a condensed format when using the data module.
+  [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
+
+<h3>Breaking changes</h3>
 
 * The tape constructed by a QNode is no longer queued to surrounding contexts.
   [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
+
+* Nested operators like `Tensor`, `Hamiltonian` and `Adjoint` now remove their owned operators
+  from the queue instead of updating their metadata to have an `"owner"`.
+  [(#3282)](https://github.com/PennyLaneAI/pennylane/pull/3282)
 
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
+
+* Pins networkx version <3.0 till a bug with tensorflow-jit, networkx, and qcut is resolved.
+  [(#3609)](https://github.com/PennyLaneAI/pennylane/pull/3609)
 
 * Fixed the wires for the Y decomposition in the ZX calculus transform.
   [(#3598)](https://github.com/PennyLaneAI/pennylane/pull/3598)

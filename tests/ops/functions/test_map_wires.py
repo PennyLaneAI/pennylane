@@ -81,13 +81,12 @@ class TestMapWiresOperators:
 
     def test_map_wires_with_queuing_and_with_replacing(self):
         """Test the map_wires method while queuing with `queue = True` and `replace=True`."""
-        with qml.queuing.AnnotatedQueue() as q_tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = build_op()
             m_op = qml.map_wires(op, wire_map=wire_map, queue=True, replace=True)
-        tape = QuantumScript.from_queue(q_tape)
-        assert len(tape.circuit) == 1
-        assert tape.circuit[0] is m_op
-        assert q_tape.get_info(op).get("owner", None) is m_op
+
+        assert len(q) == 1
+        assert q.queue[0] is m_op
 
     def test_map_wires_unsupported_object_raises_error(self):
         """Test that an error is raised when trying to map the wires of an unsupported object."""
