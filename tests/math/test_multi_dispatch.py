@@ -213,7 +213,9 @@ def test_size_autograd(array, size):
     """Test that the lower incomplete Gamma function is computed correctly."""
     from autograd import numpy as np
 
-    assert fn.size(np.array(array)) == size
+    r = fn.size(np.array(array))
+    assert r == size
+    assert fn.get_interface(r) == "numpy"
 
 
 @pytest.mark.jax
@@ -222,7 +224,9 @@ def test_size_jax(array, size):
     """Test that the lower incomplete Gamma function is computed correctly."""
     from jax import numpy as np
 
-    assert fn.size(np.array(array)) == size
+    r = fn.size(np.array(array))
+    assert r == size
+    assert fn.get_interface(r) == "jax"
 
 
 @pytest.mark.torch
@@ -231,7 +235,9 @@ def test_size_torch(array, size):
     """Test that the lower incomplete Gamma function is computed correctly."""
     import torch
 
-    assert fn.size(torch.tensor(array)) == size
+    r = fn.size(torch.tensor(array))
+    assert r == size
+    assert fn.get_interface(r) == "torch"
 
 
 @pytest.mark.tf
@@ -240,4 +246,6 @@ def test_size_tensorflow(array, size):
     """Test that the lower incomplete Gamma function is computed correctly."""
     import tensorflow as tf
 
-    assert fn.size(tf.constant(array)) == size
+    r = fn.size(tf.constant(array))
+    assert r == size
+    assert fn.get_interface(r) == "tensorflow"
