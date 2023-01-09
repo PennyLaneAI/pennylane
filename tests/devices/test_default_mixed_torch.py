@@ -296,14 +296,26 @@ class TestPassthruIntegration:
         grad = torch.autograd.functional.jacobian(circuit1, p_torch)
         assert qml.math.allclose(grad, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
+    # TODO: Uncomment the following tests once #3612 is merged
+    @pytest.mark.parametrize(
+        "op, wire_ids, exp_fn",
+        [
+            (qml.RY, [0], lambda a: -torch.sin(a)),
+            # (qml.AmplitudeDamping, [0], lambda a: -2),
+            # (qml.DepolarizingChannel, [-1], lambda a: -4 / 3),
+            # (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2),
+            # (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0),
+        ],
+    )
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
-    def test_state_differentiability(self, wires, tol):
+    def test_state_differentiability(self, wires, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
         dev = qml.device("default.mixed", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
-            qml.RY(a, wires=wires[0])
+            qml.PauliX(wires[wire_ids[0]])
+            op(a, wires=[wires[idx] for idx in wire_ids])
             return qml.state()
 
         a = torch.tensor(0.54, dtype=torch.float64, requires_grad=True)
@@ -313,7 +325,7 @@ class TestPassthruIntegration:
         res = res[1][1] - res[0][0]
         res.backward()
 
-        expected = torch.sin(a)
+        expected = exp_fn(a)
         assert torch.allclose(a.grad, expected, atol=tol, rtol=0)
 
     def test_state_vector_differentiability(self, tol):
