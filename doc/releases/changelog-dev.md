@@ -115,6 +115,9 @@
 
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
+* Support `qml.math.size` with torch tensors.
+  [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
+
 <h3>Improvements</h3>
 
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
@@ -147,15 +150,22 @@
 * The tape constructed by a QNode is no longer queued to surrounding contexts.
   [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
 
+* Nested operators like `Tensor`, `Hamiltonian` and `Adjoint` now remove their owned operators
+  from the queue instead of updating their metadata to have an `"owner"`.
+  [(#3282)](https://github.com/PennyLaneAI/pennylane/pull/3282)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
 
+* Pins networkx version <3.0 till a bug with tensorflow-jit, networkx, and qcut is resolved.
+  [(#3609)](https://github.com/PennyLaneAI/pennylane/pull/3609)
+
 * Fixed the wires for the Y decomposition in the ZX calculus transform.
   [(#3598)](https://github.com/PennyLaneAI/pennylane/pull/3598)
-* 
+*
 * `qml.pauli.PauliWord` is now pickle-able.
   [(#3588)](https://github.com/PennyLaneAI/pennylane/pull/3588)
 

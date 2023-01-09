@@ -1180,8 +1180,6 @@ class TestTensor:
         assert len(q.queue) == 1
         assert q.queue[0] is T
 
-        assert q[T] == {"owns": (op1, op2)}
-
     def test_queuing(self):
         """Test the queuing of a Tensor object."""
 
@@ -1190,14 +1188,8 @@ class TestTensor:
             op2 = qml.PauliY(1)
             T = Tensor(op1, op2)
 
-        assert len(q.queue) == 3
-        assert q.queue[0] is op1
-        assert q.queue[1] is op2
-        assert q.queue[2] is T
-
-        assert q[op1] == {"owner": T}
-        assert q[op2] == {"owner": T}
-        assert q[T] == {"owns": (op1, op2)}
+        assert len(q) == 1
+        assert q.queue[0] is T
 
     def test_queuing_observable_matmul(self):
         """Test queuing when tensor constructed with matmul."""
@@ -1207,10 +1199,8 @@ class TestTensor:
             op2 = qml.PauliY(1)
             t = op1 @ op2
 
-        assert len(q.queue) == 3
-        assert q[op1] == {"owner": t}
-        assert q[op2] == {"owner": t}
-        assert q[t] == {"owns": (op1, op2)}
+        assert len(q) == 1
+        assert q.queue[0] is t
 
     def test_queuing_tensor_matmul(self):
         """Tests the tensor-specific matmul method updates queuing metadata."""
@@ -1223,8 +1213,8 @@ class TestTensor:
             op3 = qml.PauliZ(2)
             t2 = t @ op3
 
-        assert q[t2] == {"owns": (op1, op2, op3)}
-        assert q[op3] == {"owner": t2}
+        assert len(q) == 1
+        assert q.queue[0] is t2
 
     def test_queuing_tensor_matmul_components_outside(self):
         """Tests the tensor-specific matmul method when components are defined outside the
@@ -1238,9 +1228,8 @@ class TestTensor:
             op3 = qml.PauliZ(2)
             t2 = t1 @ op3
 
-        assert len(q) == 2
-        assert q[op3] == {"owner": t2}
-        assert q[t2] == {"owns": (op1, op2, op3)}
+        assert len(q) == 1
+        assert q.queue[0] is t2
 
     def test_queuing_tensor_rmatmul(self):
         """Tests tensor-specific rmatmul updates queuing metatadata."""
@@ -1255,8 +1244,8 @@ class TestTensor:
 
             t2 = op3 @ t1
 
-        assert q[op3] == {"owner": t2}
-        assert q[t2] == {"owns": (op3, op1, op2)}
+        assert len(q.queue) == 1
+        assert q.queue[0] is t2
 
     def test_name(self):
         """Test that the names of the observables are
@@ -1630,12 +1619,12 @@ class TestTensor:
         assert type(O_pruned) == type(expected)
         assert O_pruned.wires == expected.wires
 
-    def test_prune_while_queueing_return_tensor(self):
+    def test_prune_while_queuing_return_tensor(self):
         """Tests that pruning a tensor to a tensor in a tape context registers
         the pruned tensor as owned by the measurement,
         and turns the original tensor into an orphan without an owner."""
 
-        with qml.queuing.AnnotatedQueue() as ann_queue:
+        with qml.queuing.AnnotatedQueue() as q:
             # we assign operations to variables here so we can compare them below
             a = qml.PauliX(wires=0)
             b = qml.PauliY(wires=1)
@@ -1644,51 +1633,23 @@ class TestTensor:
             T_pruned = T.prune()
             m = qml.expval(T_pruned)
 
-        # the pruned tensor became the owner of Paulis
-        assert ann_queue[a]["owner"] == T_pruned
-        assert ann_queue[b]["owner"] == T_pruned
-
-        # the Identity is still owned by the original Tensor
-        assert ann_queue[c]["owner"] == T
-        # the original tensor still owns all three observables
-        # but is not owned by a measurement
-        assert ann_queue[T]["owns"] == (a, b, c)
-        assert not hasattr(ann_queue[T], "owner")
-
-        # the pruned tensor is owned by the measurement
-        # and owns the two Paulis
-        assert ann_queue[T_pruned]["owner"] == m
-        assert ann_queue[T_pruned]["owns"] == (a, b)
-        assert ann_queue[m]["owns"] == T_pruned
+        assert len(q.queue) == 1
+        assert q.queue[0] is m
 
     def test_prune_while_queueing_return_obs(self):
         """Tests that pruning a tensor to an observable in a tape context registers
         the pruned observable as owned by the measurement,
         and turns the original tensor into an orphan without an owner."""
 
-        with qml.queuing.AnnotatedQueue() as ann_queue:
+        with qml.queuing.AnnotatedQueue() as q:
             a = qml.PauliX(wires=0)
             c = qml.Identity(wires=2)
             T = qml.operation.Tensor(a, c)
             T_pruned = T.prune()
             m = qml.expval(T_pruned)
 
-        # the pruned tensor is the Pauli observable
-        assert T_pruned == a
-        # pruned tensor/Pauli is owned by the measurement
-        # since the entry in the dictionary got updated
-        # when the pruned tensor's owner was memorized
-        assert ann_queue[a]["owner"] == m
-        # the Identity is still owned by the original Tensor
-        assert ann_queue[c]["owner"] == T
-
-        # the original tensor still owns both observables
-        # but is not owned by a measurement
-        assert ann_queue[T]["owns"] == (a, c)
-        assert not hasattr(ann_queue[T], "owner")
-
-        # the measurement owns the Pauli/pruned tensor
-        assert ann_queue[m]["owns"] == T_pruned
+        assert len(q.queue) == 1
+        assert q.queue[0] is m
 
     def test_sparse_matrix_no_wires(self):
         """Tests that the correct sparse matrix representation is used."""
