@@ -147,7 +147,10 @@
   the coefficient is equal to 1.
   [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
 
- <h3>Breaking changes</h3>
+* Write Hamiltonians to file in a condensed format when using the data module.
+  [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
+
+<h3>Breaking changes</h3>
 
 * The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`. 
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
