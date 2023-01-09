@@ -443,7 +443,8 @@ class TestMaxEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_state)
-    def test_max_entropy_grad_jax(self, params, wires, base, check_state):
+    @pytest.mark.parametrize("jit", [False, True])
+    def test_max_entropy_grad_jax(self, params, wires, base, check_state, jit):
         """Test `max_entropy` differentiability with jax."""
         import jax
         import jax.numpy as jnp
@@ -451,6 +452,12 @@ class TestMaxEntropy:
         params = jnp.array(params)
 
         max_entropy_grad = jax.grad(qml.math.max_entropy)
-        gradient = max_entropy_grad(params, wires, base, check_state)
+
+        if jit:
+            gradient = jax.jit(max_entropy_grad, static_argnums=[1, 2, 3])(
+                params, tuple(wires), base, check_state
+            )
+        else:
+            gradient = max_entropy_grad(params, wires, base, check_state)
 
         assert qml.math.allclose(gradient, 0.0)
