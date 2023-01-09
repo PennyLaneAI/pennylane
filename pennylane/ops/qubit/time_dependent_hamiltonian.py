@@ -209,7 +209,7 @@ class TDHamiltonian(Observable):
             return TDHamiltonian(coeffs, ops)
 
         if isinstance(H, (Tensor, Observable)):
-            coeffs.append(qml.math.cast_like([1.0], coeffs))
+            coeffs.append(qml.math.cast_like([1.0], coeffs)[0])
             ops.append(H)
             return TDHamiltonian(coeffs, ops)
 
