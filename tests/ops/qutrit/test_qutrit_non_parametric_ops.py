@@ -167,7 +167,7 @@ class TestPowMethod:
     @pytest.mark.parametrize("op", period_three_ops)
     @pytest.mark.parametrize("offset", (0, 3))
     def test_period_three_ops_pow_offset_2(self, op, offset):
-        """Tests that ops with a period ==3 raise a PowUndefinError when raised
+        """Tests that ops with a period ==3 raise a PowUndefinedError when raised
         to a power that is 2+multiple of three."""
 
         # When raising to power == 2 mod 3

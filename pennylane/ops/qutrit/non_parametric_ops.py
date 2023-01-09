@@ -541,5 +541,5 @@ class THadamard(Operation):
         return THadamard(wires=self.wires, subspace=self.subspace)
 
     def pow(self, z):
-        new_exp = z if self.subspace is None else z % 2
+        new_exp = z % 4 if self.subspace is None else z % 2
         return super().pow(new_exp)
