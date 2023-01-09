@@ -104,7 +104,8 @@ class TestMetricTensor:
             qml.RY(np.array(1.0, requires_grad=True), wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PhaseShift(np.array(1.0, requires_grad=True), wires=1)
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.metric_tensor(tape, approx="block-diag")
@@ -123,12 +124,11 @@ class TestMetricTensor:
         assert isinstance(tapes[1].operations[3], qml.Hadamard)
 
         # third parameter subcircuit
-        assert len(tapes[2].operations) == 4
+        assert len(tapes[2].operations) == 3
         assert isinstance(tapes[2].operations[0], qml.RX)
         assert isinstance(tapes[2].operations[1], qml.RY)
         assert isinstance(tapes[2].operations[2], qml.CNOT)
-        # Phase shift generator
-        assert isinstance(tapes[2].operations[3], qml.QubitUnitary)
+        # No decomposition for operator that is diagonal in computational basis
 
     def test_construct_subcircuit_layers(self):
         """Test correct subcircuits constructed
@@ -155,7 +155,9 @@ class TestMetricTensor:
             qml.RZ(params[7], wires=2)
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(1))
+            qml.expval(qml.PauliX(2))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.metric_tensor(tape, approx="block-diag")
@@ -703,7 +705,7 @@ class TestMetricTensor:
         assert res == ()
 
 
-fixed_pars = np.array([-0.2, 0.2, 0.5, 0.3, 0.7], requires_grad=False)
+fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 
 
 def fubini_ansatz0(params, wires=None):
@@ -1081,6 +1083,7 @@ class TestDifferentiability:
     dev = qml.device("default.qubit", wires=3)
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_autograd_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1108,6 +1111,7 @@ class TestDifferentiability:
             assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_autograd(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1324,6 +1328,7 @@ def test_error_not_available_aux_wire():
         qml.metric_tensor(circuit, aux_wire=404)(x)
 
 
+@pytest.mark.filterwarnings("ignore:An auxiliary wire is not")
 def test_error_aux_wire_replaced():
     """Tests that even if an aux_wire is provided, it is superseded by a device
     wire if it does not exist itself on the device, so that the metric_tensor is

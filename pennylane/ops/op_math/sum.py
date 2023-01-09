@@ -67,8 +67,7 @@ def op_sum(*summands, do_queue=True, id=None, lazy=True):
 
     if do_queue:
         for op in summands:
-            QueuingManager.update_info(op, owner=summands_simp)
-        QueuingManager.update_info(summands_simp, owns=summands)
+            QueuingManager.remove(op)
 
     return summands_simp
 

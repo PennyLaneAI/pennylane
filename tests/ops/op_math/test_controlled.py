@@ -606,10 +606,8 @@ class TestQueuing:
             base = qml.Rot(1.234, 2.345, 3.456, wires=2)
             op = Controlled(base, (0, 1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert q.get_info(base)["owner"] is op
-        assert q.get_info(op)["owns"] is base
-        assert tape.operations == [op]
+        assert base not in q
+        assert q.queue[0] == op
 
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if its defined outside the recording context."""
@@ -618,10 +616,8 @@ class TestQueuing:
         with qml.queuing.AnnotatedQueue() as q:
             op = Controlled(base, ("a", "b"))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         assert len(q) == 1
-        assert q.get_info(op)["owns"] is base
-        assert tape.operations == [op]
+        assert q.queue[0] is op
 
     def test_do_queue_false(self):
         """Test that when `do_queue=False` is specified, the controlled op is not queued."""

@@ -856,8 +856,8 @@ class TestWrapperFunc:
             sum1 = op_sum(qml.S(1), qml.T(1))
             sum2 = op_sum(qml.S(0), sum1, lazy=False)
 
-        assert q[sum1]["owner"] is sum2
-        assert sum1 in q[sum2]["owns"]
+        assert len(q) == 1
+        assert q.queue[0] is sum2
 
 
 class TestIntegration:
