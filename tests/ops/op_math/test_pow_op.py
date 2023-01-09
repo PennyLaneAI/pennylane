@@ -59,8 +59,8 @@ class TestConstructor:
         """Test that nonlazy pow returns a single identity if the power decomposes
         to the identity."""
 
-        op = qml.pow(op, 2, lazy=False)
-        assert qml.equal(op, qml.Identity(0))
+        op_new = qml.pow(op, 2, lazy=False)
+        assert qml.equal(op_new, qml.Identity(op.wires))
 
     def test_simplification_multiple_ops(self):
         """Test that when the simplification method returns a list of multiple operators,
@@ -85,8 +85,7 @@ class TestConstructor:
             original_op = qml.PauliX(0)
             new_op = qml.pow(original_op, 0.5, lazy=False)
 
-        assert q[original_op]["owner"] is new_op
-        assert q[new_op]["owns"] is original_op
+        assert original_op not in q.queue
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
@@ -561,10 +560,8 @@ class TestQueueing:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Pow(base, 1.2)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert q.get_info(base)["owner"] is op
-        assert q.get_info(op)["owns"] is base
-        assert tape.operations == [op]
+        assert q.queue[0] is op
+        assert len(q) == 1
 
     def test_queueing_base_defined_outside(self):
         """Test that base is added to queue even if it's defined outside the recording context."""
@@ -573,10 +570,8 @@ class TestQueueing:
         with qml.queuing.AnnotatedQueue() as q:
             op = Pow(base, 3.4)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(q.queue) == 1
-        assert q.get_info(op)["owns"] is base
-        assert tape.operations == [op]
+        assert len(q) == 1
+        assert q.queue[0] is op
 
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""
@@ -584,8 +579,7 @@ class TestQueueing:
         with qml.queuing.AnnotatedQueue() as q:
             op = Pow(base, 4.5, do_queue=False)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert len(tape) == 0
+        assert len(q) == 0
 
 
 class TestMatrix:
