@@ -535,13 +535,14 @@ class TestNumpyConversion:
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643, 2.51240058]])
 
-        with qml.tape.OperationRecorder() as rec:
-            circuit(phi=phi)
+        circuit(phi=phi)
 
-        for i in range(phi.shape[1]):
+        ops = circuit.tape.operations
+        assert len(ops) == 4
+        for op, p in zip(ops, phi[0]):
             # Test each rotation applied
-            assert rec.queue[0].name == "RX"
-            assert len(rec.queue[0].parameters) == 1
+            assert op.name == "RX"
+            assert op.parameters == [p]
 
     def test_multiple_gate_parameter(self):
         """Test that when supplied a PennyLane tensor, a QNode passes arguments
@@ -556,9 +557,10 @@ class TestNumpyConversion:
 
         phi = np.tensor([[0.04439891, 0.14490549, 3.29725643]])
 
-        with qml.tape.OperationRecorder() as rec:
-            circuit(phi=phi)
+        circuit(phi=phi)
 
         # Test the rotation applied
-        assert rec.queue[0].name == "Rot"
-        assert len(rec.queue[0].parameters) == 3
+        ops = circuit.tape.operations
+        assert len(ops) == 1
+        assert ops[0].name == "Rot"
+        assert np.array_equal(ops[0].parameters, phi[0])
