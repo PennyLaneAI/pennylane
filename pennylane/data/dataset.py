@@ -168,7 +168,7 @@ class Dataset(ABC):
     # pylint:disable=c-extension-no-member
     @staticmethod
     def get_file_contents(filepath):
-        """Reads data from a saved file.
+        """Reads data from a previously created or downloaded data file.
 
         Returns:
             A dictionary for non-standard datasets or full files, otherwise a data value
@@ -202,7 +202,7 @@ class Dataset(ABC):
             return
         for attr, value in data.items():  # pylint:disable=no-member
             if attr in condensed_hamiltonians:
-                value = dict_to_hamiltonian(value["terms"], value["wire_map"])
+                value = self.__dict_to_hamiltonian(value["terms"], value["wire_map"])
             setattr(self, f"{attr}", value)
 
     # pylint:disable=c-extension-no-member
@@ -235,7 +235,7 @@ class Dataset(ABC):
                 _ = getattr(self, attr)
         attrs = self.attrs
         for h in condensed_hamiltonians.intersection(attrs):
-            attrs[h] = hamiltonian_to_dict(attrs[h])
+            attrs[h] = self.__hamiltonian_to_dict(attrs[h])
         self._write_file(attrs, filepath, protocol=protocol)
 
     def list_attributes(self):
@@ -292,27 +292,27 @@ class Dataset(ABC):
                 )
             value = value[name]
         if name in condensed_hamiltonians:
-            value = dict_to_hamiltonian(value["terms"], value["wire_map"])
+            value = self.__dict_to_hamiltonian(value["terms"], value["wire_map"])
 
         setattr(self, name, value)
         del self._attr_filemap[name]
         return value
 
+    @staticmethod
+    def __dict_to_hamiltonian(terms, wire_map):
+        """Converts a dict of terms and a wire map into a Hamiltonian instance."""
+        coeffs, ops = [], []
+        for pauli_string, coeff in terms.items():
+            coeffs.append(coeff)
+            ops.append(string_to_pauli_word(pauli_string, wire_map))
+        return Hamiltonian(coeffs, ops)
 
-def dict_to_hamiltonian(terms, wire_map):
-    """Converts a dict of terms and a wire map into a Hamiltonian instance."""
-    coeffs, ops = [], []
-    for pauli_string, coeff in terms.items():
-        coeffs.append(coeff)
-        ops.append(string_to_pauli_word(pauli_string, wire_map))
-    return Hamiltonian(coeffs, ops)
-
-
-def hamiltonian_to_dict(hamiltonian):
-    """Converts a hamiltonian instance into a dict containing pauli-string terms and a wire map."""
-    coeffs, ops = hamiltonian.terms()
-    wire_map = {w: i for i, w in enumerate(hamiltonian.wires)}
-    return {
-        "terms": {pauli_word_to_string(op, wire_map): coeff for coeff, op in zip(coeffs, ops)},
-        "wire_map": wire_map,
-    }
+    @staticmethod
+    def __hamiltonian_to_dict(hamiltonian):
+        """Converts a hamiltonian instance into a dict containing pauli-string terms and a wire map."""
+        coeffs, ops = hamiltonian.terms()
+        wire_map = {w: i for i, w in enumerate(hamiltonian.wires)}
+        return {
+            "terms": {pauli_word_to_string(op, wire_map): coeff for coeff, op in zip(coeffs, ops)},
+            "wire_map": wire_map,
+        }

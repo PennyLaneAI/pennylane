@@ -146,6 +146,7 @@
   [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
 
 * Improve lazy-loading in `Dataset.read()` so it is more universally supported.
+  The `Dataset.get_file_contents()` static method was also added to read the contents of any compressed file.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
 <h3>Breaking changes</h3>
