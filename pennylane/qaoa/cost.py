@@ -15,6 +15,7 @@ r"""
 Methods for generating QAOA cost Hamiltonians corresponding to
 different optimization problems.
 """
+# pylint: disable=unnecessary-lambda-assignment
 from typing import Iterable, Union
 import networkx as nx
 import retworkx as rx

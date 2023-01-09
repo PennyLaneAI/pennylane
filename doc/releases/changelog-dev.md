@@ -118,8 +118,12 @@
 *Next generation device API:*
 
 * New Abstract Base Class for devices `QuantumDevice` is added to the `devices` module.
+  [(#3602)](https://github.com/PennyLaneAI/pennylane/pull/3602)
 
 <h3>Improvements</h3>
+
+* Support `qml.math.size` with torch tensors.
+  [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
@@ -166,7 +170,7 @@
 
 * Fixed the wires for the Y decomposition in the ZX calculus transform.
   [(#3598)](https://github.com/PennyLaneAI/pennylane/pull/3598)
-* 
+*
 * `qml.pauli.PauliWord` is now pickle-able.
   [(#3588)](https://github.com/PennyLaneAI/pennylane/pull/3588)
 
