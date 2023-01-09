@@ -13,12 +13,6 @@
 # limitations under the License.
 """
 Contains the :class:`ExecutionConfig` data class.
-
-shots
-gradient method/ function
-gradient hyperparameters
-device options
-ml framework
 """
 from dataclasses import dataclass, field
 from typing import Callable, Union
@@ -32,13 +26,13 @@ class ExecutionConfig:
     A configuration class to describe an execution of a quantum circuit on a device.
     """
 
-    shots: int = 1000
+    shots: Union[None, int] = None
     """The number of shots for an execution"""
 
     gradient_method: Union[None, Callable] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_hyperparameters: dict = field(default_factory=dict)
+    hyperparameters: dict = field(default_factory=dict)
     """The non-trainable parameters that the execution depends on"""
 
     device_options: dict = field(default_factory=dict)
@@ -46,6 +40,9 @@ class ExecutionConfig:
 
     framework: str = "jax"
     """The machine learning framework to use"""
+
+    derivative_order: int = 1
+    """The derivative order to compute while evaluating a gradient"""
 
     def __post_init__(self):
         if self.framework not in SUPPORTED_INTERFACES:
