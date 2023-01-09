@@ -120,13 +120,6 @@ class TestConstruction:
         with pytest.raises(AttributeError):
             _ = op.ndim_params
 
-    def test_batch_size_raises_error(self):
-        """Test that calling batch_size raises a ValueError."""
-        op = ValidOp(*self.simple_operands)
-
-        with pytest.raises(AttributeError):
-            _ = op.batch_size
-
     def test_decomposition_raises_error(self):
         """Test that calling decomposition() raises a ValueError."""
         op = ValidOp(*self.simple_operands)
