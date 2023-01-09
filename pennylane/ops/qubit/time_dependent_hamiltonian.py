@@ -118,7 +118,6 @@ class TDHamiltonian(Observable):
         self.H_drift = self._H_drift
         self.H_ts = self._H_ts
 
-        # do we want this?
         self._hyperparameters = {"ops": self._ops}
 
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
@@ -147,6 +146,8 @@ class TDHamiltonian(Observable):
 
     @staticmethod
     def _get_terms(coeffs, obs):
+        """Takes a list of scalar coefficients and list of Observables. Returns a qml.Sum of qml.SProd operators
+        (or a single qml.SProd operator in the event that there is only one term)."""
         terms_list = [qml.s_prod(coeff, ob) for coeff, ob in zip(coeffs, obs)]
         if len(terms_list) == 0:
             return None
@@ -156,10 +157,17 @@ class TDHamiltonian(Observable):
 
     @property
     def _H_drift(self):
+        """The terms without any time dependence. Returns a qml.Sum operator of qml.SProd operators
+        (or a single qml.SProd operator in the event that there is only one term in H_drift)."""
         return self._get_terms(self.H_drift_coeffs, self.H_drift_ops)
 
     @property
     def _H_ts(self):
+        """The time-dependent terms of the Hamiltonian. Returns a function that can be evaluated
+        to get a snapshot of the operator at a set time and with set parameters. When the function is
+        evaluated, the returned operator is a qml.Sum of qml.S_Prod operators (or a single qml.SProd
+        operator in the event that there is only one term in H_ts)."""
+
         def snapshot(params, t):
             coeffs = [f(params, t) for f in self.H_ts_fs]
             return self._get_terms(coeffs, self.H_ts_ops)
@@ -168,7 +176,8 @@ class TDHamiltonian(Observable):
 
     @property
     def coeffs(self):
-        """Return the coefficients defining the Hamiltonian.
+        """Return the coefficients defining the Hamiltonian, including the unevaluated
+        functions for the time-dependent terms.
 
         Returns:
             Iterable[float]): coefficients in the Hamiltonian expression
