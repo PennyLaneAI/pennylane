@@ -1,2 +1,3 @@
 tests/data/test_dataset.py
 tests/data/test_dataset_access.py
+tests/workflow/test_execution.py
