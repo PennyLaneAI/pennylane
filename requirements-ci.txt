@@ -1,6 +1,6 @@
 numpy
 scipy
-networkx<3.0
+networkx
 retworkx
 autograd
 toml
