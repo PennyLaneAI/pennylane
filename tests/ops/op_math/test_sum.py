@@ -1022,6 +1022,11 @@ class TestSupportsBroadcasting:
         op = Sum(base, qml.RY(1, 0))
         assert op.batch_size == 3
 
+    def test_batch_size_None(self):
+        """Test that the batch size is none if no operands have batching."""
+        prod_op = Sum(qml.PauliX(0), qml.RX(1.0, wires=0))
+        assert prod_op.batch_size is None
+
     def test_matrix_all_batched(self):
         """Test that Sum matrix has batching support when all operands are batched."""
         x = qml.numpy.array([0.1, 0.2, 0.3])
