@@ -18,7 +18,7 @@ help:
 	@echo "  coverage           		to generate a coverage report"
 	@echo "  format [check=1]   		to apply black formatter; use with 'check=1' to check instead of modify (requires black)"
 	@echo "  lint               		to run pylint on source files"
-	@echo "  lint-test file=<file>  to run pylint on test files"
+	@echo "  lint-test file=<file>	to run pylint on test files"
 	@echo "  lint-tests          		to run pylint on test files"
 
 .PHONY: install

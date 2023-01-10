@@ -28,9 +28,7 @@ pytestmark = pytest.mark.all_interfaces
 
 # pylint: disable=redefined-outer-name
 tf = pytest.importorskip("tensorflow", minversion="2.1")
-# pylint: disable=redefined-outer-name
 torch = pytest.importorskip("torch")
-# pylint: disable=redefined-outer-name
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 sci = pytest.importorskip("scipy")
