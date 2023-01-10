@@ -2484,3 +2484,4 @@ class TestMatmul:
         m2 = [[1, 2], [3, 4]]
         assert qml.math.allequal(fn.matmul(m1, m2), m2)
         assert qml.math.allequal(fn.matmul(m2, m1), m2)
+        assert qml.math.allequal(fn.matmul(m2, m2, like="torch"), np.matmul(m2, m2))

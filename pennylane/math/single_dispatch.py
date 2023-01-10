@@ -651,9 +651,9 @@ def _matmul_torch(tensor1, tensor2, out=None):
     import torch
 
     if get_interface(tensor1) != "torch":
-        tensor1 = torch.tensor(tensor1)
+        tensor1 = ar.numpy.asarray(tensor1, like="torch")
     if get_interface(tensor2) != "torch":
-        tensor2 = torch.tensor(tensor2)
+        tensor2 = ar.numpy.asarray(tensor2, like="torch")
     return torch.matmul(tensor1, tensor2, out=out)
 
 
