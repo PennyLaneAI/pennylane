@@ -1,9 +1,6 @@
 """
 This submodule contains the time-dependent hamiltonian class
 """
-
-from jax import numpy as jnp
-
 import pennylane as qml
 from pennylane.operation import Observable, Tensor
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
@@ -124,23 +121,8 @@ class ParametrizedHamiltonian(Observable):
 
         super().__init__(*self._coeffs, wires=self._wires, id=id, do_queue=do_queue)
 
-    def __call__(self, params, t, wire_order=None):
-        # TODO: jax-optimize this?
-        if wire_order is None:
-            wire_order = self.wires
-
-        if len(self.H_ts_ops) == 1:
-            H = jnp.array(
-                [qml.matrix(self.H_drift, wire_order=wire_order)]
-                + [qml.matrix(self.H_ts(params, t), wire_order=wire_order)]
-            )
-            return jnp.sum(H, axis=0)
-
-        H = jnp.array(
-            [qml.matrix(self.H_drift, wire_order=wire_order)]
-            + [qml.matrix(self.H_ts(params, t), wire_order=wire_order)]
-        )
-        return jnp.sum(H, axis=0)
+    def __call__(self, params, t):
+        return self.H_drift + self.H_ts(params, t)
 
     @staticmethod
     def _get_terms(coeffs, obs):
