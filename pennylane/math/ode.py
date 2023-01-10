@@ -16,6 +16,7 @@
 # need to make sure copyright is not infringed
 """Fix step size ODE solver"""
 
+import warnings
 from functools import partial
 
 import jax
@@ -73,8 +74,12 @@ def odeint(func, y0, ts, *args):
     out = _odeint(func, y0, ts, *args)
     return unravel(out)
 
+def abs2(x):
+    if jnp.iscomplexobj(x):
+        return x.real ** 2 + x.imag ** 2
+    return x ** 2
 
-def _odeint(func, y0, ts, *args):
+def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     def func_(y, t):
         return func(y, t, *args)
 
@@ -82,7 +87,21 @@ def _odeint(func, y0, ts, *args):
         y0, f0, t0 = carry
         dt = t1 - t0
         # not using y1_error and k atm
-        y1, f1, y1_error, k = runge_kutta_step(func_, y0, f0, t0, dt)
+        y1, f1, y1_error = runge_kutta_step(func_, y0, f0, t0, dt)
+
+        # check error
+        #def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
+        err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
+        err_ratio = y1_error / err_tol.astype(y1_error.dtype)
+        mean_err_ratio = jnp.sqrt(jnp.mean(abs2(err_ratio)))
+        if mean_err_ratio > 1.:
+            warnings.warn(
+                f"The targeted error tolerance of atol = {atol} and rtol = {rtol}"
+                f"is not reached with a relative error of {err_ratio}",
+                UserWarning,
+            )
+
+
         carry = [y1, f1, t1]
         return carry, y1
     
@@ -129,7 +148,7 @@ def runge_kutta_step(func, y0, f0, t0, dt):
     y1 = dt.astype(f0.dtype) * jnp.dot(c_sol, k) + y0
     y1_error = dt.astype(f0.dtype) * jnp.dot(c_error, k) # see coeffs, this is y(coeff) - y(coeff*)
     f1 = k[-1]
-    return y1, f1, y1_error, k
+    return y1, f1, y1_error
 
 
 def ravel_first_arg(f, unravel):
