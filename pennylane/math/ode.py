@@ -27,7 +27,7 @@ from jax.flatten_util import ravel_pytree
 @partial(jax.jit, static_argnums=0)
 def odeint(func, y0, ts, *args):
     """Fix step size ODE solver
-    
+
     Solves the initial value problem (IVP) of an ordinary differential equation (ODE)
 
     .. math:: \frac{dy}{dt} = f(y, t), y(t_0) = y_0
@@ -38,14 +38,14 @@ def odeint(func, y0, ts, *args):
         func (callable): ``f(y, t, *args)`` defining the ODE
         y0 (tensor_like): initial value ``y(t0) = y0)``
         ts (tensor_like): finite time steps for the ODE solver to take.
-    
+
     .. note::
 
         Unlike many standard implementations, this ``odeint`` solver does not adaptively choose the step
         sizes, but rather a fix list of times for evaluation have to be provided in ``ts``.
 
     **Example**
-    
+
     We can solve the time-dependent Schrodinger equation
 
     .. math:: \frac{d}{dt}U = -i H(t) U
