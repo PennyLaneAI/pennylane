@@ -43,7 +43,8 @@ disable=
   import-outside-toplevel,
   missing-class-docstring,
   missing-function-docstring,
-  no-self-use
+  no-self-use,
+  protected-access
 
 [MISCELLANEOUS]
 
