@@ -157,6 +157,7 @@ class Dataset(ABC):
         """Returns attributes of the dataset."""
         return {k: v for k, v in vars(self).items() if k[0] != "_"}
 
+    # pylint:disable=c-extension-no-member
     @staticmethod
     def _read_file(filepath):
         """Read data from a saved file.
@@ -203,6 +204,7 @@ class Dataset(ABC):
                     data = dict_to_hamiltonian(data["terms"], data["wire_map"])
             setattr(self, f"{attribute}", data)
 
+    # pylint:disable=c-extension-no-member
     @staticmethod
     def _write_file(data, filepath, protocol=4):
         """General method to write data to a file."""
