@@ -60,10 +60,6 @@ class TestOperations:
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
-        op._inverse = True
-        copied_op2 = copy.copy(op)
-        np.testing.assert_allclose(op.matrix(), copied_op2.matrix(), atol=tol)
-
     @pytest.mark.parametrize("ops, mat, subspace", NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, subspace, tol):
         """Test matrices of non-parametrized operations are correct"""

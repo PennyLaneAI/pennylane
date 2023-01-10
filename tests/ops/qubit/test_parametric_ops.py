@@ -3695,15 +3695,10 @@ controlled_data = [
 ]
 
 
-@pytest.mark.parametrize("inverse", (True, False))
 @pytest.mark.parametrize("base, cbase", controlled_data)
-def test_controlled_method(inverse, base, cbase):
+def test_controlled_method(base, cbase):
     """Tests the _controlled method for parametric ops."""
-    base.inverse = inverse
-    cbase.inverse = inverse
     assert qml.equal(base._controlled("a"), cbase)
-    base.inverse = True
-    cbase.inverse = True
 
 
 label_data = [

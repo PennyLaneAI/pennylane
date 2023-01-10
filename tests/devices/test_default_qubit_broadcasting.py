@@ -227,14 +227,6 @@ class TestApplyBroadcasted:
             (state_5, matrix_1_par_5),
         ]
     ]
-    test_data_single_wire_with_param_inv += [
-        (qml.QubitUnitary, s, mat_vec(par[0], s, inv=True), par)
-        for s, par in [
-            (state_1, matrix_1_par_5),
-            (state_5, matrix_1_par_1),
-            (state_5, matrix_1_par_5),
-        ]
-    ]
 
     # Add qml.DiagonalQubitUnitary test cases
     diag_par_1 = [[np.exp(1j * 0.1), np.exp(1j * np.pi)]]
@@ -251,10 +243,6 @@ class TestApplyBroadcasted:
     ]
     test_data_single_wire_with_parameters += [
         (qml.DiagonalQubitUnitary, s, mat_vec(diag(par[0]), s), par)
-        for s, par in [(state_1, diag_par_5), (state_5, diag_par_1), (state_5, diag_par_5)]
-    ]
-    test_data_single_wire_with_param_inv += [
-        (qml.DiagonalQubitUnitary, s, mat_vec(diag(par[0]), s, inv=True), par)
         for s, par in [(state_1, diag_par_5), (state_5, diag_par_1), (state_5, diag_par_5)]
     ]
 
@@ -279,9 +267,6 @@ class TestApplyBroadcasted:
         ]
         test_data_single_wire_with_parameters += [
             (qml.Rot, s, mat_vec(Rot3, s, par=par), par) for s, par in states_and_pars
-        ]
-        test_data_single_wire_with_param_inv += [
-            (qml.Rot, s, mat_vec(Rot3, s, par=par, inv=True), par) for s, par in states_and_pars
         ]
 
     @pytest.mark.parametrize(

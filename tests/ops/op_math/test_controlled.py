@@ -746,11 +746,9 @@ class TestHelperMethod:
         assert len(decomp) == 1
         assert qml.equal(decomp[0], qml.MultiControlledX(wires=(0, 1, 2, 3, 4)))
 
-    @pytest.mark.parametrize("inverse", (True, False))
-    def test_decomposes_target(self, inverse):
+    def test_decomposes_target(self):
         """Test that we decompose the target if we don't have a special case."""
         target = qml.IsingXX(1.0, wires=(0, 1))
-        target.inverse = inverse
         op = Controlled(target, (3, 4))
 
         decomp = _decompose_no_control_values(op)
