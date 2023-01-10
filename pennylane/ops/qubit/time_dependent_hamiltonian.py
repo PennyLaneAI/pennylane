@@ -14,11 +14,11 @@ class TDHamiltonian(Observable):
     r"""Operator representing a time-dependent Hamiltonian.
 
     The Hamiltonian is represented as a linear combination of other operators, e.g.,
-    :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters,
-    some of which are time-dependent.
+    :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j`, where the :math:`v, t` are trainable parameters,
+    and t is time. Including time as one of the trainable parameters is optional.
 
     Args:
-        coeffs (Union[tensor_like, callable]): coefficients of the Hamiltonian expression.
+        coeffs (Union[tensor_like, callable]): coefficients of the Hamiltonian expression. #ToDo: change from tensor_like to scalar, or update to support tensor_like coefficients
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
         id (str): Custom string to label a specific operator instance.
         do_queue (bool): indicates whether the operator should be
@@ -63,8 +63,6 @@ class TDHamiltonian(Observable):
     >>> obs3 = [qml.PauliX(0), qml.PauliY(0), qml.PauliX(1)]
     >>> H3 = qml.Hamiltonian(torch.tensor([1., 2., 3.]), obs3)
     >>> H3.compare(H1 + H2)  # ToDo: compare function not implemented, modify documentation
-
-    # ToDo: do we want any grouping behaviour akin to options on Hamiltonian class?
 
     """
 
