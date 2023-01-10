@@ -14,7 +14,7 @@
 """
 Contains the :class:`ExecutionConfig` data class.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass  # , field
 from typing import Optional, Tuple, Union
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
@@ -46,8 +46,8 @@ class ExecutionConfig:
 
     shots: Optional[Union[int, Tuple[int]]] = None
     gradient_method: Optional[str] = None
-    gradient_keyword_arguments: dict = field(default_factory=dict)
-    device_options: dict = field(default_factory=dict)
+    gradient_keyword_arguments: dict = None  # field(default_factory=dict)
+    device_options: dict = None  # field(default_factory=dict)
     framework: str = "jax"
     derivative_order: int = 1
 
