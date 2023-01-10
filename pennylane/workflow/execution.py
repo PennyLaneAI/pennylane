@@ -14,7 +14,7 @@
 """
 Contains the :class:`ExecutionConfig` data class.
 """
-from dataclasses import dataclass  # , field
+from dataclasses import dataclass
 from typing import Optional, Tuple, Union
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
@@ -34,22 +34,25 @@ SUPPORTED_GRADIENT_METHODS = [
 class ExecutionConfig:
     """
     A configuration class to describe an execution of a quantum circuit on a device.
-
-    Args:
-        shots (Optional[Union[int, Tuple[int]]]): The number of shots for an execution
-        gradient_method (Optional[str]): The method used to compute the gradient of the quantum circuit being executed
-        gradient_keyword_arguments (dict): Arguments used to control a gradient transform
-        device_options (dict): Various options for the device executing a quantum circuit
-        framework (str): The machine learning framework to use
-        derivative_order (int): The derivative order to compute while evaluating a gradient
     """
 
     shots: Optional[Union[int, Tuple[int]]] = None
+    """The number of shots for an execution"""
+
     gradient_method: Optional[str] = None
-    gradient_keyword_arguments: dict = None  # field(default_factory=dict)
-    device_options: dict = None  # field(default_factory=dict)
+    """The method used to compute the gradient of the quantum circuit being executed"""
+
+    gradient_keyword_arguments: dict = None
+    """Arguments used to control a gradient transform"""
+
+    device_options: dict = None
+    """Various options for the device executing a quantum circuit"""
+
     framework: str = "jax"
+    """The machine learning framework to use"""
+
     derivative_order: int = 1
+    """The derivative order to compute while evaluating a gradient"""
 
     def __post_init__(self):
         """
