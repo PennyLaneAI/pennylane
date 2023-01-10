@@ -23,7 +23,7 @@ from autoray import numpy as np
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .utils import cast, get_interface, requires_grad
+from .utils import cast, cast_like, get_interface, requires_grad
 
 
 # pylint:disable=redefined-outer-name
@@ -301,6 +301,7 @@ def matmul(tensor1, tensor2, like=None):
             tensor1 = ar.numpy.asarray(tensor1, like="torch")
         if get_interface(tensor2) != "torch":
             tensor2 = ar.numpy.asarray(tensor2, like="torch")
+        tensor2 = cast_like(tensor2, tensor1)  # pylint: disable=arguments-out-of-order
     return ar.numpy.matmul(tensor1, tensor2, like=like)
 
 
