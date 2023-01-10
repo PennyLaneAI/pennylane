@@ -96,7 +96,7 @@ def test_read_lazy(tmp_path):
     dataset = qml.data.Dataset()
     dataset.read(filename, lazy=True)
     assert dataset.attrs == {"molecule": None}
-    assert dataset._attr_filemap == {"molecule": filename}
+    assert dataset._attr_filemap == {"molecule": (filename, True)}
     assert dataset.molecule == 1
     assert dataset._attr_filemap == {}
 
@@ -112,6 +112,30 @@ def test_read_fails_if_lazy_file_was_deleted(tmp_path):
         qml.data.dataset.DatasetLoadError, match="the file originally containing it"
     ):
         _ = dataset.molecule
+
+
+def test_read_with_assign_to_without_lazy(tmp_path):
+    """Test that read() with assign_to simply sets the file contents."""
+    filename = str(tmp_path / "myfile.dat")
+    qml.data.Dataset._write_file(1, filename)
+    dataset = qml.data.Dataset()
+    dataset.read(filename, assign_to="molecule")
+    assert dataset.molecule == 1
+
+    dataset.write(filename)
+    dataset.read(filename, assign_to="molecule")
+    assert dataset.molecule == {"molecule": 1}
+
+
+def test_read_with_assign_to_with_lazy(tmp_path):
+    """Test that read() with assign_to and lazy set simply tracks the file location."""
+    filename = str(tmp_path / "myfile.dat")
+    qml.data.Dataset._write_file(1, filename)
+    dataset = qml.data.Dataset()
+    dataset.read(filename, assign_to="molecule", lazy=True)
+    assert dataset.attrs == {"molecule": None}
+    assert dataset._attr_filemap == {"molecule": (filename, False)}
+    assert dataset.molecule == 1
 
 
 def test_list_attributes():
@@ -140,10 +164,10 @@ def test_copy_non_standard_with_lazy(tmp_path):
 
     copied_dataset = copy(base_dataset)
     assert copied_dataset.attrs == {"foo": None, "bar": None}
-    assert copied_dataset._attr_filemap == {"foo": filepath, "bar": filepath}
+    assert copied_dataset._attr_filemap == {"foo": (filepath, True), "bar": (filepath, True)}
     assert copied_dataset.foo == 1
-    assert copied_dataset._attr_filemap == {"bar": filepath}
-    assert base_dataset._attr_filemap == {"foo": filepath, "bar": filepath}
+    assert copied_dataset._attr_filemap == {"bar": (filepath, True)}
+    assert base_dataset._attr_filemap == {"foo": (filepath, True), "bar": (filepath, True)}
 
 
 def test_copy_standard(tmp_path):
@@ -156,8 +180,8 @@ def test_copy_standard(tmp_path):
     assert new_dataset._is_standard == test_dataset._is_standard
     assert new_dataset._dtype == test_dataset._dtype
     assert new_dataset._folder == test_dataset._folder
-    assert new_dataset._prefix == test_dataset._prefix
     assert new_dataset._attr_filemap == test_dataset._attr_filemap
+    assert new_dataset._attr_filemap is not test_dataset._attr_filemap
     assert new_dataset._fullfile == test_dataset._fullfile
     assert new_dataset.__doc__ == test_dataset.__doc__
     assert new_dataset.attrs == test_dataset.attrs
@@ -281,6 +305,27 @@ def test_hamiltonian_is_loaded_properly(tmp_path):
     assert qml.equal(qml.PauliZ(0), ops[1])
 
 
+def test_hamiltonian_is_loaded_properly_with_read(tmp_path):
+    """Tests that read() and __getattribute__() agree on how to handle hamiltonians."""
+    filename = str(tmp_path / "somefile.dat")
+    compressed_ham = {"terms": {"IIII": 0.1, "ZIII": 0.2}, "wire_map": {0: 0, 1: 1, 2: 2, 3: 3}}
+    qml.data.Dataset._write_file(compressed_ham, filename)
+    dataset = qml.data.Dataset()
+
+    # assigning to hamiltonian allows for special processing
+    dataset.read(filename, assign_to="hamiltonian")
+    assert isinstance(dataset.hamiltonian, qml.Hamiltonian)
+    # lazy-loading doesn't break this convention
+    dataset.read(filename, assign_to="tapered_hamiltonian", lazy=True)
+    assert isinstance(dataset.tapered_hamiltonian, qml.Hamiltonian)
+    # for non-special keys, assign_to will simply save the value
+    dataset.read(filename, assign_to="not_hamiltonian")
+    assert dataset.not_hamiltonian == compressed_ham
+    # ...and lazy-loading doesn't break this convention either
+    dataset.read(filename, assign_to="not_tapered_hamiltonian", lazy=True)
+    assert dataset.not_tapered_hamiltonian == compressed_ham
+
+
 def test_hamiltonian_write_preserves_wire_map(tmp_path):
     """Test that writing hamiltonians to file converts to the condensed format."""
     filename = str(tmp_path / "myset_full.dat")
@@ -290,10 +335,9 @@ def test_hamiltonian_write_preserves_wire_map(tmp_path):
     dataset.write(filename)
 
     # ensure that the non-standard dataset wrote the Hamiltonian in condensed format
-    terms_and_wiremap = dataset.get_file_contents(filename)["hamiltonian"]
-    assert terms_and_wiremap == {
-        "terms": {"XIY": 0.1, "ZZZ": 0.2},
-        "wire_map": {"a": 0, "b": 1, "c": 2},
+    dataset.read(filename, assign_to="terms_and_wiremap")
+    assert dataset.terms_and_wiremap == {
+        "hamiltonian": {"terms": {"XIY": 0.1, "ZZZ": 0.2}, "wire_map": {"a": 0, "b": 1, "c": 2}}
     }
 
     # ensure std dataset reads what was written as expected (conversion happens in getattr dunder)

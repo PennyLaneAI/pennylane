@@ -145,8 +145,8 @@
 * Write Hamiltonians to file in a condensed format when using the data module.
   [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
 
-* Improve lazy-loading in `Dataset.read()` so it is more universally supported.
-  The `Dataset.get_file_contents()` static method was also added to read the contents of any compressed file.
+* Improve lazy-loading in `Dataset.read()` so it is more universally supported. Also added the `assign_to`
+  keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
 <h3>Breaking changes</h3>

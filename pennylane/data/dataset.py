@@ -113,20 +113,20 @@ class Dataset(ABC):
         """Constructor for standardized datasets."""
         self._dtype = data_name
         self._folder = folder.rstrip(os.path.sep)
-        self._prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
         self._description = os.path.join(data_name, self._folder.split(data_name)[-1][1:])
         self.__doc__ = docstring
 
-        self._fullfile = self._prefix.format("full")
+        prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
+        self._fullfile = prefix.format("full")
         if os.path.exists(self._fullfile):
             self.read(self._fullfile, lazy=True)
         else:
             self._fullfile = None
             prefix_len = len(attr_prefix) + 1
-            for f in glob(self._prefix.format("*")):
+            for f in glob(prefix.format("*")):
                 attribute = os.path.basename(f)[prefix_len:-4]
                 setattr(self, f"{attribute}", None)
-                self._attr_filemap[attribute] = f
+                self._attr_filemap[attribute] = (f, False)
 
     def __base_init__(self, **kwargs):
         """Constructor for user-defined datasets."""
@@ -167,7 +167,7 @@ class Dataset(ABC):
 
     # pylint:disable=c-extension-no-member
     @staticmethod
-    def get_file_contents(filepath):
+    def _read_file(filepath):
         """Reads data from a previously created or downloaded data file.
 
         Returns:
@@ -180,25 +180,39 @@ class Dataset(ABC):
         depressed_pickle = zstd.decompress(compressed_pickle)
         return dill.loads(depressed_pickle)
 
-    def read(self, filepath, lazy=False):
+    def read(self, filepath, lazy=False, assign_to=None):
         """Loads data from a saved file to the current dataset.
 
         Note that this method assumes that the file contents are of the form ``{attribute_name: attribute_value,}``.
 
         Args:
             filepath (string): The desired location and filename to load, e.g. './path/to/file/file_name.dat'.
-            lazy (bool): Indicates if only the key of the attribute should be saved to the Dataset instance
+            lazy (bool): Indicates if only the key of the attribute should be saved to the Dataset instance.
+                Note that the file will be remembered and its contents will be loaded when the attribute is used.
+            assign_to (str): Attribute name to which the contents of the file should be assigned.
 
         **Example**
 
         >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
         >>> new_dataset.read('./path/to/file/file_name.dat')
+
+        Example using ``assign_to``:
+
+        # assume './path/to/file/single_state.dat' contains only a tensor
+        >>> new_dataset = qml.data.Dataset()
+        >>> new_dataset.read('./path/to/file/single_state.dat', assign_to="state")
+        >>> new_dataset.state
+        tensor([1, 1, 0, 0], requires_grad=True)
         """
-        data = self.get_file_contents(filepath)
+        data = self._read_file(filepath)
+        file_contains_dataset = True
+        if assign_to is not None:
+            data = {assign_to: data}
+            file_contains_dataset = False
         if lazy:
             for attr in data:
                 setattr(self, f"{attr}", None)
-                self._attr_filemap[attr] = filepath
+                self._attr_filemap[attr] = (filepath, file_contains_dataset)
             return
         for attr, value in data.items():  # pylint:disable=no-member
             if attr in condensed_hamiltonians:
@@ -255,7 +269,6 @@ class Dataset(ABC):
         copied._is_standard = True
         copied._dtype = self._dtype
         copied._folder = self._folder
-        copied._prefix = self._prefix
         copied._fullfile = self._fullfile
         copied._description = self._description
         copied._attr_filemap = self._attr_filemap.copy()
@@ -267,25 +280,17 @@ class Dataset(ABC):
 
     def __getattribute__(self, name):
         value = super().__getattribute__(name)
-        if value is not None or name not in self.attrs:
+        if value is not None or name not in self._attr_filemap:
             return value
 
-        filepath = self._attr_filemap.get(name)
-        if not filepath:  # this is (hopefully) an attribute that was directly set to None
-            return None
+        filepath, file_contains_dataset = self._attr_filemap[name]
         if not os.path.exists(filepath):
             raise DatasetLoadError(
                 f"Dataset lazy-loaded a '{name}' attribute, but the file originally containing it ({filepath}) was not found."
             )
 
-        value = self.get_file_contents(filepath)
-        # if this is a standard dataset getting the attribute from a special single-attribute
-        # file, then `value` is already set to the value of the attribute
-        if not (
-            self._is_standard
-            and os.path.exists(self._prefix.format(name))
-            and os.path.samefile(filepath, self._prefix.format(name))
-        ):
+        value = self._read_file(filepath)
+        if file_contains_dataset:
             if name not in value:
                 raise DatasetLoadError(
                     f"Dataset lazy-loaded a '{name}' attribute from {filepath}, but it no longer appears to be in the file."
