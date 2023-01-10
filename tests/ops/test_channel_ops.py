@@ -67,6 +67,7 @@ class TestChannels:
             ops = [op(p, *tr_args, wires=0)]
         else:
             ops = [op(p, wires=0)]
+
         for operation in ops:
             K_list = operation.kraus_matrices()
             K_arr = qml.math.stack(K_list)
