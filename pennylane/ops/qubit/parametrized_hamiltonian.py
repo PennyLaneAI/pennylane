@@ -81,21 +81,21 @@ class ParametrizedHamiltonian:
         self._ops = list(observables)
         self._coeffs = coeffs
 
-        self.H_drift_coeffs = []
-        self.H_drift_ops = []
-        self.H_ts_fs = []
-        self.H_ts_ops = []
+        self.H_fixed_coeffs = []
+        self.H_fixed_ops = []
+        self.H_parametrized_fns = []
+        self.H_parametrized_ops = []
 
         for coeff, obs in zip(coeffs, observables):
             if callable(coeff):
-                self.H_ts_fs.append(coeff)
-                self.H_ts_ops.append(obs)
+                self.H_parametrized_fns.append(coeff)
+                self.H_parametrized_ops.append(obs)
             else:
-                self.H_drift_coeffs.append(coeff)
-                self.H_drift_ops.append(obs)
+                self.H_fixed_coeffs.append(coeff)
+                self.H_fixed_ops.append(obs)
 
     def __call__(self, params, t):
-        return self.H_drift + self.H_ts(params, t)
+        return self.H_fixed + self.H_parametrized(params, t)
 
     def __repr__(self):
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
@@ -112,30 +112,30 @@ class ParametrizedHamiltonian:
         return qml.op_sum(*terms_list)
 
     @property
-    def H_drift(
+    def H_fixed(
         self,
-    ):  # ToDo: rephrase/name to avoid explicit time-dependence - i.e. these are constant and parametrized, not time independent and dependent
-        """The terms without any time dependence. Returns a qml.Sum operator of qml.SProd operators
+    ):
+        """The fixed term(s) of the ParametrizedHamiltonian. Returns a qml.Sum operator of qml.SProd operators
         (or a single qml.SProd operator in the event that there is only one term in H_drift)."""
-        return self._get_terms(self.H_drift_coeffs, self.H_drift_ops)
+        return self._get_terms(self.H_fixed_coeffs, self.H_fixed_ops)
 
     @property
-    def H_ts(self):
-        """The time-dependent terms of the Hamiltonian. Returns a function that can be evaluated
+    def H_parametrized(self):
+        """The parametrized terms of the Hamiltonian. Returns a function that can be evaluated
         to get a snapshot of the operator at a set time and with set parameters. When the function is
         evaluated, the returned operator is a qml.Sum of qml.S_Prod operators (or a single qml.SProd
         operator in the event that there is only one term in H_ts)."""
 
         def snapshot(params, t):
-            coeffs = [f(params, t) for f in self.H_ts_fs]
-            return self._get_terms(coeffs, self.H_ts_ops)
+            coeffs = [f(params, t) for f in self.H_parametrized_fns]
+            return self._get_terms(coeffs, self.H_parametrized_ops)
 
         return snapshot
 
     @property
     def coeffs(self):
         """Return the coefficients defining the Hamiltonian, including the unevaluated
-        functions for the time-dependent terms.
+        functions for the parametrized terms.
 
         Returns:
             Iterable[float]): coefficients in the Hamiltonian expression
@@ -144,7 +144,7 @@ class ParametrizedHamiltonian:
 
     @property
     def ops(self):
-        """Return the operators defining the Hamiltonian.
+        """Return the operators defining the ParametrizedHamiltonian.
 
         Returns:
             Iterable[Observable]): observables in the Hamiltonian expression
@@ -152,8 +152,8 @@ class ParametrizedHamiltonian:
         return self._ops
 
     def __add__(self, H):
-        r"""The addition operation between a time dependent Hamiltonian and a
-        Hamiltonian or time-dependent Hamiltonian."""
+        r"""The addition operation between a ParametrizedHamiltonian and a
+        Hamiltonian or ParametrizedHamiltonian."""
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
