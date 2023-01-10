@@ -765,7 +765,8 @@ def test_consistent_taper_ops(operation, op_gen):
     taper_circuit1 = [x for x in tape1.circuit if x.label() != "I"]
     taper_circuit2 = [x for x in tape2.circuit if x.label() != "I"]
 
-    assert len(taper_op1) == len(taper_circuit1) and len(taper_op2) == len(taper_circuit2)
+    assert len(taper_op1) == len(taper_circuit1)
+    assert len(taper_op2) == len(taper_circuit2)
     assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_circuit1, taper_op1)])
     assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_circuit2, taper_op2)])
 
