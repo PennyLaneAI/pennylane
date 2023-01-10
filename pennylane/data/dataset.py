@@ -183,13 +183,13 @@ class Dataset(ABC):
     def read(self, filepath, lazy=False, assign_to=None):
         """Loads data from a saved file to the current dataset.
 
-        Note that this method assumes that the file contents are of the form ``{attribute_name: attribute_value,}``.
-
         Args:
             filepath (string): The desired location and filename to load, e.g. './path/to/file/file_name.dat'.
             lazy (bool): Indicates if only the key of the attribute should be saved to the Dataset instance.
                 Note that the file will be remembered and its contents will be loaded when the attribute is used.
             assign_to (str): Attribute name to which the contents of the file should be assigned.
+                If this is ``None`` (the default value), this method will assume that the file contents are of
+                the form ``{attribute_name: attribute_value,}``.
 
         **Example**
 
