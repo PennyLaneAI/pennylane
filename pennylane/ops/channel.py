@@ -616,7 +616,7 @@ class PauliError(Channel):
         interface = np.get_interface(p)
         if interface == "tensorflow" or "Y" in operators:
             if interface == "numpy":
-                p *= 1 + 0j
+                p = (1 + 0j) * p
             else:
                 p = np.cast_like(p, 1j)
 

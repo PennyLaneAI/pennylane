@@ -14,6 +14,7 @@
 """
 Unit tests for the available built-in quantum channels.
 """
+from itertools import product
 import pytest
 import numpy as np
 import pennylane as qml
@@ -25,17 +26,47 @@ X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
 Z = np.array([[1, 0], [0, -1]])
 
-ch_list = [
+one_arg_args = [(0.0,), (0.1,), (1.0,)]
+
+channels_with_one_arg = [
     channel.AmplitudeDamping,
-    channel.GeneralizedAmplitudeDamping,
     channel.PhaseDamping,
     channel.BitFlip,
     channel.PhaseFlip,
     channel.DepolarizingChannel,
-    channel.ResetError,
-    channel.PauliError,
-    channel.ThermalRelaxationError,
+    channel.PhaseDamping,
 ]
+
+two_arg_args = [
+    (0.0, 0.0),
+    (0.0, 0.1),
+    (0.1, 0.0),
+    (1.0, 1.0),
+    (0.0, 1.0),
+    (1.0, 0.0),
+    (0.3, 0.2),
+]
+
+channels_with_two_args = [channel.GeneralizedAmplitudeDamping, channel.ResetError]
+
+channels_and_args = (
+    list(product(channels_with_one_arg, one_arg_args))
+    + list(product(channels_with_two_args, two_arg_args))
+    + [
+        (channel.PauliError, ("X", 0.0)),
+        (channel.PauliError, ("X", 0.41)),
+        (channel.PauliError, ("X", 1.0)),
+        (channel.PauliError, ("YY", 0.0)),
+        (channel.PauliError, ("YX", 0.41)),
+        (channel.PauliError, ("ZZ", 1.0)),
+        (channel.ThermalRelaxationError, (0.0, 1e-4, 1e-4, 2e-8)),
+        (channel.ThermalRelaxationError, (0.1, 1e-4, 1e-4, 2e-8)),
+        (channel.ThermalRelaxationError, (1.0, 1e-4, 1e-4, 2e-8)),
+        (channel.ThermalRelaxationError, (0.0, 1e-4, 1.2e-4, 2e-8)),
+        (channel.ThermalRelaxationError, (0.1, 1e-4, 1.2e-4, 2e-8)),
+        (channel.ThermalRelaxationError, (1.0, 1e-4, 1.2e-4, 2e-8)),
+    ]
+)
 
 
 class TestChannels:
@@ -51,28 +82,23 @@ class TestChannels:
             pytest.param("torch", marks=pytest.mark.torch),
         ],
     )
-    @pytest.mark.parametrize("op", ch_list)
-    @pytest.mark.parametrize("p", [0.0, 0.1, 1.0])
-    @pytest.mark.parametrize("tr_args", [[100e-6, 100e-6, 20e-9], [100e-6, 120e-6, 20e-9]])
-    def test_kraus_matrices_sum_identity(self, op, p, tr_args, interface, tol):
+    @pytest.mark.parametrize("ch, args", channels_and_args)
+    def test_kraus_matrices_sum_identity(self, ch, args, interface, tol):
         """Test channels are trace-preserving"""
-        p = qml.math.array(p, like=interface)
-        if op.__name__ == "GeneralizedAmplitudeDamping":
-            ops = [op(p, p, wires=0)]
-        elif op.__name__ == "ResetError":
-            ops = [op(p / 2, p / 3, wires=0)]
-        elif op.__name__ == "PauliError":
-            ops = [op("X", p, wires=0), op("XX", p, wires=[0, 1])]
-        elif op.__name__ == "ThermalRelaxationError":
-            ops = [op(p, *tr_args, wires=0)]
+        if ch is channel.ResetError:
+            args = (args[0] / 2, args[1] / 3)
+        args = tuple(
+            arg if isinstance(arg, str) else qml.math.array(arg, like=interface) for arg in args
+        )
+        if ch is channel.PauliError and len(args[0]) > 1:
+            wires = [0, 1]
         else:
-            ops = [op(p, wires=0)]
-
-        for operation in ops:
-            K_list = operation.kraus_matrices()
-            K_arr = qml.math.stack(K_list)
-            Kraus_sum = qml.math.einsum("ajk,ajl->kl", qml.math.conj(K_arr), K_arr)
-            assert qml.math.allclose(Kraus_sum, np.eye(K_list[0].shape[0]), atol=tol, rtol=0)
+            wires = [0]
+        op = ch(*args, wires=wires)
+        K_list = op.kraus_matrices()
+        K_arr = qml.math.stack(K_list)
+        Kraus_sum = qml.math.einsum("ajk,ajl->kl", qml.math.conj(K_arr), K_arr)
+        assert qml.math.allclose(Kraus_sum, np.eye(K_list[0].shape[0]), atol=tol, rtol=0)
 
 
 class TestAmplitudeDamping:
