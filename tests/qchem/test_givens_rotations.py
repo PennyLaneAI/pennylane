@@ -36,7 +36,7 @@ from pennylane.qchem.givens_rotations import givens_matrix, givens_rotate, given
     ],
 )
 def test_givens_matrix(a, b, left):
-    r"""Test that Givens rotation matrix are build correctly."""
+    r"""Test that Givens rotation matrices are built correctly."""
 
     grot_mat = givens_matrix(a, b, left)
     assert np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])

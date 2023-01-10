@@ -24,7 +24,7 @@ from pennylane.qchem.givens_rotations import givens_decomposition
 class BasisRotation(Operation):
     r"""Implement a circuit that provides the unitary that can be used to do an exact single-body basis rotation.
 
-    The `BasisRotation` template performs a unitary transformation :math:`U(u)` determined by the single-particle fermionic
+    The `~.BasisRotation` template performs a unitary transformation :math:`U(u)` determined by the single-particle fermionic
     generators as:
 
     .. math::
@@ -47,9 +47,9 @@ class BasisRotation(Operation):
 
         **Usage Details**
 
-        The `BasisRotation` template can be used to implement the evolution :math:`e^{iH}`, where the Hamiltonian
+        The `~.BasisRotation` template can be used to implement the evolution :math:`e^{iH}`, where the Hamiltonian
         :math:`H = \sum_{pq} V_{pq} a^\dagger_p a_q` and :math:`V` is an :math:`N \times N` Hermitian matrix.
-        The unitary matrix :math:`u` in this case will be the transformation matrix that diagonalizes :math:`V` such that:
+        In this case, the unitary matrix :math:`u` will be the transformation matrix that diagonalizes :math:`V` such that:
 
         .. math::
 
@@ -86,8 +86,8 @@ class BasisRotation(Operation):
 
             U(u) a_p^\dagger U(u)^\dagger = b_p^\dagger,
 
-        where :math:`a_p^\dagger` and :math:`b_p^\dagger` are the original and transformed creation operators, respectively,
-        are related to each other by the following relation:
+        where :math:`a_p^\dagger` and :math:`b_p^\dagger` are the original and transformed creation operators, respectively.
+        :math:`a_p^\dagger` and :math:`b_p^\dagger` are related to each other by the following equation:
 
         .. math::
 
@@ -136,7 +136,7 @@ class BasisRotation(Operation):
 
         Args:
             wires (Any or Iterable[Any]): wires that the operator acts on
-            unitary_matrix (array): matrix specifying the basis trasformation
+            unitary_matrix (array): matrix specifying the basis transformation
             check (bool): test unitarity of the provided `unitary_matrix`
 
         Returns:
