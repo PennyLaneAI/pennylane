@@ -53,6 +53,10 @@ Symbolic Classes
 
 Controlled Operator Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
     ~ControlledQubitUnitary
 
 """
