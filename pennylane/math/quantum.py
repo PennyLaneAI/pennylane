@@ -1039,7 +1039,7 @@ def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
     interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
 
     .. math::
-        S( \rho )_0 = \log( \text{rank} ( \rho ))
+        S_{\text{max}}( \rho ) = \log( \text{rank} ( \rho ))
 
     Args:
         state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
