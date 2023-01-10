@@ -2,3 +2,10 @@ tests/data/test_dataset.py
 tests/data/test_dataset_access.py
 tests/math/test_basic_math.py
 tests/math/test_density_matrices.py
+tests/math/test_entropies_math.py
+tests/math/test_fidelity_math.py
+tests/math/test_functions.py
+tests/math/test_is_abstract.py
+tests/math/test_is_independent.py
+tests/math/test_matrix_manipulation.py
+tests/math/test_multi_dispatch.py
