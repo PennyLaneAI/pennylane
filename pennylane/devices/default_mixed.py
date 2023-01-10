@@ -360,23 +360,17 @@ class DefaultMixed(QubitDevice):
         # Use column indices instead or rows to incorporate transposition of K^\dagger
         axes_right = [col_wires_list, channel_col_ids]
         # Apply the Kraus operators, and sum over all Kraus operators afterwards
-        print(f"len(kraus)={len(kraus)}")
+        def _conjugate_state_with(k):
+            """Perform the double tensor product k @ self._state @ k.conj().
+            The `axes_left` and `axes_right` arguments are taken from the ambient variable space
+            and `axes_right` is assumed to incorporate the tensor product and the transposition
+            of k.conj() simultaneously."""
+            return qnp.tensordot(qnp.tensordot(k, self._state, axes_left), qnp.conj(k), axes_right)
+
         if len(kraus) == 1:
-            _state = qnp.tensordot(
-                qnp.tensordot(kraus[0], self._state, axes_left), qnp.conj(kraus[0]), axes_right
-            )
+            _state = _conjugate_state_with(kraus[0])
         else:
-            _state = qnp.sum(
-                qnp.stack(
-                    [
-                        qnp.tensordot(
-                            qnp.tensordot(k, self._state, axes_left), qnp.conj(k), axes_right
-                        )
-                        for k in kraus
-                    ]
-                ),
-                axis=0,
-            )
+            _state = qnp.sum(qnp.stack([_conjugate_state_with(k) for k in kraus]), axis=0)
 
         # Permute the affected axes to their destination places.
         # The row indices of the kraus operators are moved from the beginning to the original
@@ -596,11 +590,11 @@ class DefaultMixed(QubitDevice):
         if operation in diagonal_in_z_basis:
             self._apply_diagonal_unitary(matrices, wires)
         else:
-            if len(wires) > 1:
-                print(operation)
-                self._apply_channel_tensordot(matrices, wires)
-            else:
-                self._apply_channel(matrices, wires)
+            # TODO: Discuss whether we really always want to use `tensordot` over `einsum`
+            # if len(wires) > 1:
+            self._apply_channel_tensordot(matrices, wires)
+            # else:
+            # self._apply_channel(matrices, wires)
 
     # pylint: disable=arguments-differ
 
