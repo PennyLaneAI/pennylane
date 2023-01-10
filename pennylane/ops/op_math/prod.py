@@ -242,30 +242,42 @@ class Prod(CompositeOp):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
 
-        def mats_gen():
-            for ops in self.overlapping_ops:
-                if len(ops) == 1:
-                    yield (
-                        qml.matrix(ops[0])
-                        if isinstance(ops[0], qml.Hamiltonian)
-                        else ops[0].matrix()
-                    )
+        mats = []
+        for ops in self.overlapping_ops:
+            if len(ops) == 1:
+                batched = ops[0].batch_size is not None
+                mat = qml.matrix(ops[0]) if isinstance(ops[0], qml.Hamiltonian) else ops[0].matrix()
+                if self.batch_size and not batched:
+                    mats.append(qml.math.stack([mat for _ in range(self.batch_size)]))
                 else:
-                    mats_and_wires_gen = (
-                        (
-                            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(),
-                            op.wires,
-                        )
-                        for op in ops
+                    mats.append(mat)
+
+            else:
+                mats_and_wires_gen = (
+                    (
+                        qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(),
+                        op.wires,
                     )
+                    for op in ops
+                )
 
-                    reduced_mat, _ = math.reduce_matrices(
-                        mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.matmul
-                    )
+                reduced_mat, _ = math.reduce_matrices(
+                    mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.matmul
+                )
+                batched = any(op.batch_size is not None for op in ops)
 
-                    yield reduced_mat
+                if self.batch_size is not None and not batched:
+                    mats.append(qml.math.stack([reduced_mat for _ in range(self.batch_size)]))
+                else:
+                    mats.append(reduced_mat)
 
-        full_mat = reduce(math.kron, mats_gen())
+        if self.batch_size is None:
+            full_mat = reduce(math.kron, mats)
+        else:
+            mats = qml.math.array(mats)
+            full_mat = qml.math.stack(
+                [reduce(math.kron, mats[:, i]) for i in range(self.batch_size)]
+            )
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
