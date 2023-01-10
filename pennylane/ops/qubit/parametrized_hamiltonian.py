@@ -10,50 +10,45 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 class ParametrizedHamiltonian:
     r"""Operator representing a time-dependent Hamiltonian.
 
-    The Hamiltonian is represented as a linear combination of other operators, e.g.,
-    :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j`, where the :math:`v, t` are trainable parameters,
-    and t is time. Including time as one of the trainable parameters is optional.
+    The Hamiltonian representation as a linear combination of other operators, e.g.,
+    :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j`, where the :math:`v` are trainable parameters,
+    and t is time.
+
+    For example, a ParametrizedHamiltonian with a single trainable parameter, :math:`a`, could be :math:`H = 2 * XX + sin(a, t) * YY`
 
     Args:
-        coeffs (Union[float, callable]): coefficients of the Hamiltonian expression.
+        coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be constants or
+            parametrized functions. All functions passed as coeffs much accept the same parameters as arguments.
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
-        id (str): Custom string to label a specific operator instance.
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
+
+    A ParametrizedHamiltonian is callable, and passing parameters to the ParametrizedHamiltonian will return an
+    Operator representing an instance of the Hamiltonian with the specified parameter values.
 
     **Example:**
 
-    A time-dependent Hamiltonian can be created by passing a list of coefficients and callables,
-    as well as the list of observables.
+    A ParametrizedHamiltonian can be created by passing a list of coefficients (scalars or functions), as well as
+    a list of corresponding observables. The functions must have idential signatures, though they may not all
+    use all the parameters.
 
-    >>> def f1(params, t): return jnp.polyval(params, t)
-    >>> coeffs = [0.2, f1]
-    >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.Identity(1)]
+    >>> def f1(params, t): return np.sin(params[0]*t)
+    >>> def f2(params, t): return params[1] * np.cos(t)
+
+    The fucntions, along with scalar coefficients, can then be used to initialize a ParametrizedHamiltonian,
+    which will be split into a fixed and parametrized term. The fixed term is an Operator, while the parametrized
+    term must be initialized with concrete parameters to obtain an Operator.
+    >>> coeffs = [2, f1, f2]
+    >>> obs = [qml.PauliX(0)@qml.PauliX(1), qml.PauliY(0)@qml.PauliY(1), qml.PauliZ(0)@qml.PauliZ(1)]
     >>> H = ParametrizedHamiltonian(coeffs, obs)
-    >>> print(H)
-      (-0.543) [Z0 H2]   # ToDo: does not print nicely, and this output is incorrect
-    + (0.2) [X0 Z1]
+    >>> H.H_fixed
+      2*(PauliX(wires=[0]) @ PauliX(wires=[1]))
+    >>> H.H_parametrized([2.5, 3.6], t)
+      (0.5984721441039564*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.9450883011253033*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
 
-    The coefficients can be a trainable tensor, for example:  # ToDo: Can parameters be a trainable tensor? Update example regardless.
+    The resulting object can be passed parameters, and will return an Operator representing the
+    ParametrizedHamiltonian with the specified parameters:
 
-    >>> coeffs = tf.Variable([0.2, -0.543], dtype=tf.double)
-    >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2)]
-    >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> print(H)
-      (-0.543) [Z0 H2]
-    + (0.2) [X0 Z1]
-
-    In many cases, Hamiltonians can be constructed using Pythonic arithmetic operations.
-    For example:
-
-    >>> qml.Hamiltonian([1.], [qml.PauliX(0)]) + 2 * qml.PauliZ(0) @ qml.PauliZ(1)
-
-    is equivalent to the following Hamiltonian:
-
-    >>> qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)])
-
-    Addition of ParametrizedHamiltonians with ParametrizedHamiltonians, Hamiltonians or other observables is possible with
-    tensor-valued coefficients, i.e., ...
+    >>> H([1.2, 2.3], 0.5)
+    (2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((0.5646424733950354*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (2.0184398923478573*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
 
     """
 
