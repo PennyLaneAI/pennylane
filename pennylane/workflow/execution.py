@@ -15,37 +15,62 @@
 Contains the :class:`ExecutionConfig` data class.
 """
 from dataclasses import dataclass, field
-from typing import Callable, Union
+from typing import Optional, Tuple, Union
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
+from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
+
+SUPPORTED_GRADIENT_METHODS = [
+    "best",
+    "parameter-shift",
+    "backprop",
+    "finite-diff",
+    "device",
+    "adjoint",
+]
 
 
 @dataclass
 class ExecutionConfig:
     """
     A configuration class to describe an execution of a quantum circuit on a device.
+
+    Args:
+        shots (Optional[Union[int, Tuple[int]]]): The number of shots for an execution
+        gradient_method (Optional[str]): The method used to compute the gradient of the quantum circuit being executed
+        gradient_keyword_arguments (dict): Arguments used to control a gradient transform
+        device_options (dict): Various options for the device executing a quantum circuit
+        framework (str): The machine learning framework to use
+        derivative_order (int): The derivative order to compute while evaluating a gradient
     """
 
-    shots: Union[None, int] = None
-    """The number of shots for an execution"""
-
-    gradient_method: Union[None, Callable] = None
-    """The method used to compute the gradient of the quantum circuit being executed"""
-
-    hyperparameters: dict = field(default_factory=dict)
-    """The non-trainable parameters that the execution depends on"""
-
+    shots: Optional[Union[int, Tuple[int]]] = None
+    gradient_method: Optional[str] = None
+    gradient_keyword_arguments: dict = field(default_factory=dict)
     device_options: dict = field(default_factory=dict)
-    """Various options for the device executing a quantum circuit"""
-
     framework: str = "jax"
-    """The machine learning framework to use"""
-
     derivative_order: int = 1
-    """The derivative order to compute while evaluating a gradient"""
 
     def __post_init__(self):
+        """
+        Validate the configured execution options.
+
+        Note that this hook is automatically called after init via the dataclass integration.
+        """
         if self.framework not in SUPPORTED_INTERFACES:
             raise ValueError(
                 f"framework must be in {SUPPORTED_INTERFACES}, got {self.framework} instead."
+            )
+
+        if (
+            self.gradient_method is not None
+            and self.gradient_method not in SUPPORTED_GRADIENT_METHODS
+        ):
+            raise ValueError(
+                f"gradient_method must be in {SUPPORTED_GRADIENT_METHODS}, got {self.gradient_method} instead."
+            )
+
+        if any(arg not in SUPPORTED_GRADIENT_KWARGS for arg in self.gradient_keyword_arguments):
+            raise ValueError(
+                f"All gradient_keyword_arguments keys must be in {SUPPORTED_GRADIENT_KWARGS}, got unexpected values: {set(self.gradient_keyword_arguments) - set(SUPPORTED_GRADIENT_KWARGS)}"
             )

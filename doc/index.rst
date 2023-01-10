@@ -191,6 +191,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_qaoa
    code/qml_qchem
    code/qml_qnn
+   code/qml_workflow
 
 .. toctree::
    :maxdepth: 1
