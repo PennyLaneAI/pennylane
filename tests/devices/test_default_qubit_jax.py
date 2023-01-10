@@ -1039,23 +1039,6 @@ class TestOps:
         res = jacobian_transform(circuit)(param)
         assert jnp.allclose(res, jnp.zeros(wires**2))
 
-    def test_inverse_operation_jacobian_backprop(self, tol):
-        """Test that inverse operations work in backprop
-        mode"""
-        dev = qml.device("default.qubit.jax", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop", interface="jax")
-        def circuit(param):
-            qml.RY(param, wires=0).inv()
-            return qml.expval(qml.PauliX(0))
-
-        x = 0.3
-        res = circuit(x)
-        assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)
-
-        grad = jax.grad(lambda a: circuit(a).reshape(()))(x)
-        assert np.allclose(grad, -np.cos(x), atol=tol, rtol=0)
-
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
         dev = DefaultQubitJax(wires=["a", "b", "c"])
@@ -1102,23 +1085,6 @@ class TestOpsBroadcasted:
         param = jnp.array([0.3, 0.9, -4.3])
         res = jacobian_transform(circuit)(param)
         assert jnp.allclose(res, jnp.zeros((3, wires**2, 3)))
-
-    def test_inverse_operation_jacobian_backprop_broadcasted(self, tol):
-        """Test that inverse operations work in backprop
-        mode"""
-        dev = qml.device("default.qubit.jax", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop", interface="jax")
-        def circuit(param):
-            qml.RY(param, wires=0).inv()
-            return qml.expval(qml.PauliX(0))
-
-        x = jnp.array([0.3, 0.9, -4.3])
-        res = circuit(x)
-        assert jnp.allclose(res, -jnp.sin(x), atol=tol, rtol=0)
-
-        grad = jax.jacobian(circuit)(x)
-        assert jnp.allclose(grad, -jnp.diag(jnp.cos(x)), atol=tol, rtol=0)
 
     def test_full_subsystem_broadcasted(self, mocker):
         """Test applying a state vector to the full subsystem"""

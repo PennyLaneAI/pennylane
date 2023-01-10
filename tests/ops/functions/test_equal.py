@@ -1120,18 +1120,6 @@ class TestEqual:
         ):
             qml.equal(op1, op2)
 
-    def test_equal_same_inversion(self):
-        """Test operations are equal if they are both inverted."""
-        op1 = qml.RX(1.2, wires=0).inv()
-        op2 = qml.RX(1.2, wires=0).inv()
-        assert qml.equal(op1, op2)
-
-    def test_not_equal_different_inversion(self):
-        """Test operations are not equal if one is inverted and the other is not."""
-        op1 = qml.PauliX(0)
-        op2 = qml.PauliX(0).inv()
-        assert not qml.equal(op1, op2)
-
     # Measurements test cases
     @pytest.mark.parametrize("ops", PARAMETRIZED_MEASUREMENTS_COMBINATIONS)
     def test_not_equal_diff_measurement(self, ops):

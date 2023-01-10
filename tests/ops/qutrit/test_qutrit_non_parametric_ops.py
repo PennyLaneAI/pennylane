@@ -193,22 +193,19 @@ class TestPowMethod:
 
 
 label_data = [
-    (qml.TShift(0), "TShift", "TShift⁻¹"),
-    (qml.TClock(0), "TClock", "TClock⁻¹"),
-    (qml.TAdd([0, 1]), "TAdd", "TAdd⁻¹"),
-    (qml.TSWAP([0, 1]), "TSWAP", "TSWAP"),
-    (qml.THadamard(0), "TH", "TH⁻¹"),
-    (qml.THadamard(0, subspace=[0, 1]), "TH", "TH"),
+    (qml.TShift(0), "TShift"),
+    (qml.TClock(0), "TClock"),
+    (qml.TAdd([0, 1]), "TAdd"),
+    (qml.TSWAP([0, 1]), "TSWAP"),
+    (qml.THadamard(0), "TH"),
+    (qml.THadamard(0, subspace=[0, 1]), "TH"),
 ]
 
 
-@pytest.mark.parametrize("op, label1, label2", label_data)
-def test_label_method(op, label1, label2):
-    assert op.label() == label1
-    assert op.label(decimals=2) == label1
-
-    op.inv()
-    assert op.label() == label2
+@pytest.mark.parametrize("op, label", label_data)
+def test_label_method(op, label):
+    assert op.label() == label
+    assert op.label(decimals=2) == label
 
 
 control_data = [
