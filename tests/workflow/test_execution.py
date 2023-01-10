@@ -37,3 +37,13 @@ class TestExecutionConfig:
         """Tests that unknown frameworks raise a ValueError."""
         with pytest.raises(ValueError, match="framework must be in"):
             _ = ExecutionConfig(framework="nonsense")
+
+    def test_invalid_gradient_method(self):
+        """Tests that unknown gradient_methods raise a ValueError."""
+        with pytest.raises(ValueError, match="gradient_method must be in"):
+            _ = ExecutionConfig(gradient_method="nonsense")
+
+    def test_invalid_gradient_keyword_arguments(self):
+        """Tests that unknown gradient_keyword_arguments raise a ValueError."""
+        with pytest.raises(ValueError, match="All gradient_keyword_arguments keys must be in"):
+            _ = ExecutionConfig(gradient_keyword_arguments={"nonsense": 0})
