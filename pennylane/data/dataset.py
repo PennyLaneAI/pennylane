@@ -196,12 +196,11 @@ class Dataset(ABC):
         >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
         >>> new_dataset.read('./path/to/file/file_name.dat')
 
-        Example using ``assign_to``:
+        **Example using ``assign_to``**
 
-        # assume './path/to/file/single_state.dat' contains only a tensor
         >>> new_dataset = qml.data.Dataset()
         >>> new_dataset.read('./path/to/file/single_state.dat', assign_to="state")
-        >>> new_dataset.state
+        >>> new_dataset.state  # assuming the above file contains only a tensor
         tensor([1, 1, 0, 0], requires_grad=True)
         """
         data = self._read_file(filepath)
