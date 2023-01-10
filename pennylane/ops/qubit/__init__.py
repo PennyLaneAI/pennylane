@@ -36,7 +36,6 @@ from .parametric_ops import *
 from .qchem_ops import *
 from .state_preparation import *
 from .hamiltonian import Hamiltonian
-from .parametrized_hamiltonian import ParametrizedHamiltonian
 from ..identity import Identity
 from ..snapshot import Snapshot
 
@@ -118,7 +117,6 @@ obs = {
     "Projector",
     "SparseHamiltonian",
     "Hamiltonian",
-    "ParametrizedHamiltonian",
 }
 
 
