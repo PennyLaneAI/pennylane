@@ -1785,7 +1785,7 @@ class Observable(Operator):
         if isinstance(a, (int, float)):
             return qml.Hamiltonian([a], [self], simplify=True)
         if inspect.isfunction(a):
-            return qml.ops.TDHamiltonian([a], [self])  # pylint: disable=no-member
+            return qml.ops.ParametrizedHamiltonian([a], [self])  # pylint: disable=no-member
         try:
             return super().__mul__(other=a)
         except ValueError as e:

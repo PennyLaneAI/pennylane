@@ -10,7 +10,7 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 # pylint: disable= too-many-instance-attributes
-class TDHamiltonian(Observable):
+class ParametrizedHamiltonian(Observable):
     r"""Operator representing a time-dependent Hamiltonian.
 
     The Hamiltonian is represented as a linear combination of other operators, e.g.,
@@ -32,7 +32,7 @@ class TDHamiltonian(Observable):
     >>> def f1(params, t): return jnp.polyval(params, t)
     >>> coeffs = [0.2, f1]
     >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.Identity(1)]
-    >>> H = TDHamiltonian(coeffs, obs)
+    >>> H = ParametrizedHamiltonian(coeffs, obs)
     >>> print(H)
       (-0.543) [Z0 H2]   # ToDo: does not print nicely, and this output is incorrect
     + (0.2) [X0 Z1]
@@ -55,7 +55,7 @@ class TDHamiltonian(Observable):
 
     >>> qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
-    Addition of TDHamiltonians with TDHamiltonians, Hamiltonians or other observables is possible with
+    Addition of ParametrizedHamiltonians with ParametrizedHamiltonians, Hamiltonians or other observables is possible with
     tensor-valued coefficients, i.e.,
 
     >>> H1 = qml.Hamiltonian(torch.tensor([1.]), [qml.PauliX(0)])
@@ -201,15 +201,15 @@ class TDHamiltonian(Observable):
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
-        if isinstance(H, (Hamiltonian, TDHamiltonian)):
+        if isinstance(H, (Hamiltonian, ParametrizedHamiltonian)):
             coeffs.extend(H.coeffs.copy())
             ops.extend(H.ops.copy())
-            return TDHamiltonian(coeffs, ops)
+            return ParametrizedHamiltonian(coeffs, ops)
 
         if isinstance(H, (Tensor, Observable)):
             coeffs.append(qml.math.cast_like([1.0], coeffs)[0])
             ops.append(H)
-            return TDHamiltonian(coeffs, ops)
+            return ParametrizedHamiltonian(coeffs, ops)
 
         raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
