@@ -1,3 +1,7 @@
+"""
+Unit tests for the ParametrizedHamiltonian class
+"""
+
 from inspect import isfunction
 import pytest
 
@@ -153,18 +157,21 @@ class TestInteractionWithOperators:
 class TestMiscMethods:
     """Test miscellaneous methods"""
 
+    # pylint: disable=protected-access
     def test_get_terms_for_empty_lists(self):
         """Test that _get_terms can handle being passed
         an empty list, and returns None"""
         op = ParametrizedHamiltonian._get_terms([], [])
         assert op is None
 
+    # pylint: disable=protected-access
     def test_get_terms_for_single_term_operator(self):
         """Test that _get_terms for a single term operator
         returns a qml.SProd operator"""
         op = ParametrizedHamiltonian._get_terms([2.3], [qml.Hadamard(3)])
         assert qml.equal(op, qml.s_prod(2.3, qml.Hadamard(3)))
 
+    # pylint: disable=protected-access
     def test_get_terms_for_multi_term_operator(self):
         """Test that _get_terms for a single term operator
         returns a qml.Sum of qml.SProd operators"""
