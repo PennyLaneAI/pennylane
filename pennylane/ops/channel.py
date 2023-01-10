@@ -83,7 +83,9 @@ class AmplitudeDamping(Channel):
             raise ValueError("gamma must be in the interval [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma + np.eps)])
-        K1 = np.sqrt(gamma + np.eps) * np.array([[0, 1], [0, 0]])
+        K1 = np.sqrt(gamma + np.eps) * np.convert_like(
+            np.cast_like(np.array([[0, 1], [0, 0]]), gamma), gamma
+        )
         return [K0, K1]
 
 
@@ -167,9 +169,17 @@ class GeneralizedAmplitudeDamping(Channel):
             raise ValueError("p must be in the interval [0,1].")
 
         K0 = np.sqrt(p + np.eps) * np.diag([1, np.sqrt(1 - gamma + np.eps)])
-        K1 = np.sqrt(p + np.eps) * np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
+        K1 = (
+            np.sqrt(p + np.eps)
+            * np.sqrt(gamma)
+            * np.convert_like(np.cast_like(np.array([[0, 1], [0, 0]]), gamma), gamma)
+        )
         K2 = np.sqrt(1 - p + np.eps) * np.diag([np.sqrt(1 - gamma + np.eps), 1])
-        K3 = np.sqrt(1 - p + np.eps) * np.sqrt(gamma) * np.array([[0, 0], [1, 0]])
+        K3 = (
+            np.sqrt(1 - p + np.eps)
+            * np.sqrt(gamma)
+            * np.convert_like(np.cast_like(np.array([[0, 0], [1, 0]]), gamma), gamma)
+        )
         return [K0, K1, K2, K3]
 
 
@@ -320,10 +330,17 @@ class DepolarizingChannel(Channel):
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p + np.eps) * np.eye(2)
-        K1 = np.sqrt(p / 3 + np.eps) * np.array([[0, 1], [1, 0]])
-        K2 = np.sqrt(p / 3 + np.eps) * np.array([[0, -1j], [1j, 0]])
-        K3 = np.sqrt(p / 3 + np.eps) * np.array([[1, 0], [0, -1]])
+        if np.get_interface(p) == "tensorflow":
+            p = np.cast_like(p, 1j)
+
+        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.eye(2, dtype=complex), p)
+        K1 = np.sqrt(p / 3 + np.eps) * np.convert_like(np.array([[0, 1], [1, 0]], dtype=complex), p)
+        K2 = np.sqrt(p / 3 + np.eps) * np.convert_like(
+            np.array([[0, -1j], [1j, 0]], dtype=complex), p
+        )
+        K3 = np.sqrt(p / 3 + np.eps) * np.convert_like(
+            np.array([[1, 0], [0, -1]], dtype=complex), p
+        )
         return [K0, K1, K2, K3]
 
 
@@ -386,8 +403,8 @@ class BitFlip(Channel):
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p + np.eps) * np.eye(2)
-        K1 = np.sqrt(p + np.eps) * np.array([[0, 1], [1, 0]])
+        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2), p), p)
+        K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.array([[0, 1], [1, 0]]), p), p)
         return [K0, K1]
 
 
@@ -479,11 +496,21 @@ class ResetError(Channel):
         if not np.is_abstract(p_0 + p_1) and not 0.0 <= p_0 + p_1 <= 1.0:
             raise ValueError("p_0 + p_1 must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p_0 - p_1 + np.eps) * np.eye(2)
-        K1 = np.sqrt(p_0 + np.eps) * np.array([[1, 0], [0, 0]])
-        K2 = np.sqrt(p_0 + np.eps) * np.array([[0, 1], [0, 0]])
-        K3 = np.sqrt(p_1 + np.eps) * np.array([[0, 0], [1, 0]])
-        K4 = np.sqrt(p_1 + np.eps) * np.array([[0, 0], [0, 1]])
+        interface = np.get_interface([p_0, p_1])
+        p_0, p_1 = np.coerce([p_0, p_1], like=interface)
+        K0 = np.sqrt(1 - p_0 - p_1 + np.eps) * np.convert_like(np.cast_like(np.eye(2), p_0), p_0)
+        K1 = np.sqrt(p_0 + np.eps) * np.convert_like(
+            np.cast_like(np.array([[1, 0], [0, 0]]), p_0), p_0
+        )
+        K2 = np.sqrt(p_0 + np.eps) * np.convert_like(
+            np.cast_like(np.array([[0, 1], [0, 0]]), p_0), p_0
+        )
+        K3 = np.sqrt(p_1 + np.eps) * np.convert_like(
+            np.cast_like(np.array([[0, 0], [1, 0]]), p_0), p_0
+        )
+        K4 = np.sqrt(p_1 + np.eps) * np.convert_like(
+            np.cast_like(np.array([[0, 0], [0, 1]]), p_0), p_0
+        )
 
         return [K0, K1, K2, K3, K4]
 
@@ -584,16 +611,23 @@ class PauliError(Channel):
         nq = len(operators)
 
         # K0 is sqrt(1-p) * Identity
-        K0 = np.sqrt(1 - p + np.eps) * np.eye(2**nq)
+        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2**nq), p), p)
+
+        interface = np.get_interface(p)
+        if interface == "tensorflow" or "Y" in operators:
+            if interface == "numpy":
+                p = (1 + 0j) * p
+            else:
+                p = np.cast_like(p, 1j)
 
         ops = {
-            "X": np.array([[0, 1], [1, 0]]),
-            "Y": np.array([[0, -1j], [1j, 0]]),
-            "Z": np.array([[1, 0], [0, -1]]),
+            "X": np.convert_like(np.cast_like(np.array([[0, 1], [1, 0]]), p), p),
+            "Y": np.convert_like(np.cast_like(np.array([[0, -1j], [1j, 0]]), p), p),
+            "Z": np.convert_like(np.cast_like(np.array([[1, 0], [0, -1]]), p), p),
         }
 
         # K1 is composed by Kraus matrices of operators
-        K1 = np.sqrt(p + np.eps) * np.array([[1]])
+        K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.eye(1), p), p)
         for op in operators[::-1]:
             K1 = np.multi_dispatch()(np.kron)(ops[op], K1)
 
@@ -659,8 +693,8 @@ class PhaseFlip(Channel):
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p + np.eps) * np.eye(2)
-        K1 = np.sqrt(p + np.eps) * np.array([[1, 0], [0, -1]])
+        K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2), p), p)
+        K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.diag([1, -1]), p), p)
         return [K0, K1]
 
 

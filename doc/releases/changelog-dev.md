@@ -115,7 +115,13 @@
 
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
+* Support `qml.math.size` with torch tensors.
+  [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
+
 <h3>Improvements</h3>
+
+* Most channels in are now fully differentiable in all interfaces.
+  [(#3612)](https://github.com/PennyLaneAI/pennylane/pull/3612)
 
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
@@ -167,7 +173,7 @@
 
 * Fixed the wires for the Y decomposition in the ZX calculus transform.
   [(#3598)](https://github.com/PennyLaneAI/pennylane/pull/3598)
-* 
+*
 * `qml.pauli.PauliWord` is now pickle-able.
   [(#3588)](https://github.com/PennyLaneAI/pennylane/pull/3588)
 
@@ -192,3 +198,4 @@ Albert Mitjans Coma
 Romain Moyard
 Matthew Silverman
 Antal Száva
+David Wierichs
