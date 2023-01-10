@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autoray registrations"""
-# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 import numbers
+
+# pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
 
 import autoray as ar
 import numpy as np
 import semantic_version
-
-from .utils import get_interface
 
 
 def _i(name):
@@ -47,7 +46,7 @@ ar.register_function("scipy", "ndim", np.ndim)
 
 
 # -------------------------------- NumPy --------------------------------- #
-from scipy.linalg import block_diag as _scipy_block_diag  # pylint: disable=wrong-import-order
+from scipy.linalg import block_diag as _scipy_block_diag
 
 ar.register_function("numpy", "flatten", lambda x: x.flatten())
 ar.register_function("numpy", "coerce", lambda x: x)
@@ -645,19 +644,6 @@ def _sum_torch(tensor, axis=None, keepdims=False, dtype=None):
 ar.register_function("torch", "sum", _sum_torch)
 ar.register_function("torch", "cond", _cond)
 
-
-def _matmul_torch(tensor1, tensor2, out=None):
-    """Needed when calling ``qml.math.matmul`` with a torch tensor and an autograd tensor."""
-    import torch
-
-    if get_interface(tensor1) != "torch":
-        tensor1 = torch.tensor(tensor1)
-    if get_interface(tensor2) != "torch":
-        tensor2 = torch.tensor(tensor2)
-    return torch.matmul(tensor1, tensor2, out=out)
-
-
-ar.register_function("torch", "matmul", _matmul_torch)
 
 # -------------------------------- JAX --------------------------------- #
 
