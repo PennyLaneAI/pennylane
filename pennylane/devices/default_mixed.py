@@ -381,6 +381,49 @@ class DefaultMixed(QubitDevice):
         dest_right = col_wires_list
         self._state = qnp.moveaxis(_state, source_left + source_right, dest_left + dest_right)
 
+    def _apply_channel_tensordot_early_stack(self, kraus, wires):
+        r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
+        quantum state. For a unitary gate, there is a single Kraus operator.
+
+        Args:
+            kraus (list[array]): Kraus operators
+            wires (Wires): target wires
+        """
+        channel_wires = self.map_wires(wires)
+        num_ch_wires = len(channel_wires)
+
+        # Shape kraus operators and cast them to complex data type
+        kraus_shape = [len(kraus)] + [2] * (num_ch_wires * 2)
+        kraus = qnp.reshape(qnp.cast(qnp.stack(kraus), dtype=self.C_DTYPE), kraus_shape)
+
+        # row indices of the quantum state affected by this operation
+        row_wires_list = channel_wires.tolist()
+        # column indices are shifted by the number of wires
+        col_wires_list = [w + self.num_wires + 1 for w in row_wires_list]
+
+        channel_col_ids = list(range(num_ch_wires + 1, 2 * num_ch_wires + 1))
+        axes_left = [channel_col_ids, row_wires_list]
+        # Use column indices instead or rows to incorporate transposition of K^\dagger
+        axes_right = [[0] + col_wires_list, [0] + channel_col_ids]
+        # Apply the Kraus operators, and sum over all Kraus operators afterwards
+        def _conjugate_state_with(k):
+            """Perform the double tensor product k @ self._state @ k.conj().
+            The `axes_left` and `axes_right` arguments are taken from the ambient variable space
+            and `axes_right` is assumed to incorporate the tensor product and the transposition
+            of k.conj() simultaneously."""
+            return qnp.tensordot(qnp.tensordot(k, self._state, axes_left), qnp.conj(k), axes_right)
+
+        _state = _conjugate_state_with(kraus)
+
+        # Permute the affected axes to their destination places.
+        # The row indices of the kraus operators are moved from the beginning to the original
+        # target row locations, the column indices from the end to the target column locations
+        source_left = list(range(num_ch_wires))
+        dest_left = row_wires_list
+        source_right = list(range(-num_ch_wires, 0))
+        dest_right = [col-1 for col in col_wires_list]
+        self._state = qnp.moveaxis(_state, source_left + source_right, dest_left + dest_right)
+
     def _apply_diagonal_unitary(self, eigvals, wires):
         r"""Apply a diagonal unitary gate specified by a list of eigenvalues. This method uses
         the fact that the unitary is diagonal for a more efficient implementation.
