@@ -16,12 +16,13 @@
 # need to make sure copyright is not infringed
 """Fix step size ODE solver"""
 
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 from jax import linear_util as lu
 from jax.flatten_util import ravel_pytree
 
-from functools import partial
 
 @partial(jax.jit, static_argnums=0)
 def odeint(func, y0, ts, *args):
