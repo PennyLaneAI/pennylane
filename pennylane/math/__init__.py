@@ -67,6 +67,7 @@ from .quantum import (
     sqrt_matrix,
     fidelity,
     relative_entropy,
+    max_entropy,
 )
 
 from .utils import (
@@ -121,6 +122,7 @@ __all__ = [
     "is_abstract",
     "is_independent",
     "marginal_prob",
+    "max_entropy",
     "mutual_info",
     "ones_like",
     "purity",

@@ -100,6 +100,9 @@
 * The function `load_basisset` is added to extract qchem basis set data from the Basis Set Exchange
   library.
   [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
+  
+* The function `max_entropy` is added to compute the maximum entropy $H=\log(rank(\rho))$ of a quantum state.
+  [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
 
 * Added `qml.ops.dot` function to compute the dot product between a vector and a list of operators.
 
@@ -191,6 +194,7 @@ Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Borja Requena
 Matthew Silverman
 Antal Száva
 David Wierichs
