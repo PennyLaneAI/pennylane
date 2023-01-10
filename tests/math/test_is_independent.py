@@ -25,7 +25,9 @@ from pennylane.math.is_independent import _get_random_args
 
 pytestmark = pytest.mark.all_interfaces
 
+# pylint: disable=redefined-outer-name
 tf = pytest.importorskip("tensorflow", minversion="2.1")
+# pylint: disable=redefined-outer-name
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -126,6 +128,7 @@ class TestIsIndependentAutograd:
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev, interface=interface)
+    # pylint: disable=unused-argument
     def const_circuit(x, y):
         qml.RX(0.1, wires=0)
         return qml.expval(qml.PauliZ(0))
@@ -255,6 +258,7 @@ class TestIsIndependentJax:
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev, interface=interface)
+    # pylint: disable=unused-argument
     def const_circuit(x, y):
         qml.RX(0.1, wires=0)
         return qml.expval(qml.PauliZ(0))
@@ -360,6 +364,7 @@ class TestIsIndependentTensorflow:
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev, interface=interface)
+    # pylint: disable=unused-argument
     def const_circuit(x, y):
         qml.RX(0.1, wires=0)
         return qml.expval(qml.PauliZ(0))
@@ -402,19 +407,20 @@ class TestIsIndependentTensorflow:
     @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
     def test_independent(self, func, args):
         """Tests that an independent function is correctly detected as such."""
-        args = tuple([tf.Variable(_arg) for _arg in args])
+        args = tuple(tf.Variable(_arg) for _arg in args)
         assert is_independent(func, self.interface, args)
 
     @pytest.mark.parametrize("func, args", zip(dependent_functions, args_dependent))
     def test_dependent(self, func, args):
         """Tests that a dependent function is correctly detected as such."""
-        args = tuple([tf.Variable(_arg) for _arg in args])
+        args = tuple(tf.Variable(_arg) for _arg in args)
         # Filter out functions with TF-incompatible output format
         out = func(*args)
         if not isinstance(out, tf.Tensor):
             try:
                 _func = lambda *args: tf.Variable(func(*args))
                 assert not is_independent(_func, self.interface, args)
+            # pylint: disable=bare-except
             except:
                 pytest.skip()
         else:
@@ -476,6 +482,7 @@ class TestIsIndependentTorch:
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev, interface=interface)
+    # pylint: disable=unused-argument
     def const_circuit(x, y):
         qml.RX(0.1, wires=0)
         return qml.expval(qml.PauliZ(0))

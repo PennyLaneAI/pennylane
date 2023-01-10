@@ -22,13 +22,13 @@ from pennylane import math as fn
 
 pytestmark = pytest.mark.all_interfaces
 
-#pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name
 tf = pytest.importorskip("tensorflow", minversion="2.1")
-#pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name
 torch = pytest.importorskip("torch")
-#pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name
 jax = pytest.importorskip("jax")
-#pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name
 jnp = pytest.importorskip("jax.numpy")
 
 state_00 = [1, 0, 0, 0]
@@ -94,7 +94,7 @@ multiple_wires_list = [
 
 c_dtypes = ["complex64", "complex128"]
 
-#pylint: disable=unused-argument
+# pylint: disable=unused-argument
 class TestDensityMatrixFromStateVectors:
     """Tests for creating a density matrix from state vectors."""
 
@@ -217,7 +217,6 @@ class TestDensityMatrixFromStateVectors:
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
     @pytest.mark.parametrize("wires", single_wires_list)
-    #pylint: disable=too-many-arguments
     def test_density_matrix_c_dtype(
         self, array_func, state_vector, wires, c_dtype, expected_density_matrix
     ):
@@ -381,9 +380,7 @@ class TestDensityMatrixFromMatrix:
     @pytest.mark.parametrize("c_dtype", c_dtypes)
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", state_vectors)
     @pytest.mark.parametrize("wires", single_wires_list)
-    def test_density_matrix_c_dtype(
-        self, density_matrix, wires, c_dtype, expected_density_matrix
-    ):
+    def test_density_matrix_c_dtype(self, density_matrix, wires, c_dtype, expected_density_matrix):
         """Test different complex dtype."""
         if fn.get_interface(density_matrix) == "jax" and c_dtype == "complex128":
             pytest.skip("Jax does not support complex 128")

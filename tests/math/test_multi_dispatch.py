@@ -23,8 +23,11 @@ from pennylane import math as fn
 
 pytestmark = pytest.mark.all_interfaces
 
+# pylint: disable=redefined-outer-name
 tf = pytest.importorskip("tensorflow", minversion="2.1")
+# pylint: disable=redefined-outer-name
 torch = pytest.importorskip("torch")
+# pylint: disable=redefined-outer-name
 jnp = pytest.importorskip("jax.numpy")
 
 test_multi_dispatch_stack_data = [
@@ -62,6 +65,7 @@ def test_multi_dispatch_stack(x):
 
 
 @pytest.mark.parametrize("x", test_multi_dispatch_stack_data)
+# pylint: disable=unused-argument, no-value-for-parameter
 def test_multi_dispatch_decorate(x):
     """Test decorating a standard numpy function for PennyLane"""
 
@@ -87,6 +91,7 @@ test_data = [(x, x) for x in test_data0]
 
 
 @pytest.mark.parametrize("t1,t2", test_data)
+# pylint: disable=unused-argument, no-value-for-parameter
 def test_multi_dispatch_decorate_argnum_none(t1, t2):
     """Test decorating a standard numpy function for PennyLane, automatically dispatching all inputs by choosing argnum=None"""
 
@@ -110,6 +115,7 @@ test_data_values = [
 
 
 @pytest.mark.parametrize("values", test_data_values)
+# pylint: disable=unused-argument, no-value-for-parameter
 def test_multi_dispatch_decorate_non_dispatch(values):
     """Test decorating a custom function for PennyLane including a non-dispatchable parameter"""
 

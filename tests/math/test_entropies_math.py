@@ -25,7 +25,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 
-
+# pylint: disable=unused-argument
 class TestPurity:
     """Tests for computing the purity of a given state"""
 

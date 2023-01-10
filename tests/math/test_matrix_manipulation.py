@@ -16,7 +16,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
-from gate_data import CNOT, II, SWAP, I, Toffoli, X
+from gate_data import CNOT, II, SWAP, I, Toffoli
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
@@ -487,7 +487,7 @@ class TestExpandMatrix:
         class DummyOp(qml.operation.Operator):
             num_wires = 2
 
-            def compute_matrix(*params, **hyperparams):
+            def compute_matrix(*params):
                 return self.base_matrix_2
 
         op = DummyOp(wires=[0, 2])
@@ -516,7 +516,7 @@ class TestExpandMatrix:
         class DummyOp(qml.operation.Operator):
             num_wires = 2
 
-            def compute_matrix(*params, **hyperparams):
+            def compute_matrix(*params):
                 return self.base_matrix_2_broadcasted
 
         op = DummyOp(wires=[0, 2])
@@ -539,7 +539,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]]))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -551,14 +551,14 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]]))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
     def test_no_expansion(self):
         """Tests the case where the original matrix is not changed"""
         res = qml.math.expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[0, 2])
-        assert type(res) == type(self.base_matrix_2)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == self.base_matrix_2.data)
         assert all(res.indices == self.base_matrix_2.indices)
 
@@ -571,7 +571,7 @@ class TestExpandMatrixSparse:
         )
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -582,7 +582,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.array([[1, 2, 0, 0], [3, 4, 0, 0], [0, 0, 1, 2], [0, 0, 3, 4]]))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -591,11 +591,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.array([[1, 0, 2, 0], [0, 1, 0, 2], [3, 0, 4, 0], [0, 3, 0, 4]]))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_one(self, tol):
+    def test_expand_one(self):
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
         U = np.array(
             [
@@ -610,7 +610,7 @@ class TestExpandMatrixSparse:
         res.sort_indices()
         expected = csr_matrix(np.kron(np.kron(U, I), I))
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -620,7 +620,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(I, U), I))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -629,11 +629,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(I, I), U))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_two_consecutive_wires(self, tol):
+    def test_expand_two_consecutive_wires(self):
         """Test that a 2 qubit gate on consecutive wires correctly
         expands to 4 qubits."""
         U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
@@ -645,7 +645,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(U2, I), I))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -655,7 +655,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(I, U2), I))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -665,11 +665,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(I, I), U2))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_two_reversed_wires(self, tol):
+    def test_expand_two_reversed_wires(self):
         """Test that a 2 qubit gate on reversed consecutive wires correctly
         expands to 4 qubits."""
         # CNOT with target on wire 1
@@ -679,11 +679,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(np.kron(CNOT[:, rows][rows], I), I))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_three_consecutive_wires(self, tol):
+    def test_expand_three_consecutive_wires(self):
         """Test that a 3 qubit gate on consecutive
         wires correctly expands to 4 qubits."""
         # test applied to wire 0,1,2
@@ -692,7 +692,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(Toffoli, I))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -702,11 +702,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(I, Toffoli))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_three_nonconsecutive_ascending_wires(self, tol):
+    def test_expand_three_nonconsecutive_ascending_wires(self):
         """Test that a 3 qubit gate on non-consecutive but ascending
         wires correctly expands to 4 qubits."""
         # test applied to wire 0,2,3
@@ -715,7 +715,7 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(SWAP, II) @ np.kron(I, Toffoli) @ np.kron(SWAP, II))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -725,11 +725,11 @@ class TestExpandMatrixSparse:
         expected = csr_matrix(np.kron(II, SWAP) @ np.kron(Toffoli, I) @ np.kron(II, SWAP))
         expected.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_expand_three_nonconsecutive_nonascending_wires(self, tol):
+    def test_expand_three_nonconsecutive_nonascending_wires(self):
         """Test that a 3 qubit gate on non-consecutive non-ascending
         wires correctly expands to 4 qubits"""
         # test applied to wire 3, 1, 2
@@ -741,7 +741,7 @@ class TestExpandMatrixSparse:
         expected.sort_indices()
         res.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -752,7 +752,7 @@ class TestExpandMatrixSparse:
         expected.sort_indices()
         res.sort_indices()
 
-        assert type(res) == type(expected)
+        assert isinstance(res, csr_matrix)
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
@@ -761,7 +761,7 @@ class TestExpandMatrixSparse:
         n = 4
         for i in range(0, n):
             for j in range(0, n):
-                if not (i == j):
+                if not i == j:
                     expected_mat = qml.SWAP(wires=[i, j]).matrix()
                     expected_mat = qml.math.expand_matrix(expected_mat, [i, j], wire_order=range(n))
                     computed_mat = qml.math.matrix_manipulation._sparse_swap_mat(i, j, n).toarray()

@@ -26,8 +26,11 @@ from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
+# pylint: disable=redefined-outer-name
 tf = pytest.importorskip("tensorflow", minversion="2.1")
+# pylint: disable=redefined-outer-name
 torch = pytest.importorskip("torch")
+# pylint: disable=redefined-outer-name
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 sci = pytest.importorskip("scipy")
@@ -519,6 +522,7 @@ class TestDot:
         assert fn.allequal(res, [27, 40])
 
     @pytest.mark.parametrize("t1, t2", matrix_vector_product_data)
+    # pylint: disable=unused-argument
     def test_matrix_matrix_product(self, t1, t2):
         """Test that the matrix-matrix dot product of two vectors results in a matrix"""
         res = fn.dot(t1, t1)
@@ -533,7 +537,7 @@ class TestDot:
         def cost(t1, t2):
             return fn.dot(t1, t2)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape():
             res = cost(t1, t2)
 
         assert fn.allequal(res, [20, 46])
@@ -1240,14 +1244,14 @@ class TestInBackprop:
         with tf.GradientTape():
             # variables are automatically watched within a context,
             # but constants are not
-            y = f_pow(t1)
+            f_pow(t1)
             assert fn.in_backprop(t1)
             assert not fn.in_backprop(t2)
 
         with tf.GradientTape() as tape:
             # watching makes all tensors trainable
             tape.watch([t1, t2])
-            y = f_pow(t1)
+            f_pow(t1)
             assert fn.in_backprop(t1)
             assert fn.in_backprop(t2)
 
@@ -1509,17 +1513,6 @@ class TestTake:
         assert fn.allclose(res, expected)
 
     @pytest.mark.parametrize("t", take_data)
-    def test_array_indexing_along_axis(self, t):
-        """Test that indexing with a sequence properly extracts
-        the elements from the specified tensor axis"""
-        indices = [0, 1, -2]
-        res = fn.take(t, indices, axis=2)
-        expected = np.array(
-            [[[1, 2, 1], [3, 4, 3], [-1, 1, -1]], [[5, 6, 5], [0, -1, 0], [2, 1, 2]]]
-        )
-        assert fn.allclose(res, expected)
-
-    @pytest.mark.parametrize("t", take_data)
     def test_multidimensional_indexing_along_axis(self, t):
         """Test that indexing with a sequence properly extracts
         the elements from the specified tensor axis"""
@@ -1561,6 +1554,7 @@ where_data = [
 
 
 @pytest.mark.parametrize("interface, t", where_data)
+# pylint: disable=unused-argument
 def test_where(interface, t):
     """Test that the where function works as expected"""
     # With output values
@@ -1635,7 +1629,7 @@ class TestScatterElementAdd:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
-        jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
+        jac = qml.jacobian(cost_multi)(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         assert fn.allclose(jac[1], self.expected_jac_y)
 
@@ -1652,7 +1646,7 @@ class TestScatterElementAdd:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, onp.array([[1.0, 1.3136, 1.0], [1.0, 1.0, 1.09]]))
 
-        jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
+        jac = qml.jacobian(cost_multi)(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         exp_jac_y = onp.zeros((2, 3, 2))
         exp_jac_y[0, 1, 0] = 2 * y[0]
@@ -1719,7 +1713,7 @@ class TestScatterElementAdd:
         assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
-        jac = jax.jacobian(lambda *weights: cost_multi(*weights), argnums=[0, 1])(x, y)
+        jac = jax.jacobian(cost_multi, argnums=[0, 1])(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         assert fn.allclose(jac[1], self.expected_jac_y)
 
@@ -2223,7 +2217,7 @@ class TestCoercion:
             RuntimeError,
             match="Expected all tensors to be on the same device, but found at least two devices",
         ):
-            res = qml.math.coerce(tensors, like="torch")
+            qml.math.coerce(tensors, like="torch")
 
 
 class TestUnwrap:
@@ -2254,7 +2248,7 @@ class TestUnwrap:
     def test_autograd_unwrapping_forward(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the forward pass"""
-        unwrapped_params = None
+        unwrapped_params = []
 
         def cost_fn(params):
             nonlocal unwrapped_params
@@ -2267,11 +2261,12 @@ class TestUnwrap:
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
         assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
+        assert len(unwrapped_params) > 0
 
     def test_autograd_unwrapping_backward(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the backward pass"""
-        unwrapped_params = None
+        unwrapped_params = []
 
         def cost_fn(*params):
             nonlocal unwrapped_params
@@ -2283,16 +2278,17 @@ class TestUnwrap:
             np.tensor(0.1, dtype=np.float64, requires_grad=True),
             np.tensor([0.5, 0.2], requires_grad=True),
         ]
-        grad = qml.grad(cost_fn, argnum=[1, 2])(*values)
+        qml.grad(cost_fn, argnum=[1, 2])(*values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
         assert not any(isinstance(a, ArrayBox) for a in unwrapped_params)
+        assert len(unwrapped_params) > 0
 
     def test_autograd_unwrapping_backward_nested(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during multiple backward passes"""
-        unwrapped_params = None
+        unwrapped_params = []
 
         def cost_fn(p, max_depth=None):
             nonlocal unwrapped_params
@@ -2300,7 +2296,7 @@ class TestUnwrap:
             return np.sum(np.sin(np.prod(p)))
 
         values = np.tensor([0.1, 0.2, 0.3])
-        hess = qml.jacobian(qml.grad(cost_fn))(values)
+        qml.jacobian(qml.grad(cost_fn))(values)
 
         expected = np.array([0.1, 0.2, 0.3])
         assert np.allclose(unwrapped_params, expected)
@@ -2308,13 +2304,14 @@ class TestUnwrap:
 
         # Specifying max_depth=1 will result in the second backward
         # pass not being unwrapped
-        hess = qml.jacobian(qml.grad(cost_fn))(values, max_depth=1)
+        qml.jacobian(qml.grad(cost_fn))(values, max_depth=1)
         assert all(isinstance(a, ArrayBox) for a in unwrapped_params)
+        assert len(unwrapped_params) > 0
 
     def test_jax_unwrapping(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the forward pass"""
-        unwrapped_params = None
+        unwrapped_params = []
 
         def cost_fn(params):
             nonlocal unwrapped_params
@@ -2327,6 +2324,7 @@ class TestUnwrap:
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
         assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
+        assert len(unwrapped_params) > 0
 
 
 class TestGetTrainable:
@@ -2399,7 +2397,7 @@ class TestGetTrainable:
             np.tensor(0.1, requires_grad=True),
             np.tensor([0.5, 0.2], requires_grad=False),
         ]
-        grad = qml.grad(cost_fn)(*values)
+        qml.grad(cost_fn)(*values)
 
         assert res == {0, 1}
 
