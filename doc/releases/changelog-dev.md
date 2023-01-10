@@ -120,6 +120,9 @@
 
 <h3>Improvements</h3>
 
+* Most channels in are now fully differentiable in all interfaces.
+  [(#3612)](https://github.com/PennyLaneAI/pennylane/pull/3612)
+
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
 
@@ -190,3 +193,4 @@ Albert Mitjans Coma
 Romain Moyard
 Matthew Silverman
 Antal Száva
+David Wierichs
