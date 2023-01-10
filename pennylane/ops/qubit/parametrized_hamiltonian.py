@@ -7,7 +7,7 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 # pylint: disable= too-many-instance-attributes
-class ParametrizedHamiltonian(Observable):
+class ParametrizedHamiltonian:
     r"""Operator representing a time-dependent Hamiltonian.
 
     The Hamiltonian is represented as a linear combination of other operators, e.g.,
@@ -15,7 +15,7 @@ class ParametrizedHamiltonian(Observable):
     and t is time. Including time as one of the trainable parameters is optional.
 
     Args:
-        coeffs (Union[tensor_like, callable]): coefficients of the Hamiltonian expression. #ToDo: change from tensor_like to scalar, or update to support tensor_like coefficients
+        coeffs (Union[float, callable]): coefficients of the Hamiltonian expression.
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
         id (str): Custom string to label a specific operator instance.
         do_queue (bool): indicates whether the operator should be
@@ -53,13 +53,7 @@ class ParametrizedHamiltonian(Observable):
     >>> qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
     Addition of ParametrizedHamiltonians with ParametrizedHamiltonians, Hamiltonians or other observables is possible with
-    tensor-valued coefficients, i.e.,
-
-    >>> H1 = qml.Hamiltonian(torch.tensor([1.]), [qml.PauliX(0)])
-    >>> H2 = qml.Hamiltonian(torch.tensor([2., 3.]), [qml.PauliY(0), qml.PauliX(1)])
-    >>> obs3 = [qml.PauliX(0), qml.PauliY(0), qml.PauliX(1)]
-    >>> H3 = qml.Hamiltonian(torch.tensor([1., 2., 3.]), obs3)
-    >>> H3.compare(H1 + H2)  # ToDo: compare function not implemented, modify documentation
+    tensor-valued coefficients, i.e., ...
 
     """
 
@@ -70,8 +64,6 @@ class ParametrizedHamiltonian(Observable):
         self,
         coeffs,
         observables,
-        id=None,
-        do_queue=True,
     ):
 
         if qml.math.shape(coeffs)[0] != len(observables):
@@ -94,8 +86,6 @@ class ParametrizedHamiltonian(Observable):
         self.H_ts_fs = []
         self.H_ts_ops = []
 
-        # ToDo: so far this only deals with scalar coefficients for H_drift - should it accept tensor_like?
-
         for coeff, obs in zip(coeffs, observables):
             if callable(coeff):
                 self.H_ts_fs.append(coeff)
@@ -104,25 +94,11 @@ class ParametrizedHamiltonian(Observable):
                 self.H_drift_coeffs.append(coeff)
                 self.H_drift_ops.append(obs)
 
-        if len(self.H_ts_ops) == 0:
-            raise RuntimeError(
-                "Found no time-dependent terms while initializing time dependent Hamiltonian "
-                f"with coefficients {self.coeffs}"
-            )
-
-        self.H_drift = self._H_drift
-        self.H_ts = self._H_ts
-
-        self._hyperparameters = {"ops": self._ops}
-
-        self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
-
-        self.return_type = None
-
-        super().__init__(*self._coeffs, wires=self._wires, id=id, do_queue=do_queue)
-
     def __call__(self, params, t):
         return self.H_drift + self.H_ts(params, t)
+
+    def __repr__(self):
+        return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
 
     @staticmethod
     def _get_terms(coeffs, obs):
@@ -136,13 +112,15 @@ class ParametrizedHamiltonian(Observable):
         return qml.op_sum(*terms_list)
 
     @property
-    def _H_drift(self):
+    def H_drift(
+        self,
+    ):  # ToDo: rephrase/name to avoid explicit time-dependence - i.e. these are constant and parametrized, not time independent and dependent
         """The terms without any time dependence. Returns a qml.Sum operator of qml.SProd operators
         (or a single qml.SProd operator in the event that there is only one term in H_drift)."""
         return self._get_terms(self.H_drift_coeffs, self.H_drift_ops)
 
     @property
-    def _H_ts(self):
+    def H_ts(self):
         """The time-dependent terms of the Hamiltonian. Returns a function that can be evaluated
         to get a snapshot of the operator at a set time and with set parameters. When the function is
         evaluated, the returned operator is a qml.Sum of qml.S_Prod operators (or a single qml.SProd
@@ -172,10 +150,6 @@ class ParametrizedHamiltonian(Observable):
             Iterable[Observable]): observables in the Hamiltonian expression
         """
         return self._ops
-
-    @property
-    def name(self):
-        return "Parametrized Hamiltonian"
 
     def __add__(self, H):
         r"""The addition operation between a time dependent Hamiltonian and a
