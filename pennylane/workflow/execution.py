@@ -33,7 +33,9 @@ SUPPORTED_GRADIENT_METHODS = [
 @dataclass
 class ExecutionConfig:
     """
-    A configuration class to describe an execution of a quantum circuit on a device.
+    A class to configure the execution of a quantum circuit on a device.
+
+    See the Attributes section to learn more about the various configurable options.
     """
 
     shots: Optional[Union[int, Tuple[int]]] = None
