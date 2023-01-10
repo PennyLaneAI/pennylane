@@ -16,7 +16,6 @@ Tests for the BasisRotation template.
 """
 
 import pytest
-import scipy as sp
 import numpy as np
 import pennylane as qml
 
@@ -472,7 +471,7 @@ class TestInterfaces:
             res = circuit(unitary_matrix)
         grads = tape.gradient(res, [unitary_matrix])
 
-        assert grads[0] == None
+        assert grads[0] is None
 
     @pytest.mark.torch
     def test_torch(self, tol):

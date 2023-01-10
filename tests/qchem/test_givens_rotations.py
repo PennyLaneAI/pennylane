@@ -65,12 +65,12 @@ def test_givens_rotate(shape, indices, row, left):
         givens_rotate(unitary, grot_mat, indices, row)
         res = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
         if left:
-            assert np.isclose(unitary[indices[0], j - 1], 0.0) and np.isclose(
-                unitary[indices[1], j - 1], res
+            assert np.isclose(unitary[i, j - 1], 0.0) and np.isclose(
+                unitary[j, j - 1], res
             )
         else:
-            assert np.isclose(unitary[indices[0], j - 1], res) and np.isclose(
-                unitary[indices[1], j - 1], 0.0
+            assert np.isclose(unitary[i, j - 1], res) and np.isclose(
+                unitary[j, j - 1], 0.0
             )
     else:
         a, b = matrix[j - 1, indices].T
@@ -78,8 +78,8 @@ def test_givens_rotate(shape, indices, row, left):
         givens_rotate(unitary, grot_mat, indices, row)
         res = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
         if left:
-            assert np.isclose(unitary[j - 1, indices[0]], 0.0) and np.isclose(
-                unitary[j - 1, indices[1]], res
+            assert np.isclose(unitary[j - 1, i], 0.0) and np.isclose(
+                unitary[j - 1, j], res
             )
         else:
             assert np.isclose(unitary[j - 1, indices[0]], res) and np.isclose(
