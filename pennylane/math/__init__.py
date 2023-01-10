@@ -85,6 +85,8 @@ from .is_independent import is_independent
 
 from .matrix_manipulation import expand_matrix, reduce_matrices
 
+from .ode import odeint
+
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
@@ -137,4 +139,5 @@ __all__ = [
     "add",
     "iscomplex",
     "expand_matrix",
+    "odeint"
 ]
