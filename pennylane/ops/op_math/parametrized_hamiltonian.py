@@ -1,14 +1,15 @@
 """
-This submodule contains the time-dependent hamiltonian class
+This submodule contains the ParametrizedHamiltonian class
 """
 import pennylane as qml
-from pennylane.operation import Observable, Tensor
+from pennylane.operation import Observable
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 # pylint: disable= too-many-instance-attributes
 class ParametrizedHamiltonian:
-    r"""Operator representing a time-dependent Hamiltonian.
+    r"""Callable object holding the information representing a parametrized Hamiltonian. Passing parameters to
+    the ParametrizedHamiltonian returns an Operator representing the Hamiltonian for that set of parameters.
 
     The Hamiltonian representation as a linear combination of other operators, e.g.,
     :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j`, where the :math:`v` are trainable parameters,
@@ -157,11 +158,16 @@ class ParametrizedHamiltonian:
             ops.extend(H.ops.copy())
             return ParametrizedHamiltonian(coeffs, ops)
 
-        if isinstance(H, (Tensor, Observable)):
+        if isinstance(H, qml.ops.SProd):  # pylint: disable=no-member
+            coeffs.append(H.scalar)
+            ops.append(H.base)
+            return ParametrizedHamiltonian(coeffs, ops)
+
+        if isinstance(H, Observable):
             coeffs.append(qml.math.cast_like([1.0], coeffs)[0])
             ops.append(H)
             return ParametrizedHamiltonian(coeffs, ops)
 
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        raise ValueError(f"Cannot add ParametrizedHamiltonian and {type(H)}")
 
     __radd__ = __add__
