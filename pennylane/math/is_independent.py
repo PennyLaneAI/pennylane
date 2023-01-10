@@ -74,6 +74,7 @@ def _autograd_is_indep_analytic(func, *args, **kwargs):
     return True
 
 
+# pylint: disable=import-outside-toplevel,unnecessary-lambda-assignment,unnecessary-lambda
 def _jax_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
     using JAX.
@@ -107,9 +108,9 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
         This is an experimental function and unknown edge
         cases may exist to this two-stage test.
     """
-    import jax  # pylint: disable=import-outside-toplevel
+    import jax
 
-    mapped_func = lambda *_args: func(*_args, **kwargs)  # pylint: disable=unnecessary-lambda
+    mapped_func = lambda *_args: func(*_args, **kwargs)
     _vjp = jax.vjp(mapped_func, *args)[1]
     if _vjp.args[0].args != ((),):
         return False
