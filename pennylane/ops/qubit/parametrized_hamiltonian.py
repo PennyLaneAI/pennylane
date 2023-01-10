@@ -193,7 +193,7 @@ class ParametrizedHamiltonian(Observable):
 
     @property
     def name(self):
-        return "Time-Dependent Hamiltonian"
+        return "Parametrized Hamiltonian"
 
     def __add__(self, H):
         r"""The addition operation between a time dependent Hamiltonian and a

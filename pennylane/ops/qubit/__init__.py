@@ -36,7 +36,7 @@ from .parametric_ops import *
 from .qchem_ops import *
 from .state_preparation import *
 from .hamiltonian import Hamiltonian
-from .time_dependent_hamiltonian import ParametrizedHamiltonian
+from .parametrized_hamiltonian import ParametrizedHamiltonian
 from ..identity import Identity
 from ..snapshot import Snapshot
 
