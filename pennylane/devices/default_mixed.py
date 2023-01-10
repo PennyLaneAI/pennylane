@@ -421,7 +421,7 @@ class DefaultMixed(QubitDevice):
         source_left = list(range(num_ch_wires))
         dest_left = row_wires_list
         source_right = list(range(-num_ch_wires, 0))
-        dest_right = [col-1 for col in col_wires_list]
+        dest_right = [col - 1 for col in col_wires_list]
         self._state = qnp.moveaxis(_state, source_left + source_right, dest_left + dest_right)
 
     def _apply_diagonal_unitary(self, eigvals, wires):
