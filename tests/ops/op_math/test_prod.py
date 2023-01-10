@@ -481,28 +481,34 @@ class TestMatrix:
         ]
         assert np.allclose(mat, true_mat)
 
-    def test_batching_all_batched(self):
+    def test_matrix_all_batched(self):
         """Test that Prod matrix has batching support when all operands are batched."""
         x = qml.numpy.array([0.1, 0.2, 0.3])
         y = qml.numpy.array([0.4, 0.5, 0.6])
-        op = prod(qml.RX(x, wires=0), qml.RY(y, wires=2))
+        op = prod(qml.RX(x, wires=0), qml.RY(y, wires=2), qml.PauliZ(1))
         mat = op.matrix()
-        sum_list = [prod(qml.RX(i, wires=0), qml.RY(j, wires=2)) for i, j in zip(x, y)]
-        compare = qml.math.stack([p.matrix() for p in sum_list])
+        sum_list = [
+            prod(qml.RX(i, wires=0), qml.RY(j, wires=2), qml.PauliZ(1)) for i, j in zip(x, y)
+        ]
+        compare = qml.math.stack([s.matrix() for s in sum_list])
         assert qml.math.allclose(mat, compare)
-        assert mat.shape == (3, 4, 4)
+        assert mat.shape == (3, 8, 8)
 
     def test_matrix_not_all_batched(self):
         """Test that Prod matrix has batching support when all operands are not batched."""
         x = qml.numpy.array([0.1, 0.2, 0.3])
         y = 0.5
-        op = prod(qml.RX(x, wires=0), qml.RY(y, wires=2))
+        z = qml.numpy.array([0.4, 0.5, 0.6])
+        op = prod(qml.RX(x, wires=0), qml.RY(y, wires=2), qml.RZ(z, wires=1))
         mat = op.matrix()
         batched_y = [y for _ in x]
-        sum_list = [prod(qml.RX(i, wires=0), qml.RY(j, wires=2)) for i, j in zip(x, batched_y)]
+        sum_list = [
+            prod(qml.RX(i, wires=0), qml.RY(j, wires=2), qml.RZ(k, wires=1))
+            for i, j, k in zip(x, batched_y, z)
+        ]
         compare = qml.math.stack([s.matrix() for s in sum_list])
         assert qml.math.allclose(mat, compare)
-        assert mat.shape == (3, 4, 4)
+        assert mat.shape == (3, 8, 8)
 
     # Add interface tests for each interface !
 
