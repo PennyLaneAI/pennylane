@@ -100,13 +100,12 @@ class TestAmplitudeDamping:
         qml.math.array([[0, 0], [0, -1 / (2 * qml.math.sqrt(1 - gamma))]]),
         qml.math.array([[0, 1 / (2 * qml.math.sqrt(gamma))], [0, 0]]),
     ]
+    kraus_fn = lambda self, x: qml.math.stack(channel.AmplitudeDamping(x, wires=0).kraus_matrices())
 
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         gamma = pnp.array(0.43, requires_grad=True)
-        fn = lambda x: qml.math.stack(channel.AmplitudeDamping(x, wires=0).kraus_matrices())
-        jac_fn = qml.jacobian(fn)
-        jac = jac_fn(gamma)
+        jac = qml.jacobian(self.kraus_fn)(gamma)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
     @pytest.mark.torch
@@ -114,8 +113,7 @@ class TestAmplitudeDamping:
         import torch
 
         gamma = torch.tensor(0.43, requires_grad=True)
-        fn = lambda x: qml.math.stack(channel.AmplitudeDamping(x, wires=0).kraus_matrices())
-        jac = torch.autograd.functional.jacobian(fn, gamma)
+        jac = torch.autograd.functional.jacobian(self.kraus_fn, gamma)
         assert qml.math.allclose(jac.detach().numpy(), self.expected_jac_fn(gamma.detach().numpy()))
 
     @pytest.mark.tf
@@ -124,7 +122,7 @@ class TestAmplitudeDamping:
 
         gamma = tf.Variable(0.43)
         with tf.GradientTape() as tape:
-            out = qml.math.stack(channel.AmplitudeDamping(gamma, wires=0).kraus_matrices())
+            out = self.kraus_fn(gamma)
         jac = tape.jacobian(out, gamma)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
@@ -133,9 +131,7 @@ class TestAmplitudeDamping:
         import jax
 
         gamma = jax.numpy.array(0.43)
-        fn = lambda x: qml.math.stack(channel.AmplitudeDamping(x, wires=0).kraus_matrices())
-        jac_fn = jax.jacobian(fn)
-        jac = jac_fn(gamma)
+        jac = jax.jacobian(self.kraus_fn)(gamma)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
 
@@ -188,15 +184,15 @@ class TestGeneralizedAmplitudeDamping:
         ],
     )
 
+    kraus_fn = lambda self, gamma, p: qml.math.stack(
+        channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices()
+    )
+
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         gamma = pnp.array(0.43, requires_grad=True)
         p = pnp.array(0.3, requires_grad=True)
-        fn = lambda gamma, p: qml.math.stack(
-            channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices()
-        )
-        jac_fn = qml.jacobian(fn)
-        jac = jac_fn(gamma, p)
+        jac = qml.jacobian(self.kraus_fn)(gamma, p)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma, p))
 
     @pytest.mark.torch
@@ -205,10 +201,7 @@ class TestGeneralizedAmplitudeDamping:
 
         gamma = torch.tensor(0.43, requires_grad=True)
         p = torch.tensor(0.3, requires_grad=True)
-        fn = lambda gamma, p: qml.math.stack(
-            channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices()
-        )
-        jac = torch.autograd.functional.jacobian(fn, (gamma, p))
+        jac = torch.autograd.functional.jacobian(self.kraus_fn, (gamma, p))
         exp_jac = self.expected_jac_fn(gamma.detach().numpy(), p.detach().numpy())
         assert len(jac) == len(exp_jac) == 2
         for j, exp_j in zip(jac, exp_jac):
@@ -221,9 +214,7 @@ class TestGeneralizedAmplitudeDamping:
         gamma = tf.Variable(0.43)
         p = tf.Variable(0.3)
         with tf.GradientTape() as tape:
-            out = qml.math.stack(
-                channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices()
-            )
+            out = self.kraus_fn(gamma, p)
         jac = tape.jacobian(out, (gamma, p))
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma, p))
 
@@ -233,11 +224,7 @@ class TestGeneralizedAmplitudeDamping:
 
         gamma = jax.numpy.array(0.43)
         p = jax.numpy.array(0.3)
-        fn = lambda gamma, p: qml.math.stack(
-            channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices()
-        )
-        jac_fn = jax.jacobian(fn, argnums=[0, 1])
-        jac = jac_fn(gamma, p)
+        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1])(gamma, p)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma, p))
 
 
@@ -268,12 +255,12 @@ class TestPhaseDamping:
         qml.math.array([[0, 0], [0, 1 / (2 * qml.math.sqrt(gamma))]]),
     ]
 
+    kraus_fn = lambda self, x: qml.math.stack(channel.PhaseDamping(x, wires=0).kraus_matrices())
+
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         gamma = pnp.array(0.43, requires_grad=True)
-        fn = lambda x: qml.math.stack(channel.PhaseDamping(x, wires=0).kraus_matrices())
-        jac_fn = qml.jacobian(fn)
-        jac = jac_fn(gamma)
+        jac = qml.jacobian(self.kraus_fn)(gamma)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
     @pytest.mark.torch
@@ -281,8 +268,7 @@ class TestPhaseDamping:
         import torch
 
         gamma = torch.tensor(0.43, requires_grad=True)
-        fn = lambda x: qml.math.stack(channel.PhaseDamping(x, wires=0).kraus_matrices())
-        jac = torch.autograd.functional.jacobian(fn, gamma)
+        jac = torch.autograd.functional.jacobian(self.kraus_fn, gamma)
         assert qml.math.allclose(jac.detach().numpy(), self.expected_jac_fn(gamma.detach().numpy()))
 
     @pytest.mark.tf
@@ -291,7 +277,7 @@ class TestPhaseDamping:
 
         gamma = tf.Variable(0.43)
         with tf.GradientTape() as tape:
-            out = qml.math.stack(channel.PhaseDamping(gamma, wires=0).kraus_matrices())
+            out = self.kraus_fn(gamma)
         jac = tape.jacobian(out, gamma)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
@@ -300,9 +286,7 @@ class TestPhaseDamping:
         import jax
 
         gamma = jax.numpy.array(0.43)
-        fn = lambda x: qml.math.stack(channel.PhaseDamping(x, wires=0).kraus_matrices())
-        jac_fn = jax.jacobian(fn)
-        jac = jac_fn(gamma)
+        jac = jax.jacobian(self.kraus_fn)(gamma)
         assert qml.math.allclose(jac, self.expected_jac_fn(gamma))
 
 
@@ -347,12 +331,12 @@ class TestBitFlip:
         1 / (2 * qml.math.sqrt(p)) * qml.math.array([[0, 1], [1, 0]]),
     ]
 
+    kraus_fn = lambda self, x: qml.math.stack(channel.BitFlip(x, wires=0).kraus_matrices())
+
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p = pnp.array(0.43, requires_grad=True)
-        fn = lambda x: qml.math.stack(channel.BitFlip(x, wires=0).kraus_matrices())
-        jac_fn = qml.jacobian(fn)
-        jac = jac_fn(p)
+        jac = qml.jacobian(self.kraus_fn)(p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
     @pytest.mark.torch
@@ -360,8 +344,7 @@ class TestBitFlip:
         import torch
 
         p = torch.tensor(0.43, requires_grad=True)
-        fn = lambda x: qml.math.stack(channel.BitFlip(x, wires=0).kraus_matrices())
-        jac = torch.autograd.functional.jacobian(fn, p)
+        jac = torch.autograd.functional.jacobian(self.kraus_fn, p)
         assert qml.math.allclose(jac.detach().numpy(), self.expected_jac_fn(p.detach().numpy()))
 
     @pytest.mark.tf
@@ -370,7 +353,7 @@ class TestBitFlip:
 
         p = tf.Variable(0.43)
         with tf.GradientTape() as tape:
-            out = qml.math.stack(channel.BitFlip(p, wires=0).kraus_matrices())
+            out = self.kraus_fn(p)
         jac = tape.jacobian(out, p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
@@ -379,9 +362,7 @@ class TestBitFlip:
         import jax
 
         p = jax.numpy.array(0.43)
-        fn = lambda x: qml.math.stack(channel.BitFlip(x, wires=0).kraus_matrices())
-        jac_fn = jax.jacobian(fn)
-        jac = jac_fn(p)
+        jac = jax.jacobian(self.kraus_fn)(p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
 
@@ -425,13 +406,12 @@ class TestPhaseFlip:
         -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.eye(2),
         1 / (2 * qml.math.sqrt(p)) * qml.math.diag([1, -1]),
     ]
+    kraus_fn = lambda self, x: qml.math.stack(channel.PhaseFlip(x, wires=0).kraus_matrices())
 
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p = pnp.array(0.43, requires_grad=True)
-        fn = lambda x: qml.math.stack(channel.PhaseFlip(x, wires=0).kraus_matrices())
-        jac_fn = qml.jacobian(fn)
-        jac = jac_fn(p)
+        jac = qml.jacobian(self.kraus_fn)(p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
     @pytest.mark.torch
@@ -439,8 +419,7 @@ class TestPhaseFlip:
         import torch
 
         p = torch.tensor(0.43, requires_grad=True)
-        fn = lambda x: qml.math.stack(channel.PhaseFlip(x, wires=0).kraus_matrices())
-        jac = torch.autograd.functional.jacobian(fn, p)
+        jac = torch.autograd.functional.jacobian(self.kraus_fn, p)
         assert qml.math.allclose(jac.detach().numpy(), self.expected_jac_fn(p.detach().numpy()))
 
     @pytest.mark.tf
@@ -449,7 +428,7 @@ class TestPhaseFlip:
 
         p = tf.Variable(0.43)
         with tf.GradientTape() as tape:
-            out = qml.math.stack(channel.PhaseFlip(p, wires=0).kraus_matrices())
+            out = self.kraus_fn(p)
         jac = tape.jacobian(out, p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
@@ -458,9 +437,7 @@ class TestPhaseFlip:
         import jax
 
         p = jax.numpy.array(0.43)
-        fn = lambda x: qml.math.stack(channel.PhaseFlip(x, wires=0).kraus_matrices())
-        jac_fn = jax.jacobian(fn)
-        jac = jac_fn(p)
+        jac = jax.jacobian(self.kraus_fn)(p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
 
@@ -509,18 +486,21 @@ class TestDepolarizingChannel:
         1 / (6 * qml.math.sqrt(p / 3)) * qml.math.diag([1, -1]),
     ]
 
+    kraus_fn = lambda self, x: qml.math.stack(
+        channel.DepolarizingChannel(x, wires=0).kraus_matrices()
+    )
+
+    kraus_fn_real = lambda self, x: qml.math.real(
+        qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
+    )
+    kraus_fn_imag = lambda self, x: qml.math.imag(
+        qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
+    )
+
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p = pnp.array(0.43, requires_grad=True)
-        fn_real = lambda x: qml.math.real(
-            qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
-        )
-        fn_imag = lambda x: qml.math.imag(
-            qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
-        )
-        jac_fn_real = qml.jacobian(fn_real)
-        jac_fn_imag = qml.jacobian(fn_imag)
-        jac = jac_fn_real(p) + 1j * jac_fn_imag(p)
+        jac = qml.jacobian(self.kraus_fn_real)(p) + 1j * qml.jacobian(self.kraus_fn_imag)(p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
     @pytest.mark.torch
@@ -528,15 +508,9 @@ class TestDepolarizingChannel:
         import torch
 
         p = torch.tensor(0.43, requires_grad=True)
-        fn_real = lambda x: qml.math.real(
-            qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
-        )
-        fn_imag = lambda x: qml.math.imag(
-            qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
-        )
-        jac_real = torch.autograd.functional.jacobian(fn_real, p).detach().numpy()
-        jac_imag = torch.autograd.functional.jacobian(fn_imag, p).detach().numpy()
-        assert qml.math.allclose(jac_real + 1j * jac_imag, self.expected_jac_fn(p.detach().numpy()))
+        jacobian = torch.autograd.functional.jacobian
+        jac = jacobian(self.kraus_fn_real, p) + 1j * jacobian(self.kraus_fn_imag, p)
+        assert qml.math.allclose(jac, self.expected_jac_fn(p.detach().numpy()))
 
     @pytest.mark.tf
     def test_kraus_jac_tf(self):
@@ -544,7 +518,7 @@ class TestDepolarizingChannel:
 
         p = tf.Variable(0.43)
         with tf.GradientTape() as tape:
-            out = qml.math.stack(channel.DepolarizingChannel(p, wires=0).kraus_matrices())
+            out = self.kraus_fn(p)
         jac = tape.jacobian(out, p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
@@ -555,9 +529,7 @@ class TestDepolarizingChannel:
         jax.config.update("jax_enable_x64", True)
 
         p = jax.numpy.array(0.43, dtype=jax.numpy.complex128)
-        fn = lambda x: qml.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices())
-        jac_fn = jax.jacobian(fn, holomorphic=True)
-        jac = jac_fn(p)
+        jac = jax.jacobian(self.kraus_fn, holomorphic=True)(p)
         assert qml.math.allclose(jac, self.expected_jac_fn(p))
 
 
@@ -647,14 +619,16 @@ class TestResetError:
         ],
     )
 
+    kraus_fn = lambda self, p0, p1: qml.math.stack(
+        channel.ResetError(p0, p1, wires=0).kraus_matrices()
+    )
+
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p0 = pnp.array(0.43, requires_grad=True)
         p1 = pnp.array(0.12, requires_grad=True)
 
-        fn = lambda p0, p1: qml.math.stack(channel.ResetError(p0, p1, wires=0).kraus_matrices())
-        jac_fn = qml.jacobian(fn)
-        jac = jac_fn(p0, p1)
+        jac = qml.jacobian(self.kraus_fn)(p0, p1)
         assert qml.math.allclose(jac, self.expected_jac_fn(p0, p1))
 
     @pytest.mark.torch
@@ -663,8 +637,7 @@ class TestResetError:
 
         p0 = torch.tensor(0.43, requires_grad=True)
         p1 = torch.tensor(0.12, requires_grad=True)
-        fn = lambda p0, p1: qml.math.stack(channel.ResetError(p0, p1, wires=0).kraus_matrices())
-        jac = torch.autograd.functional.jacobian(fn, (p0, p1))
+        jac = torch.autograd.functional.jacobian(self.kraus_fn, (p0, p1))
         exp_jac = self.expected_jac_fn(p0.detach().numpy(), p1.detach().numpy())
         assert len(jac) == len(exp_jac) == 2
         for j, exp_j in zip(jac, exp_jac):
@@ -677,7 +650,7 @@ class TestResetError:
         p0 = tf.Variable(0.43)
         p1 = tf.Variable(0.12)
         with tf.GradientTape() as tape:
-            out = qml.math.stack(channel.ResetError(p0, p1, wires=0).kraus_matrices())
+            out = self.kraus_fn(p0, p1)
         jac = tape.jacobian(out, (p0, p1))
         assert qml.math.allclose(jac, self.expected_jac_fn(p0, p1))
 
@@ -687,9 +660,7 @@ class TestResetError:
 
         p0 = jax.numpy.array(0.43)
         p1 = jax.numpy.array(0.12)
-        fn = lambda p0, p1: qml.math.stack(channel.ResetError(p0, p1, wires=0).kraus_matrices())
-        jac_fn = jax.jacobian(fn, argnums=[0, 1])
-        jac = jac_fn(p0, p1)
+        jac = jax.jacobian(self.kraus_fn, argnums=[0, 1])(p0, p1)
         assert qml.math.allclose(jac, self.expected_jac_fn(p0, p1))
 
 
