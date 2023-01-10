@@ -274,9 +274,8 @@ class Prod(CompositeOp):
         if self.batch_size is None:
             full_mat = reduce(math.kron, mats)
         else:
-            mats = qml.math.array(mats)
             full_mat = qml.math.stack(
-                [reduce(math.kron, mats[:, i]) for i in range(self.batch_size)]
+                [reduce(math.kron, [m[i] for m in mats]) for i in range(self.batch_size)]
             )
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
