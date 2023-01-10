@@ -73,6 +73,12 @@ class ExecutionConfig:
                 f"gradient_method must be in {SUPPORTED_GRADIENT_METHODS}, got {self.gradient_method} instead."
             )
 
+        if self.device_options is None:
+            self.device_options = {}
+
+        if self.gradient_keyword_arguments is None:
+            self.gradient_keyword_arguments = {}
+
         if any(arg not in SUPPORTED_GRADIENT_KWARGS for arg in self.gradient_keyword_arguments):
             raise ValueError(
                 f"All gradient_keyword_arguments keys must be in {SUPPORTED_GRADIENT_KWARGS}, got unexpected values: {set(self.gradient_keyword_arguments) - set(SUPPORTED_GRADIENT_KWARGS)}"

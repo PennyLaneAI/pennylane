@@ -30,7 +30,7 @@ class TestExecutionConfig:
         assert config.device_options == {}
         assert config.framework == "jax"
         assert config.gradient_method is None
-        assert config.hyperparameters == {}
+        assert config.gradient_keyword_arguments == {}
         assert config.shots is None
 
     def test_invalid_framework(self):
