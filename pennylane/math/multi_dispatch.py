@@ -16,10 +16,10 @@
 import functools
 from collections.abc import Sequence
 
-from autograd.numpy.numpy_boxes import ArrayBox
 import autoray as ar
-from autoray import numpy as np
 import numpy as onp
+from autograd.numpy.numpy_boxes import ArrayBox
+from autoray import numpy as np
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
@@ -291,6 +291,17 @@ def diag(values, k=0, like=None):
         values = np.stack(np.coerce(values, like=like), like=like)
 
     return np.diag(values, k=k, like=like)
+
+
+@multi_dispatch(argnum=[0, 1])
+def matmul(tensor1, tensor2, like=None):
+    """Returns the matrix product of two tensors."""
+    if like == "torch":
+        if get_interface(tensor1) != "torch":
+            tensor1 = ar.numpy.asarray(tensor1, like="torch")
+        if get_interface(tensor2) != "torch":
+            tensor2 = ar.numpy.asarray(tensor2, like="torch")
+    return ar.numpy.matmul(tensor1, tensor2, like=like)
 
 
 @multi_dispatch(argnum=[0, 1])
