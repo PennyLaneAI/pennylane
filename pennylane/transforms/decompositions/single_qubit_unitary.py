@@ -112,3 +112,62 @@ def zyz_decomposition(U, wire):
     phis, thetas, omegas = map(math.squeeze, [phis, thetas, omegas])
 
     return [qml.Rot(phis, thetas, omegas, wires=wire)]
+
+def xyx_decomposition(U, wire):
+    r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms
+    of elementary operations, as a product of X and Y rotations in the form
+    :math:`e^{i\gamma} RX(\phi) RY(\theta) RX(\lambda)`.
+
+    Args:
+        U (tensor): A 2 x 2 unitary matrix.
+        wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
+
+    Returns:
+        list[qml.Operation]: Returns a list of 4 gates, an ``Identity`` times 
+        the global phase, then an ``RX``, an ``RY``and another ``RX`` gate,
+        which when applied in the order of appearance in the list is equivalent
+        to the unitary :math:`U`.
+
+    **Example**
+
+    >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
+                      [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
+    >>> decomp = xyx_decomposition(U, 0)
+    >>> decomp
+    [(0.38469215969008697-0.9230449297152207j)*(Identity(wires=[0])),
+        RX(-2.689126816797089, wires=[0]), 
+        RY(-1.3974974117211323, wires=[0]),
+        RX(1.4205734045584246, wires=[0])]
+    """
+    
+    # Small number to add to denominators to avoid division by zero
+    EPS = 1e-64
+    
+    # Calculate the average phase of U[0, 0] and U[1, 1]. Use it to change 
+    # the global phase of U such that U[0, 0] and U[1, 1] have the same 
+    # phase but with opposite signs. Store this form with the name "U2".
+    angle_U00 = math.arctan2(math.imag(U[0, 0]),
+                             math.real(U[0, 0]) + EPS)
+    angle_U11 = math.arctan2(math.imag(U[1, 1]),
+                             math.real(U[1, 1]) + EPS)
+    global_phase = (angle_U00 + angle_U11)/2
+    U2 = math.exp(-1j*global_phase) * U
+    
+    # Compute \phi, \theta and \lambda after analytically solving for them from
+    # U2 = expm(1j*\phi*PauliX) expm(1j*\theta*PauliY) expm(1j*\lambda*PauliX)
+    lam_plus_phi  = math.arctan2(math.imag(U2[0, 1]),
+                                 math.real(U2[0, 0]) + EPS);
+    lam_minus_phi = math.arctan2(math.imag(U2[0, 0]),
+                                 math.real(U2[0, 1]) + EPS);
+    lam = (lam_plus_phi + lam_minus_phi)/2;
+    phi = (lam_plus_phi - lam_minus_phi)/2;
+    theta = math.arcsin(math.real(U2[0, 1]) / math.cos(lam_minus_phi));
+
+    # Note: angles above are changed to half angles with opposite sign
+    # to be consistent with how Pauli rotations are implemented in Pennylane
+    return [qml.s_prod(math.exp(1j*global_phase),
+                             qml.Identity(wire)),
+                    qml.RX(-2*phi, wire),
+                    qml.RY(-2*theta, wire),
+                    qml.RX(-2*lam, wire)]
+    
