@@ -54,10 +54,9 @@ def _rademacher_sampler(indices, num_params, *args, seed=None):
         by ``indices``, each entry sampled independently from the Rademacher distribution.
     """
     # pylint: disable=unused-argument
-    if seed is not None:
-        np.random.seed(seed)
+    rng = np.random.default_rng(seed)
     direction = np.zeros(num_params)
-    direction[indices] = np.random.choice([-1, 1], size=len(indices))
+    direction[indices] = rng.choice([-1, 1], size=len(indices))
     return direction
 
 
