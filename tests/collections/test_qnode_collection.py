@@ -227,7 +227,6 @@ class TestEvalation:
         assert np.all(res == expected)
 
     @pytest.mark.autograd
-    # pylint: disable=unused-argument
     def test_grad_autograd(self, parallel):
         """Test correct gradient of the QNodeCollection using
         the Autograd interface"""
@@ -235,7 +234,7 @@ class TestEvalation:
 
         params = np.array([0.5643, -0.45], requires_grad=True)
         qc = qml.QNodeCollection([qnode1, qnode2])
-        cost_qc = lambda params: np.sum(qc(params))
+        cost_qc = lambda params: np.sum(qc(params, parallel=parallel))
         grad_qc = qml.grad(cost_qc)
 
         cost_expected = lambda params: np.sum(qnode1(params) + qnode2(params))
