@@ -80,10 +80,10 @@ class TestRademacherSampler:
     )
     @pytest.mark.parametrize("N", [10, 10000])
     def test_mean_and_var(self, ids, num, N):
-        rng = np.random.default_rng(42)
+        np.random.seed(42)
         ids_mask = np.zeros(num, dtype=bool)
         ids_mask[ids] = True
-        outputs = [_rademacher_sampler(ids, num, seed=rng) for _ in range(N)]
+        outputs = [_rademacher_sampler(ids, num) for _ in range(N)]
         # Test that the mean of non-zero entries is approximately right
         assert np.allclose(np.mean(outputs, axis=0)[ids_mask], 0, atol=4 / np.sqrt(N))
         # Test that the variance of non-zero entries is approximately right
