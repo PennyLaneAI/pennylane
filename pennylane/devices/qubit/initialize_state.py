@@ -20,6 +20,10 @@ from pennylane import numpy as np
 from pennylane.interfaces import INTERFACE_MAP
 from pennylane.operation import Operator
 
+INTERFACE_MAP = INTERFACE_MAP.copy()
+del INTERFACE_MAP[None]
+del INTERFACE_MAP["auto"]
+
 
 def _get_padded_wire_order(num_wires, operations):
     """
@@ -79,12 +83,12 @@ def initialize_state(
     if framework == "tf":
         framework = "tensorflow"
 
-    shape = (2,) * num_wires
-    state = qml.math.zeros(shape, dtype="complex128", like=framework)
+    state = np.zeros(2**num_wires, dtype="complex128")
+    state[0] = 1
 
     if prep_operations:
         wire_order = _get_padded_wire_order(num_wires, prep_operations)
         for op in prep_operations:
-            state = qml.math.matmul(op.matrix(wire_order=wire_order), state, like=framework)
+            state = qml.math.matmul(op.matrix(wire_order=wire_order), state)
 
-    return qml.math.array(state, like=framework)
+    return qml.math.reshape(qml.math.array(state, like=framework), (2,) * num_wires)

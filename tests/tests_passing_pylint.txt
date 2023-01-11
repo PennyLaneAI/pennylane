@@ -1,2 +1,2 @@
-tests/data/test_dataset.py
-tests/data/test_dataset_access.py
+tests/data/**
+tests/devices/qubit/**
