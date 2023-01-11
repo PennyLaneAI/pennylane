@@ -58,9 +58,10 @@ from .composite import CompositeOp
 from .controlled import Controlled, ControlledOp, ctrl
 from .dot import dot
 from .exp import Evolution, Exp, exp
+from .parametrized_evolution import ParametrizedEvolution
+from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .pow import Pow, pow
 from .prod import Prod, prod
 from .sprod import SProd, s_prod
 from .sum import Sum, op_sum
 from .symbolicop import SymbolicOp
-from .parametrized_hamiltonian import ParametrizedHamiltonian
