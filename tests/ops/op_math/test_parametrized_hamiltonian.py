@@ -32,31 +32,24 @@ class TestInitialization:
         ):
             ParametrizedHamiltonian(coeffs, obs)
 
-    def test_obs_is_not_observable_raises_error(self):
-        """Test that an error is raised if any of the observables are not Observables"""
-        coeffs = [1, 2, f1]
-        obs = [qml.PauliX(0), qml.PauliY(1), qml.CNOT([0, 1])]
-        with pytest.raises(ValueError, match="Some or all observables are not valid."):
-            ParametrizedHamiltonian(coeffs, obs)
-
     def test_H_fixed_lists(self):
         """Test that attributes H_fixed_ops and H_fixed_coeffs are as expected"""
-        assert test_example.H_fixed_coeffs == [1, 2]
+        assert test_example.H_coeffs_fixed == [1, 2]
         assert np.all(
             [
                 qml.equal(op1, op2)
-                for op1, op2 in zip(test_example.H_fixed_ops, [qml.PauliX(0), qml.PauliY(1)])
+                for op1, op2 in zip(test_example.H_ops_fixed, [qml.PauliX(0), qml.PauliY(1)])
             ]
         )
 
     def test_H_parametrized_lists(self):
         """Test that attributes H_parametrized_ops and H_parametrized_coeffs are as expected"""
-        assert test_example.H_parametrized_fns == [f1, f2]
+        assert test_example.H_coeffs_parametrized == [f1, f2]
         assert np.all(
             [
                 qml.equal(op1, op2)
                 for op1, op2 in zip(
-                    test_example.H_parametrized_ops, [qml.PauliZ(2), qml.Hadamard(3)]
+                    test_example.H_ops_parametrized, [qml.PauliZ(2), qml.Hadamard(3)]
                 )
             ]
         )
@@ -150,7 +143,7 @@ class TestInteractionWithOperators:
         function and an Observable"""
         pH = f1 * qml.PauliX(0)
         assert isinstance(pH, ParametrizedHamiltonian)
-        assert len(pH.H_fixed_coeffs) == 0
+        assert len(pH.H_coeffs_fixed) == 0
         assert isinstance(pH.H_parametrized(param, 0.5), qml.ops.SProd)
 
 

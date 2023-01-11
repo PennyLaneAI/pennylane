@@ -1301,6 +1301,8 @@ class Operator(abc.ABC):
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
+        if callable(other):
+            return qml.ops.ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
         try:
             return qml.s_prod(scalar=other, operator=self)
         except ValueError as e:
@@ -1783,8 +1785,6 @@ class Observable(Operator):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
             return qml.Hamiltonian([a], [self], simplify=True)
-        if callable(a):
-            return qml.ops.ParametrizedHamiltonian([a], [self])  # pylint: disable=no-member
         try:
             return super().__mul__(other=a)
         except ValueError as e:

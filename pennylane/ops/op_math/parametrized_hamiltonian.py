@@ -61,27 +61,21 @@ class ParametrizedHamiltonian:
                 "number of coefficients and operators does not match."
             )
 
-        for obs in observables:
-            if not isinstance(obs, Observable):
-                raise ValueError(
-                    "Could not create Hamiltonian. Some or all observables are not valid."
-                )
-
         self._ops = list(observables)
         self._coeffs = coeffs
 
-        self.H_fixed_coeffs = []
-        self.H_fixed_ops = []
-        self.H_parametrized_fns = []
-        self.H_parametrized_ops = []
+        self.H_coeffs_fixed = []
+        self.H_coeffs_parametrized = []
+        self.H_ops_fixed = []
+        self.H_ops_parametrized = []
 
         for coeff, obs in zip(coeffs, observables):
             if callable(coeff):
-                self.H_parametrized_fns.append(coeff)
-                self.H_parametrized_ops.append(obs)
+                self.H_coeffs_parametrized.append(coeff)
+                self.H_ops_parametrized.append(obs)
             else:
-                self.H_fixed_coeffs.append(coeff)
-                self.H_fixed_ops.append(obs)
+                self.H_coeffs_fixed.append(coeff)
+                self.H_ops_fixed.append(obs)
 
     def __call__(self, params, t):
         return self.H_fixed + self.H_parametrized(params, t)
@@ -106,7 +100,7 @@ class ParametrizedHamiltonian:
     ):
         """The fixed term(s) of the ParametrizedHamiltonian. Returns a qml.Sum operator of qml.SProd operators
         (or a single qml.SProd operator in the event that there is only one term in H_drift)."""
-        return self._get_terms(self.H_fixed_coeffs, self.H_fixed_ops)
+        return self._get_terms(self.H_coeffs_fixed, self.H_ops_fixed)
 
     @property
     def H_parametrized(self):
@@ -116,8 +110,8 @@ class ParametrizedHamiltonian:
         operator in the event that there is only one term in H_ts)."""
 
         def snapshot(params, t):
-            coeffs = [f(params, t) for f in self.H_parametrized_fns]
-            return self._get_terms(coeffs, self.H_parametrized_ops)
+            coeffs = [f(params, t) for f in self.H_coeffs_parametrized]
+            return self._get_terms(coeffs, self.H_ops_parametrized)
 
         return snapshot
 
