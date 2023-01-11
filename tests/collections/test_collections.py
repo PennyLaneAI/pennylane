@@ -411,8 +411,8 @@ class TestSum:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qnodes = [qml.QNode(circuit, dev) for i in range(4)]
-        qc = qml.QNodeCollection(qnodes)
+        qnode_list = [qml.QNode(circuit, dev) for i in range(4)]
+        qc = qml.QNodeCollection(qnode_list)
         with pytest.raises(ValueError, match="Unknown interface invalid"):
             qml.sum(qc)
 
@@ -492,6 +492,7 @@ class TestDot:
         qc = qml.QNodeCollection([qnode1, qnode2])
         coeffs = [0.5, -0.1]
 
+        # pylint: disable=unexpected-keyword-arg,no-value-for-parameter
         coeffs = tf.cast(coeffs, dtype=tf.float64)
 
         # test the dot product of tensor, qnodes
@@ -753,7 +754,7 @@ class TestDot:
         with pytest.raises(ValueError, match="Unknown interface invalid"):
             qml.dot([1, 2], qc)
 
-    def test_mismatching_interface(self, monkeypatch):
+    def test_mismatching_interface(self):
         """Test exception raised if the interfaces don't match"""
         dev = qml.device("default.qubit", wires=1)
 
