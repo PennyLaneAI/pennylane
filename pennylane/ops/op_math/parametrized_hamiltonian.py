@@ -4,7 +4,7 @@ This submodule contains the ParametrizedHamiltonian class
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
-
+from pennylane.wires import Wires
 
 # pylint: disable= too-many-instance-attributes
 class ParametrizedHamiltonian:
@@ -61,6 +61,11 @@ class ParametrizedHamiltonian:
                 "number of coefficients and operators does not match."
             )
 
+        # ToDo: assuming this is how we want to do things, make this clear in the documentation
+        # since organizing into H_fixed and H_parametrized potentially moves around the order of the terms compared
+        # to how the terms were entered, sorting seems the least ambiguous organization for the wires
+        self.wires = Wires.all_wires([op.wires for op in observables], sort=True)
+
         self._ops = list(observables)
         self._coeffs = coeffs
 
@@ -77,8 +82,14 @@ class ParametrizedHamiltonian:
                 self.H_coeffs_fixed.append(coeff)
                 self.H_ops_fixed.append(obs)
 
-    def __call__(self, params, t):
-        return self.H_fixed() + self.H_parametrized(params, t)
+    def __call__(self, params, t, wires=None):
+        H = self.H_fixed() + self.H_parametrized(params, t)
+
+        if wires:
+            wire_map = dict(zip(self.wires, wires))
+            H = qml.map_wires(H, wire_map)  # ToDo: is this the behaviour we want?
+
+        return H
 
     def __repr__(self):
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
