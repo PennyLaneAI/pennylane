@@ -20,15 +20,11 @@ This file contains the ``Evolve`` pulse gate.
 from functools import partial
 
 from pennylane.operation import Operator
-from pennylane.ops.op_math import Evolution
+from pennylane.ops.op_math import Evolution, ParametrizedHamiltonian
 from pennylane.ops.pulse import ParametrizedEvolution
 
 
-class ParametrizedHamiltonian:
-    """Dummy class"""
-
-
-def evolve(op: Operator, time: str = "t", dt: float = None):
+def evolve(op: Operator, dt: float = 1e-1):
     """Returns a new operator to compute the evolution of the given operator.
 
     Args:
@@ -37,12 +33,12 @@ def evolve(op: Operator, time: str = "t", dt: float = None):
             This argument is just used when ``op`` is an instance of the
             :class:`ParametrizedHamiltonian` class. Defaults to "t".
         dt (float, optional): the time step used by the differential equation solve to evolve
-            the time-dependent Hamiltonian. If ``None`` the value XXX is used. Defaults to None.
+            the time-dependent Hamiltonian. Defaults to XXX.
 
     Returns:
         Evolution | ParametrizedEvolution: evolution operator
     """
     if isinstance(op, ParametrizedHamiltonian):
-        return partial(ParametrizedEvolution, base=op, time=time, dt=dt)
+        return partial(ParametrizedEvolution, H=op, dt=dt)
 
     return Evolution(generator=op, param=1)

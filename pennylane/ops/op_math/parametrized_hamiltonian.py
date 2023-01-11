@@ -1,9 +1,13 @@
 """
 This submodule contains the ParametrizedHamiltonian class
 """
+import inspect
+from typing import List
+
 import pennylane as qml
 from pennylane.operation import Observable
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.wires import Wires
 
 
 # pylint: disable= too-many-instance-attributes
@@ -56,11 +60,7 @@ class ParametrizedHamiltonian:
     num_wires = qml.operation.AnyWires
     grad_method = "A"  # supports analytic gradients
 
-    def __init__(
-        self,
-        coeffs,
-        observables,
-    ):
+    def __init__(self, coeffs, observables: List[Observable]):
 
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -74,6 +74,7 @@ class ParametrizedHamiltonian:
                     "Could not create circuits. Some or all observables are not valid."
                 )
 
+        self.wires = Wires.all_wires([op.wires for op in observables])
         self._ops = list(observables)
         self._coeffs = coeffs
 
@@ -82,15 +83,24 @@ class ParametrizedHamiltonian:
         self.H_parametrized_fns = []
         self.H_parametrized_ops = []
 
+        self.num_args = 0
         for coeff, obs in zip(coeffs, observables):
             if callable(coeff):
-                self.H_parametrized_fns.append(coeff)
+                self.num_args += len(inspect.getfullargspec(coeff).args) - 1  # subtract time arg
+                self.H_parametrized_fns.append((coeff, self.num_args))
                 self.H_parametrized_ops.append(obs)
             else:
                 self.H_fixed_coeffs.append(coeff)
                 self.H_fixed_ops.append(obs)
 
     def __call__(self, params, t):
+        if not isinstance(params, list):
+            params = [params for _ in range(self.num_args)]
+        if len(params) != self.num_args:
+            raise ValueError(
+                "The number of parameters and the number of arguments in the functions"
+                "doesn't coincide."
+            )
         return self.H_fixed + self.H_parametrized(params, t)
 
     def __repr__(self):
@@ -123,7 +133,11 @@ class ParametrizedHamiltonian:
         operator in the event that there is only one term in H_ts)."""
 
         def snapshot(params, t):
-            coeffs = [f(params, t) for f in self.H_parametrized_fns]
+            coeffs = []
+            old_idx = 0
+            for f, idx in self.H_parametrized_fns:
+                coeffs.append(f(*params[old_idx:idx], t))
+                old_idx = idx
             return self._get_terms(coeffs, self.H_parametrized_ops)
 
         return snapshot
