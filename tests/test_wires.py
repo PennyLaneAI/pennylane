@@ -103,7 +103,7 @@ class TestWires:
         wires = Wires(iterable)
 
         # check single index
-        for i in range(len(iterable)):
+        for i, _ in enumerate(iterable):
             assert wires[i] == iterable[i]
         # check slicing
         assert wires[:2] == Wires(iterable[:2])
@@ -274,7 +274,7 @@ class TestWires:
 
         # error when labels not in wire_map dictionary
         with pytest.raises(WireError, match="No mapping for wire label"):
-            wires.map({-1: Wires(4)}) == expected
+            assert wires.map({-1: Wires(4)}) == expected
 
         # error for non-unique wire labels
         with pytest.raises(WireError, match="Failed to implement wire map"):
