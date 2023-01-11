@@ -51,7 +51,7 @@ class ParametrizedEvolution(Operation):
     _name = "ParametrizedEvolution"
     num_wires = AnyWires
     # pylint: disable=too-many-arguments, super-init-not-called
-    def __init__(self, H: ParametrizedHamiltonian, params: list, t, dt, do_queue=True, id=None):
+    def __init__(self, H: ParametrizedHamiltonian, params: list, t, dt=0.1, do_queue=True, id=None):
         self.H = H
         self.dt = dt
         self.data = params

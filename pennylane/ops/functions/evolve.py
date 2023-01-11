@@ -23,16 +23,11 @@ from pennylane.operation import Operator
 from pennylane.ops.op_math import Evolution, ParametrizedHamiltonian
 
 
-def evolve(op: Operator, dt: float = 1e-1):
+def evolve(op: Operator):
     """Returns a new operator to compute the evolution of the given operator.
 
     Args:
         op (Operator): operator to evolve
-        time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
-            This argument is just used when ``op`` is an instance of the
-            :class:`ParametrizedHamiltonian` class. Defaults to "t".
-        dt (float, optional): the time step used by the differential equation solve to evolve
-            the time-dependent Hamiltonian. Defaults to XXX.
 
     Returns:
         Evolution | ParametrizedEvolution: evolution operator
@@ -41,5 +36,5 @@ def evolve(op: Operator, dt: float = 1e-1):
         # need this import here to avoid raising an error when jax is not installed
         from pennylane.pulse import ParametrizedEvolution  # pylint: disable=import-outside-toplevel
 
-        return partial(ParametrizedEvolution, H=op, dt=dt)  # pylint: disable=no-member
+        return partial(ParametrizedEvolution, H=op)  # pylint: disable=no-member
     return Evolution(generator=op, param=1)
