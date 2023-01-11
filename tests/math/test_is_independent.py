@@ -115,11 +115,10 @@ class TestIsIndependentAutograd:
         seed = 921
         rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
         assert len(rnd_args) == num
-        np.random.seed(seed)
+        rng = np.random.default_rng(seed)
         for _rnd_args in rnd_args:
             expected = tuple(
-                np.random.random(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0]
-                for arg in args
+                rng.random(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0] for arg in args
             )
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
@@ -244,11 +243,10 @@ class TestIsIndependentJax:
         seed = 921
         rnd_args = _get_random_args(args, self.interface, num, seed, bounds)
         assert len(rnd_args) == num
-        np.random.seed(seed)
+        rng = np.random.default_rng(seed)
         for _rnd_args in rnd_args:
             expected = tuple(
-                np.random.random(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0]
-                for arg in args
+                rng.random(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0] for arg in args
             )
             assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
 
