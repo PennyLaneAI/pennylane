@@ -94,8 +94,6 @@ class ParametrizedHamiltonian:
                 self.H_fixed_ops.append(obs)
 
     def __call__(self, params, t):
-        if not isinstance(params, list):
-            params = [params for _ in range(self.num_args)]
         if len(params) != self.num_args:
             raise ValueError(
                 "The number of parameters and the number of arguments in the functions"
