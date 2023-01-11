@@ -166,8 +166,9 @@
 
 <h3>Bug fixes</h3>
 
-* Pins networkx version <3.0 till a bug with tensorflow-jit, networkx, and qcut is resolved.
+* Handles breaking networkx version change by selectively skipping a qcut tensorflow-jit test,
   [(#3609)](https://github.com/PennyLaneAI/pennylane/pull/3609)
+  [(#3619)](https://github.com/PennyLaneAI/pennylane/pull/3619)
 
 * Fixed the wires for the Y decomposition in the ZX calculus transform.
   [(#3598)](https://github.com/PennyLaneAI/pennylane/pull/3598)
