@@ -36,12 +36,11 @@ class ParametrizedEvolution(Operation):
     Args:
         base (ParametrizedHamiltonian): hamiltonian to evolve
         params (ndarray): trainable parameters
-        t1 (float): starting time
-        t2 (float): end time
-        time (string): The name of the time-based parameter in the parametrized Hamiltonian.
-            Defaults to "t".
+        t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
+            If a list of two floats, it corresponds to the initial time and the final time of the
+            evolution.
         dt (float): the time step used by the differential equation solver to evolve the
-            time-dependent Hamiltonian. If ``None``, the value XXX is used. Defaults to ```None```.
+            time-dependent Hamiltonian. Defaults to XXX.
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
     """

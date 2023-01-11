@@ -14,10 +14,10 @@
 """
 Unit tests for the evolve function
 """
-import pytest
+from typing import Callable
 
 import pennylane as qml
-from pennylane.ops import Evolution
+from pennylane.ops import Evolution, ParametrizedEvolution, ParametrizedHamiltonian
 
 
 class TestEvolve:
@@ -36,3 +36,15 @@ class TestEvolve:
         final_op = qml.evolve(op)
         mat = qml.math.expm(1j * qml.matrix(op))
         assert qml.math.allequal(qml.matrix(final_op), mat)
+
+    def test_evolve_returns_callable(self):
+        """Test that the evolve function returns a callable when the input is a
+        ParametrizedHamiltonian."""
+        coeffs = [1, 2, 3]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        H = ParametrizedHamiltonian(coeffs=coeffs, observables=ops)
+        final_op = qml.evolve(H)
+        assert isinstance(final_op, Callable)
+        param_evolution = final_op(params=[], t=1)
+        assert isinstance(param_evolution, ParametrizedEvolution)
+        assert param_evolution.H is H

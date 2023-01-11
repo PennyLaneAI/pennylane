@@ -17,8 +17,6 @@
 """
 This file contains the ``Evolve`` pulse gate.
 """
-from functools import partial
-
 from pennylane.operation import Operator
 from pennylane.ops.op_math import Evolution, ParametrizedEvolution, ParametrizedHamiltonian
 
@@ -33,5 +31,24 @@ def evolve(op: Operator):
         Evolution | ParametrizedEvolution: evolution operator
     """
     if isinstance(op, ParametrizedHamiltonian):
-        return partial(ParametrizedEvolution, H=op)  # pylint: disable=no-member
+
+        def parametrized_evolution(params: list, t, dt=0.1):
+            """Constructor for the :class:`ParametrizedEvolution` operator.
+
+            Args:
+                params (list): params (ndarray): trainable parameters
+                t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
+                    If a list of two floats, it corresponds to the initial time and the final time of the
+                    evolution.
+                dt (float, optional): the time step used by the differential equation solver to evolve the
+                    time-dependent Hamiltonian. Defaults to XXX.
+
+            Returns:
+                ParametrizedEvolution: class used to compute the parametrized evolution of the given
+                    hamiltonian
+            """
+            return ParametrizedEvolution(H=op, params=params, t=t, dt=dt)
+
+        return parametrized_evolution
+
     return Evolution(generator=op, param=1)
