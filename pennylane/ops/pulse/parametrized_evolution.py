@@ -20,10 +20,12 @@ This file contains the ``ParametrizedEvolution`` operator.
 from jax import numpy as jnp
 from jax.experimental.ode import odeint
 
-from pennylane.ops import SymbolicOp
+import pennylane as qml
+from pennylane.operation import AnyWires, Operation
+from pennylane.ops import ParametrizedHamiltonian
 
 
-class ParametrizedEvolution(SymbolicOp):
+class ParametrizedEvolution(Operation):
     r"""Parametrized evolution gate.
 
     For a time-dependent Hamiltonian of the form
@@ -47,16 +49,21 @@ class ParametrizedEvolution(SymbolicOp):
     """
 
     _name = "ParametrizedEvolution"
-
-    # pylint: disable=too-many-arguments
-    def __init__(
-        self, base, params, t1: float, t2: float, time="t", dt=None, do_queue=True, id=None
-    ):
-        self.time = time
+    num_wires = AnyWires
+    # pylint: disable=too-many-arguments, super-init-not-called
+    def __init__(self, H: ParametrizedHamiltonian, params: list, t, dt, do_queue=True, id=None):
+        self.H = H
         self.dt = dt
-        self.params = params
-        self.t = [t1, t2]
-        super().__init__(base=base, do_queue=do_queue, id=id)
+        self.data = params
+        self.t = [0, t] if qml.math.size(t) == 1 else t
+        self._id = id
+        self._inverse = False
+        if do_queue:
+            self.queue()
+
+    @property
+    def wires(self):
+        return self.H.wires
 
     def matrix(self, wire_order=None):
 
@@ -64,9 +71,9 @@ class ParametrizedEvolution(SymbolicOp):
 
         def fun(y, t, params):
             """dy/dt = -i H(t) y"""
-            return -1j * self.base(params, t, wire_order=wire_order) @ y
+            return -1j * qml.matrix(self.H(params, t)) @ y
 
-        t = jnp.arange(self.t[0], self.t[1], self.dt)
-        result = odeint(fun, y0, t, self.params)
+        t = jnp.arange(self.t[0], self.t[1], self.dt, dtype=float)
+        result = odeint(fun, y0, t, self.data)
 
         return result[-1]
