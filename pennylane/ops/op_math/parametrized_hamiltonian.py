@@ -2,7 +2,7 @@
 This submodule contains the ParametrizedHamiltonian class
 """
 import pennylane as qml
-from pennylane.operation import Observable
+from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
@@ -149,7 +149,7 @@ class ParametrizedHamiltonian:
             ops.append(H.base)
             return ParametrizedHamiltonian(coeffs, ops)
 
-        if isinstance(H, Observable):
+        if isinstance(H, Operator):
             coeffs.append(qml.math.convert_like([1.0], coeffs)[0])
             ops.append(H)
             return ParametrizedHamiltonian(coeffs, ops)

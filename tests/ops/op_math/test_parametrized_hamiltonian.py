@@ -105,22 +105,50 @@ class TestCall:
 class TestInteractionWithOperators:
     """Test that arithmetic operations involving or creating ParametrizedHamiltonians behave as expected"""
 
-    ops = (
-        (qml.Hamiltonian([2], [qml.PauliZ(0)]), qml.s_prod(2, qml.PauliZ(0))),
-        (qml.ops.SProd(2, qml.PauliZ(0)), qml.s_prod(2, qml.PauliZ(0))),
-        (qml.PauliX(2), qml.s_prod(1, qml.PauliX(2))),
-        (qml.PauliX(2) @ qml.PauliX(3), qml.s_prod(1, qml.PauliX(2) @ qml.PauliX(3))),
+    ops_with_coeffs = (
+        (qml.Hamiltonian([2], [qml.PauliZ(0)]), 2),
+        (qml.Hamiltonian([1.7], [qml.PauliZ(0)]), 1.7),
+        (qml.ops.SProd(3, qml.PauliZ(0)), 3),
     )
+    ops = (
+        qml.PauliX(2),
+        qml.PauliX(2) @ qml.PauliX(3),
+        qml.CNOT([0, 1]),
+    )  # ToDo: maybe add more operators to test here?
 
-    @pytest.mark.parametrize("H, res", ops)
-    def test_add_other_operators(self, H, res):
-        """Test that a Hamiltonian, SProd, Tensor or Observable can be added to a
+    @pytest.mark.parametrize("H, coeff", ops_with_coeffs)
+    def test_add_special_operators(self, H, coeff):
+        """Test that a Hamiltonian and SProd can be added to a ParametrizedHamiltonian, and
+        will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed"""
+        pH = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
+
+        # Adding on the right
+        new_pH = pH + H
+        assert pH.H_fixed() == 0
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
+        assert new_pH.H_coeffs_fixed[0] == coeff
+
+        # Adding on the left
+        new_pH = H + pH
+        assert pH.H_fixed() == 0
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
+        assert new_pH.H_coeffs_fixed[0] == coeff
+
+    @pytest.mark.parametrize("op", ops)
+    def test_add_other_operators(self, op):
+        """Test that a Hamiltonian, SProd, Tensor or Operator can be added to a
         ParametrizedHamiltonian, and will be incorporated in the H_fixed term"""
         pH = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
-        new_pH = pH + H
 
+        # Adding on the right
+        new_pH = pH + op
         assert pH.H_fixed() == 0
-        assert qml.equal(new_pH.H_fixed(), res)
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
+
+        # Adding on the left
+        new_pH = op + pH
+        assert pH.H_fixed() == 0
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
 
     def test_adding_two_parametrized_hamiltonians(self):
         """Test that two ParametrizedHamiltonians can be added together and

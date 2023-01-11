@@ -1292,6 +1292,8 @@ class Operator(abc.ABC):
             return qml.op_sum(self, other)
         if other == 0:
             return self
+        if isinstance(other, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
+            return other.__add__(self)
         try:
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         except ValueError as e:

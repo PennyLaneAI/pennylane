@@ -566,7 +566,7 @@ class Hamiltonian(Observable):
         raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
 
     def __add__(self, H):
-        r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable/ParametrizedHamiltonian."""
         ops = self.ops.copy()
         self_coeffs = copy(self.coeffs)
 
@@ -584,6 +584,8 @@ class Hamiltonian(Observable):
             )
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
+        if isinstance(H, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
+            return H.__add__(self)
 
         raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
