@@ -64,10 +64,10 @@ class TestConstruction:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qnodes = [qml.QNode(circuit, dev) for i in range(4)]
-        qc = qml.QNodeCollection(qnodes)
+        qnode_list = [qml.QNode(circuit, dev) for i in range(4)]
+        qc = qml.QNodeCollection(qnode_list)
 
-        assert qc.qnodes == qnodes
+        assert qc.qnodes == qnode_list
         assert len(qc) == 4
 
     @pytest.mark.autograd
@@ -83,8 +83,8 @@ class TestConstruction:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=1)
-        qnodes = [qml.QNode(circuit, dev, interface="autograd") for i in range(4)]
-        qc = qml.QNodeCollection(qnodes)
+        qnode_list = [qml.QNode(circuit, dev, interface="autograd") for i in range(4)]
+        qc = qml.QNodeCollection(qnode_list)
         assert qc.interface == "autograd"
 
     @pytest.mark.torch
@@ -100,8 +100,8 @@ class TestConstruction:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=1)
-        qnodes = [qml.QNode(circuit, dev, interface="torch") for i in range(4)]
-        qc = qml.QNodeCollection(qnodes)
+        qnode_list = [qml.QNode(circuit, dev, interface="torch") for i in range(4)]
+        qc = qml.QNodeCollection(qnode_list)
         assert qc.interface == "torch"
 
     @pytest.mark.tf
@@ -117,8 +117,8 @@ class TestConstruction:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=1)
-        qnodes = [qml.QNode(circuit, dev, interface="tf") for i in range(4)]
-        qc = qml.QNodeCollection(qnodes)
+        qnode_list = [qml.QNode(circuit, dev, interface="tf") for i in range(4)]
+        qc = qml.QNodeCollection(qnode_list)
         assert qc.interface == "tf"
 
     def test_append_qnode(self):
@@ -146,10 +146,10 @@ class TestConstruction:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=1)
-        qnodes = [qml.QNode(circuit, dev) for i in range(4)]
-        qc.extend(qnodes)
+        qnode_list = [qml.QNode(circuit, dev) for i in range(4)]
+        qc.extend(qnode_list)
 
-        assert qc.qnodes == [] + qnodes
+        assert qc.qnodes == [] + qnode_list
 
     def test_extend_multiple_interface_qnodes(self):
         """Test that an error is returned if QNodes with differing
@@ -161,13 +161,13 @@ class TestConstruction:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=1)
-        qnodes = [
+        qnode_list = [
             qml.QNode(circuit, dev, interface="autograd"),
             qml.QNode(circuit, dev, interface=None),
         ]
 
         with pytest.raises(ValueError, match="do not all use the same interface"):
-            qc.extend(qnodes)
+            qc.extend(qnode_list)
 
     def test_extend_interface_mismatch(self):
         """Test that an error is returned if QNodes with a differing
@@ -195,10 +195,10 @@ class TestConstruction:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=1)
-        qnodes = [qml.QNode(circuit, dev) for i in range(4)]
+        qnode_list = [qml.QNode(circuit, dev) for i in range(4)]
 
-        qc = qml.QNodeCollection(qnodes)
-        assert qc[2] == qnodes[2]
+        qc = qml.QNodeCollection(qnode_list)
+        assert qc[2] == qnode_list[2]
 
     def test_sequence(self):
         """Test that the QNodeCollection is a sequence type"""
@@ -227,6 +227,7 @@ class TestEvalation:
         assert np.all(res == expected)
 
     @pytest.mark.autograd
+    # pylint: disable=unused-argument
     def test_grad_autograd(self, parallel):
         """Test correct gradient of the QNodeCollection using
         the Autograd interface"""
