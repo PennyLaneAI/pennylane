@@ -17,9 +17,6 @@
 """
 This file contains the ``ParametrizedEvolution`` operator.
 """
-from jax import numpy as jnp
-from jax.experimental.ode import odeint
-
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import ParametrizedHamiltonian
@@ -65,8 +62,15 @@ class ParametrizedEvolution(Operation):
     def wires(self):
         return self.H.wires
 
+    # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
-
+        try:
+            import jax.numpy as jnp
+            from jax.experimental.ode import odeint
+        except ImportError as e:
+            raise ImportError(
+                "Please install JAX to be able to execute a parametrized evolution."
+            ) from e
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
         def fun(y, t, params):
