@@ -119,8 +119,8 @@ class TestInteractionWithOperators:
         pH = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
         new_pH = pH + H
 
-        assert pH.H_fixed == 0
-        assert qml.equal(new_pH.H_fixed, res)
+        assert pH.H_fixed() == 0
+        assert qml.equal(new_pH.H_fixed(), res)
 
     def test_adding_two_parametrized_hamiltonians(self):
         """Test that two ParametrizedHamiltonians can be added together and
@@ -130,8 +130,8 @@ class TestInteractionWithOperators:
 
         # H_fixed now contains the fixed terms from both pH1 and pH2
         new_pH = pH1 + pH2
-        assert qml.equal(new_pH.H_fixed[0], pH1.H_fixed)
-        assert qml.equal(new_pH.H_fixed[1], pH2.H_fixed)
+        assert qml.equal(new_pH.H_fixed()[0], pH1.H_fixed())
+        assert qml.equal(new_pH.H_fixed()[1], pH2.H_fixed())
 
         # H_parametrized now contained the parametrized terms from both pH1 and pH2
         parametric_term = new_pH.H_parametrized([1.2, 2.3], 0.5)
@@ -201,7 +201,7 @@ class TestProperties:
 
     def test_H_fixed(self):
         """Test that H_fixed is an Operator of the expected form"""
-        H_fixed = test_example.H_fixed
+        H_fixed = test_example.H_fixed()
         op = qml.op_sum(qml.s_prod(1, qml.PauliX(0)), qml.s_prod(2, qml.PauliY(1)))
         assert qml.equal(H_fixed, op)
 

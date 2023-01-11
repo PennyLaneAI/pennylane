@@ -78,7 +78,7 @@ class ParametrizedHamiltonian:
                 self.H_ops_fixed.append(obs)
 
     def __call__(self, params, t):
-        return self.H_fixed + self.H_parametrized(params, t)
+        return self.H_fixed() + self.H_parametrized(params, t)
 
     def __repr__(self):
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
@@ -94,7 +94,6 @@ class ParametrizedHamiltonian:
             return terms_list[0]
         return qml.op_sum(*terms_list)
 
-    @property
     def H_fixed(
         self,
     ):
