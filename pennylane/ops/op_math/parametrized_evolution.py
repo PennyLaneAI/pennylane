@@ -19,7 +19,8 @@ This file contains the ``ParametrizedEvolution`` operator.
 """
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops import ParametrizedHamiltonian
+
+from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
 class ParametrizedEvolution(Operation):

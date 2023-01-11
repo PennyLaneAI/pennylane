@@ -20,7 +20,7 @@ This file contains the ``Evolve`` pulse gate.
 from functools import partial
 
 from pennylane.operation import Operator
-from pennylane.ops.op_math import Evolution, ParametrizedHamiltonian
+from pennylane.ops.op_math import Evolution, ParametrizedEvolution, ParametrizedHamiltonian
 
 
 def evolve(op: Operator):
@@ -33,8 +33,5 @@ def evolve(op: Operator):
         Evolution | ParametrizedEvolution: evolution operator
     """
     if isinstance(op, ParametrizedHamiltonian):
-        # need this import here to avoid raising an error when jax is not installed
-        from pennylane.pulse import ParametrizedEvolution  # pylint: disable=import-outside-toplevel
-
         return partial(ParametrizedEvolution, H=op)  # pylint: disable=no-member
     return Evolution(generator=op, param=1)
