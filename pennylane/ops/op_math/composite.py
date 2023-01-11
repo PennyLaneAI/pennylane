@@ -65,9 +65,9 @@ class CompositeOp(Operator):
         if do_queue:
             self.queue()
 
-        self._check_batch_sizes()
+        self._set_batch_size()
 
-    def _check_batch_sizes(self):
+    def _set_batch_size(self):
         batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
         if len(batch_sizes) > 1:
             raise ValueError(
