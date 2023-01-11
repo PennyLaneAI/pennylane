@@ -160,13 +160,22 @@
   from the queue instead of updating their metadata to have an `"owner"`.
   [(#3282)](https://github.com/PennyLaneAI/pennylane/pull/3282)
 
+* `qchem.scf`, `RandomLayers.compute_decomposition`, and `Wires.select_random` all use
+  local random number generators now instead of global random number generators. This may lead to slighlty
+  different random numbers, and an independence of the results from the global random number generation state.
+  Please provide a seed to each individual function instead if you want controllable results.
+  [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
 
-* Handles breaking networkx version change by selectively skipping a qcut tensorflow-jit test,
+* Uses a local random number generator where possible to avoid mutating the global random state.
+  [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
+
+* Handles breaking networkx version change by selectively skipping a qcut tensorflow-jit test.
   [(#3609)](https://github.com/PennyLaneAI/pennylane/pull/3609)
   [(#3619)](https://github.com/PennyLaneAI/pennylane/pull/3619)
 
