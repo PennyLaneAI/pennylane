@@ -139,5 +139,5 @@ __all__ = [
     "add",
     "iscomplex",
     "expand_matrix",
-    "odeint"
+    "odeint",
 ]
