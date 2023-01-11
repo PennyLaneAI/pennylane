@@ -44,7 +44,9 @@ class TestEvolve:
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         H = ParametrizedHamiltonian(coeffs=coeffs, observables=ops)
         final_op = qml.evolve(H)
-        assert isinstance(final_op, Callable)
+        assert isinstance(
+            final_op, Callable  # pylint: disable=isinstance-second-argument-not-valid-type
+        )
         param_evolution = final_op(params=[], t=1)
         assert isinstance(param_evolution, ParametrizedEvolution)
         assert param_evolution.H is H
