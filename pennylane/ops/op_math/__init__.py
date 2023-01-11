@@ -63,3 +63,4 @@ from .prod import Prod, prod
 from .sprod import SProd, s_prod
 from .sum import Sum, op_sum
 from .symbolicop import SymbolicOp
+from .parametrized_hamiltonian import ParametrizedHamiltonian
