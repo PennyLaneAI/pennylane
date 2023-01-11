@@ -21,6 +21,7 @@ from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
+# pylint: disable=redefined-outer-name
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
