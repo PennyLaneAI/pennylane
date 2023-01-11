@@ -99,7 +99,6 @@ import functools
 import itertools
 import numbers
 import warnings
-import inspect
 from enum import IntEnum
 from typing import List
 
@@ -1786,7 +1785,7 @@ class Observable(Operator):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
             return qml.Hamiltonian([a], [self], simplify=True)
-        if inspect.isfunction(a):
+        if callable(a):
             return qml.ops.ParametrizedHamiltonian([a], [self])  # pylint: disable=no-member
         try:
             return super().__mul__(other=a)
