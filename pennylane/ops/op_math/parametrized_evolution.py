@@ -17,10 +17,18 @@
 """
 This file contains the ``ParametrizedEvolution`` operator.
 """
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+
+has_jax = True
+try:
+    import jax.numpy as jnp
+    from jax.experimental.ode import odeint
+except ImportError as e:
+    has_jax = False
 
 
 class ParametrizedEvolution(Operation):
@@ -64,13 +72,11 @@ class ParametrizedEvolution(Operation):
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
-        try:
-            import jax.numpy as jnp
-            from jax.experimental.ode import odeint
-        except ImportError as e:
+        if not has_jax:  # pragma: no cover
             raise ImportError(
-                "Please install JAX to be able to execute a parametrized evolution."
-            ) from e
+                "Module jax is required for ``ParametrizedEvolution`` class. "
+                "You can install jax via: pip install jax"
+            )
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
         def fun(y, t, params):
