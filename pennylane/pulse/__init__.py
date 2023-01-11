@@ -18,4 +18,9 @@
 This module contains all the classes and functions needed to execute pulse-based programs.
 """
 
+try:
+    import jax
+except ImportError as e:
+    raise ImportError("The pulse module requires the JAX library to be installed.") from e
+
 from .parametrized_evolution import ParametrizedEvolution
