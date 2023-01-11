@@ -1003,6 +1003,7 @@ class TestSpsaGradientDifferentiation:
 
         dev = qml.device("default.qubit.torch", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
+        np.random.seed(42)
 
         def cost_fn(params):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1012,9 +1013,7 @@ class TestSpsaGradientDifferentiation:
                 qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            tapes, fn = spsa_grad(
-                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_seed=42
-            )
+            tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
             if sampler == coordinate_sampler:
                 jac = tuple(2 * _jac for _jac in jac)
