@@ -8,18 +8,18 @@ PLUGIN_TESTRUNNER := -m pytest pennylane/devices/tests --tb=native --no-flaky-re
 .PHONY: help
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
-	@echo "  install            		to install PennyLane"
-	@echo "  wheel              		to build the PennyLane wheel"
-	@echo "  dist               		to package the source distribution"
-	@echo "  clean              		to delete all temporary, cache, and build files"
-	@echo "  docs               		to build the PennyLane documentation"
-	@echo "  clean-docs         		to delete all built documentation"
-	@echo "  test               		to run the test suite"
-	@echo "  coverage           		to generate a coverage report"
-	@echo "  format [check=1]   		to apply black formatter; use with 'check=1' to check instead of modify (requires black)"
-	@echo "  lint               		to run pylint on source files"
-	@echo "  lint-test file=<file>	to run pylint on test files"
-	@echo "  lint-tests          		to run pylint on test files"
+	@echo "	install					to install PennyLane"
+	@echo "	wheel					to build the PennyLane wheel"
+	@echo "	dist					to package the source distribution"
+	@echo "	clean					to delete all temporary, cache, and build files"
+	@echo "	docs					to build the PennyLane documentation"
+	@echo "	clean-docs				to delete all built documentation"
+	@echo "	test					to run the test suite"
+	@echo "	coverage				to generate a coverage report"
+	@echo "	format [check=1]		to apply black formatter; use with 'check=1' to check instead of modify (requires black)"
+	@echo "	lint					to run pylint on source files"
+	@echo "	lint-test file=<file>	to run pylint on test files"
+	@echo "	lint-tests				to run pylint on test files"
 
 .PHONY: install
 install:
