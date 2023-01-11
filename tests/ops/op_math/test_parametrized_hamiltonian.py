@@ -126,7 +126,7 @@ class TestInteractionWithOperators:
         pH = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
         new_pH = pH + H
 
-        assert pH.H_fixed is None
+        assert pH.H_fixed == 0
         assert qml.equal(new_pH.H_fixed, res)
 
     def test_adding_two_parametrized_hamiltonians(self):
@@ -162,7 +162,7 @@ class TestMiscMethods:
         """Test that _get_terms can handle being passed
         an empty list, and returns None"""
         op = ParametrizedHamiltonian._get_terms([], [])
-        assert op is None
+        assert op == 0
 
     # pylint: disable=protected-access
     def test_get_terms_for_single_term_operator(self):

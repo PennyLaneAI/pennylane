@@ -1292,8 +1292,6 @@ class Operator(abc.ABC):
             return qml.op_sum(self, other)
         if other == 0:
             return self
-        if other is None:
-            return self
         try:
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         except ValueError as e:

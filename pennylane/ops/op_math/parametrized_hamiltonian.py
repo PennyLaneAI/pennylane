@@ -102,7 +102,7 @@ class ParametrizedHamiltonian:
         (or a single qml.SProd operator in the event that there is only one term)."""
         terms_list = [qml.s_prod(coeff, ob) for coeff, ob in zip(coeffs, obs)]
         if len(terms_list) == 0:
-            return None
+            return 0
         if len(terms_list) == 1:
             return terms_list[0]
         return qml.op_sum(*terms_list)
