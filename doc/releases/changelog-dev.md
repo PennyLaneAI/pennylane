@@ -121,6 +121,9 @@
 * Support `qml.math.size` with torch tensors.
   [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
+* Added `devices.qubit.initialize_state()` to generate an initial state-vector given a list of prep operations.
+  [(#3626)](https://github.com/PennyLaneAI/pennylane/pull/3626)
+
 <h3>Improvements</h3>
 
 * Most channels in are now fully differentiable in all interfaces.
