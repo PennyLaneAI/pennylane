@@ -25,6 +25,7 @@ from pathlib import Path
 import pytest
 from flaky import flaky
 from networkx import MultiDiGraph, number_of_selfloops
+from networkx import __version__ as networkx_version
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -4114,12 +4115,14 @@ class TestCutCircuitTransform:
         spy.assert_not_called()
 
     @pytest.mark.tf
+    @pytest.mark.skipif(networkx_version[0] >= "3", reason="networkx version 3 breaks this test.")
     def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the TF interface and
         using JIT.
         """
+
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
