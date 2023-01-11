@@ -118,6 +118,31 @@ class TestCall:
         assert qml.equal(H_fixed, expected_H_fixed)
         assert qml.equal(H_parametrized, expected_H_parametrized)
 
+    def test_call_with_qutrit_operators(self):
+        def f1(x, t):
+            return x + 2 * t
+
+        coeffs = [f1, 2]
+        obs = [qml.GellMann(wires=0, index=1), qml.GellMann(wires=0, index=2)]
+
+        H = ParametrizedHamiltonian(coeffs, obs)
+
+        assert isinstance(H(2, 4), qml.ops.Sum)
+        assert (
+            H(2, 4).__repr__()
+            == "(2*(GellMann(wires=[0], index=2))) + (10*(GellMann(wires=[0], index=1)))"
+        )
+        assert np.all(
+            qml.matrix(H(2, 4))
+            == np.array(
+                [
+                    [0.0 + 0.0j, 10.0 - 2.0j, 0.0 + 0.0j],
+                    [10.0 + 2.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                ]
+            )
+        )
+
 
 class TestInteractionWithOperators:
     """Test that arithmetic operations involving or creating ParametrizedHamiltonians behave as expected"""
