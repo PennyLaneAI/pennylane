@@ -53,14 +53,7 @@ class ParametrizedHamiltonian:
 
     """
 
-    num_wires = qml.operation.AnyWires
-    grad_method = "A"  # supports analytic gradients
-
-    def __init__(
-        self,
-        coeffs,
-        observables,
-    ):
+    def __init__(self, coeffs, observables):
 
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -164,7 +157,7 @@ class ParametrizedHamiltonian:
             return ParametrizedHamiltonian(coeffs, ops)
 
         if isinstance(H, Observable):
-            coeffs.append(qml.math.cast_like([1.0], coeffs)[0])
+            coeffs.append(qml.math.convert_like([1.0], coeffs)[0])
             ops.append(H)
             return ParametrizedHamiltonian(coeffs, ops)
 
