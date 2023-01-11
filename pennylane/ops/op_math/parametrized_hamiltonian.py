@@ -11,15 +11,15 @@ class ParametrizedHamiltonian:
     r"""Callable object holding the information representing a parametrized Hamiltonian. Passing parameters to
     the ParametrizedHamiltonian returns an Operator representing the Hamiltonian for that set of parameters.
 
-    The Hamiltonian representation as a linear combination of other operators, e.g.,
+    The Hamiltonian can be represented as a linear combination of other operators, e.g.,
     :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j`, where the :math:`v` are trainable parameters,
     and t is time.
 
-    For example, a ParametrizedHamiltonian with a single trainable parameter, :math:`a`, could be :math:`H = 2 * XX + sin(a, t) * YY`
+    For example, a time-dependent ``ParametrizedHamiltonian`` with a single trainable parameter, :math:`a`, could be :math:`H = 2 * X_1 X_2 + sin(a, t) * Y_1 Y_2`
 
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be constants or
-            parametrized functions. All functions passed as coeffs much accept the same parameters as arguments.
+            parametrized functions. All functions passed as ``coeffs`` must accept the same parameters as arguments.
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
 
     A ParametrizedHamiltonian is callable, and passing parameters to the ParametrizedHamiltonian will return an
@@ -28,13 +28,13 @@ class ParametrizedHamiltonian:
     **Example:**
 
     A ParametrizedHamiltonian can be created by passing a list of coefficients (scalars or functions), as well as
-    a list of corresponding observables. The functions must have idential signatures, though they may not all
+    a list of corresponding observables. The functions must have identical signatures, though they may not all
     use all the parameters.
 
     >>> def f1(params, t): return np.sin(params[0]*t)
     >>> def f2(params, t): return params[1] * np.cos(t)
 
-    The fucntions, along with scalar coefficients, can then be used to initialize a ParametrizedHamiltonian,
+    The functions, along with scalar coefficients, can then be used to initialize a ParametrizedHamiltonian,
     which will be split into a fixed and parametrized term. The fixed term is an Operator, while the parametrized
     term must be initialized with concrete parameters to obtain an Operator.
     >>> coeffs = [2, f1, f2]
@@ -71,7 +71,7 @@ class ParametrizedHamiltonian:
         for obs in observables:
             if not isinstance(obs, Observable):
                 raise ValueError(
-                    "Could not create circuits. Some or all observables are not valid."
+                    "Could not create Hamiltonian. Some or all observables are not valid."
                 )
 
         self._ops = list(observables)
