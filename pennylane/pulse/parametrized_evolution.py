@@ -79,5 +79,5 @@ class ParametrizedEvolution(Operation):
 
         t = jnp.arange(self.t[0], self.t[1], self.dt, dtype=float)
         result = odeint(fun, y0, t, self.data)
-
-        return result[-1]
+        mat = result[-1]
+        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
