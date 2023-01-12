@@ -106,12 +106,12 @@ class QuantumDevice(abc.ABC):
         self.tracker = Tracker()
 
     def preprocess(
-        self, qscript: QuantumTape_or_Batch, execution_config=None
+        self, circuits: QuantumTape_or_Batch, execution_config=None
     ) -> Tuple[QuantumTapeBatch, Callable]:
         """Device preprocessing function.
 
         Args:
-            qscript (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
                 before execution on the device
             execution_config (ExecutionConfig): A datastructure describing the parameters needed to fully describe
                 the execution. Includes such information as shots.
@@ -150,15 +150,15 @@ class QuantumDevice(abc.ABC):
             """
             return res
 
-        qscript_batch = [qscript] if isinstance(qscript, QuantumTape) else qscript
-        return qscript_batch, blank_postprocessing_fn
+        circuit_batch = [circuits] if isinstance(circuits, QuantumTape) else circuits
+        return circuit_batch, blank_postprocessing_fn
 
     @abc.abstractmethod
-    def execute(self, qscripts: QuantumTape_or_Batch, execution_config=None):
+    def execute(self, circuits: QuantumTape_or_Batch, execution_config=None):
         """Execute a quantum script or a batch of quantum scripts and turn it into results.
 
         Args:
-            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the quantum script(s) to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the quantum script(s) to be executed
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
@@ -172,7 +172,7 @@ class QuantumDevice(abc.ABC):
 
         * A single ``ExecutionConfig`` datastructure: All scripts in the batch use the same configuration
 
-        * An Iterable of ``ExecutionConfig``'s of the same length as the the qscripts input: Each quantum script
+        * An Iterable of ``ExecutionConfig``'s of the same length as the the circuits input: Each quantum script
           has its own set of configuration parameters. For example, every script can be executed with a different
           number of shots.
 
@@ -288,13 +288,13 @@ class QuantumDevice(abc.ABC):
 
     def differentiate(
         self,
-        qscript: QuantumTape_or_Batch,
+        circuits: QuantumTape_or_Batch,
         execution_config=None,
     ):
         """Calculate the jacobian of either a single or a batch of Quantum Scripts.
 
         Args:
-            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
@@ -318,13 +318,13 @@ class QuantumDevice(abc.ABC):
 
     def execute_and_differentiate(
         self,
-        qscripts: QuantumTape_or_Batch,
+        circuits: QuantumTape_or_Batch,
         execution_config=None,
     ):
         """Compute the results and jacobians of QuantumTapes at the same time.
 
         Args:
-            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape or batch to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape or batch to be executed
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
@@ -338,20 +338,20 @@ class QuantumDevice(abc.ABC):
         diff gradients, calculating the result and gradient at the same can save computational work.
 
         """
-        return self.execute(qscripts, execution_config), self.differentiate(
-            qscripts, execution_config
+        return self.execute(circuits, execution_config), self.differentiate(
+            circuits, execution_config
         )
 
     def jvp(
         self,
-        qscript: QuantumTape_or_Batch,
+        circuits: QuantumTape_or_Batch,
         tangents: Tuple[Number],
         execution_config=None,
     ):
         r"""The jacobian vector product used in forward mode calculation of derivatives.
 
         Args:
-            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             tangents (tensor-like): Gradient vector for input parameters.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
@@ -375,7 +375,7 @@ class QuantumDevice(abc.ABC):
 
         **Shape of tangents:**
 
-        The ``tangents`` tuple should be the same length as ``qscript.get_parameters()`` and have a single number per
+        The ``tangents`` tuple should be the same length as ``circuit.get_parameters()`` and have a single number per
         parameter. If a number is zero, then the gradient with respect to that parameter does not need to be computed.
 
         """
@@ -383,14 +383,14 @@ class QuantumDevice(abc.ABC):
 
     def execute_and_jvp(
         self,
-        qscripts: QuantumTape_or_Batch,
+        circuits: QuantumTape_or_Batch,
         tangents: Tuple[Number],
         execution_config=None,
     ):
         """Execute a batch of quantum scripts and compute their jacobian vector products.
 
         Args:
-            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             tangents (tensor-like): Gradient vector for input parameters.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
@@ -399,8 +399,8 @@ class QuantumDevice(abc.ABC):
 
         See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.jvp` for more information on each method.
         """
-        return self.execute(qscripts, execution_config), self.jvp(
-            qscripts, tangents, execution_config
+        return self.execute(circuits, execution_config), self.jvp(
+            circuits, tangents, execution_config
         )
 
     @classmethod
@@ -414,16 +414,16 @@ class QuantumDevice(abc.ABC):
 
     def vjp(
         self,
-        qscript: QuantumTape_or_Batch,
+        circuits: QuantumTape_or_Batch,
         cotangents: Tuple[Number],
         execution_config=None,
     ):
         r"""The vector jacobian product used in reversed mode differentiation.
 
         Args:
-            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             cotangents (Tuple[Number]): Gradient-output vector. Must have shape matching the output shape of the
-                corresponding qscript
+                corresponding circuit
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
@@ -451,16 +451,16 @@ class QuantumDevice(abc.ABC):
 
     def execute_and_vjp(
         self,
-        qscripts: QuantumTape_or_Batch,
+        circuits: QuantumTape_or_Batch,
         cotangents: Tuple[Number],
         execution_config=None,
     ):
         r"""Calculate both the results and the vector jacobian product used in reversed mode differentiation.
 
         Args:
-            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             cotangents Tuple[Number]: Gradient-output vector. Must have shape matching the output shape of the
-                corresponding qscript
+                corresponding circuit
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
@@ -468,8 +468,8 @@ class QuantumDevice(abc.ABC):
 
         See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.vjp` for more information.
         """
-        return self.execute(qscripts, execution_config), self.vjp(
-            qscripts, cotangents, execution_config
+        return self.execute(circuits, execution_config), self.vjp(
+            circuits, cotangents, execution_config
         )
 
     @classmethod
