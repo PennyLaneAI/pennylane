@@ -31,49 +31,22 @@ class MyOp(qml.RX):
     has_diagonalizing_gates = False
 
 
-def compare_and_expand_mat(mat1, mat2):
-    """Helper function which takes two square matrices (of potentially different sizes)
-    and expands the smaller matrix until their shapes match."""
-
-    if mat1.size == mat2.size:
-        return mat1, mat2
-
-    (smaller_mat, larger_mat, flip_order) = (
-        (mat1, mat2, 0) if mat1.size < mat2.size else (mat2, mat1, 1)
-    )
-
-    while smaller_mat.size < larger_mat.size:
-        smaller_mat = qml.math.cast_like(qml.math.kron(smaller_mat, qml.math.eye(2)), smaller_mat)
-
-    if flip_order:
-        return larger_mat, smaller_mat
-
-    return smaller_mat, larger_mat
-
-
-@pytest.fixture()
-def param_ham():
-    """Returns a parametrized hamiltonian"""
-    f1 = lambda params, t: params[0] * np.polyval(params[1:5], t) + params[5]
-    f2 = lambda params, t: params[6] * np.polyval(params[7:10], t) + params[10]
-    return ParametrizedHamiltonian(
-        [1, 2, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2), qml.Hadamard(3)]
-    )
-
-
 class TestInitialization:
     """Unit tests for the ParametrizedEvolution class."""
 
-    def test_init(self, param_ham: ParametrizedHamiltonian):
+    def test_init(self):
         """Test the initialization."""
-        ev = ParametrizedEvolution(H=param_ham, params=[1, 2], t=2)
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
 
-        assert ev.H is param_ham
+        assert ev.H is H
         assert ev.dt == 0.1
         assert qml.math.allequal(ev.t, [0, 2])
         assert qml.math.allequal(ev.h_params, [1, 2])
 
-        assert ev.wires == param_ham.wires
+        assert ev.wires == H.wires
         assert ev.num_wires == AnyWires
         assert ev.name == "ParametrizedEvolution"
         assert ev.id is None
@@ -125,6 +98,7 @@ class TestInitialization:
 class TestMatrix:
     """Test matrix method."""
 
+    # pylint: disable=unused-argument
     def test_time_independent_hamiltonian(self):
         """Test matrix method for a time independent hamiltonian."""
 
