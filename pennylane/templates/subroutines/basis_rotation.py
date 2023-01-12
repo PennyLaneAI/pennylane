@@ -165,7 +165,7 @@ class BasisRotation(Operation):
 
         for (grot_mat, indices) in givens_list:
             theta = np.arccos(np.real(grot_mat[1, 1]))
-            phi = np.angle(grot_mat[0, 0] / grot_mat[1, 1])
+            phi = np.angle(grot_mat[0, 0])
 
             op_list.append(
                 qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
