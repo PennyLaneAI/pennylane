@@ -14,7 +14,6 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
-import numpy as np
 import pytest
 
 import pennylane as qml
@@ -22,7 +21,7 @@ from pennylane.operation import AnyWires
 from pennylane.ops import ParametrizedEvolution, ParametrizedHamiltonian
 
 
-class MyOp(qml.RX):
+class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
     """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False

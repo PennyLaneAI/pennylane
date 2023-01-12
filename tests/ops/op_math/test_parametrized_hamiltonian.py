@@ -24,14 +24,14 @@ class TestInitialization:
 
     def test_initialization_via_dot(self):
         """Test that using qml.ops.dot initializes a ParametrizedHamiltonian"""
-        f1 = lambda param, t: param[0] * np.sin(t) * (t - 1)
-        f2 = lambda param, t: param[1] * np.cos(t**2)
+        fa = lambda param, t: param[0] * np.sin(t) * (t - 1)
+        fb = lambda param, t: param[1] * np.cos(t**2)
 
         XX = qml.PauliX(0) @ qml.PauliX(1)
         YY = qml.PauliY(0) @ qml.PauliY(1)
         ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
 
-        coeffs = [2, f1, f2]
+        coeffs = [2, fa, fb]
         ops = [XX, YY, ZZ]
 
         H = qml.ops.dot(coeffs, ops)
@@ -121,10 +121,10 @@ class TestCall:
         assert qml.equal(H_parametrized, expected_H_parametrized)
 
     def test_call_with_qutrit_operators(self):
-        def f1(x, t):
+        def fa(x, t):
             return x + 2 * t
 
-        coeffs = [f1, 2]
+        coeffs = [fa, 2]
         obs = [qml.GellMann(wires=0, index=1), qml.GellMann(wires=0, index=2)]
 
         H = ParametrizedHamiltonian(coeffs, obs)
