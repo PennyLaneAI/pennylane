@@ -166,6 +166,9 @@
   keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
+* Implemented the XYX single-qubit unitary decomposition. 
+  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628) 
+
 <h3>Breaking changes</h3>
 
 * The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`. 
