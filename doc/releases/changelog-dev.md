@@ -154,9 +154,6 @@
 * Write Hamiltonians to file in a condensed format when using the data module.
   [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
 
-* Implemented the XYX single-qubit unitary decomposition. 
-  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628) 
-
 <h3>Breaking changes</h3>
 
 * The tape constructed by a QNode is no longer queued to surrounding contexts.
