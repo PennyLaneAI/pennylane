@@ -1,2 +1,4 @@
 tests/data/**
+tests/ops/op_math/test_controlled_ops.py
+tests/ops/op_math/test_controlled.py
 tests/devices/qubit/test_initialize_state.py
