@@ -407,7 +407,11 @@ class DefaultQubit(QubitDevice):
         # to. If axes[1] is larger than axes[0], then we need to shift the target axis down by
         # one, otherwise we can leave as-is. For example: a state has [0, 1, 2, 3], control=1,
         # target=3. Then, state[sl_1] has 3 axes and target=3 now corresponds to the second axis.
-        target_axes = [axes[1] - 1] if axes[1] > axes[0] else [axes[1]]
+        if axes[1] > axes[0]:
+            target_axes = [axes[1] - 1]
+        else:
+            target_axes = [axes[1]]
+
         state_x = self._apply_x(state[sl_1], axes=target_axes)
         return self._stack([state[sl_0], state_x], axis=axes[0])
 
@@ -480,7 +484,11 @@ class DefaultQubit(QubitDevice):
         sl_0 = _get_slice(0, axes[0], ndim)
         sl_1 = _get_slice(1, axes[0], ndim)
 
-        target_axes = [axes[1] - 1] if axes[1] > axes[0] else [axes[1]]
+        if axes[1] > axes[0]:
+            target_axes = [axes[1] - 1]
+        else:
+            target_axes = [axes[1]]
+
         state_z = self._apply_z(state[sl_1], axes=target_axes)
         return self._stack([state[sl_0], state_z], axis=axes[0])
 
@@ -529,84 +537,83 @@ class DefaultQubit(QubitDevice):
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
-        if observable.name not in ("Hamiltonian", "SparseHamiltonian"):
-            return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
+        if observable.name in ("Hamiltonian", "SparseHamiltonian"):
+            assert self.shots is None, f"{observable.name} must be used with shots=None"
 
-        if self.shots is not None:
-            raise ValueError(f"{observable.name} must be used with shots=None")
+            self.map_wires(observable.wires)
+            backprop_mode = (
+                not isinstance(self.state, np.ndarray)
+                or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
+            ) and observable.name == "Hamiltonian"
 
-        self.map_wires(observable.wires)
-        backprop_mode = (
-            not isinstance(self.state, np.ndarray)
-            or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
-        ) and observable.name == "Hamiltonian"
+            if backprop_mode:
+                # TODO[dwierichs]: This branch is not adapted to broadcasting yet
+                if self._ndim(self.state) == 2:
+                    raise NotImplementedError(
+                        "Expectation values of Hamiltonians for interface!=None are "
+                        "not supported together with parameter broadcasting yet"
+                    )
+                # We must compute the expectation value assuming that the Hamiltonian
+                # coefficients *and* the quantum states are tensor objects.
 
-        if backprop_mode:
-            # TODO[dwierichs]: This branch is not adapted to broadcasting yet
-            if self._ndim(self.state) == 2:
-                raise NotImplementedError(
-                    "Expectation values of Hamiltonians for interface!=None are "
-                    "not supported together with parameter broadcasting yet"
-                )
-            # We must compute the expectation value assuming that the Hamiltonian
-            # coefficients *and* the quantum states are tensor objects.
+                # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
+                # representation of the Pauliword
+                res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
+                interface = qml.math.get_interface(self.state)
 
-            # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
-            # representation of the Pauliword
-            res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
-            interface = qml.math.get_interface(self.state)
+                # Note: it is important that we use the Hamiltonian's data and not the coeffs
+                # attribute. This is because the .data attribute may be 'unwrapped' as required by
+                # the interfaces, whereas the .coeff attribute will always be the same input dtype
+                # that the user provided.
+                for op, coeff in zip(observable.ops, observable.data):
 
-            # Note: it is important that we use the Hamiltonian's data and not the coeffs
-            # attribute. This is because the .data attribute may be 'unwrapped' as required by
-            # the interfaces, whereas the .coeff attribute will always be the same input dtype
-            # that the user provided.
-            for op, coeff in zip(observable.ops, observable.data):
+                    # extract a scipy.sparse.coo_matrix representation of this Pauli word
+                    coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires, format="coo")
+                    Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
-                # extract a scipy.sparse.coo_matrix representation of this Pauli word
-                coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires, format="coo")
-                Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
+                    product = (
+                        self._gather(self._conj(self.state), coo.row)
+                        * Hmat
+                        * self._gather(self.state, coo.col)
+                    )
+                    c = qml.math.convert_like(coeff, product)
 
-                product = (
-                    self._gather(self._conj(self.state), coo.row)
-                    * Hmat
-                    * self._gather(self.state, coo.col)
-                )
-                c = qml.math.convert_like(coeff, product)
+                    if interface == "tensorflow":
+                        c = qml.math.cast(c, "complex128")
 
-                if interface == "tensorflow":
-                    c = qml.math.cast(c, "complex128")
+                    res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
 
-                res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
-
-        else:
-            # Coefficients and the state are not trainable, we can be more
-            # efficient in how we compute the Hamiltonian sparse matrix.
-            if observable.name == "Hamiltonian":
-                Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
-            elif observable.name == "SparseHamiltonian":
-                Hmat = observable.sparse_matrix()
-
-            state = qml.math.toarray(self.state)
-            if self._ndim(state) == 2:
-                res = qml.math.array(
-                    [
-                        csr_matrix.dot(
-                            csr_matrix(self._conj(_state)),
-                            csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
-                        ).toarray()[0]
-                        for _state in state
-                    ]
-                )
             else:
-                res = csr_matrix.dot(
-                    csr_matrix(self._conj(state)),
-                    csr_matrix.dot(Hmat, csr_matrix(state[..., None])),
-                ).toarray()[0]
+                # Coefficients and the state are not trainable, we can be more
+                # efficient in how we compute the Hamiltonian sparse matrix.
+                if observable.name == "Hamiltonian":
+                    Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
+                elif observable.name == "SparseHamiltonian":
+                    Hmat = observable.sparse_matrix()
 
-        if observable.name == "Hamiltonian":
-            res = qml.math.squeeze(res)
+                state = qml.math.toarray(self.state)
+                if self._ndim(state) == 2:
+                    res = qml.math.array(
+                        [
+                            csr_matrix.dot(
+                                csr_matrix(self._conj(_state)),
+                                csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
+                            ).toarray()[0]
+                            for _state in state
+                        ]
+                    )
+                else:
+                    res = csr_matrix.dot(
+                        csr_matrix(self._conj(state)),
+                        csr_matrix.dot(Hmat, csr_matrix(state[..., None])),
+                    ).toarray()[0]
 
-        return self._real(res)
+            if observable.name == "Hamiltonian":
+                res = qml.math.squeeze(res)
+
+            return self._real(res)
+
+        return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
@@ -686,7 +693,7 @@ class DefaultQubit(QubitDevice):
         if batch_size is not None:
             output_shape.insert(0, batch_size)
 
-        if state.shape not in [(dim,), (batch_size, dim)]:
+        if not (state.shape in [(dim,), (batch_size, dim)]):
             raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
 
         if not qml.math.is_abstract(state):
