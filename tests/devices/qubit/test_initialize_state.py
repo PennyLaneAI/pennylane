@@ -102,3 +102,13 @@ def test_wires_are_padded_in_calculation(framework, wires):
     expected[0][0][0] = 1 / np.sqrt(2)
     expected[1][1][0] = 1 / np.sqrt(2)
     assert qml.math.allequal(expected, actual)
+
+
+@pytest.mark.parametrize("framework", SUPPORTED_INTERFACES)
+def test_basis_state_prep_can_be_used(framework):
+    """Tests that qml.BasisState is an acceptable prep operation."""
+    ops = [qml.BasisState([0, 1], wires=range(2))]
+    actual = initialize_state(3, prep_operations=ops, framework=framework)
+    expected = np.zeros((2,) * 3)
+    expected[0][1][0] = 1
+    assert qml.math.allequal(expected, actual)

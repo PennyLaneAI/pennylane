@@ -1,2 +1,2 @@
 tests/data/**
-tests/devices/qubit/**
+tests/devices/qubit/test_initialize_state.py

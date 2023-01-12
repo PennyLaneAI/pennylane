@@ -88,7 +88,8 @@ def initialize_state(
 
     if prep_operations:
         wire_order = _get_padded_wire_order(num_wires, prep_operations)
-        for op in prep_operations:
-            state = qml.math.matmul(op.matrix(wire_order=wire_order), state)
+        prep_tape = qml.tape.QuantumScript(prep=prep_operations)
+        prep_matrix = qml.matrix(prep_tape, wire_order=wire_order)
+        state = qml.math.matmul(prep_matrix, state)
 
     return qml.math.reshape(qml.math.array(state, like=framework), (2,) * num_wires)
