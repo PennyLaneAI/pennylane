@@ -150,6 +150,7 @@ class TestMatrix:
     """Test matrix method."""
 
     # pylint: disable=unused-argument
+    @pytest.mark.jax
     def test_time_independent_hamiltonian(self):
         """Test matrix method for a time independent hamiltonian."""
         H = time_independent_hamiltonian()
