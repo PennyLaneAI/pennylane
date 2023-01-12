@@ -37,13 +37,15 @@ class ParametrizedEvolution(Operation):
     Under the hood, it is using a numerical ordinary differential equation solver.
 
     Args:
-        base (ParametrizedHamiltonian): hamiltonian to evolve
+        H (ParametrizedHamiltonian): hamiltonian to evolve
         params (ndarray): trainable parameters
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
             If a list of two floats, it corresponds to the initial time and the final time of the
             evolution.
         dt (float): the time step used by the differential equation solver to evolve the
             time-dependent Hamiltonian. Defaults to XXX.
+        time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
+            Defaults to "t".
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
     """
@@ -52,9 +54,10 @@ class ParametrizedEvolution(Operation):
     num_wires = AnyWires
     # pylint: disable=too-many-arguments, super-init-not-called
     def __init__(
-        self, H: ParametrizedHamiltonian, params: list, t, dt=None, do_queue=True, id=None
+        self, H: ParametrizedHamiltonian, params: list, t, dt=None, time="t", do_queue=True, id=None
     ):
         self.H = H
+        self.time = time
         self.dt = dt
         self.h_params = params
         self.t = [0, t] if qml.math.size(t) == 1 else t
@@ -79,7 +82,8 @@ class ParametrizedEvolution(Operation):
 
         def fun(y, t, params):
             """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(self.H(params, t)) @ y
+            kwargs = {self.time: t}
+            return -1j * qml.matrix(self.H(params, **kwargs)) @ y
 
         if self.dt is None:
             # TODO: Figure out what is 'p', and best values for 'rtol' and 'atol'
