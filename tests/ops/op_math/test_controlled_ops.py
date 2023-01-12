@@ -1,6 +1,22 @@
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for Operators inheriting from Controlled.
+"""
+
 import numpy as np
 import pytest
-from gate_data import H, I, S, T, X, Z
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -13,7 +29,7 @@ X_broadcasted = np.array([X] * 3)
 
 
 class TestControlledQubitUnitary:
-    """Tests for the ControlledQubitUnitary operation"""
+    """Tests specific to the ControlledQubitUnitary operation"""
 
     def test_initialization_from_matrix_and_operator(self):
         base_op = QubitUnitary(X, wires=1)
@@ -402,7 +418,7 @@ class TestControlledQubitUnitary:
         )
         expected.inverse = inverse
 
-        out = original._controlled("a")
+        out = original._controlled("a")  # pylint: disable=protected-access
         assert qml.equal(out, expected)
 
     def test_unitary_check(self):
