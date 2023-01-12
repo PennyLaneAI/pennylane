@@ -19,10 +19,19 @@
 import warnings
 from functools import partial
 
-import jax
-import jax.numpy as jnp
-from jax import linear_util as lu
-from jax.flatten_util import ravel_pytree
+try:
+    import jax
+    import jax.numpy as jnp
+    from jax import linear_util as lu
+    from jax.flatten_util import ravel_pytree
+except ImportError as e:
+    raise ImportError(
+            "Module jax is required for ``qml.math.odeint`` class. "
+            "You can install jax via: pip install jax"
+        ) from e
+
+
+
 
 
 @partial(jax.jit, static_argnums=0)
