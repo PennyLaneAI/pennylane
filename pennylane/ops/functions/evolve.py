@@ -32,7 +32,7 @@ def evolve(op: Operator):
     """
     if isinstance(op, ParametrizedHamiltonian):
 
-        def parametrized_evolution(params: list, t, dt=0.1):
+        def parametrized_evolution(params: list, t, dt=None):
             """Constructor for the :class:`ParametrizedEvolution` operator.
 
             Args:

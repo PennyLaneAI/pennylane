@@ -14,6 +14,7 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
+# pylint: disable=unused-argument
 import pytest
 
 import pennylane as qml
@@ -92,7 +93,7 @@ class TestInitialization:
         ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
 
         assert ev.H is H
-        assert ev.dt == 0.1
+        assert ev.dt is None
         assert qml.math.allequal(ev.t, [0, 2])
         assert qml.math.allequal(ev.h_params, [1, 2])
 
@@ -154,7 +155,7 @@ class TestMatrix:
         H = time_independent_hamiltonian()
         t = 4
         params = [1, 2]
-        ev = ParametrizedEvolution(H=H, params=params, t=t, dt=0.001)
+        ev = ParametrizedEvolution(H=H, params=params, t=t)
         true_mat = qml.math.expm(-1j * qml.matrix(H(params, t)) * t)
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
 
@@ -167,7 +168,7 @@ class TestMatrix:
 
         t = jnp.pi / 4
         params = [1, 2]
-        ev = ParametrizedEvolution(H=H, params=params, t=t, dt=1e-6)
+        ev = ParametrizedEvolution(H=H, params=params, t=t)
 
         true_mat = qml.math.expm(
             -1j * (qml.matrix(H_integral(params, t)) - qml.matrix(H_integral(params, 0)))
@@ -191,7 +192,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params, t):
-            ParametrizedEvolution(H=H, params=params, t=t, dt=0.001)
+            ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
         @qml.qnode(dev, interface="jax")
@@ -220,7 +221,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params, t):
-            ParametrizedEvolution(H=H, params=params, t=t, dt=1e-6)
+            ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         @qml.qnode(dev, interface="jax")

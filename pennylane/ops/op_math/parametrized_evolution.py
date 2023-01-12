@@ -18,6 +18,8 @@
 This file contains the ``ParametrizedEvolution`` operator.
 """
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
@@ -49,7 +51,9 @@ class ParametrizedEvolution(Operation):
     _name = "ParametrizedEvolution"
     num_wires = AnyWires
     # pylint: disable=too-many-arguments, super-init-not-called
-    def __init__(self, H: ParametrizedHamiltonian, params: list, t, dt=0.1, do_queue=True, id=None):
+    def __init__(
+        self, H: ParametrizedHamiltonian, params: list, t, dt=None, do_queue=True, id=None
+    ):
         self.H = H
         self.dt = dt
         self.h_params = params
@@ -77,7 +81,63 @@ class ParametrizedEvolution(Operation):
             """dy/dt = -i H(t) y"""
             return -1j * qml.matrix(self.H(params, t)) @ y
 
+        if self.dt is None:
+            # TODO: Figure out what is 'p', and best values for 'rtol' and 'atol'
+            self.dt = guess_dt(fun, self.t[0], y0, 2, *self.h_params)
+
         t = jnp.arange(self.t[0], self.t[1], self.dt, dtype=float)
         result = odeint(fun, y0, t, self.h_params)
         mat = result[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+
+
+def guess_dt(fun, t0, y0, p, *args, rtol=1e-4, atol=1e-4):
+    """Compute a guess for the time step.
+
+    This algorithm is described in further detail in:
+
+    `E. Hairer, S. P. Norsett G. Wanner, Solving Ordinary Differential Equations I: Nonstiff Problems, Sec. II.4. <http://mezbanhabibi.ir/wp-content/uploads/2020/01/ordinary-differential-equations-vol.1.-Nonstiff-problems.pdf>`_
+
+    Args:
+        fun (Callable): function to evaluate the time derivative of the solution `y` at time
+            `t` as `func(y, t, *args)`, producing the same shape/structure as `y0`.
+        t0 (float): initial time
+        y0 (ndarray): array or pytree of arrays representing the initial value for the state.
+        p (float): order (still don't know what this is)
+        rtol (float): relative local error tolerance for solver
+        atol (float): absolute local error tolerance for solver
+        params (list): extra parameters for the function
+
+    Raises:
+        ImportError: _description_
+
+    Returns:
+        _type_: _description_
+    """
+    try:
+        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+    except ImportError as e:
+        raise ImportError(
+            "Module jax is required for ``ParametrizedEvolution`` class. "
+            "You can install jax via: pip install jax"
+        ) from e
+    dtype = y0.dtype
+
+    f0 = fun(y0, t0, args)
+
+    scale = atol + np.abs(y0) * rtol
+    d0 = jnp.linalg.norm(y0 / scale.astype(dtype))
+    d1 = jnp.linalg.norm(f0 / scale.astype(dtype))
+
+    h0 = 1e-6 if (d0 < 1e-5 or d1 < 1e-5) else 0.01 * d0 / d1
+    y1 = y0 + h0.astype(dtype) * f0
+    f1 = fun(y1, t0 + h0, args)
+    d2 = jnp.linalg.norm((f1 - f0) / scale.astype(dtype)) / h0
+
+    h1 = (
+        jnp.maximum(1e-6, h0 * 1e-3)
+        if (d1 <= 1e-15 and d2 <= 1e-15)
+        else (0.01 / jnp.max(jnp.array([d1, d2]))) ** (1.0 / (p + 1.0))
+    )
+
+    return jnp.minimum(100.0 * h0, h1)
