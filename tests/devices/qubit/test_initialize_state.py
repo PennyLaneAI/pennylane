@@ -30,7 +30,7 @@ jax = pytest.importorskip("jax")
 SUPPORTED_INTERFACES_AND_TYPES = [
     ("numpy", np.tensor),
     ("scipy", np.ndarray),
-    ("jax", jax.numpy.DeviceArray),
+    ("jax", jax.Array),
     ("torch", torch.Tensor),
     ("tf", tf.Tensor),
 ]
