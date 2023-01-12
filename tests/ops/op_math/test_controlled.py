@@ -97,7 +97,7 @@ class TestControlledInheritance:
         base = TempOperator(1.234, wires="a")
         op = ControlledOp(base, "b")
 
-        assert type(op) is ControlledOp
+        assert type(op) is ControlledOp  # pylint: disable=unidiomatic-typecheck
 
 
 class TestInitialization:
@@ -479,8 +479,8 @@ class TestOperationProperties:
 
         op.inv()
 
-        assert op.inverse == False
-        assert base.inverse == True
+        assert op.inverse is False
+        assert base.inverse is True
         assert op.name == "C(S.inv)"
         assert op.base_name == "C(S)"
 
@@ -494,8 +494,8 @@ class TestOperationProperties:
 
         op.inverse = True
 
-        assert op.inverse == False
-        assert base.inverse == True
+        assert op.inverse is False
+        assert base.inverse is True
         assert op.name == "C(T.inv)"
         assert op.base_name == "C(T)"
 
@@ -630,7 +630,7 @@ class TestQueuing:
 
         base = qml.PauliX(0)
         with qml.queuing.AnnotatedQueue() as q:
-            op = Controlled(base, 1, do_queue=False)
+            _ = Controlled(base, 1, do_queue=False)
 
         assert len(q) == 0
 
@@ -826,7 +826,7 @@ class TestDecomposition:
         control_values = [True, False, False]
 
         base = TempOperator("a")
-        op = Controlled(base, (0, 1, 2), [True, False, False])
+        op = Controlled(base, control_wires, control_values)
 
         decomp = op.expand().circuit if test_expand else op.decomposition()
 
@@ -878,7 +878,9 @@ class TestDecomposition:
         op = Controlled(base, (0, 1, 2))
 
         with pytest.raises(DecompositionUndefinedError):
-            decomp = op.expand().circuit if test_expand else op.decomposition()
+            decomp = (
+                op.expand().circuit if test_expand else op.decomposition()
+            )  # pylint: disable=unused-variable
 
 
 class TestArithmetic:
@@ -937,7 +939,6 @@ class TestDifferentiation:
     @pytest.mark.autograd
     def test_autograd(self, diff_method):
         """Test differentiation using autograd"""
-        from pennylane import numpy as pnp
 
         dev = qml.device("default.qubit", wires=2)
         init_state = pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2)
@@ -1694,7 +1695,7 @@ def test_ctrl_values_sanity_check():
         qml.RX(0.123, wires=0)
         qml.RY(0.456, wires=2)
         qml.RX(0.789, wires=0)
-        qml.Rot(0.111, 0.222, 0.333, wires=2),
+        qml.Rot(0.111, 0.222, 0.333, wires=2)
         qml.PauliX(wires=2)
         qml.PauliY(wires=4)
         qml.PauliZ(wires=0)
