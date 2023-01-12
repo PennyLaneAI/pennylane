@@ -27,23 +27,29 @@ from jax.flatten_util import ravel_pytree
 
 @partial(jax.jit, static_argnums=0)
 def odeint(func, y0, ts, *args):
-    r"""Fix step size ODE solver
+    r"""Fix step size ODE solver with jit-compilation
 
     Solves the initial value problem (IVP) of an ordinary differential equation (ODE)
 
     .. math:: \frac{dy}{dt} = f(y, t), y(t_0) = y_0
 
     using an `explicit Runge-Kutta method <https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods>`_.
+    In particular, it is using the 4th order term of the `Dormand Prince <https://en.wikipedia.org/wiki/Dormand%E2%80%93Prince_method>`_ Butcher table.
 
     Args:
-        func (callable): ``f(y, t, *args)`` defining the ODE
-        y0 (tensor_like): initial value ``y(t0) = y0)``
-        ts (tensor_like): finite time steps for the ODE solver to take.
+        func (callable): ``f(y, t, *args)`` defining the ODE. Needs to return a ``ndarray`` of the same shape as ``y``.
+        y0 (ndarray): initial value ``y(t0) = y0``
+        ts (ndarray): finite time steps for the ODE solver to take.
 
     .. note::
 
         Unlike many standard implementations, this ``odeint`` solver does not adaptively choose the step
-        sizes, but rather a fix list of times for evaluation have to be provided in ``ts``.
+        sizes, but rather a fix list of times for evaluation have to be provided in ``ts``. For an adaptive step
+        size solver, we refer to `jax.experimental.ode.odeint <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_.
+    
+    .. warning:: 
+
+        This function is written for ``jax`` only and will not work with other machine learning frameworks typically encountered in PennyLane.
 
     **Example**
 
@@ -68,6 +74,10 @@ def odeint(func, y0, ts, *args):
             return -1j * jnp.sum(H, axis=0) @ y
 
         U = qml.math.odeint(func, y0, ts, params)
+
+    Formally, this solution can be written as the time-ordered exponential
+    :math:`U(t_0, t_1) = \text{Texp}\left[-i \int_{t_0}^{t_1}d\tau H(\tau)\right]`
+    (see `Dyson Series <https://en.wikipedia.org/wiki/Dyson_series>`_).
     """
     y0, unravel = ravel_pytree(y0)
     func = ravel_first_arg(func, unravel)
@@ -75,14 +85,14 @@ def odeint(func, y0, ts, *args):
     return unravel(out)
 
 
-def abs2(x):
+def _abs2(x):
     """Computing the squared absolute value of x"""
     if jnp.iscomplexobj(x):
         return x.real**2 + x.imag**2
     return x**2
 
 
-def tolerance_warn(atol, rtol, err_ratio):
+def _tolerance_warn(atol, rtol, err_ratio):
     warnings.warn(
         f"The targeted error tolerance of atol = {atol} and rtol = {rtol}"
         f"is not reached with a relative error of {err_ratio}",
@@ -104,11 +114,11 @@ def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
         # def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
         err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
         err_ratio = y1_error / err_tol.astype(y1_error.dtype)
-        mean_err_ratio = jnp.sqrt(jnp.mean(abs2(err_ratio)))
+        mean_err_ratio = jnp.sqrt(jnp.mean(_abs2(err_ratio)))
         print(mean_err_ratio)
         jax.lax.cond(
-            mean_err_ratio > 1.0,
-            tolerance_warn,
+            mean_err_ratio > 1.0, # and isinstance(mean_err_ratio, jnp.ndarray),
+            _tolerance_warn,
             lambda atol, rtol, err_ratio: None,
             atol,
             rtol,
