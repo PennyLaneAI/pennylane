@@ -1,11 +1,8 @@
 """
 This submodule contains the ParametrizedHamiltonian class
 """
-import inspect
-from typing import List
-
 import pennylane as qml
-from pennylane.operation import Observable
+from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.wires import Wires
 
@@ -15,15 +12,15 @@ class ParametrizedHamiltonian:
     r"""Callable object holding the information representing a parametrized Hamiltonian. Passing parameters to
     the ParametrizedHamiltonian returns an Operator representing the Hamiltonian for that set of parameters.
 
-    The Hamiltonian representation as a linear combination of other operators, e.g.,
+    The Hamiltonian can be represented as a linear combination of other operators, e.g.,
     :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j`, where the :math:`v` are trainable parameters,
     and t is time.
 
-    For example, a ParametrizedHamiltonian with a single trainable parameter, :math:`a`, could be :math:`H = 2 * XX + sin(a, t) * YY`
+    For example, a time-dependent ``ParametrizedHamiltonian`` with a single trainable parameter, :math:`a`, could be :math:`H = 2 * X_1 X_2 + sin(a, t) * Y_1 Y_2`
 
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be constants or
-            parametrized functions. All functions passed as coeffs much accept the same parameters as arguments.
+            parametrized functions. All functions passed as ``coeffs`` must accept the same parameters as arguments.
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
 
     A ParametrizedHamiltonian is callable, and passing parameters to the ParametrizedHamiltonian will return an
@@ -32,13 +29,13 @@ class ParametrizedHamiltonian:
     **Example:**
 
     A ParametrizedHamiltonian can be created by passing a list of coefficients (scalars or functions), as well as
-    a list of corresponding observables. The functions must have idential signatures, though they may not all
+    a list of corresponding observables. The functions must have identical signatures, though they may not all
     use all the parameters.
 
     >>> def f1(params, t): return np.sin(params[0]*t)
     >>> def f2(params, t): return params[1] * np.cos(t)
 
-    The fucntions, along with scalar coefficients, can then be used to initialize a ParametrizedHamiltonian,
+    The functions, along with scalar coefficients, can then be used to initialize a ParametrizedHamiltonian,
     which will be split into a fixed and parametrized term. The fixed term is an Operator, while the parametrized
     term must be initialized with concrete parameters to obtain an Operator.
     >>> coeffs = [2, f1, f2]
@@ -57,10 +54,7 @@ class ParametrizedHamiltonian:
 
     """
 
-    num_wires = qml.operation.AnyWires
-    grad_method = "A"  # supports analytic gradients
-
-    def __init__(self, coeffs, observables: List[Observable]):
+    def __init__(self, coeffs, observables):
 
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -68,38 +62,37 @@ class ParametrizedHamiltonian:
                 "number of coefficients and operators does not match."
             )
 
-        for obs in observables:
-            if not isinstance(obs, Observable):
-                raise ValueError(
-                    "Could not create circuits. Some or all observables are not valid."
-                )
+        # ToDo: assuming this is how we want to do things, make this clear in the documentation
+        # since organizing into H_fixed and H_parametrized potentially moves around the order of the terms compared
+        # to how the terms were entered, sorting seems the least ambiguous organization for the wires
+        self.wires = Wires.all_wires([op.wires for op in observables], sort=True)
 
         self.wires = Wires.all_wires([op.wires for op in observables])
         self._ops = list(observables)
         self._coeffs = coeffs
 
-        self.H_fixed_coeffs = []
-        self.H_fixed_ops = []
-        self.H_parametrized_fns = []
-        self.H_parametrized_ops = []
+        self.H_coeffs_fixed = []
+        self.H_coeffs_parametrized = []
+        self.H_ops_fixed = []
+        self.H_ops_parametrized = []
 
         self.num_args = 0
         for coeff, obs in zip(coeffs, observables):
             if callable(coeff):
-                self.num_args += len(inspect.getfullargspec(coeff).args) - 1  # subtract time arg
-                self.H_parametrized_fns.append((coeff, self.num_args))
-                self.H_parametrized_ops.append(obs)
+                self.H_coeffs_parametrized.append(coeff)
+                self.H_ops_parametrized.append(obs)
             else:
-                self.H_fixed_coeffs.append(coeff)
-                self.H_fixed_ops.append(obs)
+                self.H_coeffs_fixed.append(coeff)
+                self.H_ops_fixed.append(obs)
 
-    def __call__(self, params, t):
-        if len(params) != self.num_args:
-            raise ValueError(
-                "The number of parameters and the number of arguments in the functions"
-                "doesn't coincide."
-            )
-        return self.H_fixed + self.H_parametrized(params, t)
+    def __call__(self, params, t, wires=None):
+        H = self.H_fixed() + self.H_parametrized(params, t)
+
+        if wires:
+            wire_map = dict(zip(self.wires, wires))
+            H = qml.map_wires(H, wire_map)  # ToDo: is this the behaviour we want?
+
+        return H
 
     def __repr__(self):
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
@@ -110,18 +103,17 @@ class ParametrizedHamiltonian:
         (or a single qml.SProd operator in the event that there is only one term)."""
         terms_list = [qml.s_prod(coeff, ob) for coeff, ob in zip(coeffs, obs)]
         if len(terms_list) == 0:
-            return None
+            return 0
         if len(terms_list) == 1:
             return terms_list[0]
         return qml.op_sum(*terms_list)
 
-    @property
     def H_fixed(
         self,
     ):
         """The fixed term(s) of the ParametrizedHamiltonian. Returns a qml.Sum operator of qml.SProd operators
         (or a single qml.SProd operator in the event that there is only one term in H_drift)."""
-        return self._get_terms(self.H_fixed_coeffs, self.H_fixed_ops)
+        return self._get_terms(self.H_coeffs_fixed, self.H_ops_fixed)
 
     @property
     def H_parametrized(self):
@@ -131,12 +123,8 @@ class ParametrizedHamiltonian:
         operator in the event that there is only one term in H_ts)."""
 
         def snapshot(params, t):
-            coeffs = []
-            old_idx = 0
-            for f, idx in self.H_parametrized_fns:
-                coeffs.append(f(*params[old_idx:idx], t))
-                old_idx = idx
-            return self._get_terms(coeffs, self.H_parametrized_ops)
+            coeffs = [f(params, t) for f in self.H_coeffs_parametrized]
+            return self._get_terms(coeffs, self.H_ops_parametrized)
 
         return snapshot
 
@@ -175,8 +163,8 @@ class ParametrizedHamiltonian:
             ops.append(H.base)
             return ParametrizedHamiltonian(coeffs, ops)
 
-        if isinstance(H, Observable):
-            coeffs.append(qml.math.cast_like([1.0], coeffs)[0])
+        if isinstance(H, Operator):
+            coeffs.append(qml.math.convert_like([1.0], coeffs)[0])
             ops.append(H)
             return ParametrizedHamiltonian(coeffs, ops)
 

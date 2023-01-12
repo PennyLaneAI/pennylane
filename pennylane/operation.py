@@ -99,7 +99,6 @@ import functools
 import itertools
 import numbers
 import warnings
-import inspect
 from enum import IntEnum
 from typing import List
 
@@ -1293,8 +1292,8 @@ class Operator(abc.ABC):
             return qml.op_sum(self, other)
         if other == 0:
             return self
-        if other is None:
-            return self
+        if isinstance(other, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
+            return other.__add__(self)
         try:
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         except ValueError as e:
@@ -1304,6 +1303,8 @@ class Operator(abc.ABC):
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
+        if callable(other):
+            return qml.ops.ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
         try:
             return qml.s_prod(scalar=other, operator=self)
         except ValueError as e:
@@ -1786,8 +1787,6 @@ class Observable(Operator):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
             return qml.Hamiltonian([a], [self], simplify=True)
-        if inspect.isfunction(a):
-            return qml.ops.ParametrizedHamiltonian([a], [self])  # pylint: disable=no-member
         try:
             return super().__mul__(other=a)
         except ValueError as e:
