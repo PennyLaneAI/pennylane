@@ -32,7 +32,7 @@ class QuantumDevice(abc.ABC):
 
     The child classes can define any number of class specific arguments and keyword arguments.
 
-    Experimental devicves should be configured to run under ``qml.enable_return()``, the newer
+    Experimental devices should be configured to run under :func:`~.enable_return`, the newer
     return shape specification.
 
     Only the ``execute`` function must be defined to construct a device.
@@ -128,10 +128,10 @@ class QuantumDevice(abc.ABC):
 
     @abc.abstractmethod
     def execute(self, qscripts: QScript_or_QScriptBatch, execution_config=None):
-        """Execute a Quantum Script and turn it into a result.
+        """Execute a quantum script or a batch of quantum scripts and turn it into results.
 
         Args:
-            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the quantum script(s) to be executed
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
@@ -184,7 +184,7 @@ class QuantumDevice(abc.ABC):
         measurement value in a numpy array. ``shape`` currently accepts a device, as historically devices
         stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
 
-        >>> qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        >>> qs = qml.tape.QuantumScript(measurements=qml.expval(qml.PauliZ(0))])
         >>> qs.shape(dev)
         ()
         >>> dev.execute(qs)
@@ -199,7 +199,7 @@ class QuantumDevice(abc.ABC):
 
         If the script has multiple measurments, then the device should return a tuple of measurements.
 
-        >>> qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+        >>> qs = qml.tape.QuantumScript(measurements=[qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
         >>> qs.shape(dev)
         ((), (4,))
         >>> dev.execute(qs)
@@ -225,8 +225,8 @@ class QuantumDevice(abc.ABC):
         For example, the current Python device supports adjoint differentiation if the order is ``1`` and
         the execution occurs with no shots ``shots=None``.
 
-        >>> config = ExecutionConfig(order=1, shots=None)
-        >>> dev.supports_gradient_with_configuration(config)
+        >>> config = ExecutionConfig(derivative_order=1, shots=None)
+        >>> dev.supports_jacobian_with_configuration(config)
         True
         >>> config = ExecutionConfig(order=1, shots=10)
         >>> dev.supports_gradient_with_configuration(config)
@@ -418,7 +418,7 @@ class QuantumDevice(abc.ABC):
     def execute_and_vjp(
         self,
         qscripts: QScript_or_QScriptBatch,
-        tangents: Tuple[Number],
+        cotangents: Tuple[Number],
         execution_config=None,
     ):
         r"""Calculate both the results and the vector jacobian product used in reversed mode differentiation.
