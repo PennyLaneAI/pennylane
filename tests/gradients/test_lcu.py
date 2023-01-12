@@ -28,7 +28,7 @@ class TestFiniteDiff:
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
         x = 0.543
         y = -0.654
 
@@ -40,10 +40,12 @@ class TestFiniteDiff:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        tapes, fn = lcu_grad(tape, argnum=0)
+        tapes, fn = lcu_grad(tape)
+
         res = fn(dev.batch_execute(tapes))
-        print(res)
+        print("res", res)
         # assert res.shape == (1, 2)
 
-        expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
+        expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
+        print(expected)
         # assert np.allclose(res, expected, atol=tol, rtol=0)
