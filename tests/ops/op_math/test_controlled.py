@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Unit tests for Controlled"""
 
 from copy import copy
 from functools import partial
@@ -32,6 +33,10 @@ from pennylane.ops.op_math.controlled import (
 from pennylane.tape import QuantumScript
 from pennylane.tape.tape import expand_tape
 from pennylane.wires import Wires
+
+# pylint: disable=too-few-public-methods
+# pylint: disable=protected-access
+# pylint: disable=pointless-statement
 
 base_num_control_mats = [
     (qml.PauliX("a"), 1, CNOT),
@@ -78,7 +83,7 @@ class TestControlledInheritance:
         base = CustomOp(1.234, wires=0)
         op = Controlled(base, 6.5)
 
-        assert type(op) is ControlledOp
+        assert type(op) is ControlledOp  # pylint: disable=unidiomatic-typecheck
 
         assert isinstance(op, Controlled)
         assert isinstance(op, Operator)
@@ -1345,7 +1350,7 @@ def test_ctrl_sanity_check():
         qml.RX(0.123, wires=0)
         qml.RY(0.456, wires=2)
         qml.RX(0.789, wires=0)
-        qml.Rot(0.111, 0.222, 0.333, wires=2),
+        qml.Rot(0.111, 0.222, 0.333, wires=2)
         qml.PauliX(wires=2)
         qml.PauliY(wires=4)
         qml.PauliZ(wires=0)
@@ -1594,10 +1599,9 @@ class TestCtrlTransformDifferentiation:
     @pytest.mark.autograd
     def test_autograd(self, diff_method):
         """Test differentiation using autograd"""
-        from pennylane import numpy as pnp
 
         dev = qml.device("default.qubit", wires=2)
-        init_state = pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+        init_state = np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
@@ -1605,7 +1609,7 @@ class TestCtrlTransformDifferentiation:
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
             return qml.expval(qml.PauliX(0))
 
-        b = pnp.array(0.123, requires_grad=True)
+        b = np.array(0.123, requires_grad=True)
         res = qml.grad(circuit)(b)
         expected = np.sin(b / 2) / 2
 
