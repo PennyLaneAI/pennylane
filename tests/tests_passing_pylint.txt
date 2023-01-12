@@ -1,4 +1,5 @@
 tests/data/test_dataset.py
 tests/data/test_dataset_access.py
 tests/ops/op_math/test_parametrized_hamiltonian.py
+tests/ops/op_math/test_parametrized_evolution.py
 tests/ops/functions/test_evolve.py
