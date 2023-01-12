@@ -37,6 +37,7 @@ from pennylane.wires import Wires
 # pylint: disable=too-few-public-methods
 # pylint: disable=protected-access
 # pylint: disable=pointless-statement
+# pylint: disable=expression-not-assigned
 
 base_num_control_mats = [
     (qml.PauliX("a"), 1, CNOT),
@@ -878,9 +879,8 @@ class TestDecomposition:
         op = Controlled(base, (0, 1, 2))
 
         with pytest.raises(DecompositionUndefinedError):
-            decomp = (
-                op.expand().circuit if test_expand else op.decomposition()
-            )  # pylint: disable=unused-variable
+            # pylint: disable=unused-variable
+            decomp = op.expand().circuit if test_expand else op.decomposition()
 
 
 class TestArithmetic:
@@ -941,7 +941,7 @@ class TestDifferentiation:
         """Test differentiation using autograd"""
 
         dev = qml.device("default.qubit", wires=2)
-        init_state = pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+        init_state = np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
@@ -949,7 +949,7 @@ class TestDifferentiation:
             Controlled(qml.RY(b, wires=1), control_wires=0)
             return qml.expval(qml.PauliX(0))
 
-        b = pnp.array(0.123, requires_grad=True)
+        b = np.array(0.123, requires_grad=True)
         res = qml.grad(circuit)(b)
         expected = np.sin(b / 2) / 2
 
