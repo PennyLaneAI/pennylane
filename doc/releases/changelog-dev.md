@@ -182,7 +182,7 @@
 * Fixed typo in calculation error message and comment in operation.py
   [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
 
-* `Dataset.write()` now ensures that any lazy-loaded values are loaded before writing to file.
+* `Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
 <h3>Contributors</h3>
