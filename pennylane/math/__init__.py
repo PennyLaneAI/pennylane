@@ -70,6 +70,7 @@ from .quantum import (
     relative_entropy,
     sqrt_matrix,
     vn_entropy,
+    max_entropy,
 )
 from .utils import (
     allclose,
@@ -119,6 +120,7 @@ __all__ = [
     "is_abstract",
     "is_independent",
     "marginal_prob",
+    "max_entropy",
     "mutual_info",
     "ones_like",
     "purity",
