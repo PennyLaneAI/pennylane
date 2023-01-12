@@ -39,6 +39,10 @@ def _import_zstd_dill():
     return zstd, dill
 
 
+class DatasetLoadError(Exception):
+    """Error raised when a Dataset has trouble finding a lazy-loaded attribute."""
+
+
 # pylint: disable=too-many-instance-attributes
 class Dataset(ABC):
     """Create a dataset object to store a collection of information describing
@@ -109,17 +113,20 @@ class Dataset(ABC):
         """Constructor for standardized datasets."""
         self._dtype = data_name
         self._folder = folder.rstrip(os.path.sep)
-        self._prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
-        self._prefix_len = len(attr_prefix) + 1
         self._description = os.path.join(data_name, self._folder.split(data_name)[-1][1:])
         self.__doc__ = docstring
 
-        self._fullfile = self._prefix.format("full")
-        if not os.path.exists(self._fullfile):
+        prefix = os.path.join(self._folder, attr_prefix) + "_{}.dat"
+        self._fullfile = prefix.format("full")
+        if os.path.exists(self._fullfile):
+            self.read(self._fullfile, lazy=True)
+        else:
             self._fullfile = None
-
-        for f in glob(self._prefix.format("*")):
-            self.read(f, lazy=True)
+            prefix_len = len(attr_prefix) + 1
+            for f in glob(prefix.format("*")):
+                attribute = os.path.basename(f)[prefix_len:-4]
+                setattr(self, f"{attribute}", None)
+                self._attr_filemap[attribute] = (f, False)
 
     def __base_init__(self, **kwargs):
         """Constructor for user-defined datasets."""
@@ -128,6 +135,7 @@ class Dataset(ABC):
 
     def __init__(self, *args, standard=False, **kwargs):
         """Dispatching constructor for direct invocation with kwargs or from qml.data.load()"""
+        self._attr_filemap = {}
         if standard:
             if len(args) != len(self._standard_argnames):
                 raise TypeError(
@@ -160,10 +168,10 @@ class Dataset(ABC):
     # pylint:disable=c-extension-no-member
     @staticmethod
     def _read_file(filepath):
-        """Read data from a saved file.
+        """Reads data from a previously created or downloaded data file.
 
         Returns:
-            A data value for non-standard datasets or full files, otherwise a dictionary
+            A dictionary for non-standard datasets or full files, otherwise a data value
         """
         with open(filepath, "rb") as f:
             compressed_pickle = f.read()
@@ -172,37 +180,43 @@ class Dataset(ABC):
         depressed_pickle = zstd.decompress(compressed_pickle)
         return dill.loads(depressed_pickle)
 
-    def read(self, filepath, lazy=False):
+    def read(self, filepath, lazy=False, assign_to=None):
         """Loads data from a saved file to the current dataset.
 
         Args:
             filepath (string): The desired location and filename to load, e.g. './path/to/file/file_name.dat'.
-            lazy (bool): Indicates if only the key of the attribute should be saved to the Dataset instance
+            lazy (bool): Indicates if only the key of the attribute should be saved to the Dataset instance.
+                Note that the file will be remembered and its contents will be loaded when the attribute is used.
+            assign_to (str): Attribute name to which the contents of the file should be assigned.
+                If this is ``None`` (the default value), this method will assume that the file contents are of
+                the form ``{attribute_name: attribute_value,}``.
 
         **Example**
 
         >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
         >>> new_dataset.read('./path/to/file/file_name.dat')
+
+        **Example using ``assign_to``**
+
+        >>> new_dataset = qml.data.Dataset()
+        >>> new_dataset.read('./path/to/file/single_state.dat', assign_to="state")
+        >>> new_dataset.state  # assuming the above file contains only a tensor
+        tensor([1, 1, 0, 0], requires_grad=True)
         """
-        # set 'full' for non-standard datasets so they read keys too
-        attribute = self.__get_attribute_from_filename(filepath) if self._is_standard else "full"
-        if attribute == "full":
-            data = self._read_file(filepath)
-            for attr, value in data.items():
-                if lazy:
-                    data = None
-                elif attr in condensed_hamiltonians:
-                    data = dict_to_hamiltonian(value["terms"], value["wire_map"])
-                else:
-                    data = value
-                setattr(self, f"{attr}", data)
-        else:
-            data = None
-            if not lazy:
-                data = self._read_file(filepath)
-                if attribute in condensed_hamiltonians:
-                    data = dict_to_hamiltonian(data["terms"], data["wire_map"])
-            setattr(self, f"{attribute}", data)
+        data = self._read_file(filepath)
+        file_contains_dataset = True
+        if assign_to is not None:
+            data = {assign_to: data}
+            file_contains_dataset = False
+        if lazy:
+            for attr in data:
+                setattr(self, f"{attr}", None)
+                self._attr_filemap[attr] = (filepath, file_contains_dataset)
+            return
+        for attr, value in data.items():  # pylint:disable=no-member
+            if attr in condensed_hamiltonians:
+                value = self.__dict_to_hamiltonian(value["terms"], value["wire_map"])
+            setattr(self, f"{attr}", value)
 
     # pylint:disable=c-extension-no-member
     @staticmethod
@@ -228,9 +242,13 @@ class Dataset(ABC):
         dirname = os.path.dirname(filepath)
         if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
+        # if some values are still lazy-loaded to None, this will load them before writing
+        if self._is_standard:
+            for attr in self.attrs:
+                _ = getattr(self, attr)
         attrs = self.attrs
         for h in condensed_hamiltonians.intersection(attrs):
-            attrs[h] = hamiltonian_to_dict(getattr(self, h))
+            attrs[h] = self.__hamiltonian_to_dict(attrs[h])
         self._write_file(attrs, filepath, protocol=protocol)
 
     def list_attributes(self):
@@ -242,67 +260,63 @@ class Dataset(ABC):
         cls = self.__class__
 
         if not self._is_standard:
-            return cls(**self.attrs)
+            copied = cls(**self.attrs)
+            copied._attr_filemap = self._attr_filemap.copy()
+            return copied
 
         copied = cls.__new__(cls)
         copied._is_standard = True
         copied._dtype = self._dtype
         copied._folder = self._folder
-        copied._prefix = self._prefix
-        copied._prefix_len = self._prefix_len
         copied._fullfile = self._fullfile
+        copied._description = self._description
+        copied._attr_filemap = self._attr_filemap.copy()
         copied.__doc__ = self.__doc__
         for key, val in self.attrs.items():
             setattr(copied, f"{key}", val)
 
         return copied
 
-    # The methods below are intended for use only by standard Dataset objects
-    def __get_filename_for_attribute(self, attribute):
-        return self._fullfile or self._prefix.format(attribute)
-
-    def __get_attribute_from_filename(self, filename):
-        return os.path.basename(filename)[self._prefix_len : -4]
-
     def __getattribute__(self, name):
-        try:
-            val = super().__getattribute__(name)
-            if val is None and self._is_standard and name in self.attrs:
-                raise AttributeError(
-                    f"Dataset has a '{name}' attribute, but it is None and no data file was found"
-                )
-            return val
-        except AttributeError:
-            if not self._is_standard:
-                raise
-            filepath = self.__get_filename_for_attribute(name)
-            if not os.path.exists(filepath):  # TODO: download the file here?
-                raise
-            value = self._read_file(filepath)
-            if filepath == self._fullfile:
-                if name not in value:
-                    raise
-                value = value[name]
-            if name in condensed_hamiltonians:
-                value = dict_to_hamiltonian(value["terms"], value["wire_map"])
-            setattr(self, name, value)
+        value = super().__getattribute__(name)
+        if value is not None or name not in self._attr_filemap:
             return value
 
+        filepath, file_contains_dataset = self._attr_filemap[name]
+        if not os.path.exists(filepath):
+            raise DatasetLoadError(
+                f"Dataset lazy-loaded a '{name}' attribute, but the file originally containing it ({filepath}) was not found."
+            )
 
-def dict_to_hamiltonian(terms, wire_map):
-    """Converts a dict of terms and a wire map into a Hamiltonian instance."""
-    coeffs, ops = [], []
-    for pauli_string, coeff in terms.items():
-        coeffs.append(coeff)
-        ops.append(string_to_pauli_word(pauli_string, wire_map))
-    return Hamiltonian(coeffs, ops)
+        value = self._read_file(filepath)
+        if file_contains_dataset:
+            if name not in value:
+                raise DatasetLoadError(
+                    f"Dataset lazy-loaded a '{name}' attribute from {filepath}, but it no longer appears to be in the file."
+                )
+            value = value[name]
+        if name in condensed_hamiltonians:
+            value = self.__dict_to_hamiltonian(value["terms"], value["wire_map"])
 
+        setattr(self, name, value)
+        del self._attr_filemap[name]
+        return value
 
-def hamiltonian_to_dict(hamiltonian):
-    """Converts a hamiltonian instance into a dict containing pauli-string terms and a wire map."""
-    coeffs, ops = hamiltonian.terms()
-    wire_map = {w: i for i, w in enumerate(hamiltonian.wires)}
-    return {
-        "terms": {pauli_word_to_string(op, wire_map): coeff for coeff, op in zip(coeffs, ops)},
-        "wire_map": wire_map,
-    }
+    @staticmethod
+    def __dict_to_hamiltonian(terms, wire_map):
+        """Converts a dict of terms and a wire map into a Hamiltonian instance."""
+        coeffs, ops = [], []
+        for pauli_string, coeff in terms.items():
+            coeffs.append(coeff)
+            ops.append(string_to_pauli_word(pauli_string, wire_map))
+        return Hamiltonian(coeffs, ops)
+
+    @staticmethod
+    def __hamiltonian_to_dict(hamiltonian):
+        """Converts a hamiltonian instance into a dict containing pauli-string terms and a wire map."""
+        coeffs, ops = hamiltonian.terms()
+        wire_map = {w: i for i, w in enumerate(hamiltonian.wires)}
+        return {
+            "terms": {pauli_word_to_string(op, wire_map): coeff for coeff, op in zip(coeffs, ops)},
+            "wire_map": wire_map,
+        }
