@@ -16,7 +16,7 @@
 # need to make sure copyright is not infringed
 """Fix step size ODE solver"""
 
-#import warnings
+import warnings
 from functools import partial
 
 import jax
@@ -81,6 +81,12 @@ def abs2(x):
         return x.real**2 + x.imag**2
     return x**2
 
+def tolerance_warn(atol, rtol, err_ratio):
+    warnings.warn(
+        f"The targeted error tolerance of atol = {atol} and rtol = {rtol}"
+        f"is not reached with a relative error of {err_ratio}",
+        UserWarning,
+    )
 
 def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     def func_(y, t):
@@ -92,17 +98,13 @@ def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
         # not using y1_error and k atm
         y1, f1, y1_error = runge_kutta_step(func_, y0, f0, t0, dt)
 
-        # # check error
-        # #def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
-        # err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
-        # err_ratio = y1_error / err_tol.astype(y1_error.dtype)
-        # mean_err_ratio = jnp.sqrt(jnp.mean(abs2(err_ratio)))
-        # if mean_err_ratio > 1.:
-        #     warnings.warn(
-        #         f"The targeted error tolerance of atol = {atol} and rtol = {rtol}"
-        #         f"is not reached with a relative error of {err_ratio}",
-        #         UserWarning,
-        #     )
+        # check error
+        #def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
+        err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
+        err_ratio = y1_error / err_tol.astype(y1_error.dtype)
+        mean_err_ratio = jnp.sqrt(jnp.mean(abs2(err_ratio)))
+        print(mean_err_ratio)
+        jax.lax.cond(mean_err_ratio > 1., tolerance_warn, lambda atol, rtol, err_ratio: None, atol, rtol, err_ratio)
 
         carry = [y1, f1, t1]
         return carry, y1
@@ -111,11 +113,11 @@ def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     f0 = func_(y0, ts[0])
     init = [y0, f0, ts[0]]
     carry, _ = jax.lax.scan(scan_fun, init, ts[1:])
-    U, _, _ = carry
+    y, _, _ = carry
     # we typically only care about the final U
-    # In case we want to return all Us, the output of
+    # In case we want to return all ys, the output of
     # odeint() must be vmapped, jax.vmap(unravel)(out)
-    return U  # jnp.concatenate((y0[None], Us))
+    return y  # jnp.concatenate((y0[None], ys))
 
 
 def runge_kutta_step(func, y0, f0, t0, dt):
