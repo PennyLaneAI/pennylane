@@ -20,6 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.qubit import initialize_state
+from pennylane.interfaces import INTERFACE_MAP
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -27,29 +28,28 @@ tf = pytest.importorskip("tensorflow")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 
-SUPPORTED_INTERFACES_AND_TYPES = [
-    ("numpy", np.tensor),
-    ("scipy", np.ndarray),
-    ("jax", jax.Array),
-    ("torch", torch.Tensor),
-    ("tf", tf.Tensor),
-]
-SUPPORTED_INTERFACES = [i[0] for i in SUPPORTED_INTERFACES_AND_TYPES]
+SUPPORTED_INTERFACES = ["numpy", "scipy", "jax", "torch", "tf"]
 
 
-@pytest.mark.parametrize("ml_framework,dtype", SUPPORTED_INTERFACES_AND_TYPES)
+def get_interface(value):
+    """Helper to fetch the interface used despite the tensorflow swap."""
+    interface = qml.math.get_interface(value)
+    return "tf" if interface == "tensorflow" else interface
+
+
+@pytest.mark.parametrize("ml_framework", SUPPORTED_INTERFACES)
 @pytest.mark.parametrize("num_wires", [1, 2, 3])
-def test_initialize_state_no_ops(ml_framework, dtype, num_wires):
+def test_initialize_state_no_ops(ml_framework, num_wires):
     """Tests that initialize_state works without prep operations provided."""
     actual = initialize_state(num_wires, ml_framework=ml_framework)
     expected = np.zeros((2,) * num_wires)
     expected[(0,) * num_wires] = 1
     assert qml.math.allequal(expected, actual)
-    assert isinstance(actual, dtype)
+    assert get_interface(actual) == INTERFACE_MAP[ml_framework]
 
 
-@pytest.mark.parametrize("ml_framework,dtype", SUPPORTED_INTERFACES_AND_TYPES)
-def test_initialize_state_with_prep(ml_framework, dtype):
+@pytest.mark.parametrize("ml_framework", SUPPORTED_INTERFACES)
+def test_initialize_state_with_prep(ml_framework):
     """Tests that initialize_state handles prep operations correctly."""
     ops = [qml.Hadamard(0), qml.CNOT([0, 1])]
     actual = initialize_state(3, prep_operations=ops, ml_framework=ml_framework)
@@ -57,7 +57,7 @@ def test_initialize_state_with_prep(ml_framework, dtype):
     expected[0][0][0] = 1 / np.sqrt(2)
     expected[1][1][0] = 1 / np.sqrt(2)
     assert qml.math.allequal(expected, actual)
-    assert isinstance(actual, dtype)
+    assert get_interface(actual) == INTERFACE_MAP[ml_framework]
 
 
 def test_too_many_wires_in_prep():
