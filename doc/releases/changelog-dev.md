@@ -120,9 +120,6 @@
 
 <h3>Improvements</h3>
 
-* Implemented the XYX single-qubit unitary decomposition. 
-  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628) 
-
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
 
