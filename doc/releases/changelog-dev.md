@@ -121,6 +121,9 @@
 * Support `qml.math.size` with torch tensors.
   [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
+* Support `qml.math.matmul` with a torch tensor and an autograd tensor.
+  [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
+
 <h3>Improvements</h3>
 
 * Most channels in are now fully differentiable in all interfaces.

@@ -33,18 +33,25 @@ The following frameworks are currently supported:
 """
 import autoray as ar
 
+from .is_independent import is_independent
+from .matrix_manipulation import expand_matrix, reduce_matrices
 from .multi_dispatch import (
-    multi_dispatch,
+    add,
     array,
     block_diag,
     concatenate,
     diag,
     dot,
     einsum,
+    expm,
     eye,
     frobenius_inner_product,
     gammainc,
     get_trainable_indices,
+    iscomplex,
+    kron,
+    matmul,
+    multi_dispatch,
     ones_like,
     scatter,
     scatter_element_add,
@@ -52,39 +59,30 @@ from .multi_dispatch import (
     tensordot,
     unwrap,
     where,
-    add,
-    iscomplex,
-    expm,
-    kron,
 )
-
-from .quantum import cov_matrix, marginal_prob
 from .quantum import (
-    reduced_dm,
-    vn_entropy,
-    purity,
-    mutual_info,
-    sqrt_matrix,
+    cov_matrix,
     fidelity,
+    marginal_prob,
+    mutual_info,
+    purity,
+    reduced_dm,
     relative_entropy,
+    sqrt_matrix,
+    vn_entropy,
     max_entropy,
 )
-
 from .utils import (
     allclose,
     allequal,
     cast,
     cast_like,
-    in_backprop,
-    is_abstract,
     convert_like,
     get_interface,
+    in_backprop,
+    is_abstract,
     requires_grad,
 )
-
-from .is_independent import is_independent
-
-from .matrix_manipulation import expand_matrix, reduce_matrices
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
