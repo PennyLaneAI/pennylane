@@ -81,12 +81,14 @@ def abs2(x):
         return x.real**2 + x.imag**2
     return x**2
 
+
 def tolerance_warn(atol, rtol, err_ratio):
     warnings.warn(
         f"The targeted error tolerance of atol = {atol} and rtol = {rtol}"
         f"is not reached with a relative error of {err_ratio}",
         UserWarning,
     )
+
 
 def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     def func_(y, t):
@@ -99,12 +101,19 @@ def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
         y1, f1, y1_error = runge_kutta_step(func_, y0, f0, t0, dt)
 
         # check error
-        #def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
+        # def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
         err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
         err_ratio = y1_error / err_tol.astype(y1_error.dtype)
         mean_err_ratio = jnp.sqrt(jnp.mean(abs2(err_ratio)))
         print(mean_err_ratio)
-        jax.lax.cond(mean_err_ratio > 1., tolerance_warn, lambda atol, rtol, err_ratio: None, atol, rtol, err_ratio)
+        jax.lax.cond(
+            mean_err_ratio > 1.0,
+            tolerance_warn,
+            lambda atol, rtol, err_ratio: None,
+            atol,
+            rtol,
+            err_ratio,
+        )
 
         carry = [y1, f1, t1]
         return carry, y1
@@ -171,7 +180,7 @@ def runge_kutta_step(func, y0, f0, t0, dt):
 
 
 def ravel_first_arg(f, unravel):
-    """"Decorate a function to work with a raveled first argument"""
+    """ "Decorate a function to work with a raveled first argument"""
     return _ravel_first_arg(lu.wrap_init(f), unravel).call_wrapped
 
 
