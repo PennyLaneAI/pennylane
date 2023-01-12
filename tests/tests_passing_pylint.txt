@@ -1,4 +1,3 @@
-tests/data/test_dataset.py
-tests/data/test_dataset_access.py
+tests/data/**
 tests/ops/op_math/test_controlled_ops.py
 tests/ops/op_math/test_controlled.py
