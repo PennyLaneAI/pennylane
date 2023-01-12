@@ -58,7 +58,7 @@ def _get_padded_wire_order(num_wires, operations):
 
 
 def initialize_state(
-    num_wires: int, prep_operations: List[Operator] = None, framework: str = "autograd"
+    num_wires: int, prep_operations: List[Operator] = None, ml_framework: str = "autograd"
 ) -> np.ndarray:
     """
     Initialize a state vector given some preparation operations.
@@ -66,7 +66,7 @@ def initialize_state(
     Args:
         num_wires (int): The number of wires in the state being initialized
         prep_operations (List[Operator]): A sequence of operations to apply to prepare an initial state
-        framework (str): The machine learning framework to use when preparing the initial state
+        ml_framework (str): The machine learning framework to use when preparing the initial state
 
     Returns:
         array[complex]: The initialized state vector
@@ -75,13 +75,13 @@ def initialize_state(
         QuantumFunctionError: If an unknown machine learning framework is provided
         ValueError: If too many distinct wires are found in the provided list of prep operations
     """
-    if framework not in INTERFACE_MAP:
+    if ml_framework not in INTERFACE_MAP:
         raise qml.QuantumFunctionError(
-            f"Unknown framework {framework}. Interface must be one of {list(INTERFACE_MAP)}."
+            f"Unknown framework {ml_framework}. Interface must be one of {list(INTERFACE_MAP)}."
         )
-    framework = INTERFACE_MAP[framework]
-    if framework == "tf":
-        framework = "tensorflow"
+    ml_framework = INTERFACE_MAP[ml_framework]
+    if ml_framework == "tf":
+        ml_framework = "tensorflow"
 
     state = np.zeros(2**num_wires, dtype="complex128")
     state[0] = 1
@@ -92,4 +92,4 @@ def initialize_state(
         prep_matrix = qml.matrix(prep_tape, wire_order=wire_order)
         state = qml.math.matmul(prep_matrix, state)
 
-    return qml.math.reshape(qml.math.array(state, like=framework), (2,) * num_wires)
+    return qml.math.reshape(qml.math.array(state, like=ml_framework), (2,) * num_wires)
