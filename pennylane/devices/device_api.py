@@ -20,11 +20,11 @@ import abc
 from numbers import Number
 from typing import Callable, Union, Sequence, Tuple
 
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTape
 from pennylane import Tracker
 
-QScriptBatch = Sequence[QuantumScript]
-QScript_or_QScriptBatch = Union[QuantumScript, QScriptBatch]
+QuantumTapeBatch = Sequence[QuantumTape]
+QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
 # pylint: disable=unused-argument, no-self-use
 class QuantumDevice(abc.ABC):
@@ -37,7 +37,29 @@ class QuantumDevice(abc.ABC):
 
     Only the ``execute`` function must be defined to construct a device.
 
-    **Porting to this interface from old devices:**
+    .. warning::
+
+        The ``QuantumTape`` objects passed to the device may inherit from :class:`~.AnnotatedQueue` and have a threading lock.
+        To use these objects in a distributed manner, please convert them to a :class:`~.QuantumScript` internally to remove
+        the threading lock before sending them to different threads.
+
+    Design Motivation
+    -----------------
+
+    **Streamlined interface:** Only methods that are required to interact with the rest of PennyLane will be placed in the
+    interface. Developers will be able to clearly see what they can change while still having a fully functional device.
+
+    **Reduction of duplicate methods:** Methods that solve similar problems are combined together. Only one place will have
+    to solve each individual problem.
+
+    **Support for dynamic execution configurations:** Properties such as shots belong to specific executions.
+
+    **Greater coverage for differentiation methods:** Devices can define any order of derivative, the vector jacobian product,
+    or the jacobian vector product.  Calculation of derivatives can be done at the same time as execution to allow reuse of intermediate
+    results.
+
+    Porting from the old interface
+    ------------------------------
 
     :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.QuantumDevice.execute`
 
@@ -53,8 +75,12 @@ class QuantumDevice(abc.ABC):
     measurements, then ``preprocess`` should apply :func:`~.defer_measurements`.  A set of default preprocessing steps will be available
     to make a seemless transition to the new interface.
 
+    A class will be provided to easily construct default preprocessing steps from supported operations, supported observables,
+    supported measurement processes, and various capabilities.
+
     Versioning should be specified by the package containing the device. If an external package includes a PennyLane device,
     then the package requirements should specify the minimium PennyLane version required to work with the device.
+
     """
 
     tracker: Tracker = Tracker()
@@ -80,18 +106,18 @@ class QuantumDevice(abc.ABC):
         self.tracker = Tracker()
 
     def preprocess(
-        self, qscript: QScript_or_QScriptBatch, execution_config=None
-    ) -> Tuple[QScriptBatch, Callable]:
+        self, qscript: QuantumTape_or_Batch, execution_config=None
+    ) -> Tuple[QuantumTapeBatch, Callable]:
         """Device preprocessing function.
 
         Args:
-            qscript (Union[QuantumScript, Sequence[QuantumScript]]): The circuit or a batch of circuits to preprocess
+            qscript (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
                 before execution on the device
             execution_config (ExecutionConfig): A datastructure describing the parameters needed to fully describe
                 the execution. Includes such information as shots.
 
         Returns:
-            Sequence[QuantumScript], Callable: QuantumScripts that the device can natively execute without
+            Sequence[QuantumTape], Callable: QuantumTapes that the device can natively execute without
             error and a postprocessing function to be called after execution.
 
         Raises:
@@ -100,9 +126,10 @@ class QuantumDevice(abc.ABC):
         This function is tracked by machine learning interfaces and should be fully differentiable.
 
         Preprocessing steps may include:
-        - expansion to :class:`~.Operator`'s and :class:`~.MeasurementProcess` objects supported by the device.
-        - splitting a quantum script with the measurement of non-commuting observables or Hamiltonians into multiple executions
-        - splitting quantum scripts with batched parameters into multiple executions
+
+        * expansion to :class:`~.Operator`'s and :class:`~.MeasurementProcess` objects supported by the device.
+        * splitting a quantum script with the measurement of non-commuting observables or Hamiltonians into multiple executions
+        * splitting quantum scripts with batched parameters into multiple executions
 
         This step may also validate parameters of the ``execution_config``. For example, it could raise an error if the
         device doesn't support finite shots but the ``execution_config`` requests it.
@@ -123,15 +150,15 @@ class QuantumDevice(abc.ABC):
             """
             return res
 
-        qscript_batch = [qscript] if isinstance(qscript, QuantumScript) else qscript
+        qscript_batch = [qscript] if isinstance(qscript, QuantumTape) else qscript
         return qscript_batch, blank_postprocessing_fn
 
     @abc.abstractmethod
-    def execute(self, qscripts: QScript_or_QScriptBatch, execution_config=None):
+    def execute(self, qscripts: QuantumTape_or_Batch, execution_config=None):
         """Execute a quantum script or a batch of quantum scripts and turn it into results.
 
         Args:
-            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the quantum script(s) to be executed
+            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the quantum script(s) to be executed
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
@@ -149,6 +176,13 @@ class QuantumDevice(abc.ABC):
           has its own set of configuration parameters. For example, every script can be executed with a different
           number of shots.
 
+        Execution config properties most relevant for devices are:
+
+        * ``shots``: Either an integer or a tuple of integer. A tuple of integers represenents a shot vector.
+
+        * ``device_options``: A dictionary of device specific options. For example, the python device may have `use_multiprocessing`
+          as a key. These should be documented in the class docstring.
+
         **Interface parameters:**
 
         Note that the parameters contained within the quantum script may contain interface-specific data types, such as
@@ -158,7 +192,7 @@ class QuantumDevice(abc.ABC):
 
         **Return shape:**
 
-        The result for each :class:`~.QuantumScript` must match the shape specified by :class:`~.QuantumScript.shape`.
+        The result for each :class:`~.QuantumTape` must match the shape specified by :class:`~.QuantumTape.shape`.
 
         The level of priority for dimensions from outer dimension to inner dimension is:
 
@@ -184,7 +218,7 @@ class QuantumDevice(abc.ABC):
         measurement value in a numpy array. ``shape`` currently accepts a device, as historically devices
         stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
 
-        >>> qs = qml.tape.QuantumScript(measurements=qml.expval(qml.PauliZ(0))])
+        >>> qs = qml.tape.QuantumTape(measurements=qml.expval(qml.PauliZ(0))])
         >>> qs.shape(dev)
         ()
         >>> dev.execute(qs)
@@ -199,7 +233,7 @@ class QuantumDevice(abc.ABC):
 
         If the script has multiple measurments, then the device should return a tuple of measurements.
 
-        >>> qs = qml.tape.QuantumScript(measurements=[qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+        >>> qs = qml.tape.QuantumTape(measurements=[qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
         >>> qs.shape(dev)
         ((), (4,))
         >>> dev.execute(qs)
@@ -209,10 +243,10 @@ class QuantumDevice(abc.ABC):
         raise NotImplementedError
 
     @classmethod
-    def supports_jacobian_with_configuration(cls, execution_config=None) -> bool:
+    def supports_differentiation(cls, execution_config=None) -> bool:
         """Determine whether or not a gradient is available with a given execution configuration.
 
-        Default behaviour assumes first order derivatives exist if :meth:`~.gradient` is overriden.
+        Default behaviour assumes first order derivatives exist if :meth:`~.differentiate` is overriden.
 
         Args:
             execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
@@ -222,51 +256,51 @@ class QuantumDevice(abc.ABC):
 
         **Example:**
 
-        For example, the current Python device supports adjoint differentiation if the order is ``1`` and
-        the execution occurs with no shots ``shots=None``.
+        For example, the Python device will a device differentiation via the adjoint differentiation algorithm
+        if the order is ``1`` and the execution occurs with no shots ``shots=None``.
 
-        >>> config = ExecutionConfig(derivative_order=1, shots=None)
-        >>> dev.supports_jacobian_with_configuration(config)
+        >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="device")
+        >>> dev.supports_differentiation(config)
         True
-        >>> config = ExecutionConfig(order=1, shots=10)
-        >>> dev.supports_gradient_with_configuration(config)
+        >>> config = ExecutionConfig(derivative_order=1, shots=10, gradient_method="device")
+        >>> dev.supports_differentiation(config)
         False
-        >>> config = ExecutionConfig(order=2, shots=None)
-        >>> dev.supports_gradient_with_configuration(config)
+        >>> config = ExecutionConfig(derivative_order=2, shots=None, gradient_method="device")
+        >>> dev.supports_differentiation(config)
         False
 
         **Backpropagation:**
 
-        This method is also used to validate support for backpropagation derivatives. Backpropagation
+        This method is also used be to validate support for backpropagation derivatives. Backpropagation
         is only supported if the devices is transparent to the machine learning framework from start to finish.
 
-        >>> config = ExecutionConfig(diff_method="backprop", framework="torch")
-        >>> python_device.supports_gradient_with_configuration(config)
+        >>> config = ExecutionConfig(gradient_method="backprop", framework="torch")
+        >>> python_device.supports_differentiation(config)
         True
-        >>> cpp_device.supports_gradient_with_configuration(config)
+        >>> cpp_device.supports_differentiation(config)
         False
 
         """
-        if getattr(execution_config, "diff_method", None) == "backprop":
+        if getattr(execution_config, "gradient_method", None) != "device":
             return False
         order = getattr(execution_config, "order", 1)
-        return cls.compute_jacobian != QuantumDevice.compute_jacobian if order == 1 else False
+        return cls.differentiate != QuantumDevice.differentiate if order == 1 else False
 
-    def compute_jacobian(
+    def differentiate(
         self,
-        qscript: QScript_or_QScriptBatch,
+        qscript: QuantumTape_or_Batch,
         execution_config=None,
     ):
         """Calculate the jacobian of either a single or a batch of Quantum Scripts.
 
         Args:
-            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
             Tuple: The jacobian for each trainable parameter
 
-        See also :meth:`~.supports_jacobian_with_configuration` and :meth:`~.execute_and_compute_jacobian`.
+        See also :meth:`~.supports_differentiation` and :meth:`~.execute_and_differentiate`.
 
         **Execution Config:**
 
@@ -282,21 +316,21 @@ class QuantumDevice(abc.ABC):
         """
         raise NotImplementedError
 
-    def execute_and_compute_jacobian(
+    def execute_and_differentiate(
         self,
-        qscripts: QScript_or_QScriptBatch,
+        qscripts: QuantumTape_or_Batch,
         execution_config=None,
     ):
-        """Compute the results and jacobians of QuantumScripts at the same time.
+        """Compute the results and jacobians of QuantumTapes at the same time.
 
         Args:
-            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript or batch to be executed
+            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape or batch to be executed
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
             tuple, tuple: A numeric result of the computation and the gradient.
 
-        See :meth:`~.execute` and :meth:`~.compute_jacobian` for more information about return shapes and behaviour. If :meth:`~.calculate_jacobian`
+        See :meth:`~.execute` and :meth:`~.differentiate` for more information about return shapes and behaviour. If :meth:`~.differentiate`
         is defined, this method should be as well.
 
         This method can be used when the result and execution need to be computed at the same time, such as
@@ -304,20 +338,20 @@ class QuantumDevice(abc.ABC):
         diff gradients, calculating the result and gradient at the same can save computational work.
 
         """
-        return self.execute(qscripts, execution_config), self.compute_jacobian(
+        return self.execute(qscripts, execution_config), self.differentiate(
             qscripts, execution_config
         )
 
     def jvp(
         self,
-        qscript: QScript_or_QScriptBatch,
+        qscript: QuantumTape_or_Batch,
         tangents: Tuple[Number],
         execution_config=None,
     ):
         r"""The jacobian vector product used in forward mode calculation of derivatives.
 
         Args:
-            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             tangents (tensor-like): Gradient vector for input parameters.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
@@ -349,14 +383,14 @@ class QuantumDevice(abc.ABC):
 
     def execute_and_jvp(
         self,
-        qscripts: QScript_or_QScriptBatch,
+        qscripts: QuantumTape_or_Batch,
         tangents: Tuple[Number],
         execution_config=None,
     ):
         """Execute a batch of quantum scripts and compute their jacobian vector products.
 
         Args:
-            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             tangents (tensor-like): Gradient vector for input parameters.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
@@ -380,14 +414,14 @@ class QuantumDevice(abc.ABC):
 
     def vjp(
         self,
-        qscript: QScript_or_QScriptBatch,
+        qscript: QuantumTape_or_Batch,
         cotangents: Tuple[Number],
         execution_config=None,
     ):
         r"""The vector jacobian product used in reversed mode differentiation.
 
         Args:
-            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             cotangents (Tuple[Number]): Gradient-output vector. Must have shape matching the output shape of the
                 corresponding qscript
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
@@ -417,14 +451,14 @@ class QuantumDevice(abc.ABC):
 
     def execute_and_vjp(
         self,
-        qscripts: QScript_or_QScriptBatch,
+        qscripts: QuantumTape_or_Batch,
         cotangents: Tuple[Number],
         execution_config=None,
     ):
         r"""Calculate both the results and the vector jacobian product used in reversed mode differentiation.
 
         Args:
-            qscripts (Union[QuantumScript, Sequence[QuantumScript]]): the QuantumScript to be executed
+            qscripts (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             cotangents Tuple[Number]: Gradient-output vector. Must have shape matching the output shape of the
                 corresponding qscript
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
@@ -435,7 +469,7 @@ class QuantumDevice(abc.ABC):
         See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.vjp` for more information.
         """
         return self.execute(qscripts, execution_config), self.vjp(
-            qscripts, tangents, execution_config
+            qscripts, cotangents, execution_config
         )
 
     @classmethod
