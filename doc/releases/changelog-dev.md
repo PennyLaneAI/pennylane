@@ -121,6 +121,9 @@
 * Support `qml.math.size` with torch tensors.
   [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
+* Support `qml.math.matmul` with a torch tensor and an autograd tensor.
+  [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
+
 * Added `devices.qubit.initialize_state()` to generate an initial state-vector given a list of prep operations.
   [(#3626)](https://github.com/PennyLaneAI/pennylane/pull/3626)
 
@@ -175,6 +178,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug in `qml.transforms.metric_tensor` where prefactors of operation generators were taken
+  into account multiple times, leading to wrong outputs for non-standard operations.
+  [(#3579)](https://github.com/PennyLaneAI/pennylane/pull/3579)
+
 * Uses a local random number generator where possible to avoid mutating the global random state.
   [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
 
@@ -184,7 +191,7 @@
 
 * Fixed the wires for the Y decomposition in the ZX calculus transform.
   [(#3598)](https://github.com/PennyLaneAI/pennylane/pull/3598)
-*
+
 * `qml.pauli.PauliWord` is now pickle-able.
   [(#3588)](https://github.com/PennyLaneAI/pennylane/pull/3588)
 
