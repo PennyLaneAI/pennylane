@@ -196,10 +196,9 @@ def _get_random_args(args, interface, num, seed, bounds):
             tuple(torch.rand(np.shape(arg)) * width + bounds[0] for arg in args) for _ in range(num)
         ]
     else:
-        np.random.seed(seed)
+        rng = np.random.default_rng(seed)
         rnd_args = [
-            tuple(np.random.random(np.shape(arg)) * width + bounds[0] for arg in args)
-            for _ in range(num)
+            tuple(rng.random(np.shape(arg)) * width + bounds[0] for arg in args) for _ in range(num)
         ]
         if interface == "autograd":
 
