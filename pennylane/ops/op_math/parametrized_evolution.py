@@ -23,13 +23,6 @@ from pennylane.operation import AnyWires, Operation
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
-has_jax = True
-try:
-    import jax.numpy as jnp
-    from jax.experimental.ode import odeint
-except ImportError as e:
-    has_jax = False
-
 
 class ParametrizedEvolution(Operation):
     r"""Parametrized evolution gate.
@@ -59,24 +52,25 @@ class ParametrizedEvolution(Operation):
     def __init__(self, H: ParametrizedHamiltonian, params: list, t, dt=0.1, do_queue=True, id=None):
         self.H = H
         self.dt = dt
-        self.data = params
+        self.h_params = params
         self.t = [0, t] if qml.math.size(t) == 1 else t
-        self._id = id
-        self._inverse = False
-        if do_queue:
-            self.queue()
+        super().__init__(wires=H.wires, do_queue=do_queue, id=id)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def wires(self):
-        return self.H.wires
+    def has_matrix(self):
+        return all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in self.H.ops)
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
-        if not has_jax:  # pragma: no cover
+        try:
+            import jax.numpy as jnp
+            from jax.experimental.ode import odeint
+        except ImportError as e:
             raise ImportError(
                 "Module jax is required for ``ParametrizedEvolution`` class. "
                 "You can install jax via: pip install jax"
-            )
+            ) from e
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
         def fun(y, t, params):
@@ -84,6 +78,6 @@ class ParametrizedEvolution(Operation):
             return -1j * qml.matrix(self.H(params, t)) @ y
 
         t = jnp.arange(self.t[0], self.t[1], self.dt, dtype=float)
-        result = odeint(fun, y0, t, self.data)
+        result = odeint(fun, y0, t, self.h_params)
         mat = result[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
