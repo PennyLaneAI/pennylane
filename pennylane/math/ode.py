@@ -46,8 +46,8 @@ def odeint(func, y0, ts, *args):
         Unlike many standard implementations, this ``odeint`` solver does not adaptively choose the step
         sizes, but rather a fix list of times for evaluation have to be provided in ``ts``. For an adaptive step
         size solver, we refer to `jax.experimental.ode.odeint <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_.
-    
-    .. warning:: 
+
+    .. warning::
 
         This function is written for ``jax`` only and will not work with other machine learning frameworks typically encountered in PennyLane.
 
