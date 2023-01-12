@@ -115,12 +115,12 @@ def zyz_decomposition(U, wire):
 
 
 def xyx_decomposition(U, wire):
-    r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms
+    r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms
     of elementary operations, as a product of X and Y rotations in the form
     :math:`e^{i\gamma} RX(\phi) RY(\theta) RX(\lambda)`.
 
     Args:
-        U (tensor): A 2 x 2 unitary matrix.
+        U (array[complex]): A 2 x 2 unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
 
     Returns:
