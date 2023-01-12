@@ -16,6 +16,7 @@ Tests for the QubitUnitary decomposition transforms.
 """
 
 import pytest
+from functools import reduce
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -149,24 +150,34 @@ class TestQubitUnitaryZYZDecomposition:
         obtained_gates = zyz_decomposition(U, wire="a")
 
         self._run_assertions(U, expected_gate, expected_params, obtained_gates)
-        
 
-typeof_id_times_phase = qml.ops.op_math.sprod.SProd 
+
+typeof_id_times_phase = qml.ops.op_math.sprod.SProd
 typeof_gates = (qml.ops.op_math.sprod.SProd, qml.RX, qml.RY, qml.RX)
 single_qubit_decomps_xyx = [
     # Try a random dense unitary
-    (np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
-               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]]),
-     typeof_gates, (0.38469215914523336-0.9230449299422961j,
-                0.45246583660683803, 1.3974974118006183, -1.7210192479534632)),
+    (
+        np.array(
+            [
+                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
+                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
+            ]
+        ),
+        typeof_gates,
+        (
+            0.38469215914523336 - 0.9230449299422961j,
+            0.45246583660683803,
+            1.3974974118006183,
+            -1.7210192479534632,
+        ),
+    ),
     # Try a few specific special unitaries
-    (I, typeof_gates, [1,           0,     0,          0]),
-    (X, typeof_gates, [1j, -1/2*np.pi,     0,  3/2*np.pi]),
-    (Y, typeof_gates, [1j,  1/2*np.pi, np.pi,  1/2*np.pi]),
-    (Z, typeof_gates, [1j,  1/2*np.pi, np.pi, -1/2*np.pi])
+    (I, typeof_gates, [1, 0, 0, 0]),
+    (X, typeof_gates, [1j, -1 / 2 * np.pi, 0, 3 / 2 * np.pi]),
+    (Y, typeof_gates, [1j, 1 / 2 * np.pi, np.pi, 1 / 2 * np.pi]),
+    (Z, typeof_gates, [1j, 1 / 2 * np.pi, np.pi, -1 / 2 * np.pi]),
 ]
 
-from functools import reduce
 
 class TestQubitUnitaryXYXDecomposition:
     """Test that the XYX decomposition is correct."""
@@ -174,23 +185,20 @@ class TestQubitUnitaryXYXDecomposition:
     def _run_assertions(self, U, expected_gates, expected_params, obtained_gates):
         assert len(obtained_gates) == 4, "Incorrect number of gates"
         for i in range(4):
-            assert isinstance(obtained_gates[i], expected_gates[i]), \
-                                                    "Incorrect type of gate"
+            assert isinstance(obtained_gates[i], expected_gates[i]), "Incorrect type of gate"
             assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
         # Check the global phase
         assert qml.math.isclose(
-            qml.math.unwrap(obtained_gates[0].parameters[0]),
-            expected_params[0]
+            qml.math.unwrap(obtained_gates[0].parameters[0]), expected_params[0]
         ), "Incorrect global phase"
         # Now we check the XYX rotation angles
         assert qml.math.allclose(
             [qml.math.unwrap(o.parameters)[0] for o in obtained_gates[1:]],
-            expected_params[1:], atol=1e-7
+            expected_params[1:],
+            atol=1e-7,
         ), "Incorrect XYX rotation angles"
 
-        obtained_mat = qml.math.unwrap([reduce(np.dot,
-                                              [op.matrix() 
-                                               for op in obtained_gates])])[0]
+        obtained_mat = qml.math.unwrap([reduce(np.dot, [op.matrix() for op in obtained_gates])])[0]
 
         if len(obtained_mat.shape) == 2:
             U = [U]

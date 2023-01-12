@@ -113,6 +113,7 @@ def zyz_decomposition(U, wire):
 
     return [qml.Rot(phis, thetas, omegas, wires=wire)]
 
+
 def xyx_decomposition(U, wire):
     r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms
     of elementary operations, as a product of X and Y rotations in the form
@@ -123,7 +124,7 @@ def xyx_decomposition(U, wire):
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
 
     Returns:
-        list[qml.Operation]: Returns a list of 4 gates, an ``Identity`` times 
+        list[qml.Operation]: Returns a list of 4 gates, an ``Identity`` times
         the global phase, then an ``RX``, an ``RY``and another ``RX`` gate,
         which when applied in the order of appearance in the list is equivalent
         to the unitary :math:`U`.
@@ -139,35 +140,31 @@ def xyx_decomposition(U, wire):
             RY(1.3974974118006183, wires=[0]),
             RX(-1.7210192479534632, wires=[0])]
     """
-    
+
     # Small number to add to denominators to avoid division by zero
     EPS = 1e-64
-    
+
     # Choose gamma such that exp(-i*gamma)*U is special unitary (detU==1).
-    gamma = math.cast_like(math.angle(math.linalg.det(U))/2, 1j)
-    U_det1 = math.exp(-1j * gamma) * U 
-    
+    gamma = math.cast_like(math.angle(math.linalg.det(U)) / 2, 1j)
+    U_det1 = math.exp(-1j * gamma) * U
+
     # Compute \phi, \theta and \lambda after analytically solving for them from
     # U_det1 = expm(1j*\phi*PauliX) expm(1j*\theta*PauliY) expm(1j*\lambda*PauliX)
-    lam_plus_phi = math.arctan2(-math.imag(U_det1[0, 1]),
-                                 math.real(U_det1[0, 0]) + EPS);
-    lam_minus_phi = math.arctan2(math.imag(U_det1[0, 0]),
-                                 -math.real(U_det1[0, 1]) + EPS)
-    lam = lam_plus_phi + lam_minus_phi;
-    phi = lam_plus_phi - lam_minus_phi;
-    
-    # The following conditional attempts to avoid 0 / 0 errors. Either the 
+    lam_plus_phi = math.arctan2(-math.imag(U_det1[0, 1]), math.real(U_det1[0, 0]) + EPS)
+    lam_minus_phi = math.arctan2(math.imag(U_det1[0, 0]), -math.real(U_det1[0, 1]) + EPS)
+    lam = lam_plus_phi + lam_minus_phi
+    phi = lam_plus_phi - lam_minus_phi
+
+    # The following conditional attempts to avoid 0 / 0 errors. Either the
     # sine is 0 or the cosine, but not both.
     if math.allclose(lam_plus_phi, 0):
-        theta = 2 * math.arccos(math.real(U_det1[1, 1]) / 
-                              (math.cos(lam_plus_phi) + EPS));
+        theta = 2 * math.arccos(math.real(U_det1[1, 1]) / (math.cos(lam_plus_phi) + EPS))
     else:
-        theta = 2 * math.arccos(-math.imag(U_det1[0, 1]) / 
-                              (math.sin(lam_plus_phi) + EPS));
+        theta = 2 * math.arccos(-math.imag(U_det1[0, 1]) / (math.sin(lam_plus_phi) + EPS))
 
-    return [qml.s_prod(math.exp(1j*gamma),
-                             qml.Identity(wire)),
-                    qml.RX(phi, wire),
-                    qml.RY(theta, wire),
-                    qml.RX(lam, wire)]
-    
+    return [
+        qml.s_prod(math.exp(1j * gamma), qml.Identity(wire)),
+        qml.RX(phi, wire),
+        qml.RY(theta, wire),
+        qml.RX(lam, wire),
+    ]
