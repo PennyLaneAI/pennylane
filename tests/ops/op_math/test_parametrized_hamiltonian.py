@@ -3,15 +3,15 @@ Unit tests for the ParametrizedHamiltonian class
 """
 
 from inspect import isfunction
-
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.op_math import ParametrizedHamiltonian
 
-f1 = lambda param, t: param * np.sin(t) * (t - 1)
-f2 = lambda param, t: param * np.cos(t**2)
+
+f1 = lambda param, t: param[0] * np.sin(t) * (t - 1)
+f2 = lambda param, t: param[1] * np.cos(t**2)
 param = [1.2, 2.3]
 
 test_example = ParametrizedHamiltonian(
@@ -24,14 +24,14 @@ class TestInitialization:
 
     def test_initialization_via_dot(self):
         """Test that using qml.ops.dot initializes a ParametrizedHamiltonian"""
-        fa = lambda param, t: param[0] * np.sin(t) * (t - 1)
-        fb = lambda param, t: param[1] * np.cos(t**2)
+        f1 = lambda param, t: param[0] * np.sin(t) * (t - 1)
+        f2 = lambda param, t: param[1] * np.cos(t**2)
 
         XX = qml.PauliX(0) @ qml.PauliX(1)
         YY = qml.PauliY(0) @ qml.PauliY(1)
         ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
 
-        coeffs = [2, fa, fb]
+        coeffs = [2, f1, f2]
         ops = [XX, YY, ZZ]
 
         H = qml.ops.dot(coeffs, ops)
@@ -74,29 +74,27 @@ class TestInitialization:
 
 class TestCall:
 
-    coeffs_ops_and_params = (
+    coeffs_and_ops = (
         (
             [f1, f2],
             [qml.PauliX(0), qml.PauliY(1)],
-            [1.2, 2.3],
         ),  # no H_fixed term, multiple H_parametrized terms
-        ([f1], [qml.PauliX(0)], [1.2]),  # no H_fixed term, one H_parametrized term
+        ([f1], [qml.PauliX(0)]),  # no H_fixed term, one H_parametrized term
         (
             [1.2, 2.3],
             [qml.PauliX(0), qml.PauliY(1)],
-            [],
         ),  # no H_parametrized term, multiple H_fixed terms
-        ([1.2], [qml.PauliX(0)], []),  # no H_parametrized term, one H_fixed term
-        ([1, f1], [qml.PauliX(3), qml.PauliY(2)], [1.2]),  # one of each
-        ([1.2, f1, 2.3, f2], [qml.PauliX(0) for i in range(4)], [1.2, 2.3]),  # multiples of each
+        ([1.2], [qml.PauliX(0)]),  # no H_parametrized term, one H_fixed term
+        ([1, f1], [qml.PauliX(3), qml.PauliY(2)]),  # one of each
+        ([1.2, f1, 2.3, f2], [qml.PauliX(0) for i in range(4)]),  # multiples of each
     )
 
-    @pytest.mark.parametrize("coeffs, ops, params", coeffs_ops_and_params)
-    def test_call_succeeds_for_different_shapes(self, coeffs, ops, params):
+    @pytest.mark.parametrize("coeffs, ops", coeffs_and_ops)
+    def test_call_succeeds_for_different_shapes(self, coeffs, ops):
         """Test that calling the ParametrizedHamiltonian succeeds for
         different numbers of H_fixed and H_parametrized terms"""
         pH = ParametrizedHamiltonian(coeffs, ops)
-        pH(params, 0.5)
+        pH(param, 0.5)
 
     def test_call_returns_expected_results(self):
         """Test result of calling the ParametrizedHamiltonian makes sense"""
@@ -114,17 +112,17 @@ class TestCall:
             qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
         )
         expected_H_parametrized = qml.op_sum(
-            qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
+            qml.s_prod(f1(params, t), qml.PauliX(1)), qml.s_prod(f2(params, t), qml.PauliX(3))
         )
 
         assert qml.equal(H_fixed, expected_H_fixed)
         assert qml.equal(H_parametrized, expected_H_parametrized)
 
     def test_call_with_qutrit_operators(self):
-        def fa(x, t):
+        def f1(x, t):
             return x + 2 * t
 
-        coeffs = [fa, 2]
+        coeffs = [f1, 2]
         obs = [qml.GellMann(wires=0, index=1), qml.GellMann(wires=0, index=2)]
 
         H = ParametrizedHamiltonian(coeffs, obs)
@@ -261,8 +259,8 @@ class TestInteractionWithOperators:
 
         # H_parametrized now contained the parametrized terms from both pH1 and pH2
         parametric_term = new_pH.H_parametrized([1.2, 2.3], 0.5)
-        assert qml.equal(parametric_term[0], pH1.H_parametrized([1.2], 0.5))
-        assert qml.equal(parametric_term[1], pH2.H_parametrized([2.3], 0.5))
+        assert qml.equal(parametric_term[0], pH1.H_parametrized([1.2, 2.3], 0.5))
+        assert qml.equal(parametric_term[1], pH2.H_parametrized([1.2, 2.3], 0.5))
 
     def test_fn_times_observable_creates_parametrized_hamiltonian(self):
         """Test a ParametrizedHamiltonian can be created by multiplying a

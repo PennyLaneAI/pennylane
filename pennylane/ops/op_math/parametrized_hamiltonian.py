@@ -6,7 +6,6 @@ from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.wires import Wires
 
-
 # pylint: disable= too-many-instance-attributes
 class ParametrizedHamiltonian:
     r"""Callable object holding the information representing a parametrized Hamiltonian. Passing parameters to
@@ -67,7 +66,6 @@ class ParametrizedHamiltonian:
         # to how the terms were entered, sorting seems the least ambiguous organization for the wires
         self.wires = Wires.all_wires([op.wires for op in observables], sort=True)
 
-        self.wires = Wires.all_wires([op.wires for op in observables])
         self._ops = list(observables)
         self._coeffs = coeffs
 
@@ -76,7 +74,6 @@ class ParametrizedHamiltonian:
         self.H_ops_fixed = []
         self.H_ops_parametrized = []
 
-        self.num_args = 0
         for coeff, obs in zip(coeffs, observables):
             if callable(coeff):
                 self.H_coeffs_parametrized.append(coeff)
