@@ -132,8 +132,8 @@ def scf(mol, n_steps=50, tol=1e-8):
             s = overlap_matrix(basis_functions)(*args)
             h_core = core_matrix(basis_functions, charges, r)(*args)
 
-        qml.math.random.seed(2030)
-        s = s + qml.math.diag(qml.math.random.rand(len(s)) * 1.0e-12)
+        rng = qml.math.random.default_rng(2030)
+        s = s + qml.math.diag(rng.random(len(s)) * 1.0e-12)
 
         w, v = qml.math.linalg.eigh(s)
         x = v @ qml.math.diag(1.0 / qml.math.sqrt(w)) @ v.T

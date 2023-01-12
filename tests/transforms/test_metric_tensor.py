@@ -104,7 +104,8 @@ class TestMetricTensor:
             qml.RY(np.array(1.0, requires_grad=True), wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PhaseShift(np.array(1.0, requires_grad=True), wires=1)
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.metric_tensor(tape, approx="block-diag")
@@ -123,12 +124,10 @@ class TestMetricTensor:
         assert isinstance(tapes[1].operations[3], qml.Hadamard)
 
         # third parameter subcircuit
-        assert len(tapes[2].operations) == 4
+        assert len(tapes[2].operations) == 3
         assert isinstance(tapes[2].operations[0], qml.RX)
         assert isinstance(tapes[2].operations[1], qml.RY)
         assert isinstance(tapes[2].operations[2], qml.CNOT)
-        # Phase shift generator
-        assert isinstance(tapes[2].operations[3], qml.QubitUnitary)
 
     def test_construct_subcircuit_layers(self):
         """Test correct subcircuits constructed
@@ -155,7 +154,9 @@ class TestMetricTensor:
             qml.RZ(params[7], wires=2)
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(1))
+            qml.expval(qml.PauliX(2))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.metric_tensor(tape, approx="block-diag")
@@ -315,7 +316,7 @@ class TestMetricTensor:
             x, y, z, h, g, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
-            qml.RY(-y, wires=1).inv()
+            qml.adjoint(qml.RY)(-y, wires=1)
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
             qml.RY(f, wires=1)
@@ -736,7 +737,7 @@ def fubini_ansatz2(params, wires=None):
     qml.RY(params0, wires=0)
     qml.RY(params0, wires=1)
     qml.CNOT(wires=[0, 1])
-    qml.RX(params1, wires=0).inv()
+    qml.adjoint(qml.RX)(params1, wires=0)
     qml.RX(params1, wires=1).inv()
 
 
@@ -770,7 +771,7 @@ def fubini_ansatz4(params00, params_rest, wires=None):
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
     qml.RY(fixed_pars[4], wires=0)
-    qml.RX(params00, wires=0)
+    qml.RX(params00, wires=0) ** 0.5
     qml.CNOT(wires=[0, 1])
     qml.RX(params01, wires=1)
     qml.RZ(params10, wires=1)
@@ -809,7 +810,7 @@ def fubini_ansatz8(params, wires=None):
     qml.RZ(fixed_pars[0], wires=[1])
     qml.CNOT(wires=[0, 1])
     qml.RX(params0, wires=[0])
-    qml.RX(params0, wires=[1])
+    qml.IsingXX(params0, wires=[1, 0])
     qml.CNOT(wires=[0, 1])
     qml.RY(fixed_pars[4], wires=[1])
     qml.RY(params1, wires=[0])
@@ -1081,6 +1082,7 @@ class TestDifferentiability:
     dev = qml.device("default.qubit", wires=3)
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_autograd_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1108,6 +1110,7 @@ class TestDifferentiability:
             assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_autograd(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1324,6 +1327,7 @@ def test_error_not_available_aux_wire():
         qml.metric_tensor(circuit, aux_wire=404)(x)
 
 
+@pytest.mark.filterwarnings("ignore:An auxiliary wire is not available")
 def test_error_aux_wire_replaced():
     """Tests that even if an aux_wire is provided, it is superseded by a device
     wire if it does not exist itself on the device, so that the metric_tensor is
