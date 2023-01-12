@@ -50,7 +50,7 @@ class ExecutionConfig:
     device_options: dict = None
     """Various options for the device executing a quantum circuit"""
 
-    framework: str = "jax"
+    interface: str = "jax"
     """The machine learning framework to use"""
 
     derivative_order: int = 1
@@ -62,9 +62,9 @@ class ExecutionConfig:
 
         Note that this hook is automatically called after init via the dataclass integration.
         """
-        if self.framework not in SUPPORTED_INTERFACES:
+        if self.interface not in SUPPORTED_INTERFACES:
             raise ValueError(
-                f"framework must be in {SUPPORTED_INTERFACES}, got {self.framework} instead."
+                f"interface must be in {SUPPORTED_INTERFACES}, got {self.interface} instead."
             )
 
         if (

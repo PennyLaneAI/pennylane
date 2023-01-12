@@ -28,15 +28,15 @@ class TestExecutionConfig:
         config = ExecutionConfig()
         assert config.derivative_order == 1
         assert config.device_options == {}
-        assert config.framework == "jax"
+        assert config.interface == "jax"
         assert config.gradient_method is None
         assert config.gradient_keyword_arguments == {}
         assert config.shots is None
 
-    def test_invalid_framework(self):
+    def test_invalid_interface(self):
         """Tests that unknown frameworks raise a ValueError."""
-        with pytest.raises(ValueError, match="framework must be in"):
-            _ = ExecutionConfig(framework="nonsense")
+        with pytest.raises(ValueError, match="interface must be in"):
+            _ = ExecutionConfig(interface="nonsense")
 
     def test_invalid_gradient_method(self):
         """Tests that unknown gradient_methods raise a ValueError."""
