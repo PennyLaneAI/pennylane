@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import AnyWires
-from pennylane.ops import ParametrizedEvolution, ParametrizedHamiltonian
+from pennylane.ops import ParametrizedEvolution, ParametrizedHamiltonian, QubitUnitary
 
 
 class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
@@ -28,6 +28,57 @@ class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
     has_adjoint = False
     has_decomposition = False
     has_diagonalizing_gates = False
+
+
+def time_independent_hamiltonian():
+    ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
+
+    def f1(params, t):
+        return params[0]  # constant
+
+    def f2(params, t):
+        return params[1]  # constant
+
+    coeffs = [f1, f2, 4, 9]
+
+    return ParametrizedHamiltonian(coeffs, ops)
+
+
+def time_dependent_hamiltonian():
+    from jax import numpy as jnp
+
+    ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
+
+    def f1(params, t):
+        return params[0] * t
+
+    def f2(params, t):
+        return params[1] * jnp.cos(t)
+
+    def f3(params, t):
+        return 4
+
+    def f4(params, t):
+        return 9
+
+    coeffs = [f1, f2, f3, f4]
+
+    def f1_integral(params, t):
+        return params[0] * (t**2) / 2
+
+    def f2_integral(params, t):
+        return params[1] * jnp.sin(t)
+
+    def f3_integral(params, t):
+        return 4 * t
+
+    def f4_integral(params, t):
+        return 9 * t
+
+    coeffs_integral = [f1_integral, f2_integral, f3_integral, f4_integral]
+    H = ParametrizedHamiltonian(coeffs, ops)
+    H_integral = ParametrizedHamiltonian(coeffs_integral, ops)
+    return H, H_integral
 
 
 class TestInitialization:
@@ -100,17 +151,7 @@ class TestMatrix:
     # pylint: disable=unused-argument
     def test_time_independent_hamiltonian(self):
         """Test matrix method for a time independent hamiltonian."""
-
-        ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
-
-        def f1(params, t):
-            return params[0]  # constant
-
-        def f2(params, t):
-            return params[1]  # constant
-
-        coeffs = [f1, f2, 4, 9]
-        H = ParametrizedHamiltonian(coeffs, ops)
+        H = time_independent_hamiltonian()
         t = 4
         params = [1, 2]
         ev = ParametrizedEvolution(H=H, params=params, t=t, dt=0.001)
@@ -122,37 +163,8 @@ class TestMatrix:
         """Test matrix method for a time dependent hamiltonian."""
         from jax import numpy as jnp
 
-        ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
+        H, H_integral = time_dependent_hamiltonian()
 
-        def f1(params, t):
-            return params[0] * t
-
-        def f2(params, t):
-            return params[1] * jnp.cos(t)
-
-        def f3(params, t):
-            return 4
-
-        def f4(params, t):
-            return 9
-
-        coeffs = [f1, f2, f3, f4]
-
-        def f1_integral(params, t):
-            return params[0] * (t**2) / 2
-
-        def f2_integral(params, t):
-            return params[1] * jnp.sin(t)
-
-        def f3_integral(params, t):
-            return 4 * t
-
-        def f4_integral(params, t):
-            return 9 * t
-
-        coeffs_integral = [f1_integral, f2_integral, f3_integral, f4_integral]
-        H = ParametrizedHamiltonian(coeffs, ops)
-        H_integral = ParametrizedHamiltonian(coeffs_integral, ops)
         t = jnp.pi / 4
         params = [1, 2]
         ev = ParametrizedEvolution(H=H, params=params, t=t, dt=1e-6)
@@ -161,3 +173,68 @@ class TestMatrix:
             -1j * (qml.matrix(H_integral(params, t)) - qml.matrix(H_integral(params, 0)))
         )
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-1)
+
+
+class TestIntegration:
+    """Integration tests for the Prod class."""
+
+    # pylint: disable=unused-argument
+    @pytest.mark.jax
+    def test_time_independent_hamiltonian(self):
+        """Test matrix method for a time independent hamiltonian."""
+        import jax
+        from jax import numpy as jnp
+
+        H = time_independent_hamiltonian()
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params, t):
+            ParametrizedEvolution(H=H, params=params, t=t, dt=0.001)
+            return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
+
+        @qml.qnode(dev, interface="jax")
+        def true_circuit(params, t):
+            true_mat = qml.math.expm(-1j * qml.matrix(H(params, t)) * t)
+            QubitUnitary(U=true_mat, wires=[0, 1])
+            return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
+
+        t = 4
+        params = jnp.array([1.0, 2.0])
+
+        assert qml.math.allclose(circuit(params, t), true_circuit(params, t), atol=1e-2)
+        assert qml.math.allclose(
+            jax.grad(circuit)(params, t), jax.grad(true_circuit)(params, t), atol=1e-2
+        )
+
+    @pytest.mark.jax
+    def test_time_dependent_hamiltonian(self):
+        """Test matrix method for a time dependent hamiltonian."""
+        import jax
+        import jax.numpy as jnp
+
+        H, H_integral = time_dependent_hamiltonian()
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params, t):
+            ParametrizedEvolution(H=H, params=params, t=t, dt=1e-6)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        @qml.qnode(dev, interface="jax")
+        def true_circuit(params, t):
+            true_mat = qml.math.expm(
+                -1j * (qml.matrix(H_integral(params, t)) - qml.matrix(H_integral(params, 0)))
+            )
+            QubitUnitary(U=true_mat, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        t = jnp.pi / 4
+        params = jnp.array([1.0, 2.0])
+
+        assert qml.math.allclose(circuit(params, t), true_circuit(params, t), atol=1e-2)
+        assert qml.math.allclose(
+            jax.grad(circuit)(params, t), jax.grad(true_circuit)(params, t), atol=1e-2
+        )
