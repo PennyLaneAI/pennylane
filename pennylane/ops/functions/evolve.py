@@ -17,11 +17,13 @@
 """
 This file contains the ``Evolve`` pulse gate.
 """
+from typing import Union
+
 from pennylane.operation import Operator
 from pennylane.ops.op_math import Evolution, ParametrizedEvolution, ParametrizedHamiltonian
 
 
-def evolve(op: Operator):
+def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     """Returns a new operator to compute the evolution of the given operator.
 
     Args:
