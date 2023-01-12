@@ -143,31 +143,31 @@ def xyx_decomposition(U, wire):
     # Small number to add to denominators to avoid division by zero
     EPS = 1e-64
     
-    # Calculate the average phase of U[0, 0] and U[1, 1]. Use it to change 
-    # the global phase of U such that U[0, 0] and U[1, 1] have the same 
-    # phase but with opposite signs. Store this form with the name "U2".
-    angle_U00 = math.arctan2(math.imag(U[0, 0]),
-                             math.real(U[0, 0]) + EPS)
-    angle_U11 = math.arctan2(math.imag(U[1, 1]),
-                             math.real(U[1, 1]) + EPS)
-    global_phase = (angle_U00 + angle_U11)/2
-    U2 = math.exp(-1j*global_phase) * U
+    # Choose gamma such that exp(-i*gamma)*U is special unitary (detU==1).
+    gamma = math.cast_like(math.angle(math.linalg.det(U))/2, 1j)
+    U_det1 = math.exp(-1j * gamma) * U 
     
     # Compute \phi, \theta and \lambda after analytically solving for them from
-    # U2 = expm(1j*\phi*PauliX) expm(1j*\theta*PauliY) expm(1j*\lambda*PauliX)
-    lam_plus_phi  = math.arctan2(math.imag(U2[0, 1]),
-                                 math.real(U2[0, 0]) + EPS);
-    lam_minus_phi = math.arctan2(math.imag(U2[0, 0]),
-                                 math.real(U2[0, 1]) + EPS);
-    lam = (lam_plus_phi + lam_minus_phi)/2;
-    phi = (lam_plus_phi - lam_minus_phi)/2;
-    theta = math.arcsin(math.real(U2[0, 1]) / math.cos(lam_minus_phi));
+    # U_det1 = expm(1j*\phi*PauliX) expm(1j*\theta*PauliY) expm(1j*\lambda*PauliX)
+    lam_plus_phi = math.arctan2(-math.imag(U_det1[0, 1]),
+                                 math.real(U_det1[0, 0]) + EPS);
+    lam_minus_phi = math.arctan2(math.imag(U_det1[0, 0]),
+                                 -math.real(U_det1[0, 1]) + EPS)
+    lam = lam_plus_phi + lam_minus_phi;
+    phi = lam_plus_phi - lam_minus_phi;
+    
+    # The following conditional attempts to avoid 0 / 0 errors. Either the 
+    # sine is 0 or the cosine, but not both.
+    if math.allclose(lam_plus_phi, 0):
+        theta = 2 * math.arccos(math.real(U_det1[1, 1]) / 
+                              (math.cos(lam_plus_phi) + EPS));
+    else:
+        theta = 2 * math.arccos(-math.imag(U_det1[0, 1]) / 
+                              (math.sin(lam_plus_phi) + EPS));
 
-    # Note: angles above are changed to half angles with opposite sign
-    # to be consistent with how Pauli rotations are implemented in Pennylane
-    return [qml.s_prod(math.exp(1j*global_phase),
+    return [qml.s_prod(math.exp(1j*gamma),
                              qml.Identity(wire)),
-                    qml.RX(-2*phi, wire),
-                    qml.RY(-2*theta, wire),
-                    qml.RX(-2*lam, wire)]
+                    qml.RX(phi, wire),
+                    qml.RY(theta, wire),
+                    qml.RX(lam, wire)]
     

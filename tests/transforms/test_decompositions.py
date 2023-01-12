@@ -32,7 +32,7 @@ from pennylane.transforms.decompositions.two_qubit_unitary import (
 )
 
 from test_optimization.utils import check_matrix_equivalence
-from gate_data import I, Z, S, T, H, X, CNOT, SWAP
+from gate_data import I, Z, S, T, H, X, Y, CNOT, SWAP
 
 single_qubit_decomps_zyz = [
     # First set of gates are diagonal and converted to RZ
@@ -152,22 +152,18 @@ class TestQubitUnitaryZYZDecomposition:
         
 
 typeof_id_times_phase = qml.ops.op_math.sprod.SProd 
+typeof_gates = (qml.ops.op_math.sprod.SProd, qml.RX, qml.RY, qml.RX)
 single_qubit_decomps_xyx = [
-    # Try a random unitary
+    # Try a random dense unitary
     (np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
                [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]]),
-     (typeof_id_times_phase, qml.RX, qml.RY, qml.RX),
-     (0.38469215969008697-0.9230449297152207j,
-      -2.689126816797089, -1.3974974117211323, 1.4205734045584246)),
-    # Try special unitaries to test when division by zero occurs. 
-    # Divisions by zero can happen if real(U[0,0])=0, real(U[1,1])=0,
-    # real(U[0,1])=0 or lambda-phi=pi/2. Gates I, X, Z from gate_data
-    # cover all these cases.
-    (I, (typeof_id_times_phase, qml.RX, qml.RY, qml.RX), [1, 0, 0, 0]),
-    (X, (typeof_id_times_phase, qml.RX, qml.RY, qml.RX), [1, -np.pi, 0, 0]),
-    (Z, (typeof_id_times_phase, qml.RX, qml.RY, qml.RX), 
-                                                [1j, -1.5707963267948966,
-                                                  0, 1.5707963267948966])
+     typeof_gates, (0.38469215914523336-0.9230449299422961j,
+                0.45246583660683803, 1.3974974118006183, -1.7210192479534632)),
+    # Try a few specific special unitaries
+    (I, typeof_gates, [1,           0,     0,          0]),
+    (X, typeof_gates, [1j, -1/2*np.pi,     0,  3/2*np.pi]),
+    (Y, typeof_gates, [1j,  1/2*np.pi, np.pi,  1/2*np.pi]),
+    (Z, typeof_gates, [1j,  1/2*np.pi, np.pi, -1/2*np.pi])
 ]
 
 from functools import reduce
@@ -220,7 +216,7 @@ class TestQubitUnitaryXYXDecomposition:
 
         U = torch.tensor(U, dtype=torch.complex128)
 
-        obtained_gates = xyx_decomposition(U, wire="a")
+        obtained_gates = xyx_decomposition(U, Wires("a"))
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -232,7 +228,7 @@ class TestQubitUnitaryXYXDecomposition:
 
         U = tf.Variable(U, dtype=tf.complex128)
 
-        obtained_gates = xyx_decomposition(U, wire="a")
+        obtained_gates = xyx_decomposition(U, Wires("a"))
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -250,7 +246,7 @@ class TestQubitUnitaryXYXDecomposition:
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
-        obtained_gates = xyx_decomposition(U, wire="a")
+        obtained_gates = xyx_decomposition(U, Wires("a"))
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
