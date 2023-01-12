@@ -154,6 +154,10 @@
 * Write Hamiltonians to file in a condensed format when using the data module.
   [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
 
+* Improve lazy-loading in `Dataset.read()` so it is more universally supported. Also added the `assign_to`
+  keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
+  [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
+
 <h3>Breaking changes</h3>
 
 * The tape constructed by a QNode is no longer queued to surrounding contexts.
@@ -197,6 +201,9 @@
 
 * Fixed typo in calculation error message and comment in operation.py
   [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
+
+* `Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
+  [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
 <h3>Contributors</h3>
 
