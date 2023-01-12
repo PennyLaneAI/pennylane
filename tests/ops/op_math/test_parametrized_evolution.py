@@ -154,28 +154,29 @@ class TestMatrix:
         def f1(params, t):
             return params[0] * t
 
-        def f1_integral(params, t):
-            return params[0] * (t**2) / 2
-
         def f2(params, t):
             return params[1] * jnp.cos(t)
-
-        def f2_integral(params, t):
-            return params[1] * jnp.sin(t)
 
         def f3(params, t):
             return 4
 
-        def f3_integral(params, t):
-            return 4 * t
-
         def f4(params, t):
             return 9
+
+        coeffs = [f1, f2, f3, f4]
+
+        def f1_integral(params, t):
+            return params[0] * (t**2) / 2
+
+        def f2_integral(params, t):
+            return params[1] * jnp.sin(t)
+
+        def f3_integral(params, t):
+            return 4 * t
 
         def f4_integral(params, t):
             return 9 * t
 
-        coeffs = [f1, f2, f3, f4]
         coeffs_integral = [f1_integral, f2_integral, f3_integral, f4_integral]
         H = ParametrizedHamiltonian(coeffs, ops)
         H_integral = ParametrizedHamiltonian(coeffs_integral, ops)
