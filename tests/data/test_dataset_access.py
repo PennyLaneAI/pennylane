@@ -54,6 +54,7 @@ def httpserver_listen_address():
     return ("localhost", 8888)
 
 
+# pylint:disable=unused-argument
 def get_mock(url, timeout=1.0):
     """Return the foldermap or data_struct according to URL"""
     resp = MagicMock(ok=True)
@@ -70,6 +71,7 @@ def submit_download_mock(_self, _fetch_and_save, filename, dest_folder):
     qml.data.Dataset._write_file(content, os.path.join(dest_folder, filename))
 
 
+# pylint:disable=unused-argument
 def wait_mock_fixture(_futures, return_when=None):
     """Patch to avoid raising exceptions after collecting threads."""
     return MagicMock(done=[])
@@ -605,7 +607,7 @@ class TestLoadInteractive:
     )
     def test_load_interactive_success(
         self, mock_input, mock_load, mock_sleep, side_effect, data_name, kwargs, sleep_call_count
-    ):
+    ):  # pylint:disable=too-many-arguments
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qml.data.load_interactive(), qml.data.Dataset)

@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* `qml.purity` is added as a measurement process for purity 
+* `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
 * Added a new template that implements a canonical 2-complete linear (2-CCL) swap network
@@ -70,7 +70,7 @@
      DeviceArray(0.41614684, dtype=float64, weak_type=True))))
   ```
 
-* The qchem workflow is modified to support both Autograd and JAX frameworks. 
+* The qchem workflow is modified to support both Autograd and JAX frameworks.
   [(#3458)](https://github.com/PennyLaneAI/pennylane/pull/3458)
   [(#3462)](https://github.com/PennyLaneAI/pennylane/pull/3462)
   [(#3495)](https://github.com/PennyLaneAI/pennylane/pull/3495)
@@ -98,16 +98,41 @@
   ```
   
 * The function `load_basisset` is added to extract qchem basis set data from the Basis Set Exchange
-  library. 
+  library.
   [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
+  
+* The function `max_entropy` is added to compute the maximum entropy $H=\log(rank(\rho))$ of a quantum state.
+  [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
+
+* Added `qml.ops.dot` function to compute the dot product between a vector and a list of operators.
+
+  ```pycon
+  >>> coeffs = np.array([1.1, 2.2])
+  >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+  >>> qml.ops.dot(coeffs, ops)
+  (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+  >>> qml.ops.dot(coeffs, ops, pauli=True)
+  1.1 * X(0)
+  + 2.2 * Y(0)
+  ```
+
+  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
+
+* Support `qml.math.size` with torch tensors.
+  [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
+
+* Support `qml.math.matmul` with a torch tensor and an autograd tensor.
+  [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
 
 <h3>Improvements</h3>
+
+* Most channels in are now fully differentiable in all interfaces.
+  [(#3612)](https://github.com/PennyLaneAI/pennylane/pull/3612)
 
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
 
-
-* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of 
+* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
  [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
 
@@ -117,21 +142,52 @@
 * Limit the `numpy` version to `<1.24`.
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
 
-* Validation has been added on the `gradient_kwargs` when initializing a QNode, and if unexpected kwargs are passed, 
-  a `UserWarning` is raised. A list of the current expected gradient function kwargs has been added as 
+* Validation has been added on the `gradient_kwargs` when initializing a QNode, and if unexpected kwargs are passed,
+  a `UserWarning` is raised. A list of the current expected gradient function kwargs has been added as
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
 
- <h3>Breaking changes</h3>
+* Improve the `PauliSentence.operation()` method to avoid instantiating an `SProd` operator when
+  the coefficient is equal to 1.
+  [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
+
+* Write Hamiltonians to file in a condensed format when using the data module.
+  [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
+
+<h3>Breaking changes</h3>
 
 * The tape constructed by a QNode is no longer queued to surrounding contexts.
   [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
+
+* Nested operators like `Tensor`, `Hamiltonian` and `Adjoint` now remove their owned operators
+  from the queue instead of updating their metadata to have an `"owner"`.
+  [(#3282)](https://github.com/PennyLaneAI/pennylane/pull/3282)
+
+* `qchem.scf`, `RandomLayers.compute_decomposition`, and `Wires.select_random` all use
+  local random number generators now instead of global random number generators. This may lead to slighlty
+  different random numbers, and an independence of the results from the global random number generation state.
+  Please provide a seed to each individual function instead if you want controllable results.
+  [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
 
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug in `qml.transforms.metric_tensor` where prefactors of operation generators were taken
+  into account multiple times, leading to wrong outputs for non-standard operations.
+  [(#3579)](https://github.com/PennyLaneAI/pennylane/pull/3579)
+
+* Uses a local random number generator where possible to avoid mutating the global random state.
+  [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
+
+* Handles breaking networkx version change by selectively skipping a qcut tensorflow-jit test.
+  [(#3609)](https://github.com/PennyLaneAI/pennylane/pull/3609)
+  [(#3619)](https://github.com/PennyLaneAI/pennylane/pull/3619)
+
+* Fixed the wires for the Y decomposition in the ZX calculus transform.
+  [(#3598)](https://github.com/PennyLaneAI/pennylane/pull/3598)
 
 * `qml.pauli.PauliWord` is now pickle-able.
   [(#3588)](https://github.com/PennyLaneAI/pennylane/pull/3588)
@@ -155,6 +211,7 @@ Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Borja Requena
 Matthew Silverman
 Antal Száva
-
+David Wierichs

@@ -14,7 +14,7 @@
 """Adaptive optimizer"""
 import copy
 
-# pylint: disable= no-value-for-parameter, protected-access
+# pylint: disable= no-value-for-parameter, protected-access, not-callable
 import pennylane as qml
 from pennylane import numpy as np
 
