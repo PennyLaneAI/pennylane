@@ -117,26 +117,26 @@ def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
         y0, f0, t0 = carry
         dt = t1 - t0
         # not using y1_error and k atm
-        y1, f1, y1_error = runge_kutta_step(func_, y0, f0, t0, dt)
+        y1, f1, _ = runge_kutta_step(func_, y0, f0, t0, dt)
 
-        # check error
-        # def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
-        err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
-        err_ratio = y1_error / err_tol.astype(y1_error.dtype)
-        mean_err_ratio = jnp.sqrt(jnp.mean(_abs2(err_ratio)))
+        # # check error
+        # # def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
+        # err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
+        # err_ratio = y1_error / err_tol.astype(y1_error.dtype)
+        # mean_err_ratio = jnp.sqrt(jnp.mean(_abs2(err_ratio)))
 
-        # warn_string = f"Warning: target tolerance atol={atol}, rtol={rtol} is not met"
-        # warn_string = jnp.where(mean_err_ratio > 1.0, warn_string, None)
-        # print(warn_string)
+        # # warn_string = f"Warning: target tolerance atol={atol}, rtol={rtol} is not met"
+        # # warn_string = jnp.where(mean_err_ratio > 1.0, warn_string, None)
+        # # print(warn_string)
 
-        # jax.lax.cond(
-        #     mean_err_ratio > 1.0, # and isinstance(mean_err_ratio, jnp.ndarray),
-        #     _tolerance_warn,
-        #     lambda atol, rtol, err_ratio: None,
-        #     atol,
-        #     rtol,
-        #     err_ratio,
-        # )
+        # # jax.lax.cond(
+        # #     mean_err_ratio > 1.0, # and isinstance(mean_err_ratio, jnp.ndarray),
+        # #     _tolerance_warn,
+        # #     lambda atol, rtol, err_ratio: None,
+        # #     atol,
+        # #     rtol,
+        # #     err_ratio,
+        # # )
 
         carry = [y1, f1, t1]
         return carry, y1
