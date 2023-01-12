@@ -40,6 +40,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "shots",
     "strategy",
     "validate_params",
+    "device_wires",
 ]
 
 

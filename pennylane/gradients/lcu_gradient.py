@@ -27,12 +27,14 @@ from .gradient_transform import (
     gradient_transform,
 )
 
-
+from pennylane.transforms.metric_tensor import _get_aux_wire
 @gradient_transform
 def lcu_grad(
     tape,
     argnum=None,
     shots=None,
+    aux_wire=None,
+    device_wires=None,
 ):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
     parameters with respect to its inputs. This function is adapted to the new return system.
@@ -62,17 +64,24 @@ def lcu_grad(
     gradient_tapes = []
 
     method_map = choose_grad_methods(diff_methods, argnum)
+    argnum = [i for i, dm in method_map.items() if dm == "A"]
+    print(method_map)
+
+    # Get default for aux_wire
+    aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
 
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
-        g_tapes, processing_fn = var_lcu(tape, argnum)
+        g_tapes, processing_fn = var_lcu(tape, argnum, aux_wire)
     else:
-        g_tapes, processing_fn = expval_lcu(tape, argnum)
+        g_tapes, processing_fn = expval_lcu(tape, argnum, aux_wire)
 
     return gradient_tapes, processing_fn
 
 
-def expval_lcu(tape, argnum):
-
+def expval_lcu(tape, argnum, aux_wire):
+    print("1", argnum, tape.trainable_params)
+    argnum = argnum or tape.trainable_params
+    print("2", argnum, tape.trainable_params)
     g_tapes = []
 
     def processing_fn(results):
@@ -81,7 +90,9 @@ def expval_lcu(tape, argnum):
     return g_tapes, processing_fn
 
 
-def var_lcu(tape, argnum):
+def var_lcu(tape, argnum, aux_wire):
+    argnum = argnum or tape.trainable_params
+    print("ici", argnum)
     g_tapes = []
 
     def processing_fn(results):

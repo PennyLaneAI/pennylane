@@ -40,7 +40,7 @@ class TestFiniteDiff:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        tapes, fn = lcu_grad(tape)
+        tapes, fn = lcu_grad(tape, argnum=0)
         res = fn(dev.batch_execute(tapes))
         print(res)
         # assert res.shape == (1, 2)
