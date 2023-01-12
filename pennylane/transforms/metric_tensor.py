@@ -479,7 +479,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
     except KeyError as e:
         if allow_nonunitary:
-            mat = qml.matrix(qml.generator(op, format="observable"))
+            mat = qml.matrix(qml.generator(op)[0])
             return qml.ControlledQubitUnitary(mat, control_wires=aux_wire, wires=op.wires)
 
         raise ValueError(
