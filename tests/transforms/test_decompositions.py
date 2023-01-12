@@ -152,8 +152,7 @@ class TestQubitUnitaryZYZDecomposition:
         self._run_assertions(U, expected_gate, expected_params, obtained_gates)
 
 
-typeof_id_times_phase = qml.ops.op_math.sprod.SProd
-typeof_gates = (qml.ops.op_math.sprod.SProd, qml.RX, qml.RY, qml.RX)
+typeof_gates = (qml.RX, qml.RY, qml.RX, qml.ops.op_math.sprod.SProd)
 single_qubit_decomps_xyx = [
     # Try a random dense unitary
     (
@@ -165,17 +164,17 @@ single_qubit_decomps_xyx = [
         ),
         typeof_gates,
         (
-            0.38469215914523336 - 0.9230449299422961j,
             0.45246583660683803,
             1.3974974118006183,
             -1.7210192479534632,
+            0.38469215914523336 - 0.9230449299422961j,
         ),
     ),
     # Try a few specific special unitaries
-    (I, typeof_gates, [1, 0, 0, 0]),
-    (X, typeof_gates, [1j, -1 / 2 * np.pi, 0, 3 / 2 * np.pi]),
-    (Y, typeof_gates, [1j, 1 / 2 * np.pi, np.pi, 1 / 2 * np.pi]),
-    (Z, typeof_gates, [1j, 1 / 2 * np.pi, np.pi, -1 / 2 * np.pi]),
+    (I, typeof_gates, [0, 0, 0, 1]),  # This triggers the if conditional
+    (X, typeof_gates, [-1 / 2 * np.pi, 0, 3 / 2 * np.pi, 1j]),
+    (Y, typeof_gates, [1 / 2 * np.pi, np.pi, 1 / 2 * np.pi, 1j]),
+    (Z, typeof_gates, [1 / 2 * np.pi, np.pi, -1 / 2 * np.pi, 1j]),
 ]
 
 
@@ -189,12 +188,12 @@ class TestQubitUnitaryXYXDecomposition:
             assert obtained_gates[i].wires == Wires("a"), "Incorrect wire"
         # Check the global phase
         assert qml.math.isclose(
-            qml.math.unwrap(obtained_gates[0].parameters[0]), expected_params[0]
+            qml.math.unwrap(obtained_gates[3].parameters[0]), expected_params[3]
         ), "Incorrect global phase"
         # Now we check the XYX rotation angles
         assert qml.math.allclose(
-            [qml.math.unwrap(o.parameters)[0] for o in obtained_gates[1:]],
-            expected_params[1:],
+            [qml.math.unwrap(o.parameters)[0] for o in obtained_gates[:3]],
+            expected_params[:3],
             atol=1e-7,
         ), "Incorrect XYX rotation angles"
 
@@ -212,7 +211,7 @@ class TestQubitUnitaryXYXDecomposition:
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decomps_xyx)
     def test_xyx_decomposition(self, U, expected_gates, expected_params):
         """Test that a one-qubit matrix in isolation is correctly decomposed."""
-        obtained_gates = xyx_decomposition(U, Wires("a"))
+        obtained_gates = xyx_decomposition(U, Wires("a"), return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -224,7 +223,7 @@ class TestQubitUnitaryXYXDecomposition:
 
         U = torch.tensor(U, dtype=torch.complex128)
 
-        obtained_gates = xyx_decomposition(U, Wires("a"))
+        obtained_gates = xyx_decomposition(U, Wires("a"), return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -236,7 +235,7 @@ class TestQubitUnitaryXYXDecomposition:
 
         U = tf.Variable(U, dtype=tf.complex128)
 
-        obtained_gates = xyx_decomposition(U, Wires("a"))
+        obtained_gates = xyx_decomposition(U, Wires("a"), return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
@@ -254,7 +253,7 @@ class TestQubitUnitaryXYXDecomposition:
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
-        obtained_gates = xyx_decomposition(U, Wires("a"))
+        obtained_gates = xyx_decomposition(U, Wires("a"), return_global_phase=True)
 
         self._run_assertions(U, expected_gates, expected_params, obtained_gates)
 
