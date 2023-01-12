@@ -1,11 +1,29 @@
 #!/bin/bash
 missing_files=()
+list_file=tests/tests_passing_pylint.txt
+
 for file in $@
 do
-    if grep -Fxq $file tests/tests_passing_pylint.txt
+    # it's in the list, check the next one
+    if grep -Fxq $file $list_file
     then
-        :
-    else
+        continue
+    fi
+
+    # check if this file's folder is in the list
+    filedir=$file
+    while [ $filedir != "." ]
+    do
+        filedir=$(dirname $filedir)
+        if grep -Fxq "${filedir}/**" $list_file
+        then
+            break
+        fi
+    done
+
+    # loop reached termination condition without finding a match, user needs to add this file
+    if [ ${filedir} == "." ]
+    then
         missing_files+=($file)
     fi
 done
