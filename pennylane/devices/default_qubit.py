@@ -152,7 +152,6 @@ class DefaultQubit(QubitDevice):
         "OrbitalRotation",
         "QFT",
         "ECR",
-        "ParametrizedEvolution",
     }
 
     observables = {
