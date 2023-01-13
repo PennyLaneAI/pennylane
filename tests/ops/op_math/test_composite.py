@@ -132,7 +132,7 @@ class TestConstruction:
         assert op.batch_size == 3
 
     def test_batch_size_not_all_batched(self):
-        """Test that the batch_size is correct when all operands are not batched."""
+        """Test that the batch_size is correct when some but not all operands are batched."""
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
         op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3]), wires=2))
         assert op.batch_size == 3
