@@ -16,8 +16,10 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
+from pennylane import numpy as np
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.wires import Wires, WireError
 
 state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
 
@@ -155,6 +157,32 @@ class QubitStateVector(Operation):
 
         """
         return [MottonenStatePreparation(state, wires)]
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return True
+
+    def matrix(self, wire_order=None):
+        """Returns a ket vector representing the state being created.
+
+        QSV([1/2, 1/2, 1/2, 1/2], wires=[0,2]) = 1/4 * (|0 0> + |0 1> + |1 0> + |1 1>)
+                                               = 1/4 * (|000> + |001> + |100> + |101>)
+        """
+        if wire_order is None:
+            return np.array(self.parameters[0], dtype="complex128")
+
+        wires = Wires(wire_order)
+        if not wires.contains_wires(self.wires):
+            raise WireError("Custom wire_order must contain all QubitStateVector wires")
+        num_wires = len(wires)
+        indices = [0] * num_wires
+        for base_wire_idx in [wires.index(w) for w in self.wires]:
+            indices[base_wire_idx] = slice(None)  # same as ":"
+
+        ket = np.zeros((2,) * num_wires)
+        ket[tuple(indices)] = np.reshape(self.parameters[0], (2,) * len(self.wires))
+        return ket.reshape(2**num_wires)
 
 
 class QubitDensityMatrix(Operation):
