@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=missing-module-docstring
+# pylint: disable=unspecified-encoding
+# pylint: disable=consider-using-with
+# pylint: disable=unspecific-encoding
+
 from setuptools import setup, find_packages
 
 with open("pennylane/_version.py") as f:
@@ -53,6 +58,7 @@ info = {
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
+            "default.pulse = pennylane.devices.default_pulse:DefaultPulse",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },
