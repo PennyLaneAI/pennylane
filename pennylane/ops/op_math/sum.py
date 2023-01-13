@@ -17,8 +17,8 @@ computing the sum of operations.
 """
 import itertools
 from copy import copy
-from typing import List
 from functools import reduce
+from typing import List
 
 import numpy as np
 
@@ -179,25 +179,18 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
-        mats_and_wires_gen = (
-            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
-            for op in self
-        )
+        gen = ((qml.matrix(op), op.wires) for op in self)
 
-        reduced_mat, sum_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
-        )
+        reduced_mat, sum_wires = math.reduce_matrices(mats_and_wires_gen=gen, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
+        gen = ((op.sparse_matrix(), op.wires) for op in self)
 
-        reduced_mat, sum_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
-        )
+        reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 

@@ -246,22 +246,15 @@ class Prod(CompositeOp):
         mats: List[np.ndarray] = []  # TODO: change type to `tensor_like` when available
         batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
-            mats_and_wires_gen = (
-                (
-                    qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(),
-                    op.wires,
-                )
-                for op in ops
-            )
+            gen = ((qml.matrix(op), op.wires) for op in ops)
 
-            reduced_mat, _ = math.reduce_matrices(
-                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.matmul
-            )
+            reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
 
             if self.batch_size is not None:
                 batched.append(any(op.batch_size is not None for op in ops))
             else:
                 batched.append(False)
+
             mats.append(reduced_mat)
 
         if self.batch_size is None:
@@ -277,11 +270,9 @@ class Prod(CompositeOp):
 
     def sparse_matrix(self, wire_order=None):
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
-            mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
+            gen = ((op.sparse_matrix(), op.wires) for op in self)
 
-            reduced_mat, prod_wires = math.reduce_matrices(
-                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
-            )
+            reduced_mat, prod_wires = math.reduce_matrices(gen, reduce_func=math.dot)
 
             wire_order = wire_order or self.wires
 
