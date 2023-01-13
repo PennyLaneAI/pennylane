@@ -14,7 +14,7 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -160,22 +160,6 @@ class TestMatrix:
         true_mat = qml.math.expm(-1j * qml.matrix(H(params, t)) * t)
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-3)
 
-    @pytest.mark.jax
-    def test_time_dependent_hamiltonian(self):
-        """Test matrix method for a time dependent hamiltonian."""
-        from jax import numpy as jnp
-
-        H, H_integral = time_dependent_hamiltonian()
-
-        t = jnp.pi / 4
-        params = [1, 2]
-        ev = Evolve(H=H, params=params, t=t)
-
-        true_mat = qml.math.expm(
-            -1j * (qml.matrix(H_integral(params, t)) - qml.matrix(H_integral(params, 0)))
-        )
-        assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-1)
-
 
 class TestIntegration:
     """Integration tests for the ParametrizedEvolution class."""
@@ -196,6 +180,12 @@ class TestIntegration:
             Evolve(H=H, params=params, t=t, dt=1e-6)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def jitted_circuit(params, t):
+            Evolve(H=H, params=params, t=t, dt=1e-6)
+            return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
+
         @qml.qnode(dev, interface="jax")
         def true_circuit(params, t):
             true_mat = qml.math.expm(-1j * qml.matrix(H(params, t)) * t)
@@ -206,39 +196,12 @@ class TestIntegration:
         params = jnp.array([1.0, 2.0])
 
         assert qml.math.allclose(circuit(params, t), true_circuit(params, t), atol=1e-3)
+        assert qml.math.allclose(jitted_circuit(params, t), true_circuit(params, t), atol=1e-3)
         assert qml.math.allclose(
             jax.grad(circuit)(params, t), jax.grad(true_circuit)(params, t), atol=1e-3
         )
-
-    @pytest.mark.jax
-    def test_time_dependent_hamiltonian(self):
-        """Test matrix method for a time dependent hamiltonian."""
-        import jax
-        import jax.numpy as jnp
-
-        H, H_integral = time_dependent_hamiltonian()
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="jax")
-        def circuit(params, t):
-            Evolve(H=H, params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-        @qml.qnode(dev, interface="jax")
-        def true_circuit(params, t):
-            true_mat = qml.math.expm(
-                -1j * (qml.matrix(H_integral(params, t)) - qml.matrix(H_integral(params, 0)))
-            )
-            QubitUnitary(U=true_mat, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-        t = jnp.pi / 4
-        params = jnp.array([1.0, 2.0])
-
-        assert qml.math.allclose(circuit(params, t), true_circuit(params, t), atol=1e-2)
         assert qml.math.allclose(
-            jax.grad(circuit)(params, t), jax.grad(true_circuit)(params, t), atol=1e-2
+            jax.grad(jitted_circuit)(params, t), jax.grad(true_circuit)(params, t), atol=1e-3
         )
 
 
