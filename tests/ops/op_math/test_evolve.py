@@ -192,7 +192,7 @@ class TestIntegration:
             QubitUnitary(U=true_mat, wires=[0, 1])
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
-        t = 4
+        t = jnp.array(4)
         params = jnp.array([1.0, 2.0])
 
         assert qml.math.allclose(circuit(params, t), true_circuit(params, t), atol=1e-3)
