@@ -317,7 +317,7 @@ class TestMetricTensor:
             x, y, z, h, g, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
-            qml.RY(-y, wires=1).inv()
+            qml.adjoint(qml.RY)(-y, wires=1)
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
             qml.RY(f, wires=1)
@@ -735,10 +735,10 @@ def fubini_ansatz2(params, wires=None):
     qml.RX(fixed_pars[1], wires=0)
     qml.Rot(*fixed_pars[2:5], wires=1)
     qml.CNOT(wires=[0, 1])
-    qml.RY(params0, wires=0)
+    qml.RY(params0, wires=0) ** 0.4
     qml.RY(params0, wires=1)
     qml.CNOT(wires=[0, 1])
-    qml.RX(params1, wires=0).inv()
+    qml.adjoint(qml.RX)(params1, wires=0)
     qml.RX(params1, wires=1).inv()
 
 
