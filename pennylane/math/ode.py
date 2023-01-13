@@ -27,12 +27,9 @@ try:
     from jax.experimental import host_callback
 except ImportError as e:
     raise ImportError(
-            "Module jax is required for ``qml.math.odeint`` class. "
-            "You can install jax via: pip install jax"
-        ) from e
-
-
-
+        "Module jax is required for ``qml.math.odeint`` class. "
+        "You can install jax via: pip install jax"
+    ) from e
 
 
 @partial(jax.jit, static_argnums=0)
@@ -111,7 +108,6 @@ def _tolerance_warn(arg, transforms):
             "Try reducing the step size.",
             UserWarning,
         )
-
 
 
 def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
