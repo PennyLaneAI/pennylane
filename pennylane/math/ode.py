@@ -24,6 +24,7 @@ try:
     import jax.numpy as jnp
     from jax import linear_util as lu
     from jax.flatten_util import ravel_pytree
+    from jax.experimental import host_callback
 except ImportError as e:
     raise ImportError(
             "Module jax is required for ``qml.math.odeint`` class. "
@@ -101,12 +102,16 @@ def _abs2(x):
     return x**2
 
 
-def _tolerance_warn(atol, rtol, err_ratio):
-    warnings.warn(
-        f"The targeted error tolerance of atol = {atol} and rtol = {rtol}"
-        f"is not reached with a relative error of {err_ratio}",
-        UserWarning,
-    )
+def _tolerance_warn(arg, transforms):
+    atol, rtol, mean_err_ratio, y1_error, err_tol = arg
+    if mean_err_ratio > 1.0:
+        warnings.warn(
+            f"An error of {y1_error} in y occured which exceeds the error tolerance {err_tol} "
+            f"based on a tolerance of atol = {atol} and rtol = {rtol}. "
+            "Try reducing the step size.",
+            UserWarning,
+        )
+
 
 
 def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
@@ -117,26 +122,16 @@ def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
         y0, f0, t0 = carry
         dt = t1 - t0
         # not using y1_error and k atm
-        y1, f1, _ = runge_kutta_step(func_, y0, f0, t0, dt)
+        y1, f1, y1_error = runge_kutta_step(func_, y0, f0, t0, dt)
 
-        # # check error
-        # # def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
-        # err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
-        # err_ratio = y1_error / err_tol.astype(y1_error.dtype)
-        # mean_err_ratio = jnp.sqrt(jnp.mean(_abs2(err_ratio)))
+        # check error
+        # def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
+        err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
+        err_ratio = y1_error / err_tol.astype(y1_error.dtype)
+        mean_err_ratio = jnp.sqrt(jnp.mean(_abs2(err_ratio)))
 
-        # # warn_string = f"Warning: target tolerance atol={atol}, rtol={rtol} is not met"
-        # # warn_string = jnp.where(mean_err_ratio > 1.0, warn_string, None)
-        # # print(warn_string)
-
-        # # jax.lax.cond(
-        # #     mean_err_ratio > 1.0, # and isinstance(mean_err_ratio, jnp.ndarray),
-        # #     _tolerance_warn,
-        # #     lambda atol, rtol, err_ratio: None,
-        # #     atol,
-        # #     rtol,
-        # #     err_ratio,
-        # # )
+        # sends call from device to host to inspect runtime values
+        host_callback.id_tap(_tolerance_warn, (atol, rtol, mean_err_ratio, y1_error, err_tol))
 
         carry = [y1, f1, t1]
         return carry, y1
