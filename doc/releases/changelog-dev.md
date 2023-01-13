@@ -132,6 +132,14 @@
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
 
+* Reorganize `ControlledQubitUnitary` to inherit from `ControlledOp`. The class methods 
+  `decomposition`, `expand`, and `sparse_matrix` are now defined rather than raising an error.
+  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
+
+* Parameter broadcasting support is added for the `Controlled` class if the base operator supports 
+  broadcasting.
+  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
+
 * The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
  [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
@@ -154,7 +162,15 @@
 * Write Hamiltonians to file in a condensed format when using the data module.
   [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
 
+* Improve lazy-loading in `Dataset.read()` so it is more universally supported. Also added the `assign_to`
+  keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
+  [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
+
 <h3>Breaking changes</h3>
+
+* The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`. 
+  Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
+  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
 * The tape constructed by a QNode is no longer queued to surrounding contexts.
   [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
@@ -197,6 +213,9 @@
 
 * Fixed typo in calculation error message and comment in operation.py
   [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
+
+* `Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
+  [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
 <h3>Contributors</h3>
 
