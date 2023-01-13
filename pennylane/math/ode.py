@@ -99,11 +99,12 @@ def _abs2(x):
     return x**2
 
 
-def _tolerance_warn(arg, transforms):
+def _tolerance_warn(arg, _):
+    # The second blank argument is to abide by host_callback.id_tap's logic
     atol, rtol, mean_err_ratio, y1_error, err_tol = arg
     if mean_err_ratio > 1.0:
         warnings.warn(
-            f"An error of {y1_error} in y occured which exceeds the error tolerance {err_tol} "
+            f"An mean error of {y1_error} in y occured which exceeds the mean error tolerance {err_tol} "
             f"based on a tolerance of atol = {atol} and rtol = {rtol}. "
             "Try reducing the step size.",
             UserWarning,
@@ -127,7 +128,7 @@ def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
         mean_err_ratio = jnp.sqrt(jnp.mean(_abs2(err_ratio)))
 
         # sends call from device to host to inspect runtime values
-        host_callback.id_tap(_tolerance_warn, (atol, rtol, mean_err_ratio, y1_error, err_tol))
+        host_callback.id_tap(_tolerance_warn, (atol, rtol, mean_err_ratio, jnp.sqrt(jnp.mean(_abs2(y1_error))), jnp.sqrt(jnp.mean(_abs2(err_tol)))))
 
         carry = [y1, f1, t1]
         return carry, y1
