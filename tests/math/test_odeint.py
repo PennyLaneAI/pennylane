@@ -56,15 +56,15 @@ class TestUnitTest:
             return y
 
         y0 = jnp.ones((5))
-        y1 = qml.math.odeint(fun, y0, t)
+        y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
         assert qml.math.allequal(y0.shape, y1.shape)
 
         y0 = jnp.ones((5, 5))
-        y1 = qml.math.odeint(fun, y0, t)
+        y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
         assert qml.math.allequal(y0.shape, y1.shape)
 
         y0 = jnp.ones((5, 5, 5))
-        y1 = qml.math.odeint(fun, y0, t)
+        y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
         assert qml.math.allequal(y0.shape, y1.shape)
 
 

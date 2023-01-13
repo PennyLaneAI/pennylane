@@ -33,7 +33,7 @@ except ImportError as e:
 
 
 @partial(jax.jit, static_argnums=0)
-def odeint(func, y0, ts, *args):
+def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     r"""Fix step size ODE solver with jit-compilation
 
     Solves the initial value problem (IVP) of an ordinary differential equation (ODE)
@@ -88,7 +88,7 @@ def odeint(func, y0, ts, *args):
     """
     y0, unravel = ravel_pytree(y0)
     func = ravel_first_arg(func, unravel)
-    out = _odeint(func, y0, ts, *args)
+    out = _odeint(func, y0, ts, atol, rtol, *args)
     return unravel(out)
 
 
@@ -111,7 +111,7 @@ def _tolerance_warn(arg, _):
         )
 
 
-def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
+def _odeint(func, y0, ts, atol, rtol, *args):
     def func_(y, t):
         return func(y, t, *args)
 
