@@ -44,7 +44,7 @@ class ParametrizedEvolution(Operation):
         params (ndarray): trainable parameters
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
             If a list of two floats, it corresponds to the initial time and the final time of the
-            evolution.
+            evolution. Note that such absolute times only have meaning within an instance of ``ParametrizedEvolution`` and will not affect other gates.
         dt (float): the time step used by the differential equation solver to evolve the
             time-dependent Hamiltonian. Defaults to XXX.
         time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
