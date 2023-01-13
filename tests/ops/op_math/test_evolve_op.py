@@ -99,7 +99,7 @@ class TestInitialization:
 
         assert ev.wires == H.wires
         assert ev.num_wires == AnyWires
-        assert ev.name == "ParametrizedEvolution"
+        assert ev.name == "Evolve"
         assert ev.id is None
         assert ev.queue_idx is None
 
@@ -174,7 +174,7 @@ class TestMatrix:
         true_mat = qml.math.expm(
             -1j * (qml.matrix(H_integral(params, t)) - qml.matrix(H_integral(params, 0)))
         )
-        assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-1)
+        assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
 
 
 class TestIntegration:
