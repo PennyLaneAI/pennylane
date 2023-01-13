@@ -181,7 +181,7 @@ class Sum(CompositeOp):
         """
         gen = ((qml.matrix(op), op.wires) for op in self)
 
-        reduced_mat, sum_wires = math.reduce_matrices(mats_and_wires_gen=gen, reduce_func=math.add)
+        reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 
