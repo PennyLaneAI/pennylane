@@ -108,7 +108,7 @@ class Prod(CompositeOp):
         ```
         But it doesn't support batching of operators:
         ```pycon
-        >>> op = qml.prod(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
         ```
 
