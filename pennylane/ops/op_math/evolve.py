@@ -15,7 +15,7 @@
 # pylint: disable=too-few-public-methods,function-redefined
 
 """
-This file contains the ``ParametrizedEvolution`` operator.
+This file contains the ``Evolve`` operator.
 """
 
 from typing import Union
