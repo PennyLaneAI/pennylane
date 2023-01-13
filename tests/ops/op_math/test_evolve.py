@@ -178,7 +178,7 @@ class TestMatrix:
 
 
 class TestIntegration:
-    """Integration tests for the Prod class."""
+    """Integration tests for the ParametrizedEvolution class."""
 
     # pylint: disable=unused-argument
     @pytest.mark.jax

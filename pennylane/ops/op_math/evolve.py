@@ -32,7 +32,10 @@ class Evolve(Operation):
     For a time-dependent Hamiltonian of the form
     :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j` it implements the corresponding
     time-evolution operator :math:`U(t_1, t_2)`, which is the solution to the time-dependent
-    Schrodinger equation .. math:: \frac{d}{dt}U(t) = -i H(v, t) U(t).
+    Schrodinger equation
+
+    .. math:: \frac{d}{dt}U(t) = -i H(v, t) U(t).
+
 
     Under the hood, it is using a numerical ordinary differential equation solver.
 
@@ -41,7 +44,7 @@ class Evolve(Operation):
         params (ndarray): trainable parameters
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
             If a list of two floats, it corresponds to the initial time and the final time of the
-            evolution.
+            evolution. Note that such absolute times only have meaning within an instance of ``ParametrizedEvolution`` and will not affect other gates.
         dt (float): the time step used by the differential equation solver to evolve the
             time-dependent Hamiltonian. Defaults to XXX.
         time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
