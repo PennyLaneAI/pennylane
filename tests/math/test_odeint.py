@@ -16,25 +16,11 @@ Integration tests for odeint (ordinary differential equation integrator)
 """
 import pytest
 import pennylane as qml
-import scipy
+import pennylane.numpy as np
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-
-def toscipy(f):
-    """Convenience to go from scipy convention f(t, y) to jax/qml convention f(y, t)"""
-
-    def wrapper(t, y):
-        return f(y, t)
-
-    return wrapper
-
-
-def scipyodeint(fun, y0, t):
-    """Convenience to solve ODEs with scipy with the same signature"""
-    res = scipy.integrate.solve_ivp(toscipy(fun), [t[0], t[-1]], y0)
-    return res.y[:, -1]
 
 
 def jaxode(fun, y0, t, *args):
@@ -43,12 +29,14 @@ def jaxode(fun, y0, t, *args):
 
     return jaxodeint(fun, y0, jnp.array([t[0], t[-1]]), *args)[-1]
 
+
+
 # pylint: disable=too-few-public-methods
 class TestUnitTest:
     """Unit tests for odeint"""
 
-    # TODO catch warnings to avoid annoying outputs (or reduce tolerance)
     def testInputOutputShapes(self):
+        """Test that input and output match in shape and dtype"""
         # Unit tests
         t = jnp.linspace(0, 1, 3)
 
@@ -58,14 +46,43 @@ class TestUnitTest:
         y0 = jnp.ones((5))
         y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
         assert qml.math.allequal(y0.shape, y1.shape)
+        assert qml.math.allequal(y0.dtype, y1.dtype)
 
         y0 = jnp.ones((5, 5))
         y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
         assert qml.math.allequal(y0.shape, y1.shape)
+        assert qml.math.allequal(y0.dtype, y1.dtype)
 
         y0 = jnp.ones((5, 5, 5))
         y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
         assert qml.math.allequal(y0.shape, y1.shape)
+        assert qml.math.allequal(y0.dtype, y1.dtype)
+    
+    def testwarning(self):
+        """Test that a warning is raised when the accuracy is not matched"""
+        t = jnp.linspace(0, 2, 2)
+
+        def fun(y, _):
+            return y
+
+        y0 = jnp.ones((5))
+        with pytest.warns(UserWarning, match="An error of"):
+            _ = qml.math.odeint(fun, y0, t)
+    
+    @pytest.mark.parametrize("t", [np.linspace(0, 1, 5), jnp.linspace(0, 1, 5),])
+    def test_valid_t_types(self, t):
+        """Test that odeint can handle jnp and np arrays for t"""
+        def fun(y, _):
+            return y
+
+        y0 = jnp.ones((5))
+        y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
+        
+        assert qml.math.allequal(y0.shape, y1.shape)
+        assert qml.math.allequal(y0.dtype, y1.dtype)
+
+    
+
 
 
 class TestAnalyticODE:
@@ -127,7 +144,7 @@ class TestODESchrodingerEquation:
         def fun(y, _):
             return -1j * H @ y
 
-        res_expm = jax.scipy.linalg.expm(-1j * H)
+        res_expm = qml.math.expm(-1j * H)
         res_qml = qml.math.odeint(fun, y0, t)
         res_jax = jaxode(fun, y0, t)
 
