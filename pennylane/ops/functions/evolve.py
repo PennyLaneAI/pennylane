@@ -20,7 +20,7 @@ This file contains the ``Evolve`` pulse gate.
 from typing import Union
 
 from pennylane.operation import Operator
-from pennylane.ops.op_math import Evolution, ParametrizedEvolution, ParametrizedHamiltonian
+from pennylane.ops.op_math import Evolution, Evolve, ParametrizedHamiltonian
 
 
 def evolve(op: Union[Operator, ParametrizedHamiltonian]):
@@ -49,7 +49,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
                 ParametrizedEvolution: class used to compute the parametrized evolution of the given
                     hamiltonian
             """
-            return ParametrizedEvolution(H=op, params=params, t=t, dt=dt)
+            return Evolve(H=op, params=params, t=t, dt=dt)
 
         return parametrized_evolution
 

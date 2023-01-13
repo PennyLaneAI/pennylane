@@ -17,7 +17,7 @@ Unit tests for the evolve function
 from typing import Callable
 
 import pennylane as qml
-from pennylane.ops import Evolution, ParametrizedEvolution, ParametrizedHamiltonian
+from pennylane.ops import Evolution, Evolve, ParametrizedHamiltonian
 
 
 class TestEvolve:
@@ -48,5 +48,5 @@ class TestEvolve:
             final_op, Callable
         )
         param_evolution = final_op(params=[], t=1)
-        assert isinstance(param_evolution, ParametrizedEvolution)
+        assert isinstance(param_evolution, Evolve)
         assert param_evolution.H is H

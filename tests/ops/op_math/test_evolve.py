@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import AnyWires
-from pennylane.ops import ParametrizedEvolution, ParametrizedHamiltonian, QubitUnitary
+from pennylane.ops import Evolve, ParametrizedHamiltonian, QubitUnitary
 
 
 class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
@@ -90,7 +90,7 @@ class TestInitialization:
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
+        ev = Evolve(H=H, params=[1, 2], t=2)
 
         assert ev.H is H
         assert ev.dt is None
@@ -114,7 +114,7 @@ class TestInitialization:
         ops = [qml.PauliX(wires=0), qml.RZ(0.23, wires="a")]
         coeffs = [1, 1]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[], t=0)
+        ev = Evolve(H=H, params=[], t=0)
 
         assert ev.has_matrix is True
 
@@ -126,7 +126,7 @@ class TestInitialization:
         coeffs = [1, 1]
 
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[], t=0)
+        ev = Evolve(H=H, params=[], t=0)
 
         assert ev.has_matrix is True
 
@@ -141,7 +141,7 @@ class TestInitialization:
         coeffs = [1, 1]
 
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[], t=0)
+        ev = Evolve(H=H, params=[], t=0)
 
         assert ev.has_matrix is False
 
@@ -156,7 +156,7 @@ class TestMatrix:
         H = time_independent_hamiltonian()
         t = 4
         params = [1, 2]
-        ev = ParametrizedEvolution(H=H, params=params, t=t)
+        ev = Evolve(H=H, params=params, t=t)
         true_mat = qml.math.expm(-1j * qml.matrix(H(params, t)) * t)
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
 
@@ -169,7 +169,7 @@ class TestMatrix:
 
         t = jnp.pi / 4
         params = [1, 2]
-        ev = ParametrizedEvolution(H=H, params=params, t=t)
+        ev = Evolve(H=H, params=params, t=t)
 
         true_mat = qml.math.expm(
             -1j * (qml.matrix(H_integral(params, t)) - qml.matrix(H_integral(params, 0)))
@@ -193,7 +193,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params, t):
-            ParametrizedEvolution(H=H, params=params, t=t)
+            Evolve(H=H, params=params, t=t)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
         @qml.qnode(dev, interface="jax")
@@ -222,7 +222,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params, t):
-            ParametrizedEvolution(H=H, params=params, t=t)
+            Evolve(H=H, params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         @qml.qnode(dev, interface="jax")

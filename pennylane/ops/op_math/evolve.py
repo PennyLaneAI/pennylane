@@ -26,7 +26,7 @@ from pennylane.operation import AnyWires, Operation
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
-class ParametrizedEvolution(Operation):
+class Evolve(Operation):
     r"""Parametrized evolution gate.
 
     For a time-dependent Hamiltonian of the form
