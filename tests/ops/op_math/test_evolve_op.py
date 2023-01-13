@@ -193,7 +193,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params, t):
-            Evolve(H=H, params=params, t=t)
+            Evolve(H=H, params=params, t=t, dt=1e-6)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
         @qml.qnode(dev, interface="jax")
@@ -205,9 +205,9 @@ class TestIntegration:
         t = 4
         params = jnp.array([1.0, 2.0])
 
-        assert qml.math.allclose(circuit(params, t), true_circuit(params, t), atol=1e-2)
+        assert qml.math.allclose(circuit(params, t), true_circuit(params, t), atol=1e-3)
         assert qml.math.allclose(
-            jax.grad(circuit)(params, t), jax.grad(true_circuit)(params, t), atol=1e-2
+            jax.grad(circuit)(params, t), jax.grad(true_circuit)(params, t), atol=1e-3
         )
 
     @pytest.mark.jax
