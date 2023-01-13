@@ -21,6 +21,7 @@ from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
+import numpy as np
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
@@ -242,15 +243,16 @@ class Prod(CompositeOp):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
 
-        mats = []
+        mats: List[np.ndarray] = []  # TODO: change type to `tensor_like` when available
+        batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
             if len(ops) == 1:
-                batched = ops[0].batch_size is not None
                 mat = qml.matrix(ops[0]) if isinstance(ops[0], qml.Hamiltonian) else ops[0].matrix()
-                if self.batch_size and not batched:
-                    mats.append(qml.math.stack([mat for _ in range(self.batch_size)]))
+                if self.batch_size:
+                    batched.append(ops[0].batch_size is not None)
                 else:
-                    mats.append(mat)
+                    batched.append(False)
+                mats.append(mat)
 
             else:
                 mats_and_wires_gen = (
@@ -264,18 +266,21 @@ class Prod(CompositeOp):
                 reduced_mat, _ = math.reduce_matrices(
                     mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.matmul
                 )
-                batched = any(op.batch_size is not None for op in ops)
 
                 if self.batch_size is not None and not batched:
-                    mats.append(qml.math.stack([reduced_mat for _ in range(self.batch_size)]))
+                    batched.append(any(op.batch_size is not None for op in ops))
                 else:
-                    mats.append(reduced_mat)
+                    batched.append(False)
+                mats.append(reduced_mat)
 
         if self.batch_size is None:
             full_mat = reduce(math.kron, mats)
         else:
             full_mat = qml.math.stack(
-                [reduce(math.kron, [m[i] for m in mats]) for i in range(self.batch_size)]
+                [
+                    reduce(math.kron, [m[i] if b else m for m, b in zip(mats, batched)])
+                    for i in range(self.batch_size)
+                ]
             )
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
