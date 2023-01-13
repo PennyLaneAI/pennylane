@@ -301,6 +301,7 @@ class TestQutritUnitary:
         base = qml.QutritUnitary(U, wires=0)
 
         expected = qml.ControlledQutritUnitary(U, control_wires="a", wires=0)
+
         out = base._controlled("a")
         assert qml.equal(out, expected)
 
