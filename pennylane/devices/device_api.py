@@ -43,43 +43,64 @@ class QuantumDevice(abc.ABC):
         To use these objects in a distributed manner, please convert them to a :class:`~.QuantumScript` internally to remove
         the threading lock before sending them to different threads.
 
-    Design Motivation
-    -----------------
+    .. details::
+        :title: Design Motivation
 
-    **Streamlined interface:** Only methods that are required to interact with the rest of PennyLane will be placed in the
-    interface. Developers will be able to clearly see what they can change while still having a fully functional device.
+        **Streamlined interface:** Only methods that are required to interact with the rest of PennyLane will be placed in the
+        interface. Developers will be able to clearly see what they can change while still having a fully functional device.
 
-    **Reduction of duplicate methods:** Methods that solve similar problems are combined together. Only one place will have
-    to solve each individual problem.
+        **Reduction of duplicate methods:** Methods that solve similar problems are combined together. Only one place will have
+        to solve each individual problem.
 
-    **Support for dynamic execution configurations:** Properties such as shots belong to specific executions.
+        **Support for dynamic execution configurations:** Properties such as shots belong to specific executions.
 
-    **Greater coverage for differentiation methods:** Devices can define any order of derivative, the vector jacobian product,
-    or the jacobian vector product.  Calculation of derivatives can be done at the same time as execution to allow reuse of intermediate
-    results.
+        **Greater coverage for differentiation methods:** Devices can define any order of derivative, the vector jacobian product,
+        or the jacobian vector product.  Calculation of derivatives can be done at the same time as execution to allow reuse of intermediate
+        results.
 
-    Porting from the old interface
-    ------------------------------
+    .. details::
+        :title: Porting from the old interface
 
-    :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.QuantumDevice.execute`
+        :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.QuantumDevice.execute`
 
-    :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.QuantumDevice.preprocess`
+        :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.QuantumDevice.preprocess`
 
-    Shot information is no longer stored on the device, but instead provided by a runtime argument, the ``ExecutionConfig``. Devices
-    may define their own default values in the absence of specified values in the execution config.
+        Shot information is no longer stored on the device, but instead provided by a runtime argument, the ``ExecutionConfig``. Devices
+        may define their own default values in the absence of specified values in the execution config.
 
-    The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characterisitics of the devices and controlled various
-    preprocessing and validation steps, such as ``"supports_broadcasting"``.  These capabilites should now be handled by the
-    :meth:`~.QuantumDevice.preprocess` method. For example, if a device does not support broadcasting, ``preprocess`` should
-    split a quantum script with broadcasted parameters into a batch of quantum scripts. If the device does not support mid circuit
-    measurements, then ``preprocess`` should apply :func:`~.defer_measurements`.  A set of default preprocessing steps will be available
-    to make a seemless transition to the new interface.
+        The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characterisitics of the devices and controlled various
+        preprocessing and validation steps, such as ``"supports_broadcasting"``.  These capabilites should now be handled by the
+        :meth:`~.QuantumDevice.preprocess` method. For example, if a device does not support broadcasting, ``preprocess`` should
+        split a quantum script with broadcasted parameters into a batch of quantum scripts. If the device does not support mid circuit
+        measurements, then ``preprocess`` should apply :func:`~.defer_measurements`.  A set of default preprocessing steps will be available
+        to make a seemless transition to the new interface.
 
-    A class will be provided to easily construct default preprocessing steps from supported operations, supported observables,
-    supported measurement processes, and various capabilities.
+        A class will be provided to easily construct default preprocessing steps from supported operations, supported observables,
+        supported measurement processes, and various capabilities.
 
-    Versioning should be specified by the package containing the device. If an external package includes a PennyLane device,
-    then the package requirements should specify the minimium PennyLane version required to work with the device.
+        Versioning should be specified by the package containing the device. If an external package includes a PennyLane device,
+        then the package requirements should specify the minimium PennyLane version required to work with the device.
+
+
+    .. details::
+        :title: Execution Configuration
+
+        Most methods in this device accept an ``ExecutionConfig`` argument,  The execution config can be:
+
+        * ``None``: device defaults should be used
+
+        * A single ``ExecutionConfig`` datastructure: All scripts in the batch use the same configuration
+
+        * An Iterable of ``ExecutionConfig``'s of the same length as the the circuits input: Each quantum script
+          has its own set of configuration parameters. For example, every script can be executed with a different
+          number of shots.
+
+        Execution config properties most relevant for devices are:
+
+        * ``shots``: Either an integer or a tuple of integer. A tuple of integers represenents a shot vector.
+
+        * ``device_options``: A dictionary of device specific options. For example, the python device may have `use_multiprocessing`
+          as a key. These should be documented in the class docstring.
 
     """
 
@@ -134,7 +155,8 @@ class QuantumDevice(abc.ABC):
         This step may also validate parameters of the ``execution_config``. For example, it could raise an error if the
         device doesn't support finite shots but the ``execution_config`` requests it.
 
-        Processing steps can depend on the requested gradient method.
+        Processing steps can depend on the requested gradient method. For example, when the device gradient method is requested,
+        preprocessing can decompose the operations till they all have
 
         """
 
@@ -164,25 +186,6 @@ class QuantumDevice(abc.ABC):
         Returns:
             A numeric result of the computation.
 
-        **Execution Config:**
-
-        The execution config can be:
-
-        * ``None``: device defaults should be used
-
-        * A single ``ExecutionConfig`` datastructure: All scripts in the batch use the same configuration
-
-        * An Iterable of ``ExecutionConfig``'s of the same length as the the circuits input: Each quantum script
-          has its own set of configuration parameters. For example, every script can be executed with a different
-          number of shots.
-
-        Execution config properties most relevant for devices are:
-
-        * ``shots``: Either an integer or a tuple of integer. A tuple of integers represenents a shot vector.
-
-        * ``device_options``: A dictionary of device specific options. For example, the python device may have `use_multiprocessing`
-          as a key. These should be documented in the class docstring.
-
         **Interface parameters:**
 
         Note that the parameters contained within the quantum script may contain interface-specific data types, such as
@@ -190,54 +193,55 @@ class QuantumDevice(abc.ABC):
         can implement an optional "internal preprocessing" step that converts all parameters to vanilla numpy. A convenience
         transform implementing this will be provided.
 
-        **Return shape:**
+        .. details::
+            :title: Return Shape
 
-        The result for each :class:`~.QuantumTape` must match the shape specified by :class:`~.QuantumTape.shape`.
+            The result for each :class:`~.QuantumTape` must match the shape specified by :class:`~.QuantumTape.shape`.
 
-        The level of priority for dimensions from outer dimension to inner dimension is:
+            The level of priority for dimensions from outer dimension to inner dimension is:
 
-        1) Quantum Script in batch
-        2) Shot choice in a shot vector
-        3) Measurement in the quantum script
-        4) Parameter broadcasting
-        5) Measurement shape for array-valued measurements like probabilities
+            1. Quantum Script in batch
+            2. Shot choice in a shot vector
+            3. Measurement in the quantum script
+            4. Parameter broadcasting
+            5. Measurement shape for array-valued measurements like probabilities
 
-        For a batch of quantum scripts with multiple measurements, a shot vector, and parameter broadcasting:
+            For a batch of quantum scripts with multiple measurements, a shot vector, and parameter broadcasting:
 
-        * ``result[0]``: the results for the first script
-        * ``result[0][0]``: the first shot number in the shot vector
-        * ``result[0][0][0]``: the first measurement in the quantum script
-        * ``result[0][0][0][0]``: the first parameter broadcasting choice
-        * ``result[0][0][0][0][0]``: the first value for an array-valued measurement
+            * ``result[0]``: the results for the first script
+            * ``result[0][0]``: the first shot number in the shot vector
+            * ``result[0][0][0]``: the first measurement in the quantum script
+            * ``result[0][0][0][0]``: the first parameter broadcasting choice
+            * ``result[0][0][0][0][0]``: the first value for an array-valued measurement
 
-        With the exception of quantum script batches, dimensions with only a single component should be eliminated.
+            With the exception of quantum script batches, dimensions with only a single component should be eliminated.
 
-        For example:
+            For example:
 
-        With a single script and a single measurement process, execute should return just the
-        measurement value in a numpy array. ``shape`` currently accepts a device, as historically devices
-        stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
+            With a single script and a single measurement process, execute should return just the
+            measurement value in a numpy array. ``shape`` currently accepts a device, as historically devices
+            stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
 
-        >>> qs = qml.tape.QuantumTape(measurements=qml.expval(qml.PauliZ(0))])
-        >>> qs.shape(dev)
-        ()
-        >>> dev.execute(qs)
-        array(1.0)
+            >>> qs = qml.tape.QuantumTape(measurements=qml.expval(qml.PauliZ(0))])
+            >>> qs.shape(dev)
+            ()
+            >>> dev.execute(qs)
+            array(1.0)
 
-        If execute recieves a batch of scripts, then it should return a tuple of results:
+            If execute recieves a batch of scripts, then it should return a tuple of results:
 
-        >>> dev.execute([qs, qs])
-        (array(1.0), array(1.0))
-        >>> dev.execute([qs])
-        (array(1.0),)
+            >>> dev.execute([qs, qs])
+            (array(1.0), array(1.0))
+            >>> dev.execute([qs])
+            (array(1.0),)
 
-        If the script has multiple measurments, then the device should return a tuple of measurements.
+            If the script has multiple measurments, then the device should return a tuple of measurements.
 
-        >>> qs = qml.tape.QuantumTape(measurements=[qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
-        >>> qs.shape(dev)
-        ((), (4,))
-        >>> dev.execute(qs)
-        (array(1.0), array([1., 0., 0., 0.]))
+            >>> qs = qml.tape.QuantumTape(measurements=[qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+            >>> qs.shape(dev)
+            ((), (4,))
+            >>> dev.execute(qs)
+            (array(1.0), array([1., 0., 0., 0.]))
 
         """
         raise NotImplementedError
