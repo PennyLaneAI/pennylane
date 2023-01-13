@@ -128,7 +128,16 @@ def _odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
         mean_err_ratio = jnp.sqrt(jnp.mean(_abs2(err_ratio)))
 
         # sends call from device to host to inspect runtime values
-        host_callback.id_tap(_tolerance_warn, (atol, rtol, mean_err_ratio, jnp.sqrt(jnp.mean(_abs2(y1_error))), jnp.sqrt(jnp.mean(_abs2(err_tol)))))
+        host_callback.id_tap(
+            _tolerance_warn,
+            (
+                atol,
+                rtol,
+                mean_err_ratio,
+                jnp.sqrt(jnp.mean(_abs2(y1_error))),
+                jnp.sqrt(jnp.mean(_abs2(err_tol))),
+            ),
+        )
 
         carry = [y1, f1, t1]
         return carry, y1
@@ -194,6 +203,7 @@ def runge_kutta_step(func, y0, f0, t0, dt):
     return y1, f1, y1_error
 
 
+# pylint: disable=no-member
 def ravel_first_arg(f, unravel):
     """ "Decorate a function to work with a raveled first argument"""
     return _ravel_first_arg(lu.wrap_init(f), unravel).call_wrapped
