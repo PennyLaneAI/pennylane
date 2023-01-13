@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WireError
 
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
@@ -93,3 +93,36 @@ class TestDecomposition:
 
         op = qml.QubitStateVector(U, wires=wires)
         assert op.batch_size == 3
+
+
+class TestMatrix:
+    """Test the matrix() method of various state-prep operations."""
+
+    @pytest.mark.parametrize(
+        "num_wires,wire_order,one_position",
+        [
+            (2, None, 1),
+            (2, [1, 2], 1),
+            (3, [0, 1, 2], 1),
+            (3, ["a", 1, 2], 1),
+            (3, [1, 2, 0], 2),
+            (3, [1, 2, "a"], 2),
+        ],
+    )
+    def test_BasisState_matrix(self, num_wires, wire_order, one_position):
+        """Tests that BasisState matrix returns kets as expected."""
+        basis_op = qml.BasisState([0, 1], wires=[1, 2])
+        ket = basis_op.matrix(wire_order=wire_order)
+        assert ket[one_position] == 1
+        ket[one_position] = 0  # everything else should be zero, as we assert below
+        assert np.allclose(np.zeros(2**num_wires), ket)
+
+    def test_BasisState_matrix_bad_wire_order(self):
+        """Tests that the provided wire_order must contain the wires in the operation."""
+        basis_op = qml.BasisState([0, 1], wires=[0, 1])
+        with pytest.raises(WireError, match="wire_order must contain all BasisState wires"):
+            basis_op.matrix(wire_order=[1, 2])
+
+    def test_has_matrix(self):
+        """Tests that has_matrix is always True for BasisState."""
+        assert qml.BasisState([0, 1], wires=[0, 1]).has_matrix is True

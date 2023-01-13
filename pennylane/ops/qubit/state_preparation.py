@@ -16,8 +16,10 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
+from pennylane import numpy as np
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.wires import Wires, WireError
 
 state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
 
@@ -87,6 +89,29 @@ class BasisState(Operation):
 
         """
         return [BasisStatePreparation(n, wires)]
+
+    # pylint:disable=invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return True
+
+    def matrix(self, wire_order=None):
+        """Returns a ket vector representing the state being created."""
+        if wire_order is None:
+            num_wires = len(self.wires)
+            indices = self.parameters[0]
+        else:
+            wires = Wires(wire_order)
+            if not wires.contains_wires(self.wires):
+                raise WireError("Custom wire_order must contain all BasisState wires")
+            num_wires = len(wires)
+            indices = [0] * num_wires
+            for wire_idx, value in zip(self.wires, self.parameters[0]):
+                indices[wires.index(wire_idx)] = value
+
+        ket = np.zeros(2**num_wires, dtype="complex128")
+        ket[np.ravel_multi_index(indices, [2] * num_wires)] = 1
+        return ket
 
 
 class QubitStateVector(Operation):
