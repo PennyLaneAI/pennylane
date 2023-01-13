@@ -24,7 +24,7 @@ from pennylane.ops.op_math import Evolution, ParametrizedEvolution, Parametrized
 
 
 def evolve(op: Union[Operator, ParametrizedHamiltonian]):
-    """Returns a new operator to compute the evolution of the given operator.
+    """Returns a new operator that computes the evolution of the given operator.
 
     Args:
         op (Operator): operator to evolve
