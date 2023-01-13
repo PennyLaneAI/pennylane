@@ -28,8 +28,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces import InterfaceUnsupportedError, execute
-from pennylane.interfaces.jax_jit import _execute_with_fwd
+from pennylane.workflow.interfaces import InterfaceUnsupportedError, execute
+from pennylane.workflow.interfaces.jax_jit import _execute_with_fwd
 
 
 @pytest.mark.parametrize(

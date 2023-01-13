@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.interfaces import INTERFACE_MAP
+from pennylane.workflow.interfaces import INTERFACE_MAP
 from pennylane.measurements import VnEntropy
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires

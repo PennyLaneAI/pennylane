@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
-from pennylane.interfaces import execute
+from pennylane.workflow.interfaces import execute
 
 pytestmark = pytest.mark.tf
 

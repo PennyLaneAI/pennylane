@@ -23,8 +23,8 @@ import numpy as np
 import semantic_version
 
 import pennylane as qml
-from pennylane.interfaces import InterfaceUnsupportedError
-from pennylane.interfaces.jax import _raise_vector_valued_fwd
+from pennylane.workflow.interfaces import InterfaceUnsupportedError
+from pennylane.workflow.interfaces.jax import _raise_vector_valued_fwd
 from pennylane.measurements import ProbabilityMP
 
 dtype = jnp.float64

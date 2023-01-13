@@ -24,7 +24,7 @@ from pennylane.operation import Observable, AnyWires
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import finite_diff, param_shift
-from pennylane.interfaces import execute
+from pennylane.workflow.interfaces import execute
 
 pytestmark = pytest.mark.autograd
 
@@ -39,7 +39,7 @@ class TestAutogradExecuteUnitTests:
         mock.side_effect = ImportError()
 
         try:
-            del sys.modules["pennylane.interfaces.autograd"]
+            del sys.modules["pennylane.workflow.interfaces.autograd"]
         except:
             pass
 

@@ -25,7 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute, InterfaceUnsupportedError
+from pennylane.workflow.interfaces import execute, InterfaceUnsupportedError
 
 
 class TestJaxExecuteUnitTests:

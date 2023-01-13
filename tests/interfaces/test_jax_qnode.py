@@ -18,7 +18,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.interfaces import InterfaceUnsupportedError
+from pennylane.workflow.interfaces import InterfaceUnsupportedError
 from pennylane.tape import QuantumScript
 
 qubit_device_and_diff_method = [

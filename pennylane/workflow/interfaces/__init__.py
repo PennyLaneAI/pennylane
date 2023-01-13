@@ -24,8 +24,8 @@ Execution functions and utilities
     :toctree: api
 
     ~execute
-    ~interfaces.cache_execute
-    ~interfaces.set_shots
+    ~workflow.interfaces.cache_execute
+    ~workflow.interfaces.set_shots
 
 Supported interfaces
 ~~~~~~~~~~~~~~~~~~~~
@@ -33,12 +33,12 @@ Supported interfaces
 .. autosummary::
     :toctree: api
 
-    ~interfaces.autograd
-    ~interfaces.jax
-    ~interfaces.jax_jit
-    ~interfaces.tensorflow
-    ~interfaces.tensorflow_autograph
-    ~interfaces.torch
+    ~workflow.interfaces.autograd
+    ~workflow.interfaces.jax
+    ~workflow.interfaces.jax_jit
+    ~workflow.interfaces.tensorflow
+    ~workflow.interfaces.tensorflow_autograph
+    ~workflow.interfaces.torch
 
 """
 from .execution import cache_execute, execute, INTERFACE_MAP, SUPPORTED_INTERFACES

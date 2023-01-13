@@ -13,4 +13,4 @@ qml.interfaces
 
 .. rubric:: Modules
 
-.. automodule:: pennylane.interfaces
+.. automodule:: pennylane.workflow.interfaces

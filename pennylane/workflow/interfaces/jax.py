@@ -21,7 +21,7 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.interfaces import InterfaceUnsupportedError
+from pennylane.workflow.interfaces import InterfaceUnsupportedError
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 
 dtype = jnp.float64

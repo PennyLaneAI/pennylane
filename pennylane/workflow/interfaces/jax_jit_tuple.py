@@ -21,8 +21,8 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.interfaces.jax import _compute_jvps
-from pennylane.interfaces.jax_jit import _numeric_type_to_dtype, _validate_jax_version
+from pennylane.workflow.interfaces.jax import _compute_jvps
+from pennylane.workflow.interfaces.jax_jit import _numeric_type_to_dtype, _validate_jax_version
 
 dtype = jnp.float64
 
