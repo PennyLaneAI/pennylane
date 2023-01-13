@@ -28,12 +28,14 @@ class TestFiniteDiff:
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
+        qml.enable_return()
         dev = qml.device("default.qubit", wires=3)
         x = 0.543
         y = -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
+            qml.PauliZ(wires=0)
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))

@@ -33,11 +33,11 @@ from pennylane.transforms.metric_tensor import _get_aux_wire
 
 @gradient_transform
 def lcu_grad(
-    tape,
-    argnum=None,
-    shots=None,
-    aux_wire=None,
-    device_wires=None,
+        tape,
+        argnum=None,
+        shots=None,
+        aux_wire=None,
+        device_wires=None,
 ):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
     parameters with respect to its inputs. This function is adapted to the new return system.
@@ -74,7 +74,7 @@ def lcu_grad(
     aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
 
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
-        g_tapes, processing_fn = var_lcu(tape, argnum, aux_wire)
+        raise qml.QuantumFunctionError("Hadamard test for gradient of variance is not implemented yet.")
     else:
         g_tapes, processing_fn = expval_lcu(tape, argnum, aux_wire)
 
@@ -87,19 +87,24 @@ def expval_lcu(tape, argnum, aux_wire):
     print("argnum", argnum)
     g_tapes = []
     coeffs = []
-    for idx in argnums:
-        gate = tape[idx]
+
+    for id_argnum in argnums:
+        gate, _, idx = tape.get_operation(id_argnum)
+
         ops_to_gate = tape.operations[: idx + 1]
-        ops_after_gate = tape.operations[idx + 1 :]
+        ops_after_gate = tape.operations[idx + 1:]
+
+        # Get a generator and add the control on the aux qubit
+        # TODO: Add general case
         gen = gate.generator()
-
         coeffs.append(gen.coeffs[0])
-
         ops = gen.ops
         ctrl_gen = qml.ctrl(*ops, control=aux_wire).decomposition()
         hadamard = [qml.Hadamard(wires=aux_wire)]
         ops = ops_to_gate + hadamard + ctrl_gen + hadamard + ops_after_gate
 
+        # Add the Y measurement on the aux qubit
+        # TODO: Add multi measurements cases
         obs_new = tape.measurements[0].obs.obs.copy()
         obs_new.append(qml.PauliY(wires=aux_wire))
         obs_new = qml.operation.Tensor(*obs_new)
@@ -113,16 +118,5 @@ def expval_lcu(tape, argnum, aux_wire):
         for coeff, res in zip(coeffs, results):
             final_res.append(2 * coeff * res)
         return final_res
-
-    return g_tapes, processing_fn
-
-
-def var_lcu(tape, argnum, aux_wire):
-    argnum = argnum or tape.trainable_params
-    print("ici", argnum)
-    g_tapes = []
-
-    def processing_fn(results):
-        return results
 
     return g_tapes, processing_fn
