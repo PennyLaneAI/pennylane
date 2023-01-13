@@ -53,4 +53,4 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
 
         return parametrized_evolution
 
-    return Evolution(generator=op, param=1)
+    return Evolution(generator=op, param=1.)
