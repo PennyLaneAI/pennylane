@@ -90,7 +90,7 @@ class BasisState(Operation):
         """
         return [BasisStatePreparation(n, wires)]
 
-    # pylint:disable=invalid-overridden-method
+    # pylint:disable=arguments-renamed,invalid-overridden-method
     @property
     def has_matrix(self):
         return True
