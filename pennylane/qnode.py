@@ -24,7 +24,7 @@ import autograd
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
+from pennylane.workflow.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
 from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
 from pennylane.tape import QuantumTape, make_qscript
 

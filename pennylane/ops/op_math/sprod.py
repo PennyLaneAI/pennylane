@@ -22,7 +22,7 @@ import autoray
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane.interfaces import SUPPORTED_INTERFACES
+from pennylane.workflow.interfaces import SUPPORTED_INTERFACES
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum

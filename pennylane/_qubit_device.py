@@ -30,7 +30,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import Device, DeviceError
-from pennylane.interfaces import set_shots
+from pennylane.workflow.interfaces import set_shots
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (

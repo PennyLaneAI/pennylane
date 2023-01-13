@@ -107,10 +107,11 @@ from pennylane.shadows import ClassicalShadow
 import pennylane.data
 
 # collections needs to be imported after all other pennylane imports
+from pennylane.workflow import interfaces
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
-from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
+from pennylane.workflow.interfaces import execute  # pylint:disable=wrong-import-order
 
 
 # Look for an existing configuration file
