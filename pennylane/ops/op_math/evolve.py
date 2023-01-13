@@ -18,12 +18,48 @@
 This file contains the ``ParametrizedEvolution`` operator.
 """
 
+from typing import Union
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, Operation, Operator
 
+from .exp import Evolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+
+
+def evolve(op: Union[Operator, ParametrizedHamiltonian]):
+    """Returns a new operator that computes the evolution of the given operator.
+
+    Args:
+        op (Operator): operator to evolve
+
+    Returns:
+        Evolution | ParametrizedEvolution: evolution operator
+    """
+    if isinstance(op, ParametrizedHamiltonian):
+
+        def parametrized_evolution(params: list, t, dt=None):
+            """Constructor for the :class:`ParametrizedEvolution` operator.
+
+            Args:
+                params (list): params (ndarray): trainable parameters
+                t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
+                    If a list of two floats, it corresponds to the initial time and the final time of the
+                    evolution.
+                dt (float, optional): the time step used by the differential equation solver to evolve the
+                    time-dependent Hamiltonian. Defaults to XXX.
+
+            Returns:
+                ParametrizedEvolution: class used to compute the parametrized evolution of the given
+                    hamiltonian
+            """
+            return Evolve(H=op, params=params, t=t, dt=dt)
+
+        return parametrized_evolution
+
+    return Evolution(generator=op, param=1.0)
 
 
 class Evolve(Operation):

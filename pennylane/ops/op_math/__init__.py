@@ -57,7 +57,7 @@ from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
 from .controlled import Controlled, ControlledOp, ctrl
 from .dot import dot
-from .evolve import Evolve
+from .evolve import Evolve, evolve
 from .exp import Evolution, Exp, exp
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .pow import Pow, pow
