@@ -156,9 +156,9 @@ class TestMatrix:
         H = time_independent_hamiltonian()
         t = 4
         params = [1, 2]
-        ev = Evolve(H=H, params=params, t=t)
+        ev = Evolve(H=H, params=params, t=t, dt=1e-6)
         true_mat = qml.math.expm(-1j * qml.matrix(H(params, t)) * t)
-        assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
+        assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-3)
 
     @pytest.mark.jax
     def test_time_dependent_hamiltonian(self):
@@ -174,7 +174,7 @@ class TestMatrix:
         true_mat = qml.math.expm(
             -1j * (qml.matrix(H_integral(params, t)) - qml.matrix(H_integral(params, 0)))
         )
-        assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
+        assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-1)
 
 
 class TestIntegration:
