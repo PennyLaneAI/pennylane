@@ -25,6 +25,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
@@ -193,7 +194,10 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
-        gen = ((qml.matrix(op), op.wires) for op in self)
+        gen = (
+            (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
+            for op in self
+        )
 
         reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
 

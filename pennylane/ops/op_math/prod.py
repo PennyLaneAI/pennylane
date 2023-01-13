@@ -30,6 +30,7 @@ from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
+from pennylane.ops.qubit import Hamiltonian
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -260,7 +261,10 @@ class Prod(CompositeOp):
         mats: List[np.ndarray] = []  # TODO: change type to `tensor_like` when available
         batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
-            gen = ((qml.matrix(op), op.wires) for op in ops)
+            gen = (
+                (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
+                for op in ops
+            )
 
             reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
 
