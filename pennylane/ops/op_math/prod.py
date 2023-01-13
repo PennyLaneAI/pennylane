@@ -98,6 +98,20 @@ class Prod(CompositeOp):
         do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
 
+    .. note::
+
+        This operator supports batched operands:
+        ```pycon
+        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+        ```
+        But it doesn't support batching of operators:
+        ```pycon
+        >>> op = qml.prod(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
+        ```
+
     .. seealso:: :func:`~.ops.op_math.prod`
 
     **Example**
