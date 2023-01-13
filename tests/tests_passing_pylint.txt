@@ -1,4 +1,6 @@
 tests/data/**
 tests/collections/**
 tests/math/**
+tests/ops/op_math/test_controlled_ops.py
+tests/ops/op_math/test_controlled.py
 tests/test_wires.py

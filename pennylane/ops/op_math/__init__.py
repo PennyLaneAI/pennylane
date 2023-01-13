@@ -51,11 +51,20 @@ Symbolic Classes
     ~SProd
     ~SymbolicOp
 
+Controlled Operator Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ControlledQubitUnitary
+
 """
 
 from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
 from .controlled import Controlled, ControlledOp, ctrl
+from .controlled_ops import ControlledQubitUnitary
 from .dot import dot
 from .exp import Evolution, Exp, exp
 from .pow import Pow, pow
@@ -63,3 +72,8 @@ from .prod import Prod, prod
 from .sprod import SProd, s_prod
 from .sum import Sum, op_sum
 from .symbolicop import SymbolicOp
+
+
+controlled_qubit_ops = {
+    "ControlledQubitUnitary",
+}
