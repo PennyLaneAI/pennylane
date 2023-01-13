@@ -1,3 +1,17 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 This submodule contains the ParametrizedHamiltonian class
 """
@@ -5,6 +19,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.wires import Wires
+
 
 # pylint: disable= too-many-instance-attributes
 class ParametrizedHamiltonian:
@@ -94,36 +109,23 @@ class ParametrizedHamiltonian:
     def __repr__(self):
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
 
-    @staticmethod
-    def _get_terms(coeffs, obs):
-        """Takes a list of scalar coefficients and list of Observables. Returns a qml.Sum of qml.SProd operators
-        (or a single qml.SProd operator in the event that there is only one term)."""
-        terms_list = [qml.s_prod(coeff, ob) for coeff, ob in zip(coeffs, obs)]
-        if len(terms_list) == 0:
-            return 0
-        if len(terms_list) == 1:
-            return terms_list[0]
-        return qml.op_sum(*terms_list)
-
-    def H_fixed(
-        self,
-    ):
+    def H_fixed(self):
         """The fixed term(s) of the ParametrizedHamiltonian. Returns a qml.Sum operator of qml.SProd operators
         (or a single qml.SProd operator in the event that there is only one term in H_drift)."""
-        return self._get_terms(self.H_coeffs_fixed, self.H_ops_fixed)
+        if self.H_coeffs_fixed:
+            return qml.ops.dot(self.H_coeffs_fixed, self.H_ops_fixed)  # pylint: disable=no-member
+        return 0
 
-    @property
-    def H_parametrized(self):
+    def H_parametrized(self, params, t):
         """The parametrized terms of the Hamiltonian. Returns a function that can be evaluated
         to get a snapshot of the operator at a set time and with set parameters. When the function is
         evaluated, the returned operator is a qml.Sum of qml.S_Prod operators (or a single qml.SProd
         operator in the event that there is only one term in H_ts)."""
 
-        def snapshot(params, t):
-            coeffs = [f(params, t) for f in self.H_coeffs_parametrized]
-            return self._get_terms(coeffs, self.H_ops_parametrized)
-
-        return snapshot
+        coeffs = [f(params, t) for f in self.H_coeffs_parametrized]
+        if len(coeffs) == 0:
+            return 0
+        return qml.ops.dot(coeffs, self.H_ops_parametrized)  # pylint: disable=no-member
 
     @property
     def coeffs(self):
@@ -161,7 +163,7 @@ class ParametrizedHamiltonian:
             return ParametrizedHamiltonian(coeffs, ops)
 
         if isinstance(H, Operator):
-            coeffs.append(qml.math.convert_like([1.0], coeffs)[0])
+            coeffs.append(1)
             ops.append(H)
             return ParametrizedHamiltonian(coeffs, ops)
 
