@@ -876,7 +876,7 @@ class TestOperatorIntegration:
             r"""Dummy custom operator"""
             num_wires = 1
 
-        with pytest.raises(ValueError, match="Cannot raise an Operator"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             _ = DummyOp(wires=[0]) ** DummyOp(wires=[0])
 
     def test_sum_with_operator(self):
@@ -1027,12 +1027,12 @@ class TestOperatorIntegration:
 
     def test_mul_with_not_supported_object_raises_error(self):
         """Test that the __mul__ dunder method raises an error when using a non-supported object."""
-        with pytest.raises(ValueError, match="Cannot multiply Observable by"):
+        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'PauliX'"):
             _ = "dummy" * qml.PauliX(0)
 
     def test_matmul_with_not_supported_object_raises_error(self):
         """Test that the __matmul__ dunder method raises an error when using a non-supported object."""
-        with pytest.raises(ValueError, match="Can only perform tensor products between operators."):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             _ = qml.PauliX(0) @ "dummy"
 
 
@@ -1382,15 +1382,11 @@ class TestTensor:
         Y = qml.CNOT(wires=[0, 1])
         Z = qml.PauliZ(0)
 
-        with pytest.raises(
-            ValueError, match="Can only perform tensor products between observables"
-        ):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             T = X @ Z
             T @ Y
 
-        with pytest.raises(
-            ValueError, match="Can only perform tensor products between observables"
-        ):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             T = X @ Z
             4 @ T
 
@@ -1894,14 +1890,17 @@ class TestTensorObservableOperations:
         obs = qml.PauliZ(0)
         tensor = qml.PauliZ(0) @ qml.PauliX(1)
         A = [[1, 0], [0, -1]]
-        with pytest.raises(ValueError, match="Cannot add Observable"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             obs + A
+        with pytest.raises(TypeError, match="unsupported operand type"):
             tensor + A
-        with pytest.raises(ValueError, match="Cannot multiply Observable"):
+        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'PauliZ'"):
             obs * A
+        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'Tensor'"):
             A * tensor
-        with pytest.raises(ValueError, match="Cannot subtract"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             obs - A
+        with pytest.raises(TypeError, match="unsupported operand type"):
             tensor - A
 
 
