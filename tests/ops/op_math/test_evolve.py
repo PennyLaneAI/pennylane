@@ -175,33 +175,34 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
+        t = 4
+
         @qml.qnode(dev, interface="jax")
-        def circuit(params, t):
+        def circuit(params):
             Evolve(H=H, params=params, t=t, dt=1e-6)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
-        def jitted_circuit(params, t):
+        def jitted_circuit(params):
             Evolve(H=H, params=params, t=t, dt=1e-6)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
         @qml.qnode(dev, interface="jax")
-        def true_circuit(params, t):
+        def true_circuit(params):
             true_mat = qml.math.expm(-1j * qml.matrix(H(params, t)) * t)
             QubitUnitary(U=true_mat, wires=[0, 1])
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
-        t = jnp.array(4)
         params = jnp.array([1.0, 2.0])
 
-        assert qml.math.allclose(circuit(params, t), true_circuit(params, t), atol=1e-3)
-        assert qml.math.allclose(jitted_circuit(params, t), true_circuit(params, t), atol=1e-3)
+        assert qml.math.allclose(circuit(params), true_circuit(params), atol=1e-3)
+        assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=1e-3)
         assert qml.math.allclose(
-            jax.grad(circuit)(params, t), jax.grad(true_circuit)(params, t), atol=1e-3
+            jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
         )
         assert qml.math.allclose(
-            jax.grad(jitted_circuit)(params, t), jax.grad(true_circuit)(params, t), atol=1e-3
+            jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
         )
 
 
