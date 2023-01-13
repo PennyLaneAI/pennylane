@@ -27,7 +27,7 @@ try:
     from jax.experimental import host_callback
 except ImportError as e:
     raise ImportError(
-        "Module jax is required for ``qml.math.odeint`` class. "
+        "Module jax is required for ``qml.math.odeint`` functionality. "
         "You can install jax via: pip install jax"
     ) from e
 
