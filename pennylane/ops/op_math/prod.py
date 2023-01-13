@@ -246,32 +246,23 @@ class Prod(CompositeOp):
         mats: List[np.ndarray] = []  # TODO: change type to `tensor_like` when available
         batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
-            if len(ops) == 1:
-                mat = qml.matrix(ops[0]) if isinstance(ops[0], qml.Hamiltonian) else ops[0].matrix()
-                if self.batch_size:
-                    batched.append(ops[0].batch_size is not None)
-                else:
-                    batched.append(False)
-                mats.append(mat)
+            mats_and_wires_gen = (
+                (
+                    qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(),
+                    op.wires,
+                )
+                for op in ops
+            )
 
+            reduced_mat, _ = math.reduce_matrices(
+                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.matmul
+            )
+
+            if self.batch_size is not None:
+                batched.append(any(op.batch_size is not None for op in ops))
             else:
-                mats_and_wires_gen = (
-                    (
-                        qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(),
-                        op.wires,
-                    )
-                    for op in ops
-                )
-
-                reduced_mat, _ = math.reduce_matrices(
-                    mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.matmul
-                )
-
-                if self.batch_size is not None and not batched:
-                    batched.append(any(op.batch_size is not None for op in ops))
-                else:
-                    batched.append(False)
-                mats.append(reduced_mat)
+                batched.append(False)
+            mats.append(reduced_mat)
 
         if self.batch_size is None:
             full_mat = reduce(math.kron, mats)
