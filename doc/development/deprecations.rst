@@ -30,29 +30,6 @@ Pending deprecations
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
   have been consolidated in the ``pauli/grouping/`` directory.
 
-* In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
-  use ``qml.adjoint`` or ``qml.pow`` instead. 
-
-  - Still accessible in v0.27 and v0.28
-  - Will be removed in v0.29
-
-  Don't use:
-
-  >>> v1 = qml.PauliX(0).inv()
-  >>> v2 = qml.PauliX(0)
-  >>> v2.inverse = True
-
-  Instead, use:
-
-  >>> qml.adjoint(qml.PauliX(0))
-  Adjoint(PauliX(wires=[0]))
-  >>> qml.pow(qml.PauliX(0), -1)
-  PauliX(wires=[0])**-1
-  >>> qml.pow(qml.PauliX(0), -1, lazy=False)
-  PauliX(wires=[0])
-  >>> qml.PauliX(0) ** -1
-  PauliX(wires=[0])**-1
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
@@ -109,6 +86,30 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+
+* In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
+  use ``qml.adjoint`` or ``qml.pow`` instead. 
+
+  - Still accessible in v0.27 and v0.28
+  - Removed in v0.29
+
+  Don't use:
+
+  >>> v1 = qml.PauliX(0).inv()
+  >>> v2 = qml.PauliX(0)
+  >>> v2.inverse = True
+
+  Instead, use:
+
+  >>> qml.adjoint(qml.PauliX(0))
+  Adjoint(PauliX(wires=[0]))
+  >>> qml.pow(qml.PauliX(0), -1)
+  PauliX(wires=[0])**-1
+  >>> qml.pow(qml.PauliX(0), -1, lazy=False)
+  PauliX(wires=[0])
+  >>> qml.PauliX(0) ** -1
+  PauliX(wires=[0])**-1
 
 * The ``qml.utils.decompose_hamiltonian()`` method is removed. Please
   use ``qml.pauli_decompose()``.

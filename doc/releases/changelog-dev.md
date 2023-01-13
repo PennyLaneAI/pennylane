@@ -168,6 +168,9 @@
 
 <h3>Breaking changes</h3>
 
+* `Operator.inv()` and the `Operator.inverse` setter are removed. Please use `qml.adjoint` or `qml.pow` instead.
+  [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
+
 * The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`. 
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
