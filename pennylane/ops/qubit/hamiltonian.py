@@ -603,7 +603,7 @@ class Hamiltonian(Observable):
     def __sub__(self, H):
         r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
-            return self.__add__(H.__mul__(-1))
+            return self + (-1 * H)
         return NotImplemented
 
     def __iadd__(self, H):
