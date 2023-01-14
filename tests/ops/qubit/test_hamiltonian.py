@@ -18,6 +18,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+import scipy
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -1229,6 +1230,165 @@ class TestHamiltonianArithmeticAutograd:
         H = qml.Hamiltonian(coeffs_expected, obs_expected)
 
         assert H.compare(H1 @ H2)
+
+
+class TestHamiltonianSparseMatrix:
+    """Test for sparse matrix representation."""
+
+    @pytest.mark.parametrize(
+        ("coeffs", "obs", "wires", "ref_matrix"),
+        [
+            (
+                [1, -0.45],
+                [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)],
+                None,
+                np.array(
+                    [
+                        [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.45j],
+                        [0.0 - 0.45j, 0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j, 1.0 + 0.0j],
+                    ]
+                ),
+            ),
+            (
+                [0.1],
+                [qml.PauliZ("b") @ qml.PauliX("a")],
+                ["a", "c", "b"],
+                np.array(
+                    [
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                        ],
+                        [
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                    ]
+                ),
+            ),
+            (
+                [0.21, -0.78, 0.52],
+                [
+                    qml.PauliZ(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliY(0) @ qml.PauliZ(1),
+                ],
+                None,
+                np.array(
+                    [
+                        [0.21 + 0.0j, 0.0 + 0.0j, -0.78 - 0.52j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, -0.21 + 0.0j, 0.0 + 0.0j, 0.78 + 0.52j],
+                        [-0.78 + 0.52j, 0.0 + 0.0j, -0.21 + 0.0j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, 0.78 - 0.52j, 0.0 + 0.0j, 0.21 + 0.0j],
+                    ]
+                ),
+            ),
+        ],
+    )
+    def test_sparse_matrix(self, coeffs, obs, wires, ref_matrix):
+        """Tests that sparse_hamiltonian returns a correct sparse matrix"""
+        H = qml.Hamiltonian(coeffs, obs)
+
+        sparse_matrix = H.sparse_matrix(wire_order=wires)
+
+        assert np.allclose(sparse_matrix.toarray(), ref_matrix)
+
+    def test_sparse_format(self):
+        """Tests that sparse_hamiltonian returns a scipy.sparse.csr_matrix object"""
+
+        coeffs = [-0.25, 0.75]
+        obs = [
+            qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]),
+            qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]),
+        ]
+        H = qml.Hamiltonian(coeffs, obs)
+
+        sparse_matrix = H.sparse_matrix()
+
+        assert isinstance(sparse_matrix, scipy.sparse.csr_matrix)
+
+    def test_observable_error(self):
+        """Tests that an error is thrown if the observables are themselves constructed from multi-qubit
+        operations."""
+        with pytest.raises(ValueError, match="Can only sparsify Hamiltonians"):
+            H = qml.Hamiltonian(
+                [0.1], [qml.PauliZ("c") @ qml.Hermitian(np.eye(4), wires=["a", "b"])]
+            )
+            H.sparse_matrix(wire_order=["a", "c", "b"])
 
 
 class TestHamiltonianArithmeticJax:

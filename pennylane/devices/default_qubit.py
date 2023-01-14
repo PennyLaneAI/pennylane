@@ -587,7 +587,7 @@ class DefaultQubit(QubitDevice):
                 # Coefficients and the state are not trainable, we can be more
                 # efficient in how we compute the Hamiltonian sparse matrix.
                 if observable.name == "Hamiltonian":
-                    Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
+                    Hmat = observable.sparse_matrix(wire_order=self.wires)
                 elif observable.name == "SparseHamiltonian":
                     Hmat = observable.sparse_matrix()
 

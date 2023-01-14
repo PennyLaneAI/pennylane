@@ -20,9 +20,10 @@ import itertools
 import numbers
 from collections.abc import Iterable
 from copy import copy
-import scipy
 import functools
 from typing import List
+import scipy
+
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -364,7 +365,7 @@ class Hamiltonian(Observable):
         >>> H_sparse = H.sparse_matrix()
         >>> H_sparse
         <4x4 sparse matrix of type '<class 'numpy.complex128'>'
-	        with 8 stored elements in Compressed Sparse Row format>
+                with 8 stored elements in Compressed Sparse Row format>
 
         The resulting sparse matrix can be either used directly or transformed into a numpy array:
 
@@ -413,7 +414,9 @@ class Hamiltonian(Observable):
             if i_count > 0:
                 mat.append(scipy.sparse.eye(2**i_count, format="coo"))
 
-            red_mat = functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
+            red_mat = (
+                functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
+            )
 
             temp_mats.append(red_mat.tocsr())
             # Value of 100 arrived at empirically to balance time savings vs memory use. At this point
@@ -423,7 +426,7 @@ class Hamiltonian(Observable):
                 matrix += sum(temp_mats)
                 temp_mats = []
 
-        matrix += sum(temp_mats)       
+        matrix += sum(temp_mats)
         return expand_matrix(matrix, wires=self.wires, wire_order=wire_order)
 
     def simplify(self):

@@ -20,81 +20,57 @@ from collections.abc import Iterable
 import functools
 import inspect
 import numbers
-from operator import matmul
 import warnings
 
 
 import numpy as np
-import scipy
 
 import pennylane as qml
 
 
 def sparse_hamiltonian(H, wires=None):
+    r"""Warning: This method is deprecated. Use :meth:~.Hamiltonian.sparse_matrix` instead.
 
+    Computes the sparse matrix representation a Hamiltonian in the computational basis.
+    Args:
+        H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
+         computed
+        wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+         is constructed. If not profided, ``H.wires`` is used.
+    Returns:
+        csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
+        :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+
+    **Example:**
+    This function can be used by passing a `qml.Hamiltonian` object as:
+    >>> coeffs = [1, -0.45]
+    >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> H_sparse = sparse_hamiltonian(H)
+    >>> H_sparse
+    <4x4 sparse matrix of type '<class 'numpy.complex128'>'
+        with 2 stored elements in COOrdinate format>
+    The resulting sparse matrix can be either used directly or transformed into a numpy array:
+    >>> H_sparse.toarray()
+    array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
+           [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
+           [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
+           [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
+    """
     warnings.warn(
-            "The method sparse_hamiltonian is deprecated. Please use the method "
-            "sparse_matrix of the Hamiltonian operator instead.",
-            UserWarning,
-        )
+        "The method sparse_hamiltonian is deprecated. Please use the method "
+        "sparse_matrix of the Hamiltonian operator instead.",
+        UserWarning,
+    )
     if not isinstance(H, qml.Hamiltonian):
         raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
 
-    if wires is None:
+    if wires is None:  # not sure if this if-else is still necessary
         wires = H.wires
     else:
         wires = qml.wires.Wires(wires)
 
-    n = len(wires)
-    matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
-
-    coeffs = qml.math.toarray(H.data)
-
-    temp_mats = []
-    for coeff, op in zip(coeffs, H.ops):
-        obs = []
-        for o in qml.operation.Tensor(op).obs:
-            if len(o.wires) > 1:
-                # todo: deal with operations created from multi-qubit operations such as Hermitian
-                raise ValueError(
-                    f"Can only sparsify Hamiltonians whose constituent observables consist of "
-                    f"(tensor products of) single-qubit operators; got {op}."
-                )
-            obs.append(o.matrix())
-
-        # Array to store the single-wire observables which will be Kronecker producted together
-        mat = []
-        # i_count tracks the number of consecutive single-wire identity matrices encountered
-        # in order to avoid unnecessary Kronecker products, since I_n x I_m = I_{n+m}
-        i_count = 0
-        for wire_lab in wires:
-            if wire_lab in op.wires:
-                if i_count > 0:
-                    mat.append(scipy.sparse.eye(2**i_count, format="coo"))
-                i_count = 0
-                idx = op.wires.index(wire_lab)
-                # obs is an array storing the single-wire observables which
-                # make up the full Hamiltonian term
-                sp_obs = scipy.sparse.coo_matrix(obs[idx])
-                mat.append(sp_obs)
-            else:
-                i_count += 1
-
-        if i_count > 0:
-            mat.append(scipy.sparse.eye(2**i_count, format="coo"))
-
-        red_mat = functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
-
-        temp_mats.append(red_mat.tocsr())
-        # Value of 100 arrived at empirically to balance time savings vs memory use. At this point
-        # the `temp_mats` are summed into the final result and the temporary storage array is
-        # cleared.
-        if (len(temp_mats) % 100) == 0:
-            matrix += sum(temp_mats)
-            temp_mats = []
-
-    matrix += sum(temp_mats)
-    return matrix
+    return H.sparse_matrix(wire_order=wires)
 
 
 def _flatten(x):

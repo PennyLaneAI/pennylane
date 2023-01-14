@@ -164,3 +164,8 @@ Completed deprecation cycles
 
   - Deprecated in v0.22
   - Removed in v0.28
+
+* The ``qml.utils.sparse_hamiltonian`` function is deprecated. ``~.Hamiltonian.sparse_matrix`` should be used instead.
+
+  - Deprecated in v0.29
+  - Removed in v0.31
