@@ -21,6 +21,26 @@ from pennylane import numpy as np
 from pennylane import qchem
 
 
+def test_scf_leaves_random_seed_unchanged():
+    """Tests that the scf function leaves the global numpy sampling state unchanged."""
+
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+    alpha = np.array(
+        [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        requires_grad=True,
+    )
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
+    args = [alpha]
+
+    initial_numpy_state = np.random.get_state()
+    v_fock, coeffs, fock_matrix, h_core, rep_tensor = qchem.scf(mol)(*args)
+    final_numpy_state = np.random.get_state()
+
+    assert initial_numpy_state[0] == final_numpy_state[0]
+    assert np.all(initial_numpy_state[1] == final_numpy_state[1])
+
+
 @pytest.mark.parametrize(
     ("symbols", "geometry", "v_fock", "coeffs", "fock_matrix", "h_core", "repulsion_tensor"),
     [

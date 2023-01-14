@@ -141,26 +141,38 @@ no_pow_method_ops = [
 
 
 class TestPowMethod:
+    """Tests for the pow method of non-parametric qutrit operations."""
+
     @pytest.mark.parametrize("op", period_three_ops)
     @pytest.mark.parametrize("offset", (-6, -3, 0, 3, 6))
-    def test_period_three_pow(self, op, offset):
-        """Tests that ops with period == 3 behave correctly when raised to various
-        integer powers"""
+    def test_period_three_ops_pow_multiple_of_3(self, op, offset):
+        """Tests that ops with period == 3 return an empty list when raised to a
+        power that's a multiple of 3."""
 
-        # When raising to power == 0 mod 3
         assert len(op.pow(0 + offset)) == 0
 
+    @pytest.mark.parametrize("op", period_three_ops)
+    @pytest.mark.parametrize("offset", (-6, -3, 0, 3, 6))
+    def test_period_three_ops_pow_offset_1(self, op, offset):
+        """Tests that ops with a period == 3 return a queued copy of themselves when
+        raised to a power that is 1+multiple of three.
+        """
         # When raising to power == 1 mod 3
-        op_pow_1 = op.pow(1 + offset)[0]
-        assert op_pow_1.__class__ is op.__class__
-        assert np.allclose(op_pow_1.matrix(), op.matrix())
-        assert op_pow_1.inverse == False
+        with qml.queuing.AnnotatedQueue() as q:
+            op_pow_1 = op.pow(1 + offset)[0]
+
+        assert q.queue[0] is op_pow_1
+        assert qml.equal(op_pow_1, op)
+
+    @pytest.mark.parametrize("op", period_three_ops)
+    @pytest.mark.parametrize("offset", (0, 3))
+    def test_period_three_ops_pow_offset_2(self, op, offset):
+        """Tests that ops with a period ==3 raise a PowUndefinedError when raised
+        to a power that is 2+multiple of three."""
 
         # When raising to power == 2 mod 3
-        op_pow_2 = op.pow(2 + offset)[0]
-        assert op_pow_2.__class__ is op.__class__
-        assert np.allclose(op.matrix().conj().T, op_pow_2.matrix())
-        assert op_pow_2.inverse == True
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op_pow_2 = op.pow(2 + offset)
 
     @pytest.mark.parametrize("op", period_three_ops + period_two_ops)
     def test_period_two_three_noninteger_power(self, op):
@@ -175,7 +187,7 @@ class TestPowMethod:
         integer powers"""
 
         assert len(op.pow(0 + offset)) == 0
-        assert op.pow(1 + offset)[0].__class__ is op.__class__
+        assert qml.equal(op.pow(1 + offset)[0], op)
 
     @pytest.mark.parametrize("op", no_pow_method_ops)
     def test_no_pow_ops(self, op):
@@ -193,22 +205,19 @@ class TestPowMethod:
 
 
 label_data = [
-    (qml.TShift(0), "TShift", "TShift⁻¹"),
-    (qml.TClock(0), "TClock", "TClock⁻¹"),
-    (qml.TAdd([0, 1]), "TAdd", "TAdd⁻¹"),
-    (qml.TSWAP([0, 1]), "TSWAP", "TSWAP"),
-    (qml.THadamard(0), "TH", "TH⁻¹"),
-    (qml.THadamard(0, subspace=[0, 1]), "TH", "TH"),
+    (qml.TShift(0), "TShift"),
+    (qml.TClock(0), "TClock"),
+    (qml.TAdd([0, 1]), "TAdd"),
+    (qml.TSWAP([0, 1]), "TSWAP"),
+    (qml.THadamard(0), "TH"),
+    (qml.THadamard(0, subspace=[0, 1]), "TH"),
 ]
 
 
-@pytest.mark.parametrize("op, label1, label2", label_data)
-def test_label_method(op, label1, label2):
+@pytest.mark.parametrize("op, label1", label_data)
+def test_label_method(op, label1):
     assert op.label() == label1
     assert op.label(decimals=2) == label1
-
-    op.inv()
-    assert op.label() == label2
 
 
 control_data = [
@@ -227,7 +236,7 @@ def test_control_wires(op, control_wires):
     assert op.control_wires == control_wires
 
 
-adjoint_ops = [  # ops that are not their own inverses
+no_adjoint_ops = [  # ops that are not their own inverses
     qml.TShift(wires=0),
     qml.TClock(wires=0),
     qml.TAdd(wires=[0, 1]),
@@ -242,19 +251,20 @@ involution_ops = [  # ops that are their own inverses
 ]
 
 
-@pytest.mark.parametrize("op", adjoint_ops)
+@pytest.mark.parametrize("op", no_adjoint_ops)
 def test_adjoint_method(op, tol):
-    adj_op = copy.copy(op)
-    adj_op = adj_op.adjoint()
+    """Assert that ops that are not their own inverses do not have a defined adjoint."""
+    assert not op.has_adjoint
 
-    assert adj_op.name == op.name + ".inv"
-    assert np.allclose(adj_op.matrix(), op.matrix().conj().T)
+    with pytest.raises(qml.operation.AdjointUndefinedError):
+        op.adjoint()
 
 
 @pytest.mark.parametrize("op", involution_ops)
 def test_adjoint_method_involution(op, tol):
-    adj_op = copy.copy(op)
-    adj_op = adj_op.adjoint()
+    """Assert that involution ops are their own adjoint."""
+    assert op.has_adjoint
 
-    assert adj_op.name == op.name
-    assert np.allclose(adj_op.matrix(), op.matrix())
+    adj_op = op.adjoint()
+    assert qml.equal(adj_op, op)
+    assert adj_op is not op
