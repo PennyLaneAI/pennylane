@@ -1233,7 +1233,7 @@ class TestHamiltonianArithmeticAutograd:
 
 
 class TestHamiltonianSparseMatrix:
-    """Test for sparse matrix representation."""
+    """Tests for sparse matrix representation."""
 
     @pytest.mark.parametrize(
         ("coeffs", "obs", "wires", "ref_matrix"),

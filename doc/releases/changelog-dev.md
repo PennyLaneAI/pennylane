@@ -118,9 +118,16 @@
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
 
+* Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
+  [(#3236)](https://github.com/PennyLaneAI/pennylane/issues/3236)
+
  <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
+
+* `qml.utils.sparse_hamiltonian` function has been deprecated, and usage will now raise a warning.
+   Instead, one should use the `~.Hamiltonian.sparse_matrix` method.
+  [(#3236)](https://github.com/PennyLaneAI/pennylane/issues/3236)
 
 <h3>Documentation</h3>
 
@@ -138,6 +145,7 @@ This release contains contributions from (in alphabetical order):
 
 Ikko Ashimine
 Utkarsh Azad
+Miriam Beddig
 Astral Cai
 Lillian M. A. Frederiksen
 Soran Jahangiri
