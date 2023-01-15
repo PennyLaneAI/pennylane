@@ -14,7 +14,7 @@
 """
 Contains functions to implement the dot product between QNode collections
 """
-# pylint: disable=too-many-arguments,import-outside-toplevel
+# pylint: disable=too-many-arguments,import-outside-toplevel,unnecessary-lambda-assignment
 
 
 def _get_dot_func(interface, x=None):

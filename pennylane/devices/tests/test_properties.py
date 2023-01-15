@@ -295,4 +295,4 @@ class TestCapabilities:
                 assert pnp.array(dev.access_state()).shape == orig_shape
 
         assert pnp.ndim(res) == 2
-        assert res.shape[0] == 3
+        assert res.shape[0] == 3  # pylint:disable=unsubscriptable-object
