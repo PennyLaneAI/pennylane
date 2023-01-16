@@ -182,11 +182,6 @@ class Exp(SymbolicOp, Operation):
         return self.base.num_params + 1
 
     @property
-    def ndim_params(self):
-        self._check_batching(self.data)
-        return self._ndim_params
-
-    @property
     def batch_size(self):
         return self.base.batch_size or 1 * math.size(self.coeff)
 
