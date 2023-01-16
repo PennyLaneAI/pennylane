@@ -101,7 +101,7 @@
   library.
   [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
   
-* The function `max_entropy` is added to compute the maximum entropy $H=\log(rank(\rho))$ of a quantum state.
+* The function `max_entropy` is added to compute the maximum entropy of a quantum state.
   [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
 
 * Added `qml.ops.dot` function to compute the dot product between a vector and a list of operators.
