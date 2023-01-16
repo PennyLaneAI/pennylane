@@ -92,7 +92,7 @@ class TestInitialization:
     def test_H_fixed(self):
         """Test that H_fixed is an Operator of the expected form"""
         H_fixed = test_example.H_fixed()
-        op = qml.op_sum(qml.PauliX(0), qml.s_prod(2, qml.PauliY(1)))
+        op = qml.op_sum(qml.s_prod(1, qml.PauliX(0)), qml.s_prod(2, qml.PauliY(1)))
         assert qml.equal(H_fixed, op)
 
     def test_H_parametrized(self):
@@ -234,12 +234,12 @@ class TestInteractionWithOperators:
         # Adding on the right
         new_pH = pH + op
         assert pH.H_fixed() == 0
-        assert qml.equal(new_pH.H_fixed(), op)
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
 
         # Adding on the left
         new_pH = op + pH
         assert pH.H_fixed() == 0
-        assert qml.equal(new_pH.H_fixed(), op)
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
 
     def test_add_invalid_object_raises_error(self):
         H = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
