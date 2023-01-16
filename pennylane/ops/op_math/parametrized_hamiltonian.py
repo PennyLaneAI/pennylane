@@ -77,6 +77,7 @@ class ParametrizedHamiltonian:
             raise ValueError(
                 "Could not create valid Hamiltonian; "
                 "number of coefficients and operators does not match."
+                f"Got len(coeffs) = {len(coeffs)} and len(observables) = {len(observables)}."
             )
 
         self._ops = list(observables)
