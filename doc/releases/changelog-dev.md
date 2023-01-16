@@ -132,11 +132,11 @@
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
 
-* Reorganize `ControlledQubitUnitary` to inherit from `ControlledOp`. The class methods 
+* Reorganize `ControlledQubitUnitary` to inherit from `ControlledOp`. The class methods
   `decomposition`, `expand`, and `sparse_matrix` are now defined rather than raising an error.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
-* Parameter broadcasting support is added for the `Controlled` class if the base operator supports 
+* Parameter broadcasting support is added for the `Controlled` class if the base operator supports
   broadcasting.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
@@ -149,7 +149,6 @@
 
 * Limit the `numpy` version to `<1.24`.
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
-
 
 * Removes qutrit operations use of in-place inversion in preparation for the
   removal of in-place inversion.
@@ -171,9 +170,16 @@
   keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
+* Make `qml.ops.dot` jax-jittable.
+  [(#3636)](https://github.com/PennyLaneAI/pennylane/pull/3636)
+
+* All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
+  of the other class to be called.
+  [(#3631)](https://github.com/PennyLaneAI/pennylane/pull/3631)
+
 <h3>Breaking changes</h3>
 
-* The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`. 
+* The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
