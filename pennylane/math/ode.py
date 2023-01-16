@@ -87,10 +87,10 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
 
     We can solve the time-dependent Schrodinger equation for the unitary evolution operator
 
-    .. math:: \frac{d}{dt}U = -i H(t) U
+    .. math:: \frac{d}{dt}U = -i H(t) U, U(0) = 1
 
     for a time-dependent Hamiltonian :math:`H(t) = X_0 X_1 + v \sin(t) Z_0 Y_1`
-    in the time window ``(t0, t1) = (0, 4)`` using ``odeint``:
+    in the time window ``(t0, t1) = (0, 2)`` using ``odeint``:
 
     .. code:: python3
 
@@ -151,7 +151,6 @@ def _odeint(func, y0, ts, atol, rtol, *args):
         y1, f1, y1_error = runge_kutta_step(func_, y0, f0, t0, dt)
 
         # check error
-        # def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
         err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
         err_ratio = y1_error / err_tol.astype(y1_error.dtype)
         mean_err_ratio = jnp.sqrt(jnp.mean(_abs2(err_ratio)))
@@ -199,9 +198,7 @@ def runge_kutta_step(func, y0, f0, t0, dt):
         ],
         dtype=f0.dtype,
     )
-    c_sol = jnp.array(
-        [35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0], dtype=f0.dtype
-    )
+    c_sol = beta[-1]
 
     # TODO: include error check
     c_error = jnp.array(

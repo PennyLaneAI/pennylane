@@ -109,7 +109,7 @@ class TestAnalyticODE:
         res_qml = qml.math.odeint(fun, y0, t)
 
         # analytic solution y(t) = 1/(1-t)
-        print(qml.math.allclose(res_qml, 2))
+        assert qml.math.allclose(res_qml, 2)
 
 
 # Preparing some constant Hamiltonians for testing
