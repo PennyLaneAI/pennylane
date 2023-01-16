@@ -39,7 +39,7 @@ class TestFiniteDiff:
             qml.PauliZ(wires=0)
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1)) #, qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))  # , qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
 

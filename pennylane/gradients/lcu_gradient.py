@@ -115,7 +115,11 @@ def expval_lcu(tape, argnum, aux_wire):
 
             obs_new.append(qml.PauliY(wires=aux_wire))
             obs_new = qml.operation.Tensor(*obs_new)
-            measurements.append(qml.expval(op=obs_new))
+
+            if isinstance(m, qml.measurements.ExpectationMP):
+                measurements.append(qml.expval(op=obs_new))
+            else:
+                measurements.append(qml.probs(op=obs_new))
 
         new_tape = qml.tape.QuantumTape(ops=ops, measurements=measurements)
 
