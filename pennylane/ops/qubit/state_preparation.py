@@ -17,6 +17,7 @@ with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 from pennylane import numpy as np
+from pennylane.math import convert_like, reshape
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.wires import Wires, WireError
@@ -164,13 +165,9 @@ class QubitStateVector(Operation):
         return True
 
     def matrix(self, wire_order=None):
-        """Returns a ket vector representing the state being created.
-
-        QSV([1/2, 1/2, 1/2, 1/2], wires=[0,2]) = 1/4 * (|0 0> + |0 1> + |1 0> + |1 1>)
-                                               = 1/4 * (|000> + |001> + |100> + |101>)
-        """
+        """Returns a ket vector representing the state being created."""
         if wire_order is None:
-            return np.array(self.parameters[0], dtype="complex128")
+            return self.parameters[0]
 
         wires = Wires(wire_order)
         if not wires.contains_wires(self.wires):
@@ -181,8 +178,8 @@ class QubitStateVector(Operation):
             indices[base_wire_idx] = slice(None)  # same as ":"
 
         ket = np.zeros((2,) * num_wires)
-        ket[tuple(indices)] = np.reshape(self.parameters[0], (2,) * len(self.wires))
-        return ket.reshape(2**num_wires)
+        ket[tuple(indices)] = reshape(self.parameters[0], (2,) * len(self.wires))
+        return convert_like(reshape(ket, 2**num_wires), self.parameters[0])
 
 
 class QubitDensityMatrix(Operation):
