@@ -3,3 +3,5 @@ tests/data/test_dataset_access.py
 tests/workflow/test_execution.py
 tests/ops/op_math/test_controlled_ops.py
 tests/ops/op_math/test_controlled.py
+tests/ops/op_math/test_dot.py
+tests/test_operation.py
