@@ -295,15 +295,12 @@ class TestQutritUnitary:
         assert np.allclose(res_static, expected)
         assert np.allclose(res_dynamic, expected)
 
-    @pytest.mark.parametrize("inverse", (True, False))
-    def test_controlled(self, inverse):
+    def test_controlled(self):
         """Test QutritUnitary's controlled method."""
         U = U_thadamard_01
         base = qml.QutritUnitary(U, wires=0)
-        base.inverse = inverse
 
         expected = qml.ControlledQutritUnitary(U, control_wires="a", wires=0)
-        expected.inverse = inverse
 
         out = base._controlled("a")
         assert qml.equal(out, expected)
@@ -580,16 +577,13 @@ class TestControlledQutritUnitary:
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(0.12)
 
-    @pytest.mark.parametrize("inverse", (True, False))
-    def test_controlled(self, inverse):
+    def test_controlled(self):
         """Test the _controlled method for ControlledQutritUnitary."""
 
         U = TSWAP
 
         original = qml.ControlledQutritUnitary(U, control_wires=(0, 1), wires=[4, 2])
-        original.inverse = inverse
         expected = qml.ControlledQutritUnitary(U, control_wires=(0, 1, "a"), wires=[4, 2])
-        expected.inverse = inverse
 
         out = original._controlled("a")
         assert qml.equal(out, expected)
@@ -597,11 +591,9 @@ class TestControlledQutritUnitary:
         original = qml.ControlledQutritUnitary(
             U, control_wires=(0, 1), wires=[4, 2], control_values="01"
         )
-        original.inverse = inverse
         expected = qml.ControlledQutritUnitary(
             U, control_wires=(0, 1, "a"), wires=[4, 2], control_values="012"
         )
-        expected.inverse = inverse
 
         out = original._controlled("a")
         assert qml.equal(out, expected)

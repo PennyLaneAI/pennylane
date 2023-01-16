@@ -31,11 +31,8 @@ class TestDotSum:
         S = dot(coeffs=c, ops=o)
         assert isinstance(S, Sum)
         for summand, coeff, op in zip(S.operands, c, o):
-            if coeff != 1:
-                assert isinstance(summand, SProd)
-                assert summand.scalar == coeff
-            else:
-                assert isinstance(summand, type(op))
+            assert isinstance(summand, SProd)
+            assert summand.scalar == coeff
 
     def test_dot_returns_sprod(self):
         """Test that the dot function returns a SProd operator when only one operator is input."""
@@ -68,7 +65,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            qml.PauliX(0),
+            SProd(qml.numpy.array(1.0), qml.PauliX(0)),
             SProd(qml.numpy.array(2.0), qml.PauliY(1)),
             SProd(qml.numpy.array(3.0), qml.PauliZ(2)),
         )
@@ -83,7 +80,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            qml.PauliX(0),
+            SProd(tf.constant(1.0), qml.PauliX(0)),
             SProd(tf.constant(2.0), qml.PauliY(1)),
             SProd(tf.constant(3.0), qml.PauliZ(2)),
         )
@@ -98,7 +95,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            qml.PauliX(0),
+            SProd(torch.tensor(1.0), qml.PauliX(0)),
             SProd(torch.tensor(2.0), qml.PauliY(1)),
             SProd(torch.tensor(3.0), qml.PauliZ(2)),
         )
@@ -113,11 +110,30 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         op_sum = dot(c, o)
         op_sum_2 = Sum(
-            qml.PauliX(0),
+            SProd(jax.numpy.array(1.0), qml.PauliX(0)),
             SProd(jax.numpy.array(2.0), qml.PauliY(1)),
             SProd(jax.numpy.array(3.0), qml.PauliZ(2)),
         )
         assert qml.equal(op_sum, op_sum_2)
+
+    @pytest.mark.jax
+    def test_dot_is_jittable(self):
+        """Test that the dot function is jittable."""
+        import jax
+
+        @jax.jit
+        def jittable_func():
+            c = jax.numpy.array([1.0, 2.0, 3.0])
+            o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+            return qml.matrix(dot(c, o))
+
+        op_mat = jittable_func()
+        op_sum_2 = Sum(
+            SProd(jax.numpy.array(1.0), qml.PauliX(0)),
+            SProd(jax.numpy.array(2.0), qml.PauliY(1)),
+            SProd(jax.numpy.array(3.0), qml.PauliZ(2)),
+        )
+        assert qml.math.allequal(op_mat, op_sum_2.matrix())
 
 
 coeffs = [0.12345, 1.2345, 12.345, 123.45, 1234.5, 12345]
