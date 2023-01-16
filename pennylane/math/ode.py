@@ -60,12 +60,37 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
 
     **Example**
 
-    We can solve the time-dependent Schrodinger equation
+    Let us look at the very simple initival value problem $dy/dt = y,$ $y(0)=3$.
+    The analytic solution is $y(t) = 3e^t$. Say we are interested in the solution at
+    time $t=2$, i.e. $y(2)=3e^2$. We can compute this numerically using ``odeint``
+
+    .. code:: python3
+
+        t = jnp.linspace(0, 2, 20)
+
+        def fun(y, t):
+            return y
+
+        y0 = jnp.array((3.))
+        res = qml.math.odeint(fun, y0, t)
+
+    >>> print(qml.math.isclose(res, 3*jnp.exp(2)))
+    True
+
+    As long as ``fun(y, t)`` outputs arrays of the same shape as ``y``, we can use arbitrary input
+    shapes for ``y0``.
+
+    >>> y0 = jnp.ones((5), dtype=float)
+    >>> y1 = qml.math.odeint(fun, y0, t)
+    >>> print(y0.shape, y1.shape)
+    (5,) (5,)
+
+    We can solve the time-dependent Schrodinger equation for the unitary evolution operator
 
     .. math:: \frac{d}{dt}U = -i H(t) U
 
     for a time-dependent Hamiltonian :math:`H(t) = X_0 X_1 + v \sin(t) Z_0 Y_1`
-    for the time window ``(t0, t1) = (0, 4)`` using ``odeint`` in the following way:
+    in the time window ``(t0, t1) = (0, 4)`` using ``odeint`` in the following way:
 
     .. code:: python3
 
@@ -85,6 +110,8 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     Formally, this solution can be written as the time-ordered exponential
     :math:`U(t_0, t_1) = \text{Texp}\left[-i \int_{t_0}^{t_1}d\tau H(\tau)\right]`
     (see `Dyson Series <https://en.wikipedia.org/wiki/Dyson_series>`_).
+
+    **Backpropagate**
     """
     y0, unravel = ravel_pytree(y0)
     func = ravel_first_arg(func, unravel)
