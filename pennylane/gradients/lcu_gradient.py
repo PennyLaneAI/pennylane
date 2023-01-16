@@ -106,19 +106,28 @@ def expval_lcu(tape, argnum, aux_wire):
         ops = ops_to_gate + hadamard + ctrl_gen + hadamard + ops_after_gate
 
         # Add the Y measurement on the aux qubit
-        # TODO: Add multi measurements cases
-        obs_new = tape.measurements[0].obs.obs.copy()
-        obs_new.append(qml.PauliY(wires=aux_wire))
-        obs_new = qml.operation.Tensor(*obs_new)
-        measurements = qml.expval(op=obs_new)
-        new_tape = qml.tape.QuantumTape(ops=ops, measurements=[measurements])
+        measurements = []
+        for m in tape.measurements:
+            if isinstance(m.obs, qml.operation.Tensor):
+                obs_new = m.obs.obs.copy()
+            else:
+                obs_new = [m.obs]
+
+            obs_new.append(qml.PauliY(wires=aux_wire))
+            obs_new = qml.operation.Tensor(*obs_new)
+            measurements.append(qml.expval(op=obs_new))
+
+        new_tape = qml.tape.QuantumTape(ops=ops, measurements=measurements)
 
         g_tapes.append(new_tape)
 
     def processing_fn(results):
         final_res = []
         for coeff, res in zip(coeffs, results):
-            final_res.append(2 * coeff * res)
+            if isinstance(res, tuple):
+                final_res.append(tuple([2 * coeff * r for r in res]))
+            else:
+                final_res.append(2 * coeff * res)
         return tuple(final_res)
 
     return g_tapes, processing_fn
