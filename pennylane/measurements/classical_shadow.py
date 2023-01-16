@@ -386,8 +386,8 @@ class ShadowExpvalMP(MeasurementTransform):
         the observable is not queued"""
         Hs = self.H if isinstance(self.H, Iterable) else [self.H]
         for H in Hs:
-            context.update_info(H, owner=self)
-        context.append(self, owns=Hs)
+            context.remove(H)
+        context.append(self)
 
         return self
 

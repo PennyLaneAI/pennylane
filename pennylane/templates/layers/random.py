@@ -233,8 +233,7 @@ class RandomLayers(Operation):
          RX(tensor(1.4000), wires=['a'])]
         """
         wires = qml.wires.Wires(wires)
-        if seed is not None:
-            np.random.seed(seed)
+        rng = np.random.default_rng(seed)
 
         shape = qml.math.shape(weights)
         n_layers = qml.math.shape(weights)[0]
@@ -244,17 +243,17 @@ class RandomLayers(Operation):
 
             i = 0
             while i < shape[1]:
-                if np.random.random() > ratio_imprimitive:
+                if rng.random() > ratio_imprimitive:
                     # apply a random rotation gate to a random wire
-                    gate = np.random.choice(rotations)
-                    rnd_wire = wires.select_random(1)
+                    gate = rng.choice(rotations)
+                    rnd_wire = wires.select_random(1, seed=rng)
                     op_list.append(gate(weights[l][i], wires=rnd_wire))
                     i += 1
 
                 else:
                     # apply the entangler to two random wires
                     if len(wires) > 1:
-                        rnd_wires = wires.select_random(2)
+                        rnd_wires = wires.select_random(2, seed=rng)
                         op_list.append(imprimitive(wires=rnd_wires))
         return op_list
 

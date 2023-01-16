@@ -58,13 +58,12 @@ class TestSimplifyOperators:
 
     def test_simplify_method_with_queuing(self):
         """Test the simplify method while queuing."""
-        with qml.queuing.AnnotatedQueue() as q_tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = build_op()
             s_op = qml.simplify(op)
-        tape = QuantumScript.from_queue(q_tape)
-        assert len(tape.circuit) == 1
-        assert tape.circuit[0] is s_op
-        assert q_tape.get_info(op)["owner"] is s_op
+
+        assert len(q) == 1
+        assert q.queue[0] is s_op
 
     def test_simplify_unsupported_object_raises_error(self):
         """Test that an error is raised when trying to simplify an unsupported object."""
