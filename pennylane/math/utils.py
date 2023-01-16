@@ -524,3 +524,32 @@ def in_backprop(tensor, interface=None):
         return False
 
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
+
+
+def pwc_from_array(idx1, idx2, t1, t2):
+    """Create a function that is piecewise-constant in time, based on the params for a TDHamiltonian.
+
+    Args:
+        idx1(int): the index of the first parameter in params that should be included in the array
+            defining the constant values for the function.
+        idx2(int): the index of the final parameter in params that should be included in the array defining the
+            constant values for the function.
+        t1(float): the start time for the function
+        t2(float): the stop time for the function
+        #ToDo: make docs clearer and add example
+
+    Returns:
+        func: a function that can be passed params and t, and will return the corresponding constant
+
+    **Example**
+
+
+    """
+
+    def func(params, t):
+        array = params[idx1:idx2]
+        num_bins = len(array)
+        idx = np.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
+        return array[idx]
+
+    return func
