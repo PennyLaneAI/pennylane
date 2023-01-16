@@ -51,11 +51,11 @@ def test_labelling_matrix_cache(op, mat, base):
     assert op.label() == base
 
     cache = {"matrices": []}
-    assert op.label(cache=cache) == base + "(M0)"
+    assert op.label(cache=cache) == f"{base}(M0)"
     assert qml.math.allclose(cache["matrices"][0], mat)
 
     cache = {"matrices": [0, mat, 0]}
-    assert op.label(cache=cache) == base + "(M1)"
+    assert op.label(cache=cache) == f"{base}(M1)"
     assert len(cache["matrices"]) == 3
 
 
@@ -116,6 +116,14 @@ class TestMatrix:
         assert ket[one_position] == 1
         ket[one_position] = 0  # everything else should be zero, as we assert below
         assert np.allclose(np.zeros(2**num_wires), ket)
+
+    def test_BasisState_preserves_parameter_type(self):
+        """Tests that given a Torch tensor, the result is also a Torch tensor."""
+        import torch
+
+        basis_op = qml.BasisState(torch.tensor([0, 1]), wires=[1, 2])
+        assert isinstance(basis_op.matrix(), torch.Tensor)
+        assert isinstance(basis_op.matrix(wire_order=[0, 1, 2]), torch.Tensor)
 
     def test_BasisState_matrix_bad_wire_order(self):
         """Tests that the provided wire_order must contain the wires in the operation."""

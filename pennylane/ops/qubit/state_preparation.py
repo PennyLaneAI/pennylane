@@ -17,6 +17,7 @@ with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 from pennylane import numpy as np
+from pennylane.math import convert_like
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.wires import Wires, WireError
@@ -95,7 +96,7 @@ class BasisState(Operation):
         """Returns a ket vector representing the state being created."""
         if wire_order is None:
             num_wires = len(self.wires)
-            indices = self.parameters[0]
+            indices = np.array(self.parameters[0])
         else:
             wires = Wires(wire_order)
             if not wires.contains_wires(self.wires):
@@ -107,7 +108,7 @@ class BasisState(Operation):
 
         ket = np.zeros(2**num_wires, dtype="complex128")
         ket[np.ravel_multi_index(indices, [2] * num_wires)] = 1
-        return ket
+        return convert_like(ket, self.parameters[0])
 
 
 class QubitStateVector(Operation):
