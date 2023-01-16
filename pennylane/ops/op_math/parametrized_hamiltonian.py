@@ -76,11 +76,6 @@ class ParametrizedHamiltonian:
                 "number of coefficients and operators does not match."
             )
 
-        # ToDo: assuming this is how we want to do things, make this clear in the documentation
-        # since organizing into H_fixed and H_parametrized potentially moves around the order of the terms compared
-        # to how the terms were entered, sorting seems the least ambiguous organization for the wires
-        self.wires = Wires.all_wires([op.wires for op in observables], sort=True)
-
         self._ops = list(observables)
         self._coeffs = coeffs
 
@@ -97,14 +92,12 @@ class ParametrizedHamiltonian:
                 self.H_coeffs_fixed.append(coeff)
                 self.H_ops_fixed.append(obs)
 
-    def __call__(self, params, t, wires=None):
-        H = self.H_fixed() + self.H_parametrized(params, t)
+        self.wires = Wires.all_wires(
+            [op.wires for op in self.H_ops_fixed] + [op.wires for op in self.H_ops_parametrized]
+        )
 
-        if wires:
-            wire_map = dict(zip(self.wires, wires))
-            H = qml.map_wires(H, wire_map)  # ToDo: is this the behaviour we want?
-
-        return H
+    def __call__(self, params, t):
+        return self.H_fixed() + self.H_parametrized(params, t)
 
     def __repr__(self):
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
