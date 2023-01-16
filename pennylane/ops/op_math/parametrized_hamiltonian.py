@@ -45,6 +45,15 @@ class ParametrizedHamiltonian:
 
     **Example:**
 
+    .. code-block:: python3
+
+    coeffs = [2, lambda v, t: v[0] * jnp.sin(v[1] * t)]
+    observables =  [qml.PauliX(0), qml.PauliY(1)]
+    H = ParametrizedHamiltonian(coeffs, observables)
+
+    >>> H(jnp.ones(2), 1.)
+    2 * X(0) + 1*sin(1) * Y(1)
+
     A ``ParametrizedHamiltonian`` can be created by passing a list of coefficients (scalars or functions), as well as
     a list of corresponding observables. The functions must all have signatures, ``(params, t)`` with ``params`` being
     trainable parameters and ``t`` being time.
@@ -55,13 +64,12 @@ class ParametrizedHamiltonian:
     The functions, along with scalar coefficients, can then be used to initialize a ``ParametrizedHamiltonian``,
     which will be split into a fixed and parametrized term. The fixed term is an ``Operator``, while the parametrized
     term must be initialized with concrete parameters to obtain an ``Operator``.
-    >>> coeffs = [2, f1, f2]
-    >>> obs = [qml.PauliX(0)@qml.PauliX(1), qml.PauliY(0)@qml.PauliY(1), qml.PauliZ(0)@qml.PauliZ(1)]
-    >>> H = ParametrizedHamiltonian(coeffs, obs)
-    >>> H.H_fixed
-    2*(PauliX(wires=[0]) @ PauliX(wires=[1]))
-    >>> H.H_parametrized([2.5, 3.6], t)
-    (0.5984721441039564*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.9450883011253033*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
+
+    .. code-block:: python3
+
+    coeffs = [2, f1, f2]
+    obs = [qml.PauliX(0)@qml.PauliX(1), qml.PauliY(0)@qml.PauliY(1), qml.PauliZ(0)@qml.PauliZ(1)]
+    H = ParametrizedHamiltonian(coeffs, obs)
 
     The resulting object can be passed parameters, and will return an ``Operator`` representing the
     ``ParametrizedHamiltonian`` with the specified parameters:
@@ -69,6 +77,13 @@ class ParametrizedHamiltonian:
     >>> H([1.2, 2.3], 0.5)
     (2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((0.5646424733950354*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (2.0184398923478573*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
 
+    We can also access the fixed and parametrized terms seperately:
+
+    >>> H.H_fixed
+    2*(PauliX(wires=[0]) @ PauliX(wires=[1]))
+
+    >>> H.H_parametrized([2.5, 3.6], t)
+    (0.5984721441039564*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.9450883011253033*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
     """
 
     def __init__(self, coeffs, observables):
