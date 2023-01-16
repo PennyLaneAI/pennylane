@@ -244,3 +244,53 @@ def _ravel_first_arg(unravel, y_flat, *args):
     ans = yield (y,) + args, {}
     ans_flat, _ = ravel_pytree(ans)
     yield ans_flat
+
+
+# @partial(jax.jit, static_argnums=0)
+# def odeintnowarn(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
+#     r"""for benchmarking
+#     """
+#     y0, unravel = ravel_pytree(y0)
+#     func = ravel_first_arg(func, unravel)
+#     out = _odeintnowarn(func, y0, ts, atol, rtol, *args)
+#     return unravel(out)
+
+# def _odeintnowarn(func, y0, ts, atol, rtol, *args):
+#     def func_(y, t): return func(y, t, *args)
+
+#     def scan_fun(carry, t1):
+#         y0, f0, t0 = carry
+#         dt = t1 - t0
+#         # not using y1_error and k atm
+#         y1, f1, y1_error = runge_kutta_step(func_, y0, f0, t0, dt)
+
+#         # check error
+#         # def mean_error_ratio(error_estimate, rtol, atol, y0, y1):
+#         # err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
+#         # err_ratio = y1_error / err_tol.astype(y1_error.dtype)
+#         # mean_err_ratio = jnp.sqrt(jnp.mean(_abs2(err_ratio)))
+
+#         # # sends call from device to host to inspect runtime values
+#         # host_callback.id_tap(
+#         #     _tolerance_warn,
+#         #     (
+#         #         atol,
+#         #         rtol,
+#         #         mean_err_ratio,
+#         #         jnp.sqrt(jnp.mean(_abs2(y1_error))),
+#         #         jnp.sqrt(jnp.mean(_abs2(err_tol))),
+#         #     ),
+#         # )
+
+#         carry = [y1, f1, t1]
+#         return carry, y1
+
+#     # scan = fancy for-loop in jax, see https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.scan.html
+#     f0 = func_(y0, ts[0])
+#     init = [y0, f0, ts[0]]
+#     carry, _ = jax.lax.scan(scan_fun, init, ts[1:])
+#     y, _, _ = carry
+#     # we typically only care about the final U
+#     # In case we want to return all ys, the output of
+#     # odeint() must be vmapped, jax.vmap(unravel)(out)
+#     return y  # jnp.concatenate((y0[None], ys))
