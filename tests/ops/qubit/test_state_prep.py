@@ -117,13 +117,13 @@ class TestMatrix:
         ket[one_position] = 0  # everything else should be zero, as we assert below
         assert np.allclose(np.zeros(2**num_wires), ket)
 
-    def test_BasisState_preserves_parameter_type(self):
-        """Tests that given a Torch tensor, the result is also a Torch tensor."""
-        import torch
-
-        basis_op = qml.BasisState(torch.tensor([0, 1]), wires=[1, 2])
-        assert isinstance(basis_op.matrix(), torch.Tensor)
-        assert isinstance(basis_op.matrix(wire_order=[0, 1, 2]), torch.Tensor)
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_BasisState_preserves_parameter_type(self, interface):
+        """Tests that given an array of some type, the resulting matrix is also that type."""
+        basis_op = qml.BasisState(qml.math.array([0, 1], like=interface), wires=[1, 2])
+        assert qml.math.get_interface(basis_op.matrix()) == interface
+        assert qml.math.get_interface(basis_op.matrix(wire_order=[0, 1, 2])) == interface
 
     def test_BasisState_matrix_bad_wire_order(self):
         """Tests that the provided wire_order must contain the wires in the operation."""

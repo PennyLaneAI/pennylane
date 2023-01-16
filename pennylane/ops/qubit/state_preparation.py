@@ -96,17 +96,17 @@ class BasisState(Operation):
         """Returns a ket vector representing the state being created."""
         if wire_order is None:
             num_wires = len(self.wires)
-            indices = np.array(self.parameters[0])
+            indices = list(self.parameters[0])
         else:
-            wires = Wires(wire_order)
-            if not wires.contains_wires(self.wires):
+            new_wires = Wires(wire_order)
+            if not new_wires.contains_wires(self.wires):
                 raise WireError("Custom wire_order must contain all BasisState wires")
-            num_wires = len(wires)
+            num_wires = len(new_wires)
             indices = [0] * num_wires
-            for wire_idx, value in zip(self.wires, self.parameters[0]):
-                indices[wires.index(wire_idx)] = value
+            for base_wire_label, value in zip(self.wires, self.parameters[0]):
+                indices[new_wires.index(base_wire_label)] = value
 
-        ket = np.zeros(2**num_wires, dtype="complex128")
+        ket = np.zeros(2**num_wires)
         ket[np.ravel_multi_index(indices, [2] * num_wires)] = 1
         return convert_like(ket, self.parameters[0])
 
