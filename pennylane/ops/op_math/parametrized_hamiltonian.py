@@ -32,7 +32,7 @@ class ParametrizedHamiltonian:
     :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j`, where the :math:`v` are trainable parameters,
     and t is time.
 
-    For example, a time-dependent ``ParametrizedHamiltonian`` with a single trainable parameter, :math:`a`, could be :math:`H = 2 * X_1 X_2 + sin(a, t) * Y_1 Y_2`
+    For example, a time-dependent ``ParametrizedHamiltonian`` with a single trainable parameter, :math:`a`, could be :math:`H = 2 X_1 X_2 + \sin(a t) Y_1 Y_2`
 
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be constants or
