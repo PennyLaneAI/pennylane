@@ -34,6 +34,7 @@ class TestFiniteDiff:
         y = -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliZ(wires=0)
             qml.RX(x, wires=[0])
             qml.PauliZ(wires=0)
             qml.RY(y, wires=[1])

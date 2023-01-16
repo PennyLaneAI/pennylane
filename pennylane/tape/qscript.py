@@ -399,7 +399,9 @@ class QuantumScript:
         """
         self._par_info = []
         for idx, op in enumerate(self.operations):
-            self._par_info.extend({"op": op, "p_idx": i, "op_idx": idx} for i, d in enumerate(op.data))
+            self._par_info.extend(
+                {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
+            )
 
         for m in self.measurements:
             if m.obs is not None:
@@ -563,7 +565,7 @@ class QuantumScript:
 
         # get the info for the parameter
         info = self._par_info[t_idx]
-        return info["op"], info["p_idx"], info["op_idx"]
+        return info["op"], info["op_idx"], info["p_idx"]
 
     def get_parameters(
         self, trainable_only=True, operations_only=False, **kwargs

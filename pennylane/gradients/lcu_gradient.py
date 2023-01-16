@@ -33,11 +33,11 @@ from pennylane.transforms.metric_tensor import _get_aux_wire
 
 @gradient_transform
 def lcu_grad(
-        tape,
-        argnum=None,
-        shots=None,
-        aux_wire=None,
-        device_wires=None,
+    tape,
+    argnum=None,
+    shots=None,
+    aux_wire=None,
+    device_wires=None,
 ):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
     parameters with respect to its inputs. This function is adapted to the new return system.
@@ -74,7 +74,9 @@ def lcu_grad(
     aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
 
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
-        raise qml.QuantumFunctionError("Hadamard test for gradient of variance is not implemented yet.")
+        raise qml.QuantumFunctionError(
+            "Hadamard test for gradient of variance is not implemented yet."
+        )
     else:
         g_tapes, processing_fn = expval_lcu(tape, argnum, aux_wire)
 
@@ -89,10 +91,10 @@ def expval_lcu(tape, argnum, aux_wire):
     coeffs = []
 
     for id_argnum in argnums:
-        gate, _, idx = tape.get_operation(id_argnum)
+        gate, idx, _ = tape.get_operation(id_argnum)
 
         ops_to_gate = tape.operations[: idx + 1]
-        ops_after_gate = tape.operations[idx + 1:]
+        ops_after_gate = tape.operations[idx + 1 :]
 
         # Get a generator and add the control on the aux qubit
         # TODO: Add general case
@@ -117,6 +119,6 @@ def expval_lcu(tape, argnum, aux_wire):
         final_res = []
         for coeff, res in zip(coeffs, results):
             final_res.append(2 * coeff * res)
-        return final_res
+        return tuple(final_res)
 
     return g_tapes, processing_fn
