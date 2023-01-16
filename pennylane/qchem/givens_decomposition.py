@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def givens_matrix(a, b, left=True, tol=1e-8):
+def _givens_matrix(a, b, left=True, tol=1e-8):
     r"""Build a :math:`2 \times 2` Givens rotation matrix :math:`G`.
 
     When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
@@ -34,7 +34,7 @@ def givens_matrix(a, b, left=True, tol=1e-8):
         a (float or complex): first element of the vector for which the Givens matrix is being computed
         b (float or complex): second element of the vector for which the Givens matrix is being computed
         left (bool): determines if the Givens matrix is being applied from the left side or right side.
-        tol (float): determines tolerance limits for `|a|` and `|b|` under which they are considered as zero.
+        tol (float): determines tolerance limits for :math:`|a|` and :math:`|b|` under which they are considered as zero.
 
     Returns:
         np.ndarray (or tensor): Givens rotation matrix
@@ -57,49 +57,49 @@ def givens_matrix(a, b, left=True, tol=1e-8):
     return np.array([[phase * sine, cosine], [-phase * cosine, sine]])
 
 
-def givens_rotate(unitary, grot_mat, indices, row=True):
-    r"""Apply in-place Givens roation on the unitary on the specified indices
-
-    This is equivalent to the following transformation of basis states:
-
-    .. math::
-
-        &|00\rangle \mapsto |00\rangle\\
-        &|01\rangle \mapsto e^{i \phi} \cos(\theta) |01\rangle - \sin(\theta) |10\rangle\\
-        &|10\rangle \mapsto e^{i \phi} \sin(\theta) |01\rangle + \cos(\theta) |10\rangle\\
-        &|11\rangle \mapsto |11\rangle.
-
-    Args:
-        unitary (tensor): unitary matrix on which Givens rotation is to be applied
-        grot_mat (tensor): Givens roation matrix that has to be applied on the unitary
-        indices (list or tuple): list of indices [i, j] of the `unitary` on which Given rotation is applied
-        row (bool): determines whether Givens rotation is applied across rows or coloumns
-
-    Raises:
-        ValueError: if more than two indices are provided.
-    """
-
-    if len(indices) != 2:
-        raise ValueError(f"Indices must have length 2, got {len(indices)}")
-
-    if row:
-        unitary[indices] = grot_mat @ unitary[indices]
-    else:
-        unitary[:, indices] = unitary[:, indices] @ grot_mat.T
-
-
 def givens_decomposition(unitary):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
 
-    This decomposition is based on the construction scheme given by `W. Clements et al. <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_ (2016),
+    This decomposition is based on the construction scheme given in `Optica, 3, 1460 (2016) <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_\ ,
     which allows one to write any unitary matrix :math:`U` as:
 
     .. math::
 
-        U = D \left(\prod_{(m, n) \in G} T_{m, n}\right),
+        U = D \left(\prod_{(m, n) \in G} T_{m, n}(\theta, \phi)\right),
 
-    where :math:`D` is a diagonal phase matrix, :math:`T` is the Givens rotation gates with phase shifts and :math:`G` defines the
-    specific ordered sequence of the Givens rotation gates.
+    where :math:`D` is a diagonal phase matrix, :math:`T(\theta, \phi)` is the Givens rotation gates with phase shifts and :math:`G` defines the
+    specific ordered sequence of the Givens rotation gates acting on wires :math:`(m, n)`. The unitary for the :math:`T(\theta, \phi)` gates
+    appearing in the decomposition is of the following form:
+
+    .. math:: T(\theta, \phi) = \begin{bmatrix}
+                                    1 & 0 & 0 & 0 \\
+                                    0 & e^{i \phi} \cos(\theta) & -\sin(\theta) & 0 \\
+                                    0 & e^{i \phi} \sin(\theta) & \cos(\theta) & 0 \\
+                                    0 & 0 & 0 & 1
+                                \end{bmatrix},
+
+    where :math:`\theta \in [0, \pi/2]` is the angle of rotation in the :math:`\{|01\rangle, |10\rangle \}` subspace,
+    and :math:`\phi \in [0, 2 \pi]` represents the phase shift at the first wire.
+
+    **Example**
+
+    .. code-block:: python
+
+        unitary = np.array([ 0.73678+0.27511j, -0.5095 +0.10704j, -0.06847+0.32515j]
+                           [-0.21271+0.34938j, -0.38853+0.36497j,  0.61467-0.41317j]
+                           [ 0.41356-0.20765j, -0.00651-0.66689j,  0.32839-0.48293j]])     
+
+        phase_mat, ordered_rotations = givens_decomposition(matrix)
+
+    >>> phase_mat
+    [-0.20606284+0.97853876j -0.82993403+0.55786154j  0.56230707-0.82692851j]
+    >>> ordered_rotations
+    [(tensor([[-0.65088844-0.63936314j, -0.40933972-0.j],
+              [-0.29202076-0.28684994j,  0.91238204-0.j]], requires_grad=True), (0, 1)), 
+     (tensor([[ 0.47970417-0.33309047j, -0.8117479 -0.j],
+              [ 0.66676972-0.46298251j,  0.584008  -0.j]], requires_grad=True), (1, 2)),
+     (tensor([[ 0.36147511+0.73779414j, -0.57008381-0.j],
+              [ 0.25082094+0.5119418j ,  0.82158655-0.j]], requires_grad=True), (0, 1))]
 
     Args:
         unitary (tensor): unitary matrix on which decomposition will be performed
@@ -111,20 +111,18 @@ def givens_decomposition(unitary):
         ValueError: if the provided matrix is not square.
 
     .. details::
+        :title: Theory and Pseudocode
 
-        **Decomposition**
+        **Givens Rotation**
 
-        The Givens rotation unitary :math:`T(\theta, \phi)` appearing in the decomposition is of the following form:
+        Applying the Givens roation :math:`T(\theta, \phi)` performs the following tranformation of the basis states:
 
-        .. math:: T(\theta, \phi) = \begin{bmatrix}
-                                        1 & 0 & 0 & 0 \\
-                                        0 & e^{i \phi} \cos(\theta) & -\sin(\theta) & 0 \\
-                                        0 & e^{i \phi} \sin(\theta) & \cos(\theta) & 0 \\
-                                        0 & 0 & 0 & 1
-                                    \end{bmatrix},
+        .. math::
 
-        where :math:`\theta \in [0, \pi/2]` is the angle of rotation in the :math:`\{|01\rangle, |10\rangle \}` subspace,
-        and :math:`\phi \in [0, 2 \pi]` represents the phase shift at the first wire.
+            &|00\rangle \mapsto |00\rangle\\
+            &|01\rangle \mapsto e^{i \phi} \cos(\theta) |01\rangle - \sin(\theta) |10\rangle\\
+            &|10\rangle \mapsto e^{i \phi} \sin(\theta) |01\rangle + \cos(\theta) |10\rangle\\
+            &|11\rangle \mapsto |11\rangle.
 
         **Pseudocode**
 
@@ -154,21 +152,21 @@ def givens_decomposition(unitary):
         if i % 2:
             for j in range(0, i):
                 indices = [i - j - 1, i - j]
-                grot_mat = givens_matrix(*unitary[N - j - 1, indices].T, left=True)
-                givens_rotate(unitary, grot_mat, indices, row=False)
+                grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
+                unitary[:, indices] = unitary[:, indices] @ grot_mat.T
                 right_givens.append((grot_mat.conj(), indices))
         else:
             for j in range(1, i + 1):
                 indices = [N + j - i - 2, N + j - i - 1]
-                grot_mat = givens_matrix(*unitary[indices, j - 1], left=False)
-                givens_rotate(unitary, grot_mat, indices, row=True)
+                grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
+                unitary[indices] = grot_mat @ unitary[indices]
                 left_givens.append((grot_mat, indices))
 
     nleft_givens = []
     for (grot_mat, (i, j)) in reversed(left_givens):
         sphase_mat = np.diag(np.diag(unitary)[[i, j]])
         decomp_mat = grot_mat.conj().T @ sphase_mat
-        givens_mat = givens_matrix(*decomp_mat[1, :].T)
+        givens_mat = _givens_matrix(*decomp_mat[1, :].T)
         nphase_mat = decomp_mat @ givens_mat.T
 
         # check for T_{m,n}^{-1} x D = D x T.

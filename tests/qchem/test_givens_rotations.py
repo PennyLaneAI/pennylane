@@ -20,7 +20,7 @@ import pytest
 from scipy.stats import unitary_group
 
 from pennylane import numpy as np
-from pennylane.qchem.givens_rotations import givens_matrix, givens_rotate, givens_decomposition
+from pennylane.qchem.givens_decomposition import _givens_matrix, givens_decomposition
 
 
 @pytest.mark.parametrize("left", [True, False])
@@ -36,9 +36,9 @@ from pennylane.qchem.givens_rotations import givens_matrix, givens_rotate, given
     ],
 )
 def test_givens_matrix(a, b, left):
-    r"""Test that Givens rotation matrices are built correctly."""
+    r"""Test that `_givens_matrix` builds the correct Givens rotation matrices."""
 
-    grot_mat = givens_matrix(a, b, left)
+    grot_mat = _givens_matrix(a, b, left)
     assert np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])
 
     rotated_vector = grot_mat @ np.array([a, b]).T
@@ -56,13 +56,13 @@ def test_givens_matrix(a, b, left):
 @pytest.mark.parametrize("indices", [[0, 1], [2, 3], [1, 4], [0, 3]])
 @pytest.mark.parametrize("shape", [(5, 5), (6, 6)])
 def test_givens_rotate(shape, indices, row, left):
-    r"""Test that Givens rotation is performed correctly."""
+    r"""Test that Givens rotation is performed correctly for matrices built via `_givens_matrix`."""
     matrix = np.random.rand(*shape) * 1j + np.random.rand(*shape)
     unitary, (i, j) = matrix.copy(), indices
     if row:
         a, b = matrix[indices, j - 1]
-        grot_mat = givens_matrix(a, b, left)
-        givens_rotate(unitary, grot_mat, indices, row)
+        grot_mat = _givens_matrix(a, b, left)
+        unitary[indices] = grot_mat @ unitary[indices]
         res = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
         if left:
             assert np.isclose(unitary[i, j - 1], 0.0) and np.isclose(unitary[j, j - 1], res)
@@ -70,8 +70,8 @@ def test_givens_rotate(shape, indices, row, left):
             assert np.isclose(unitary[i, j - 1], res) and np.isclose(unitary[j, j - 1], 0.0)
     else:
         a, b = matrix[j - 1, indices].T
-        grot_mat = givens_matrix(a, b, left)
-        givens_rotate(unitary, grot_mat, indices, row)
+        grot_mat = _givens_matrix(a, b, left)
+        unitary[:, indices] = unitary[:, indices] @ grot_mat.T
         res = b / np.abs(b) * np.hypot(np.abs(a), np.abs(b)) if b else 1.0
         if left:
             assert np.isclose(unitary[j - 1, i], 0.0) and np.isclose(unitary[j - 1, j], res)
@@ -83,7 +83,7 @@ def test_givens_rotate(shape, indices, row, left):
 
 @pytest.mark.parametrize("shape", [2, 3, 7, 8, 15, 16])
 def test_givens_decomposition(shape):
-    r"""Test that Givens decomposition is performed correctly."""
+    r"""Test that `givens_decomposition` perform correct Givens decomposition."""
 
     matrix = unitary_group.rvs(shape)
 
@@ -127,31 +127,3 @@ def test_givens_decomposition_exceptions(unitary_matrix, msg_match):
 
     with pytest.raises(ValueError, match=msg_match):
         givens_decomposition(unitary_matrix)
-
-
-@pytest.mark.parametrize(
-    ("indices", "msg_match"),
-    [
-        (
-            [0],
-            "Indices must have length 2",
-        ),
-        (
-            [0, 1, 2],
-            "Indices must have length 2",
-        ),
-    ],
-)
-def test_givens_rotate_exceptions(indices, msg_match):
-    """Test that givens_decomposition throws an exception if the parameters have illegal shapes."""
-
-    unitary = np.array(
-        [
-            [-0.77228482 + 0.0j, -0.02959195 + 0.63458685j],
-            [0.63527644 + 0.0j, -0.03597397 + 0.77144651j],
-        ]
-    )
-    grot_mat = givens_matrix(1, 0)
-
-    with pytest.raises(ValueError, match=msg_match):
-        givens_rotate(unitary, grot_mat, indices)

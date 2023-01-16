@@ -127,6 +127,10 @@ like VQE to perform quantum chemistry simulations.
     :figure: _static/templates/subroutines/all_singles_doubles.png
 
 .. gallery-item::
+    :description: :doc:`Basis Rotation <../code/api/pennylane.BasisRotation>`
+    :figure: _static/templates/subroutines/basis_rotation.jpeg
+
+.. gallery-item::
     :description: :doc:`GateFabric <../code/api/pennylane.GateFabric>`
     :figure: _static/templates/layers/gate_fabric_layer.png
 
@@ -202,10 +206,6 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`Interferometer <../code/api/pennylane.Interferometer>`
     :figure: _static/templates/subroutines/interferometer.png
-
-.. gallery-item::
-    :description: :doc:`Basis Rotation<../code/api/pennylane.BasisRotation>`
-    :figure: _static/templates/subroutines/basis_rotation.jpeg
 
 .. gallery-item::
     :description: :doc:`FermionicSingleExcitation <../code/api/pennylane.FermionicSingleExcitation>`

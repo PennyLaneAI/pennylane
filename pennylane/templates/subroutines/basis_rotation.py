@@ -18,22 +18,22 @@ This module contains the template for performing basis transformation defined by
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Operation, AnyWires
-from pennylane.qchem.givens_rotations import givens_decomposition
+from pennylane.qchem.givens_decomposition import givens_decomposition
 
 # pylint: disable-msg=too-many-arguments
 class BasisRotation(Operation):
     r"""Implement a circuit that provides the unitary that can be used to do an exact single-body basis rotation.
 
-    The `~.BasisRotation` template performs a unitary transformation :math:`U(u)` determined by the single-particle fermionic
-    generators as:
+    The :class:`~.pennylane.BasisRotation` template performs the following unitary transformation :math:`U(u)` determined by the single-particle fermionic
+    generators as given in `arXiv:1711.04789 <https://arxiv.org/abs/1711.04789>`_\ :
 
     .. math::
 
         U(u) = \exp{\left( \sum_{pq} \left[\log u \right]_{pq} (a_p^\dagger a_q - a_q^\dagger a_p) \right)}.
 
     This :math:`U(u)` is implemented efficiently by performing its Givens decomposition into a sequence of
-    :class:`~.PhaseShift` and :class:`~.SingleExcitation` gates using the construction scheme given by
-    `W. Clements et al. <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_ (2016).
+    :class:`~.PhaseShift` and :class:`~.SingleExcitation` gates using the construction scheme given in
+    `Optica, 3, 1460 (2016) <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_\ .
 
     Args:
         wires (Iterable[Any]): wires that the operator acts on
@@ -42,20 +42,21 @@ class BasisRotation(Operation):
 
     Raises:
         ValueError: if the provided matrix is not square.
+        ValueError: if length of the wires is less than two.
 
     .. details::
+        :title: Usage Details
+        :href: usage-basis-rotation
 
-        **Usage Details**
-
-        The `~.BasisRotation` template can be used to implement the evolution :math:`e^{iH}`, where the Hamiltonian
+        The :class:`~.pennylane.BasisRotation` template can be used to implement the evolution :math:`e^{iH}` where
         :math:`H = \sum_{pq} V_{pq} a^\dagger_p a_q` and :math:`V` is an :math:`N \times N` Hermitian matrix.
-        In this case, the unitary matrix :math:`u` will be the transformation matrix that diagonalizes :math:`V` such that:
+        When the unitary matrix :math:`u` is the transformation matrix that diagonalizes :math:`V`, the evolution is:
 
         .. math::
 
             e^{i \sum_{pq} V_{pq} a^\dagger_p a_q} = U(u)^\dagger \prod_k e^{i\lambda_k \sigma_z^k} U(u),
 
-        where the :math:`\lambda_k` are the eigenvalues of the Hamiltonian :math:`H`.
+        where :math:`\lambda_k` denotes the eigenvalues of matrix :math:`V`, the Hamiltonian coefficients matrix.
 
         >>> V = np.array([[ 0.53672126+0.j        , -0.1126064 -2.41479668j],
         ...               [-0.1126064 +2.41479668j,  1.48694623+0.j        ]])
@@ -77,7 +78,9 @@ class BasisRotation(Operation):
                 [ 0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j,  0.   +0.j   ],
                 [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
 
-        **Theory**
+    .. details::
+        :title: Theory
+        :href: theory-basis-rotation
 
         The overall effect of :math:`U(u)` can be viewed as performing a transformation from one basis to a new basis
         that is defined by the linear combination of fermionic ladder operators:
