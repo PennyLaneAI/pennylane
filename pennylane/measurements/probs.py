@@ -139,33 +139,40 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device=None):
+    def shape(self, device=None, execution_config=None):
+        shot_location = device if device is not None else execution_config
         if qml.active_return():
-            return self._shape_new(device)
-        if device is None:
+            return self._shape_new(shot_location)
+        if shot_location is None:
             raise MeasurementShapeError(
                 "The device argument is required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
         num_shot_elements = (
-            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
+            1
+            if shot_location.shot_vector is None
+            else sum(s.copies for s in shot_location.shot_vector)
         )
         len_wires = len(self.wires)
-        dim = self._get_num_basis_states(len_wires, device)
+        dim = self._get_num_basis_states(len_wires, shot_location)
+        # TODO: Change/fix this (maybe??)
 
         return (num_shot_elements, dim)
 
-    def _shape_new(self, device=None):
-        if device is None:
+    def _shape_new(self, shot_location=None):
+        if shot_location is None:
             raise MeasurementShapeError(
                 "The device argument is required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
         num_shot_elements = (
-            1 if device.shot_vector is None else sum(s.copies for s in device.shot_vector)
+            1
+            if shot_location.shot_vector is None
+            else sum(s.copies for s in shot_location.shot_vector)
         )
         len_wires = len(self.wires)
-        dim = self._get_num_basis_states(len_wires, device)
+        dim = self._get_num_basis_states(len_wires, shot_location)
+        # TODO: Change/fix this (maybe??)
 
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
