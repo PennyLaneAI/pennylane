@@ -31,7 +31,6 @@ except ImportError as e:
         "You can install jax via: pip install jax"
     ) from e
 
-
 @partial(jax.jit, static_argnums=0)
 def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     r"""Fix step size ODE solver with jit-compilation
