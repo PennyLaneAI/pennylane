@@ -150,7 +150,6 @@
 * Limit the `numpy` version to `<1.24`.
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
 
-
 * Removes qutrit operations use of in-place inversion in preparation for the
   removal of in-place inversion.
   [(#3566)](https://github.com/PennyLaneAI/pennylane/pull/3566)
@@ -170,6 +169,9 @@
 * Improve lazy-loading in `Dataset.read()` so it is more universally supported. Also added the `assign_to`
   keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
+
+* Make `qml.ops.dot` jax-jittable.
+  [(#3636)](https://github.com/PennyLaneAI/pennylane/pull/3636)
 
 * All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
   of the other class to be called.
