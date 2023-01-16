@@ -56,6 +56,7 @@ class BasisState(Operation):
     >>> print(example_circuit())
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
+    has_matrix = True
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -89,11 +90,6 @@ class BasisState(Operation):
 
         """
         return [BasisStatePreparation(n, wires)]
-
-    # pylint:disable=arguments-renamed,invalid-overridden-method
-    @property
-    def has_matrix(self):
-        return True
 
     def matrix(self, wire_order=None):
         """Returns a ket vector representing the state being created."""

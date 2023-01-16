@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires, WireError
+from pennylane.wires import WireError
 
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
@@ -125,4 +125,4 @@ class TestMatrix:
 
     def test_has_matrix(self):
         """Tests that has_matrix is always True for BasisState."""
-        assert qml.BasisState([0, 1], wires=[0, 1]).has_matrix is True
+        assert qml.BasisState.has_matrix is True
