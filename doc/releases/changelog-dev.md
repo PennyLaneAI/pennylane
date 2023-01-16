@@ -150,7 +150,6 @@
 * Limit the `numpy` version to `<1.24`.
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
 
-
 * Removes qutrit operations use of in-place inversion in preparation for the
   removal of in-place inversion.
   [(#3566)](https://github.com/PennyLaneAI/pennylane/pull/3566)
@@ -173,6 +172,9 @@
 
 * Allow `Sum` and `Prod` to have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
+
+* Make `qml.ops.dot` jax-jittable.
+  [(#3636)](https://github.com/PennyLaneAI/pennylane/pull/3636)
 
 * All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
   of the other class to be called.
