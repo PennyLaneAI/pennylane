@@ -150,6 +150,11 @@
 * Limit the `numpy` version to `<1.24`.
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
 
+
+* Removes qutrit operations use of in-place inversion in preparation for the
+  removal of in-place inversion.
+  [(#3566)](https://github.com/PennyLaneAI/pennylane/pull/3566)
+
 * Validation has been added on the `gradient_kwargs` when initializing a QNode, and if unexpected kwargs are passed,
   a `UserWarning` is raised. A list of the current expected gradient function kwargs has been added as
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
