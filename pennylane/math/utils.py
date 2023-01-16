@@ -542,8 +542,6 @@ def pwc_from_array(idx1, idx2, t1, t2):
         func: a function that can be passed params and t, and will return the corresponding constant
 
     **Example**
-
-
     """
 
     def func(params, t):
@@ -553,3 +551,31 @@ def pwc_from_array(idx1, idx2, t1, t2):
         return array[idx]
 
     return func
+
+
+def pwc_from_function(
+    t1, t2, num_bins
+):  # ToDo: bad things happen if t1 and t2 are outside of the actual relevant range, but no error is raised. Probably similar for idx1 and idx 2 above.
+    """
+
+    **Example**
+
+    pwc_from_function(0, 10, 1000)(fn)
+
+    @pwc_from_function(0, 10, 1000)
+    def fn(x): return 2 * x
+
+
+    """
+
+    def inner(fn):
+        time_bins = np.linspace(t1, t2, num_bins)
+
+        def wrapper(params, t):
+            constants = fn(params, time_bins)
+            idx = np.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
+            return constants[idx]
+
+        return wrapper
+
+    return inner
