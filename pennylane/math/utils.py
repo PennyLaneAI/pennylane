@@ -536,12 +536,29 @@ def pwc_from_array(idx1, idx2, t1, t2):
             constant values for the function.
         t1(float): the start time for the function
         t2(float): the stop time for the function
-        #ToDo: make docs clearer and add example
 
     Returns:
         func: a function that can be passed params and t, and will return the corresponding constant
 
     **Example**
+
+    >>> t1, t2 = 1, 3
+    >>> idx1, idx2 = 0, 7
+    >>> f1 = pwc_from_array(idx1, idx2, t1, t2)
+
+    The resulting function `f1` has the call signature `f1(params, t)`. If passed parameters and a time,
+    it will assign the numbers at params[idx1:idx2] as the constants in the piecewise function, and select
+    the constant corresponding to the specified time, given the previously specified interval t1 to t2.
+
+    >>> params = np.linspace(10, 20, 10)
+    >>> f1(params, 2)
+    DeviceArray(13.333334, dtype=float32)
+
+    >>> f1(params, 2.1)  # same bin
+    DeviceArray(13.333334, dtype=float32)
+
+    >>> f1(params, 2.5)  # next bin
+    DeviceArray(15.555556, dtype=float32)
     """
 
     from jax import numpy as jnp
@@ -557,14 +574,40 @@ def pwc_from_array(idx1, idx2, t1, t2):
 
 def pwc_from_function(t1, t2, num_bins):
     """
+    Decorator to turn a smooth function into a piecewise constant function.
+
+    Args:
+        t1(float): start time
+        t2(float): end time
+        num_bins: number of bins for time-binning the function
+
+    Returns:
+        a function that takes some smooth function `f(params, t)` and converts it to a
+        piecewise constant function spanning `t1` to `t2` in `num_bins` bins.
 
     **Example**
 
-    pwc_from_function(0, 10, 1000)(fn)
+    >>> def f0(params, t): return params[0] * t + params[1]
+    >>> t1, t2 = 0, 10
+    >>> num_bins = 10
+    >>> f1 = pwc_from_function(t1, t2, num_bins)(f0)
+    >>> f1([2, 4], 3), f0([2, 4], 3)
+    (DeviceArray(10.666666, dtype=float32), DeviceArray(10, dtype=int32))
 
-    @pwc_from_function(0, 10, 1000)
-    def fn(x): return 2 * x
+    >>> f1([2, 4], 3.2), f0([2, 4], 3.2)
+    (DeviceArray(10.666666, dtype=float32), DeviceArray(10.4, dtype=float32))
 
+    >>> f1([2, 4], 4.5), f0([2, 4], 4.5)
+    (DeviceArray(12.888889, dtype=float32), DeviceArray(13., dtype=float32))
+
+    # ToDo: can we include images in the docs for the version rendered for the website? Would be clearest way to illustrate
+
+    The same effect can be achieved by decorating the smooth function:
+
+    >>> @pwc_from_function(t1, t2, num_bins)
+    >>> def fn(params, t): return params[0] * t + params[1]
+    >>> fn([2, 4], 3)
+    DeviceArray(10.666666, dtype=float32)
 
     """
 
