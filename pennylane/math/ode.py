@@ -51,7 +51,7 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     .. note::
 
         Unlike many standard implementations, this ``odeint`` solver does not adaptively choose the step
-        sizes, but rather a fix list of times for evaluation have to be provided in ``ts``. For an adaptive step
+        sizes, but rather a fixed list of times for evaluation have to be provided in ``ts``. For an adaptive step
         size solver, we refer to `jax.experimental.ode.odeint <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_.
 
     .. warning::
