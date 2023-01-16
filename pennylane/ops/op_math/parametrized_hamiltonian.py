@@ -40,7 +40,7 @@ class ParametrizedHamiltonian:
             with ``params`` being trainable parameters and ``t`` being time.
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as ``coeffs``
 
-    A ``ParametrizedHamiltonian`` is callable, and passing parameters to the ``ParametrizedHamiltonian`` will return an
+    A ``ParametrizedHamiltonian`` is callable with the fixed signature ``H(params, t)`` that returns an
     ``Operator`` representing an instance of the Hamiltonian with the specified parameter values.
 
     **Example:**
