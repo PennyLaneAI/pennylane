@@ -16,20 +16,21 @@ This submodule defines the symbolic operation that stands for an exponential of 
 """
 from copy import copy
 from warnings import warn
-from scipy.sparse.linalg import expm as sparse_expm
+
 import numpy as np
+from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import (
     DecompositionUndefinedError,
-    expand_matrix,
-    OperatorPropertyUndefined,
     GeneratorUndefinedError,
+    Operation,
+    OperatorPropertyUndefined,
     Tensor,
+    expand_matrix,
 )
 from pennylane.wires import Wires
-from pennylane.operation import Operation
 
 from .symbolicop import SymbolicOp
 
@@ -405,19 +406,11 @@ class Evolution(Exp):
 
     """
 
+    _name = "Evolution"
+
     def __init__(self, generator, param, do_queue=True, id=None):
+        self.param = param
         super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
-        self._name = "Evolution"
-        self._data = [param]
-
-    @property
-    def param(self):
-        """A real coefficient with ``1j`` factored out."""
-        return self.data[0]
-
-    @property
-    def coeff(self):
-        return 1j * self.data[0]
 
     @property
     def num_params(self):
@@ -425,9 +418,7 @@ class Evolution(Exp):
 
     def label(self, decimals=None, base_label=None, cache=None):
         param = (
-            self.data[0]
-            if decimals is None
-            else format(math.toarray(self.data[0]), f".{decimals}f")
+            self.param if decimals is None else format(math.toarray(self.param), f".{decimals}f")
         )
         return base_label or f"Exp({param}j {self.base.label(decimals=decimals, cache=cache)})"
 
