@@ -4,3 +4,4 @@ tests/ops/op_math/test_parametrized_hamiltonian.py
 tests/ops/op_math/test_evolve.py
 tests/ops/op_math/test_controlled_ops.py
 tests/ops/op_math/test_controlled.py
+tests/ops/op_math/test_dot.py
