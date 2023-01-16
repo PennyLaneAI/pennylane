@@ -90,7 +90,7 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     .. math:: \frac{d}{dt}U = -i H(t) U
 
     for a time-dependent Hamiltonian :math:`H(t) = X_0 X_1 + v \sin(t) Z_0 Y_1`
-    in the time window ``(t0, t1) = (0, 4)`` using ``odeint`` in the following way:
+    in the time window ``(t0, t1) = (0, 4)`` using ``odeint``:
 
     .. code:: python3
 
