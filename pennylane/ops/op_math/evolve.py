@@ -20,8 +20,6 @@ This file contains the ``Evolve`` operator.
 
 from typing import Union
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation, Operator
 
@@ -168,7 +166,7 @@ def guess_dt(fun, t0, y0, p, *args, rtol=1e-4, atol=1e-4):
 
     f0 = fun(y0, t0, args)
 
-    scale = atol + np.abs(y0) * rtol
+    scale = atol + jnp.abs(y0) * rtol
     d0 = jnp.linalg.norm(y0 / scale.astype(dtype))
     d1 = jnp.linalg.norm(f0 / scale.astype(dtype))
 
