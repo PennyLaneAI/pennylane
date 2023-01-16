@@ -234,7 +234,7 @@ def runge_kutta_step(func, y0, f0, t0, dt):
 
 # pylint: disable=no-member
 def ravel_first_arg(f, unravel):
-    """ "Decorate a function to work with a raveled first argument"""
+    """Decorate a function to work with a raveled first argument"""
     return _ravel_first_arg(lu.wrap_init(f), unravel).call_wrapped
 
 
