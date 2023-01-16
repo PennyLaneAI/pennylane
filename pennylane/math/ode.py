@@ -97,7 +97,7 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
         XX = qml.matrix(qml.PauliX(0) @ qml.PauliX(1))
         ZY = qml.matrix(qml.PauliZ(0) @ qml.PauliY(1))
 
-        ts = jnp.linspace(0., 4., 20)
+        ts = jnp.linspace(0., 2., 50)
         y0 = jnp.eye(2**2, dtype=complex)
         params = jnp.ones(1, dtype=complex)
 
@@ -111,7 +111,9 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     :math:`U(t_0, t_1) = \text{Texp}\left[-i \int_{t_0}^{t_1}d\tau H(\tau)\right]`
     (see `Dyson Series <https://en.wikipedia.org/wiki/Dyson_series>`_).
 
-    **Backpropagate**
+    Note that this computation can be backward differentiated with respect to the parameters ``params`` via
+
+    >>> jac = jax.jacobian(qml.math.odeint, argnums=3, holomorphic=True)(func, y0, ts, params)
     """
     y0, unravel = ravel_pytree(y0)
     func = ravel_first_arg(func, unravel)
