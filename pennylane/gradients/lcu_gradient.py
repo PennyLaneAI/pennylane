@@ -33,11 +33,11 @@ from pennylane.transforms.metric_tensor import _get_aux_wire
 
 @gradient_transform
 def lcu_grad(
-    tape,
-    argnum=None,
-    shots=None,
-    aux_wire=None,
-    device_wires=None,
+        tape,
+        argnum=None,
+        shots=None,
+        aux_wire=None,
+        device_wires=None,
 ):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
     parameters with respect to its inputs. This function is adapted to the new return system.
@@ -91,42 +91,58 @@ def expval_lcu(tape, argnum, aux_wire):
     coeffs = []
 
     for id_argnum in argnums:
-        gate, idx, _ = tape.get_operation(id_argnum)
+        trainable_op, idx, p_idx = tape.get_operation(id_argnum)
 
-        ops_to_gate = tape.operations[: idx + 1]
-        ops_after_gate = tape.operations[idx + 1 :]
+        ops_to_trainable_op = tape.operations[: idx + 1]
+        ops_after_trainable_op = tape.operations[idx + 1:]
 
-        # Get a generator and add the control on the aux qubit
-        # TODO: Add general case
-        gen = gate.generator()
-        coeffs.append(gen.coeffs[0])
-        ops = gen.ops
-        ctrl_gen = qml.ctrl(*ops, control=aux_wire).decomposition()
-        hadamard = [qml.Hadamard(wires=aux_wire)]
-        ops = ops_to_gate + hadamard + ctrl_gen + hadamard + ops_after_gate
+        # Get a generator and coefficients
+        sub_coeffs, generators = _get_generators(trainable_op)
+        coeffs.extend(sub_coeffs)
 
-        # Add the Y measurement on the aux qubit
-        measurements = []
-        for m in tape.measurements:
-            if isinstance(m.obs, qml.operation.Tensor):
-                obs_new = m.obs.obs.copy()
-            else:
-                obs_new = [m.obs]
+        for gen in generators:
 
-            obs_new.append(qml.PauliY(wires=aux_wire))
-            obs_new = qml.operation.Tensor(*obs_new)
+            if isinstance(trainable_op, qml.Rot):
+                # Move the rotation after the controlled generator
+                if p_idx == 0:
+                    op_temp = ops_to_trainable_op.pop(-1)
+                    ops_after_trainable_op = op_temp + ops_after_trainable_op
+                elif p_idx == 1:
+                    ops_to_add_before = [qml.RZ(-trainable_op.data[1], wires=trainable_op.wires),
+                                         qml.RX(qml.numpy.pi/2, wires=trainable_op.wires)]
+                    ops_to_trainable_op.extend(ops_to_add_before)
 
-            if isinstance(m, qml.measurements.ExpectationMP):
-                measurements.append(qml.expval(op=obs_new))
-            else:
-                measurements.append(qml.probs(op=obs_new))
+                    ops_to_add_after = [qml.RX(-qml.numpy.pi/2, wires=trainable_op.wires),
+                                        qml.RZ(trainable_op.data[1], wires=trainable_op.wires)]
+                    ops_after_trainable_op = ops_to_add_after + ops_after_trainable_op
 
-        new_tape = qml.tape.QuantumTape(ops=ops, measurements=measurements)
+            ctrl_gen = qml.ctrl(gen, control=aux_wire).decomposition()
+            hadamard = [qml.Hadamard(wires=aux_wire)]
+            ops = ops_to_trainable_op + hadamard + ctrl_gen + hadamard + ops_after_trainable_op
 
-        g_tapes.append(new_tape)
+            # Add the Y measurement on the aux qubit
+            measurements = []
+            for m in tape.measurements:
+                if isinstance(m.obs, qml.operation.Tensor):
+                    obs_new = m.obs.obs.copy()
+                else:
+                    obs_new = [m.obs]
+
+                obs_new.append(qml.PauliY(wires=aux_wire))
+                obs_new = qml.operation.Tensor(*obs_new)
+
+                if isinstance(m, qml.measurements.ExpectationMP):
+                    measurements.append(qml.expval(op=obs_new))
+                else:
+                    measurements.append(qml.probs(op=obs_new))
+
+            new_tape = qml.tape.QuantumTape(ops=ops, measurements=measurements)
+
+            g_tapes.append(new_tape)
 
     def processing_fn(results):
         final_res = []
+        # TODO multiple measurements, shot vectors and broadcasting
         for coeff, res in zip(coeffs, results):
             if isinstance(res, tuple):
                 final_res.append(tuple([2 * coeff * r for r in res]))
@@ -135,3 +151,21 @@ def expval_lcu(tape, argnum, aux_wire):
         return tuple(final_res)
 
     return g_tapes, processing_fn
+
+
+def _get_generators(trainable_op):
+    # rot special case
+
+    # For PhaseShift, we need to separate the generator in two unitaries (Hardware compatibility)
+    if isinstance(trainable_op, qml.PhaseShift):
+        generators = [qml.Identity(wires=trainable_op.wires), qml.PauliZ(wires=trainable_op.wires)]
+        coeffs = [0.5, 0.5]
+    # For rotation it possible to only use CZ by applying some other rotations in the main function
+    elif isinstance(trainable_op, qml.Rot):
+        generators = [qml.PauliZ(wires=trainable_op.wires)]
+        coeffs = [0.5]
+    else:
+        generators = trainable_op.generator().ops
+        coeffs = trainable_op.generator().coeffs
+
+    return coeffs, generators
