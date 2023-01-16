@@ -241,9 +241,9 @@ class PauliSentence(dict):
     """Dictionary representing a linear combination of Pauli words, with the keys
     as PauliWord instances and the values correspond to coefficients.
 
-    >>> ps = PauliSentence({
-            PauliWord({0:'X', 1:'Y'}): 1.23,
-            PauliWord({2:'Z', 0:'Y'}): -0.45j
+    >>> ps = qml.pauli.PauliSentence({
+            qml.pauli.PauliWord({0:'X', 1:'Y'}): 1.23,
+            qml.pauli.PauliWord({2:'Z', 0:'Y'}): -0.45j
         })
     >>> ps
     1.23 * X(0) @ Y(1)
