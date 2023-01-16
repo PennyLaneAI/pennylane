@@ -544,18 +544,18 @@ def pwc_from_array(idx1, idx2, t1, t2):
     **Example**
     """
 
+    from jax import numpy as jnp
+
     def func(params, t):
-        array = params[idx1:idx2]
+        array = jnp.array(params[idx1:idx2])
         num_bins = len(array)
-        idx = np.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
+        idx = jnp.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
         return array[idx]
 
     return func
 
 
-def pwc_from_function(
-    t1, t2, num_bins
-):  # ToDo: bad things happen if t1 and t2 are outside of the actual relevant range, but no error is raised. Probably similar for idx1 and idx 2 above.
+def pwc_from_function(t1, t2, num_bins):
     """
 
     **Example**
@@ -568,12 +568,14 @@ def pwc_from_function(
 
     """
 
+    from jax import numpy as jnp
+
     def inner(fn):
         time_bins = np.linspace(t1, t2, num_bins)
 
         def wrapper(params, t):
-            constants = fn(params, time_bins)
-            idx = np.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
+            constants = jnp.array(fn(params, time_bins))
+            idx = jnp.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
             return constants[idx]
 
         return wrapper
