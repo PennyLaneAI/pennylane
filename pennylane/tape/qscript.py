@@ -403,9 +403,9 @@ class QuantumScript:
                 {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
             )
 
-        for m in self.measurements:
+        for idx, m in enumerate(self.measurements):
             if m.obs is not None:
-                self._par_info.extend({"op": m.obs, "p_idx": i} for i, d in enumerate(m.obs.data))
+                self._par_info.extend({"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data))
 
     def _update_trainable_params(self):
         """Set the trainable parameters

@@ -54,6 +54,11 @@ def hadamard_grad(
     **Example**
 
     """
+    if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
+        raise ValueError(
+            "Computing the gradient of circuits that return the state is not supported."
+        )
+
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
 
@@ -84,13 +89,19 @@ def hadamard_grad(
 
 
 def expval_hadamard_grad(tape, argnum, aux_wire):
-    print("argnum trainable params", argnum, tape.trainable_params)
     argnums = argnum or tape.trainable_params
-    print("argnum", argnum)
     g_tapes = []
     coeffs = []
 
-    for id_argnum in argnums:
+    gradient_data = []
+
+    for id_argnum in tape.trainable_params:
+
+        if id_argnum not in argnums:
+            # parameter has zero gradient
+            gradient_data.append(None)
+            continue
+
         trainable_op, idx, p_idx = tape.get_operation(id_argnum)
 
         ops_to_trainable_op = tape.operations[: idx + 1]
@@ -100,6 +111,7 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
         sub_coeffs, generators = _get_generators(trainable_op)
         coeffs.extend(sub_coeffs)
 
+        num_tape = 0
         for gen in generators:
 
             if isinstance(trainable_op, qml.Rot):
@@ -138,17 +150,26 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
 
             new_tape = qml.tape.QuantumTape(ops=ops, measurements=measurements)
 
+            num_tape += 1
             g_tapes.append(new_tape)
+        gradient_data.append(num_tape)
 
     def processing_fn(results):
-        final_res = []
         # TODO multiple measurements, shot vectors and broadcasting
+        grads = []
+        final_res = []
         for coeff, res in zip(coeffs, results):
             if isinstance(res, tuple):
-                final_res.append(tuple([2 * coeff * r for r in res]))
+                final_res.append([2 * coeff * r for r in res])
             else:
                 final_res.append(2 * coeff * res)
-        return tuple(final_res)
+
+        for idx, num_tape in enumerate(gradient_data):
+            if num_tape is None:
+                grads.append(qml.math.zeros(()))
+            else:
+                grads.append(sum(final_res[idx: idx + num_tape]))
+        return tuple(grads)
 
     return g_tapes, processing_fn
 
@@ -157,7 +178,7 @@ def _get_generators(trainable_op):
     # rot special case
 
     # For PhaseShift, we need to separate the generator in two unitaries (Hardware compatibility)
-    if isinstance(trainable_op, qml.PhaseShift, qml.U1):
+    if isinstance(trainable_op, (qml.PhaseShift, qml.U1)):
         generators = [qml.Identity(wires=trainable_op.wires), qml.PauliZ(wires=trainable_op.wires)]
         coeffs = [0.5, 0.5]
     # For rotation it possible to only use CZ by applying some other rotations in the main function
