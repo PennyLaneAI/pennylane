@@ -133,7 +133,7 @@ def _tolerance_warn(arg, _):
     atol, rtol, mean_err_ratio, y1_error, err_tol = arg
     if mean_err_ratio > 1.0:
         warnings.warn(
-            f"An mean error of {y1_error} in y occured which exceeds the mean error tolerance {err_tol} "
+            f"A mean error of {y1_error} in y occured which exceeds the mean error tolerance {err_tol} "
             f"based on a tolerance of atol = {atol} and rtol = {rtol}. "
             "Try reducing the step size.",
             UserWarning,
