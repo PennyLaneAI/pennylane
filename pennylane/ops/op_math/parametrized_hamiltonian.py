@@ -59,9 +59,9 @@ class ParametrizedHamiltonian:
     >>> obs = [qml.PauliX(0)@qml.PauliX(1), qml.PauliY(0)@qml.PauliY(1), qml.PauliZ(0)@qml.PauliZ(1)]
     >>> H = ParametrizedHamiltonian(coeffs, obs)
     >>> H.H_fixed
-      2*(PauliX(wires=[0]) @ PauliX(wires=[1]))
+    2*(PauliX(wires=[0]) @ PauliX(wires=[1]))
     >>> H.H_parametrized([2.5, 3.6], t)
-      (0.5984721441039564*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.9450883011253033*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
+    (0.5984721441039564*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.9450883011253033*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
 
     The resulting object can be passed parameters, and will return an ``Operator`` representing the
     ``ParametrizedHamiltonian`` with the specified parameters:
