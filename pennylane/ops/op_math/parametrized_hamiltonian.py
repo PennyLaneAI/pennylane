@@ -23,8 +23,10 @@ from pennylane.wires import Wires
 
 # pylint: disable= too-many-instance-attributes
 class ParametrizedHamiltonian:
-    r"""Callable object holding the information representing a parametrized Hamiltonian. Passing parameters to
-    the ParametrizedHamiltonian returns an Operator representing the Hamiltonian for that set of parameters.
+    r"""Callable object holding the information representing a parametrized Hamiltonian.
+
+    Passing parameters to the ``ParametrizedHamiltonian`` returns an ``:class:~Operator`` representing the Hamiltonian
+    for that set of parameters.
 
     The Hamiltonian can be represented as a linear combination of other operators, e.g.,
     :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j`, where the :math:`v` are trainable parameters,
@@ -34,24 +36,25 @@ class ParametrizedHamiltonian:
 
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be constants or
-            parametrized functions. All functions passed as ``coeffs`` must accept the same parameters as arguments.
-        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
+            parametrized functions. All functions passed as ``coeffs`` must have the signature ``(params, t)``
+            with ``params`` being trainable parameters and ``t`` being time.
+        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as ``coeffs``
 
-    A ParametrizedHamiltonian is callable, and passing parameters to the ParametrizedHamiltonian will return an
-    Operator representing an instance of the Hamiltonian with the specified parameter values.
+    A ``ParametrizedHamiltonian`` is callable, and passing parameters to the ``ParametrizedHamiltonian`` will return an
+    ``:class:~Operator`` representing an instance of the Hamiltonian with the specified parameter values.
 
     **Example:**
 
-    A ParametrizedHamiltonian can be created by passing a list of coefficients (scalars or functions), as well as
-    a list of corresponding observables. The functions must have identical signatures, though they may not all
-    use all the parameters.
+    A ``ParametrizedHamiltonian`` can be created by passing a list of coefficients (scalars or functions), as well as
+    a list of corresponding observables. The functions must all have signatures, ``(params, t)`` with ``params`` being
+    trainable parameters and ``t`` being time.
 
     >>> def f1(params, t): return np.sin(params[0]*t)
     >>> def f2(params, t): return params[1] * np.cos(t)
 
-    The functions, along with scalar coefficients, can then be used to initialize a ParametrizedHamiltonian,
-    which will be split into a fixed and parametrized term. The fixed term is an Operator, while the parametrized
-    term must be initialized with concrete parameters to obtain an Operator.
+    The functions, along with scalar coefficients, can then be used to initialize a ``ParametrizedHamiltonian``,
+    which will be split into a fixed and parametrized term. The fixed term is an ``Operator``, while the parametrized
+    term must be initialized with concrete parameters to obtain an ``Operator``.
     >>> coeffs = [2, f1, f2]
     >>> obs = [qml.PauliX(0)@qml.PauliX(1), qml.PauliY(0)@qml.PauliY(1), qml.PauliZ(0)@qml.PauliZ(1)]
     >>> H = ParametrizedHamiltonian(coeffs, obs)
@@ -60,8 +63,8 @@ class ParametrizedHamiltonian:
     >>> H.H_parametrized([2.5, 3.6], t)
       (0.5984721441039564*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.9450883011253033*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
 
-    The resulting object can be passed parameters, and will return an Operator representing the
-    ParametrizedHamiltonian with the specified parameters:
+    The resulting object can be passed parameters, and will return an ``Operator`` representing the
+    ``ParametrizedHamiltonian`` with the specified parameters:
 
     >>> H([1.2, 2.3], 0.5)
     (2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((0.5646424733950354*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (2.0184398923478573*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
@@ -70,7 +73,7 @@ class ParametrizedHamiltonian:
 
     def __init__(self, coeffs, observables):
 
-        if qml.math.shape(coeffs)[0] != len(observables):
+        if len(coeffs) != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
                 "number of coefficients and operators does not match."
@@ -103,17 +106,21 @@ class ParametrizedHamiltonian:
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
 
     def H_fixed(self):
-        """The fixed term(s) of the ParametrizedHamiltonian. Returns a qml.Sum operator of qml.SProd operators
-        (or a single qml.SProd operator in the event that there is only one term in H_drift)."""
+        """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``:class:~Sum`` operator of ``:class:~SProd``
+        operators (or a single ``qml.SProd operator`` in the event that there is only one term in ``H_fixed``)."""
         if self.H_coeffs_fixed:
             return qml.ops.dot(self.H_coeffs_fixed, self.H_ops_fixed)  # pylint: disable=no-member
         return 0
 
     def H_parametrized(self, params, t):
-        """The parametrized terms of the Hamiltonian. Returns a function that can be evaluated
-        to get a snapshot of the operator at a set time and with set parameters. When the function is
-        evaluated, the returned operator is a qml.Sum of qml.S_Prod operators (or a single qml.SProd
-        operator in the event that there is only one term in H_ts)."""
+        """The parametrized terms of the Hamiltonian for the specified parameters and time.
+
+        Args:
+            params(tensor_like): the parameters values used to evaluate the operators
+            t(float): the time at which the operator is evaluated
+
+        Returns: an operator is a ``:class:~Sum`` of ``:class:~S_Prod`` operators (or a single
+        ``:class:~SProd`` operator in the event that there is only one term in ``H_parametrized``)."""
 
         coeffs = [f(params, t) for f in self.H_coeffs_parametrized]
         if len(coeffs) == 0:
@@ -122,7 +129,7 @@ class ParametrizedHamiltonian:
 
     @property
     def coeffs(self):
-        """Return the coefficients defining the Hamiltonian, including the unevaluated
+        """Return the coefficients defining the ``ParametrizedHamiltonian``, including the unevaluated
         functions for the parametrized terms.
 
         Returns:
@@ -132,7 +139,7 @@ class ParametrizedHamiltonian:
 
     @property
     def ops(self):
-        """Return the operators defining the ParametrizedHamiltonian.
+        """Return the operators defining the ``ParametrizedHamiltonian``.
 
         Returns:
             Iterable[Observable]): observables in the Hamiltonian expression
@@ -140,8 +147,8 @@ class ParametrizedHamiltonian:
         return self._ops
 
     def __add__(self, H):
-        r"""The addition operation between a ParametrizedHamiltonian and a
-        Hamiltonian or ParametrizedHamiltonian."""
+        r"""The addition operation between a ``ParametrizedHamiltonian`` and an ``Operator``
+        or ``ParametrizedHamiltonian``."""
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 

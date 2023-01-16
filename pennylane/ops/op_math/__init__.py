@@ -50,6 +50,7 @@ Symbolic Classes
     ~Sum
     ~SProd
     ~SymbolicOp
+    ~ParametrizedHamiltonian
 
 Controlled Operator Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
