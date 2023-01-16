@@ -811,12 +811,6 @@ def iscomplex(tensor, like=None):
 
 
 @multi_dispatch()
-def size(tensor, like=None):
-    """Return the size of the tensor."""
-    return tensor.numel() if like == "torch" else np.size(tensor)
-
-
-@multi_dispatch()
 def expm(tensor, like=None):
     """Compute the matrix exponential of an array :math:`e^{X}`.
 
