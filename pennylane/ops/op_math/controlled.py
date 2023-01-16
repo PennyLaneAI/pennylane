@@ -140,6 +140,8 @@ class Controlled(SymbolicOp):
             length as ``control_wires``. Defaults to ``True`` for all control wires.
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
+        do_queue(bool):  indicates whether the operator should be
+            recorded when created in a tape context
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
@@ -232,7 +234,7 @@ class Controlled(SymbolicOp):
 
     # pylint: disable=unused-argument
     def __new__(cls, base, *_, **__):
-        """If base is an ``Operation``, then the a ``ControlledOp`` should be used instead."""
+        """If base is an ``Operation``, then a ``ControlledOp`` should be used instead."""
         if isinstance(base, operation.Operation):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
@@ -241,6 +243,7 @@ class Controlled(SymbolicOp):
     def __init__(
         self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
     ):
+
         control_wires = Wires(control_wires)
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
@@ -252,7 +255,8 @@ class Controlled(SymbolicOp):
                     "Specifying control values as a string is deprecated. Please use Sequence[Bool]",
                     UserWarning,
                 )
-                control_values = [(x == "1") for x in control_values]
+                # All values not 0 are cast as true. Assumes a string of 1s and 0s.
+                control_values = [(x != "0") for x in control_values]
 
             control_values = (
                 [bool(control_values)]
@@ -308,7 +312,19 @@ class Controlled(SymbolicOp):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return self.base.has_matrix if self.base.batch_size is None else False
+        return self.base.has_matrix
+
+    # pylint: disable=protected-access
+    def _check_batching(self, params):
+        self.base._check_batching(params)
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
 
     # Properties on the control values ######################
     @property
@@ -353,7 +369,7 @@ class Controlled(SymbolicOp):
         new_control_wires = Wires([wire_map.get(wire, wire) for wire in self.control_wires])
         new_work_wires = Wires([wire_map.get(wire, wire) for wire in self.work_wires])
 
-        return Controlled(
+        return self.__class__(
             base=new_base,
             control_wires=new_control_wires,
             control_values=self.control_values,
@@ -375,9 +391,6 @@ class Controlled(SymbolicOp):
 
     def matrix(self, wire_order=None):
 
-        if self.base.batch_size is not None:
-            raise qml.operation.MatrixUndefinedError
-
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
 
@@ -391,7 +404,13 @@ class Controlled(SymbolicOp):
         left_pad = qmlmath.cast_like(qmlmath.eye(padding_left, like=interface), 1j)
         right_pad = qmlmath.cast_like(qmlmath.eye(padding_right, like=interface), 1j)
 
-        canonical_matrix = qmlmath.block_diag([left_pad, base_matrix, right_pad])
+        shape = qml.math.shape(base_matrix)
+        if len(shape) == 3:  # stack if batching
+            canonical_matrix = qml.math.stack(
+                [qml.math.block_diag([left_pad, _U, right_pad]) for _U in base_matrix]
+            )
+        else:
+            canonical_matrix = qmlmath.block_diag([left_pad, base_matrix, right_pad])
 
         if wire_order is None or self.wires == Wires(wire_order):
             return qml.math.expand_matrix(
@@ -489,27 +508,35 @@ class Controlled(SymbolicOp):
         return self.base.has_adjoint
 
     def adjoint(self):
-        return Controlled(
-            self.base.adjoint(), self.control_wires, self.control_values, self.work_wires
+        return self.__class__(
+            self.base.adjoint(),
+            self.control_wires,
+            control_values=self.control_values,
+            work_wires=self.work_wires,
         )
 
     def pow(self, z):
         base_pow = self.base.pow(z)
         return [
-            Controlled(op, self.control_wires, self.control_values, self.work_wires)
+            self.__class__(
+                op,
+                self.control_wires,
+                control_values=self.control_values,
+                work_wires=self.work_wires,
+            )
             for op in base_pow
         ]
 
     def simplify(self) -> "Controlled":
         if isinstance(self.base, Controlled):
             base = self.base.base.simplify()
-            return Controlled(
+            return self.__class__(
                 base,
                 control_wires=self.control_wires + self.base.control_wires,
                 control_values=self.control_values + self.base.control_values,
                 work_wires=self.work_wires + self.base.work_wires,
             )
-        return Controlled(
+        return self.__class__(
             base=self.base.simplify(),
             control_wires=self.control_wires,
             control_values=self.control_values,
