@@ -60,7 +60,7 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
 
     **Example**
 
-    Let us look at the very simple initival value problem $dy/dt = y,$ $y(0)=3$.
+    Let us look at the very simple initial value problem $dy/dt = y,$ $y(0)=3$.
     The analytic solution is $y(t) = 3e^t$. Say we are interested in the solution at
     time $t=2$, i.e. $y(2)=3e^2$. We can compute this numerically using ``odeint``
 
