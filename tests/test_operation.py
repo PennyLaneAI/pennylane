@@ -984,6 +984,30 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+    def test_dunder_method_with_new_class(self):
+        """Test that when calling any Operator dunder method with a non-supported class that
+        has its right dunder method defined, the class' right dunder method is called."""
+
+        class Dummy:
+            def __radd__(self, other):
+                return True
+
+            def __rsub__(self, other):
+                return True
+
+            def __rmul__(self, other):
+                return True
+
+            def __rmatmul__(self, other):
+                return True
+
+        op = qml.PauliX(0)
+        dummy = Dummy()
+        assert op + dummy is True
+        assert op - dummy is True
+        assert op * dummy is True
+        assert op @ dummy is True
+
     @pytest.mark.torch
     def test_mul_scalar_torch_tensor(self):
         """Test the __mul__ dunder method with a scalar torch tensor."""
