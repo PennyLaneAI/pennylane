@@ -118,9 +118,6 @@
 
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
-* Support `qml.math.size` with torch tensors.
-  [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
-
 * Support `qml.math.matmul` with a torch tensor and an autograd tensor.
   [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
 
@@ -179,6 +176,9 @@
 * All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
   of the other class to be called.
   [(#3631)](https://github.com/PennyLaneAI/pennylane/pull/3631)
+
+* Support `qml.math.size` with torch tensors.
+  [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
 <h3>Breaking changes</h3>
 
