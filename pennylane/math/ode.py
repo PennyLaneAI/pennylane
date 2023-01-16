@@ -14,7 +14,7 @@
 
 # TODO: This code is heavily inspired by https://github.com/google/jax/blob/main/jax/experimental/ode.py
 # need to make sure copyright is not infringed
-"""Fix step size ODE solver"""
+"""Fixed step size ODE solver"""
 
 import warnings
 from functools import partial
