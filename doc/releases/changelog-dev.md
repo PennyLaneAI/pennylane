@@ -231,6 +231,9 @@
 * `Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
+* Change `Evolution.data` to mimic the data shape of its parent class: `Exp`.
+  [(#3639)](https://github.com/PennyLaneAI/pennylane/pull/3639)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):

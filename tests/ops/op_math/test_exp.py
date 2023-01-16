@@ -11,9 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Unit tests for the Exp class."""
+from copy import copy
 
 import pytest
-from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -22,7 +23,7 @@ from pennylane.operation import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
 )
-from pennylane.ops.op_math import Exp, Evolution
+from pennylane.ops.op_math import Evolution, Exp
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -109,6 +110,7 @@ class TestProperties:
 
         assert op.data == [[coeff], [phi]]
 
+    # pylint: disable=protected-access
     def test_queue_category_ops(self):
         """Test the _queue_category property."""
         assert Exp(qml.PauliX(0), -1.234j)._queue_category == "_ops"
@@ -388,7 +390,6 @@ class TestMiscMethods:
     def test_simplify_sprod(self):
         """Test that simplify merges SProd into the coefficent."""
         base = qml.adjoint(qml.PauliX(0))
-        coeff1 = 2.0
         s_op = qml.s_prod(2.0, base)
 
         op = Exp(s_op, 3j)
@@ -476,7 +477,9 @@ class TestIntegration:
         phi_grad = tape.gradient(res, phi)
 
         assert qml.math.allclose(res, tf.cos(phi))
-        assert qml.math.allclose(phi_grad, -tf.sin(phi))
+        assert qml.math.allclose(
+            phi_grad, -tf.sin(phi)  # pylint: disable=invalid-unary-operand-type
+        )
 
     @pytest.mark.torch
     def test_torch_qnode(self):
@@ -696,8 +699,8 @@ class TestEvolution:
         assert isinstance(op, Exp)
 
         assert op.num_params == 1
-        assert op.parameters == [param]
-        assert op.data == [param]
+        assert op.parameters == [[1j * param], []]
+        assert op.data == [[1j * param], []]
 
         assert op.wires == qml.wires.Wires(("b", "c"))
 
@@ -727,9 +730,9 @@ class TestEvolution:
         base = qml.PauliX(0)
         op = Evolution(base, param)
 
-        assert op.data == [param]
-        assert op.coeff == 1j * op.data[0]
-        assert op.param == op.data[0]
+        assert op.data == [[1j * param], []]
+        assert op.coeff == op.data[0][0]
+        assert op.param == np.imag(op.data[0][0])
 
     @pytest.mark.parametrize(
         "op,decimals,expected",

@@ -133,10 +133,10 @@ class Exp(SymbolicOp, Operation):
     """
 
     control_wires = Wires([])
+    _name = "Exp"
 
     def __init__(self, base=None, coeff=1, do_queue=True, id=None):
         super().__init__(base, do_queue=do_queue, id=id)
-        self._name = "Exp"
         self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
 
