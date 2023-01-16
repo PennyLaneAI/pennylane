@@ -120,12 +120,30 @@ class TestConstruction:
         with pytest.raises(AttributeError):
             _ = op.ndim_params
 
-    def test_batch_size_raises_error(self):
-        """Test that calling batch_size raises a ValueError."""
-        op = ValidOp(*self.simple_operands)
+    def test_batch_size_None(self):
+        """Test that the batch size is none if no operands have batching."""
+        prod_op = ValidOp(qml.PauliX(0), qml.RX(1.0, wires=0))
+        assert prod_op.batch_size is None
 
-        with pytest.raises(AttributeError):
-            _ = op.batch_size
+    def test_batch_size_all_batched(self):
+        """Test that the batch_size is correct when all operands are batched."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = ValidOp(base, base, base)
+        assert op.batch_size == 3
+
+    def test_batch_size_not_all_batched(self):
+        """Test that the batch_size is correct when some but not all operands are batched."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3]), wires=2))
+        assert op.batch_size == 3
+
+    def test_different_batch_sizes_raises_error(self):
+        """Test that an error is raised if the operands have different batch sizes."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        with pytest.raises(
+            ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
+        ):
+            op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
 
     def test_decomposition_raises_error(self):
         """Test that calling decomposition() raises a ValueError."""

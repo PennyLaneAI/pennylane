@@ -121,6 +121,9 @@
 * Support `qml.math.size` with torch tensors.
   [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
+* Support `qml.math.matmul` with a torch tensor and an autograd tensor.
+  [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
+
 <h3>Improvements</h3>
 
 * Most channels in are now fully differentiable in all interfaces.
@@ -128,6 +131,14 @@
 
 * Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
+
+* Reorganize `ControlledQubitUnitary` to inherit from `ControlledOp`. The class methods
+  `decomposition`, `expand`, and `sparse_matrix` are now defined rather than raising an error.
+  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
+
+* Parameter broadcasting support is added for the `Controlled` class if the base operator supports
+  broadcasting.
+  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
 * The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
   `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
@@ -138,6 +149,10 @@
 
 * Limit the `numpy` version to `<1.24`.
   [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
+
+* Removes qutrit operations use of in-place inversion in preparation for the
+  removal of in-place inversion.
+  [(#3566)](https://github.com/PennyLaneAI/pennylane/pull/3566)
 
 * Validation has been added on the `gradient_kwargs` when initializing a QNode, and if unexpected kwargs are passed,
   a `UserWarning` is raised. A list of the current expected gradient function kwargs has been added as
@@ -151,7 +166,25 @@
 * Write Hamiltonians to file in a condensed format when using the data module.
   [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
 
+* Improve lazy-loading in `Dataset.read()` so it is more universally supported. Also added the `assign_to`
+  keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
+  [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
+
+* Allow `Sum` and `Prod` to have broadcasted operands.
+  [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
+
+* Make `qml.ops.dot` jax-jittable.
+  [(#3636)](https://github.com/PennyLaneAI/pennylane/pull/3636)
+
+* All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
+  of the other class to be called.
+  [(#3631)](https://github.com/PennyLaneAI/pennylane/pull/3631)
+
 <h3>Breaking changes</h3>
+
+* The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
+  Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
+  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
 * The tape constructed by a QNode is no longer queued to surrounding contexts.
   [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
@@ -194,6 +227,9 @@
 
 * Fixed typo in calculation error message and comment in operation.py
   [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
+
+* `Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
+  [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
 <h3>Contributors</h3>
 
