@@ -19,7 +19,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.gradients import lcu_grad
+from pennylane.gradients import hadamard_grad
 
 
 class TestFiniteDiff:
@@ -43,7 +43,7 @@ class TestFiniteDiff:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        tapes, fn = lcu_grad(tape)
+        tapes, fn = hadamard_grad(tape)
 
         res = fn(dev.batch_execute(tapes))
         print("res", res)

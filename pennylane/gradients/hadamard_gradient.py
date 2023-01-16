@@ -32,7 +32,7 @@ from pennylane.transforms.metric_tensor import _get_aux_wire
 
 
 @gradient_transform
-def lcu_grad(
+def hadamard_grad(
         tape,
         argnum=None,
         shots=None,
@@ -57,7 +57,7 @@ def lcu_grad(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
 
-    gradient_analysis(tape, grad_fn=lcu_grad)
+    gradient_analysis(tape, grad_fn=hadamard_grad)
     method = "analytic"
     diff_methods = grad_method_validation(method, tape)
 
@@ -78,12 +78,12 @@ def lcu_grad(
             "Hadamard test for gradient of variance is not implemented yet."
         )
     else:
-        g_tapes, processing_fn = expval_lcu(tape, argnum, aux_wire)
+        g_tapes, processing_fn = expval_hadamard_grad(tape, argnum, aux_wire)
 
     return g_tapes, processing_fn
 
 
-def expval_lcu(tape, argnum, aux_wire):
+def expval_hadamard_grad(tape, argnum, aux_wire):
     print("argnum trainable params", argnum, tape.trainable_params)
     argnums = argnum or tape.trainable_params
     print("argnum", argnum)
@@ -103,7 +103,7 @@ def expval_lcu(tape, argnum, aux_wire):
         for gen in generators:
 
             if isinstance(trainable_op, qml.Rot):
-                # Move the rotation after the controlled generator
+                # Given that we only used Z as generator, we need to apply some gates before and after the generator.
                 if p_idx == 0:
                     op_temp = ops_to_trainable_op.pop(-1)
                     ops_after_trainable_op = op_temp + ops_after_trainable_op
@@ -157,7 +157,7 @@ def _get_generators(trainable_op):
     # rot special case
 
     # For PhaseShift, we need to separate the generator in two unitaries (Hardware compatibility)
-    if isinstance(trainable_op, qml.PhaseShift):
+    if isinstance(trainable_op, qml.PhaseShift, qml.U1):
         generators = [qml.Identity(wires=trainable_op.wires), qml.PauliZ(wires=trainable_op.wires)]
         coeffs = [0.5, 0.5]
     # For rotation it possible to only use CZ by applying some other rotations in the main function
