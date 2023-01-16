@@ -111,8 +111,8 @@ class SymbolicOp(Operator):
         return self.base._queue_category  # pylint: disable=protected-access
 
     def queue(self, context=QueuingManager):
-        context.update_info(self.base, owner=self)
-        context.append(self, owns=self.base)
+        context.remove(self.base)
+        context.append(self)
         return self
 
     @property

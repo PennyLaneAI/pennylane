@@ -29,6 +29,7 @@ Constructor Functions
     ~pow
     ~prod
     ~s_prod
+    ~ops.dot
 
 Symbolic Classes
 ~~~~~~~~~~~~~~~~
@@ -50,22 +51,29 @@ Symbolic Classes
     ~SProd
     ~SymbolicOp
 
+Controlled Operator Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ControlledQubitUnitary
+
 """
 
-from .adjoint_class import Adjoint
-from .adjoint_constructor import adjoint
-from .controlled_class import Controlled, ControlledOp
-from .exp import exp, Exp, Evolution
-
-from .prod import prod, Prod
-
-from .sum import op_sum, Sum
-
-from .sprod import s_prod, SProd
-
-from .control import ctrl
-from .pow import pow, Pow
-
+from .adjoint import Adjoint, adjoint
+from .composite import CompositeOp
+from .controlled import Controlled, ControlledOp, ctrl
+from .controlled_ops import ControlledQubitUnitary
+from .dot import dot
+from .exp import Evolution, Exp, exp
+from .pow import Pow, pow
+from .prod import Prod, prod
+from .sprod import SProd, s_prod
+from .sum import Sum, op_sum
 from .symbolicop import SymbolicOp
 
-from .composite import CompositeOp
+
+controlled_qubit_ops = {
+    "ControlledQubitUnitary",
+}
