@@ -30,7 +30,7 @@ class TestDotSum:
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         S = dot(coeffs=c, ops=o)
         assert isinstance(S, Sum)
-        for summand, coeff, op in zip(S.operands, c, o):
+        for summand, coeff in zip(S.operands, c):
             assert isinstance(summand, SProd)
             assert summand.scalar == coeff
 
