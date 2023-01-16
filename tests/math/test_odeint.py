@@ -58,7 +58,7 @@ class TestUnitTest:
         assert qml.math.allequal(y0.shape, y1.shape)
         assert qml.math.allequal(y0.dtype, y1.dtype)
     
-    @pytest.mark.xfail
+    #@pytest.mark.xfail
     def testwarning(self):
         """Test that a warning is raised when the accuracy is not matched"""
         t = jnp.linspace(0, 2, 2)
@@ -67,7 +67,7 @@ class TestUnitTest:
             return y
 
         y0 = jnp.ones((5))
-        with pytest.warns(UserWarning, match="An error of"):
+        with pytest.warns(UserWarning, match="Try reducing the step size."):
             _ = qml.math.odeint(fun, y0, t)
     
     @pytest.mark.parametrize("t", [np.linspace(0, 1, 5), jnp.linspace(0, 1, 5),])
