@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
 
     **Example**
 
-    Let us look at the very simple initival value problem $dy/dt = y,$ $y(0)=3$.
+    Let us look at the very simple initial value problem $dy/dt = y,$ $y(0)=3$.
     The analytic solution is $y(t) = 3e^t$. Say we are interested in the solution at
     time $t=2$, i.e. $y(2)=3e^2$. We can compute this numerically using ``odeint``
 
@@ -133,7 +133,7 @@ def _tolerance_warn(arg, _):
     atol, rtol, mean_err_ratio, y1_error, err_tol = arg
     if mean_err_ratio > 1.0:
         warnings.warn(
-            f"An mean error of {y1_error} in y occured which exceeds the mean error tolerance {err_tol} "
+            f"A mean error of {y1_error} in y occured which exceeds the mean error tolerance {err_tol} "
             f"based on a tolerance of atol = {atol} and rtol = {rtol}. "
             "Try reducing the step size.",
             UserWarning,
@@ -234,7 +234,7 @@ def runge_kutta_step(func, y0, f0, t0, dt):
 
 # pylint: disable=no-member
 def ravel_first_arg(f, unravel):
-    """ "Decorate a function to work with a raveled first argument"""
+    """Decorate a function to work with a raveled first argument"""
     return _ravel_first_arg(lu.wrap_init(f), unravel).call_wrapped
 
 
