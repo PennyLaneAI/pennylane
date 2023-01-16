@@ -174,6 +174,10 @@
 * Allow `Sum` and `Prod` to have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
+* All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
+  of the other class to be called.
+  [(#3631)](https://github.com/PennyLaneAI/pennylane/pull/3631)
+
 <h3>Breaking changes</h3>
 
 * The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
