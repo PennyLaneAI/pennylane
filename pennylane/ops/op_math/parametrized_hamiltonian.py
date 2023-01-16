@@ -25,7 +25,7 @@ from pennylane.wires import Wires
 class ParametrizedHamiltonian:
     r"""Callable object holding the information representing a parametrized Hamiltonian.
 
-    Passing parameters to the ``ParametrizedHamiltonian`` returns an ``:class:~Operator`` representing the Hamiltonian
+    Passing parameters to the ``ParametrizedHamiltonian`` returns an :class:`~pennylane.operation.Operator` representing the Hamiltonian
     for that set of parameters.
 
     The Hamiltonian can be represented as a linear combination of other operators, e.g.,
@@ -41,7 +41,7 @@ class ParametrizedHamiltonian:
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as ``coeffs``
 
     A ``ParametrizedHamiltonian`` is callable, and passing parameters to the ``ParametrizedHamiltonian`` will return an
-    ``:class:~Operator`` representing an instance of the Hamiltonian with the specified parameter values.
+    ``Operator`` representing an instance of the Hamiltonian with the specified parameter values.
 
     **Example:**
 
@@ -106,8 +106,8 @@ class ParametrizedHamiltonian:
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
 
     def H_fixed(self):
-        """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``:class:~Sum`` operator of ``:class:~SProd``
-        operators (or a single ``qml.SProd operator`` in the event that there is only one term in ``H_fixed``)."""
+        """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``
+        operators (or a single ``SProd`` operator in the event that there is only one term in ``H_fixed``)."""
         if self.H_coeffs_fixed:
             return qml.ops.dot(self.H_coeffs_fixed, self.H_ops_fixed)  # pylint: disable=no-member
         return 0
@@ -119,8 +119,8 @@ class ParametrizedHamiltonian:
             params(tensor_like): the parameters values used to evaluate the operators
             t(float): the time at which the operator is evaluated
 
-        Returns: an operator is a ``:class:~Sum`` of ``:class:~S_Prod`` operators (or a single
-        ``:class:~SProd`` operator in the event that there is only one term in ``H_parametrized``)."""
+        Returns: an operator is a ``Sum`` of ``~S_Prod`` operators (or a single
+        ``~SProd`` operator in the event that there is only one term in ``H_parametrized``)."""
 
         coeffs = [f(params, t) for f in self.H_coeffs_parametrized]
         if len(coeffs) == 0:
