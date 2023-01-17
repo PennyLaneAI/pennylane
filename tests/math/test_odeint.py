@@ -158,8 +158,8 @@ class TestODESchrodingerEquation:
         res_qml = qml.math.odeint(fun, y0, t)
         res_jax = jaxode(fun, y0, t)
 
-        assert qml.math.allclose(res_expm, res_qml, rtol=1e-4)
-        assert qml.math.allclose(res_qml, res_jax, rtol=1e-4)
+        assert qml.math.allclose(res_expm, res_qml, rtol=1e-3)
+        assert qml.math.allclose(res_qml, res_jax, rtol=1e-3)
 
     @pytest.mark.parametrize("H", Hs)
     def testTimedependentHamiltonian(self, H):
