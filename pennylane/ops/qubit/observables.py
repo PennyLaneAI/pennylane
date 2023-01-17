@@ -235,12 +235,12 @@ class SparseHamiltonian(Observable):
     the utility function :func:`~.utils.sparse_hamiltonian` to construct the sparse matrix that serves as the input
     to ``SparseHamiltonian``:
 
-    >>> wires = 20
-    >>> coeffs = [1 for _ in range(wires)]
-    >>> observables = [qml.PauliZ(i) for i in range(wires)]
+    >>> wires = range(20)
+    >>> coeffs = [1 for _ in wires]
+    >>> observables = [qml.PauliZ(i) for i in wires]
     >>> H = qml.Hamiltonian(coeffs, observables)
     >>> Hmat = qml.utils.sparse_hamiltonian(H)
-    >>> H_sparse = qml.SparseHamiltonian(Hmat, range(wires))
+    >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
     num_wires = AllWires
     num_params = 1
