@@ -32,7 +32,7 @@ except:
 
 
 def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
-    r"""Fix step size ODE solver with jit-compilation
+    r"""Fixed step size ODE solver in jax with jit-compilation
 
     Solves the initial value problem (IVP) of an ordinary differential equation (ODE)
 
@@ -129,13 +129,6 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     return odeint_wrapper(func, y0, ts, *args, atol=atol, rtol=atol)
 
 
-def _abs2(x):
-    """Computing the squared absolute value of x"""
-    if jnp.iscomplexobj(x):
-        return x.real**2 + x.imag**2
-    return x**2
-
-
 def _tolerance_warn(arg, _):
     # The second blank argument is to abide by host_callback.id_tap's logic
     atol, rtol, mean_err_ratio, y1_error, err_tol = arg
@@ -155,13 +148,12 @@ def _odeint(func, y0, ts, atol, rtol, *args):
     def scan_fun(carry, t1):
         y0, f0, t0 = carry
         dt = t1 - t0
-        # not using y1_error and k atm
         y1, f1, y1_error = runge_kutta_step(func_, y0, f0, t0, dt)
 
         # check error
         err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
         err_ratio = y1_error / err_tol.astype(y1_error.dtype)
-        mean_err_ratio = jnp.sqrt(jnp.mean(_abs2(err_ratio)))
+        mean_err_ratio = jnp.sqrt(jnp.mean(jnp.abs(err_ratio)**2))
 
         # sends call from device to host to inspect runtime values
         host_callback.id_tap(
@@ -170,8 +162,8 @@ def _odeint(func, y0, ts, atol, rtol, *args):
                 atol,
                 rtol,
                 mean_err_ratio,
-                jnp.sqrt(jnp.mean(_abs2(y1_error))),
-                jnp.sqrt(jnp.mean(_abs2(err_tol))),
+                jnp.sqrt(jnp.mean(jnp.abs(y1_error)**2)),
+                jnp.sqrt(jnp.mean(jnp.abs(err_tol)**2)),
             ),
         )
 
