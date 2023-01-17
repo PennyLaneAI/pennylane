@@ -122,8 +122,8 @@ class TestMeasurementProcess:
     @pytest.mark.parametrize("measurement", [qml.probs(wires=[0, 1]), qml.state(), qml.sample()])
     def test_no_device_error(self, measurement):
         """Test that an error is raised when a measurement that requires a device
-        is called without a device"""
-        msg = "The device argument is required to obtain the shape of the measurement"
+        or execution config is called without one"""
+        msg = "The device or execution_config argument is required to obtain the shape of the measurement"
 
         with pytest.raises(MeasurementShapeError, match=msg):
             measurement.shape()
