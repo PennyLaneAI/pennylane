@@ -78,7 +78,7 @@ def givens_decomposition(unitary):
                                     0 & 0 & 0 & 1
                                 \end{bmatrix},
 
-    where :math:`\theta \in [0, \pi/2]` is the angle of rotation in the :math:`\{|01\rangle, |10\rangle \}` subspace,
+    where :math:`\theta \in [0, \pi/2]` is the angle of rotation in the :math:`\{|01\rangle, |10\rangle \}` subspace
     and :math:`\phi \in [0, 2 \pi]` represents the phase shift at the first wire.
 
     **Example**

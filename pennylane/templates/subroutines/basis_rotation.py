@@ -22,7 +22,7 @@ from pennylane.qchem.givens_decomposition import givens_decomposition
 
 # pylint: disable-msg=too-many-arguments
 class BasisRotation(Operation):
-    r"""Implement a circuit that provides the unitary that can be used to do an exact single-body basis rotation.
+    r"""Implement a circuit that provides a unitary that can be used to do an exact single-body basis rotation.
 
     The :class:`~.pennylane.BasisRotation` template performs the following unitary transformation :math:`U(u)` determined by the single-particle fermionic
     generators as given in `arXiv:1711.04789 <https://arxiv.org/abs/1711.04789>`_\ :
@@ -31,7 +31,7 @@ class BasisRotation(Operation):
 
         U(u) = \exp{\left( \sum_{pq} \left[\log u \right]_{pq} (a_p^\dagger a_q - a_q^\dagger a_p) \right)}.
 
-    This :math:`U(u)` is implemented efficiently by performing its Givens decomposition into a sequence of
+    The unitary :math:`U(u)` is implemented efficiently by performing its Givens decomposition into a sequence of
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` gates using the construction scheme given in
     `Optica, 3, 1460 (2016) <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_\ .
 
@@ -90,7 +90,7 @@ class BasisRotation(Operation):
             U(u) a_p^\dagger U(u)^\dagger = b_p^\dagger,
 
         where :math:`a_p^\dagger` and :math:`b_p^\dagger` are the original and transformed creation operators, respectively.
-        :math:`a_p^\dagger` and :math:`b_p^\dagger` are related to each other by the following equation:
+        The operators :math:`a_p^\dagger` and :math:`b_p^\dagger` are related to each other by the following equation:
 
         .. math::
 
