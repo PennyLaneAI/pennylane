@@ -124,6 +124,9 @@
 * Support `qml.math.matmul` with a torch tensor and an autograd tensor.
   [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
 
+* A fixed step size ODE solver `qml.math.odeint`is added to the math module.
+  [(#3616)](https://github.com/PennyLaneAI/pennylane/pull/3616)
+
 <h3>Improvements</h3>
 
 * Most channels in are now fully differentiable in all interfaces.
