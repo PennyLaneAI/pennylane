@@ -203,6 +203,8 @@
 
 <h3>Documentation</h3>
 
+* Updated the code example in `qml.SparseHamiltonian` with the correct wire range.
+
 <h3>Bug fixes</h3>
 
 * Fixed a bug in `qml.transforms.metric_tensor` where prefactors of operation generators were taken

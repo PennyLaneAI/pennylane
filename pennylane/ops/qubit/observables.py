@@ -222,7 +222,7 @@ class SparseHamiltonian(Observable):
     Args:
         H (csr_matrix): a sparse matrix in SciPy Compressed Sparse Row (CSR) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
-        wires (Sequence[int] or int): the wire(s) the operation acts on
+        wires (Sequence[int]): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -240,7 +240,7 @@ class SparseHamiltonian(Observable):
     >>> observables = [qml.PauliZ(i) for i in range(wires)]
     >>> H = qml.Hamiltonian(coeffs, observables)
     >>> Hmat = qml.utils.sparse_hamiltonian(H)
-    >>> H_sparse = qml.SparseHamiltonian(Hmat, wires=wires)
+    >>> H_sparse = qml.SparseHamiltonian(Hmat, range(wires))
     """
     num_wires = AllWires
     num_params = 1
