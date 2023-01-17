@@ -21,6 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.op_math import ParametrizedHamiltonian
+from pennylane.wires import Wires
 
 
 def f1(p, t):
@@ -91,7 +92,7 @@ class TestInitialization:
     def test_H_fixed(self):
         """Test that H_fixed is an Operator of the expected form"""
         H_fixed = test_example.H_fixed()
-        op = qml.op_sum(qml.PauliX(0), qml.s_prod(2, qml.PauliY(1)))
+        op = qml.op_sum(qml.s_prod(1, qml.PauliX(0)), qml.s_prod(2, qml.PauliY(1)))
         assert qml.equal(H_fixed, op)
 
     def test_H_parametrized(self):
@@ -109,6 +110,15 @@ class TestInitialization:
         """Test repr method returns expected string"""
         str = repr(test_example)
         assert str == "ParametrizedHamiltonian: terms=4"
+
+    def test_wire_attribute(self):
+        """Tests that the wires attribute contains the expected wires, in the expected order"""
+        coeffs = [1, f1, 2, f2]
+        ops = [qml.PauliX(3), qml.PauliX(2), qml.PauliX(0), qml.PauliX(1)]
+
+        H = ParametrizedHamiltonian(coeffs, ops)
+        assert H.wires == H(param, 2).wires
+        assert H.wires == Wires([3, 0, 2, 1])
 
 
 class TestCall:
@@ -182,62 +192,6 @@ class TestCall:
             )
         )
 
-    wires = (
-        ([0, 1, 2, 3], [10, 12, 2, 7]),  # expected to map 0--> 10, 1 --> 12, 2 --> 2 and 3 --> 7
-        (
-            ["a", "c", "d", "b"],
-            [0, 1, 2, 3],
-        ),  # expected to map 'a'--> 0, 'b' --> 1, 'c' --> 2 and 'd' --> 3
-        (
-            ["a", 2, "b", "c"],
-            [2, 10, 11, 12],
-        ),  # expected to map 2 --> 2, 'a'--> 10, 'b' --> 11, 'c' --> 12
-    )
-
-    @pytest.mark.parametrize("wires1, wires2", wires)
-    def test_call_with_wire_mapping(self, wires1, wires2):
-        """Test that calling the ParametrizedHamiltonian with the optional
-        kwarg wires returns an Operator with wires mapped as expected"""
-        coeffs = [1.2, f1, 2.3, f2]
-        ops = [
-            qml.PauliX(wires1[0]),
-            qml.PauliY(wires1[1]),
-            qml.PauliZ(wires1[2]),
-            qml.Identity(wires1[3]),
-        ]
-        # note that wires1 are passed to ParametrizedHamiltonian in the order given above, but are
-        # sorted when initializing H, so the order when mapping will not necessarily match the order here
-
-        H = ParametrizedHamiltonian(coeffs, ops)
-        params = [4.5, 6.7]
-        t = 2
-
-        assert np.all(H.wires == np.sort(wires1))
-
-        # get a list of all operators for wire configuration wires1 and wires2
-        ops1 = H(params, t).simplify().operands
-        ops2 = H(params, t, wires=wires2).simplify().operands
-
-        for w1, w2 in zip(H.wires, wires2):
-            # get the operators we expect to correspond in the two wire mappings
-            op1 = [op for op in ops1 if op.wires[0] == w1]
-            op2 = [op for op in ops2 if op.wires[0] == w2]
-            assert len(op1) == len(op2) == 1
-
-            op1 = op1[0]
-            op2 = op2[0]
-
-            # operators are not equal unless w1=w2 (in first and last test examples, 2 maps to 2)
-            if w1 != w2:
-                assert not qml.equal(op1, op2)
-            else:
-                assert qml.equal(op1, op2)
-
-            # if wire mapping is reversed, the operators are equal, i.e. op1 and op2 match in all aspects except wire
-            assert qml.equal(op1, qml.map_wires(op2, {w2: w1}))
-
-    # ToDo: make sure it can be called WITHOUT defining t, and test that here as well
-
 
 class TestInteractionWithOperators:
     """Test that arithmetic operations involving or creating ParametrizedHamiltonians behave as expected"""
@@ -280,12 +234,12 @@ class TestInteractionWithOperators:
         # Adding on the right
         new_pH = pH + op
         assert pH.H_fixed() == 0
-        assert qml.equal(new_pH.H_fixed(), op)
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
 
         # Adding on the left
         new_pH = op + pH
         assert pH.H_fixed() == 0
-        assert qml.equal(new_pH.H_fixed(), op)
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
 
     def test_add_invalid_object_raises_error(self):
         H = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
