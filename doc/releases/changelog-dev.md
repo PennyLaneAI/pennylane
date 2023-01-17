@@ -231,6 +231,9 @@
 * `Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
+* Set `Tensor._batch_size` to None during initialization.
+  [(#3642)](https://github.com/PennyLaneAI/pennylane/pull/3642)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
