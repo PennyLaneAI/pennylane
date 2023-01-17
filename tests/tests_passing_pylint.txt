@@ -9,4 +9,5 @@ tests/ops/op_math/test_dot.py
 tests/test_operation.py
 tests/ops/qutrit/test_qutrit_observables.py
 tests/measurements/test_probs.py
+tests/measurements/test_classicaL_shadow.py
 tests/returntypes/core/test_new_qscript.py
