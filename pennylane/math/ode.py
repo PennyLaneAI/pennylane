@@ -31,7 +31,7 @@ except:
 
 
 
-def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
+def odeint(func, y0, ts, *args, rtol=1e-8, atol=1e-8):
     r"""Fixed step size ODE solver in jax with jit-compilation
 
     Solves the initial value problem (IVP) of an ordinary differential equation (ODE)
@@ -42,9 +42,15 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     In particular, it is using the 4th order term of the `Dormand Prince <https://en.wikipedia.org/wiki/Dormand%E2%80%93Prince_method>`_ Butcher table.
 
     Args:
-        func (callable): ``f(y, t, *args)`` defining the ODE. Needs to return a ``ndarray`` of the same shape as ``y``.
+        func (callable): ``func(y, t, *args)`` defining the ODE. Needs to return a ``ndarray`` of the same shape as ``y``.
         y0 (ndarray): initial value ``y(t0) = y0``
         ts (ndarray): finite time steps for the ODE solver to take.
+        args (Union[ndarray, tuple(ndarray)]): optional arguments provided to ``func(y, t, *args)``
+        rtol, atol (float): Relative and absolute error tolerance. The error is estimated from comparing a 4th and 5th order Runge-Kutta step.
+            When this error exceeds ``tol = atol + rtol * abs(y)``, a warning is raised indicating the mean error in y and mean tolerance.
+
+    Returns:
+        ndarray: The final value ``y(ts[-1])``.
 
     .. note::
 
@@ -120,13 +126,13 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
         )
 
     @partial(jax.jit, static_argnums=0)
-    def odeint_wrapper(func, y0, ts, *args, atol=atol, rtol=atol):
+    def odeint_wrapper(func, y0, ts, *args, rtol=atol, atol=atol):
         y0, unravel = ravel_pytree(y0)
         func = ravel_first_arg(func, unravel)
-        out = _odeint(func, y0, ts, atol, rtol, *args)
+        out = _odeint(func, y0, ts, rtol, atol, *args)
         return unravel(out)
     
-    return odeint_wrapper(func, y0, ts, *args, atol=atol, rtol=atol)
+    return odeint_wrapper(func, y0, ts, *args, rtol=atol, atol=atol)
 
 
 def _tolerance_warn(arg, _):
@@ -141,7 +147,7 @@ def _tolerance_warn(arg, _):
         )
 
 
-def _odeint(func, y0, ts, atol, rtol, *args):
+def _odeint(func, y0, ts, rtol, atol, *args):
     def func_(y, t):
         return func(y, t, *args)
 
