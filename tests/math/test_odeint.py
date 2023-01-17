@@ -136,9 +136,8 @@ H3 = qml.Hamiltonian(jnp.ones(5), [qml.PauliZ(i) @ qml.PauliZ((i + 1)) for i in 
 H4 = H1 + H2
 H5 = H1 + H3
 H6 = H2 + H3
-H7 = H1 + H2 + H3
 
-Hs = Hpaulis + [H1, H2, H3, H4, H5, H6, H7]
+Hs = Hpaulis + [H1, H2, H3, H4, H5, H6]
 for i, op in enumerate(Hs):
     Hs[i] = jnp.array(qml.matrix(op))
 
