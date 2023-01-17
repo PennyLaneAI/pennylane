@@ -180,9 +180,6 @@
   of the other class to be called.
   [(#3631)](https://github.com/PennyLaneAI/pennylane/pull/3631)
 
-* Introduce the `ExecutionConfig` data class in the new `workflow` module.
-  [(#3614)](https://github.com/PennyLaneAI/pennylane/pull/3614)
-
 <h3>Breaking changes</h3>
 
 * The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
