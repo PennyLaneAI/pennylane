@@ -316,8 +316,8 @@ class ClassicalShadowMP(MeasurementTransform):
         # otherwise, the return type requires a device
         if device is None and execution_config is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of a classical "
-                "shadow measurement process."
+                "The device or execution_config argument is required to obtain the "
+                "shape of a classical shadow measurement process."
             )
 
         # the first entry of the tensor represents the measured bits,
