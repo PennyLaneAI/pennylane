@@ -124,6 +124,59 @@
 * Support `qml.math.matmul` with a torch tensor and an autograd tensor.
   [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
 
+* Added `qml.qchem.givens_decomposition` method that decompose a unitary into a sequence
+  of Givens rotation gates with phase shifts and a diagonal phase matrix.
+  [(#3573)](https://github.com/PennyLaneAI/pennylane/pull/3573)
+
+  ```python
+  unitary = np.array([[ 0.73678+0.27511j, -0.5095 +0.10704j, -0.06847+0.32515j]
+                      [-0.21271+0.34938j, -0.38853+0.36497j,  0.61467-0.41317j]
+                      [ 0.41356-0.20765j, -0.00651-0.66689j,  0.32839-0.48293j]])
+
+  phase_mat, ordered_rotations = givens_decomposition(matrix)
+  ```
+
+  ```pycon
+  >>> phase_mat
+  [-0.20606284+0.97853876j -0.82993403+0.55786154j  0.56230707-0.82692851j]
+  >>> ordered_rotations
+  [(tensor([[-0.65088844-0.63936314j, -0.40933972-0.j],
+            [-0.29202076-0.28684994j,  0.91238204-0.j]], requires_grad=True), (0, 1)),
+    (tensor([[ 0.47970417-0.33309047j, -0.8117479 -0.j],
+            [ 0.66676972-0.46298251j,  0.584008  -0.j]], requires_grad=True), (1, 2)),
+    (tensor([[ 0.36147511+0.73779414j, -0.57008381-0.j],
+            [ 0.25082094+0.5119418j ,  0.82158655-0.j]], requires_grad=True), (0, 1))]
+  ```
+
+* Added a new template `qml.BasisRotation` that performs basis transformation defined by a set of
+  fermionic ladder operators.
+  [(#3573)](https://github.com/PennyLaneAI/pennylane/pull/3573)
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  V = np.array([[ 0.53672126+0.j        , -0.1126064 -2.41479668j],
+                [-0.1126064 +2.41479668j,  1.48694623+0.j        ]])
+  eigen_vals, eigen_vecs = np.linalg.eigh(V)
+  umat = eigen_vecs.T
+  wires = range(len(umat))
+  def circuit():
+      qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=umat))
+      for idx, eigenval in enumerate(eigen_vals):
+          qml.RZ(eigenval, wires=[idx])
+      qml.BasisRotation(wires=wires, unitary_matrix=umat)
+  ```
+
+  ```pycon
+  >>> circ_unitary = qml.matrix(circuit)()
+  >>> np.round(circ_unitary/circ_unitary[0][0], 3)
+  tensor([[ 1.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
+          [ 0.   +0.j   , -0.516-0.596j, -0.302-0.536j,  0.   +0.j   ],
+          [ 0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j,  0.   +0.j   ],
+          [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
+  ```
+
 <h3>Improvements</h3>
 
 * Most channels in are now fully differentiable in all interfaces.
