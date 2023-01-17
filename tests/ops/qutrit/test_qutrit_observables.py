@@ -392,7 +392,7 @@ class TestGellMann:
 
     @pytest.mark.parametrize("index", list(range(1, 9)))
     def test_repr(self, index):
-        """Test that the __repr__ method si correct"""
+        """Test that the __repr__ method is correct"""
 
         rep = f"GellMann{index}(wires=[0])"
         obs = qml.GellMann(wires=0, index=index)
