@@ -128,10 +128,10 @@ def xyx_decomposition(U, wire, return_global_phase=False):
     Args:
         U (array[complex]): A 2 x 2 unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
-        return_global_phase (bool): If `True`, the return list of operations will include
-        the global phase as the last element, as an `qml.s_prod` between :math:`e^{i\gamma}`
-        and the Identity. If `False`, only the list with the three rotations is returned.
-
+        return_global_phase (bool): Whether to return the global phase
+            as a `qml.s_prod` between `exp(1j)*gamma` and `qml.Identity` as the last
+            element of the returned list of operations.
+        
     Returns:
         list[qml.Operation]: Returns a list of of gates, an ``RX``, an ``RY`` and
         another ``RX`` gate, which when applied in the order of appearance in the list is equivalent
