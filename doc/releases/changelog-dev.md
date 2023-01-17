@@ -203,7 +203,7 @@
 
 <h3>Documentation</h3>
 
-* Added hyperlink text for an URL in `qml.qchem.mol_data` docstring.
+* Added hyperlink text for an URL in the `qml.qchem.mol_data` docstring.
   [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
 
 <h3>Bug fixes</h3>
