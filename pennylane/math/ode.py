@@ -27,7 +27,7 @@ try:
     from jax import linear_util as lu
     from jax.flatten_util import ravel_pytree
     from jax.experimental import host_callback
-except:
+except ImportError:
     has_jax = False
 
 
