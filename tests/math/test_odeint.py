@@ -143,7 +143,7 @@ for i, op in enumerate(Hs):
 
 
 class TestODESchrodingerEquation:
-    """Test time-dependent Schrodinger equation ODEs with constant Hamiltonians"""
+    """Test time-dependent Schrodinger equations"""
 
     @pytest.mark.parametrize("H", Hs)
     def testConstantHamiltonian(self, H):
