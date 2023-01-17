@@ -63,23 +63,7 @@ def time_dependent_hamiltonian():
         return 9
 
     coeffs = [f1, f2, f3, f4]
-
-    def f1_integral(params, t):
-        return params[0] * (t**2) / 2
-
-    def f2_integral(params, t):
-        return params[1] * jnp.sin(t)
-
-    def f3_integral(params, t):
-        return 4 * t
-
-    def f4_integral(params, t):
-        return 9 * t
-
-    coeffs_integral = [f1_integral, f2_integral, f3_integral, f4_integral]
-    H = ParametrizedHamiltonian(coeffs, ops)
-    H_integral = ParametrizedHamiltonian(coeffs_integral, ops)
-    return H, H_integral
+    return ParametrizedHamiltonian(coeffs, ops)
 
 
 class TestInitialization:
@@ -160,6 +144,28 @@ class TestMatrix:
         true_mat = qml.math.expm(-1j * qml.matrix(H(params, t)) * t)
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-3)
 
+    @pytest.mark.slow
+    @pytest.mark.jax
+    def test_time_dependent_hamiltonian(self):
+        """Test matrix method for a time dependent hamiltonian. This test approximates the
+        time-ordered exponential with a product of exponentials using small time steps.
+        For more information, see https://en.wikipedia.org/wiki/Ordered_exponential."""
+        from jax import numpy as jnp
+
+        H = time_dependent_hamiltonian()
+
+        t = jnp.pi / 4
+        params = [1, 2]
+        ev = Evolve(H=H, params=params, t=t)
+
+        time_step = 1e-4
+        times = jnp.arange(0, t, step=time_step)
+        true_mat = jnp.eye(2 ** len(ev.wires))
+        for ti in times[::-1]:
+            true_mat @= qml.math.expm(-1j * time_step * qml.matrix(H(params, ti)))
+
+        assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
+
 
 class TestIntegration:
     """Integration tests for the ParametrizedEvolution class."""
@@ -204,6 +210,37 @@ class TestIntegration:
         assert qml.math.allclose(
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
         )
+
+    @pytest.mark.slow
+    @pytest.mark.jax
+    def test_time_dependent_hamiltonian(self):
+        """Test matrix method for a time dependent hamiltonian."""
+        import jax.numpy as jnp
+
+        H = time_dependent_hamiltonian()
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params, t):
+            Evolve(H=H, params=params, t=t)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        @qml.qnode(dev, interface="jax")
+        def true_circuit(params, t):
+            time_step = 1e-4
+            times = jnp.arange(0, t, step=time_step)
+            true_mat = jnp.eye(2 ** len(H.wires))
+            for ti in times[::-1]:
+                true_mat @= qml.math.expm(-1j * time_step * qml.matrix(H(params, ti)))
+            QubitUnitary(U=true_mat, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        t = jnp.pi / 4
+        params = jnp.array([1.0, 2.0])
+
+        # testing grad here is super slow!
+        assert qml.math.allclose(circuit(params, t), true_circuit(params, t), atol=1e-2)
 
 
 class TestEvolveConstructor:
