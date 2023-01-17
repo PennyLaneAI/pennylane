@@ -170,6 +170,9 @@
   keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
+* Allow `Sum` and `Prod` to have broadcasted operands.
+  [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
+
 * Make `qml.ops.dot` jax-jittable.
   [(#3636)](https://github.com/PennyLaneAI/pennylane/pull/3636)
 
