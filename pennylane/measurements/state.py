@@ -150,13 +150,14 @@ class StateMP(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def shape(self, device=None):
+    def shape(self, device=None, execution_config=None):
+        shot_location = device if device is not None else execution_config
         if qml.active_return():
-            return self._shape_new(device)
+            return self._shape_new(shot_location)
         num_shot_elements = (
             1
-            if (device is None or device.shot_vector is None)
-            else sum(s.copies for s in device.shot_vector)
+            if (shot_location is None or shot_location.shot_vector is None)
+            else sum(s.copies for s in shot_location.shot_vector)
         )
 
         if self.wires:
@@ -164,20 +165,20 @@ class StateMP(StateMeasurement):
             dim = 2 ** len(self.wires)
             return (num_shot_elements, dim, dim)
 
-        if device is None:
+        if shot_location is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
+                "The device or execution_config argument is required to obtain the shape of the "
+                f"measurement {self.__class__.__name__}."
             )
         # qml.state()
         dim = 2 ** len(device.wires)
         return (num_shot_elements, dim)
 
-    def _shape_new(self, device=None):
+    def _shape_new(self, shot_location=None):
         num_shot_elements = (
             1
-            if (device is None or device.shot_vector is None)
-            else sum(s.copies for s in device.shot_vector)
+            if (shot_location is None or shot_location.shot_vector is None)
+            else sum(s.copies for s in shot_location.shot_vector)
         )
 
         if self.wires:
@@ -190,13 +191,13 @@ class StateMP(StateMeasurement):
             )
 
         # qml.state()
-        if device is None:
+        if shot_location is None:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
+                "The device or execution_config argument is required to obtain the shape of the "
+                f"measurement {self.__class__.__name__}."
             )
 
-        dim = 2 ** len(device.wires)
+        dim = 2 ** len(shot_location.wires)
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
     # pylint: disable=redefined-outer-name
