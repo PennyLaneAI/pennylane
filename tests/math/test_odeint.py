@@ -21,9 +21,8 @@ import pennylane.numpy as np
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-# # pytest-mark all tests as jax
-# pytestmark = pytest.importorskip("jax") # breaks the tests
-
+# pytest-mark all tests as jax
+pytestmark = pytest.mark.jax
 
 def jaxode(fun, y0, t, *args):
     """Convenience to solve ODEs with jax with the same signature"""
