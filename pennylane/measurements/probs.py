@@ -145,7 +145,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             return self._shape_new(shot_location)
         if shot_location is None:
             raise MeasurementShapeError(
-                "The device  or execution_config argument is required to obtain the shape "
+                "The device or execution_config argument is required to obtain the shape "
                 f"of the measurement {self.__class__.__name__}."
             )
         num_shot_elements = (
