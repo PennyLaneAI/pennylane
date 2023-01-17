@@ -20,6 +20,7 @@ import warnings
 from functools import partial
 
 has_jax = True
+# pylint: disable=bare-except
 try:
     import jax
     import jax.numpy as jnp
@@ -27,8 +28,7 @@ try:
     from jax.flatten_util import ravel_pytree
     from jax.experimental import host_callback
 except:
-    has_jax=False
-
+    has_jax = False
 
 
 def odeint(func, y0, ts, *args, rtol=1e-8, atol=1e-8):
@@ -111,9 +111,7 @@ def odeint(func, y0, ts, *args, rtol=1e-8, atol=1e-8):
 
         U = qml.math.odeint(func, y0, ts, params)
 
-    Formally, this solution can be written as the time-ordered exponential
-    :math:`U(t_0, t_1) = \text{Texp}\left[-i \int_{t_0}^{t_1}d\tau H(\tau)\right]`
-    (see `Dyson Series <https://en.wikipedia.org/wiki/Dyson_series>`_).
+    The solution is the evolution operator from time ``t1`` to ``t2`` :math:`U(t_0, t_1)`.
 
     Note that this computation can be backward differentiated with respect to the parameters ``params`` via
 
@@ -131,7 +129,7 @@ def odeint(func, y0, ts, *args, rtol=1e-8, atol=1e-8):
         func = ravel_first_arg(func, unravel)
         out = _odeint(func, y0, ts, rtol, atol, *args)
         return unravel(out)
-    
+
     return odeint_wrapper(func, y0, ts, *args, rtol=rtol, atol=atol)
 
 
@@ -159,7 +157,7 @@ def _odeint(func, y0, ts, rtol, atol, *args):
         # check error
         err_tol = atol + rtol * jnp.maximum(jnp.abs(y0), jnp.abs(y1))
         err_ratio = y1_error / err_tol.astype(y1_error.dtype)
-        mean_err_ratio = jnp.sqrt(jnp.mean(jnp.abs(err_ratio)**2))
+        mean_err_ratio = jnp.sqrt(jnp.mean(jnp.abs(err_ratio) ** 2))
 
         # sends call from device to host to inspect runtime values
         host_callback.id_tap(
@@ -168,8 +166,8 @@ def _odeint(func, y0, ts, rtol, atol, *args):
                 atol,
                 rtol,
                 mean_err_ratio,
-                jnp.sqrt(jnp.mean(jnp.abs(y1_error)**2)),
-                jnp.sqrt(jnp.mean(jnp.abs(err_tol)**2)),
+                jnp.sqrt(jnp.mean(jnp.abs(y1_error) ** 2)),
+                jnp.sqrt(jnp.mean(jnp.abs(err_tol) ** 2)),
             ),
         )
 
@@ -238,6 +236,7 @@ def runge_kutta_step(func, y0, f0, t0, dt):
 # pylint: disable=no-member
 def ravel_first_arg(f, unravel):
     """Decorate a function to work with a raveled first argument"""
+
     @lu.transformation
     def _ravel_first_arg(unravel, y_flat, *args):
         y = unravel(y_flat)
