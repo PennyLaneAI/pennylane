@@ -128,10 +128,8 @@ class MutualInfoMP(StateMeasurement):
 
     def shape(self, device=None, execution_config=None):
         shot_location = device if device is not None else execution_config
-
         if qml.active_return():
             return self._shape_new(shot_location)
-
         if shot_location is None or shot_location.shot_vector is None:
             return (1,)
         num_shot_elements = sum(s.copies for s in shot_location.shot_vector)
