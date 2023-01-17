@@ -362,7 +362,7 @@ class TestExpvalMeasurement:
         res = qml.shadow_expval(H, k=10)
 
         copied_res = copy.copy(res)
-        assert type(copied_res) == type(res)
+        assert type(copied_res) == type(res)  # pylint: disable=unidiomatic-typecheck
         assert copied_res.return_type == res.return_type
         assert qml.equal(copied_res.H, res.H)
         assert copied_res.k == res.k
