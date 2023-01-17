@@ -23,6 +23,12 @@ from autoray import numpy as np
 
 from . import single_dispatch  # pylint:disable=unused-import
 
+has_jnp = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as e:
+    has_jnp = False
+
 
 def allequal(tensor1, tensor2, **kwargs):
     """Returns True if two tensors are element-wise equal along a given axis.
@@ -558,8 +564,6 @@ def pwc_from_array(dt, index):
     tensor(17.77777778, requires_grad=True)
     """
 
-    from jax import numpy as jnp
-
     if isinstance(dt, tuple):
         t1, t2 = dt
     else:
@@ -569,7 +573,11 @@ def pwc_from_array(dt, index):
     def func(params, t):
         params = params[index]
         num_bins = len(params)
-        idx = jnp.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
+        if has_jnp:
+            idx = jnp.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
+            # ToDo: also base this on get_interface, or is it fine for idx to always be a jax array if jax is available?
+        else:
+            idx = np.array(num_bins / (t2 - t1) * (t - t1), dtype=int)  # not jittable
         return params[idx]
 
     return func
@@ -614,8 +622,6 @@ def pwc_from_function(dt, num_bins):
 
     """
 
-    from jax import numpy as jnp  # ToDo: raise error if fails
-
     if isinstance(dt, tuple):
         t1, t2 = dt
     else:
@@ -627,7 +633,11 @@ def pwc_from_function(dt, num_bins):
 
         def wrapper(params, t):
             constants = jnp.array(fn(params, time_bins))
-            idx = jnp.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
+            if has_jnp:
+                idx = jnp.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
+                # ToDo: same question as above
+            else:
+                idx = np.array(num_bins / (t2 - t1) * (t - t1), dtype=int)  # not jittable
             return constants[idx]
 
         return wrapper
