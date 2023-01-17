@@ -526,48 +526,51 @@ def in_backprop(tensor, interface=None):
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
 
 
-def pwc_from_array(idx1, idx2, t1, t2):
+def pwc_from_array(dt, index):
     """Create a function that is piecewise-constant in time, based on the params for a TDHamiltonian.
 
     Args:
-        idx1(int): the index of the first parameter in params that should be included in the array
-            defining the constant values for the function.
-        idx2(int): the index of the final parameter in params that should be included in the array defining the
-            constant values for the function.
-        t1(float): the start time for the function
-        t2(float): the stop time for the function
+        dt(Union[float, tuple(float, float)]: the total duration as a float, or the start and end time as floats.
+        index(int): the index at which the relevant parameter array is located in the overall ``params`` variable
 
     Returns:
-        func: a function that can be passed params and t, and will return the corresponding constant
+        func: a function that can be passed the full ``params`` variable and ``t``, and will return the
+            corresponding constant
 
     **Example**
 
     >>> t1, t2 = 1, 3
-    >>> idx1, idx2 = 0, 7
-    >>> f1 = pwc_from_array(idx1, idx2, t1, t2)
+    >>> index = 0
+    >>> f1 = pwc_from_array((t1, t2), index)
 
-    The resulting function `f1` has the call signature `f1(params, t)`. If passed parameters and a time,
-    it will assign the numbers at params[idx1:idx2] as the constants in the piecewise function, and select
-    the constant corresponding to the specified time, given the previously specified interval t1 to t2.
+    The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed parameters and a time,
+    it will assign the array at ``params[index]`` as the constants in the piecewise function, and select
+    the constant corresponding to the specified time, based on the previously specified interval ``t1`` to ``t2``.
 
-    >>> params = np.linspace(10, 20, 10)
+    >>> params = [np.linspace(10, 20, 10)]
     >>> f1(params, 2)
-    DeviceArray(13.333334, dtype=float32)
+    tensor(15.55555556, requires_grad=True)
 
     >>> f1(params, 2.1)  # same bin
-    DeviceArray(13.333334, dtype=float32)
+    tensor(15.55555556, requires_grad=True)
 
     >>> f1(params, 2.5)  # next bin
-    DeviceArray(15.555556, dtype=float32)
+    tensor(17.77777778, requires_grad=True)
     """
 
     from jax import numpy as jnp
 
+    if isinstance(dt, tuple):
+        t1, t2 = dt
+    else:
+        t1 = 0
+        t2 = dt
+
     def func(params, t):
-        array = jnp.array(params[idx1:idx2])
-        num_bins = len(array)
+        params = params[index]
+        num_bins = len(params)
         idx = jnp.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
-        return array[idx]
+        return params[idx]
 
     return func
 
