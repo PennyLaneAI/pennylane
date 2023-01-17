@@ -25,9 +25,11 @@ from pennylane.measurements import (
 )
 from pennylane.queuing import AnnotatedQueue
 
+# pylint: disable=redefined-outer-name, too-many-public-methods, too-many-arguments
+
 
 # TODO: Remove this when new CustomMP are the default
-def custom_measurement_process(device, spy):
+def custom_measurement_process(device, spy):  # pylint: disable=missing-function-docstring
     assert len(spy.call_args_list) > 0  # make sure method is mocked properly
 
     samples = device._samples  # pylint: disable=protected-access

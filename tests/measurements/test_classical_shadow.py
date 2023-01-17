@@ -22,6 +22,8 @@ from pennylane import numpy as np
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 
+# pylint: disable=too-many-arguments, import-outside-toplevel
+
 
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):
     """

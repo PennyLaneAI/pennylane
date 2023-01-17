@@ -171,7 +171,9 @@ class TestOutputShape:
 
     @pytest.mark.parametrize("measurement, expected_shape", measures)
     @pytest.mark.parametrize("shots", [None, 1, 10, (1, 2, 5, 3)])
-    def test_output_shapes_single_qnode_check(self, measurement, expected_shape, shots):
+    def test_output_shapes_single_qnode_check(
+        self, measurement, expected_shape, shots
+    ):  # pylint: disable=unused-argument
         """Test that the output shape produced by the tape matches the output
         shape of a QNode for a single measurement."""
         if shots is None and measurement.return_type is qml.measurements.Sample:
@@ -227,10 +229,12 @@ class TestOutputShape:
                 super().__init__(wires=wires, shots=shots)
                 self.cutoff = cutoff
 
-            def apply(self, operations, **kwargs):
+            def apply(self, operations, **kwargs):  # pylint: disable=missing-function-docstring
                 pass
 
-            def analytic_probability(self, wires=None):
+            def analytic_probability(
+                self, wires=None
+            ):  # pylint: disable=missing-function-docstring
                 if wires is None:
                     wires = self.wires
                 return np.zeros(self.cutoff ** len(wires))
@@ -517,7 +521,7 @@ class TestNumericType:
                 2.312,
             ]
         )
-        herm = np.outer(arr, arr)
+        herm = np.outer(arr, arr)  # pylint: disable=unused-variable
         qs = QuantumScript([qml.RY(0.4, 0)], [ret])
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
