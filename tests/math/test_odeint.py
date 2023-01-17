@@ -17,21 +17,19 @@ Integration tests for odeint (ordinary differential equation integrator)
 import pytest
 import pennylane as qml
 import pennylane.numpy as np
-import jax
-import jax.numpy as jnp
 
-# # jax = pytest.importorskip("jax")
-# jnp = pytest.importorskip("jax.numpy")
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 # # pytest-mark all tests as jax
-pytestmark = pytest.importorskip("jax")
+# pytestmark = pytest.importorskip("jax") # breaks the tests
+
 
 def jaxode(fun, y0, t, *args):
     """Convenience to solve ODEs with jax with the same signature"""
     from jax.experimental.ode import odeint as jaxodeint
 
     return jaxodeint(fun, y0, jnp.array([t[0], t[-1]]), *args)[-1]
-
 
 
 # pylint: disable=too-few-public-methods
@@ -60,8 +58,8 @@ class TestUnitTest:
         y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
         assert qml.math.allequal(y0.shape, y1.shape)
         assert qml.math.allequal(y0.dtype, y1.dtype)
-    
-    #@pytest.mark.xfail
+
+    # @pytest.mark.xfail
     def testwarning(self):
         """Test that a warning is raised when the accuracy is not matched"""
         t = jnp.linspace(0, 2, 2)
@@ -72,21 +70,25 @@ class TestUnitTest:
         y0 = jnp.ones((5))
         with pytest.warns(UserWarning, match="Try reducing the step size."):
             _ = qml.math.odeint(fun, y0, t)
-    
-    @pytest.mark.parametrize("t", [np.linspace(0, 1, 5), jnp.linspace(0, 1, 5),])
+
+    @pytest.mark.parametrize(
+        "t",
+        [
+            np.linspace(0, 1, 5),
+            jnp.linspace(0, 1, 5),
+        ],
+    )
     def test_valid_t_types(self, t):
         """Test that odeint can handle jnp and np arrays for t"""
+
         def fun(y, _):
             return y
 
         y0 = jnp.ones((5))
         y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
-        
+
         assert qml.math.allequal(y0.shape, y1.shape)
         assert qml.math.allequal(y0.dtype, y1.dtype)
-
-    
-
 
 
 class TestAnalyticODE:
