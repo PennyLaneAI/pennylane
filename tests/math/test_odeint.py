@@ -24,6 +24,7 @@ jnp = pytest.importorskip("jax.numpy")
 # pytest-mark all tests as jax
 pytestmark = pytest.mark.jax
 
+
 def jaxode(fun, y0, t, *args):
     """Convenience to solve ODEs with jax with the same signature"""
     from jax.experimental.ode import odeint as jaxodeint
@@ -35,7 +36,23 @@ def jaxode(fun, y0, t, *args):
 class TestUnitTest:
     """Unit tests for odeint"""
 
-    def testInputOutputShapes(self):
+    @pytest.mark.parametrize(
+        "in_shape",
+        [
+            (1,),
+            (5,),
+            (
+                2,
+                3,
+            ),
+            (
+                2,
+                3,
+                4,
+            ),
+        ],
+    )
+    def testInputOutputShapes(self, in_shape):
         """Test that input and output match in shape and dtype"""
         # Unit tests
         t = jnp.linspace(0, 1, 3)
@@ -43,22 +60,11 @@ class TestUnitTest:
         def fun(y, _):
             return y
 
-        y0 = jnp.ones((5))
+        y0 = jnp.ones(in_shape)
         y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
         assert qml.math.allequal(y0.shape, y1.shape)
         assert qml.math.allequal(y0.dtype, y1.dtype)
 
-        y0 = jnp.ones((5, 5))
-        y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
-        assert qml.math.allequal(y0.shape, y1.shape)
-        assert qml.math.allequal(y0.dtype, y1.dtype)
-
-        y0 = jnp.ones((5, 5, 5))
-        y1 = qml.math.odeint(fun, y0, t, atol=1, rtol=1)
-        assert qml.math.allequal(y0.shape, y1.shape)
-        assert qml.math.allequal(y0.dtype, y1.dtype)
-
-    # @pytest.mark.xfail
     def testwarning(self):
         """Test that a warning is raised when the accuracy is not matched"""
         t = jnp.linspace(0, 2, 2)
@@ -124,9 +130,9 @@ Hpaulis = [
     qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2),
 ]
 
-H1 = qml.Hamiltonian(jnp.ones(5), [qml.PauliX(i) @ qml.PauliX((i + 1) % 10) for i in range(5)])
-H2 = qml.Hamiltonian(jnp.ones(5), [qml.PauliY(i) @ qml.PauliY((i + 1) % 10) for i in range(5)])
-H3 = qml.Hamiltonian(jnp.ones(5), [qml.PauliZ(i) @ qml.PauliZ((i + 1) % 10) for i in range(5)])
+H1 = qml.Hamiltonian(jnp.ones(5), [qml.PauliX(i) @ qml.PauliX((i + 1)) for i in range(5)])
+H2 = qml.Hamiltonian(jnp.ones(5), [qml.PauliY(i) @ qml.PauliY((i + 1)) for i in range(5)])
+H3 = qml.Hamiltonian(jnp.ones(5), [qml.PauliZ(i) @ qml.PauliZ((i + 1)) for i in range(5)])
 H4 = H1 + H2
 H5 = H1 + H3
 H6 = H2 + H3
@@ -138,7 +144,7 @@ for i, op in enumerate(Hs):
 
 
 class TestODESchrodingerEquation:
-    """Test Schrodinger equation ODEs with constant time-dependence"""
+    """Test time-dependent Schrodinger equation ODEs with constant Hamiltonians"""
 
     @pytest.mark.parametrize("H", Hs)
     def testConstantHamiltonian(self, H):

@@ -42,8 +42,9 @@ def odeint(func, y0, ts, *args, rtol=1e-8, atol=1e-8):
     In particular, it is using the 4th order term of the `Dormand Prince <https://en.wikipedia.org/wiki/Dormand%E2%80%93Prince_method>`_ Butcher table.
 
     Args:
-        func (callable): ``func(y, t, *args)`` defining the ODE. Needs to return a ``ndarray`` of the same shape as ``y``.
-        y0 (ndarray): initial value ``y(t0) = y0``
+        func (callable): ``func(y, t, *args)`` defining the ODE. Needs to return a ``ndarray`` of the same shape and dtype as ``y``.
+        y0 (ndarray): initial value ``y(t0) = y0``. The ``dtype`` of the computation pipeline is set to the one of ``y0``. This may require casting ``y0``
+            to a specific ``dtype`` a priori (see Schrodinger equation example below).
         ts (ndarray): finite time steps for the ODE solver to take.
         args (Union[ndarray, tuple(ndarray)]): optional arguments provided to ``func(y, t, *args)``
         rtol, atol (float): Relative and absolute error tolerance. The error is estimated from comparing a 4th and 5th order Runge-Kutta step.
