@@ -1290,8 +1290,8 @@ class Operator(abc.ABC):
             return self
         try:
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
-        except ValueError as e:
-            raise ValueError(f"Cannot add Operator and {type(other)}") from e
+        except ValueError:
+            return NotImplemented
 
     __radd__ = __add__
 
@@ -1299,22 +1299,20 @@ class Operator(abc.ABC):
         """The scalar multiplication between scalars and Operators."""
         try:
             return qml.s_prod(scalar=other, operator=self)
-        except ValueError as e:
-            raise ValueError(f"Cannot multiply Operator and {type(other)}.") from e
+        except ValueError:
+            return NotImplemented
 
     __rmul__ = __mul__
 
     def __matmul__(self, other):
         """The product operation between Operator objects."""
-        if isinstance(other, Operator):
-            return qml.prod(self, other)
-        raise ValueError("Can only perform tensor products between operators.")
+        return qml.prod(self, other) if isinstance(other, Operator) else NotImplemented
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, (Operator, numbers.Number)):
             return self + (-other)
-        raise ValueError(f"Cannot subtract {type(other)} from Operator.")
+        return NotImplemented
 
     def __rsub__(self, other):
         """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
@@ -1328,7 +1326,7 @@ class Operator(abc.ABC):
         r"""The power operation of an Operator object."""
         if isinstance(other, numbers.Number):
             return qml.pow(self, z=other)
-        raise ValueError(f"Cannot raise an Operator with an exponent of type {type(other)}")
+        return NotImplemented
 
 
 # =============================================================================
@@ -1673,10 +1671,7 @@ class Observable(Operator):
         if isinstance(other, Observable):
             return Tensor(self, other)
 
-        try:
-            return super().__matmul__(other=other)
-        except ValueError as e:
-            raise ValueError("Can only perform tensor products between operators.") from e
+        return super().__matmul__(other=other)
 
     def _obs_data(self):
         r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
@@ -1744,10 +1739,8 @@ class Observable(Operator):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
-        try:
-            return super().__add__(other=other)
-        except ValueError as e:
-            raise ValueError(f"Cannot add Observable and {type(other)}") from e
+
+        return super().__add__(other=other)
 
     __radd__ = __add__
 
@@ -1755,21 +1748,16 @@ class Observable(Operator):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
             return qml.Hamiltonian([a], [self], simplify=True)
-        try:
-            return super().__mul__(other=a)
-        except ValueError as e:
-            raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
+
+        return super().__mul__(other=a)
 
     __rmul__ = __mul__
 
     def __sub__(self, other):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
-            return self.__add__(other.__mul__(-1))
-        try:
-            return super().__sub__(other=other)
-        except ValueError as e:
-            raise ValueError(f"Cannot subtract {type(other)} from Observable") from e
+            return self + (-1 * other)
+        return super().__sub__(other=other)
 
 
 class Tensor(Observable):
@@ -1959,7 +1947,7 @@ class Tensor(Observable):
             self.obs.append(other)
 
         else:
-            raise ValueError("Can only perform tensor products between observables.")
+            return NotImplemented
 
         wires = [op.wires for op in self.obs]
         if len(wires) != len(set(wires)):
@@ -1981,7 +1969,7 @@ class Tensor(Observable):
             QueuingManager.remove(other)
             return self
 
-        raise ValueError("Can only perform tensor products between observables.")
+        return NotImplemented
 
     __imatmul__ = __matmul__
 
