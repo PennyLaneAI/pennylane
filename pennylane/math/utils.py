@@ -575,7 +575,7 @@ def pwc_from_array(dt, index):
     return func
 
 
-def pwc_from_function(t1, t2, num_bins):
+def pwc_from_function(dt, num_bins):
     """
     Decorator to turn a smooth function into a piecewise constant function.
 
@@ -591,9 +591,9 @@ def pwc_from_function(t1, t2, num_bins):
     **Example**
 
     >>> def f0(params, t): return params[0] * t + params[1]
-    >>> t1, t2 = 0, 10
+    >>> dt = 10
     >>> num_bins = 10
-    >>> f1 = pwc_from_function(t1, t2, num_bins)(f0)
+    >>> f1 = pwc_from_function(dt, num_bins)(f0)
     >>> f1([2, 4], 3), f0([2, 4], 3)
     (DeviceArray(10.666666, dtype=float32), DeviceArray(10, dtype=int32))
 
@@ -607,14 +607,20 @@ def pwc_from_function(t1, t2, num_bins):
 
     The same effect can be achieved by decorating the smooth function:
 
-    >>> @pwc_from_function(t1, t2, num_bins)
+    >>> @pwc_from_function(dt, num_bins)
     >>> def fn(params, t): return params[0] * t + params[1]
     >>> fn([2, 4], 3)
     DeviceArray(10.666666, dtype=float32)
 
     """
 
-    from jax import numpy as jnp
+    from jax import numpy as jnp  # ToDo: raise error if fails
+
+    if isinstance(dt, tuple):
+        t1, t2 = dt
+    else:
+        t1 = 0
+        t2 = dt
 
     def inner(fn):
         time_bins = np.linspace(t1, t2, num_bins)
