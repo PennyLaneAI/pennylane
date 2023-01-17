@@ -22,7 +22,7 @@ from pennylane import numpy as np
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 
-# pylint: disable=too-many-arguments, import-outside-toplevel
+# pylint: disable=too-many-arguments, import-outside-toplevel, dangerous-default-value, unused-variable
 
 
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):
@@ -503,7 +503,7 @@ class TestExpvalForward:
 
 
 @pytest.mark.all_interfaces
-class TestExpvalForwardInterfaces:
+class TestExpvalForwardInterfaces:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_qft_expval(self, interface, k=1, obs=obs_qft, expected=expected_qft):
         """Test that the expval estimation is correct for a QFT state"""
