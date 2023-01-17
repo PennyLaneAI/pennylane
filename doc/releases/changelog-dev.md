@@ -233,6 +233,9 @@
   of the other class to be called.
   [(#3631)](https://github.com/PennyLaneAI/pennylane/pull/3631)
 
+* The GellMann operators now include their index in the displayed representation.
+  [(#3641)](https://github.com/PennyLaneAI/pennylane/pull/3641)
+
 <h3>Breaking changes</h3>
 
 * The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
@@ -283,6 +286,9 @@
 
 * `Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
+
+* Set `Tensor._batch_size` to None during initialization.
+  [(#3642)](https://github.com/PennyLaneAI/pennylane/pull/3642)
 
 <h3>Contributors</h3>
 
