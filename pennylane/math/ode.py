@@ -126,13 +126,13 @@ def odeint(func, y0, ts, *args, rtol=1e-8, atol=1e-8):
         )
 
     @partial(jax.jit, static_argnums=0)
-    def odeint_wrapper(func, y0, ts, *args, rtol=atol, atol=atol):
+    def odeint_wrapper(func, y0, ts, *args, rtol=rtol, atol=atol):
         y0, unravel = ravel_pytree(y0)
         func = ravel_first_arg(func, unravel)
         out = _odeint(func, y0, ts, rtol, atol, *args)
         return unravel(out)
     
-    return odeint_wrapper(func, y0, ts, *args, rtol=atol, atol=atol)
+    return odeint_wrapper(func, y0, ts, *args, rtol=rtol, atol=atol)
 
 
 def _tolerance_warn(arg, _):
