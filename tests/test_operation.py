@@ -1278,6 +1278,13 @@ class TestTensor:
         t = Tensor(X, Y)
         assert t.name == [X.name, Y.name]
 
+    def test_batch_size(self):
+        """Test that the batch_size attribute of the Tensor is initialized as None."""
+        X = qml.PauliX(0)
+        Y = qml.PauliY(2)
+        t = Tensor(X, Y)
+        assert t.batch_size is None
+
     def test_num_wires(self):
         """Test that the correct number of wires is returned"""
         p = np.eye(4)
