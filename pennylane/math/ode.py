@@ -19,20 +19,18 @@
 import warnings
 from functools import partial
 
+has_jax = True
 try:
     import jax
     import jax.numpy as jnp
     from jax import linear_util as lu
     from jax.flatten_util import ravel_pytree
     from jax.experimental import host_callback
-except ImportError as e:
-    raise ImportError(
-        "Module jax is required for ``qml.math.odeint`` functionality. "
-        "You can install jax via: pip install jax"
-    ) from e
+except:
+    has_jax=False
 
 
-@partial(jax.jit, static_argnums=0)
+
 def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     r"""Fix step size ODE solver with jit-compilation
 
@@ -115,10 +113,20 @@ def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
 
     >>> jac = jax.jacobian(qml.math.odeint, argnums=3, holomorphic=True)(func, y0, ts, params)
     """
-    y0, unravel = ravel_pytree(y0)
-    func = ravel_first_arg(func, unravel)
-    out = _odeint(func, y0, ts, atol, rtol, *args)
-    return unravel(out)
+    if not has_jax:
+        raise ImportError(
+            "Module jax is required for ``qml.math.odeint`` functionality. "
+            "You can install jax via: pip install jax"
+        )
+
+    @partial(jax.jit, static_argnums=0)
+    def odeint_wrapper(func, y0, ts, *args, atol=atol, rtol=atol):
+        y0, unravel = ravel_pytree(y0)
+        func = ravel_first_arg(func, unravel)
+        out = _odeint(func, y0, ts, atol, rtol, *args)
+        return unravel(out)
+    
+    return odeint_wrapper(func, y0, ts, *args, atol=atol, rtol=atol)
 
 
 def _abs2(x):
@@ -232,12 +240,11 @@ def runge_kutta_step(func, y0, f0, t0, dt):
 # pylint: disable=no-member
 def ravel_first_arg(f, unravel):
     """Decorate a function to work with a raveled first argument"""
+    @lu.transformation
+    def _ravel_first_arg(unravel, y_flat, *args):
+        y = unravel(y_flat)
+        ans = yield (y,) + args, {}
+        ans_flat, _ = ravel_pytree(ans)
+        yield ans_flat
+
     return _ravel_first_arg(lu.wrap_init(f), unravel).call_wrapped
-
-
-@lu.transformation
-def _ravel_first_arg(unravel, y_flat, *args):
-    y = unravel(y_flat)
-    ans = yield (y,) + args, {}
-    ans_flat, _ = ravel_pytree(ans)
-    yield ans_flat
