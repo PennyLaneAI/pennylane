@@ -131,7 +131,7 @@ def xyx_decomposition(U, wire, return_global_phase=False):
         return_global_phase (bool): Whether to return the global phase
             as a `qml.s_prod` between `exp(1j)*gamma` and `qml.Identity` as the last
             element of the returned list of operations.
-        
+
     Returns:
         list[qml.Operation]: Returns a list of of gates, an ``RX``, an ``RY`` and
         another ``RX`` gate, which when applied in the order of appearance in the list is equivalent
