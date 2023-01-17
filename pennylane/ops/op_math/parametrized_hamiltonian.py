@@ -47,12 +47,12 @@ class ParametrizedHamiltonian:
 
     .. code-block:: python3
 
-    coeffs = [2, lambda v, t: v[0] * jnp.sin(v[1] * t)]
-    observables =  [qml.PauliX(0), qml.PauliY(1)]
-    H = ParametrizedHamiltonian(coeffs, observables)
+        coeffs = [2, lambda v, t: v[0] * jnp.sin(v[1] * t)]
+        observables =  [qml.PauliX(0), qml.PauliY(1)]
+        H = ParametrizedHamiltonian(coeffs, observables)
 
     >>> H(jnp.ones(2), 1.)
-    2 * X(0) + 1*sin(1) * Y(1)
+    (2*(PauliX(wires=[0]))) + (0.8414710164070129*(PauliY(wires=[1])))
 
     A ``ParametrizedHamiltonian`` can be created by passing a list of coefficients (scalars or functions), as well as
     a list of corresponding observables. The functions must all have signatures, ``(params, t)`` with ``params`` being
@@ -67,9 +67,9 @@ class ParametrizedHamiltonian:
 
     .. code-block:: python3
 
-    coeffs = [2, f1, f2]
-    obs = [qml.PauliX(0)@qml.PauliX(1), qml.PauliY(0)@qml.PauliY(1), qml.PauliZ(0)@qml.PauliZ(1)]
-    H = ParametrizedHamiltonian(coeffs, obs)
+        coeffs = [2, f1, f2]
+        obs = [qml.PauliX(0)@qml.PauliX(1), qml.PauliY(0)@qml.PauliY(1), qml.PauliZ(0)@qml.PauliZ(1)]
+        H = ParametrizedHamiltonian(coeffs, obs)
 
     The resulting object can be passed parameters, and will return an ``Operator`` representing the
     ``ParametrizedHamiltonian`` with the specified parameters:
