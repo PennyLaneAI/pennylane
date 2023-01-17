@@ -31,6 +31,7 @@ except ImportError as e:
         "You can install jax via: pip install jax"
     ) from e
 
+
 @partial(jax.jit, static_argnums=0)
 def odeint(func, y0, ts, *args, atol=1e-8, rtol=1e-8):
     r"""Fix step size ODE solver with jit-compilation
@@ -138,6 +139,7 @@ def _tolerance_warn(arg, _):
             UserWarning,
         )
 
+
 def _odeint(func, y0, ts, atol, rtol, *args):
     def func_(y, t):
         return func(y, t, *args)
@@ -177,6 +179,7 @@ def _odeint(func, y0, ts, atol, rtol, *args):
     # In case we want to return all ys, the output of
     # odeint() must be vmapped, jax.vmap(unravel)(out)
     return y  # jnp.concatenate((y0[None], ys))
+
 
 def runge_kutta_step(func, y0, f0, t0, dt):
     """Performing the Runge Kutta 45 step
