@@ -180,6 +180,9 @@
   of the other class to be called.
   [(#3631)](https://github.com/PennyLaneAI/pennylane/pull/3631)
 
+* The GellMann operators now include their index in the displayed representation.
+  [(#3641)](https://github.com/PennyLaneAI/pennylane/pull/3641)
+
 <h3>Breaking changes</h3>
 
 * The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
