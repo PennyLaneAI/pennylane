@@ -389,3 +389,12 @@ class TestGellMann:
 
         assert obs.label() == label
         assert obs.label(decimals=2) == label
+
+    @pytest.mark.parametrize("index", list(range(1, 9)))
+    def test_repr(self, index):
+        """Test that the __repr__ method si correct"""
+
+        rep = f"GellMann{index}(wires=[0])"
+        obs = qml.GellMann(wires=0, index=index)
+
+        assert repr(obs) == rep
