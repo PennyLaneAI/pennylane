@@ -140,5 +140,4 @@ __all__ = [
     "iscomplex",
     "expand_matrix",
     "odeint",
-    "odeintnowarn",
 ]
