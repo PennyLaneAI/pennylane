@@ -63,14 +63,11 @@ class BasisRotation(Operation):
         >>> eigen_vals, eigen_vecs = np.linalg.eigh(V)
         >>> umat = eigen_vecs.T
         >>> wires = range(len(umat))
-        >>> dev = qml.device("default.qubit", wires=wires)
-        >>> @qml.qnode(dev)
-        ... def circuit():
+        >>> def circuit():
         ...    qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=umat))
         ...    for idx, eigenval in enumerate(eigen_vals):
         ...        qml.RZ(eigenval, wires=[idx])
         ...    qml.BasisRotation(wires=wires, unitary_matrix=umat)
-        ...    return qml.state()
         >>> circ_unitary = qml.matrix(circuit)()
         >>> np.round(circ_unitary/circ_unitary[0][0], 3)
         tensor([[ 1.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ],

@@ -155,20 +155,17 @@
   ```python
   import pennylane as qml
   from pennylane import numpy as np
-  
+
   V = np.array([[ 0.53672126+0.j        , -0.1126064 -2.41479668j],
                 [-0.1126064 +2.41479668j,  1.48694623+0.j        ]])
   eigen_vals, eigen_vecs = np.linalg.eigh(V)
   umat = eigen_vecs.T
   wires = range(len(umat))
-  dev = qml.device("default.qubit", wires=wires)
-  @qml.qnode(dev)
   def circuit():
-     qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=umat))
-     for idx, eigenval in enumerate(eigen_vals):
-         qml.RZ(eigenval, wires=[idx])
-     qml.BasisRotation(wires=wires, unitary_matrix=umat)
-     return qml.state()
+      qml.adjoint(qml.BasisRotation(wires=wires, unitary_matrix=umat))
+      for idx, eigenval in enumerate(eigen_vals):
+          qml.RZ(eigenval, wires=[idx])
+      qml.BasisRotation(wires=wires, unitary_matrix=umat)
   ```
 
   ```pycon
