@@ -128,23 +128,26 @@ def xyx_decomposition(U, wire, return_global_phase=False):
     Args:
         U (array[complex]): A 2 x 2 unitary matrix.
         wire (Union[Wires, Sequence[int] or int]): The wire on which to apply the operation.
+        return_global_phase (bool): If `True`, the return list of operations will include
+        the global phase as the last element, as an `qml.s_prod` between :math:`e^{i\gamma}`
+        and the Identity. If `False`, only the list with the three rotations is returned.
 
     Returns:
-        list[qml.Operation]: Returns a list of 4 gates, an ``Identity`` times
-        the global phase, then an ``RX``, an ``RY``and another ``RX`` gate,
-        which when applied in the order of appearance in the list is equivalent
-        to the unitary :math:`U`.
+        list[qml.Operation]: Returns a list of of gates, an ``RX``, an ``RY`` and
+        another ``RX`` gate, which when applied in the order of appearance in the list is equivalent
+        to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
+        the global phase is returned as the last element of the list.
 
     **Example**
 
     >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
                       [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
-    >>> decomp = xyx_decomposition(U, 0)
+    >>> decomp = xyx_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-    [(0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0])),
-            RX(0.45246583660683803, wires=[0]),
-            RY(1.3974974118006183, wires=[0]),
-            RX(-1.7210192479534632, wires=[0])]
+    [RX(0.45246583660683803, wires=[0]),
+     RY(1.3974974118006183, wires=[0]),
+     RX(-1.7210192479534632, wires=[0]),
+     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
     # Small number to add to denominators to avoid division by zero
