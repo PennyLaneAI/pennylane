@@ -1823,6 +1823,7 @@ class Tensor(Observable):
         self._eigvals_cache = None
         self.obs: List[Observable] = []
         self._args = args
+        self._batch_size = None
         self.queue(init=True)
 
     def label(self, decimals=None, base_label=None, cache=None):
