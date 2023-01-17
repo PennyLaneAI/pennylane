@@ -4,3 +4,5 @@ tests/ops/op_math/test_controlled_ops.py
 tests/ops/op_math/test_controlled.py
 tests/test_operation.py
 tests/math/test_odeint.py
+tests/ops/op_math/test_dot.py
+tests/test_operation.py
