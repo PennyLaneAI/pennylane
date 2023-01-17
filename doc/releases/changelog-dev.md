@@ -241,6 +241,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Ikko Ashimine
 Utkarsh Azad
+Cristian Boghiu
 Astral Cai
 Lillian M. A. Frederiksen
 Soran Jahangiri
