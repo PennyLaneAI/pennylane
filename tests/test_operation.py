@@ -28,7 +28,8 @@ from pennylane.operation import Operation, Operator, Tensor, operation_derivativ
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods, too-many-public-methods, unused-argument
+# pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
+# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
