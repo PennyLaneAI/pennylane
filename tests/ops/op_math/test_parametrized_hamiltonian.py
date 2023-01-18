@@ -15,7 +15,7 @@
 """
 Unit tests for the ParametrizedHamiltonian class
 """
-
+# pylint: disable=no-member
 import pytest
 
 import pennylane as qml
@@ -62,9 +62,9 @@ class TestInitialization:
         and the list of observables don't match"""
         coeffs = [1, 2, f1]
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        with pytest.raises(
-            ValueError, match="number of coefficients and operators does not match."
-        ):
+        # fmt: off
+        with pytest.raises(ValueError, match="number of coefficients and operators does not match."):
+            # fmt: on
             ParametrizedHamiltonian(coeffs, obs)
 
     def test_H_fixed_lists(self):
@@ -246,7 +246,7 @@ class TestInteractionWithOperators:
         class DummyObject:  # pylint: disable=too-few-public-methods
             pass
 
-        with pytest.raises(ValueError, match="Cannot add ParametrizedHamiltonian and"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             _ = H + DummyObject()
 
     def test_adding_two_parametrized_hamiltonians(self):
