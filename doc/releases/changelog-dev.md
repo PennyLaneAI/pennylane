@@ -121,7 +121,7 @@
 * Support `qml.math.size` with torch tensors.
   [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
-* Added `Evolve`, which computes the time evolution of a `ParametrizedHamiltonian`.
+* Added `ParametrizedEvolution`, which computes the time evolution of a `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
 
 * Added `qml.evolve`, which accepts an operator or a `ParametrizedHamiltonian` and returns another
