@@ -102,7 +102,6 @@ import warnings
 from enum import IntEnum
 from typing import List
 
-
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
@@ -1292,8 +1291,6 @@ class Operator(abc.ABC):
             return qml.op_sum(self, other)
         if other == 0:
             return self
-        if isinstance(other, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
-            return other.__add__(self)
         try:
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         except ValueError:
