@@ -150,27 +150,6 @@ class TestApply:
         (qml.Identity, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
     ]
 
-    test_data_no_parameters_inverses = [
-        (qml.PauliX, [1, 0], np.array([0, 1])),
-        (qml.PauliX, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
-        (qml.PauliY, [1, 0], [0, 1j]),
-        (qml.PauliY, [1 / math.sqrt(2), 1 / math.sqrt(2)], [-1j / math.sqrt(2), 1j / math.sqrt(2)]),
-        (qml.PauliZ, [1, 0], [1, 0]),
-        (qml.PauliZ, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), -1 / math.sqrt(2)]),
-        (qml.S, [1, 0], [1, 0]),
-        (qml.S, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), -1j / math.sqrt(2)]),
-        (qml.T, [1, 0], [1, 0]),
-        (
-            qml.T,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), np.exp(-1j * np.pi / 4) / math.sqrt(2)],
-        ),
-        (qml.Hadamard, [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
-        (qml.Hadamard, [1 / math.sqrt(2), -1 / math.sqrt(2)], [0, 1]),
-        (qml.Identity, [1, 0], [1, 0]),
-        (qml.Identity, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
-    ]
-
     @pytest.mark.parametrize("operation,input,expected_output", test_data_no_parameters)
     def test_apply_operation_single_wire_no_parameters(
         self, qubit_device_1_wire, tol, operation, input, expected_output
@@ -180,19 +159,6 @@ class TestApply:
 
         qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
         qubit_device_1_wire.apply([operation(wires=[0])])
-
-        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
-        assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
-
-    @pytest.mark.parametrize("operation,input,expected_output", test_data_no_parameters_inverses)
-    def test_apply_operation_single_wire_no_parameters_inverse(
-        self, qubit_device_1_wire, tol, operation, input, expected_output
-    ):
-        """Tests that applying an operation yields the expected output state for single wire
-        operations that have no parameters."""
-
-        qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
-        qubit_device_1_wire.apply([operation(wires=[0]).inv()])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
@@ -231,16 +197,6 @@ class TestApply:
         ),
     ]
 
-    test_data_iswap_inv = [
-        (qml.ISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.ISWAP, [0, 0, 1, 0], [0, -1j, 0, 0]),
-        (
-            qml.ISWAP,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), 1j / math.sqrt(2), 0, 0],
-        ),
-    ]
-
     test_data_siswap = [
         (qml.SISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
         (qml.SISWAP, [0, 1, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2) * 1j, 0]),
@@ -258,34 +214,6 @@ class TestApply:
             qml.SQISW,
             [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
             [1 / math.sqrt(2), 0.5, 0.5 * 1j, 0],
-        ),
-    ]
-
-    test_data_siswap_inv = [
-        (
-            qml.SISWAP,
-            [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), -0.5 * 1j, 0.5, 0],
-        ),
-        (qml.SISWAP, [0, 0, 1, 0], [0, -1 / math.sqrt(2) * 1j, 1 / math.sqrt(2), 0]),
-        (
-            qml.SISWAP,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), 0.5 * 1j, -0.5, 0],
-        ),
-    ]
-
-    test_data_sqisw_inv = [
-        (
-            qml.SQISW,
-            [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), -0.5 * 1j, 0.5, 0],
-        ),
-        (qml.SQISW, [0, 0, 1, 0], [0, -1 / math.sqrt(2) * 1j, 1 / math.sqrt(2), 0]),
-        (
-            qml.SQISW,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), 0.5 * 1j, -0.5, 0],
         ),
     ]
 
@@ -310,33 +238,6 @@ class TestApply:
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
-    all_two_wires_no_parameters_inv = (
-        test_data_two_wires_no_parameters
-        + test_data_iswap_inv
-        + test_data_siswap_inv
-        + test_data_sqisw_inv
-    )
-
-    @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters_inv)
-    def test_apply_operation_two_wires_no_parameters_inverse(
-        self, qubit_device_2_wires, tol, operation, input, expected_output
-    ):
-        """Tests that applying an operation yields the expected output state for two wire
-        operations that have no parameters."""
-
-        qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
-            (2, 2)
-        )
-        qubit_device_2_wires.apply([operation(wires=[0, 1]).inv()])
-
-        assert np.allclose(
-            qubit_device_2_wires._state.flatten(),
-            np.array(expected_output),
-            atol=tol,
-            rtol=0,
-        )
-        assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
-
     test_data_three_wires_no_parameters = [
         (qml.CSWAP, [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0]),
         (qml.CSWAP, [0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0]),
@@ -354,23 +255,6 @@ class TestApply:
             (2, 2, 2)
         )
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2])])
-
-        assert np.allclose(
-            qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
-        )
-        assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
-
-    @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
-    def test_apply_operation_three_wires_no_parameters_inverse(
-        self, qubit_device_3_wires, tol, operation, input, expected_output
-    ):
-        """Tests that applying the inverse of an operation yields the expected output state for three wire
-        operations that have no parameters."""
-
-        qubit_device_3_wires._state = np.array(input, dtype=qubit_device_3_wires.C_DTYPE).reshape(
-            (2, 2, 2)
-        )
-        qubit_device_3_wires.apply([operation(wires=[0, 1, 2]).inv()])
 
         assert np.allclose(
             qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
@@ -522,57 +406,6 @@ class TestApply:
         ),
     ]
 
-    test_data_single_wire_with_parameters_inverses = [
-        (qml.PhaseShift, [1, 0], [1, 0], [math.pi / 2]),
-        (qml.PhaseShift, [0, 1], [0, -1j], [math.pi / 2]),
-        (
-            qml.PhaseShift,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), 1 / 2 - 1j / 2],
-            [math.pi / 4],
-        ),
-        (qml.RX, [1, 0], [1 / math.sqrt(2), 1j * 1 / math.sqrt(2)], [math.pi / 2]),
-        (qml.RX, [1, 0], [0, 1j], [math.pi]),
-        (
-            qml.RX,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / 2 + 1j / 2, 1 / 2 + 1j / 2],
-            [math.pi / 2],
-        ),
-        (qml.RY, [1, 0], [1 / math.sqrt(2), -1 / math.sqrt(2)], [math.pi / 2]),
-        (qml.RY, [1, 0], [0, -1], [math.pi]),
-        (qml.RY, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1, 0], [math.pi / 2]),
-        (qml.RZ, [1, 0], [1 / math.sqrt(2) + 1j / math.sqrt(2), 0], [math.pi / 2]),
-        (qml.RZ, [0, 1], [0, -1j], [math.pi]),
-        (
-            qml.RZ,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / 2 + 1 / 2 * 1j, 1 / 2 - 1 / 2 * 1j],
-            [math.pi / 2],
-        ),
-        (qml.MultiRZ, [1, 0], [1 / math.sqrt(2) + 1j / math.sqrt(2), 0], [math.pi / 2]),
-        (qml.MultiRZ, [0, 1], [0, -1j], [math.pi]),
-        (
-            qml.MultiRZ,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / 2 + 1 / 2 * 1j, 1 / 2 - 1 / 2 * 1j],
-            [math.pi / 2],
-        ),
-        (qml.DiagonalQubitUnitary, [1, 0], [-1, 0], [np.array([-1, 1])]),
-        (
-            qml.DiagonalQubitUnitary,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), -1j / math.sqrt(2)],
-            [np.array([1, 1j])],
-        ),
-        (
-            qml.DiagonalQubitUnitary,
-            [1 / 2, math.sqrt(3) / 4],
-            [cmath.exp(-1j * 0.4) / 2, cmath.exp(1j * 0.4) * math.sqrt(3) / 4],
-            [np.array([cmath.exp(1j * 0.4), cmath.exp(1j * -0.4)])],
-        ),
-    ]
-
     @pytest.mark.parametrize(
         "operation,input,expected_output,par", test_data_single_wire_with_parameters
     )
@@ -585,21 +418,6 @@ class TestApply:
         qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
 
         qubit_device_1_wire.apply([operation(*par, wires=[0])])
-
-        assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
-        assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
-
-    @pytest.mark.parametrize(
-        "operation,input,expected_output,par", test_data_single_wire_with_parameters_inverses
-    )
-    def test_apply_operation_single_wire_with_parameters_inverse(
-        self, qubit_device_1_wire, tol, operation, input, expected_output, par
-    ):
-        """Tests that applying the inverse of an operation yields the expected output state for single wire
-        operations that have parameters."""
-
-        qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
-        qubit_device_1_wire.apply([operation(*par, wires=[0]).inv()])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
@@ -726,33 +544,6 @@ class TestApply:
         (qml.IsingZZ, [1, 0, 0, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0, 0, 0], [math.pi / 2]),
     ]
 
-    test_data_two_wires_with_parameters_inverses = [
-        (qml.CRX, [0, 1, 0, 0], [0, 1, 0, 0], [math.pi / 2]),
-        (qml.CRX, [0, 0, 0, 1], [0, 0, 1j, 0], [math.pi]),
-        (
-            qml.CRX,
-            [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
-            [0, 1 / math.sqrt(2), 1 / 2, 1j / 2],
-            [math.pi / 2],
-        ),
-        (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
-        (qml.MultiRZ, [0, 0, 1, 0], [0, 0, -1j, 0], [math.pi]),
-        (
-            qml.MultiRZ,
-            [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
-            [1 / 2 + 1j / 2, 1 / 2 - 1j / 2, 0, 0],
-            [math.pi / 2],
-        ),
-        (qml.DiagonalQubitUnitary, [1, 0, 0, 0], [-1, 0, 0, 0], [np.array([-1, 1, 1, -1])]),
-        (
-            qml.DiagonalQubitUnitary,
-            [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), 0, 0, -1 / math.sqrt(2)],
-            [np.array([1, 1, 1, -1])],
-        ),
-        (qml.DiagonalQubitUnitary, [0, 0, 1, 0], [0, 0, -1j, 0], [np.array([-1, 1j, 1j, -1])]),
-    ]
-
     @pytest.mark.parametrize(
         "operation,input,expected_output,par", test_data_two_wires_with_parameters
     )
@@ -766,25 +557,6 @@ class TestApply:
             (2, 2)
         )
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1])])
-
-        assert np.allclose(
-            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
-        )
-        assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
-
-    @pytest.mark.parametrize(
-        "operation,input,expected_output,par", test_data_two_wires_with_parameters_inverses
-    )
-    def test_apply_operation_two_wires_with_parameters_inverse(
-        self, qubit_device_2_wires, tol, operation, input, expected_output, par
-    ):
-        """Tests that applying the inverse of an operation yields the expected output state for two wire
-        operations that have parameters."""
-
-        qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
-            (2, 2)
-        )
-        qubit_device_2_wires.apply([operation(*par, wires=[0, 1]).inv()])
 
         assert np.allclose(
             qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
@@ -2154,7 +1926,6 @@ class TestGetSlice:
         assert np.allclose(array[sl], target)
 
 
-@pytest.mark.parametrize("inverse", [True, False])
 class TestApplyOps:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
     gates in DefaultQubit."""
@@ -2181,64 +1952,64 @@ class TestApplyOps:
     ]
 
     @pytest.mark.parametrize("op, method", single_qubit_ops)
-    def test_apply_single_qubit_op(self, op, method, inverse):
+    def test_apply_single_qubit_op(self, op, method):
         """Test if the application of single qubit operations is correct."""
-        state_out = method(self.state, axes=[1], inverse=inverse)
+        state_out = method(self.state, axes=[1])
         op = op(wires=[1])
-        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = op.matrix()
         state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", two_qubit_ops)
-    def test_apply_two_qubit_op(self, op, method, inverse):
+    def test_apply_two_qubit_op(self, op, method):
         """Test if the application of two qubit operations is correct."""
         state_out = method(self.state, axes=[0, 1])
         op = op(wires=[0, 1])
-        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = op.matrix()
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", two_qubit_ops)
-    def test_apply_two_qubit_op_reverse(self, op, method, inverse):
+    def test_apply_two_qubit_op_reverse(self, op, method):
         """Test if the application of two qubit operations is correct when the applied wires are
         reversed."""
         state_out = method(self.state, axes=[2, 1])
         op = op(wires=[2, 1])
-        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = op.matrix()
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,idck->ibak", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_smaller(self, op, method, inverse):
+    def test_apply_three_qubit_op_controls_smaller(self, op, method):
         """Test if the application of three qubit operations is correct when both control wires are
         smaller than the target wire."""
         state_out = method(self.state, axes=[0, 2, 3])
         op = op(wires=[0, 2, 3])
-        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = op.matrix()
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,dkef->akbc", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_greater(self, op, method, inverse):
+    def test_apply_three_qubit_op_controls_greater(self, op, method):
         """Test if the application of three qubit operations is correct when both control wires are
         greater than the target wire."""
         state_out = method(self.state, axes=[2, 1, 0])
         op = op(wires=[2, 1, 0])
-        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = op.matrix()
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,fedk->cbak", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", three_qubit_ops)
-    def test_apply_three_qubit_op_controls_split(self, op, method, inverse):
+    def test_apply_three_qubit_op_controls_split(self, op, method):
         """Test if the application of three qubit operations is correct when one control wire is smaller
         and one control wire is greater than the target wire."""
         state_out = method(self.state, axes=[3, 1, 2])
         op = op(wires=[3, 1, 2])
-        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = op.matrix()
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2274,70 +2045,10 @@ class TestStateVector:
         spy.assert_called()
 
 
-class TestInverseDecomposition:
-    """Integration tests for decompositions of inverse gates"""
-
-    def test_inverse_S(self, tol):
-        """Test that applying the inverse of the S gate
-        works without decomposition"""
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def test_s():
-            qml.Hadamard(wires=0)
-            qml.S(wires=0)
-            return qml.probs(wires=0)
-
-        test_s()
-        operations = test_s.qtape.operations
-        assert "S" in [i.name for i in operations]
-
-        expected = np.array([1.0, 1.0j]) / np.sqrt(2)
-        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def test_s_inverse():
-            qml.Hadamard(wires=0)
-            qml.S(wires=0).inv()
-            return qml.probs(wires=0)
-
-        test_s_inverse()
-        operations = test_s_inverse.qtape.operations
-        assert "S.inv" in [i.name for i in operations]
-
-        expected = np.array([1.0, -1.0j]) / np.sqrt(2)
-        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
-
-    def test_inverse_decomposition(self, tol, mocker):
-        """Test that the expansion is inverted when inverse gate is applied and the gate isn't supported."""
-        dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(dev, "execute")
-
-        class DummyOp(qml.operation.Operation):
-            """A Dummy Op with a decomposition defined."""
-
-            num_wires = 1
-
-            def decomposition(self):
-                return [qml.PauliX(self.wires), qml.PauliY(self.wires)]
-
-        @qml.qnode(dev, diff_method=None)
-        def test_dummy_inv():
-            DummyOp(0).inv()
-            return qml.probs(wires=0)
-
-        test_dummy_inv()
-        operations = spy.call_args[0][0].operations
-        assert qml.equal(operations[0], qml.PauliY(0))
-        assert qml.equal(operations[1], qml.PauliX(0))
-
-
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
 
-    @pytest.mark.parametrize("inverse", [True, False])
-    def test_internal_apply_ops_case(self, inverse, monkeypatch):
+    def test_internal_apply_ops_case(self, monkeypatch):
         """Tests that if we provide an operation that has an internal
         implementation, then we use that specific implementation.
 
@@ -2355,7 +2066,7 @@ class TestApplyOperationUnit:
             m.setattr(dev, "_apply_ops", {"PauliX": supported_gate_application})
 
             test_state = np.array([1, 0])
-            op = qml.PauliX(0) if not inverse else qml.PauliX(0).inv()
+            op = qml.PauliX(0)
 
             res = dev._apply_operation(test_state, op)
             assert np.allclose(res, expected_test_output)
@@ -2423,8 +2134,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, op.matrix())
             assert np.allclose(res_wires, wires)
 
-    @pytest.mark.parametrize("inverse", [True, False])
-    def test_apply_tensordot_case(self, inverse, mocker, monkeypatch):
+    def test_apply_tensordot_case(self, mocker, monkeypatch):
         """Tests the case when np.tensordot is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=3)
@@ -2446,9 +2156,6 @@ class TestApplyOperationUnit:
 
         assert op.name in dev.operations
         assert op.name not in dev._apply_ops
-
-        if inverse:
-            op = op.inv()
 
         # Set the internal _apply_unitary_tensordot
         history = []

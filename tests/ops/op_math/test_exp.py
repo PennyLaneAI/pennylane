@@ -125,15 +125,6 @@ class TestProperties:
 
         assert not Exp(qml.RX(1.2, wires=0)).is_hermitian
 
-    def test_setting_inverse_raises_error(self):
-        op = Exp(qml.PauliX(0), -1.234j)
-
-        with pytest.raises(NotImplementedError):
-            op.inverse = True
-
-        with pytest.raises(NotImplementedError):
-            op.inv()
-
 
 class TestMatrix:
     """Test the matrix method."""

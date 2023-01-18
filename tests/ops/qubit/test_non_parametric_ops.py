@@ -81,10 +81,6 @@ class TestOperations:
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
-        op._inverse = True
-        copied_op2 = copy.copy(op)
-        np.testing.assert_allclose(op.matrix(), copied_op2.matrix(), atol=tol)
-
     @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, tol):
         """Test matrices of non-parametrized operations are correct"""
@@ -968,7 +964,7 @@ class TestMultiControlledX:
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
-            qml.MultiControlledX(wires=list(control_wires) + [target_wire]).inv()
+            qml.MultiControlledX(wires=list(control_wires) + [target_wire])
             for op in tape.operations:
                 op.queue()
             return qml.probs(wires=range(n_ctrl_wires + 1))
@@ -1002,7 +998,7 @@ class TestMultiControlledX:
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
-            qml.MultiControlledX(wires=list(control_wires) + [target_wire]).inv()
+            qml.MultiControlledX(wires=list(control_wires) + [target_wire])
             for op in tape.operations:
                 op.queue()
             return qml.probs(wires=range(n_ctrl_wires + 1))
@@ -1057,7 +1053,7 @@ class TestMultiControlledX:
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
-            qml.MultiControlledX(wires=control_target_wires, control_values=control_values).inv()
+            qml.MultiControlledX(wires=control_target_wires, control_values=control_values)
             for op in tape.operations:
                 op.queue()
             return qml.probs(wires=range(n_ctrl_wires + 1))
@@ -1089,7 +1085,7 @@ class TestMultiControlledX:
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=control_target_wires)
-            qml.MultiControlledX(wires=control_target_wires).inv()
+            qml.MultiControlledX(wires=control_target_wires)
             for op in tape.operations:
                 op.queue()
             return qml.probs(wires=control_target_wires)
@@ -1122,7 +1118,7 @@ class TestMultiControlledX:
         @qml.qnode(dev)
         def f():
             qml.QubitStateVector(rnd_state, wires=range(n_all_wires))
-            qml.MultiControlledX(wires=control_target_wires).inv()
+            qml.MultiControlledX(wires=control_target_wires)
             for op in tape.operations:
                 op.queue()
             return qml.state()
@@ -1361,39 +1357,36 @@ class TestSparseMatrix:
 
 
 label_data = [
-    (qml.Identity(0), "I", "I"),
-    (qml.Hadamard(0), "H", "H"),
-    (qml.PauliX(0), "X", "X"),
-    (qml.PauliY(0), "Y", "Y"),
-    (qml.PauliZ(0), "Z", "Z"),
-    (qml.S(wires=0), "S", "S⁻¹"),
-    (qml.T(wires=0), "T", "T⁻¹"),
-    (qml.SX(wires=0), "SX", "SX⁻¹"),
-    (qml.CNOT(wires=(0, 1)), "X", "X"),
-    (qml.CZ(wires=(0, 1)), "Z", "Z"),
-    (qml.CY(wires=(0, 1)), "Y", "Y"),
-    (qml.CH(wires=(0, 1)), "H", "H"),
-    (qml.SWAP(wires=(0, 1)), "SWAP", "SWAP⁻¹"),
-    (qml.ISWAP(wires=(0, 1)), "ISWAP", "ISWAP⁻¹"),
-    (qml.ECR(wires=(0, 1)), "ECR", "ECR⁻¹"),
-    (qml.SISWAP(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
-    (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
-    (qml.CCZ(wires=(0, 1, 2)), "Z", "Z"),
-    (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
-    (qml.Toffoli(wires=(0, 1, 2)), "X", "X"),
-    (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X", "X"),
-    (qml.Barrier(0), "||", "||"),
-    (qml.WireCut(wires=0), "//", "//"),
+    (qml.Identity(0), "I"),
+    (qml.Hadamard(0), "H"),
+    (qml.PauliX(0), "X"),
+    (qml.PauliY(0), "Y"),
+    (qml.PauliZ(0), "Z"),
+    (qml.S(wires=0), "S"),
+    (qml.T(wires=0), "T"),
+    (qml.SX(wires=0), "SX"),
+    (qml.CNOT(wires=(0, 1)), "X"),
+    (qml.CZ(wires=(0, 1)), "Z"),
+    (qml.CY(wires=(0, 1)), "Y"),
+    (qml.CH(wires=(0, 1)), "H"),
+    (qml.SWAP(wires=(0, 1)), "SWAP"),
+    (qml.ISWAP(wires=(0, 1)), "ISWAP"),
+    (qml.ECR(wires=(0, 1)), "ECR"),
+    (qml.SISWAP(wires=(0, 1)), "SISWAP"),
+    (qml.SQISW(wires=(0, 1)), "SISWAP"),
+    (qml.CCZ(wires=(0, 1, 2)), "Z"),
+    (qml.CSWAP(wires=(0, 1, 2)), "SWAP"),
+    (qml.Toffoli(wires=(0, 1, 2)), "X"),
+    (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X"),
+    (qml.Barrier(0), "||"),
+    (qml.WireCut(wires=0), "//"),
 ]
 
 
-@pytest.mark.parametrize("op, label1, label2", label_data)
-def test_label_method(op, label1, label2):
-    assert op.label() == label1
-    assert op.label(decimals=2) == label1
-
-    op.inv()
-    assert op.label() == label2
+@pytest.mark.parametrize("op, label", label_data)
+def test_label_method(op, label):
+    assert op.label() == label
+    assert op.label(decimals=2) == label
 
 
 control_data = [
