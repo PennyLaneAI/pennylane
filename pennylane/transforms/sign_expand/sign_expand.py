@@ -194,6 +194,7 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
 
 batch_transform_with_diff_false = partial(batch_transform, differentiable=False)
 
+
 @batch_transform_with_diff_false
 def sign_expand(  # pylint: disable=too-many-arguments
     tape, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")

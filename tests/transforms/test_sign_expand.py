@@ -154,4 +154,3 @@ class TestSignExpand:
         expval = fn(results)
 
         assert np.isclose(output, expval, 1e-1)
-
