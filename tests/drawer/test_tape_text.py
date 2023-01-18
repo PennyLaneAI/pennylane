@@ -277,7 +277,14 @@ single_op_tests_data = [
         qml.GroverOperator(wires=(0, 1, 2)),
         "0: ─╭GroverOperator─┤  \n1: ─├GroverOperator─┤  \n2: ─╰GroverOperator─┤  ",
     ),
-    (qml.RX(1.234, wires=0).inv(), "0: ──RX⁻¹(1.23)─┤  "),
+    (
+        qml.adjoint(qml.RX(1.234, wires=0)),
+        "0: ──RX(1.23)†─┤  ",
+    ),
+    (
+        qml.RX(1.234, wires=0) ** -1,
+        "0: ──RX(1.23)⁻¹─┤  ",
+    ),
     (qml.expval(qml.PauliZ(0)), "0: ───┤  <Z>"),
     (qml.var(qml.PauliZ(0)), "0: ───┤  Var[Z]"),
     (qml.probs(wires=0), "0: ───┤  Probs"),

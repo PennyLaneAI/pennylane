@@ -108,7 +108,6 @@ class ParametrizedHamiltonian:
 
     >>> H.H_fixed()
     2*(PauliX(wires=[0]) @ PauliX(wires=[1]))
-
     >>> H.H_parametrized([2.5, 3.6], 0.5)
     (0.9489846193555862*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (3.159297222805342*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
     """
@@ -214,6 +213,6 @@ class ParametrizedHamiltonian:
             ops.append(H)
             return ParametrizedHamiltonian(coeffs, ops)
 
-        raise ValueError(f"Cannot add ParametrizedHamiltonian and {type(H)}")
+        return NotImplemented
 
     __radd__ = __add__
