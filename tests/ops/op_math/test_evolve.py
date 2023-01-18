@@ -155,7 +155,7 @@ class TestIntegration:
     # pylint: disable=unused-argument
     @pytest.mark.jax
     def test_time_independent_hamiltonian(self):
-        """Test matrix method for a time independent hamiltonian."""
+        """Test the execution of a time independent hamiltonian."""
         import jax
         from jax import numpy as jnp
 
@@ -196,7 +196,9 @@ class TestIntegration:
     @pytest.mark.slow
     @pytest.mark.jax
     def test_time_dependent_hamiltonian(self):
-        """Test matrix method for a time dependent hamiltonian."""
+        """Test the execution of a time dependent hamiltonian. This test approximates the
+        time-ordered exponential with a product of exponentials using small time steps.
+        For more information, see https://en.wikipedia.org/wiki/Ordered_exponential."""
         import jax.numpy as jnp
 
         H = time_dependent_hamiltonian()

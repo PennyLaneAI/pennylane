@@ -121,22 +121,22 @@ class Evolve(Operation):
             ) from e
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
-        def fun(y, t, params):
+        def fun(y, t):
             """dy/dt = -i H(t) y"""
-            kwargs = {self.time: t}
-            return -1j * qml.matrix(self.H(params, **kwargs)) @ y
+            return -1j * qml.matrix(self.H(self.h_params, t=t)) @ y
 
         if self.dt is None:
-            # TODO: Figure out what is 'p', and best values for 'rtol' and 'atol'
-            self.dt = guess_dt(fun, self.t[0], y0, 2, *self.h_params)
+            self.dt = guess_dt(fun, self.t[0], y0)
 
         t = jnp.arange(self.t[0], self.t[-1], self.dt, dtype=float)
-        result = odeint(fun, y0, t, self.h_params)
+        result = odeint(fun, y0, t)
         mat = result[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
 
-def guess_dt(fun, t0, y0, p, *args, rtol=1e-4, atol=1e-4):
+# TODO: Figure out best values for 'rtol' and 'atol'
+# pylint: disable=too-many-arguments
+def guess_dt(fun, t0, y0, p=3, rtol=1.4e-8, atol=1.4e-8):
     """Compute a guess for the time step.
 
     This algorithm is described in further detail in:
@@ -151,7 +151,6 @@ def guess_dt(fun, t0, y0, p, *args, rtol=1e-4, atol=1e-4):
         p (float): order (still don't know what this is)
         rtol (float): relative local error tolerance for solver
         atol (float): absolute local error tolerance for solver
-        params (list): extra parameters for the function
 
     Raises:
         ImportError: _description_
@@ -168,7 +167,7 @@ def guess_dt(fun, t0, y0, p, *args, rtol=1e-4, atol=1e-4):
         ) from e
     dtype = y0.dtype
 
-    f0 = fun(y0, t0, args)
+    f0 = fun(y0, t0)
 
     scale = atol + jnp.abs(y0) * rtol
     d0 = jnp.linalg.norm(y0 / scale.astype(dtype))
@@ -176,7 +175,7 @@ def guess_dt(fun, t0, y0, p, *args, rtol=1e-4, atol=1e-4):
 
     h0 = 1e-6 if (d0 < 1e-5 or d1 < 1e-5) else 0.01 * d0 / d1
     y1 = y0 + h0.astype(dtype) * f0
-    f1 = fun(y1, t0 + h0, args)
+    f1 = fun(y1, t0 + h0)
     d2 = jnp.linalg.norm((f1 - f0) / scale.astype(dtype)) / h0
 
     h1 = (
