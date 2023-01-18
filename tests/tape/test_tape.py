@@ -906,7 +906,11 @@ class TestInverseAdjoint:
 
         with QuantumTape() as tape:
             prep = qml.BasisState(init_state, wires=[0, "a"])
-            ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
+            ops = [
+                qml.RX(p[0], wires=0),
+                qml.adjoint(qml.Rot(*p[1:], wires=0)),
+                qml.CNOT(wires=[0, "a"]),
+            ]
             m1 = qml.probs(wires=0)
             m2 = qml.probs(wires="a")
 
