@@ -594,22 +594,6 @@ class ControlledOp(Controlled, operation.Operation):
             self.grad_recipe = [None] * self.num_params
 
     @property
-    def _inverse(self):
-        return False
-
-    @_inverse.setter
-    def _inverse(self, boolean):
-        self.base._inverse = boolean  # pylint: disable=protected-access
-        # refresh name as base_name got updated.
-        self._name = f"C({self.base.name})"
-
-    def inv(self):
-        self.base.inv()
-        # refresh name as base_name got updated.
-        self._name = f"C({self.base.name})"
-        return self
-
-    @property
     def base_name(self):
         return f"C({self.base.base_name})"
 
