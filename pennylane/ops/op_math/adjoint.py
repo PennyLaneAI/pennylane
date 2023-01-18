@@ -251,10 +251,6 @@ class Adjoint(SymbolicOp):
         self.base._check_batching(params)
 
     @property
-    def batch_size(self):
-        return self.base.batch_size
-
-    @property
     def ndim_params(self):
         return self.base.ndim_params
 
@@ -338,18 +334,6 @@ class AdjointOperation(Operation):
     @property
     def _inverse(self):
         return self.base._inverse  # pylint: disable=protected-access
-
-    @_inverse.setter
-    def _inverse(self, boolean):
-        self.base._inverse = boolean  # pylint: disable=protected-access
-        # refresh name as base_name got updated.
-        self._name = f"Adjoint({self.base.name})"
-
-    def inv(self):
-        self.base.inv()
-        # refresh name as base_name got updated.
-        self._name = f"Adjoint({self.base.name})"
-        return self
 
     @property
     def base_name(self):
