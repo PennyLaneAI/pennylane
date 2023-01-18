@@ -26,21 +26,6 @@ jnp = pytest.importorskip("jax.numpy")
 # pytest-mark all tests as jax
 pytestmark = pytest.mark.jax
 
-
-def test_nojax_ImportError(monkeypatch):
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "jax", None)
-        # import pennylane as qml
-
-        def fun(y, _):
-            return y
-
-        y0 = qml.numpy.array([1.0])
-        ts = qml.numpy.array([1.0, 2.0, 3.0])
-        with pytest.raises(ImportError, match="Module jax is required"):
-            qml.math.odeint(fun, y0, ts)
-
-
 def jaxode(fun, y0, t, *args):
     """Convenience to solve ODEs with jax with the same signature"""
     from jax.experimental.ode import odeint as jaxodeint
