@@ -143,11 +143,9 @@ class ParametrizedHamiltonian:
         ``~SProd`` operator in the event that there is only one term in ``H_parametrized``)."""
 
         coeffs = [f(param, t) for f, param in zip(self.H_coeffs_parametrized, params)]
-        return (
-            qml.ops.dot(coeffs, self.H_ops_parametrized)  # pylint: disable=no-member
-            if coeffs
-            else 0
-        )
+        if len(coeffs) == 0:
+            return 0
+        return qml.ops.dot(coeffs, self.H_ops_parametrized)  # pylint: disable=no-member
 
     @property
     def coeffs(self):
