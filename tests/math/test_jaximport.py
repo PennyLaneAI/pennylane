@@ -19,7 +19,7 @@ import pytest
 from unittest.mock import patch
 
 #@patch.dict(sys.modules, {"jax": None})
-@pytest.mark.xfail
+#@pytest.mark.xfail
 def test_nojax_ImportError(monkeypatch):
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "jax", None)
