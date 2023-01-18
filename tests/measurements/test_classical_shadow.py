@@ -133,8 +133,11 @@ class TestClassicalShadow:
     def test_measurement_process_shape(self, wires, shots, seed):
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
+        exec_conf = qml.ExecutionConfig()
+        exec_conf.shots = shots
         res = qml.classical_shadow(wires=range(wires), seed=seed)
         assert res.shape(device=dev) == (1, 2, shots, wires)
+        assert res.shape(execution_config=exec_conf) == (1, 2, shots, wires)
 
         # test an error is raised when device is None
         msg = (
@@ -142,7 +145,7 @@ class TestClassicalShadow:
             "classical shadow measurement"
         )
         with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
-            res.shape(device=None)
+            res.shape(device=None, execution_config=None)
 
     def test_shape_matches(self, wires):
         """Test that the shape of the MeasurementProcess matches the shape
@@ -282,7 +285,9 @@ class TestClassicalShadow:
             qml.classical_shadow(wires=wires, seed_recipes=False)
 
 
-def hadamard_circuit(wires, shots=10000, interface="autograd"):
+def hadamard_circuit(
+    wires, shots=10000, interface="autograd"
+):  # pylint: disable=missing-function-docstring
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
@@ -294,7 +299,9 @@ def hadamard_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def max_entangled_circuit(wires, shots=10000, interface="autograd"):
+def max_entangled_circuit(
+    wires, shots=10000, interface="autograd"
+):  # pylint: disable=missing-function-docstring
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
@@ -307,7 +314,9 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def qft_circuit(wires, shots=10000, interface="autograd"):
+def qft_circuit(
+    wires, shots=10000, interface="autograd"
+):  # pylint: disable=missing-function-docstring
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     one_state = np.zeros(wires)
@@ -323,7 +332,7 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
 
 
 @pytest.mark.autograd
-class TestExpvalMeasurement:
+class TestExpvalMeasurement:  # pylint: disable=missing-class-docstring
     def test_measurement_process_numeric_type(self):
         """Test that the numeric type of the MeasurementProcess instance is correct"""
         H = qml.PauliZ(0)
@@ -335,10 +344,13 @@ class TestExpvalMeasurement:
     def test_measurement_process_shape(self, wires, shots):
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
+        exec_conf = qml.ExecutionConfig()
+        exec_conf.shots = shots
         H = qml.PauliZ(0)
         res = qml.shadow_expval(H)
         assert res.shape() == (1,)
         assert res.shape(dev) == (1,)
+        assert res.shape(execution_config=exec_conf) == (1,)
 
     def test_shape_matches(self):
         """Test that the shape of the MeasurementProcess matches the shape
@@ -503,7 +515,7 @@ class TestExpvalForward:
 
 
 @pytest.mark.all_interfaces
-class TestExpvalForwardInterfaces:  # pylint: disable=too-few-public-methods
+class TestExpvalForwardInterfaces:  # pylint: disable=too-few-public-methods, missing-class-docstring
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     def test_qft_expval(self, interface, k=1, obs=obs_qft, expected=expected_qft):
         """Test that the expval estimation is correct for a QFT state"""
@@ -530,7 +542,9 @@ obs_strongly_entangled = [
 ]
 
 
-def strongly_entangling_circuit(wires, shots=10000, interface="autograd"):
+def strongly_entangling_circuit(
+    wires, shots=10000, interface="autograd"
+):  # pylint: disable=missing-function-docstring
     dev = qml.device("default.qubit", wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
@@ -541,7 +555,9 @@ def strongly_entangling_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def strongly_entangling_circuit_exact(wires, interface="autograd"):
+def strongly_entangling_circuit_exact(
+    wires, interface="autograd"
+):  # pylint: disable=missing-function-docstring
     dev = qml.device("default.qubit", wires=wires)
 
     @qml.qnode(dev, interface=interface)

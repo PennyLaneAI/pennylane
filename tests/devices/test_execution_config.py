@@ -15,6 +15,8 @@
 Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 """
 
+# pylint: disable=protected-access
+
 import pytest
 
 from pennylane.devices import ExecutionConfig
@@ -47,3 +49,33 @@ def test_invalid_gradient_keyword_arguments():
     """Tests that unknown gradient_keyword_arguments raise a ValueError."""
     with pytest.raises(ValueError, match="All gradient_keyword_arguments keys must be in"):
         _ = ExecutionConfig(gradient_keyword_arguments={"nonsense": 0})
+
+
+def test_shots():
+    """Tests that shots are initialized correctly"""
+    exec_conf = ExecutionConfig()
+    shotlist = [1, 3, 3, 4, 4, 4, 3]
+    exec_conf.shots = shotlist
+    shot_vector = exec_conf.shot_vector
+
+    assert len(shot_vector) == 4
+    assert shot_vector[0].shots == 1
+    assert shot_vector[0].copies == 1
+    assert shot_vector[1].shots == 3
+    assert shot_vector[1].copies == 2
+    assert shot_vector[2].shots == 4
+    assert shot_vector[2].copies == 3
+    assert shot_vector[3].shots == 3
+    assert shot_vector[3].copies == 1
+    assert exec_conf._raw_shot_sequence == shotlist
+    assert exec_conf.shots == 22
+
+    exec_conf.shots = 3
+    assert exec_conf.shot_vector is None
+    assert exec_conf._raw_shot_sequence is None
+    assert exec_conf.shots == 3
+
+    exec_conf.shots = None
+    assert exec_conf.shot_vector is None
+    assert exec_conf._raw_shot_sequence is None
+    assert exec_conf.shots is None
