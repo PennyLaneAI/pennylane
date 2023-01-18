@@ -50,7 +50,7 @@ class ExecutionConfig:
     device_options: dict = None
     """Various options for the device executing a quantum circuit"""
 
-    interface: str = "jax"
+    interface: str = "autograd"
     """The machine learning framework to use"""
 
     derivative_order: int = 1
