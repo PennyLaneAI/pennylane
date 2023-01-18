@@ -63,8 +63,7 @@ def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
     sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, do_queue=do_queue, id=id)
 
     if do_queue:
-        QueuingManager.update_info(operator, owner=sprod_op)
-        QueuingManager.update_info(sprod_op, owns=operator)
+        QueuingManager.remove(operator)
 
     return sprod_op
 

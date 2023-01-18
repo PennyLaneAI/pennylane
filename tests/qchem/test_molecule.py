@@ -123,7 +123,7 @@ class TestMolecule:
         assert np.allclose(mol.basis_data, basis_data)
 
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "l", "alpha", "coeff", "r"),
+        ("symbols", "geometry", "l", "alpha", "coeff", "r", "load_data"),
         [
             (
                 ["H", "H"],
@@ -132,6 +132,16 @@ class TestMolecule:
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                False,
+            ),
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                [(0, 0, 0), (0, 0, 0)],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                True,
             ),
             (
                 ["H", "F"],
@@ -163,14 +173,15 @@ class TestMolecule:
                         [0.0, 0.0, 1.0],
                     ]
                 ),
+                False,
             ),
         ],
     )
-    def test_basisset(self, symbols, geometry, l, alpha, coeff, r):
+    def test_basisset(self, symbols, geometry, l, alpha, coeff, r, load_data):
         r"""Test that the molecule object contains the correct basis set and non-default basis data
         for a given molecule.
         """
-        mol = qchem.Molecule(symbols, geometry, normalize=False)
+        mol = qchem.Molecule(symbols, geometry, load_data=load_data, normalize=False)
 
         assert set(map(type, mol.basis_set)) == {qchem.BasisFunction}
         assert mol.l == l

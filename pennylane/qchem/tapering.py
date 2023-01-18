@@ -765,7 +765,7 @@ def taper_operation(
         r"""Applies the tapered operation for the specified parameter value whenever
         queing context is active, otherwise returns it as a list."""
         if qml.QueuingManager.recording():
-            qml.QueuingManager.update_info(operation, owner=gen_tapered)
+            qml.QueuingManager.remove(operation)
             for coeff, op in zip(*gen_tapered.terms()):
                 qml.exp(op, 1j * params * coeff)
         else:

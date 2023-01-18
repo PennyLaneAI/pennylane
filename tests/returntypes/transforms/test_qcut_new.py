@@ -25,6 +25,7 @@ from pathlib import Path
 import pytest
 from flaky import flaky
 from networkx import MultiDiGraph, number_of_selfloops
+from networkx import __version__ as networkx_version
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -2743,6 +2744,7 @@ class TestCutCircuitMCTransform:
         ):
             cut_circuit(v)
 
+    @pytest.mark.filterwarnings("ignore:Detected 'shots'")
     def test_qnode_shots_arg_error(self):
         """
         Tests that if a shots argument is passed directly to the qnode when using
@@ -3861,6 +3863,7 @@ class TestCutCircuitTransform:
     Tests for the cut_circuit transform
     """
 
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
     def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots):
@@ -4112,12 +4115,14 @@ class TestCutCircuitTransform:
         spy.assert_not_called()
 
     @pytest.mark.tf
+    @pytest.mark.skipif(networkx_version[0] >= "3", reason="networkx version 3 breaks this test.")
     def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the TF interface and
         using JIT.
         """
+
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
