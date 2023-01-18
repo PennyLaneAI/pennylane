@@ -584,8 +584,6 @@ class Hamiltonian(Observable):
             )
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
-        if isinstance(H, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
-            return H.__add__(self)
 
         return NotImplemented
 
