@@ -44,25 +44,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
         Union[.Evolution, .ParametrizedEvolution]: evolution operator
     """
     if isinstance(op, ParametrizedHamiltonian):
-
-        def parametrized_evolution(params: list, t):
-            """Constructor for the :class:`ParametrizedEvolution` operator.
-
-            Args:
-                params (Union[list, tuple, ndarray]): trainable parameters
-                t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
-                    If a list of two floats, it corresponds to the initial time and the final time of the
-                    evolution.
-                dt (float, optional): the time step used by the differential equation solver to evolve the
-                    time-dependent Hamiltonian. Defaults to XXX.
-
-            Returns:
-                .ParametrizedEvolution: class used to compute the parametrized evolution of the given
-                    hamiltonian
-            """
-            return ParametrizedEvolution(H=op, params=params, t=t)
-
-        return parametrized_evolution
+        return ParametrizedEvolution(H=op)
 
     return Evolution(generator=op, param=1.0)
 
@@ -157,7 +139,13 @@ class ParametrizedEvolution(Operation):
     num_wires = AnyWires
     # pylint: disable=too-many-arguments, super-init-not-called
     def __init__(
-        self, H: ParametrizedHamiltonian, params: list, t, time="t", do_queue=True, id=None
+        self,
+        H: ParametrizedHamiltonian,
+        params: list = None,
+        t=None,
+        time="t",
+        do_queue=True,
+        id=None,
     ):
         if not has_jax:
             raise ImportError(
@@ -169,9 +157,17 @@ class ParametrizedEvolution(Operation):
             )
         self.H = H
         self.time = time
-        self.h_params = params
-        self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
+        self.params = params
+        if t is None:
+            self.t = None
+        else:
+            self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
         super().__init__(wires=H.wires, do_queue=do_queue, id=id)
+
+    def __call__(self, params, t):
+        self.params = params
+        self.t = t
+        return self
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -180,11 +176,16 @@ class ParametrizedEvolution(Operation):
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
+        if self.params is None or self.t is None:
+            raise ValueError(
+                "The parameters and the time window are required to compute the matrix. "
+                "You can update its values by calling the class: EV(params, t)."
+            )
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(self.H(self.h_params, t=t)) @ y
+            return -1j * qml.matrix(self.H(self.params, t=t)) @ y
 
         result = odeint(fun, y0, self.t)
         mat = result[-1]

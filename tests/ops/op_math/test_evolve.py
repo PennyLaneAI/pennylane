@@ -77,7 +77,7 @@ class TestInitialization:
 
         assert ev.H is H
         assert qml.math.allequal(ev.t, [0, 2])
-        assert qml.math.allequal(ev.h_params, [1, 2])
+        assert qml.math.allequal(ev.params, [1, 2])
 
         assert ev.wires == H.wires
         assert ev.num_wires == AnyWires
@@ -249,14 +249,16 @@ class TestEvolveConstructor:
         mat = qml.math.expm(1j * qml.matrix(op))
         assert qml.math.allequal(qml.matrix(final_op), mat)
 
-    def test_evolve_returns_callable(self):
-        """Test that the evolve function returns a callable when the input is a
-        ParametrizedHamiltonian."""
+    def test_evolve_returns_parametrized_evolution(self):
+        """Test that the evolve function returns a ParametrizedEvolution with `params=None` and `t=None`
+        when the input is a ParametrizedHamiltonian."""
         coeffs = [1, 2, 3]
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         H = ParametrizedHamiltonian(coeffs=coeffs, observables=ops)
         final_op = qml.evolve(H)
-        assert callable(final_op)
+        assert isinstance(final_op, ParametrizedEvolution)
+        assert final_op.params is None
+        assert final_op.t is None
         param_evolution = final_op(params=[], t=1)
         assert isinstance(param_evolution, ParametrizedEvolution)
         assert param_evolution.H is H
