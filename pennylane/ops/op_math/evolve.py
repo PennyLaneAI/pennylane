@@ -26,6 +26,13 @@ from pennylane.operation import AnyWires, Operation, Operator
 from .exp import Evolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
+has_jax = True
+try:
+    import jax.numpy as jnp
+    from jax.experimental.ode import odeint
+except ImportError as e:
+    has_jax = False
+
 
 def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     """Returns a new operator that computes the evolution of the given operator.
@@ -38,7 +45,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     """
     if isinstance(op, ParametrizedHamiltonian):
 
-        def parametrized_evolution(params: list, t, dt=None):
+        def parametrized_evolution(params: list, t):
             """Constructor for the :class:`ParametrizedEvolution` operator.
 
             Args:
@@ -53,7 +60,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
                 ParametrizedEvolution: class used to compute the parametrized evolution of the given
                     hamiltonian
             """
-            return Evolve(H=op, params=params, t=t, dt=dt)
+            return Evolve(H=op, params=params, t=t)
 
         return parametrized_evolution
 
@@ -80,8 +87,6 @@ class Evolve(Operation):
             If a list of two floats, it corresponds to the initial time and the final time of the
             evolution. Note that such absolute times only have meaning within an instance of
             ``Evolve`` and will not affect other gates.
-        dt (float): the time step used by the differential equation solver to evolve the
-            time-dependent Hamiltonian. Defaults to XXX.
         time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
             Defaults to "t".
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
@@ -92,7 +97,7 @@ class Evolve(Operation):
     num_wires = AnyWires
     # pylint: disable=too-many-arguments, super-init-not-called
     def __init__(
-        self, H: ParametrizedHamiltonian, params: list, t, dt=None, time="t", do_queue=True, id=None
+        self, H: ParametrizedHamiltonian, params: list, t, time="t", do_queue=True, id=None
     ):
         if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
             raise ValueError(
@@ -100,9 +105,8 @@ class Evolve(Operation):
             )
         self.H = H
         self.time = time
-        self.dt = dt
         self.h_params = params
-        self.t = [0, t] if qml.math.size(t) == 1 else t
+        self.t = jnp.array([0, t], dtype=float) if qml.math.size(t) == 1 else t
         super().__init__(wires=H.wires, do_queue=do_queue, id=id)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -112,77 +116,17 @@ class Evolve(Operation):
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
-        try:
-            import jax.numpy as jnp
-            from jax.experimental.ode import odeint
-        except ImportError as e:
+        if not has_jax:
             raise ImportError(
                 "Module jax is required for ``ParametrizedEvolution`` class. "
                 "You can install jax via: pip install jax"
-            ) from e
+            )
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
             return -1j * qml.matrix(self.H(self.h_params, t=t)) @ y
 
-        if self.dt is None:
-            self.dt = guess_dt(fun, self.t[0], y0)
-
-        t = jnp.arange(self.t[0], self.t[-1], self.dt, dtype=float)
-        result = odeint(fun, y0, t)
+        result = odeint(fun, y0, self.t)
         mat = result[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
-
-
-# TODO: Figure out best values for 'rtol' and 'atol'
-# pylint: disable=too-many-arguments
-def guess_dt(fun, t0, y0, p=4, rtol=1.4e-8, atol=1.4e-8):
-    """Compute a guess for the time step.
-
-    This algorithm is described in further detail in:
-
-    `E. Hairer, S. P. Norsett G. Wanner, Solving Ordinary Differential Equations I: Nonstiff Problems, Sec. II.4. <http://mezbanhabibi.ir/wp-content/uploads/2020/01/ordinary-differential-equations-vol.1.-Nonstiff-problems.pdf>`_
-
-    Args:
-        fun (Callable): function to evaluate the time derivative of the solution `y` at time
-            `t` as `func(y, t, *args)`, producing the same shape/structure as `y0`.
-        t0 (float): initial time
-        y0 (ndarray): array or pytree of arrays representing the initial value for the state.
-        p (float): order (still don't know what this is)
-        rtol (float): relative local error tolerance for solver
-        atol (float): absolute local error tolerance for solver
-
-    Raises:
-        ImportError: _description_
-
-    Returns:
-        _type_: _description_
-    """
-    try:
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-    except ImportError as e:
-        raise ImportError(
-            "Module jax is required for ``ParametrizedEvolution`` class. "
-            "You can install jax via: pip install jax"
-        ) from e
-    dtype = y0.dtype
-
-    f0 = fun(y0, t0)
-
-    scale = atol + jnp.abs(y0) * rtol
-    d0 = jnp.linalg.norm(y0 / scale.astype(dtype))
-    d1 = jnp.linalg.norm(f0 / scale.astype(dtype))
-
-    h0 = 1e-6 if (d0 < 1e-5 or d1 < 1e-5) else 0.01 * d0 / d1
-    y1 = y0 + h0.astype(dtype) * f0
-    f1 = fun(y1, t0 + h0)
-    d2 = jnp.linalg.norm((f1 - f0) / scale.astype(dtype)) / h0
-
-    h1 = (
-        jnp.maximum(1e-6, h0 * 1e-3)
-        if (d1 <= 1e-15 and d2 <= 1e-15)
-        else (0.01 / jnp.max(jnp.array([d1, d2]))) ** (1.0 / (p + 1.0))
-    )
-
-    return jnp.minimum(100.0 * h0, h1)
