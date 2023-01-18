@@ -28,13 +28,18 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
     "op",
     [
         qml.BasisState(np.array([0, 1]), wires=0),
-        qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),
         qml.QubitDensityMatrix(densitymat0, wires=0),
     ],
 )
 def test_adjoint_error_exception(op):
     with pytest.raises(qml.operation.AdjointUndefinedError):
         op.adjoint()
+
+
+def test_QubitStateVector_eigvals_undefined():
+    """Tests that eigvals raises an error for QubitStateVector."""
+    with pytest.raises(qml.operation.EigvalsUndefinedError):
+        qml.QubitStateVector([0, 1], wires=[0]).eigvals()
 
 
 @pytest.mark.parametrize(
@@ -131,6 +136,22 @@ class TestMatrix:
         with pytest.raises(WireError, match="wire_order must contain all QubitStateVector wires"):
             qsv_op.matrix(wire_order=[1, 2])
 
-    def test_has_matrix(self):
+    def test_QubitStateVector_has_matrix(self):
         """Tests that has_matrix is always True for QubitStateVector."""
         assert qml.QubitStateVector([0, 1], wires=[0]).has_matrix is True
+
+
+class TestAdjoint:
+    """Tests the adjoint of state-prep operations."""
+
+    def test_QubitStateVector_adjoint_matrix(self):
+        """Tests the matrix of the adjoint of QubitStateVector."""
+        base = qml.QubitStateVector([0, 1j], wires=[0])
+        op = qml.adjoint(base)
+        assert op.has_matrix
+        assert np.array_equal(op.matrix(), [0, -1j])
+
+    def test_QubitStateVector_adjoint_no_eigvals(self):
+        """Tests that eigvals raises an error on the adjoint of QubitStateVector."""
+        with pytest.raises(qml.operation.EigvalsUndefinedError):
+            qml.adjoint(qml.QubitStateVector([0, 1], wires=[0])).eigvals()

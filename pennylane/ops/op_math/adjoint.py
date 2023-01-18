@@ -19,10 +19,13 @@ from functools import wraps
 import pennylane as qml
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
+from pennylane.ops.qubit import QubitStateVector
 from pennylane.queuing import QueuingManager
 from pennylane.tape import make_qscript
 
 from .symbolicop import SymbolicOp
+
+OPS_WITH_VECTOR_REPRESENTATION = [QubitStateVector]
 
 
 # pylint: disable=no-member
@@ -265,7 +268,11 @@ class Adjoint(SymbolicOp):
         else:
             base_matrix = self.base.matrix(wire_order=wire_order)
 
-        return moveaxis(conj(base_matrix), -2, -1)
+        return (
+            conj(base_matrix)
+            if self.base.__class__ in OPS_WITH_VECTOR_REPRESENTATION
+            else moveaxis(conj(base_matrix), -2, -1)
+        )
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):

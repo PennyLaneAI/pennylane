@@ -17,8 +17,8 @@ with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 from pennylane import numpy as np
-from pennylane.math import convert_like, reshape
-from pennylane.operation import AnyWires, Operation
+from pennylane.math import convert_like, reshape, conj
+from pennylane.operation import AnyWires, Operation, EigvalsUndefinedError
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.wires import Wires, WireError
 
@@ -123,6 +123,7 @@ class QubitStateVector(Operation):
     >>> print(example_circuit())
     [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
     """
+    has_matrix = True
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -159,11 +160,6 @@ class QubitStateVector(Operation):
         """
         return [MottonenStatePreparation(state, wires)]
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_matrix(self):
-        return True
-
     def matrix(self, wire_order=None):
         """Returns a ket vector representing the state being created."""
         if wire_order is None:
@@ -180,6 +176,12 @@ class QubitStateVector(Operation):
         ket = np.zeros((2,) * num_wires)
         ket[tuple(indices)] = reshape(self.parameters[0], (2,) * len(self.wires))
         return convert_like(reshape(ket, 2**num_wires), self.parameters[0])
+
+    def adjoint(self):
+        return QubitStateVector(conj(self.parameters[0]), wires=self.wires)
+
+    def eigvals(self):
+        raise EigvalsUndefinedError
 
 
 class QubitDensityMatrix(Operation):
