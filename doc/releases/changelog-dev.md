@@ -262,6 +262,17 @@
 
 <h3>Breaking changes</h3>
 
+* `Operator.inv()` and the `Operator.inverse` setter are removed. Please use `qml.adjoint` or `qml.pow` instead.
+  [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
+  
+  Instead of 
+  
+  >>> qml.PauliX(0).inv()
+  
+  use
+  
+  >>> qml.adjoint(qml.PauliX(0))
+
 * The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
@@ -282,6 +293,9 @@
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
+
+* Added hyperlink text for an URL in the `qml.qchem.mol_data` docstring.
+  [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
 
 <h3>Bug fixes</h3>
 
@@ -313,6 +327,9 @@
 
 * Set `Tensor._batch_size` to None during initialization.
   [(#3642)](https://github.com/PennyLaneAI/pennylane/pull/3642)
+
+* Set `Tensor.has_matrix` to `True`.
+  [(#3647)](https://github.com/PennyLaneAI/pennylane/pull/3647)
 
 <h3>Contributors</h3>
 
