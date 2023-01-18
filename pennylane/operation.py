@@ -1814,6 +1814,7 @@ class Tensor(Observable):
     # pylint: disable=abstract-method
     return_type = None
     tensor = True
+    has_matrix = True
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
 
@@ -1829,9 +1830,6 @@ class Tensor(Observable):
         self._args = args
         self._batch_size = None
         self.queue(init=True)
-
-    def has_matrix(self):
-        return True
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the operator is represented in diagrams and drawings.
