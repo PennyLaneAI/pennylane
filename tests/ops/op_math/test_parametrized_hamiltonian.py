@@ -179,7 +179,7 @@ class TestCall:
         H = ParametrizedHamiltonian(coeffs, obs)
 
         assert isinstance(H([2], 4), qml.ops.Sum)
-        assert repr(H([2], t=4)) == "(2*(GellMann(wires=[0]))) + (10*(GellMann(wires=[0])))"
+        assert repr(H([2], t=4)) == "(2*(GellMann2(wires=[0]))) + (10*(GellMann1(wires=[0])))"
         assert np.all(
             qml.matrix(H([2], 4))
             == np.array(

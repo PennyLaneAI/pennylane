@@ -25,23 +25,49 @@ from pennylane.wires import Wires
 class ParametrizedHamiltonian:
     r"""Callable object holding the information representing a parametrized Hamiltonian.
 
-    Passing parameters to the ``ParametrizedHamiltonian`` returns an :class:`~pennylane.operation.Operator` representing the Hamiltonian
-    for that set of parameters.
+    Passing parameters to the ``ParametrizedHamiltonian`` returns an
+    :class:`~pennylane.operation.Operator` representing the Hamiltonian for that set of parameters.
 
     The Hamiltonian can be represented as a linear combination of other operators, e.g.,
-    :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j`, where the :math:`v` are trainable parameters,
-    and t is time.
+    :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j`, where the :math:`v` are trainable
+    parameters, and t is time.
 
-    For example, a time-dependent ``ParametrizedHamiltonian`` with a single trainable parameter, :math:`a`, could be :math:`H = 2 X_1 X_2 + \sin(a t) Y_1 Y_2`
+    For example, a time-dependent ``ParametrizedHamiltonian`` with a single trainable parameter can
+    be: :math:`a`, could be :math:`H = 2 X_1 X_2 + \sin(a t) Y_1 Y_2`
 
     Args:
-        coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be constants or
-            parametrized functions. All functions passed as ``coeffs`` must have the signature ``(params, t)``
-            with ``params`` being trainable parameters and ``t`` being time.
-        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as ``coeffs``
+        coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
+            constants or parametrized functions. All functions passed as ``coeffs`` must have two
+            arguments, the first one being the trainable parameters and the second one being time.
+        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same
+            length as ``coeffs``
 
-    A ``ParametrizedHamiltonian`` is callable with the fixed signature ``H(params, t)`` that returns an
+    A ``ParametrizedHamiltonian`` is a callable with the fixed signature ``H(params, t)``,
+    with ``params`` being an iterable where each element corresponds to the parameters of each
+    scalar-valued function of the hamiltonian. Calling the ``ParametrizedHamiltonian`` returns an
     ``Operator`` representing an instance of the Hamiltonian with the specified parameter values.
+
+    .. note::
+
+        The parameters used in the ``ParametrizedHamiltonian`` call should have the same order
+        as the functions used to define this hamiltonian. For example, if we build a
+        ``ParametrizedHamiltonian`` that contains two functions:
+
+        >>> def f1(p, t):
+        ...     return p * t
+        >>> def f2(p, t):
+        ...     return p * jnp.sin(t)
+        >>> coeffs = [f1, f2]
+        >>> ops = [qml.PauliX(0), qml.PauliY(1)]
+        >>> H = qml.ops.dot(coeffs, ops)
+
+        And we call it using the following parameters:
+
+        >>> params = [4, 5]
+        >>> H(params, t=0.5)
+        (2.0*(PauliX(wires=[0]))) + (2.397127628326416*(PauliY(wires=[1])))
+
+        Internally we are computing ``f1(4, 0.5)`` and ``f2(5, 0.5)``.
 
     **Example:**
 
