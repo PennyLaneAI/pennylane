@@ -15,8 +15,10 @@
 Integration tests for odeint (ordinary differential equation integrator)
 """
 import pytest
+
 import pennylane as qml
 import pennylane.numpy as np
+
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -32,26 +34,15 @@ def jaxode(fun, y0, t, *args):
     return jaxodeint(fun, y0, jnp.array([t[0], t[-1]]), *args)[-1]
 
 
+# fmt: off
+in_shapes = [(1,), (5,), (2, 3,), (2, 3, 4,)]
+# fmt: on
+
 # pylint: disable=too-few-public-methods
 class TestUnitTest:
     """Unit tests for odeint"""
 
-    @pytest.mark.parametrize(
-        "in_shape",
-        [
-            (1,),
-            (5,),
-            (
-                2,
-                3,
-            ),
-            (
-                2,
-                3,
-                4,
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("in_shape", in_shapes)
     def testInputOutputShapes(self, in_shape):
         """Test that input and output match in shape and dtype"""
         # Unit tests
@@ -94,7 +85,6 @@ class TestUnitTest:
 
         assert qml.math.allequal(y0.shape, y1.shape)
         assert qml.math.allequal(y0.dtype, y1.dtype)
-
 
 class TestAnalyticODE:
     """Test ODEs with analytic solutions"""

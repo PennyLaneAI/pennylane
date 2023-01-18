@@ -20,7 +20,7 @@ import warnings
 from functools import partial
 
 has_jax = True
-# pylint: disable=bare-except
+
 try:
     import jax
     import jax.numpy as jnp
