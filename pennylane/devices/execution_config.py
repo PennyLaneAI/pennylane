@@ -39,9 +39,6 @@ class ExecutionConfig:
     See the Attributes section to learn more about the various configurable options.
     """
 
-    shots: Optional[Union[int, Tuple[int]]] = None
-    """The number of shots for an execution"""
-
     gradient_method: Optional[str] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
@@ -87,6 +84,11 @@ class ExecutionConfig:
                 f"All gradient_keyword_arguments keys must be in {SUPPORTED_GRADIENT_KWARGS}, got unexpected values: {set(self.gradient_keyword_arguments) - set(SUPPORTED_GRADIENT_KWARGS)}"
             )
 
+    @property
+    def shots(self):
+        """The number of shots for an execution"""
+        return self._shots
+
     @shots.setter
     def shots(self, shots):
         """Changes the number of shots.
@@ -100,8 +102,8 @@ class ExecutionConfig:
         """
         if shots is None:
             # analytic mode
-            self.shots = shots
-            self.shot_vector = None
+            self._shots = shots
+            self._shot_vector = None
             self._raw_shot_sequence = None
 
         elif isinstance(shots, int):
@@ -111,15 +113,21 @@ class ExecutionConfig:
                     f"The specified number of shots needs to be at least 1. Got {shots}."
                 )
 
-            self.shots = shots
-            self.shot_vector = None
+            self._shots = shots
+            self._shot_vector = None
 
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # batched sampling mode
-            self.shots, self.shot_vector = _process_shot_sequence(shots)
+            self._shots, self._shot_vector = _process_shot_sequence(shots)
             self._raw_shot_sequence = shots
 
         else:
             raise DeviceError(
                 "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
+
+    @property
+    def shot_vector(self):
+        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
+        representation of the shot sequence"""
+        return self._shot_vector
