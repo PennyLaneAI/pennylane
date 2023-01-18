@@ -14,7 +14,6 @@
 """
 Integration tests for odeint (ordinary differential equation integrator)
 """
-import sys
 import pytest
 
 import pennylane as qml
@@ -25,6 +24,7 @@ jnp = pytest.importorskip("jax.numpy")
 
 # pytest-mark all tests as jax
 pytestmark = pytest.mark.jax
+
 
 def jaxode(fun, y0, t, *args):
     """Convenience to solve ODEs with jax with the same signature"""
