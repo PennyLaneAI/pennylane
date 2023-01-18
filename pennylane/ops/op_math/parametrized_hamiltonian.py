@@ -120,7 +120,7 @@ class ParametrizedHamiltonian:
             raise ValueError(
                 "The number of parameters and scalar-valued functions must be the same."
             )
-        return self.H_fixed() + self.H_parametrized(params, t=t)
+        return self.H_fixed() + self.H_parametrized(params, t)
 
     def __repr__(self):
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
