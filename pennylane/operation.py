@@ -1883,9 +1883,9 @@ class Tensor(Observable):
                 else:
                     raise ValueError("Can only perform tensor products between observables.")
 
-            context.update_info(o, owner=self)
+            context.remove(o)
 
-        context.append(self, owns=tuple(constituents))
+        context.append(self)
         return self
 
     def __copy__(self):
@@ -1998,16 +1998,14 @@ class Tensor(Observable):
         if QueuingManager.recording() and self not in QueuingManager.active_context():
             QueuingManager.append(self)
 
-        QueuingManager.update_info(self, owns=tuple(self.obs))
-        QueuingManager.update_info(other, owner=self)
+        QueuingManager.remove(other)
 
         return self
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
-            QueuingManager.update_info(self, owns=tuple(self.obs))
-            QueuingManager.update_info(other, owner=self)
+            QueuingManager.remove(other)
             return self
 
         raise ValueError("Can only perform tensor products between observables.")
@@ -2261,6 +2259,9 @@ class Tensor(Observable):
         Returns:
             ~.Observable: the pruned tensor product of observables
         """
+        if qml.QueuingManager.recording():
+            qml.QueuingManager.remove(self)
+
         if len(self.non_identity_obs) == 0:
             # Return a single Identity as the tensor only contains Identities
             obs = qml.Identity(self.wires[0])

@@ -665,9 +665,7 @@ class TestQubitIntegration:
 
         res = circuit(x, y)
         assert isinstance(res, tuple)
-        expected = np.array(
-            [np.cos(x), [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]]
-        )
+        expected = [np.cos(x), [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]]
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 

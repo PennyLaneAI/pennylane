@@ -479,9 +479,12 @@ class TestPauliSentence:
             full_ps_op.operands[1],
             full_op.operands[1],
         )  # testing that the identity term is constructed well
-        assert ps_op.scalar == op.scalar
+        if op.scalar != 1:
+            assert ps_op.scalar == op.scalar
+            ps_base, op_base = (ps_op.base, op.base)
+        else:
+            ps_base, op_base = ps_op, op.base
 
-        ps_base, op_base = (ps_op.base, op.base)
         assert ps_base.name == op_base.name
         assert set(ps_base.wires) == set(op_base.wires)
         # in constructing the identity wires are cast from set -> list and the order is not preserved

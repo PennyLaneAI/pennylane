@@ -81,16 +81,14 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
 
     num_ops = len(pow_ops)
     if num_ops == 0:
-        # needs to be identity (not prod of identities) so device knows to skip
-        pow_op = qml.Identity(base.wires[0], id=id)
+        pow_op = qml.Identity(base.wires, id=id)
     elif num_ops == 1:
         pow_op = pow_ops[0]
     else:
         pow_op = qml.prod(*pow_ops)
 
     if do_queue:
-        QueuingManager.update_info(base, owner=pow_op)
-        QueuingManager.update_info(pow_op, owns=base)
+        QueuingManager.remove(base)
 
     return pow_op
 

@@ -81,8 +81,7 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
 
     if do_queue:
         for op in ops:
-            QueuingManager.update_info(op, owner=ops_simp)
-        QueuingManager.update_info(ops_simp, owns=ops)
+            QueuingManager.remove(op)
 
     return ops_simp
 

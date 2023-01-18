@@ -1047,8 +1047,8 @@ class TestWrapperFunc:
             prod1 = prod(qml.S(1), qml.T(1))
             prod2 = prod(qml.S(0), prod1, lazy=False)
 
-        assert q[prod1]["owner"] == prod2
-        assert prod1 in q[prod2]["owns"]
+        assert len(q) == 1
+        assert q.queue[0] is prod2
 
 
 class TestIntegration:

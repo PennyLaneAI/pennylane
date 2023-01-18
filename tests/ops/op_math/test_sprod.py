@@ -668,8 +668,8 @@ class TestWrapperFunc:
             sprod1 = s_prod(4, qml.PauliX(0))
             sprod2 = s_prod(3, sprod1, lazy=False)
 
-        assert q[sprod1]["owner"] is sprod2
-        assert q[sprod2]["owns"] is sprod1
+        assert len(q) == 1
+        assert q.queue[0] is sprod2
 
 
 class TestIntegration:

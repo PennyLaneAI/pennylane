@@ -431,12 +431,10 @@ class TestVectorValuedQNode:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        expected = np.array(
-            [
-                [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2],
-                [(1 + np.cos(x) * np.cos(y)) / 2, 0, (1 - np.cos(x) * np.cos(y)) / 2, 0],
-            ]
-        )
+        expected = [
+            [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2],
+            [(1 + np.cos(x) * np.cos(y)) / 2, 0, (1 - np.cos(x) * np.cos(y)) / 2, 0],
+        ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
         assert res[0].shape == (2,)
@@ -500,9 +498,7 @@ class TestVectorValuedQNode:
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
         res = circuit(x, y)
-        expected = np.array(
-            [np.cos(x), [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]]
-        )
+        expected = [np.cos(x), [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]]
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -604,9 +600,10 @@ class TestVectorValuedQNode:
 
         res = circuit(x, y)
 
-        expected = np.array(
-            [np.sin(x) ** 2, [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]]
-        )
+        expected = [
+            np.sin(x) ** 2,
+            [(1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2],
+        ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
         assert res[0].shape == ()
@@ -998,9 +995,7 @@ class TestQubitIntegrationHigherOrder:
         def cost_fn(x):
             return x @ jax.numpy.array(circuit(x))
 
-        x = jax.numpy.array(
-            [0.76, -0.87],
-        )
+        x = jax.numpy.array([0.76, -0.87])
         res = cost_fn(x)
 
         a, b = x

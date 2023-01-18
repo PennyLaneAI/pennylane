@@ -18,6 +18,7 @@ works correctly an a device.
 # pylint: disable=no-self-use
 # pylint: disable=too-many-arguments
 # pylint: disable=pointless-statement
+# pylint: disable=unnecessary-lambda-assignment
 from cmath import exp
 from math import cos, sin, sqrt
 

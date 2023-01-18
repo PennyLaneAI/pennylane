@@ -901,29 +901,15 @@ class TestHamiltonian:
     def test_hamiltonian_queue_inside(self):
         """Tests that Hamiltonian are queued correctly when components are instantiated inside the recording context."""
 
-        queue = [
-            qml.Hadamard(wires=1),
-            qml.PauliX(wires=0),
-            qml.PauliX(1),
-            qml.PauliZ(0),
-            qml.PauliZ(2),
-            qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliZ(1),
-            qml.Hamiltonian(
-                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
-            ),
-        ]
-
         with qml.queuing.AnnotatedQueue() as q:
-            qml.Hadamard(wires=1)
-            qml.PauliX(wires=0)
-            qml.expval(
+            m = qml.expval(
                 qml.Hamiltonian(
                     [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
                 )
             )
 
-        assert np.all([q1.compare(q2) for q1, q2 in zip(q.queue, queue)])
+        assert len(q.queue) == 1
+        assert q.queue[0] is m
 
     def test_terms(self):
         """Tests that the terms representation is returned correctly."""
