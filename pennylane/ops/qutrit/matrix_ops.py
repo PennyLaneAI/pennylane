@@ -132,8 +132,7 @@ class QutritUnitary(Operation):
         return super().pow(z)
 
     def _controlled(self, wire):
-        new_op = ControlledQutritUnitary(*self.parameters, control_wires=wire, wires=self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return ControlledQutritUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
@@ -333,10 +332,9 @@ class ControlledQutritUnitary(QutritUnitary):
         ctrl_wires = self.control_wires + wire
         old_control_values = self.hyperparameters["control_values"]
         values = None if old_control_values is None else f"{old_control_values}2"
-        new_op = ControlledQutritUnitary(
+        return ControlledQutritUnitary(
             *self.parameters,
             control_wires=ctrl_wires,
             wires=self.hyperparameters["u_wires"],
             control_values=values,
         )
-        return new_op.inv() if self.inverse else new_op
