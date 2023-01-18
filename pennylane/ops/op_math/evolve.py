@@ -130,7 +130,7 @@ class Evolve(Operation):
             # TODO: Figure out what is 'p', and best values for 'rtol' and 'atol'
             self.dt = guess_dt(fun, self.t[0], y0, 2, *self.h_params)
 
-        t = jnp.arange(self.t[0], self.t[1], self.dt, dtype=float)
+        t = jnp.arange(self.t[0], self.t[-1], self.dt, dtype=float)
         result = odeint(fun, y0, t, self.h_params)
         mat = result[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
