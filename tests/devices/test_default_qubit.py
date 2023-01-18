@@ -197,16 +197,6 @@ class TestApply:
         ),
     ]
 
-    test_data_iswap_inv = [
-        (qml.ISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.ISWAP, [0, 0, 1, 0], [0, -1j, 0, 0]),
-        (
-            qml.ISWAP,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), 1j / math.sqrt(2), 0, 0],
-        ),
-    ]
-
     test_data_siswap = [
         (qml.SISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
         (qml.SISWAP, [0, 1, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2) * 1j, 0]),
@@ -224,34 +214,6 @@ class TestApply:
             qml.SQISW,
             [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
             [1 / math.sqrt(2), 0.5, 0.5 * 1j, 0],
-        ),
-    ]
-
-    test_data_siswap_inv = [
-        (
-            qml.SISWAP,
-            [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), -0.5 * 1j, 0.5, 0],
-        ),
-        (qml.SISWAP, [0, 0, 1, 0], [0, -1 / math.sqrt(2) * 1j, 1 / math.sqrt(2), 0]),
-        (
-            qml.SISWAP,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), 0.5 * 1j, -0.5, 0],
-        ),
-    ]
-
-    test_data_sqisw_inv = [
-        (
-            qml.SQISW,
-            [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), -0.5 * 1j, 0.5, 0],
-        ),
-        (qml.SQISW, [0, 0, 1, 0], [0, -1 / math.sqrt(2) * 1j, 1 / math.sqrt(2), 0]),
-        (
-            qml.SQISW,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), 0.5 * 1j, -0.5, 0],
         ),
     ]
 
@@ -275,13 +237,6 @@ class TestApply:
             qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
-
-    all_two_wires_no_parameters_inv = (
-        test_data_two_wires_no_parameters
-        + test_data_iswap_inv
-        + test_data_siswap_inv
-        + test_data_sqisw_inv
-    )
 
     test_data_three_wires_no_parameters = [
         (qml.CSWAP, [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0]),

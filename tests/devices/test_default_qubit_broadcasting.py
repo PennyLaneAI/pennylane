@@ -71,16 +71,6 @@ class TestApplyBroadcasted:
         (qml.Identity, triple_state, triple_state),
     ]
 
-    test_data_no_parameters_inverses = [
-        (qml.PauliX, triple_state, mat_vec(X, triple_state, inv=True)),
-        (qml.PauliY, triple_state, mat_vec(Y, triple_state, inv=True)),
-        (qml.PauliZ, triple_state, mat_vec(Z, triple_state, inv=True)),
-        (qml.S, triple_state, mat_vec(S, triple_state, inv=True)),
-        (qml.T, triple_state, mat_vec(T, triple_state, inv=True)),
-        (qml.Hadamard, triple_state, mat_vec(H, triple_state, inv=True)),
-        (qml.Identity, triple_state, triple_state),
-    ]
-
     @pytest.mark.parametrize("operation,input,expected_output", test_data_no_parameters)
     def test_apply_operation_single_wire_no_parameters_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output
