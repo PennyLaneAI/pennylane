@@ -42,7 +42,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
             """Constructor for the :class:`ParametrizedEvolution` operator.
 
             Args:
-                params (list): params (ndarray): trainable parameters
+                params (Union[list, tuple, ndarray]): trainable parameters
                 t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
                     If a list of two floats, it corresponds to the initial time and the final time of the
                     evolution.
