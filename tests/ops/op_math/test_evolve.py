@@ -246,7 +246,7 @@ class TestEvolveConstructor:
         """Test that the matrix of the evolved function is correct."""
         op = qml.s_prod(2, qml.PauliX(0))
         final_op = qml.evolve(op)
-        mat = qml.math.expm(1j * qml.matrix(op))
+        mat = qml.math.expm(-1j * qml.matrix(op))
         assert qml.math.allequal(qml.matrix(final_op), mat)
 
     def test_evolve_returns_parametrized_evolution(self):

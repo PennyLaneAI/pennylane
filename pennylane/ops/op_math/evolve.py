@@ -42,6 +42,9 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
 
     Returns:
         Union[.Evolution, ~evolve.ParametrizedEvolution]: evolution operator
+
+    .. seealso:: :class:`~.evolve.ParametrizedEvolution`
+    .. seealso:: :class:`~.ops.op_math.exp.Evolution`
     """
     if isinstance(op, ParametrizedHamiltonian):
         return ParametrizedEvolution(H=op)
