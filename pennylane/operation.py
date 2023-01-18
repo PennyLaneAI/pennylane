@@ -1783,6 +1783,7 @@ class Tensor(Observable):
     # pylint: disable=abstract-method
     return_type = None
     tensor = True
+    has_matrix = True
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
 
