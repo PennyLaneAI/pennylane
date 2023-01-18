@@ -53,6 +53,7 @@ class ParametrizedHamiltonian:
         as the functions used to define this hamiltonian. For example, if we build a
         ``ParametrizedHamiltonian`` that contains two functions:
 
+        >>> import jax.numpy as jnp
         >>> def f1(p, t):
         ...     return p * t
         >>> def f2(p, t):
@@ -77,24 +78,22 @@ class ParametrizedHamiltonian:
         observables =  [qml.PauliX(0), qml.PauliY(1)]
         H = ParametrizedHamiltonian(coeffs, observables)
 
-    >>> H(jnp.ones(2), 1.)
+    >>> H([jnp.ones(2)], 1.)
     (2*(PauliX(wires=[0]))) + (0.8414710164070129*(PauliY(wires=[1])))
 
     A ``ParametrizedHamiltonian`` can be created by passing a list of coefficients (scalars or functions), as well as
-    a list of corresponding observables. The functions must all have signatures, ``(params, t)`` with ``params`` being
-    trainable parameters and ``t`` being time.
+    a list of corresponding observables. The functions must have two arguments, the first one being the
+    trainable parameters and the second one being time.
 
-    >>> def f1(params, t): return np.sin(params[0]*t)
-    >>> def f2(params, t): return params[1] * np.cos(t)
+    >>> def f1(p, t): return np.sin(p * t)
+    >>> def f2(p, t): return p * np.cos(t)
 
-    The functions, along with scalar coefficients, can then be used to initialize a ``ParametrizedHamiltonian``,
-    which will be split into a fixed and parametrized term. The fixed term is an ``Operator``, while the parametrized
-    term must be initialized with concrete parameters to obtain an ``Operator``.
+    The functions, along with scalar coefficients, can then be used to initialize a ``ParametrizedHamiltonian``:
 
     .. code-block:: python3
 
         coeffs = [2, f1, f2]
-        obs = [qml.PauliX(0)@qml.PauliX(1), qml.PauliY(0)@qml.PauliY(1), qml.PauliZ(0)@qml.PauliZ(1)]
+        obs = [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(0) @ qml.PauliY(1), qml.PauliZ(0) @ qml.PauliZ(1)]
         H = ParametrizedHamiltonian(coeffs, obs)
 
     The resulting object can be passed parameters, and will return an ``Operator`` representing the
@@ -103,7 +102,9 @@ class ParametrizedHamiltonian:
     >>> H([1.2, 2.3], 0.5)
     (2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((0.5646424733950354*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (2.0184398923478573*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
 
-    We can also access the fixed and parametrized terms seperately:
+    We can also access the fixed and parametrized terms of the ``ParametrizedHamiltonian``.
+    The fixed term is an ``Operator``, while the parametrized term must be initialized with concrete
+    parameters to obtain an ``Operator``:
 
     >>> H.H_fixed
     2*(PauliX(wires=[0]) @ PauliX(wires=[1]))
