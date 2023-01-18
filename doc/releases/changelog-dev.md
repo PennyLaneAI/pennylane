@@ -199,6 +199,13 @@
   >>> H(params, t=0.5)
   (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
   ```
+  The same `ParametrizedHamiltonian` can also be constructed via a list of coefficients and operators:
+
+  ```pycon
+  >>> coeffs = [2, f1, f2]
+  >>> ops = [XX, YY, ZZ]
+  >>> H =  qml.ops.dot(coeffs, ops)
+  ```
   
 <h3>Improvements</h3>
 
