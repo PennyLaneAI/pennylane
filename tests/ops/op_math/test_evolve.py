@@ -120,7 +120,7 @@ class TestMatrix:
         t = 4
         params = [1, 2]
         ev = Evolve(H=H, params=params, t=t)
-        true_mat = qml.math.expm(-1j * qml.matrix(H(*params, t=t)) * t)
+        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-3)
 
     @pytest.mark.slow
@@ -139,7 +139,7 @@ class TestMatrix:
             time_step = 1e-3
             times = jnp.arange(0, t, step=time_step)
             for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(*params, t=ti)))
+                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
 
         true_mat = reduce(lambda x, y: y @ x, generator(params))
 
@@ -171,7 +171,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def true_circuit(params):
-            true_mat = qml.math.expm(-1j * qml.matrix(H(*params, t=t)) * t)
+            true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
             QubitUnitary(U=true_mat, wires=[0, 1])
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
@@ -201,7 +201,7 @@ class TestIntegration:
             time_step = 1e-3
             times = jnp.arange(0, t, step=time_step)
             for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(*params, t=ti)))
+                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):

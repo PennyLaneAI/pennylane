@@ -115,8 +115,12 @@ class ParametrizedHamiltonian:
             [op.wires for op in self.H_ops_fixed] + [op.wires for op in self.H_ops_parametrized]
         )
 
-    def __call__(self, *params, t):
-        return self.H_fixed() + self.H_parametrized(*params, t=t)
+    def __call__(self, params, t):
+        if len(params) != len(self.H_coeffs_parametrized):
+            raise ValueError(
+                "The number of parameters and scalar-valued functions must be the same."
+            )
+        return self.H_fixed() + self.H_parametrized(params, t=t)
 
     def __repr__(self):
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
@@ -128,7 +132,7 @@ class ParametrizedHamiltonian:
             return qml.ops.dot(self.H_coeffs_fixed, self.H_ops_fixed)  # pylint: disable=no-member
         return 0
 
-    def H_parametrized(self, *params, t):
+    def H_parametrized(self, params, t):
         """The parametrized terms of the Hamiltonian for the specified parameters and time.
 
         Args:

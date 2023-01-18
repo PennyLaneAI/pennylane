@@ -55,7 +55,7 @@ class TestInitialization:
         H = qml.ops.dot(coeffs, ops)
         expected_H = ParametrizedHamiltonian(coeffs, ops)
 
-        assert qml.equal(H(*[1.2, 2.3], t=3.4), expected_H(*[1.2, 2.3], t=3.4))
+        assert qml.equal(H([1.2, 2.3], t=3.4), expected_H([1.2, 2.3], t=3.4))
 
     def test_mismatched_coeffs_and_obs_raises_error(self):
         """Test that an error is raised if the length of the list of coefficients
@@ -100,7 +100,7 @@ class TestInitialization:
         returns an Operator of the expected format."""
         H_param = test_example.H_parametrized
 
-        H = H_param(*[1, 2], t=0.5)
+        H = H_param([1, 2], t=0.5)
         assert len(H) == 2
         assert isinstance(H, qml.ops.Sum)
         assert isinstance(H[0], qml.ops.SProd)
@@ -117,40 +117,42 @@ class TestInitialization:
         ops = [qml.PauliX(3), qml.PauliX(2), qml.PauliX(0), qml.PauliX(1)]
 
         H = ParametrizedHamiltonian(coeffs, ops)
-        assert H.wires == H(*param, t=2).wires
+        assert H.wires == H(param, t=2).wires
         assert H.wires == Wires([3, 0, 2, 1])
 
 
 class TestCall:
 
-    coeffs_and_ops = (
+    coeffs_and_ops_and_params = (
         (
             [f1, f2],
             [qml.PauliX(0), qml.PauliY(1)],
+            [1, 2],
         ),  # no H_fixed term, multiple H_parametrized terms
-        ([f1], [qml.PauliX(0)]),  # no H_fixed term, one H_parametrized term
+        ([f1], [qml.PauliX(0)], [1]),  # no H_fixed term, one H_parametrized term
         (
             [1.2, 2.3],
             [qml.PauliX(0), qml.PauliY(1)],
+            [],
         ),  # no H_parametrized term, multiple H_fixed terms
-        ([1.2], [qml.PauliX(0)]),  # no H_parametrized term, one H_fixed term
-        ([1, f1], [qml.PauliX(3), qml.PauliY(2)]),  # one of each
-        ([1.2, f1, 2.3, f2], [qml.PauliX(0) for i in range(4)]),  # multiples of each
+        ([1.2], [qml.PauliX(0)], []),  # no H_parametrized term, one H_fixed term
+        ([1, f1], [qml.PauliX(3), qml.PauliY(2)], [1]),  # one of each
+        ([1.2, f1, 2.3, f2], [qml.PauliX(0) for i in range(4)], [1, 2]),  # multiples of each
     )
 
-    @pytest.mark.parametrize("coeffs, ops", coeffs_and_ops)
-    def test_call_succeeds_for_different_shapes(self, coeffs, ops):
+    @pytest.mark.parametrize("coeffs, ops, params", coeffs_and_ops_and_params)
+    def test_call_succeeds_for_different_shapes(self, coeffs, ops, params):
         """Test that calling the ParametrizedHamiltonian succeeds for
         different numbers of H_fixed and H_parametrized terms"""
         pH = ParametrizedHamiltonian(coeffs, ops)
-        pH(*param, t=0.5)
+        pH(params, t=0.5)
 
     def test_call_returns_expected_results(self):
         """Test result of calling the ParametrizedHamiltonian makes sense"""
         pH = ParametrizedHamiltonian([1.2, f1, 2.3, f2], [qml.PauliX(i) for i in range(4)])
         params = [4.5, 6.7]
         t = 2
-        op = pH(*params, t=t)
+        op = pH(params, t=t)
 
         assert isinstance(op, qml.ops.Sum)
         assert len(op) == 2
@@ -177,10 +179,10 @@ class TestCall:
 
         H = ParametrizedHamiltonian(coeffs, obs)
 
-        assert isinstance(H(2, t=4), qml.ops.Sum)
-        assert repr(H(2, t=4)) == "(2*(GellMann(wires=[0]))) + (10*(GellMann(wires=[0])))"
+        assert isinstance(H([2], t=4), qml.ops.Sum)
+        assert repr(H([2], t=4)) == "(2*(GellMann(wires=[0]))) + (10*(GellMann(wires=[0])))"
         assert np.all(
-            qml.matrix(H(2, t=4))
+            qml.matrix(H([2], t=4))
             == np.array(
                 [
                     [0.0 + 0.0j, 10.0 - 2.0j, 0.0 + 0.0j],
@@ -260,9 +262,9 @@ class TestInteractionWithOperators:
         assert qml.equal(new_pH.H_fixed()[1], pH2.H_fixed())
 
         # H_parametrized now contained the parametrized terms from both pH1 and pH2
-        parametric_term = new_pH.H_parametrized(*[1.2, 2.3], t=0.5)
-        assert qml.equal(parametric_term[0], pH1.H_parametrized(*[1.2], t=0.5))
-        assert qml.equal(parametric_term[1], pH2.H_parametrized(*[2.3], t=0.5))
+        parametric_term = new_pH.H_parametrized([1.2, 2.3], t=0.5)
+        assert qml.equal(parametric_term[0], pH1.H_parametrized([1.2], t=0.5))
+        assert qml.equal(parametric_term[1], pH2.H_parametrized([2.3], t=0.5))
 
     def test_fn_times_observable_creates_parametrized_hamiltonian(self):
         """Test a ParametrizedHamiltonian can be created by multiplying a
@@ -270,7 +272,7 @@ class TestInteractionWithOperators:
         pH = f1 * qml.PauliX(0)
         assert isinstance(pH, ParametrizedHamiltonian)
         assert len(pH.H_coeffs_fixed) == 0
-        assert isinstance(pH.H_parametrized(*param, t=0.5), qml.ops.SProd)
+        assert isinstance(pH.H_parametrized(param, t=0.5), qml.ops.SProd)
 
 
 class TestProperties:
@@ -303,7 +305,7 @@ class TestInterfaces:
         pH = ParametrizedHamiltonian([1.2, f1, 2.3, f2], [qml.PauliX(i) for i in range(4)])
         params = jax.numpy.array([4.5, 6.7])
         t = 2
-        op = pH(*params, t=t)
+        op = pH(params, t=t)
 
         assert isinstance(op, qml.ops.Sum)
         assert len(op) == 2
@@ -327,7 +329,7 @@ class TestInterfaces:
         pH = ParametrizedHamiltonian([1.2, f1, 2.3, f2], [qml.PauliX(i) for i in range(4)])
         params = torch.Tensor([4.5, 6.7])
         t = 2
-        op = pH(*params, t=t)
+        op = pH(params, t=t)
 
         assert isinstance(op, qml.ops.Sum)
         assert len(op) == 2
@@ -351,7 +353,7 @@ class TestInterfaces:
         pH = ParametrizedHamiltonian([1.2, f1, 2.3, f2], [qml.PauliX(i) for i in range(4)])
         params = tf.constant([4.5, 6.7])
         t = 2
-        op = pH(*params, t=t)
+        op = pH(params, t=t)
 
         assert isinstance(op, qml.ops.Sum)
         assert len(op) == 2

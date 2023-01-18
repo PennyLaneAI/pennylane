@@ -124,7 +124,7 @@ class Evolve(Operation):
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(self.H(*self.h_params, t=t)) @ y
+            return -1j * qml.matrix(self.H(self.h_params, t=t)) @ y
 
         result = odeint(fun, y0, self.t)
         mat = result[-1]
