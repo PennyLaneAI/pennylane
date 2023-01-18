@@ -469,37 +469,6 @@ class TestMiscMethods:
 class TestOperationProperties:
     """Test ControlledOp specific properties."""
 
-    def test_invert_controlled_op(self):
-        """Test that in-place inversion of a power operator inverts the base operator."""
-
-        base = qml.S(0)
-        op = Controlled(base, 2)
-
-        assert op.inverse == base.inverse == False
-        assert op.name == "C(S)"
-
-        op.inv()
-
-        assert op.inverse is False
-        assert base.inverse is True
-        assert op.name == "C(S.inv)"
-        assert op.base_name == "C(S)"
-
-    def test_inverse_setter(self):
-        """Teest that the inverse property can be set."""
-        base = qml.T(0)
-        op = Controlled(base, 1)
-
-        assert op.inverse == base.inverse == False
-        assert op.name == "C(T)"
-
-        op.inverse = True
-
-        assert op.inverse is False
-        assert base.inverse is True
-        assert op.name == "C(T.inv)"
-        assert op.base_name == "C(T)"
-
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
         """Check grad_method defers to that of the base operation."""
@@ -771,14 +740,6 @@ class TestHelperMethod:
         assert len(decomp) == 1
         assert qml.equal(decomp[0], qml.CRX(1.0, wires=(1, 0)))
 
-    def test_inverts_decomp_if_target_inverted(self):
-        """Tests that the method preserves the inverse parameter."""
-        base = qml.RX(1.0, wires=0).inv()
-        op = Controlled(base, 1)
-        decomp = _decompose_no_control_values(op)
-        assert len(decomp) == 1
-        assert decomp[0].inverse
-
     def test_toffoli(self):
         """Test case when PauliX with two controls."""
         op = Controlled(qml.PauliX("c"), ("a", 2))
@@ -793,11 +754,9 @@ class TestHelperMethod:
         assert len(decomp) == 1
         assert qml.equal(decomp[0], qml.MultiControlledX(wires=(0, 1, 2, 3, 4)))
 
-    @pytest.mark.parametrize("inverse", (True, False))
-    def test_decomposes_target(self, inverse):
+    def test_decomposes_target(self):
         """Test that we decompose the target if we don't have a special case."""
         target = qml.IsingXX(1.0, wires=(0, 1))
-        target.inverse = inverse
         op = Controlled(target, (3, 4))
 
         decomp = _decompose_no_control_values(op)

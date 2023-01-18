@@ -763,50 +763,6 @@ class TestDecompositionExpand:
             op.decomposition()
 
 
-class TestInverse:
-    """Test the interaction between in-place inversion and the power operator."""
-
-    def test_base_already_inverted(self):
-        """Test that if the base is already inverted, then initialization un-inverts
-        it and applies a negative sign to the exponent."""
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            base = qml.S(0).inv()
-        op = Pow(base, 2)
-
-        assert base.inverse is False
-
-        assert op.z == -2
-        assert op.name == "S**-2"
-        assert op.base_name == "S**-2"
-        assert op.inverse is False
-
-    def test_invert_pow_op(self):
-        """Test that in-place inversion of a power operator only changes the sign
-        of the power and does not change the `inverse` property."""
-        base = qml.S(0)
-        op = Pow(base, 2)
-
-        with pytest.warns(UserWarning, match="In-place inversion with inv is deprecated"):
-            op.inv()
-
-        assert base.inverse is False
-
-        assert op.z == -2
-        assert op.name == "S**-2"
-        assert op.base_name == "S**-2"
-        assert op.inverse is False
-
-    def test_inverse_setter(self):
-        """Assert that the inverse can be set to False, but trying to set it to True raises a
-        NotImplementedError."""
-        op = Pow(qml.S(0), 2.1)
-
-        op.inverse = False
-
-        with pytest.raises(NotImplementedError):
-            op.inverse = True
-
-
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestOperationProperties:
     """Test Operation specific properties."""

@@ -175,22 +175,19 @@ class TestAdjointJacobian:
         """Tests that the gradients of circuits match between the finite difference and device
         methods."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Hadamard(wires=0)
-            qml.RX(0.543, wires=0)
-            qml.CNOT(wires=[0, 1])
+        ops = [
+            qml.Hadamard(wires=0),
+            qml.RX(0.543, wires=0),
+            qml.CNOT(wires=[0, 1]),
+            op,
+            qml.Rot(1.3, -2.3, 0.5, wires=[0]),
+            qml.RZ(-0.5, wires=0),
+            qml.adjoint(qml.RY(0.5, wires=1)),
+            qml.CNOT(wires=[0, 1]),
+        ]
+        measurements = [qml.expval(obs(wires=0)), qml.expval(qml.PauliZ(wires=1))]
 
-            qml.apply(op)
-
-            qml.Rot(1.3, -2.3, 0.5, wires=[0])
-            qml.RZ(-0.5, wires=0)
-            qml.RY(0.5, wires=1).inv()
-            qml.CNOT(wires=[0, 1])
-
-            qml.expval(obs(wires=0))
-            qml.expval(qml.PauliZ(wires=1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(ops, measurements)
         tape.trainable_params = set(range(1, 1 + op.num_params))
 
         grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
