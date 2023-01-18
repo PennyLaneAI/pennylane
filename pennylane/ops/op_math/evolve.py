@@ -94,6 +94,7 @@ class ParametrizedEvolution(Operation):
     >>> ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
     >>> coeffs = [lambda p, t: p for _ in range(3)]
     >>> H1 = qml.ops.dot(coeffs, ops)  # time-independent parametrized hamiltonian
+    >>> ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
     >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
     >>> H2 = qml.ops.dot(coeffs, ops) # time-dependent parametrized hamiltonian
     >>> H1, H2
@@ -109,12 +110,12 @@ class ParametrizedEvolution(Operation):
     ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
     >>> params = jnp.array([1., 2., 3.])
     >>> circuit(params)
-    Array(-0.11284423, dtype=float32)
+    Array(-0.01543971, dtype=float32)
 
     We can also compute the gradient of this evolution with respect to the input parameters!
 
     >>> jax.grad(circuit)(params)
-    Array([-2.2885817e+01,  6.3256729e-01,  1.3149789e-05], dtype=float32)
+    Array([ 0.6908507,  0.0865578, -1.4594607], dtype=float32)
 
     As mentioned in the warning above, ``circuit`` is not executing the evolution of ``H1`` and ``H2``
     simultaneously, but rather executing ``H1`` in the ``[0, 10]`` time window and then executing
@@ -129,10 +130,10 @@ class ParametrizedEvolution(Operation):
     ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
     >>> params = jnp.concatenate([params, params])  # H1 + H2 requires 6 parameters!
     >>> circuit(params)
-    Array(-0.11286649, dtype=float32)  # TODO: why do we obtain almost the same result ???
+    Array(-0.78236955, dtype=float32)
     >>> jax.grad(circuit)(params)
-    Array([-1.9330484e+01,  5.3454441e-01,  1.9257823e-05, -3.5550218e+00,
-            9.8307326e-02,  3.8251674e-06], dtype=float32)
+    Array([-4.8066125,  3.7038102, -1.3294725, -2.4061902,  0.6811545,
+        -0.5226515], dtype=float32)
     """
 
     _name = "ParametrizedEvolution"
@@ -166,7 +167,7 @@ class ParametrizedEvolution(Operation):
 
     def __call__(self, params, t):
         self.params = params
-        self.t = t
+        self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
         return self
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
