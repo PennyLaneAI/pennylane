@@ -144,6 +144,13 @@ class TestMatrix:
 class TestAdjoint:
     """Tests the adjoint of state-prep operations."""
 
+    def test_QubitStateVector_adjoint_exists(self):
+        """Test that QubitStateVector has an adjoint method defined."""
+        base = qml.QubitStateVector([0, 1j], wires=[0])
+        from_method = base.adjoint()
+        from_adjoint = qml.adjoint(base)
+        assert all(from_method.matrix() == from_adjoint.matrix())
+
     def test_QubitStateVector_adjoint_matrix(self):
         """Tests the matrix of the adjoint of QubitStateVector."""
         base = qml.QubitStateVector([0, 1j], wires=[0])
