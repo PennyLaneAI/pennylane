@@ -290,6 +290,9 @@
 * Set `Tensor._batch_size` to None during initialization.
   [(#3642)](https://github.com/PennyLaneAI/pennylane/pull/3642)
 
+* Set `Tensor.has_matrix` to `True`.
+  [(#3647)](https://github.com/PennyLaneAI/pennylane/pull/3647)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
