@@ -168,6 +168,8 @@ class TestCall:
         assert qml.equal(H_parametrized, expected_H_parametrized)
 
     def test_call_with_qutrit_operators(self):
+        """Test that the ParametrizedHamiltonian can be created and called to initialize an
+        operator consisting of qutrit operations"""
         def f(x, t):
             return x + 2 * t
 
