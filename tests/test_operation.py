@@ -1286,6 +1286,10 @@ class TestTensor:
         t = Tensor(X, Y)
         assert t.batch_size is None
 
+    def test_has_matrix(self):
+        """Test that the Tensor class has a ``has_matrix`` static attribute set to True."""
+        assert Tensor.has_matrix is True
+
     def test_num_wires(self):
         """Test that the correct number of wires is returned"""
         p = np.eye(4)
