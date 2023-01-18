@@ -115,8 +115,8 @@ class ParametrizedHamiltonian:
             [op.wires for op in self.H_ops_fixed] + [op.wires for op in self.H_ops_parametrized]
         )
 
-    def __call__(self, params, t):
-        return self.H_fixed() + self.H_parametrized(params, t)
+    def __call__(self, *params, t):
+        return self.H_fixed() + self.H_parametrized(*params, t=t)
 
     def __repr__(self):
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
@@ -128,7 +128,7 @@ class ParametrizedHamiltonian:
             return qml.ops.dot(self.H_coeffs_fixed, self.H_ops_fixed)  # pylint: disable=no-member
         return 0
 
-    def H_parametrized(self, params, t):
+    def H_parametrized(self, *params, t):
         """The parametrized terms of the Hamiltonian for the specified parameters and time.
 
         Args:
@@ -138,10 +138,12 @@ class ParametrizedHamiltonian:
         Returns: an operator is a ``Sum`` of ``~S_Prod`` operators (or a single
         ``~SProd`` operator in the event that there is only one term in ``H_parametrized``)."""
 
-        coeffs = [f(params, t) for f in self.H_coeffs_parametrized]
-        if len(coeffs) == 0:
-            return 0
-        return qml.ops.dot(coeffs, self.H_ops_parametrized)  # pylint: disable=no-member
+        coeffs = [f(param, t) for f, param in zip(self.H_coeffs_parametrized, params)]
+        return (
+            qml.ops.dot(coeffs, self.H_ops_parametrized)  # pylint: disable=no-member
+            if coeffs
+            else 0
+        )
 
     @property
     def coeffs(self):

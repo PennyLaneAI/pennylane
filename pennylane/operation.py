@@ -102,7 +102,6 @@ import warnings
 from enum import IntEnum
 from typing import List
 
-
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
@@ -1830,6 +1829,9 @@ class Tensor(Observable):
         self._args = args
         self._batch_size = None
         self.queue(init=True)
+
+    def has_matrix(self):
+        return True
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the operator is represented in diagrams and drawings.

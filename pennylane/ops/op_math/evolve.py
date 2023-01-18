@@ -99,6 +99,10 @@ class Evolve(Operation):
     def __init__(
         self, H: ParametrizedHamiltonian, params: list, t, time="t", do_queue=True, id=None
     ):
+        if not has_jax:
+            raise ImportError(
+                "Module jax is required for the ``Evolve`` class. You can install jax via: pip install jax"
+            )
         if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
             raise ValueError(
                 "All operators inside the parametrized hamiltonian must have a matrix defined."
@@ -116,16 +120,11 @@ class Evolve(Operation):
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
-        if not has_jax:
-            raise ImportError(
-                "Module jax is required for ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
-            )
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(self.H(self.h_params, t=t)) @ y
+            return -1j * qml.matrix(self.H(*self.h_params, t=t)) @ y
 
         result = odeint(fun, y0, self.t)
         mat = result[-1]

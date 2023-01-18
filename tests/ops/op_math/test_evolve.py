@@ -23,6 +23,10 @@ import pennylane as qml
 from pennylane.operation import AnyWires
 from pennylane.ops import Evolution, Evolve, ParametrizedHamiltonian, QubitUnitary
 
+pytest_mark = pytest.mark.jax
+jax = pytest.importorskip("jax")
+jnp = jax.numpy
+
 
 class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
     """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
@@ -37,10 +41,10 @@ def time_independent_hamiltonian():
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
 
     def f1(params, t):
-        return params[0]  # constant
+        return params  # constant
 
     def f2(params, t):
-        return params[1]  # constant
+        return params  # constant
 
     coeffs = [f1, f2, 4, 9]
 
@@ -48,23 +52,16 @@ def time_independent_hamiltonian():
 
 
 def time_dependent_hamiltonian():
-    from jax import numpy as jnp
 
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
 
     def f1(params, t):
-        return params[0] * t
+        return params * t
 
     def f2(params, t):
-        return params[1] * jnp.cos(t)
+        return params * jnp.cos(t)
 
-    def f3(params, t):
-        return 4
-
-    def f4(params, t):
-        return 9
-
-    coeffs = [f1, f2, f3, f4]
+    coeffs = [f1, f2, 4, 9]
     return ParametrizedHamiltonian(coeffs, ops)
 
 
@@ -117,24 +114,20 @@ class TestMatrix:
     """Test matrix method."""
 
     # pylint: disable=unused-argument
-    @pytest.mark.jax
     def test_time_independent_hamiltonian(self):
         """Test matrix method for a time independent hamiltonian."""
         H = time_independent_hamiltonian()
         t = 4
         params = [1, 2]
         ev = Evolve(H=H, params=params, t=t)
-        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t)) * t)
+        true_mat = qml.math.expm(-1j * qml.matrix(H(*params, t=t)) * t)
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-3)
 
     @pytest.mark.slow
-    @pytest.mark.jax
     def test_time_dependent_hamiltonian(self):
         """Test matrix method for a time dependent hamiltonian. This test approximates the
         time-ordered exponential with a product of exponentials using small time steps.
         For more information, see https://en.wikipedia.org/wiki/Ordered_exponential."""
-        import jax
-        from jax import numpy as jnp
 
         H = time_dependent_hamiltonian()
 
@@ -146,7 +139,7 @@ class TestMatrix:
             time_step = 1e-3
             times = jnp.arange(0, t, step=time_step)
             for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, ti)))
+                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(*params, t=ti)))
 
         true_mat = reduce(lambda x, y: y @ x, generator(params))
 
@@ -157,12 +150,8 @@ class TestIntegration:
     """Integration tests for the ParametrizedEvolution class."""
 
     # pylint: disable=unused-argument
-    @pytest.mark.jax
     def test_time_independent_hamiltonian(self):
         """Test the execution of a time independent hamiltonian."""
-        import jax
-        from jax import numpy as jnp
-
         H = time_independent_hamiltonian()
 
         dev = qml.device("default.qubit", wires=2)
@@ -182,7 +171,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def true_circuit(params):
-            true_mat = qml.math.expm(-1j * qml.matrix(H(params, t)) * t)
+            true_mat = qml.math.expm(-1j * qml.matrix(H(*params, t=t)) * t)
             QubitUnitary(U=true_mat, wires=[0, 1])
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
@@ -198,13 +187,10 @@ class TestIntegration:
         )
 
     @pytest.mark.slow
-    @pytest.mark.jax
     def test_time_dependent_hamiltonian(self):
         """Test the execution of a time dependent hamiltonian. This test approximates the
         time-ordered exponential with a product of exponentials using small time steps.
         For more information, see https://en.wikipedia.org/wiki/Ordered_exponential."""
-        import jax
-        import jax.numpy as jnp
 
         H = time_dependent_hamiltonian()
 
@@ -215,7 +201,7 @@ class TestIntegration:
             time_step = 1e-3
             times = jnp.arange(0, t, step=time_step)
             for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, ti)))
+                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(*params, t=ti)))
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
