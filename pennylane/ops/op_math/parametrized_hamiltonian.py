@@ -213,6 +213,6 @@ class ParametrizedHamiltonian:
             ops.append(H)
             return ParametrizedHamiltonian(coeffs, ops)
 
-        raise ValueError(f"Cannot add ParametrizedHamiltonian and {type(H)}")
+        return NotImplemented
 
     __radd__ = __add__
