@@ -237,7 +237,7 @@
   [(#3641)](https://github.com/PennyLaneAI/pennylane/pull/3641)
 
 * Introduce the `ExecutionConfig` data class.
-  [(#3614)](https://github.com/PennyLaneAI/pennylane/pull/3614)
+  [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
 
 <h3>Breaking changes</h3>
 
