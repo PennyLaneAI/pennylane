@@ -25,7 +25,7 @@ from pennylane.ops import Evolution, Evolve, ParametrizedHamiltonian, QubitUnita
 
 pytest_mark = pytest.mark.jax
 jax = pytest.importorskip("jax")
-jnp = jax.numpy
+jnp = pytest.importorskip("jax.numpy")
 
 
 class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
