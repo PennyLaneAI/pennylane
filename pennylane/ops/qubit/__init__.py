@@ -89,6 +89,7 @@ ops = {
     "QubitStateVector",
     "QubitDensityMatrix",
     "QubitUnitary",
+    "SpecialUnitary",
     "MultiControlledX",
     "IntegerComparator",
     "DiagonalQubitUnitary",
