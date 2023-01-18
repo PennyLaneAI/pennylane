@@ -182,7 +182,7 @@ class TestAdjointJacobian:
             op,
             qml.Rot(1.3, -2.3, 0.5, wires=[0]),
             qml.RZ(-0.5, wires=0),
-            qml.RY(-0.5, wires=1),
+            qml.adjoint(qml.RY(0.5, wires=1)),
             qml.CNOT(wires=[0, 1]),
         ]
         measurements = [qml.expval(obs(wires=0)), qml.expval(qml.PauliZ(wires=1))]
