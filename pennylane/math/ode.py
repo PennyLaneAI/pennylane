@@ -1,19 +1,9 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
-
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-
-#     http://www.apache.org/licenses/LICENSE-2.0
-
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# TODO: This code is heavily inspired by https://github.com/google/jax/blob/main/jax/experimental/ode.py
-# need to make sure copyright is not infringed
+# This code is a modified version of the experimental jax solver for ordinary differential equations
+# `jax.experimental.ode <https://github.com/google/jax/blob/main/jax/experimental/ode.py`_,
+# which is released under the Apache 2 licence with the following
+# copyright notice:
+# Copyright 2018 The JAX Authors.
+#
 """Fixed step size ODE solver"""
 
 import warnings
