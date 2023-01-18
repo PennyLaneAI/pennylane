@@ -41,7 +41,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
         op (Operator): operator to evolve
 
     Returns:
-        .Evolution | .ParametrizedEvolution: evolution operator
+        Union[.Evolution, .ParametrizedEvolution]: evolution operator
     """
     if isinstance(op, ParametrizedHamiltonian):
 
@@ -57,7 +57,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
                     time-dependent Hamiltonian. Defaults to XXX.
 
             Returns:
-                ParametrizedEvolution: class used to compute the parametrized evolution of the given
+                .ParametrizedEvolution: class used to compute the parametrized evolution of the given
                     hamiltonian
             """
             return ParametrizedEvolution(H=op, params=params, t=t)
@@ -73,7 +73,7 @@ class ParametrizedEvolution(Operation):
     For a time-dependent Hamiltonian of the form
     :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j` it implements the corresponding
     time-evolution operator :math:`U(t_1, t_2)`, which is the solution to the time-dependent
-    Schrodinger equation
+    Schrodinger equation.
 
     .. math:: \frac{d}{dt}U(t) = -i H(v, t) U(t).
 
@@ -91,6 +91,66 @@ class ParametrizedEvolution(Operation):
             Defaults to "t".
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
+
+    .. warning::
+
+        The time argument ``t`` corresponds to the time window used to compute the scalar-valued
+        functions present in the :class:`ParametrizedHamiltonian` class. Consequently, executing
+        two ``ParametrizedEvolution`` gates using the same time window does not mean both gates
+        are executed simultaneously, but rather both gates evaluate their respective scalar-valued
+        functions using the same time window.
+
+    .. note::
+
+        To execute two :class:`ParametrizedHamiltonian``s simultaneously one must wrap them with the
+        same ``ParametrizedEvolution`` gate.
+
+    **Example**
+
+    Let's first build two :class:`ParametrizedHamiltonian` objects:
+
+    >>> ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+    >>> coeffs = [lambda p, t: p for _ in range(3)]
+    >>> H1 = qml.ops.dot(coeffs, ops)  # time-independent parametrized hamiltonian
+    >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
+    >>> H2 = qml.ops.dot(coeffs, ops) # time-dependent parametrized hamiltonian
+    >>> H1, H2
+    (ParametrizedHamiltonian: terms=3, ParametrizedHamiltonian: terms=3)
+
+    Now we can execute the evolution of these parametrized hamiltonians:
+
+    >>> dev = qml.device("default.qubit", wires=3)
+    >>> @qml.qnode(dev, interface="jax")
+    ... def circuit(params):
+    ...     qml.evolve(H1)(params, t=[0, 10])
+    ...     qml.evolve(H2)(params, t=[0, 10])
+    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+    >>> params = jnp.array([1., 2., 3.])
+    >>> circuit(params)
+    Array(-0.11284423, dtype=float32)
+
+    We can also compute the gradient of this evolution with respect to the input parameters!
+
+    >>> jax.grad(circuit)(params)
+    Array([-2.2885817e+01,  6.3256729e-01,  1.3149789e-05], dtype=float32)
+
+    As mentioned in the warning above, ``circuit`` is not executing the evolution of ``H1`` and ``H2``
+    simultaneously, but rather executing ``H1`` in the ``[0, 10]`` time window and then executing
+    ``H2`` with the same time window.
+
+    If we want to execute both hamiltonians simultaneously, we need to wrap them with the same
+    ``ParametrizedEvolution`` operator:
+
+    >>> @qml.qnode(dev, interface="jax")
+    ... def circuit(params):
+    ...     qml.evolve(H1 + H2)(params, t=[0, 10])
+    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+    >>> params = jnp.concatenate([params, params])  # H1 + H2 requires 6 parameters!
+    >>> circuit(params)
+    Array(-0.11286649, dtype=float32)  # TODO: why do we obtain almost the same result ???
+    >>> jax.grad(circuit)(params)
+    Array([-1.9330484e+01,  5.3454441e-01,  1.9257823e-05, -3.5550218e+00,
+            9.8307326e-02,  3.8251674e-06], dtype=float32)
     """
 
     _name = "ParametrizedEvolution"
@@ -110,7 +170,7 @@ class ParametrizedEvolution(Operation):
         self.H = H
         self.time = time
         self.h_params = params
-        self.t = jnp.array([0, t], dtype=float) if qml.math.size(t) == 1 else t
+        self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
         super().__init__(wires=H.wires, do_queue=do_queue, id=id)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
