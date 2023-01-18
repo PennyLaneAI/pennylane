@@ -236,6 +236,9 @@
 * The GellMann operators now include their index in the displayed representation.
   [(#3641)](https://github.com/PennyLaneAI/pennylane/pull/3641)
 
+* Introduce the `ExecutionConfig` data class.
+  [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
+
 <h3>Breaking changes</h3>
 
 * `Operator.inv()` and the `Operator.inverse` setter are removed. Please use `qml.adjoint` or `qml.pow` instead.
