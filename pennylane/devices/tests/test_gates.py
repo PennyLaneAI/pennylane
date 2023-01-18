@@ -543,7 +543,7 @@ class TestGatesQubit:
     @pytest.mark.parametrize("theta", thetas)
     def test_special_unitary(self, device, init_state, theta, tol, skip_if):
         """Test SpecialUnitary gate."""
-        n_wires = int(np.log(len(theta) + 1)/np.log(4))
+        n_wires = int(np.log(len(theta) + 1) / np.log(4))
         dev = device(n_wires)
 
         if "SpecialUnitary" not in dev.operations:
