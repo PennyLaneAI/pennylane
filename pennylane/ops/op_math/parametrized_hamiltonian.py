@@ -123,9 +123,6 @@ class ParametrizedHamiltonian:
                 f"Got len(coeffs) = {len(coeffs)} and len(observables) = {len(observables)}."
             )
 
-        self._ops = list(observables)
-        self._coeffs = coeffs
-
         self.coeffs_fixed = []
         self.coeffs_parametrized = []
         self.ops_fixed = []
@@ -183,7 +180,7 @@ class ParametrizedHamiltonian:
         Returns:
             Iterable[float]): coefficients in the Hamiltonian expression
         """
-        return self._coeffs
+        return self.coeffs_fixed + self.coeffs_parametrized
 
     @property
     def ops(self):
@@ -192,7 +189,7 @@ class ParametrizedHamiltonian:
         Returns:
             Iterable[Observable]): observables in the Hamiltonian expression
         """
-        return self._ops
+        return self.ops_fixed + self.ops_parametrized
 
     def __add__(self, H):
         r"""The addition operation between a ``ParametrizedHamiltonian`` and an ``Operator``
