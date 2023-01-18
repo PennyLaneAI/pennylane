@@ -140,11 +140,11 @@ class TestMatrix:
         params = [1, 2]
         ev = Evolve(H=H, params=params, t=t)
 
-        time_step = 1e-4
+        time_step = 1e-3
         times = jnp.arange(0, t, step=time_step)
         true_mat = jnp.eye(2 ** len(ev.wires))
-        for ti in times[::-1]:
-            true_mat @= qml.math.expm(-1j * time_step * qml.matrix(H(params, ti)))
+        for ti in times:
+            true_mat = qml.math.expm(-1j * time_step * qml.matrix(H(params, ti))) @ true_mat
 
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
 
@@ -212,11 +212,11 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def true_circuit(params, t):
-            time_step = 1e-4
+            time_step = 1e-3
             times = jnp.arange(0, t, step=time_step)
             true_mat = jnp.eye(2 ** len(H.wires))
-            for ti in times[::-1]:
-                true_mat @= qml.math.expm(-1j * time_step * qml.matrix(H(params, ti)))
+            for ti in times:
+                true_mat = qml.math.expm(-1j * time_step * qml.matrix(H(params, ti))) @ true_mat
             QubitUnitary(U=true_mat, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 

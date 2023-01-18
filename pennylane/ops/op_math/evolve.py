@@ -78,7 +78,8 @@ class Evolve(Operation):
         params (ndarray): trainable parameters
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
             If a list of two floats, it corresponds to the initial time and the final time of the
-            evolution. Note that such absolute times only have meaning within an instance of ``ParametrizedEvolution`` and will not affect other gates.
+            evolution. Note that such absolute times only have meaning within an instance of
+            ``Evolve`` and will not affect other gates.
         dt (float): the time step used by the differential equation solver to evolve the
             time-dependent Hamiltonian. Defaults to XXX.
         time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
@@ -87,7 +88,7 @@ class Evolve(Operation):
         id (str or None): id for the scalar product operator. Default is None.
     """
 
-    _name = "ParametrizedEvolution"
+    _name = "Evolve"
     num_wires = AnyWires
     # pylint: disable=too-many-arguments, super-init-not-called
     def __init__(
@@ -136,7 +137,7 @@ class Evolve(Operation):
 
 # TODO: Figure out best values for 'rtol' and 'atol'
 # pylint: disable=too-many-arguments
-def guess_dt(fun, t0, y0, p=3, rtol=1.4e-8, atol=1.4e-8):
+def guess_dt(fun, t0, y0, p=4, rtol=1.4e-8, atol=1.4e-8):
     """Compute a guess for the time step.
 
     This algorithm is described in further detail in:
