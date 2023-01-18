@@ -566,7 +566,7 @@ class Hamiltonian(Observable):
         return NotImplemented
 
     def __add__(self, H):
-        r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable/ParametrizedHamiltonian."""
+        r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         ops = self.ops.copy()
         self_coeffs = copy(self.coeffs)
 
@@ -584,8 +584,6 @@ class Hamiltonian(Observable):
             )
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
-        if isinstance(H, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
-            return H.__add__(self)
 
         return NotImplemented
 
