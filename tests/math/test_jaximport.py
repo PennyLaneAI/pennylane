@@ -17,7 +17,7 @@ Integration tests for odeint (ordinary differential equation integrator)
 import sys
 import pytest
 
-
+# cant test this in a file where pennylane is already imported
 def test_nojax_ImportError(monkeypatch):
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "jax", None)
