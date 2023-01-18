@@ -69,9 +69,15 @@ def pauli_basis(num_wires):
     **Example**
 
     >>> pauli_basis(1)
-    TODO
+    array([[[ 0.+0.j,  1.+0.j],
+            [ 1.+0.j,  0.+0.j]],
+           [[ 0.+0.j, -0.-1.j],
+            [ 0.+1.j,  0.+0.j]],
+           [[ 1.+0.j,  0.+0.j],
+            [ 0.+0.j, -1.+0.j]]])
+
     >>> pauli_basis(3).shape
-    TODO
+    (63, 8, 8)
     """
     return reduce(np.kron, (_paulis for _ in range(num_wires)))[1:]
 
@@ -104,9 +110,9 @@ def pauli_words(num_wires):
     **Example**
 
     >>> pauli_words(1)
-    TODO
+    ['X', 'Y', 'Z']
     >>> len(pauli_words(3))
-    TODO
+    63
     """
     return ["".join(letters) for letters in list(product(_pauli_letters, repeat=num_wires))[1:]]
 
@@ -514,7 +520,7 @@ class SpecialUnitary(Operation):
     >>> rx = qml.RX(-2 * x, 0) # RX introduces a prefactor -0.5
     >>> qml.math.allclose(su.matrix(), prot.matrix())
     True
-    >>> qml.math.allclose(su.matrix(), rx.matrix()):
+    >>> qml.math.allclose(su.matrix(), rx.matrix())
     True
 
     More interestingly, multiple Pauli words can be activated simultaneously, giving
@@ -526,8 +532,14 @@ class SpecialUnitary(Operation):
     True
     >>> su = qml.SpecialUnitary(theta, wires=wires)
     >>> su.matrix()
-    TODO
-
+    array([[ 0.56397118+0.52139241j,  0.30652227+0.02438052j,
+             0.13555302+0.22630716j,  0.0689876 -0.49110826j],
+           [-0.15454843+0.00998377j,  0.88294943+0.01496327j,
+            -0.25396275-0.10785888j, -0.26041566+0.22857073j],
+           [-0.2876174 -0.2443733j ,  0.25423439+0.05896445j,
+             0.71621665+0.50686226j,  0.1380692 +0.02252197j],
+           [-0.34495668-0.35307844j,  0.10817019-0.21404059j,
+            -0.29040522+0.00830631j,  0.15015337-0.76933485j]])
     """
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
@@ -588,7 +600,8 @@ class SpecialUnitary(Operation):
 
         >>> theta = np.array([0.5, 0.1, -0.3])
         >>> qml.SpecialUnitary.compute_matrix(theta, num_wires=1)
-        TODO
+        array([[ 0.83004499-0.28280371j,  0.0942679 +0.47133952j],
+               [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]])
         """
         return special_unitary_matrix(theta, num_wires)
 
@@ -613,8 +626,9 @@ class SpecialUnitary(Operation):
         **Example:**
 
         >>> theta = np.array([0.5, 0.1, -0.3])
-        >>> qml.SpecialUnitary.compute_decomposition(theta, num_wires=1)
-        TODO
+        >>> qml.SpecialUnitary.compute_decomposition(theta, 0, num_wires=1)
+        [QubitUnitary(array([[ 0.83004499-0.28280371j,  0.0942679 +0.47133952j],
+            [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]]), wires=[0])]
         """
         return [QubitUnitary(special_unitary_matrix(theta, num_wires), wires=wires)]
 

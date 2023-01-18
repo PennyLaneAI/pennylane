@@ -13,10 +13,24 @@
   
   For example, on a single qubit, we may define
   
+  ```pycon
   >>> theta = np.array([0.2, 0.1, -0.5])
   >>> U = qml.SpecialUnitary(theta, 0)
   >>> U.matrix()
-  TODO
+  array([[ 0.8537127 -0.47537233j,  0.09507447+0.19014893j],
+         [-0.09507447+0.19014893j,  0.8537127 +0.47537233j]])
+  ```
+  
+  A single non-zero entry in the parameters will create a Pauli rotation:
+
+  ```pycon
+  >>> x = 0.412
+  >>> theta = x * np.array([1, 0, 0]) # The first entry belongs to the Pauli word "X"
+  >>> su = qml.SpecialUnitary(theta, wires=0)
+  >>> rx = qml.RX(-2 * x, 0) # RX introduces a prefactor -0.5 that has to be compensated
+  >>> qml.math.allclose(su.matrix(), rx.matrix())
+  True
+  ```
   
 * `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
