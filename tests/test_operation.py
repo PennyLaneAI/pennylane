@@ -1060,107 +1060,6 @@ class TestOperatorIntegration:
             _ = qml.PauliX(0) @ "dummy"
 
 
-class TestInverse:
-    """Test inverse of operations"""
-
-    def test_operation_inverse_using_dummy_operation(self):
-        some_param = 0.5
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom Operation"""
-            num_wires = 1
-
-        # Check that the name of the Operation is initialized fine
-        dummy_op = DummyOp(some_param, wires=[1])
-
-        assert not dummy_op.inverse
-
-        dummy_op_class_name = dummy_op.name
-
-        # Check that the name of the Operation was modified when applying the inverse
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            assert dummy_op.inv().name == dummy_op_class_name + ".inv"
-        assert dummy_op.inverse
-
-        # Check that the name of the Operation is the original again, once applying the inverse a second time
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            assert dummy_op.inv().name == dummy_op_class_name
-        assert not dummy_op.inverse
-
-    def test_inv_queuing(self):
-        """Test that inv updates the inverse property in place during queuing."""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom Operation"""
-            num_wires = 1
-
-        with qml.queuing.AnnotatedQueue() as q:
-            with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-                op = DummyOp(wires=[0]).inv()
-            assert op.inverse is True
-
-        _ = qml.tape.QuantumScript.from_queue(q)
-        assert op.inverse is True
-
-    def test_inverse_integration(self):
-        """Test that the inv integrates with qnode execution. An operation followed by the inverse
-        operation should leave the state unchanged.
-        """
-
-        dev1 = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev1)
-        def circuit():
-            qml.RX(1.234, wires=0)
-            qml.RX(1.234, wires=0).inv()
-            return qml.state()
-
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            assert qml.math.allclose(circuit()[0], 1)
-
-    def test_inverse_operations_not_supported(self):
-        """Test that the inverse of operations is not currently
-        supported on the default gaussian device"""
-
-        dev1 = qml.device("default.gaussian", wires=2)
-
-        @qml.qnode(dev1)
-        def mean_photon_gaussian(mag_alpha, phase_alpha, phi):
-            qml.Displacement(mag_alpha, phase_alpha, wires=0)
-            qml.Rotation(phi, wires=0).inv()
-            return qml.expval(qml.NumberOperator(0))
-
-        with pytest.raises(
-            qml.DeviceError,
-            match=r"inverse of gates are not supported on device default\.gaussian",
-        ):
-            mean_photon_gaussian(0.015, 0.02, 0.005)
-
-    @pytest.fixture(scope="function")
-    def qnode_for_inverse(self, mock_device):
-        """Provides a QNode for the subsequent tests of inv"""
-
-        def circuit(x):
-            qml.RZ(x, wires=[1]).inv()
-            qml.RZ(x, wires=[1]).inv().inv()
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
-
-        node = qml.QNode(circuit, mock_device)
-        node.construct([1.0], {})
-
-        return node
-
-    def test_operation_inverse_defined(self, qnode_for_inverse):
-        """Test that the inverse of an operation is added to the QNode queue and the operation is an instance
-        of the original class"""
-        assert qnode_for_inverse.qtape.operations[0].name == "RZ.inv"
-        assert qnode_for_inverse.qtape.operations[0].inverse
-        assert issubclass(qnode_for_inverse.qtape.operations[0].__class__, qml.operation.Operation)
-        assert qnode_for_inverse.qtape.operations[1].name == "RZ"
-        assert not qnode_for_inverse.qtape.operations[1].inverse
-        assert issubclass(qnode_for_inverse.qtape.operations[1].__class__, qml.operation.Operation)
-
-
 class TestTensor:
     """Unit tests for the Tensor class"""
 
@@ -2113,16 +2012,6 @@ class TestOperationDerivative:
         )
 
         assert np.allclose(derivative, expected_derivative)
-
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            op.inv()
-        derivative_inv = operation_derivative(op)
-        expected_derivative_inv = 0.5 * np.array(
-            [[-np.sin(p / 2), 1j * np.cos(p / 2)], [1j * np.cos(p / 2), -np.sin(p / 2)]]
-        )
-
-        assert not np.allclose(derivative, derivative_inv)
-        assert np.allclose(derivative_inv, expected_derivative_inv)
 
     def test_phase(self):
         """Test if the function correctly returns the derivative of PhaseShift"""
