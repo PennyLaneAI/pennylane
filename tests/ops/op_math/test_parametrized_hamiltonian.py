@@ -25,11 +25,11 @@ from pennylane.wires import Wires
 
 
 def f1(p, t):
-    return p[0] * np.sin(t) * (t - 1)
+    return p * np.sin(t) * (t - 1)
 
 
 def f2(p, t):
-    return p[1] * np.cos(t**2)
+    return p * np.cos(t**2)
 
 
 param = [1.2, 2.3]
@@ -123,27 +123,29 @@ class TestInitialization:
 
 class TestCall:
 
-    coeffs_and_ops = (
+    coeffs_and_ops_and_params = (
         (
             [f1, f2],
             [qml.PauliX(0), qml.PauliY(1)],
+            [1, 2],
         ),  # no H_fixed term, multiple H_parametrized terms
-        ([f1], [qml.PauliX(0)]),  # no H_fixed term, one H_parametrized term
+        ([f1], [qml.PauliX(0)], [1]),  # no H_fixed term, one H_parametrized term
         (
             [1.2, 2.3],
             [qml.PauliX(0), qml.PauliY(1)],
+            [],
         ),  # no H_parametrized term, multiple H_fixed terms
-        ([1.2], [qml.PauliX(0)]),  # no H_parametrized term, one H_fixed term
-        ([1, f1], [qml.PauliX(3), qml.PauliY(2)]),  # one of each
-        ([1.2, f1, 2.3, f2], [qml.PauliX(0) for i in range(4)]),  # multiples of each
+        ([1.2], [qml.PauliX(0)], []),  # no H_parametrized term, one H_fixed term
+        ([1, f1], [qml.PauliX(3), qml.PauliY(2)], [1]),  # one of each
+        ([1.2, f1, 2.3, f2], [qml.PauliX(0) for i in range(4)], [1, 2]),  # multiples of each
     )
 
-    @pytest.mark.parametrize("coeffs, ops", coeffs_and_ops)
-    def test_call_succeeds_for_different_shapes(self, coeffs, ops):
+    @pytest.mark.parametrize("coeffs, ops, params", coeffs_and_ops_and_params)
+    def test_call_succeeds_for_different_shapes(self, coeffs, ops, params):
         """Test that calling the ParametrizedHamiltonian succeeds for
         different numbers of H_fixed and H_parametrized terms"""
         pH = ParametrizedHamiltonian(coeffs, ops)
-        pH(param, 0.5)
+        pH(params, 0.5)
 
     def test_call_returns_expected_results(self):
         """Test result of calling the ParametrizedHamiltonian makes sense"""
@@ -161,7 +163,7 @@ class TestCall:
             qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
         )
         expected_H_parametrized = qml.op_sum(
-            qml.s_prod(f1(params, t), qml.PauliX(1)), qml.s_prod(f2(params, t), qml.PauliX(3))
+            qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
         assert qml.equal(H_fixed, expected_H_fixed)
@@ -176,13 +178,10 @@ class TestCall:
 
         H = ParametrizedHamiltonian(coeffs, obs)
 
-        assert isinstance(H(2, 4), qml.ops.Sum)
-        assert (
-            repr(H(2, 4))
-            == "(2*(GellMann(wires=[0], index=2))) + (10*(GellMann(wires=[0], index=1)))"
-        )
+        assert isinstance(H([2], 4), qml.ops.Sum)
+        assert repr(H([2], t=4)) == "(2*(GellMann(wires=[0]))) + (10*(GellMann(wires=[0])))"
         assert np.all(
-            qml.matrix(H(2, 4))
+            qml.matrix(H([2], 4))
             == np.array(
                 [
                     [0.0 + 0.0j, 10.0 - 2.0j, 0.0 + 0.0j],
@@ -263,8 +262,8 @@ class TestInteractionWithOperators:
 
         # H_parametrized now contained the parametrized terms from both pH1 and pH2
         parametric_term = new_pH.H_parametrized([1.2, 2.3], 0.5)
-        assert qml.equal(parametric_term[0], pH1.H_parametrized([1.2, 2.3], 0.5))
-        assert qml.equal(parametric_term[1], pH2.H_parametrized([1.2, 2.3], 0.5))
+        assert qml.equal(parametric_term[0], pH1.H_parametrized([1.2], 0.5))
+        assert qml.equal(parametric_term[1], pH2.H_parametrized([2.3], 0.5))
 
     def test_fn_times_observable_creates_parametrized_hamiltonian(self):
         """Test a ParametrizedHamiltonian can be created by multiplying a
@@ -316,7 +315,7 @@ class TestInterfaces:
             qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
         )
         expected_H_parametrized = qml.op_sum(
-            qml.s_prod(f1(params, t), qml.PauliX(1)), qml.s_prod(f2(params, t), qml.PauliX(3))
+            qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
         assert qml.equal(H_fixed, expected_H_fixed)
@@ -340,7 +339,7 @@ class TestInterfaces:
             qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
         )
         expected_H_parametrized = qml.op_sum(
-            qml.s_prod(f1(params, t), qml.PauliX(1)), qml.s_prod(f2(params, t), qml.PauliX(3))
+            qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
         assert qml.equal(H_fixed, expected_H_fixed)
@@ -364,7 +363,7 @@ class TestInterfaces:
             qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
         )
         expected_H_parametrized = qml.op_sum(
-            qml.s_prod(f1(params, t), qml.PauliX(1)), qml.s_prod(f2(params, t), qml.PauliX(3))
+            qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
         assert qml.equal(H_fixed, expected_H_fixed)
