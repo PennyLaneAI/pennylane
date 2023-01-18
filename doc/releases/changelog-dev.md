@@ -259,6 +259,9 @@
 
 <h3>Documentation</h3>
 
+* Added hyperlink text for an URL in the `qml.qchem.mol_data` docstring.
+  [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
+
 <h3>Bug fixes</h3>
 
 * Fixed a bug in `qml.transforms.metric_tensor` where prefactors of operation generators were taken
@@ -289,6 +292,9 @@
 
 * Set `Tensor._batch_size` to None during initialization.
   [(#3642)](https://github.com/PennyLaneAI/pennylane/pull/3642)
+
+* Set `Tensor.has_matrix` to `True`.
+  [(#3647)](https://github.com/PennyLaneAI/pennylane/pull/3647)
 
 <h3>Contributors</h3>
 
