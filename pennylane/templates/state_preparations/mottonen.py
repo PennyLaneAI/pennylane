@@ -88,7 +88,7 @@ def compute_theta(alpha):
         for j in range(len(M_trans[0])):
             M_trans[i, j] = _matrix_M_entry(j, i)
 
-    theta = qml.math.dot(M_trans, alpha.T).T
+    theta = qml.math.transpose(qml.math.dot(M_trans, qml.math.transpose(alpha)))
 
     return theta / 2**k
 
@@ -123,7 +123,7 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
 
     if gray_code_rank == 0:
-        if qml.math.all(theta[..., 0] != 0.0):
+        if qml.math.is_abstract(theta) or qml.math.all(theta[..., 0] != 0.0):
             op_list.append(gate(theta[..., 0], wires=[target_wire]))
         return op_list
 
@@ -136,7 +136,7 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     ]
 
     for i, control_index in enumerate(control_indices):
-        if qml.math.all(theta[..., i] != 0.0):
+        if qml.math.is_abstract(theta) or qml.math.all(theta[..., i] != 0.0):
             op_list.append(gate(theta[..., i], wires=[target_wire]))
         op_list.append(qml.CNOT(wires=[control_wires[control_index], target_wire]))
     return op_list
@@ -309,11 +309,12 @@ class MottonenStatePreparation(Operation):
                     f"State vectors must be of length {2 ** len(wires)} or less; vector {i} has length {n_amplitudes}."
                 )
 
-            norm = qml.math.sum(qml.math.abs(state) ** 2)
-            if not qml.math.allclose(norm, 1.0, atol=1e-3):
-                raise ValueError(
-                    f"State vectors have to be of norm 1.0, vector {i} has norm {norm}"
-                )
+            if not qml.math.is_abstract(state):
+                norm = qml.math.sum(qml.math.abs(state) ** 2)
+                if not qml.math.allclose(norm, 1.0, atol=1e-3):
+                    raise ValueError(
+                        f"State vectors have to be of norm 1.0, vector {i} has norm {norm}"
+                    )
 
         super().__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
 
@@ -364,7 +365,7 @@ class MottonenStatePreparation(Operation):
             op_list.extend(_apply_uniform_rotation_dagger(qml.RY, alpha_y_k, control, target))
 
         # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
-        if not qml.math.allclose(omega, 0):
+        if qml.math.is_abstract(omega) or not qml.math.allclose(omega, 0):
             for k in range(len(wires_reverse), 0, -1):
                 alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
                 control = wires_reverse[k:]

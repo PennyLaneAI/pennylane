@@ -12,7 +12,9 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-import sys, os, re
+import os
+import re
+import sys
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -51,6 +53,7 @@ os.environ["SPHINX_BUILD"] = "1"
 autosummary_generate = True
 autosummary_imported_members = False
 automodapi_toctreedirnm = "code/api"
+automodapi_inheritance_diagram = False
 automodsumm_inherited_members = True
 
 # Hot fix for the error: 'You must configure the bibtex_bibfiles setting'
@@ -231,7 +234,7 @@ html_theme_options = {
     "extra_copyrights": [
         "TensorFlow, the TensorFlow logo, and any related marks are trademarks " "of Google Inc."
     ],
-    "google_analytics_tracking_id": "UA-130507810-1"
+    "google_analytics_tracking_id": "UA-130507810-1",
 }
 
 edit_on_github_project = "PennyLaneAI/pennylane"

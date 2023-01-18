@@ -16,6 +16,7 @@ Contains the BasisEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
+import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 
@@ -72,9 +73,18 @@ class BasisEmbedding(Operation):
 
     def __init__(self, features, wires, do_queue=True, id=None):
 
-        if isinstance(features, int):
-            bin_string = f"{features:b}".zfill(len(wires))
-            features = [1 if d == "1" else 0 for d in bin_string]
+        if isinstance(features, list):
+            features = qml.math.stack(features)
+
+        tracing = qml.math.is_abstract(features)
+
+        if qml.math.shape(features) == ():
+            if not tracing and features >= 2 ** len(wires):
+                raise ValueError(
+                    f"Features must be of length {len(wires)}, got features={features} which is >= {2 ** len(wires)}"
+                )
+            bin = 2 ** np.arange(len(wires))[::-1]
+            features = qml.math.where((features & bin) > 0, 1, 0)
 
         wires = Wires(wires)
         shape = qml.math.shape(features)
@@ -88,10 +98,10 @@ class BasisEmbedding(Operation):
                 f"Features must be of length {len(wires)}; got length {n_features} (features={features})."
             )
 
-        features = list(qml.math.toarray(features))
-
-        if not set(features).issubset({0, 1}):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
+        if not tracing:
+            features = list(qml.math.toarray(features))
+            if not set(features).issubset({0, 1}):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
 
         self._hyperparameters = {"basis_state": features}
 
@@ -125,9 +135,17 @@ class BasisEmbedding(Operation):
         [PauliX(wires=['a']),
          PauliX(wires=['c'])]
         """
+        if not qml.math.is_abstract(basis_state):
+            ops_list = []
+            for wire, bit in zip(wires, basis_state):
+                if bit == 1:
+                    ops_list.append(qml.PauliX(wire))
+            return ops_list
+
         ops_list = []
-        for wire, bit in zip(wires, basis_state):
-            if bit == 1:
-                ops_list.append(qml.PauliX(wire))
+        for wire, state in zip(wires, basis_state):
+            ops_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+            ops_list.append(qml.RX(state * np.pi, wire))
+            ops_list.append(qml.PhaseShift(state * np.pi / 2, wire))
 
         return ops_list

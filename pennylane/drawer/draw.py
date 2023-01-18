@@ -227,7 +227,13 @@ def draw(
 
 
 def draw_mpl(
-    qnode, wire_order=None, show_all_wires=False, decimals=None, expansion_strategy=None, **kwargs
+    qnode,
+    wire_order=None,
+    show_all_wires=False,
+    decimals=None,
+    expansion_strategy=None,
+    style="black_white",
+    **kwargs,
 ):
     """Draw a qnode with matplotlib
 
@@ -239,6 +245,10 @@ def draw_mpl(
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
+        style (str): visual style of plot. Valid strings are ``{'black_white', 'black_white_dark', 'sketch',
+            'sketch_dark', 'solarized_light', 'solarized_dark', 'default'}``. If no style is specified, the
+            ``'black_white'`` style will be used. Setting style does not modify matplotlib global plotting settings.
+            If ``None``, the current matplotlib settings will be used.
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -365,23 +375,24 @@ def draw_mpl(
 
         PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
         All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
-        Any available string can then be passed to ``qml.drawer.use_style``.
+        Any available string can then be passed via the kwarg ``style`` to change the settings for
+        that plot. This will not affect style settings for subsequent matplotlib plots.
 
         .. code-block:: python
 
-            qml.drawer.use_style('black_white')
-            fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+            fig, ax = qml.draw_mpl(circuit, style='sketch')(1.2345,1.2345)
             fig.show()
 
 
-        .. figure:: ../../_static/draw_mpl/black_white_style.png
+        .. figure:: ../../_static/draw_mpl/sketch_style.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
 
         You can also control the appearance with matplotlib's provided tools, see the
         `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-        For example, we can customize ``plt.rcParams``:
+        For example, we can customize ``plt.rcParams``. To use a customized appearance based on matplotlib's
+        ``plt.rcParams``, ``qml.draw_mpl`` must be run with ``style=None``:
 
         .. code-block:: python
 
@@ -395,7 +406,7 @@ def draw_mpl(
             plt.rcParams['lines.linewidth'] = 5
             plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-            fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+            fig, ax = qml.draw_mpl(circuit, style=None)(1.2345,1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/rcparams.png
@@ -409,7 +420,7 @@ def draw_mpl(
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circuit, wire_options={'color':'black', 'linewidth': 5},
+            fig, ax = qml.draw_mpl(circuit, wire_options={'color':'teal', 'linewidth': 5},
                         label_options={'size': 20})(1.2345,1.2345)
             fig.show()
 
@@ -437,6 +448,7 @@ def draw_mpl(
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
+            style=style,
             **kwargs,
         )
 

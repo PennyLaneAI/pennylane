@@ -16,6 +16,7 @@ Contains the apply function
 """
 
 
+# pylint:disable=unnecessary-lambda-assignment
 def apply(func, qnode_collection):
     """Apply a function to the constituent QNodes of a :class:`QNodeCollection`.
 

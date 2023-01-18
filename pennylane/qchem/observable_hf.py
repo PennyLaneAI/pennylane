@@ -17,10 +17,9 @@ This module contains the functions needed for creating fermionic and qubit obser
 # pylint: disable= too-many-branches,
 from functools import reduce
 
-import autograd.numpy as anp
-
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.pauli.utils import _pauli_mult, simplify
 
 
 def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
@@ -43,24 +42,25 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     >>> ops
     [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
     """
-    coeffs = anp.array([])
+    coeffs = qml.math.array([])
 
-    if constant != anp.array([0.0]):
-        coeffs = anp.concatenate((coeffs, constant))
+    if not qml.math.allclose(constant, 0.0):
+        coeffs = qml.math.concatenate((coeffs, constant))
         operators = [[]]
     else:
         operators = []
 
     if one is not None:
-        indices_one = anp.argwhere(abs(one) >= cutoff)
+        indices_one = qml.math.argwhere(abs(one) >= cutoff)
         # up-up + down-down terms
         operators_one = (indices_one * 2).tolist() + (indices_one * 2 + 1).tolist()
-        coeffs_one = anp.tile(one[abs(one) >= cutoff], 2)
-        coeffs = anp.concatenate((coeffs, coeffs_one))
+        coeffs_one = qml.math.tile(one[abs(one) >= cutoff], 2)
+        coeffs = qml.math.convert_like(coeffs, one)
+        coeffs = qml.math.concatenate((coeffs, coeffs_one))
         operators = operators + operators_one
 
     if two is not None:
-        indices_two = anp.argwhere(abs(two) >= cutoff)
+        indices_two = np.array(qml.math.argwhere(abs(two) >= cutoff))
         n = len(indices_two)
         operators_two = (
             [(indices_two[i] * 2).tolist() for i in range(n)]  # up-up-up-up
@@ -68,12 +68,14 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
             + [(indices_two[i] * 2 + [1, 0, 0, 1]).tolist() for i in range(n)]  # down-up-up-down
             + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]  # down-down-down-down
         )
-        coeffs_two = anp.tile(two[abs(two) >= cutoff], 4) / 2
+        coeffs_two = qml.math.tile(two[abs(two) >= cutoff], 4) / 2
 
-        coeffs = anp.concatenate((coeffs, coeffs_two))
+        coeffs = qml.math.concatenate((coeffs, coeffs_two))
         operators = operators + operators_two
 
     indices_sort = [operators.index(i) for i in sorted(operators)]
+    if len(indices_sort) != 0:
+        indices_sort = qml.math.array(indices_sort)
 
     return coeffs[indices_sort], sorted(operators)
 
@@ -102,18 +104,18 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     + ((1+0j)) [I0]
     """
     ops = []
-    coeffs = anp.array([])
+    coeffs = qml.math.array([])
 
     for n, t in enumerate(o_ferm[1]):
         if len(t) == 0:
             ops = ops + [qml.Identity(0)]
-            coeffs = anp.array([0.0])
+            coeffs = qml.math.array([0.0])
             coeffs = coeffs + o_ferm[0][n]
         else:
             op = jordan_wigner(t)
             if op != 0:
                 ops = ops + op[1]
-                coeffs = anp.concatenate([coeffs, anp.array(op[0]) * o_ferm[0][n]])
+                coeffs = qml.math.concatenate([coeffs, qml.math.array(op[0]) * o_ferm[0][n]])
 
     o_qubit = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
@@ -195,134 +197,3 @@ def jordan_wigner(op):
             o[i] = reduce(lambda x, y: x @ y, k)
 
     return c, o
-
-
-def simplify(h, cutoff=1.0e-12):
-    r"""Add together identical terms in the Hamiltonian.
-
-    The Hamiltonian terms with identical Pauli words are added together and eliminated if the
-    overall coefficient is smaller than a cutoff value.
-
-    Args:
-        h (Hamiltonian): PennyLane Hamiltonian
-        cutoff (float): cutoff value for discarding the negligible terms
-
-    Returns:
-        Hamiltonian: Simplified PennyLane Hamiltonian
-
-    **Example**
-
-    >>> c = np.array([0.5, 0.5])
-    >>> h = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)])
-    >>> print(simplify(h))
-    (1.0) [X0 Y1]
-    """
-    wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
-
-    c, o = [], []
-    for i, op in enumerate(h.ops):
-        op = qml.operation.Tensor(op).prune()
-        op = qml.grouping.pauli_word_to_string(op, wire_map=wiremap)
-        if op not in o:
-            c.append(h.coeffs[i])
-            o.append(op)
-        else:
-            c[o.index(op)] += h.coeffs[i]
-
-    coeffs, ops = [], []
-    nonzero_ind = np.argwhere(abs(np.array(c)) > cutoff).flatten()
-    for i in nonzero_ind:
-        coeffs.append(c[i])
-        ops.append(qml.grouping.string_to_pauli_word(o[i], wire_map=wiremap))
-
-    try:
-        coeffs = qml.math.stack(coeffs)
-    except ValueError:
-        pass
-
-    return qml.Hamiltonian(np.array(coeffs), ops)
-
-
-def _pauli_mult(p1, p2):
-    r"""Return the result of multiplication between two tensor products of Pauli operators.
-
-    The Pauli operator :math:`(P_0)` is denoted by [(0, 'P')], where :math:`P` represents
-    :math:`X`, :math:`Y` or :math:`Z`.
-
-    Args:
-        p1 (list[tuple[int, str]]): the first tensor product of Pauli operators
-        p2 (list[tuple[int, str]]): the second tensor product of Pauli operators
-
-    Returns
-        tuple(list[tuple[int, str]], complex): list of the Pauli operators and the coefficient
-
-    **Example**
-
-    >>> p1 = [(0, "X"), (1, "Y")]  # X_0 @ Y_1
-    >>> p2 = [(0, "X"), (2, "Y")]  # X_0 @ Y_2
-    >>> _pauli_mult(p1, p2)
-    ([(2, "Y"), (1, "Y")], 1.0) # p1 @ p2 = X_0 @ Y_1 @ X_0 @ Y_2
-    """
-    c = 1.0
-
-    t1 = [t[0] for t in p1]
-    t2 = [t[0] for t in p2]
-
-    k = []
-
-    for i in p1:
-        if i[0] in t1 and i[0] not in t2:
-            k.append((i[0], pauli_mult[i[1]]))
-        for j in p2:
-            if j[0] in t2 and j[0] not in t1:
-                k.append((j[0], pauli_mult[j[1]]))
-
-            if i[0] == j[0]:
-                if i[1] + j[1] in pauli_coeff:
-                    k.append((i[0], pauli_mult[i[1] + j[1]]))
-                    c = c * pauli_coeff[i[1] + j[1]]
-                else:
-                    k.append((i[0], pauli_mult[i[1] + j[1]]))
-
-    k = [i for i in k if "I" not in i[1]]
-
-    for item in k:
-        k_ = [i for i, x in enumerate(k) if x == item]
-        if len(k_) >= 2:
-            for j in k_[::-1][:-1]:
-                del k[j]
-
-    return k, c
-
-
-pauli_mult = {
-    "XX": "I",
-    "YY": "I",
-    "ZZ": "I",
-    "ZX": "Y",
-    "XZ": "Y",
-    "ZY": "X",
-    "YZ": "X",
-    "XY": "Z",
-    "YX": "Z",
-    "IX": "X",
-    "IY": "Y",
-    "IZ": "Z",
-    "XI": "X",
-    "YI": "Y",
-    "ZI": "Z",
-    "I": "I",
-    "II": "I",
-    "X": "X",
-    "Y": "Y",
-    "Z": "Z",
-}
-
-pauli_coeff = {
-    "ZX": 1.0j,
-    "XZ": -1.0j,
-    "ZY": -1.0j,
-    "YZ": 1.0j,
-    "XY": 1.0j,
-    "YX": -1.0j,
-}

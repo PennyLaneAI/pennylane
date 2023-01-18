@@ -23,7 +23,7 @@ from pennylane import numpy as npp
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import ControlledPhaseShift, Z
+from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
 
 PARAMETRIZED_OPERATIONS = [
     qml.RX(0.123, wires=0),
@@ -38,6 +38,9 @@ PARAMETRIZED_OPERATIONS = [
     qml.PhaseShift(2.133, wires=0),
     qml.ControlledPhaseShift(1.777, wires=[0, 2]),
     qml.CPhase(1.777, wires=[0, 2]),
+    qml.CPhaseShift00(1.777, wires=[0, 2]),
+    qml.CPhaseShift01(1.777, wires=[0, 2]),
+    qml.CPhaseShift10(1.777, wires=[0, 2]),
     qml.MultiRZ(0.112, wires=[1, 2, 3]),
     qml.CRX(0.836, wires=[2, 3]),
     qml.CRY(0.721, wires=[2, 3]),
@@ -70,6 +73,9 @@ BROADCASTED_OPERATIONS = [
     qml.PhaseShift(np.array([2.12, 0.21, -6.2]), wires=0),
     qml.ControlledPhaseShift(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
     qml.CPhase(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
+    qml.CPhaseShift00(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
+    qml.CPhaseShift01(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
+    qml.CPhaseShift10(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
     qml.MultiRZ(np.array([1.124, -2.31, 0.112]), wires=[1, 2, 3]),
     qml.CRX(np.array([0.836, 0.21, -3.57]), wires=[2, 3]),
     qml.CRY(np.array([0.721, 2.31, 0.983]), wires=[2, 3]),
@@ -126,11 +132,6 @@ class TestOperations:
         """Tests that copied parametrized ops function as expected"""
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
-
-        op.inv()
-        copied_op2 = copy.copy(op)
-        np.testing.assert_allclose(op.matrix(), copied_op2.matrix(), atol=tol)
-        op.inv()
 
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
@@ -814,6 +815,26 @@ class TestDecompositions:
         decomposed_matrix = multi_dot_broadcasted(mats)
         lam = np.exp(1j * phi)
         exp = np.array([np.diag([1, 1, 1, 1, 1, el, 1, el]) for el in lam])
+
+        assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    @pytest.mark.parametrize(
+        "cphase_op,lam_pos",
+        [
+            (qml.CPhaseShift00, 0),
+            (qml.CPhaseShift01, 1),
+            (qml.CPhaseShift10, 2),
+        ],
+    )
+    def test_c_phase_shift_decomp(self, phi, cphase_op, lam_pos):
+        """Tests that the CPhaseShift operations
+        calculate the correct decomposition"""
+        op = cphase_op(phi, wires=[0, 2])
+        decomposed_matrix = qml.matrix(op.decomposition, wire_order=op.wires)()
+        lam = np.exp(1j * phi)
+        exp = np.eye(4, dtype=complex)
+        exp[..., lam_pos, lam_pos] = lam
 
         assert np.allclose(decomposed_matrix, exp)
 
@@ -1759,6 +1780,118 @@ class TestMatrix:
         exp_eigvals[..., 3] = np.exp(1j * phi)
         assert np.allclose(res, exp_eigvals)
 
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    @pytest.mark.parametrize(
+        "cphase_op,gate_data_mat",
+        [
+            (qml.CPhaseShift00, CPhaseShift00),
+            (qml.CPhaseShift01, CPhaseShift01),
+            (qml.CPhaseShift10, CPhaseShift10),
+        ],
+    )
+    def test_c_phase_shift_matrix_and_eigvals(self, phi, cphase_op, gate_data_mat):
+        """Tests that the CPhaseShift operations calculate the correct
+        matrix and eigenvalues"""
+        op = cphase_op(phi, wires=[0, 1])
+        res = op.matrix()
+        exp = gate_data_mat(phi)
+        assert np.allclose(res, exp)
+
+        res = op.eigvals()
+        assert np.allclose(res, np.diag(exp))
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    @pytest.mark.parametrize(
+        "cphase_op,gate_data_mat",
+        [
+            (qml.CPhaseShift00, CPhaseShift00),
+            (qml.CPhaseShift01, CPhaseShift01),
+            (qml.CPhaseShift10, CPhaseShift10),
+        ],
+    )
+    def test_c_phase_shift_matrix_and_eigvals_tf(self, phi, cphase_op, gate_data_mat, tol):
+        """Test matrix and eigenvalues computation for CPhaseShift using Tensorflow interface"""
+        import tensorflow as tf
+
+        param_tf = tf.Variable(phi)
+        op = cphase_op(param_tf, wires=[0, 1])
+        res = op.matrix()
+        exp = gate_data_mat(phi)
+        assert np.allclose(res, exp)
+
+        res = op.eigvals()
+        assert np.allclose(res, np.diag(exp))
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    @pytest.mark.parametrize(
+        "cphase_op,gate_data_mat",
+        [
+            (qml.CPhaseShift00, CPhaseShift00),
+            (qml.CPhaseShift01, CPhaseShift01),
+            (qml.CPhaseShift10, CPhaseShift10),
+        ],
+    )
+    def test_c_phase_shift_matrix_and_eigvals_torch(self, phi, cphase_op, gate_data_mat, tol):
+        """Test matrix and eigenvalues computation for CPhaseShift using Torch interface"""
+        import torch
+
+        param_torch = torch.tensor(phi)
+        op = cphase_op(param_torch, wires=[0, 1])
+        res = op.matrix()
+        exp = gate_data_mat(phi)
+        assert np.allclose(res, exp)
+
+        res = op.eigvals()
+        assert np.allclose(res, np.diag(exp))
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    @pytest.mark.parametrize(
+        "cphase_op,gate_data_mat",
+        [
+            (qml.CPhaseShift00, CPhaseShift00),
+            (qml.CPhaseShift01, CPhaseShift01),
+            (qml.CPhaseShift10, CPhaseShift10),
+        ],
+    )
+    def test_c_phase_shift_matrix_and_eigvals_jax(self, phi, cphase_op, gate_data_mat, tol):
+        """Test matrix and eigenvalues computation for CPhaseShift using JAX interface"""
+        import jax
+
+        param_jax = jax.numpy.array(phi)
+        op = cphase_op(param_jax, wires=[0, 1])
+        res = op.matrix()
+        exp = gate_data_mat(phi)
+        assert np.allclose(res, exp)
+
+        res = op.eigvals()
+        assert np.allclose(res, np.diag(exp))
+
+    @pytest.mark.parametrize(
+        "cphase_op,shift_pos",
+        [
+            (qml.CPhaseShift00, 0),
+            (qml.CPhaseShift01, 1),
+            (qml.CPhaseShift10, 2),
+        ],
+    )
+    def test_c_phase_shift_matrix_and_eigvals_broadcasted(self, cphase_op, shift_pos):
+        """Tests that the CPhaseShift operations calculate the
+        correct matrix and eigenvalues for broadcasted parameters"""
+        phi = np.array([0.2, np.pi / 2, -0.1])
+        op = cphase_op(phi, wires=[0, 1])
+        res = op.matrix()
+        expected = np.array([np.eye(4, dtype=complex)] * 3)
+        expected[..., shift_pos, shift_pos] = np.exp(1j * phi)
+        assert np.allclose(res, expected)
+
+        res = op.eigvals()
+        exp_eigvals = np.ones((3, 4), dtype=complex)
+        exp_eigvals[..., shift_pos] = np.exp(1j * phi)
+        assert np.allclose(res, exp_eigvals)
+
 
 class TestEigvals:
     """Test eigvals of parametrized operations."""
@@ -2487,6 +2620,25 @@ class TestGrad:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+class TestGenerator:
+    @pytest.mark.parametrize(
+        "cphase_op,expected",
+        [
+            (qml.CPhaseShift00(1.234, wires=(0, 1)), qml.Projector(np.array([0, 0]), wires=(0, 1))),
+            (qml.CPhaseShift01(1.234, wires=(0, 1)), qml.Projector(np.array([0, 1]), wires=(0, 1))),
+            (qml.CPhaseShift10(1.234, wires=(0, 1)), qml.Projector(np.array([1, 0]), wires=(0, 1))),
+        ],
+    )
+    def test_c_phase_shift_generator(self, cphase_op, expected):
+        """Test that the generator of the CPhaseShift operations
+        is correctly returned."""
+        gen, coeff = qml.generator(cphase_op)
+
+        assert coeff == 1.0
+        assert gen.name == expected.name
+        assert gen.wires == expected.wires
+
+
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
     (
         "XY",
@@ -2565,6 +2717,10 @@ PAULI_ROT_MATRIX_TEST_DATA = [
 
 class TestPauliRot:
     """Test the PauliRot operation."""
+
+    def test_paulirot_repr(self):
+        op = qml.PauliRot(1.234, "XYX", wires=(0, 1, 2))
+        assert repr(op) == "PauliRot(1.234, XYX, wires=[0, 1, 2])"
 
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize(
@@ -2901,7 +3057,7 @@ class TestPauliRot:
 
         val = np.cos(-theta / 2) + 1j * np.sin(-theta / 2)
         exp = torch.tensor(np.diag([val, val]), device=torch_device)
-        assert torch.allclose(mat, exp)
+        assert qml.math.allclose(mat, exp)
 
     def test_pauli_rot_generator(self):
         """Test that the generator of the PauliRot operation
@@ -3539,15 +3695,10 @@ controlled_data = [
 ]
 
 
-@pytest.mark.parametrize("inverse", (True, False))
 @pytest.mark.parametrize("base, cbase", controlled_data)
-def test_controlled_method(inverse, base, cbase):
+def test_controlled_method(base, cbase):
     """Tests the _controlled method for parametric ops."""
-    base.inverse = inverse
-    cbase.inverse = inverse
     assert qml.equal(base._controlled("a"), cbase)
-    base.inverse = True
-    cbase.inverse = True
 
 
 label_data = [
@@ -3556,85 +3707,93 @@ label_data = [
         "Rot",
         "Rot\n(1.23,\n2.35,\n3.46)",
         "Rot\n(1,\n2,\n3)",
-        "Rot⁻¹\n(1,\n2,\n3)",
     ),
-    (qml.RX(1.23456, wires=0), "RX", "RX\n(1.23)", "RX\n(1)", "RX⁻¹\n(1)"),
-    (qml.RY(1.23456, wires=0), "RY", "RY\n(1.23)", "RY\n(1)", "RY⁻¹\n(1)"),
-    (qml.RZ(1.23456, wires=0), "RZ", "RZ\n(1.23)", "RZ\n(1)", "RZ⁻¹\n(1)"),
-    (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ\n(1.23)", "MultiRZ\n(1)", "MultiRZ⁻¹\n(1)"),
+    (qml.RX(1.23456, wires=0), "RX", "RX\n(1.23)", "RX\n(1)"),
+    (qml.RY(1.23456, wires=0), "RY", "RY\n(1.23)", "RY\n(1)"),
+    (qml.RZ(1.23456, wires=0), "RZ", "RZ\n(1.23)", "RZ\n(1)"),
+    (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ\n(1.23)", "MultiRZ\n(1)"),
     (
         qml.PauliRot(1.2345, "XYZ", wires=(0, 1, 2)),
         "RXYZ",
         "RXYZ\n(1.23)",
         "RXYZ\n(1)",
-        "RXYZ⁻¹\n(1)",
     ),
     (
         qml.PhaseShift(1.2345, wires=0),
         "Rϕ",
         "Rϕ\n(1.23)",
         "Rϕ\n(1)",
-        "Rϕ⁻¹\n(1)",
     ),
     (
         qml.ControlledPhaseShift(1.2345, wires=(0, 1)),
         "Rϕ",
         "Rϕ\n(1.23)",
         "Rϕ\n(1)",
-        "Rϕ⁻¹\n(1)",
     ),
-    (qml.CRX(1.234, wires=(0, 1)), "RX", "RX\n(1.23)", "RX\n(1)", "RX⁻¹\n(1)"),
-    (qml.CRY(1.234, wires=(0, 1)), "RY", "RY\n(1.23)", "RY\n(1)", "RY⁻¹\n(1)"),
-    (qml.CRZ(1.234, wires=(0, 1)), "RZ", "RZ\n(1.23)", "RZ\n(1)", "RZ⁻¹\n(1)"),
+    (
+        qml.CPhaseShift00(1.2345, wires=(0, 1)),
+        "Rϕ(00)",
+        "Rϕ(00)\n(1.23)",
+        "Rϕ(00)\n(1)",
+    ),
+    (
+        qml.CPhaseShift01(1.2345, wires=(0, 1)),
+        "Rϕ(01)",
+        "Rϕ(01)\n(1.23)",
+        "Rϕ(01)\n(1)",
+    ),
+    (
+        qml.CPhaseShift10(1.2345, wires=(0, 1)),
+        "Rϕ(10)",
+        "Rϕ(10)\n(1.23)",
+        "Rϕ(10)\n(1)",
+    ),
+    (qml.CRX(1.234, wires=(0, 1)), "RX", "RX\n(1.23)", "RX\n(1)"),
+    (qml.CRY(1.234, wires=(0, 1)), "RY", "RY\n(1.23)", "RY\n(1)"),
+    (qml.CRZ(1.234, wires=(0, 1)), "RZ", "RZ\n(1.23)", "RZ\n(1)"),
     (
         qml.CRot(1.234, 2.3456, 3.456, wires=(0, 1)),
         "Rot",
         "Rot\n(1.23,\n2.35,\n3.46)",
         "Rot\n(1,\n2,\n3)",
-        "Rot⁻¹\n(1,\n2,\n3)",
     ),
-    (qml.U1(1.2345, wires=0), "U1", "U1\n(1.23)", "U1\n(1)", "U1⁻¹\n(1)"),
-    (qml.U2(1.2345, 2.3456, wires=0), "U2", "U2\n(1.23,\n2.35)", "U2\n(1,\n2)", "U2⁻¹\n(1,\n2)"),
+    (qml.U1(1.2345, wires=0), "U1", "U1\n(1.23)", "U1\n(1)"),
+    (qml.U2(1.2345, 2.3456, wires=0), "U2", "U2\n(1.23,\n2.35)", "U2\n(1,\n2)"),
     (
         qml.U3(1.2345, 2.345, 3.4567, wires=0),
         "U3",
         "U3\n(1.23,\n2.35,\n3.46)",
         "U3\n(1,\n2,\n3)",
-        "U3⁻¹\n(1,\n2,\n3)",
     ),
     (
         qml.IsingXX(1.2345, wires=(0, 1)),
         "IsingXX",
         "IsingXX\n(1.23)",
         "IsingXX\n(1)",
-        "IsingXX⁻¹\n(1)",
     ),
     (
         qml.IsingYY(1.2345, wires=(0, 1)),
         "IsingYY",
         "IsingYY\n(1.23)",
         "IsingYY\n(1)",
-        "IsingYY⁻¹\n(1)",
     ),
     (
         qml.IsingZZ(1.2345, wires=(0, 1)),
         "IsingZZ",
         "IsingZZ\n(1.23)",
         "IsingZZ\n(1)",
-        "IsingZZ⁻¹\n(1)",
     ),
 ]
 
 # labels with broadcasted parameters are not implemented properly yet, the parameters are truncated
 label_data_broadcasted = [
-    (qml.RX(np.array([1.23, 4.56]), wires=0), "RX", "RX", "RX", "RX⁻¹"),
-    (qml.PauliRot(np.array([1.23, 4.5]), "XYZ", wires=(0, 1, 2)), "RXYZ", "RXYZ", "RXYZ", "RXYZ⁻¹"),
+    (qml.RX(np.array([1.23, 4.56]), wires=0), "RX", "RX", "RX"),
+    (qml.PauliRot(np.array([1.23, 4.5]), "XYZ", wires=(0, 1, 2)), "RXYZ", "RXYZ", "RXYZ"),
     (
         qml.U3(np.array([0.1, 0.2]), np.array([-0.1, -0.2]), np.array([1.2, -0.1]), wires=0),
         "U3",
         "U3",
         "U3",
-        "U3⁻¹",
     ),
 ]
 
@@ -3642,29 +3801,21 @@ label_data_broadcasted = [
 class TestLabel:
     """Test the label method on parametric ops"""
 
-    @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data)
-    def test_label_method(self, op, label1, label2, label3, label4):
+    @pytest.mark.parametrize("op, label1, label2, label3", label_data)
+    def test_label_method(self, op, label1, label2, label3):
         """Test label method with plain scalers."""
 
         assert op.label() == label1
         assert op.label(decimals=2) == label2
         assert op.label(decimals=0) == label3
 
-        op.inv()
-        assert op.label(decimals=0) == label4
-        op.inv()
-
-    @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data_broadcasted)
-    def test_label_method_broadcasted(self, op, label1, label2, label3, label4):
+    @pytest.mark.parametrize("op, label1, label2, label3", label_data_broadcasted)
+    def test_label_method_broadcasted(self, op, label1, label2, label3):
         """Test label method with plain scalers."""
 
         assert op.label() == label1
         assert op.label(decimals=2) == label2
         assert op.label(decimals=0) == label3
-
-        op.inv()
-        assert op.label(decimals=0) == label4
-        op.inv()
 
     @pytest.mark.tf
     def test_label_tf(self):
@@ -3762,6 +3913,9 @@ pow_parametric_ops = (
     qml.RZ(np.array([3.456]), wires=0),
     qml.PhaseShift(np.array([6.0, 7.0, 8.0]), wires=0),
     qml.ControlledPhaseShift(np.array([0.234]), wires=(0, 1)),
+    qml.CPhaseShift00(np.array([0.234]), wires=(0, 1)),
+    qml.CPhaseShift01(np.array([0.234]), wires=(0, 1)),
+    qml.CPhaseShift10(np.array([0.234]), wires=(0, 1)),
     qml.MultiRZ(np.array([-0.4432, -0.231, 0.251]), wires=(0, 1, 2)),
     qml.PauliRot(np.array([0.5, 0.9]), "X", wires=0),
     qml.CRX(np.array([-6.5432, 0.7653]), wires=(0, 1)),
@@ -3815,6 +3969,9 @@ control_data = [
     (qml.PSWAP(1.234, wires=(0, 1)), Wires([])),
     ### Controlled Ops
     (qml.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CPhaseShift00(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CPhaseShift01(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CPhaseShift10(1.234, wires=(0, 1)), Wires(0)),
     (qml.CPhase(1.234, wires=(0, 1)), Wires(0)),
     (qml.CRX(1.234, wires=(0, 1)), Wires(0)),
     (qml.CRY(1.234, wires=(0, 1)), Wires(0)),
@@ -3827,3 +3984,15 @@ control_data = [
 def test_control_wires(op, control_wires):
     """Test the ``control_wires`` attribute for parametrized operations."""
     assert op.control_wires == control_wires
+
+
+control_value_data = [
+    (qml.CPhaseShift00(1.234, wires=(0, 1)), "0"),
+    (qml.CPhaseShift01(1.234, wires=(0, 1)), "0"),
+]
+
+
+@pytest.mark.parametrize("op, control_values", control_value_data)
+def test_control_values(op, control_values):
+    """Test the ``control_values`` attribute for parametrized operations."""
+    assert op.control_values == control_values

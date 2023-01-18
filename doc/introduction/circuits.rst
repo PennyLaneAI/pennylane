@@ -58,18 +58,19 @@ Quantum functions are a restricted subset of Python functions, adhering to the f
 constraints:
 
 * The quantum function accepts classical inputs, and consists of
-  :doc:`quantum operators <operations>` or sequences of operators called :doc:`templates`,
-  using one instruction per line.
+  :doc:`quantum operators <operations>` or sequences of operators called :doc:`templates`.
 
 * The function can contain classical flow control structures such as ``for`` loops or ``if`` statements.
 
 * The quantum function must always return either a single or a tuple of
-  *measured observable values*, by applying a :doc:`measurement function <measurements>`
-  to a :ref:`qubit observable <intro_ref_ops_qobs>` or :ref:`continuous-value observable <intro_ref_ops_cvobs>`.
+  *measurement values*, by applying a :doc:`measurement function <measurements>`
+  to the qubit register. The most common example is to measure the expectation value of
+  a :ref:`qubit observable <intro_ref_ops_qobs>` or
+  :ref:`continuous-value observable <intro_ref_ops_cvobs>`.
 
 .. note::
 
-    Quantum functions can only be evaluated on a device from within a QNode.
+    Quantum functions are evaluated on a device from within a QNode.
 
 .. _intro_vcirc_device:
 
@@ -114,7 +115,7 @@ The two most important device options are the ``wires`` and ``shots`` arguments.
 Wires
 *****
 
-The wires argument can either be an integer that defines the *number of wires*
+The wires argument can be an integer that defines the *number of wires*
 that you can address by consecutive integer labels ``0, 1, 2, ...``.
 
 .. code-block:: python
@@ -153,7 +154,8 @@ to estimate statistical quantities. On some supported simulator devices, ``shots
 measurement statistics *exactly*.
 
 Note that this argument can be temporarily overwritten when a QNode is called. For example, ``my_qnode(shots=3)``
-will temporarily evaluate ``my_qnode`` using three shots.
+will temporarily evaluate ``my_qnode`` using three shots. This is a feature of each QNode and it is not 
+necessary to manually implement the ``shots`` keyword argument of the quantum function.
 
 It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
 QNode several times ("shot batching"). Batches of shots can be specified by passing a list of integers,
@@ -210,8 +212,8 @@ To view the quantum circuit given specific parameter values, we can use the :fun
 transform,
 
 >>> print(qml.draw(circuit)(np.pi/4, 0.7))
-aux: ───────────╭●─┤     
- q1: ──RZ(0.79)─╰X─┤     
+aux: ───────────╭●─┤
+ q1: ──RZ(0.79)─╰X─┤
  q2: ──RY(0.70)────┤  <Z>
 
 or the :func:`~.pennylane.draw_mpl` transform:
@@ -254,6 +256,45 @@ For example:
         return qml.expval(qml.PauliZ(1))
 
     result = circuit(0.543)
+
+Parameter Broadcasting in QNodes
+--------------------------------
+
+Depending on the quantum operations used, a :class:`~.pennylane.QNode` may support execution at multiple parameters simultaneously:
+
+>>> x = np.array([0.543, 1.234])
+>>> result = circuit(x)
+>>> result
+tensor([0.85616242, 0.33046511], requires_grad=True)
+
+Note that we are passing in a 1-dimensional array of parameters to the `circuit()`
+QNode defined above, which takes a single parameter and returns a single expectation
+value. As the input is now an array, the output is also an array, with each
+element the expectation value of the corresponding input element.
+
+This is called *parameter broadcasting* (as for, say, NumPy functions executed along an axis)
+or *parameter batching* (as in the application of a function to a *batch* of parameters in
+machine learning).
+
+In addition to a more flexible execution syntax, broadcasting can yield performance boosts
+compared to the separate execution of the QNode for each parameter setting. Whether or not this is
+the case depends on quite a few details, but in particular for (at most) moderately sized circuits
+(:math:`\lesssim 20` wires) with a moderate number of parameters (:math:`\lesssim 200`) executed
+on a classical simulator, one can expect to benefit from broadcasting.
+See the :class:`~.pennylane.QNode` documentation for usage details.
+
+Many standard quantum operators support broadcasting; see the corresponding attribute
+:obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting` for a list. The
+:class:`~.pennylane.operation.Operator` documentation contains implementation details
+and a guide to make custom operators compatible with broadcasting.
+Broadcasting can be used with any device, but will usually only yield performance upgrades for
+devices like ``"default.qubit"`` that indicate that they support it:
+
+>>> cap = dev.capabilities()
+>>> cap["supports_broadcasting"]
+True
+
+Other devices separate the parameters and execute the QNode sequentially.
 
 Importing circuits from other frameworks
 ----------------------------------------

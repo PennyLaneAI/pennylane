@@ -23,8 +23,8 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import MeasurementProcess
 from pennylane import QubitDevice
+from pennylane.measurements import MeasurementProcess
 from pennylane.wires import Wires
 
 
@@ -37,7 +37,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
       and perform the quantum computation.
 
     Devices that generate their own samples (such as hardware) may optionally
-    overwrite :meth:`~.probabilty`. This method otherwise automatically
+    overwrite :meth:`~.probability`. This method otherwise automatically
     computes the probabilities from the generated samples, and **must**
     overwrite the following method:
 

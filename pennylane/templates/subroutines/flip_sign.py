@@ -55,14 +55,12 @@ class FlipSign(Operation):
             qml.FlipSign(basis_state, wires=list(range(2)))
             return qml.state()
 
-        circuit()
-
     The result for the above circuit is:
 
     .. code-block:: python
 
-        >>> print(circuit())
-        [ 0.5+0.j  0.5+0.j -0.5+0.j  0.5+0.j]
+        >>> circuit()
+        tensor([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j], requires_grad=True)
 
     """
 

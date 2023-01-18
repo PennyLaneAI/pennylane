@@ -56,6 +56,7 @@ class TestInitialization:
         assert qs.num_wires == 0
         assert qs.is_sampled is False
         assert qs.all_sampled is False
+        assert qs.samples_computational_basis is False
         assert qs._obs_sharing_wires == []
         assert qs._obs_sharing_wires_id == []
 
@@ -143,16 +144,32 @@ class TestUpdate:
         assert qs.is_sampled is True
         assert qs.all_sampled is False
 
+        shadow_mp = sample_ms.return_type not in (
+            qml.measurements.Shadow,
+            qml.measurements.ShadowExpval,
+        )
+        assert qs.samples_computational_basis is shadow_mp
+
         qs = QuantumScript(measurements=[sample_ms, sample_ms, qml.sample()])
         assert qs.is_sampled is True
         assert qs.all_sampled is True
+        assert qs.samples_computational_basis is True
 
     def test_update_circuit_info_no_sampling(self):
-        """Test that all_sampled and is_sampled properties are set to False if no sampling
+        """Test that all_sampled, is_sampled and samples_computational_basis properties are set to False if no sampling
         measurement process exists."""
         qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
         assert qs.is_sampled is False
         assert qs.all_sampled is False
+        assert qs.samples_computational_basis is False
+
+    def test_samples_computational_basis_correctly(self):
+        """Test that the samples_computational_basis property works as expected even if the script is updated."""
+        qs = QuantumScript(measurements=[qml.sample()])
+        assert qs.samples_computational_basis is True
+
+        qs._measurements = [qml.expval(qml.PauliZ(0))]
+        assert qs.samples_computational_basis is False
 
     def test_update_par_info_update_trainable_params(self):
         """Tests setting the parameter info dictionary.  Makes sure to include operations with
@@ -708,3 +725,115 @@ class TestQScriptDraw:
 
         assert qs.draw() == qml.drawer.tape_text(qs)
         assert qs.draw(max_length=20) == qml.drawer.tape_text(qs, max_length=20)
+
+
+class TestMakeQscript:
+    """Test the make_qscript method."""
+
+    def test_ops_are_recorded_to_qscript(self):
+        """Test make_qscript records operations from the quantum function passed to it."""
+
+        def qfunc():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            qml.expval(qml.PauliX(0))
+
+        qscript = qml.tape.make_qscript(qfunc)()
+        assert len(qscript.operations) == 2
+        assert len(qscript.measurements) == 1
+
+    def test_qfunc_is_recording_during_make_qscript(self):
+        """Test that quantum functions passed to make_qscript run in a recording context."""
+
+        def assert_recording():
+            assert qml.QueuingManager.recording()
+
+        qml.tape.make_qscript(assert_recording)()
+
+    def test_ops_are_not_recorded_to_surrounding_context(self):
+        """Test that ops are not recorded to any surrounding context during make_qscript."""
+
+        def qfunc():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+
+        with qml.queuing.AnnotatedQueue() as q:
+            recorded_op = qml.PauliX(0)
+            qscript = qml.tape.make_qscript(qfunc)()
+        assert q.queue == [recorded_op]
+        assert len(qscript.operations) == 2
+
+    def test_make_qscript_returns_callable(self):
+        """Test that make_qscript returns a callable."""
+
+        def qfunc():
+            qml.Hadamard(0)
+
+        assert callable(qml.tape.make_qscript(qfunc))
+
+    def test_non_queued_ops_are_not_recorded(self):
+        """Test that ops are not recorded to the qscript when recording is disabled."""
+
+        def qfunc():
+            qml.PauliX(0)
+            with qml.QueuingManager.stop_recording():
+                qml.Hadamard(0)
+
+        qscript = qml.tape.make_qscript(qfunc)()
+        assert len(qscript.operations) == 1
+        assert qscript.operations[0].name == "PauliX"
+
+
+class TestFromQueue:
+    """Test that QuantumScript.from_queue behaves properly."""
+
+    def test_from_queue(self):
+        """Test that QuantumScript.from_queue works correctly."""
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.PauliX(0)
+            with qml.QueuingManager.stop_recording():
+                qml.Hadamard(0)
+            qml.expval(qml.PauliZ(0))
+        qscript = QuantumScript.from_queue(q)
+        assert qscript.operations == [op]
+        assert len(qscript.measurements) == 1
+
+    def test_from_queue_child_class_preserved(self):
+        """Test that a child of QuantumScript gets its own type when calling from_queue."""
+
+        class MyScript(QuantumScript):
+            pass
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliZ(0)
+
+        qscript = MyScript.from_queue(q)
+        assert type(qscript) == MyScript
+
+    def test_from_queue_child_with_different_init_fails(self):
+        """Test that if a child class overrides init to take different arguments, from_queue will fail."""
+
+        class ScriptWithNewInit(QuantumScript):
+            """An arbitrary class that has a different constructor from QuantumScript."""
+
+            def __init__(self, ops, measurements, prep, bonus):
+                super().__init__(ops, measurements, prep)
+                self.bonus = bonus
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliZ(0)
+
+        with pytest.raises(TypeError):
+            ScriptWithNewInit.from_queue(q)
+
+    @pytest.mark.parametrize("child", QuantumScript.__subclasses__())
+    def test_that_fails_if_a_subclass_does_not_match(self, child):
+        """
+        Makes sure that no subclasses for QuantumScript override the constructor.
+        If you have, and you stumbled onto this test, note that QuantumScript.from_queue
+        might need some modification for your PR to be complete.
+        """
+        with qml.queuing.AnnotatedQueue() as q:
+            x = qml.PauliZ(0)
+
+        assert child.from_queue(q).operations == [x]

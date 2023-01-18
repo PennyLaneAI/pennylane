@@ -145,10 +145,11 @@ class TestUI:
         def my_transform(tape):
             return [op.name for op in tape.operations]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.6, wires=0)
             qml.RY(0.65, wires="a")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = my_transform(tape)
         assert res == ["RX", "RY"]
 
@@ -234,9 +235,7 @@ class TestTransformParameters:
 
         @qml.op_transform
         def my_transform(op, lower=False):
-            if lower:
-                return op.name.lower()
-            return op.name
+            return op.name.lower() if lower else op.name
 
         op = qml.RX(0.5, wires=0)
         res = my_transform(op, lower=True)
@@ -247,9 +246,7 @@ class TestTransformParameters:
 
         @qml.op_transform
         def my_transform(op, lower=False):
-            if lower:
-                return op.name.lower()
-            return op.name
+            return op.name.lower() if lower else op.name
 
         res = my_transform(qml.RX, lower=True)(0.5, wires=0)
         assert res == "rx"
@@ -260,9 +257,7 @@ class TestTransformParameters:
 
         @qml.op_transform
         def my_transform(op, lower=False):
-            if lower:
-                return op.name.lower()
-            return op.name
+            return op.name.lower() if lower else op.name
 
         @my_transform.tape_transform
         def my_transform(tape, lower=False):
@@ -442,7 +437,7 @@ class TestQFuncTransformIntegration:
 
         weights = np.array([0.1, 0.0, 0.0])
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError, match="QNodes cannot be declared as qfunc transforms"):
             circuit(weights)
 
 
@@ -525,9 +520,10 @@ class TestWireOrder:
         """Test that wire order can be passed to a tape"""
         spy = mocker.spy(qml.op_transform, "_make_tape")
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliZ(wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = matrix(tape, wire_order=["a", 0])
         expected = np.kron(np.eye(2), np.diag([1, -1]))
         assert np.allclose(res, expected)
@@ -539,10 +535,11 @@ class TestWireOrder:
 
     def test_inconsistent_wires_tape(self, mocker):
         """Test that an exception is raised if the wire order and tape wires are inconsistent"""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliZ(wires=0)
             qml.PauliY(wires="b")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             OperationTransformError,
             match=r"Wires in circuit .+ inconsistent with those in wire\_order",

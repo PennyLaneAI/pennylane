@@ -24,8 +24,8 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     While this function can be used to compute Fourier coefficients in general,
     the specific use case in PennyLane is to compute coefficients of the
     functions that result from measuring expectation values of parametrized
-    quantum circuits, as described in `Schuld, Sweke and Meyer (2020)
-    <https://arxiv.org/abs/2008.08605>`__ and `Vidal and Theis, 2019
+    quantum circuits, as described in `Schuld, Sweke, and Meyer (2020)
+    <https://arxiv.org/abs/2008.08605>`__ and `Vidal and Theis (2019)
     <https://arxiv.org/abs/1901.11434>`__.
 
     **Details**

@@ -806,13 +806,13 @@ class DefaultGaussian(Device):
 
     def var(self, observable, wires, par):
 
-        cov, mu = self.reduced_state(wires)
-
         if observable == "PolyXP":
+            cov, mu = self._state
             _, var = self._observable_map[observable](
                 cov, mu, wires, self.wires, par, hbar=self.hbar
             )
         else:
+            cov, mu = self.reduced_state(wires)
             _, var = self._observable_map[observable](cov, mu, par, hbar=self.hbar)
         return var
 

@@ -357,22 +357,76 @@ class TestGradient:
         qml.grad(circuit)(state_vector)
 
 
+@pytest.mark.parametrize(
+    "inputs, expected",
+    [
+        (
+            [0.0, 0.7, 0.7, 0.0],
+            [0.0, 0.5, 0.5, 0.0],
+        ),
+        ([0.1, 0.0, 0.0, 0.1], [0.5, 0.0, 0.0, 0.5]),
+    ],
+)
 class TestCasting:
     """Test that the Mottonen state preparation ensures the compatibility with
     interfaces by using casting'"""
 
+    @pytest.mark.jax
+    def test_jax(self, inputs, expected):
+        """Test that MottonenStatePreparation can be correctly used with the JAX interface."""
+        import jax
+        from jax import numpy as jnp
+
+        inputs = jnp.array(inputs)
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(inputs):
+            qml.MottonenStatePreparation(inputs, wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        inputs = inputs / jnp.linalg.norm(inputs)
+        res = circuit(inputs)
+        assert np.allclose(res, expected, atol=1e-6, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, inputs, expected):
+        """Test that MottonenStatePreparation can be correctly used with the JAX-JIT interface."""
+        import jax
+        from jax import numpy as jnp
+
+        inputs = jnp.array(inputs)
+        dev = qml.device("default.qubit", wires=2)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(inputs):
+            qml.MottonenStatePreparation(inputs, wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        inputs = inputs / jnp.linalg.norm(inputs)
+        res = circuit(inputs)
+        assert np.allclose(res, expected, atol=1e-6, rtol=0)
+
+    @pytest.mark.tf
+    def test_tensorflow(self, inputs, expected):
+        """Test that MottonenStatePreparation can be correctly used with the TensorFlow interface."""
+        import tensorflow as tf
+
+        inputs = tf.Variable(inputs)
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(inputs):
+            qml.MottonenStatePreparation(inputs, wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        inputs = inputs / tf.linalg.norm(inputs)
+        res = circuit(inputs)
+        assert np.allclose(res, expected, atol=1e-6, rtol=0)
+
     @pytest.mark.torch
-    @pytest.mark.parametrize(
-        "inputs, expected",
-        [
-            (
-                [0.0, 0.7, 0.7, 0.0],
-                [0.0, 0.5, 0.5, 0.0],
-            ),
-            ([0.1, 0.0, 0.0, 0.1], [0.5, 0.0, 0.0, 0.5]),
-        ],
-    )
-    def test_scalar_torch(self, inputs, expected):
+    def test_torch(self, inputs, expected):
         """Test that MottonenStatePreparation can be correctly used with the Torch interface."""
         import torch
 

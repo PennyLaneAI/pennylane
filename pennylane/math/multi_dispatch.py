@@ -16,19 +16,22 @@
 import functools
 from collections.abc import Sequence
 
+import autoray as ar
+import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .utils import cast, get_interface, requires_grad
+from .utils import cast, cast_like, get_interface, requires_grad
 
 
 # pylint:disable=redefined-outer-name
 def array(*args, like=None, **kwargs):
     """Creates an array or tensor object of the target framework.
 
-    This method preserves the Torch device used.
+    If the PyTorch interface is specified, this method preserves the Torch device used.
+    If the JAX interface is specified, this method uses JAX numpy arrays, which do not cause issues with jit tracers.
 
     Returns:
         tensor_like: the tensor_like object of the framework
@@ -150,6 +153,14 @@ def multi_dispatch(argnum=None, tensor_list=None):
         return wrapper
 
     return decorator
+
+
+@multi_dispatch(argnum=[0, 1])
+def kron(*args, like=None, **kwargs):
+    """The kronecker/tensor product of args."""
+    if like == "scipy":
+        return onp.kron(*args, **kwargs)  # Dispatch scipy kron to numpy backed specifically.
+    return ar.numpy.kron(*args, like=like, **kwargs)
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
@@ -283,6 +294,18 @@ def diag(values, k=0, like=None):
 
 
 @multi_dispatch(argnum=[0, 1])
+def matmul(tensor1, tensor2, like=None):
+    """Returns the matrix product of two tensors."""
+    if like == "torch":
+        if get_interface(tensor1) != "torch":
+            tensor1 = ar.numpy.asarray(tensor1, like="torch")
+        if get_interface(tensor2) != "torch":
+            tensor2 = ar.numpy.asarray(tensor2, like="torch")
+        tensor2 = cast_like(tensor2, tensor1)  # pylint: disable=arguments-out-of-order
+    return ar.numpy.matmul(tensor1, tensor2, like=like)
+
+
+@multi_dispatch(argnum=[0, 1])
 def dot(tensor1, tensor2, like=None):
     """Returns the matrix or dot product of two tensors.
 
@@ -394,11 +417,11 @@ def get_trainable_indices(values, like=None):
         import jax
 
         if not any(isinstance(v, jax.core.Tracer) for v in values):
-            # No JAX tracing is occuring; treat all `DeviceArray` objects as trainable.
+            # No JAX tracing is occuring; treat all `Array` objects as trainable.
 
             # pylint: disable=function-redefined,unused-argument
             def trainable(p, **kwargs):
-                return isinstance(p, jax.numpy.DeviceArray)
+                return isinstance(p, jax.Array)
 
         else:
             # JAX tracing is occuring; use the default behaviour (only traced arrays
@@ -754,8 +777,11 @@ def unwrap(values, max_depth=None):
     return [convert(val) for val in values]
 
 
-def add(*args, **kwargs):
+@multi_dispatch(argnum=[0])
+def add(*args, like=None, **kwargs):
     """Add arguments element-wise."""
+    if like == "scipy":
+        return onp.add(*args, **kwargs)  # Dispatch scipy add to numpy backed specifically.
     try:
         return np.add(*args, **kwargs)
     except TypeError:
@@ -805,3 +831,37 @@ def expm(tensor, like=None):
     from scipy.linalg import expm as scipy_expm
 
     return scipy_expm(tensor)
+
+
+@multi_dispatch(argnum=[1])
+def gammainc(m, t, like=None):
+    r"""Return the lower incomplete Gamma function.
+
+    The lower incomplete Gamma function is defined in scipy as
+
+    .. math::
+
+        \gamma(m, t) = \frac{1}{\Gamma(m)} \int_{0}^{t} x^{m-1} e^{-x} dx,
+
+    where :math:`\Gamma` denotes the Gamma function.
+
+     Args:
+        m (float): exponent of the incomplete Gamma function
+        t (array[float]): upper limit of the incomplete Gamma function
+
+    Returns:
+        (array[float]): value of the incomplete Gamma function
+    """
+    if like == "jax":
+        from jax.scipy.special import gammainc
+
+        return gammainc(m, t)
+
+    if like == "autograd":
+        from autograd.scipy.special import gammainc
+
+        return gammainc(m, t)
+
+    import scipy
+
+    return scipy.special.gammainc(m, t)

@@ -14,8 +14,9 @@
 """
 Unit tests for functions needed to computing integrals over basis functions.
 """
-import autograd
 import pytest
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
 
@@ -273,8 +274,8 @@ class TestOverlap:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = autograd.grad(qchem.overlap_integral(basis_a, basis_b), argnum=0)(*args)
-        g_coeff = autograd.grad(qchem.overlap_integral(basis_a, basis_b), argnum=1)(*args)
+        g_alpha = qml.grad(qchem.overlap_integral(basis_a, basis_b), argnum=0)(*args)
+        g_coeff = qml.grad(qchem.overlap_integral(basis_a, basis_b), argnum=1)(*args)
 
         # compute overlap gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -431,8 +432,8 @@ class TestMoment:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = autograd.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnum=0)(*args)
-        g_coeff = autograd.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnum=1)(*args)
+        g_alpha = qml.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnum=0)(*args)
+        g_coeff = qml.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnum=1)(*args)
 
         # compute moment gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -581,8 +582,8 @@ class TestKinetic:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = autograd.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=0)(*args)
-        g_coeff = autograd.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=1)(*args)
+        g_alpha = qml.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=0)(*args)
+        g_coeff = qml.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=1)(*args)
 
         # compute kinetic gradients with respect to alpha, coeff and r using finite diff
         delta = 0.0001
@@ -688,8 +689,8 @@ class TestAttraction:
         args = [mol.alpha, mol.coeff]
         r_nuc = geometry[0]
 
-        g_alpha = autograd.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=0)(*args)
-        g_coeff = autograd.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=1)(*args)
+        g_alpha = qml.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=0)(*args)
+        g_coeff = qml.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=1)(*args)
 
         # compute attraction gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -820,12 +821,12 @@ class TestRepulsion:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = autograd.grad(
-            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0
-        )(*args)
-        g_coeff = autograd.grad(
-            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1
-        )(*args)
+        g_alpha = qml.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0)(
+            *args
+        )
+        g_coeff = qml.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1)(
+            *args
+        )
 
         # compute repulsion gradients with respect to alpha and coeff using finite diff
         delta = 0.0001

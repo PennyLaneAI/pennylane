@@ -18,7 +18,8 @@ from typing import Any, Dict, Optional, Sequence, Union
 
 from pennylane import QNode, apply, adjoint
 from pennylane.math import mean, shape, round
-from pennylane.tape import QuantumTape
+from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane.transforms import batch_transform
 
 import pennylane as qml
@@ -40,7 +41,14 @@ def fold_global(circuit, scale_factor):
         scale_factor (float): Scale factor :math:`\lambda` determining :math:`n` and :math:`s`
 
     Returns:
-        QuantumTape: Folded circuit
+        function or tuple[list[QuantumTape], function]:
+
+        - If the input is a QNode, an object representing the folded QNode that can be executed
+          with the same arguments as the QNode to obtain the result of the folded circuit.
+
+        - If the input is a tape, a tuple containing a (single-entry) list of generated
+          circuits, together with a post-processing function that extracts the single tape result
+          from the evaluated tape list in order to obtain the result of the folded circuit.
 
     .. seealso:: :func:`~.pennylane.transforms.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
@@ -216,7 +224,7 @@ def fold_global_tape(circuit, scale_factor):
     num_to_fold = int(round(fraction_scale * n_ops / 2))
 
     # Create new_circuit from folded list
-    with QuantumTape() as new_circuit:
+    with AnnotatedQueue() as new_circuit_q:
         # Original U
         for op in base_ops:
             qfunc(op)
@@ -240,7 +248,7 @@ def fold_global_tape(circuit, scale_factor):
         for meas in circuit.measurements:
             apply(meas)
 
-    return new_circuit
+    return QuantumScript.from_queue(new_circuit_q)
 
 
 # TODO: make this a pennylane.math function
@@ -410,7 +418,7 @@ def mitigate_with_zne(
 
     >>> qml.grad(circuit)(w1, w2)
     (array([-0.89319941,  0.37949841]),
-    array([[[-7.04121596e-01,  3.00073104e-01]],
+     array([[[-7.04121596e-01,  3.00073104e-01]],
             [[-6.41155176e-01,  8.32667268e-17]]]))
 
     .. details::
@@ -503,31 +511,25 @@ def mitigate_with_zne(
     if isinstance(folding, qml.batch_transform):
         folding = fold_global_tape
 
-    tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
-
-    with QuantumTape() as tape_removed:
-        for op in tape._ops:
-            apply(op)
+    tape = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumScript))
+    script_removed = QuantumScript(tape._ops)
 
     tapes = [
-        [folding(tape_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
+        [folding(script_removed, s, **folding_kwargs) for _ in range(reps_per_factor)]
         for s in scale_factors
     ]
 
     tapes = [tape_ for tapes_ in tapes for tape_ in tapes_]  # flattens nested list
-
-    out_tapes = []
-
-    for tape_ in tapes:
-        # pylint: disable=expression-not-assigned
-        with QuantumTape() as t:
-            [apply(p) for p in tape._prep]
-            [apply(op) for op in tape_.operations]
-            [apply(m) for m in tape.measurements]
-        out_tapes.append(t)
+    out_tapes = [QuantumScript(tape_.operations, tape.measurements, tape._prep) for tape_ in tapes]
 
     def processing_fn(results):
         """Maps from input tape executions to an error-mitigated estimate"""
+        if qml.active_return():
+            for i, tape in enumerate(out_tapes):
+                # stack the results if there are multiple measurements
+                # this will not create ragged arrays since only expval measurements are allowed
+                if len(tape.observables) > 1:
+                    results[i] = qml.math.stack(results[i])
 
         # Averaging over reps_per_factor repetitions
         results_flattened = []
@@ -537,6 +539,14 @@ def mitigate_with_zne(
             results_flattened.append(mean(qml.math.stack(results[i : i + reps_per_factor]), axis=0))
 
         extrapolated = extrapolate(scale_factors, results_flattened, **extrapolate_kwargs)
+
+        if qml.active_return():
+            extrapolated = extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
+
+            # unstack the results in the case of multiple measurements
+            return (
+                extrapolated if shape(extrapolated) == () else tuple(qml.math.unstack(extrapolated))
+            )
 
         return extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
 

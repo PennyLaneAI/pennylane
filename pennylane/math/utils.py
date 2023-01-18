@@ -195,6 +195,16 @@ def get_interface(*values):
 
     * Vanilla NumPy arrays and SciPy sparse matrices can be used alongside other tensor objects;
       they will always be treated as non-differentiable constants.
+
+    .. warning::
+        ``get_interface`` defaults to ``"numpy"`` whenever Python built-in objects are passed.
+        I.e. a list or tuple of ``torch`` tensors will be identified as ``"numpy"``:
+
+        >>> get_interface([torch.tensor([1]), torch.tensor([1])])
+        "numpy"
+
+        The correct usage in that case is to unpack the arguments ``get_interface(*[torch.tensor([1]), torch.tensor([1])])``.
+
     """
 
     if len(values) == 1:
@@ -312,7 +322,7 @@ def is_abstract(tensor, like=None):
     >>> function(x)
     Value: [0.5, 0.1]
     Abstract: False
-    DeviceArray(0.26, dtype=float32)
+    Array(0.26, dtype=float32)
 
     However, if we use the ``@jax.jit`` decorator, the tensor will now be abstract:
 
@@ -320,7 +330,7 @@ def is_abstract(tensor, like=None):
     >>> jax.jit(function)(x)
     Value: Traced<ShapedArray(float32[2])>with<DynamicJaxprTrace(level=0/1)>
     Abstract: True
-    DeviceArray(0.26, dtype=float32)
+    Array(0.26, dtype=float32)
 
     Note that JAX uses an abstract *shaped* array, so although we won't be able to
     include conditionals within our function that depend on the value of the tensor,
@@ -356,7 +366,14 @@ def is_abstract(tensor, like=None):
         import jax
         from jax.interpreters.partial_eval import DynamicJaxprTracer
 
-        if isinstance(tensor, (jax.ad.JVPTracer, jax.interpreters.batching.BatchTracer)):
+        if isinstance(
+            tensor,
+            (
+                jax.ad.JVPTracer,
+                jax.interpreters.batching.BatchTracer,
+                jax.interpreters.partial_eval.JaxprTracer,
+            ),
+        ):
             # Tracer objects will be used when computing gradients or applying transforms.
             # If the value of the tracer is known, it will contain a ConcreteArray.
             # Otherwise, it will be abstract.

@@ -23,8 +23,8 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.pauli.utils import _binary_matrix
 from pennylane.qchem.tapering import (
-    _binary_matrix,
     _kernel,
     _observable_mult,
     _reduced_row_echelon,
@@ -33,79 +33,6 @@ from pennylane.qchem.tapering import (
     taper_hf,
     taper_operation,
 )
-
-
-@pytest.mark.parametrize(
-    ("terms", "num_qubits", "result"),
-    [
-        (
-            [
-                qml.Identity(wires=[0]),
-                qml.PauliZ(wires=[0]),
-                qml.PauliZ(wires=[1]),
-                qml.PauliZ(wires=[2]),
-                qml.PauliZ(wires=[3]),
-                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                qml.PauliY(wires=[0])
-                @ qml.PauliX(wires=[1])
-                @ qml.PauliX(wires=[2])
-                @ qml.PauliY(wires=[3]),
-                qml.PauliY(wires=[0])
-                @ qml.PauliY(wires=[1])
-                @ qml.PauliX(wires=[2])
-                @ qml.PauliX(wires=[3]),
-                qml.PauliX(wires=[0])
-                @ qml.PauliX(wires=[1])
-                @ qml.PauliY(wires=[2])
-                @ qml.PauliY(wires=[3]),
-                qml.PauliX(wires=[0])
-                @ qml.PauliY(wires=[1])
-                @ qml.PauliY(wires=[2])
-                @ qml.PauliX(wires=[3]),
-                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-            ],
-            4,
-            np.array(
-                [
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 1, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 1, 0, 0, 0, 0],
-                    [1, 1, 0, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 1, 1, 1, 1, 1],
-                    [1, 1, 0, 0, 1, 1, 1, 1],
-                    [0, 0, 1, 1, 1, 1, 1, 1],
-                    [0, 1, 1, 0, 1, 1, 1, 1],
-                    [1, 0, 1, 0, 0, 0, 0, 0],
-                    [1, 0, 0, 1, 0, 0, 0, 0],
-                    [0, 1, 1, 0, 0, 0, 0, 0],
-                    [0, 1, 0, 1, 0, 0, 0, 0],
-                    [0, 0, 1, 1, 0, 0, 0, 0],
-                ]
-            ),
-        ),
-        (
-            [
-                qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
-                qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
-                qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
-            ],
-            4,
-            np.array(
-                [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
-            ),
-        ),
-    ],
-)
-def test_binary_matrix(terms, num_qubits, result):
-    r"""Test that _binary_matrix returns the correct result."""
-    binary_matrix = _binary_matrix(terms, num_qubits)
-    assert (binary_matrix == result).all()
 
 
 @pytest.mark.parametrize(
@@ -829,16 +756,17 @@ def test_consistent_taper_ops(operation, op_gen):
     )
     assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op1, taper_op2)])
 
-    tape1, tape2 = qml.tape.QuantumTape(), qml.tape.QuantumTape()
-    with tape1:
+    with qml.queuing.AnnotatedQueue() as q_tape1:
         taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=None)
-    with tape2:
+    with qml.queuing.AnnotatedQueue() as q_tape2:
         taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen)
-
+    tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
+    tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
     taper_circuit1 = [x for x in tape1.circuit if x.label() != "I"]
     taper_circuit2 = [x for x in tape2.circuit if x.label() != "I"]
 
-    assert len(taper_op1) == len(taper_circuit1) and len(taper_op2) == len(taper_circuit2)
+    assert len(taper_op1) == len(taper_circuit1)
+    assert len(taper_op2) == len(taper_circuit2)
     assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_circuit1, taper_op1)])
     assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_circuit2, taper_op2)])
 

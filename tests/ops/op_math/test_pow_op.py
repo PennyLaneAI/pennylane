@@ -21,7 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math.controlled_class import ControlledOp
+from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 
 
@@ -59,8 +59,8 @@ class TestConstructor:
         """Test that nonlazy pow returns a single identity if the power decomposes
         to the identity."""
 
-        op = qml.pow(op, 2, lazy=False)
-        assert qml.equal(op, qml.Identity(0))
+        op_new = qml.pow(op, 2, lazy=False)
+        assert qml.equal(op_new, qml.Identity(op.wires))
 
     def test_simplification_multiple_ops(self):
         """Test that when the simplification method returns a list of multiple operators,
@@ -85,8 +85,7 @@ class TestConstructor:
             original_op = qml.PauliX(0)
             new_op = qml.pow(original_op, 0.5, lazy=False)
 
-        assert q._queue[original_op]["owner"] is new_op
-        assert q._queue[new_op]["owns"] is original_op
+        assert original_op not in q.queue
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
@@ -357,6 +356,33 @@ class TestProperties:
         assert op.ndim_params == (0, 2)
         assert op.batch_size == 3
 
+    op_pauli_reps = (
+        (qml.PauliZ(wires=0), 1, qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1})),
+        (qml.PauliX(wires=1), 2, qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),  # identity
+        (qml.PauliY(wires="a"), 5, qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1})),
+    )
+
+    @pytest.mark.parametrize("base, exp, rep", op_pauli_reps)
+    def test_pauli_rep(self, base, exp, rep, power_method):
+        """Test the pauli rep is produced as expected."""
+        op = power_method(base, exp)
+        assert op._pauli_rep == rep
+
+    def test_pauli_rep_is_none_for_bad_exponents(self, power_method):
+        """Test that the _pauli_rep is None if the exponent is not positive or non integer."""
+        base = qml.PauliX(wires=0)
+        exponents = [1.23, -2]
+
+        for exponent in exponents:
+            op = power_method(base, z=exponent)
+            assert op._pauli_rep is None
+
+    def test_pauli_rep_none_if_base_pauli_rep_none(self, power_method):
+        """Test that None is produced if the base op does not have a pauli rep"""
+        base = qml.RX(1.23, wires=0)
+        op = power_method(base, z=2)
+        assert op._pauli_rep is None
+
 
 class TestSimplify:
     """Test Pow simplify method and depth property."""
@@ -530,32 +556,30 @@ class TestQueueing:
     def test_queueing(self):
         """Test queuing and metadata when both Pow and base defined inside a recording context."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Pow(base, 1.2)
 
-        assert tape._queue[base]["owner"] is op
-        assert tape._queue[op]["owns"] is base
-        assert tape.operations == [op]
+        assert q.queue[0] is op
+        assert len(q) == 1
 
     def test_queueing_base_defined_outside(self):
         """Test that base is added to queue even if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Pow(base, 3.4)
 
-        assert len(tape.queue) == 1
-        assert tape._queue[op]["owns"] is base
-        assert tape.operations == [op]
+        assert len(q) == 1
+        assert q.queue[0] is op
 
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Pow(base, 4.5, do_queue=False)
 
-        assert len(tape) == 0
+        assert len(q) == 0
 
 
 class TestMatrix:
@@ -605,7 +629,7 @@ class TestMatrix:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
-    def test_matrix_against_shortcut_jax(self, z):
+    def test_matrix_against_shortcut_tf(self, z):
         """Test the matrix using a tf variable parameter."""
         import tensorflow as tf
 
@@ -737,50 +761,6 @@ class TestDecompositionExpand:
 
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
-
-
-class TestInverse:
-    """Test the interaction between in-place inversion and the power operator."""
-
-    def test_base_already_inverted(self):
-        """Test that if the base is already inverted, then initialization un-inverts
-        it and applies a negative sign to the exponent."""
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            base = qml.S(0).inv()
-        op = Pow(base, 2)
-
-        assert base.inverse is False
-
-        assert op.z == -2
-        assert op.name == "S**-2"
-        assert op.base_name == "S**-2"
-        assert op.inverse is False
-
-    def test_invert_pow_op(self):
-        """Test that in-place inversion of a power operator only changes the sign
-        of the power and does not change the `inverse` property."""
-        base = qml.S(0)
-        op = Pow(base, 2)
-
-        with pytest.warns(UserWarning, match="In-place inversion with inv is deprecated"):
-            op.inv()
-
-        assert base.inverse is False
-
-        assert op.z == -2
-        assert op.name == "S**-2"
-        assert op.base_name == "S**-2"
-        assert op.inverse is False
-
-    def test_inverse_setter(self):
-        """Assert that the inverse can be set to False, but trying to set it to True raises a
-        NotImplementedError."""
-        op = Pow(qml.S(0), 2.1)
-
-        op.inverse = False
-
-        with pytest.raises(NotImplementedError):
-            op.inverse = True
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])

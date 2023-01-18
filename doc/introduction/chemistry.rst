@@ -201,7 +201,6 @@ Differentiable observables
     ~pennylane.qchem.jordan_wigner
     ~pennylane.qchem.molecular_hamiltonian
     ~pennylane.qchem.qubit_observable
-    ~pennylane.qchem.simplify
 
 :html:`</div>`
 
@@ -253,8 +252,10 @@ Utility functions
     ~pennylane.qchem.excitations
     ~pennylane.qchem.excitations_to_wires
     ~pennylane.qchem.factorize
+    ~pennylane.qchem.givens_decomposition
     ~pennylane.qchem.hf_state
     ~pennylane.import_operator
+    ~pennylane.qchem.mol_data
     ~pennylane.qchem.read_structure
 
 :html:`</div>`

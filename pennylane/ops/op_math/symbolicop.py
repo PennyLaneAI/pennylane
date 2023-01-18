@@ -33,8 +33,8 @@ class SymbolicOp(Operator):
     This *developer-facing* class can serve as a parent to single base symbolic operators, such as
     :class:`~.ops.op_math.Adjoint` and :class:`~.ops.op_math.Pow`.
 
-    New symbolic operators can inherit from this class to recieve some common default behavior, such
-    as deferring properties to the the base class, copying the base class during a shallow copy, and
+    New symbolic operators can inherit from this class to receive some common default behavior, such
+    as deferring properties to the base class, copying the base class during a shallow copy, and
     updating the metadata of the base operator during queueing.
 
     The child symbolic operator should define the `_name` property during initialization and define
@@ -66,9 +66,14 @@ class SymbolicOp(Operator):
         self.hyperparameters["base"] = base
         self._id = id
         self.queue_idx = None
+        self._pauli_rep = None
 
         if do_queue:
             self.queue()
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size
 
     @property
     def base(self) -> Operator:
@@ -110,8 +115,8 @@ class SymbolicOp(Operator):
         return self.base._queue_category  # pylint: disable=protected-access
 
     def queue(self, context=QueuingManager):
-        context.update_info(self.base, owner=self)
-        context.append(self, owns=self.base)
+        context.remove(self.base)
+        context.append(self)
         return self
 
     @property

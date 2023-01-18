@@ -34,7 +34,7 @@ class TestMergeAmplitudeEmbedding:
             qml.state()
 
         transformed_qfunc = merge_amplitude_embedding(qfunc)
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == 3
 

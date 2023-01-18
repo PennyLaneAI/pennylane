@@ -14,6 +14,7 @@
 """
 Tests for the Hamiltonian class.
 """
+from collections.abc import Iterable
 from unittest.mock import patch
 
 import numpy as np
@@ -22,7 +23,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.wires import Wires
-from collections.abc import Iterable
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -39,7 +39,7 @@ except ImportError:
     pass
 
 try:
-    import tf
+    import tensorflow as tf
 
     COEFFS_PARAM_INTERFACE.append(
         (tf.Variable([-0.05, 0.17], dtype=tf.double), tf.Variable(1.7, dtype=tf.double), "tf")
@@ -48,9 +48,9 @@ except ImportError:
     pass
 
 try:
-    import torch
+    from torch import tensor
 
-    COEFFS_PARAM_INTERFACE.append((torch.tensor([-0.05, 0.17]), torch.tensor(1.7), "torch"))
+    COEFFS_PARAM_INTERFACE.append((tensor([-0.05, 0.17]), tensor(1.7), "torch"))
 except ImportError:
     pass
 
@@ -727,7 +727,7 @@ class TestHamiltonian:
         """Tests that simplifying a Hamiltonian in a tape context
         queues the simplified Hamiltonian."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             a = qml.PauliX(wires=0)
             b = qml.PauliY(wires=1)
             c = qml.Identity(wires=2)
@@ -738,7 +738,7 @@ class TestHamiltonian:
         # check that H is simplified
         assert H.ops == [a, b]
         # check that the simplified Hamiltonian is in the queue
-        assert H in tape._queue
+        assert q.get_info(H) is not None
 
     def test_data(self):
         """Tests the obs_data method"""
@@ -857,21 +857,21 @@ class TestHamiltonian:
         """Tests that the arithmetic operations thrown the correct errors"""
         H = qml.Hamiltonian([1], [qml.PauliZ(0)])
         A = [[1, 0], [0, -1]]
-        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
-            H @ A
-        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
-            H.__rmatmul__(A)
-        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
-            H + A
-        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
-            H * A
-        with pytest.raises(ValueError, match="Cannot subtract"):
-            H - A
-        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H @ A
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = A @ H
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H + A
+        with pytest.raises(TypeError, match="can't multiply sequence by non-int"):
+            _ = H * A
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H - A
+        with pytest.raises(TypeError, match="unsupported operand type"):
             H += A
-        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             H *= A
-        with pytest.raises(ValueError, match="Cannot subtract"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             H -= A
 
     def test_hamiltonian_queue_outside(self):
@@ -887,43 +887,29 @@ class TestHamiltonian:
 
         H = qml.PauliX(1) + 3 * qml.PauliZ(0) @ qml.PauliZ(2) + qml.PauliZ(1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
             qml.expval(H)
 
-        assert len(tape.queue) == 3
-        assert isinstance(tape.queue[0], qml.Hadamard)
-        assert isinstance(tape.queue[1], qml.PauliX)
-        assert isinstance(tape.queue[2], qml.measurements.MeasurementProcess)
-        assert H.compare(tape.queue[2].obs)
+        assert len(q.queue) == 3
+        assert isinstance(q.queue[0], qml.Hadamard)
+        assert isinstance(q.queue[1], qml.PauliX)
+        assert isinstance(q.queue[2], qml.measurements.MeasurementProcess)
+        assert H.compare(q.queue[2].obs)
 
     def test_hamiltonian_queue_inside(self):
         """Tests that Hamiltonian are queued correctly when components are instantiated inside the recording context."""
 
-        queue = [
-            qml.Hadamard(wires=1),
-            qml.PauliX(wires=0),
-            qml.PauliX(1),
-            qml.PauliZ(0),
-            qml.PauliZ(2),
-            qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliZ(1),
-            qml.Hamiltonian(
-                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
-            ),
-        ]
-
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=1)
-            qml.PauliX(wires=0)
-            qml.expval(
+        with qml.queuing.AnnotatedQueue() as q:
+            m = qml.expval(
                 qml.Hamiltonian(
                     [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
                 )
             )
 
-        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
+        assert len(q.queue) == 1
+        assert q.queue[0] is m
 
     def test_terms(self):
         """Tests that the terms representation is returned correctly."""
@@ -1388,10 +1374,10 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
 
-        assert tape.queue == [H]
+        assert q.queue == [H]
 
     def test_grouping_method_can_be_set(self):
         r"""Tests that the grouping method can be controlled by kwargs.

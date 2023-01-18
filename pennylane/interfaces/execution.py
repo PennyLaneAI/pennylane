@@ -26,7 +26,7 @@ devices with autodifferentiation support.
 import inspect
 import warnings
 from contextlib import _GeneratorContextManager
-from functools import wraps
+from functools import wraps, partial
 from typing import Callable, Sequence
 
 from cachetools import LRUCache
@@ -238,7 +238,7 @@ def _execute_new(
     cache=True,
     cachesize=10000,
     max_diff=1,
-    override_shots=False,
+    override_shots: int = False,
     expand_fn="device",
     max_expansion=10,
     device_batch_transform=True,
@@ -271,6 +271,8 @@ def _execute_new(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        override_shots (int): The number of shots to use for the execution. If ``False``, then the
+            number of shots on the device is used.
         expand_fn (function): Tape expansion function to be called prior to device execution.
             Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
             single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
@@ -351,7 +353,8 @@ def _execute_new(
     gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
-        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+        dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
+        tapes, batch_fn = qml.transforms.map_batch_transform(dev_batch_transform, tapes)
     else:
         batch_fn = lambda res: res  # pragma: no cover
 
@@ -438,29 +441,35 @@ def _execute_new(
     try:
         if mapped_interface == "autograd":
             from .autograd import execute as _execute
+
         elif mapped_interface == "tf":
             # TODO: remove pragmas when TF is supported
             import tensorflow as tf  # pragma: no cover
 
             if not tf.executing_eagerly() or "autograph" in interface:  # pragma: no cover
                 from .tensorflow_autograph import execute as _execute  # pragma: no cover
+
+                _execute = partial(_execute, mode=_mode)
+
             else:
                 from .tensorflow import execute as _execute  # pragma: no cover
+
         elif mapped_interface == "torch":
             # TODO: remove pragmas when Torch is supported
             from .torch import execute as _execute  # pragma: no cover
-        else:  # is jax
-            # TODO: remove pragmas when Jax is supported
-            _execute = _get_jax_execute_fn(interface, tapes)  # pragma: no cover
+
+        elif mapped_interface == "jax":
+            _execute = _get_jax_execute_fn(interface, tapes)
+
+        res = _execute(
+            tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff
+        )
+
     except ImportError as e:
         raise qml.QuantumFunctionError(
             f"{mapped_interface} not found. Please install the latest "
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
-
-    res = _execute(
-        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
-    )
 
     return batch_fn(res)
 
@@ -475,7 +484,7 @@ def execute(
     cache=True,
     cachesize=10000,
     max_diff=1,
-    override_shots=False,
+    override_shots: int = False,
     expand_fn="device",
     max_expansion=10,
     device_batch_transform=True,
@@ -507,6 +516,8 @@ def execute(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        override_shots (int): The number of shots to use for the execution. If ``False``, then the
+            number of shots on the device is used.
         expand_fn (function): Tape expansion function to be called prior to device execution.
             Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
             single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
@@ -604,7 +615,8 @@ def execute(
     gradient_kwargs = gradient_kwargs or {}
 
     if device_batch_transform:
-        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+        dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
+        tapes, batch_fn = qml.transforms.map_batch_transform(dev_batch_transform, tapes)
     else:
         batch_fn = lambda res: res
 
@@ -728,7 +740,13 @@ def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
         interface = get_jax_interface_name(tapes)
 
     if interface == "jax-jit":
-        from .jax_jit import execute as _execute
+        if qml.active_return():
+            from .jax_jit_tuple import execute_tuple as _execute
+        else:
+            from .jax_jit import execute as _execute
     else:
-        from .jax import execute as _execute
+        if qml.active_return():
+            from .jax import execute_new as _execute
+        else:
+            from .jax import execute as _execute
     return _execute

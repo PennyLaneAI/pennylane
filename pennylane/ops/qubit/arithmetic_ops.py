@@ -520,8 +520,7 @@ class IntegerComparator(Operation):
             for control_values in control_values_list:
                 gates.append(
                     MultiControlledX(
-                        control_wires=control_wires,
-                        wires=wires,
+                        wires=control_wires + wires,
                         control_values=control_values,
                         work_wires=work_wires,
                     )

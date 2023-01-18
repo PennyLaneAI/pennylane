@@ -17,7 +17,8 @@ This module contains the functions needed for computing matrices.
 # pylint: disable= too-many-branches
 import itertools as it
 
-import autograd.numpy as anp
+import pennylane as qml
+from pennylane import numpy as np
 
 from .integrals import (
     attraction_integral,
@@ -55,7 +56,7 @@ def mol_density_matrix(n_electron, c):
     >>> mol_density_matrix(n_electron, c)
     array([[0.30061941, 0.30061941], [0.30061941, 0.30061941]])
     """
-    p = anp.dot(c[:, : n_electron // 2], anp.conjugate(c[:, : n_electron // 2]).T)
+    p = qml.math.dot(c[:, : n_electron // 2], qml.math.conjugate(c[:, : n_electron // 2]).T)
     return p
 
 
@@ -90,7 +91,7 @@ def overlap_matrix(basis_functions):
             array[array[float]]: the overlap matrix
         """
         n = len(basis_functions)
-        matrix = anp.eye(n)
+        matrix = qml.math.eye(n)
 
         for (i, a), (j, b) in it.combinations(enumerate(basis_functions), r=2):
             args_ab = []
@@ -98,7 +99,7 @@ def overlap_matrix(basis_functions):
                 args_ab.extend([arg[i], arg[j]] for arg in args)
             integral = overlap_integral(a, b, normalize=False)(*args_ab)
 
-            o = anp.zeros((n, n))
+            o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
             matrix = matrix + integral * o
 
@@ -141,7 +142,7 @@ def moment_matrix(basis_functions, order, idx):
             array[array[float]]: the multipole moment matrix
         """
         n = len(basis_functions)
-        matrix = anp.zeros((n, n))
+        matrix = qml.math.zeros((n, n))
 
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
 
@@ -150,7 +151,7 @@ def moment_matrix(basis_functions, order, idx):
                 args_ab.extend([arg[i], arg[j]] for arg in args)
             integral = moment_integral(a, b, order, idx, normalize=False)(*args_ab)
 
-            o = anp.zeros((n, n))
+            o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
             matrix = matrix + integral * o
 
@@ -190,7 +191,7 @@ def kinetic_matrix(basis_functions):
             array[array[float]]: the kinetic matrix
         """
         n = len(basis_functions)
-        matrix = anp.zeros((n, n))
+        matrix = qml.math.zeros((n, n))
 
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
             args_ab = []
@@ -198,7 +199,7 @@ def kinetic_matrix(basis_functions):
                 args_ab.extend([arg[i], arg[j]] for arg in args)
             integral = kinetic_integral(a, b, normalize=False)(*args_ab)
 
-            o = anp.zeros((n, n))
+            o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
             matrix = matrix + integral * o
 
@@ -241,7 +242,7 @@ def attraction_matrix(basis_functions, charges, r):
             array[array[float]]: the electron-nuclear attraction matrix
         """
         n = len(basis_functions)
-        matrix = anp.zeros((n, n))
+        matrix = qml.math.zeros((n, n))
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
             integral = 0
             if args:
@@ -266,7 +267,7 @@ def attraction_matrix(basis_functions, charges, r):
                         integral - charges[k] * attraction_integral(c, a, b, normalize=False)()
                     )
 
-            o = anp.zeros((n, n))
+            o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
             matrix = matrix + integral * o
 
@@ -313,11 +314,11 @@ def repulsion_tensor(basis_functions):
             array[array[float]]: the electron repulsion tensor
         """
         n = len(basis_functions)
-        tensor = anp.zeros((n, n, n, n))
-        e_calc = anp.full((n, n, n, n), anp.nan)
+        tensor = qml.math.zeros((n, n, n, n))
+        e_calc = qml.math.full((n, n, n, n), np.nan)
 
         for (i, a), (j, b), (k, c), (l, d) in it.product(enumerate(basis_functions), repeat=4):
-            if anp.isnan(e_calc[(i, j, k, l)]):
+            if qml.math.isnan(e_calc[(i, j, k, l)]):
                 args_abcd = []
                 if args:
                     args_abcd.extend([arg[i], arg[j], arg[k], arg[l]] for arg in args)
@@ -334,7 +335,7 @@ def repulsion_tensor(basis_functions):
                     (k, l, j, i),
                 ]
 
-                o = anp.zeros((n, n, n, n))
+                o = qml.math.zeros((n, n, n, n))
                 for perm in permutations:
                     o[perm] = 1.0
                     e_calc[perm] = 1.0

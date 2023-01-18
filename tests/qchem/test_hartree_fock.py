@@ -14,11 +14,31 @@
 """
 Unit tests for Hartree-Fock functions.
 """
-import autograd
 import pytest
 
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
+
+
+def test_scf_leaves_random_seed_unchanged():
+    """Tests that the scf function leaves the global numpy sampling state unchanged."""
+
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+    alpha = np.array(
+        [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        requires_grad=True,
+    )
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
+    args = [alpha]
+
+    initial_numpy_state = np.random.get_state()
+    v_fock, coeffs, fock_matrix, h_core, rep_tensor = qchem.scf(mol)(*args)
+    final_numpy_state = np.random.get_state()
+
+    assert initial_numpy_state[0] == final_numpy_state[0]
+    assert np.all(initial_numpy_state[1] == final_numpy_state[1])
 
 
 @pytest.mark.parametrize(
@@ -92,6 +112,22 @@ def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_t
             "6-31G",
             # HF energy computed with pyscf using scf.hf.SCF(mol_pyscf).kernel()
             np.array([-2.83655236013837]),
+        ),
+        (
+            ["H", "He"],
+            np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=False),
+            1,
+            "6-311G",
+            # HF energy computed with pyscf using scf.hf.SCF(mol_pyscf).kernel()
+            np.array([-2.84429553346549]),
+        ),
+        (
+            ["H", "He"],
+            np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]], requires_grad=False),
+            1,
+            "cc-pvdz",
+            # HF energy computed with pyscf using scf.hf.SCF(mol_pyscf).kernel()
+            np.array([-2.84060925839206]),
         ),
     ],
 )
@@ -167,7 +203,7 @@ def test_hf_energy_gradient(symbols, geometry, g_ref):
     correct."""
     mol = qchem.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    g = autograd.grad(qchem.hf_energy(mol))(*args)
+    g = qml.grad(qchem.hf_energy(mol))(*args)
 
     assert np.allclose(g, g_ref)
 
@@ -221,5 +257,31 @@ def test_nuclear_energy_gradient(symbols, geometry, g_ref):
     r"""Test that nuclear energy gradients are correct."""
     mol = qchem.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    g = autograd.grad(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
+    g = qml.grad(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
     assert np.allclose(g, g_ref)
+
+
+class TestJax:
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "g_ref"),
+        [
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+                # HF gradient computed with pyscf using rnuc_grad_method().kernel()
+                np.array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]]),
+            ),
+        ],
+    )
+    @pytest.mark.jax
+    def test_hf_energy_gradient(self, symbols, geometry, g_ref):
+        r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
+        correct."""
+        import jax
+
+        mol = qchem.Molecule(symbols, geometry)
+        args = [jax.numpy.array(mol.coordinates)]
+        g = jax.grad(qchem.hf_energy(mol))(*args)
+        g_ref = jax.numpy.array(g_ref)
+
+        assert np.allclose(g, g_ref)

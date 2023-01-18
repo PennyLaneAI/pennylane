@@ -33,8 +33,6 @@ label_data = [
 def test_label(op, label):
     assert op.label() == label
     assert op.label(decimals=2) == label
-    op.inv()
-    assert op.label() == label + "⁻¹"
 
 
 class TestQubitCarry:
@@ -86,13 +84,14 @@ class TestQubitCarry:
         dev = qml.device("default.qubit", wires=4)
         spy = mocker.spy(qml.QubitCarry, "decomposition")
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             for i in range(len(input_string)):
                 if input_string[i] == "1":
                     qml.PauliX(i)
             qml.QubitCarry(wires=wires)
             qml.probs(wires=[0, 1, 2, 3])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         if expand:
             tape = tape.expand()
         result = dev.execute(tape)
@@ -191,7 +190,7 @@ class TestQubitSum:
         dev = qml.device("default.qubit", wires=3)
         spy = mocker.spy(qml.QubitSum, "decomposition")
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.QubitStateVector(input_state, wires=[0, 1, 2])
 
             if expand:
@@ -201,6 +200,7 @@ class TestQubitSum:
 
             qml.state()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         result = dev.execute(tape)
         assert np.allclose(result, output_state)
 
@@ -359,13 +359,11 @@ class TestIntegerComparator:
     def test_label_method(self):
         """Test label method"""
 
-        op, label1, label2 = qml.IntegerComparator(2, wires=(0, 1, 2, 3)), ">=2", ">=2"
+        op = qml.IntegerComparator(2, wires=(0, 1, 2, 3))
+        label = ">=2"
 
-        assert op.label() == label1
-        assert op.label(decimals=2) == label1
-
-        op.inv()
-        assert op.label() == label2
+        assert op.label() == label
+        assert op.label(decimals=2) == label
 
     @pytest.mark.parametrize(
         "value,wires,geq,expected_error_message",
@@ -387,12 +385,14 @@ class TestIntegerComparator:
 
     def test_decomposition(self):
         """Test operator's ``compute_decomposition()`` method."""
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2])
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
         assert all(isinstance(op, qml.MultiControlledX) for op in tape1.operations)
 
-        with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.IntegerComparator.compute_decomposition(2, wires=[0, 1, 2], geq=False)
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qml.MultiControlledX) for op in tape2.operations)
 
         num_wires = 3
@@ -402,7 +402,7 @@ class TestIntegerComparator:
         @qml.qnode(dev)
         def f(bitstring, tape, geq):
             qml.BasisState(bitstring, wires=range(num_wires + num_workers))
-            qml.IntegerComparator(2, wires=(0, 1, 2), geq=geq).inv()
+            qml.adjoint(qml.IntegerComparator(2, wires=(0, 1, 2), geq=geq), lazy=False)
             for op in tape.operations:
                 op.queue()
             return qml.probs(wires=range(num_wires + num_workers))
@@ -420,12 +420,14 @@ class TestIntegerComparator:
         """Test operator's ``compute_decomposition()`` method when ``value`` is such that
         decomposition is the identity matrix."""
 
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q1:
             qml.IntegerComparator.compute_decomposition(10, wires=[0, 1, 2])
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
         assert all(isinstance(op, qml.Identity) for op in tape1.operations)
 
-        with qml.tape.QuantumTape() as tape2:
+        with qml.queuing.AnnotatedQueue() as q2:
             qml.IntegerComparator.compute_decomposition(0, wires=[0, 1, 2], geq=False)
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qml.Identity) for op in tape2.operations)
 
     def test_power(self):

@@ -53,9 +53,12 @@ Operator to Operator functions
     ~pennylane.cond
     ~pennylane.exp
     ~pennylane.op_sum
+    ~pennylane.pow
     ~pennylane.prod
     ~pennylane.s_prod
     ~pennylane.generator
+    ~pennylane.map_wires
+    ~pennylane.ops.dot
 
 These operator functions act on operators to produce new operators.
 
@@ -112,6 +115,24 @@ array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
 [ 0. -0.38268343j,  0.+0.j,  0.92387953+0.j,  0.+0.j],
 [ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
 
+
+Matrix to Operator functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+
+    ~pennylane.pauli_decompose
+
+These functions take the matrix representation of an operator and return
+the equivalent native PennyLane operator.
+
+>>> mat = np.array([[1, 1], [1, -1]])
+>>> h = qml.pauli_decompose(mat)
+>>> type(h)
+<class 'pennylane.ops.qubit.hamiltonian.Hamiltonian'>
+>>> print(h)
+(1.0) [X0]
++ (1.0) [Z0]
 
 .. _intro_ref_ops_qubit:
 
@@ -173,6 +194,9 @@ Parametrized gates
     ~pennylane.PhaseShift
     ~pennylane.ControlledPhaseShift
     ~pennylane.CPhase
+    ~pennylane.CPhaseShift00
+    ~pennylane.CPhaseShift01
+    ~pennylane.CPhaseShift10
     ~pennylane.CRX
     ~pennylane.CRY
     ~pennylane.CRZ
@@ -206,6 +230,7 @@ Quantum chemistry gates
     ~pennylane.DoubleExcitationPlus
     ~pennylane.DoubleExcitationMinus
     ~pennylane.OrbitalRotation
+    ~pennylane.FermionicSWAP
 
 :html:`</div>`
 
@@ -409,6 +434,7 @@ Qutrit non-parametrized gates
 
     ~pennylane.TShift
     ~pennylane.TClock
+    ~pennylane.THadamard
     ~pennylane.TAdd
     ~pennylane.TSWAP
 
