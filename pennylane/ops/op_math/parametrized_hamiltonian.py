@@ -126,25 +126,25 @@ class ParametrizedHamiltonian:
         self._ops = list(observables)
         self._coeffs = coeffs
 
-        self.H_coeffs_fixed = []
-        self.H_coeffs_parametrized = []
-        self.H_ops_fixed = []
-        self.H_ops_parametrized = []
+        self.coeffs_fixed = []
+        self.coeffs_parametrized = []
+        self.ops_fixed = []
+        self.ops_parametrized = []
 
         for coeff, obs in zip(coeffs, observables):
             if callable(coeff):
-                self.H_coeffs_parametrized.append(coeff)
-                self.H_ops_parametrized.append(obs)
+                self.coeffs_parametrized.append(coeff)
+                self.ops_parametrized.append(obs)
             else:
-                self.H_coeffs_fixed.append(coeff)
-                self.H_ops_fixed.append(obs)
+                self.coeffs_fixed.append(coeff)
+                self.ops_fixed.append(obs)
 
         self.wires = Wires.all_wires(
-            [op.wires for op in self.H_ops_fixed] + [op.wires for op in self.H_ops_parametrized]
+            [op.wires for op in self.ops_fixed] + [op.wires for op in self.ops_parametrized]
         )
 
     def __call__(self, params, t):
-        if len(params) != len(self.H_coeffs_parametrized):
+        if len(params) != len(self.coeffs_parametrized):
             raise ValueError(
                 "The length of the params argument and the number of scalar-valued functions must be the same."
             )
@@ -156,8 +156,8 @@ class ParametrizedHamiltonian:
     def H_fixed(self):
         """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``
         operators (or a single ``SProd`` operator in the event that there is only one term in ``H_fixed``)."""
-        if self.H_coeffs_fixed:
-            return qml.ops.dot(self.H_coeffs_fixed, self.H_ops_fixed)  # pylint: disable=no-member
+        if self.coeffs_fixed:
+            return qml.ops.dot(self.coeffs_fixed, self.ops_fixed)  # pylint: disable=no-member
         return 0
 
     def H_parametrized(self, params, t):
@@ -170,10 +170,10 @@ class ParametrizedHamiltonian:
         Returns: an operator that is a ``Sum`` of ``~S_Prod`` operators (or a single
         ``~SProd`` operator in the event that there is only one term in ``H_parametrized``)."""
 
-        coeffs = [f(param, t) for f, param in zip(self.H_coeffs_parametrized, params)]
+        coeffs = [f(param, t) for f, param in zip(self.coeffs_parametrized, params)]
         if len(coeffs) == 0:
             return 0
-        return qml.ops.dot(coeffs, self.H_ops_parametrized)  # pylint: disable=no-member
+        return qml.ops.dot(coeffs, self.ops_parametrized)  # pylint: disable=no-member
 
     @property
     def coeffs(self):

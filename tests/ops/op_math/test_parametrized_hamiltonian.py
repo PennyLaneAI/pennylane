@@ -69,23 +69,21 @@ class TestInitialization:
 
     def test_H_fixed_lists(self):
         """Test that attributes H_fixed_ops and H_fixed_coeffs are as expected"""
-        assert test_example.H_coeffs_fixed == [1, 2]
+        assert test_example.coeffs_fixed == [1, 2]
         assert np.all(
             [
                 qml.equal(op1, op2)
-                for op1, op2 in zip(test_example.H_ops_fixed, [qml.PauliX(0), qml.PauliY(1)])
+                for op1, op2 in zip(test_example.ops_fixed, [qml.PauliX(0), qml.PauliY(1)])
             ]
         )
 
     def test_H_parametrized_lists(self):
         """Test that attributes H_parametrized_ops and H_parametrized_coeffs are as expected"""
-        assert test_example.H_coeffs_parametrized == [f1, f2]
+        assert test_example.coeffs_parametrized == [f1, f2]
         assert np.all(
             [
                 qml.equal(op1, op2)
-                for op1, op2 in zip(
-                    test_example.H_ops_parametrized, [qml.PauliZ(2), qml.Hadamard(3)]
-                )
+                for op1, op2 in zip(test_example.ops_parametrized, [qml.PauliZ(2), qml.Hadamard(3)])
             ]
         )
 
@@ -216,13 +214,13 @@ class TestInteractionWithOperators:
         new_pH = pH + H
         assert pH.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
-        assert new_pH.H_coeffs_fixed[0] == coeff
+        assert new_pH.coeffs_fixed[0] == coeff
 
         # Adding on the left
         new_pH = H + pH
         assert pH.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
-        assert new_pH.H_coeffs_fixed[0] == coeff
+        assert new_pH.coeffs_fixed[0] == coeff
 
     @pytest.mark.parametrize("op", ops)
     def test_add_other_operators(self, op):
@@ -270,7 +268,7 @@ class TestInteractionWithOperators:
         function and an Observable"""
         pH = f1 * qml.PauliX(0)
         assert isinstance(pH, ParametrizedHamiltonian)
-        assert len(pH.H_coeffs_fixed) == 0
+        assert len(pH.coeffs_fixed) == 0
         assert isinstance(pH.H_parametrized(param, 0.5), qml.ops.SProd)
 
 
