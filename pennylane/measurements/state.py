@@ -171,7 +171,7 @@ class StateMP(StateMeasurement):
                 f"measurement {self.__class__.__name__}."
             )
         # qml.state()
-        dim = 2 ** len(device.wires)
+        dim = 2 ** len(shot_location.wires)
         return (num_shot_elements, dim)
 
     def _shape_new(self, shot_location=None):
