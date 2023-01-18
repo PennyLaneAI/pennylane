@@ -7,3 +7,4 @@ tests/ops/op_math/test_controlled.py
 tests/ops/op_math/test_dot.py
 tests/test_operation.py
 tests/ops/qutrit/test_qutrit_observables.py
+tests/transforms/test_sign_expand.py
