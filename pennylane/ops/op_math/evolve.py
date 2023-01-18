@@ -93,6 +93,10 @@ class Evolve(Operation):
     def __init__(
         self, H: ParametrizedHamiltonian, params: list, t, dt=None, time="t", do_queue=True, id=None
     ):
+        if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
+            raise ValueError(
+                "All operators inside the parametrized hamiltonian must have a matrix defined."
+            )
         self.H = H
         self.time = time
         self.dt = dt
@@ -103,7 +107,7 @@ class Evolve(Operation):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in self.H.ops)
+        return True
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):

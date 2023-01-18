@@ -91,43 +91,25 @@ class TestInitialization:
         assert ev.parameters == []
         assert ev.num_params == 0
 
-    def test_has_matrix_true_via_op_have_matrix(self):
-        """Test that a parametrized evolution of operators that have `has_matrix=True`
-        has `has_matrix=True` as well."""
-
-        ops = [qml.PauliX(wires=0), qml.RZ(0.23, wires="a")]
-        coeffs = [1, 1]
+    def test_has_matrix_true(self):
+        """Test that a parametrized evolution always has ``has_matrix=True``."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = Evolve(H=H, params=[], t=0)
-
+        ev = Evolve(H=H, params=[1, 2], t=2)
         assert ev.has_matrix is True
 
-    def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
-        """Test that a product of operators of which one does not have `has_matrix=True`
-        but is a Hamiltonian has `has_matrix=True`."""
-
-        ops = [qml.Hamiltonian([0.5], [qml.PauliX(wires=1)]), qml.RZ(0.23, wires=5)]
-        coeffs = [1, 1]
-
+    def test_evolve_with_operator_without_matrix_raises_error(self):
+        """Test that an error is raised when an ``Evolve`` operator is initialized with a
+        ``ParametrizedHamiltonian`` that contains an operator without a matrix defined."""
+        ops = [qml.PauliX(0), MyOp(phi=0, wires=0)]
+        coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = Evolve(H=H, params=[], t=0)
-
-        assert ev.has_matrix is True
-
-    @pytest.mark.parametrize(
-        "first_factor", [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])]
-    )
-    def test_has_matrix_false_via_factor_has_no_matrix(self, first_factor):
-        """Test that a product of operators of which one does not have `has_matrix=True`
-        has `has_matrix=False`."""
-
-        ops = [first_factor, MyOp(0.23, wires="a")]
-        coeffs = [1, 1]
-
-        H = ParametrizedHamiltonian(coeffs, ops)
-        ev = Evolve(H=H, params=[], t=0)
-
-        assert ev.has_matrix is False
+        with pytest.raises(
+            ValueError,
+            match="All operators inside the parametrized hamiltonian must have a matrix defined",
+        ):
+            _ = Evolve(H=H, params=[1, 2], t=2)
 
 
 class TestMatrix:
