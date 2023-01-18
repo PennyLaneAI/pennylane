@@ -465,8 +465,8 @@ class DiagonalQubitUnitary(Operation):
 class SpecialUnitary(Operation):
     r"""Gate from the group :math:`SU(N)` with :math:`N=2^n` for :math:`n` qubits.
 
-    .. math:: 
-        
+    .. math::
+
         U(\theta) &= e^{A(\theta)}\\
         A(\theta) &= \sum_{m=1}^d i \theta_m P_m\\
         P_m &\in {I, X, Y, Z}^{\otimes n} \setminus \{I^{\otimes n}\}
@@ -481,7 +481,7 @@ class SpecialUnitary(Operation):
     * Number of wires: Any
     * Number of parameters: 1
     * Number of dimensions per parameter: (1,)
-    * Gradient recipe: 
+    * Gradient recipe:
 
     .. math::
 
