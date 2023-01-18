@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import AnyWires
-from pennylane.ops import Evolution, Evolve, ParametrizedHamiltonian, QubitUnitary
+from pennylane.ops import Evolution, ParametrizedEvolution, ParametrizedHamiltonian, QubitUnitary
 
 pytest_mark = pytest.mark.jax
 jax = pytest.importorskip("jax")
@@ -73,7 +73,7 @@ class TestInitialization:
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = Evolve(H=H, params=[1, 2], t=2)
+        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
 
         assert ev.H is H
         assert qml.math.allequal(ev.t, [0, 2])
@@ -81,7 +81,7 @@ class TestInitialization:
 
         assert ev.wires == H.wires
         assert ev.num_wires == AnyWires
-        assert ev.name == "Evolve"
+        assert ev.name == "ParametrizedEvolution"
         assert ev.id is None
         assert ev.queue_idx is None
 
@@ -94,11 +94,11 @@ class TestInitialization:
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = Evolve(H=H, params=[1, 2], t=2)
+        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
         assert ev.has_matrix is True
 
     def test_evolve_with_operator_without_matrix_raises_error(self):
-        """Test that an error is raised when an ``Evolve`` operator is initialized with a
+        """Test that an error is raised when an ``ParametrizedEvolution`` operator is initialized with a
         ``ParametrizedHamiltonian`` that contains an operator without a matrix defined."""
         ops = [qml.PauliX(0), MyOp(phi=0, wires=0)]
         coeffs = [1, 2]
@@ -107,7 +107,7 @@ class TestInitialization:
             ValueError,
             match="All operators inside the parametrized hamiltonian must have a matrix defined",
         ):
-            _ = Evolve(H=H, params=[1, 2], t=2)
+            _ = ParametrizedEvolution(H=H, params=[1, 2], t=2)
 
 
 class TestMatrix:
@@ -119,7 +119,7 @@ class TestMatrix:
         H = time_independent_hamiltonian()
         t = 4
         params = [1, 2]
-        ev = Evolve(H=H, params=params, t=t)
+        ev = ParametrizedEvolution(H=H, params=params, t=t)
         true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-3)
 
@@ -133,7 +133,7 @@ class TestMatrix:
 
         t = jnp.pi / 4
         params = [1, 2]
-        ev = Evolve(H=H, params=params, t=t)
+        ev = ParametrizedEvolution(H=H, params=params, t=t)
 
         def generator(params):
             time_step = 1e-3
@@ -160,13 +160,13 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            Evolve(H=H, params=params, t=t)
+            ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def jitted_circuit(params):
-            Evolve(H=H, params=params, t=t)
+            ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
         @qml.qnode(dev, interface="jax")
@@ -205,13 +205,13 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            Evolve(H=H, params=params, t=t)
+            ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def jitted_circuit(params):
-            Evolve(H=H, params=params, t=t)
+            ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         @qml.qnode(dev, interface="jax")
@@ -258,5 +258,5 @@ class TestEvolveConstructor:
         final_op = qml.evolve(H)
         assert callable(final_op)
         param_evolution = final_op(params=[], t=1)
-        assert isinstance(param_evolution, Evolve)
+        assert isinstance(param_evolution, ParametrizedEvolution)
         assert param_evolution.H is H

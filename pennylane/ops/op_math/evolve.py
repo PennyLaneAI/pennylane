@@ -15,7 +15,7 @@
 # pylint: disable=too-few-public-methods,function-redefined
 
 """
-This file contains the ``Evolve`` operator.
+This file contains the ``ParametrizedEvolution`` operator.
 """
 
 from typing import Union
@@ -60,14 +60,14 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
                 ParametrizedEvolution: class used to compute the parametrized evolution of the given
                     hamiltonian
             """
-            return Evolve(H=op, params=params, t=t)
+            return ParametrizedEvolution(H=op, params=params, t=t)
 
         return parametrized_evolution
 
     return Evolution(generator=op, param=1.0)
 
 
-class Evolve(Operation):
+class ParametrizedEvolution(Operation):
     r"""Parametrized evolution gate.
 
     For a time-dependent Hamiltonian of the form
@@ -86,14 +86,14 @@ class Evolve(Operation):
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
             If a list of two floats, it corresponds to the initial time and the final time of the
             evolution. Note that such absolute times only have meaning within an instance of
-            ``Evolve`` and will not affect other gates.
+            ``ParametrizedEvolution`` and will not affect other gates.
         time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
             Defaults to "t".
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
     """
 
-    _name = "Evolve"
+    _name = "ParametrizedEvolution"
     num_wires = AnyWires
     # pylint: disable=too-many-arguments, super-init-not-called
     def __init__(
@@ -101,7 +101,7 @@ class Evolve(Operation):
     ):
         if not has_jax:
             raise ImportError(
-                "Module jax is required for the ``Evolve`` class. You can install jax via: pip install jax"
+                "Module jax is required for the ``ParametrizedEvolution`` class. You can install jax via: pip install jax"
             )
         if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
             raise ValueError(
