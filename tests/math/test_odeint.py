@@ -86,6 +86,7 @@ class TestUnitTest:
         assert qml.math.allequal(y0.shape, y1.shape)
         assert qml.math.allequal(y0.dtype, y1.dtype)
 
+
 class TestAnalyticODE:
     """Test ODEs with analytic solutions"""
 
