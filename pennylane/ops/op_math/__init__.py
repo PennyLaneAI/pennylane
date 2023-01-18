@@ -30,6 +30,7 @@ Constructor Functions
     ~prod
     ~s_prod
     ~ops.dot
+    ~evolve
 
 Symbolic Classes
 ~~~~~~~~~~~~~~~~
@@ -51,6 +52,7 @@ Symbolic Classes
     ~SProd
     ~SymbolicOp
     ~ParametrizedHamiltonian
+    ~ParametrizedEvolution
 
 Controlled Operator Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
