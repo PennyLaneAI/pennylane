@@ -14,12 +14,13 @@
 """Unit tests for qutrit observables."""
 import functools
 from unittest.mock import PropertyMock, patch
-
 import pytest
-import pennylane as qml
 import numpy as np
 from gate_data import GELL_MANN
 
+import pennylane as qml
+
+# pylint: disable=protected-access, unused-argument
 
 # Hermitian matrices, their corresponding eigenvalues and eigenvectors.
 EIGVALS_TEST_DATA = [
@@ -72,7 +73,7 @@ class TestTHermitian:
 
     def setup_method(self):
         """Patch the _eigs class attribute of the Hermitian class before every test."""
-        self.patched_eigs = patch(
+        self.patched_eigs = patch(  # pylint: disable=attribute-defined-outside-init
             "pennylane.ops.qutrit.observables.THermitian._eigs", PropertyMock(return_value={})
         )
         self.patched_eigs.start()
@@ -388,3 +389,12 @@ class TestGellMann:
 
         assert obs.label() == label
         assert obs.label(decimals=2) == label
+
+    @pytest.mark.parametrize("index", list(range(1, 9)))
+    def test_repr(self, index):
+        """Test that the __repr__ method is correct"""
+
+        rep = f"GellMann{index}(wires=[0])"
+        obs = qml.GellMann(wires=0, index=index)
+
+        assert repr(obs) == rep
