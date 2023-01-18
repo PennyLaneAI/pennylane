@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state):
     return math.einsum(einsum_indices, reshaped_mat, state)
 
 
-def apply_matrix_tensordot(op: qml.operation.Operator, state):
+def apply_operation_tensordot(op: qml.operation.Operator, state):
     """Apply ``Operator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
     numbers.
 
@@ -100,13 +100,15 @@ def apply_operation(op: qml.operation.Operator, state):
 
     .. warning::
 
-        ``apply_operation`` is an internal function, and thus applies no validation to its inputs.
-        Please make sure your state is the right shape and wire labels correspond to dimensions.
+        ``apply_operation`` is an internal function, and thus subject to change without a deprecation cycle.
 
-    This function assumes that the wires of the operator correspond to indices
-    of the state. See :func:`~.map_wires` to convert operations to integer wire labels.
+    .. warning::
+        ``apply_operation`` applies no validation to its inputs.
 
-    The shape of state should be ``[2]*num_wires``.
+        This function assumes that the wires of the operator correspond to indices
+        of the state. See :func:`~.map_wires` to convert operations to integer wire labels.
+
+        The shape of state should be ``[2]*num_wires``.
 
     This is a ``functools.singledispatch`` function, so additional specialized kernels
     for specific operations can be registered like:
@@ -131,13 +133,20 @@ def apply_operation(op: qml.operation.Operator, state):
     """
     if len(op.wires) < 3:
         return apply_operation_einsum(op, state)
-    return apply_matrix_tensordot(op, state)
+    return apply_operation_tensordot(op, state)
 
 
 @apply_operation.register
 def apply_x(op: qml.PauliX, state):
     """Apply paulix operator to state"""
     return math.roll(state, 1, op.wires[0])
+
+
+@apply_operation.register
+def apply_pauliz(op: qml.PauliZ, state):
+    """Apply pauliz to state."""
+    state1 = math.multiply(-1, math.take(state, 1, axis=op.wires[0]))
+    return math.stack([math.take(state, 0, axis=op.wires[0]), state1], axis=op.wires[0])
 
 
 @apply_operation.register
@@ -149,26 +158,13 @@ def apply_y(op: qml.PauliY, state):
 
 
 @apply_operation.register
-def apply_pauliz(op: qml.PauliZ, state):
-    """Apply phase to state."""
-    ndim = math.ndim(state)
-    sl_0 = _get_slice(0, op.wires[0], ndim)
-    sl_1 = _get_slice(1, op.wires[0], ndim)
-
-    state1 = math.multiply(-1, state[sl_1])
-    return math.stack([state[sl_0], state1], axis=op.wires[0])
-
-
-@apply_operation.register
 def apply_phase(op: qml.PhaseShift, state):
     """Apply PhaseShift operator to state."""
-    ndim = math.ndim(state)
-    sl_0 = _get_slice(0, op.wires[0], ndim)
-    sl_1 = _get_slice(1, op.wires[0], ndim)
+    shift = math.exp(1j * op.data[0])
 
-    shift = math.exp(-1j * op.data[0])
-    state1 = math.multiply(shift, state[sl_1])
-    return math.stack([state[sl_0], state1], axis=op.wires[0])
+    state0 = math.take(state, 0, axis=op.wires[0])
+    state1 = math.multiply(shift, math.take(state, 1, axis=op.wires[0]))
+    return math.stack([state0, state1], axis=op.wires[0])
 
 
 @apply_operation.register
@@ -182,10 +178,9 @@ def apply_hadamard(op: qml.Hadamard, state):
 @apply_operation.register
 def apply_cnot(op: qml.CNOT, state):
     """Apply cnot gate to state."""
-    ndim = math.ndim(state)
-    sl_0 = _get_slice(0, op.wires[0], ndim)
-    sl_1 = _get_slice(1, op.wires[0], ndim)
 
     target_axes = [op.wires[1] - 1] if op.wires[1] > op.wires[0] else [op.wires[1]]
-    state_x = math.roll(state[sl_1], 1, target_axes)
-    return math.stack([state[sl_0], state_x], axis=op.wires[0])
+
+    state0 = math.take(state, 0, axis=op.wires[0])
+    state_x = math.roll(math.take(state, 1, axis=op.wires[0]), 1, target_axes)
+    return math.stack([state0, state_x], axis=op.wires[0])
