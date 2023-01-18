@@ -35,16 +35,35 @@ except ImportError as e:
 
 
 def evolve(op: Union[Operator, ParametrizedHamiltonian]):
-    """Returns a new operator that computes the evolution of the given operator.
+    """Returns a new operator that computes the evolution of ``op``.
 
     Args:
-        op (Operator): operator to evolve
+        op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
 
     Returns:
         Union[.Evolution, ~evolve.ParametrizedEvolution]: evolution operator
 
     .. seealso:: :class:`~.evolve.ParametrizedEvolution`
     .. seealso:: :class:`~.ops.op_math.exp.Evolution`
+
+    **Examples**
+
+    We can use ``qml.evolve`` to compute the evolution of any PL operator:
+
+    >>> op = qml.s_prod(2, qml.PauliX(0))
+    >>> qml.evolve(op)
+    Exp((-0-1j) 2*(PauliX(wires=[0])))
+
+    When evolving a :class:`.ParametrizedHamiltonian` class, then a :class:`.ParametrizedEvolution`
+    instance is returned:
+
+    >>> coeffs = [lambda p, t: p * t for _ in range(4)]
+    >>> ops = [qml.PauliX(i) for i in range(4)]
+    >>> H = qml.ops.dot(coeffs, ops)
+    >>> qml.evolve(H)
+    ParametrizedEvolution(wires=[0, 1, 2, 3])
+
+    Please check the :class:`~.evolve.ParametrizedEvolution` class for more information.
     """
     if isinstance(op, ParametrizedHamiltonian):
         return ParametrizedEvolution(H=op)
