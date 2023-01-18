@@ -16,6 +16,7 @@ Contains the sign (and xi) decomposition tape transform, implementation of ideas
 import json
 from os import path
 import pennylane as qml
+from functools import partial
 from pennylane import numpy as np
 from ..batch_transform import batch_transform
 
@@ -191,7 +192,9 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
     return tapes
 
 
-@batch_transform
+batch_transform_with_diff_false = partial(batch_transform, differentiable=False)
+
+@batch_transform_with_diff_false
 def sign_expand(  # pylint: disable=too-many-arguments
     tape, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
 ):
