@@ -46,7 +46,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     if isinstance(op, ParametrizedHamiltonian):
         return ParametrizedEvolution(H=op)
 
-    return Evolution(generator=op, param=1.0)
+    return Evolution(generator=op, param=-1.0)
 
 
 class ParametrizedEvolution(Operation):
