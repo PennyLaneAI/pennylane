@@ -136,14 +136,13 @@ class TestQNode:
 
     def test_jacobian(self, dev_name, diff_method, mode, mocker, tol):
         """Test jacobian calculation"""
-        gradient_kwargs = {}
         if diff_method == "parameter-shift":
             spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
         elif diff_method == "finite-diff":
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
         elif diff_method == "spsa":
             spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         a = tf.Variable(0.1, dtype=tf.float64)
@@ -151,7 +150,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, diff_method=diff_method, mode=mode, interface="tf", **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, mode=mode, interface="tf")
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -380,9 +379,8 @@ class TestQNode:
         """Test that operation and nested tapes expansion
         is differentiable"""
 
-        gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
@@ -401,7 +399,7 @@ class TestQNode:
         a = np.array(0.1)
         p = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
 
-        @qnode(dev, diff_method=diff_method, mode=mode, interface="tf", **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, mode=mode, interface="tf")
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
@@ -622,18 +620,17 @@ class TestQubitIntegration:
         """Tests correct output shape and evaluation for a tape
         with multiple probs outputs"""
 
-        gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        @qnode(dev, diff_method=diff_method, mode=mode, interface="tf", **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, mode=mode, interface="tf")
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -670,18 +667,17 @@ class TestQubitIntegration:
     def test_ragged_differentiation(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        @qnode(dev, diff_method=diff_method, mode=mode, interface="tf", **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, mode=mode, interface="tf")
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -966,11 +962,10 @@ class TestQubitIntegration:
 
     def test_projector(self, dev_name, diff_method, mode, tol):
         """Test that the variance of a projector is correctly returned"""
-        gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support projectors")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
@@ -979,7 +974,7 @@ class TestQubitIntegration:
         x, y = 0.765, -0.654
         weights = tf.Variable([x, y], dtype=tf.float64)
 
-        @qnode(dev, diff_method=diff_method, interface="tf", mode=mode, **gradient_kwargs)
+        @qnode(dev, diff_method=diff_method, interface="tf", mode=mode)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=1)
@@ -1175,11 +1170,10 @@ class TestTapeExpansion:
     def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff, tol):
         """Test that if there are non-commuting groups and the number of shots is None
         the first and second order gradients are correctly evaluated"""
-        gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
+            np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=3, shots=None)
@@ -1191,7 +1185,6 @@ class TestTapeExpansion:
             mode=mode,
             max_diff=max_diff,
             interface="tf",
-            **gradient_kwargs
         )
         def circuit(data, weights, coeffs):
             weights = tf.reshape(weights, [1, -1])
@@ -1248,7 +1241,8 @@ class TestTapeExpansion:
         if diff_method in ("adjoint", "backprop"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
         elif diff_method == "spsa":
-            gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA, "h": H_FOR_SPSA}
+            np.random.seed(SEED_FOR_SPSA)
+            gradient_kwargs = {"h": H_FOR_SPSA}
             tol = TOL_FOR_SPSA
         elif diff_method == "finite-diff":
             gradient_kwargs = {"h": 0.05}
