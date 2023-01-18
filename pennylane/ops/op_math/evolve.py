@@ -41,7 +41,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
         op (Operator): operator to evolve
 
     Returns:
-        Evolution | ParametrizedEvolution: evolution operator
+        .Evolution | .ParametrizedEvolution: evolution operator
     """
     if isinstance(op, ParametrizedHamiltonian):
 
