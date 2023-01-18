@@ -279,11 +279,11 @@ single_op_tests_data = [
     ),
     (
         qml.adjoint(qml.RX(1.234, wires=0)),
-        "0: ──RX†─┤  ",
+        "0: ──RX(1.23)†─┤  ",
     ),
     (
         qml.RX(1.234, wires=0) ** -1,
-        "0: ──RX⁻¹─┤  ",
+        "0: ──RX(1.23)⁻¹─┤  ",
     ),
     (qml.expval(qml.PauliZ(0)), "0: ───┤  <Z>"),
     (qml.var(qml.PauliZ(0)), "0: ───┤  Var[Z]"),

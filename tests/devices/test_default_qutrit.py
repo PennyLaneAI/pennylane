@@ -138,22 +138,6 @@ class TestApply:
         ),
     ]
 
-    test_data_tadd_inv = [
-        (qml.TAdd, [0, 0, 0, 0, 0, 1, 0, 0, 0], np.array([0, 0, 0, 0, 1, 0, 0, 0, 0]), None),
-        (
-            qml.TAdd,
-            [0, 0, 0, 0, 1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0, 0],
-            np.array([0, 0, 0, 1 / math.sqrt(2), 0, 0, 0, 1 / math.sqrt(2), 0]),
-            None,
-        ),
-        (
-            qml.TAdd,
-            [0, 0.5, -0.5, 0, 0, -0.5 * 1j, 0, 0.5 * 1j, 0],
-            np.array([0, 0.5, -0.5, 0, -0.5 * 1j, 0, 0, 0, 0.5 * 1j]),
-            None,
-        ),
-    ]
-
     all_two_wires_no_parameters = test_data_two_wires_no_parameters + test_data_tadd
 
     @pytest.mark.parametrize(

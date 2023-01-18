@@ -594,10 +594,6 @@ class ControlledOp(Controlled, operation.Operation):
             self.grad_recipe = [None] * self.num_params
 
     @property
-    def _inverse(self):
-        return False
-
-    @property
     def base_name(self):
         return f"C({self.base.base_name})"
 
