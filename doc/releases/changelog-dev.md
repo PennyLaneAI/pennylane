@@ -4,6 +4,20 @@
 
 <h3>New features since last release</h3>
 
+* A new operation `SpecialUnitary` was added, providing access to an arbitrary
+  unitary gate via a parametrization in the Pauli basis.
+  [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
+ 
+  The new operation takes a single argument, a one-dimensional `tensor_like`
+  of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
+  
+  For example, on a single qubit, we may define
+  
+  >>> theta = np.array([0.2, 0.1, -0.5])
+  >>> U = qml.SpecialUnitary(theta, 0)
+  >>> U.matrix()
+  TODO
+  
 * `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
