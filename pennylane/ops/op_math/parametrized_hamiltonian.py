@@ -85,7 +85,7 @@ class ParametrizedHamiltonian:
     a list of corresponding observables. The functions must have two arguments, the first one being the
     trainable parameters and the second one being time.
 
-    >>> def f1(p, t): return np.sin(p * t)
+    >>> def f1(p, t): return np.sin(p[0] * t) + p[1]
     >>> def f2(p, t): return p * np.cos(t)
 
     The functions, along with scalar coefficients, can then be used to initialize a ``ParametrizedHamiltonian``:
@@ -99,8 +99,10 @@ class ParametrizedHamiltonian:
     The resulting object can be passed parameters, and will return an ``Operator`` representing the
     ``ParametrizedHamiltonian`` with the specified parameters:
 
-    >>> H([1.2, 2.3], 0.5)
-    (2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((0.5646424733950354*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (2.0184398923478573*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
+    >>> H([[1.2, 2.3], 4.5], 0.5)
+    (2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((2.864642473395035*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (3.9491215285066774*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
+
+    Here [1.2, 2.3] is passed to f1, and 4.5 is passed to f2, while both receive t=0.5.
 
     We can also access the fixed and parametrized terms of the ``ParametrizedHamiltonian``.
     The fixed term is an ``Operator``, while the parametrized term must be initialized with concrete
@@ -108,8 +110,8 @@ class ParametrizedHamiltonian:
 
     >>> H.H_fixed()
     2*(PauliX(wires=[0]) @ PauliX(wires=[1]))
-    >>> H.H_parametrized([2.5, 3.6], 0.5)
-    (0.9489846193555862*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (3.159297222805342*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
+    >>> H.H_parametrized([[1.2, 2.3], 4.5], 0.5)
+    (2.864642473395035*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (3.9491215285066774*(PauliZ(wires=[0]) @ PauliZ(wires=[1])))
     """
 
     def __init__(self, coeffs, observables):
@@ -144,7 +146,7 @@ class ParametrizedHamiltonian:
     def __call__(self, params, t):
         if len(params) != len(self.H_coeffs_parametrized):
             raise ValueError(
-                "The number of parameters and scalar-valued functions must be the same."
+                "The length of the params argument and the number of scalar-valued functions must be the same."
             )
         return self.H_fixed() + self.H_parametrized(params, t)
 
@@ -165,7 +167,7 @@ class ParametrizedHamiltonian:
             params(tensor_like): the parameters values used to evaluate the operators
             t(float): the time at which the operator is evaluated
 
-        Returns: an operator is a ``Sum`` of ``~S_Prod`` operators (or a single
+        Returns: an operator that is a ``Sum`` of ``~S_Prod`` operators (or a single
         ``~SProd`` operator in the event that there is only one term in ``H_parametrized``)."""
 
         coeffs = [f(param, t) for f, param in zip(self.H_coeffs_parametrized, params)]
