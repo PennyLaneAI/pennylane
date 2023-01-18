@@ -15,10 +15,11 @@
 Contains the :class:`ExecutionConfig` data class.
 """
 from dataclasses import dataclass
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Sequence
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
+from pennylane._device import _process_shot_sequence, DeviceError
 
 SUPPORTED_GRADIENT_METHODS = [
     "best",
@@ -84,4 +85,41 @@ class ExecutionConfig:
         if any(arg not in SUPPORTED_GRADIENT_KWARGS for arg in self.gradient_keyword_arguments):
             raise ValueError(
                 f"All gradient_keyword_arguments keys must be in {SUPPORTED_GRADIENT_KWARGS}, got unexpected values: {set(self.gradient_keyword_arguments) - set(SUPPORTED_GRADIENT_KWARGS)}"
+            )
+
+    @shots.setter
+    def shots(self, shots):
+        """Changes the number of shots.
+
+        Args:
+            shots Union(int, Tuple[int]): number of circuit evaluations/random samples used to estimate
+                expectation values of observables
+
+        Raises:
+            DeviceError: if number of shots is less than 1
+        """
+        if shots is None:
+            # analytic mode
+            self.shots = shots
+            self.shot_vector = None
+            self._raw_shot_sequence = None
+
+        elif isinstance(shots, int):
+            # sampling mode (unbatched)
+            if shots < 1:
+                raise DeviceError(
+                    f"The specified number of shots needs to be at least 1. Got {shots}."
+                )
+
+            self.shots = shots
+            self.shot_vector = None
+
+        elif isinstance(shots, Sequence) and not isinstance(shots, str):
+            # batched sampling mode
+            self.shots, self.shot_vector = _process_shot_sequence(shots)
+            self._raw_shot_sequence = shots
+
+        else:
+            raise DeviceError(
+                "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
