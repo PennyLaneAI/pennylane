@@ -126,24 +126,28 @@ class TestCall:
             [f1, f2],
             [qml.PauliX(0), qml.PauliY(1)],
             [1, 2],
+            [0, 2],
         ),  # no H_fixed term, multiple H_parametrized terms
-        ([f1], [qml.PauliX(0)], [1]),  # no H_fixed term, one H_parametrized term
+        ([f1], [qml.PauliX(0)], [1], [0, 1]),  # no H_fixed term, one H_parametrized term
         (
             [1.2, 2.3],
             [qml.PauliX(0), qml.PauliY(1)],
             [],
+            [2, 0],
         ),  # no H_parametrized term, multiple H_fixed terms
-        ([1.2], [qml.PauliX(0)], []),  # no H_parametrized term, one H_fixed term
-        ([1, f1], [qml.PauliX(3), qml.PauliY(2)], [1]),  # one of each
-        ([1.2, f1, 2.3, f2], [qml.PauliX(0) for i in range(4)], [1, 2]),  # multiples of each
+        ([1.2], [qml.PauliX(0)], [], [1, 0]),  # no H_parametrized term, one H_fixed term
+        ([1, f1], [qml.PauliX(3), qml.PauliY(2)], [1], [1, 1]),  # one of each
+        ([1.2, f1, 2.3, f2], [qml.PauliX(0) for i in range(4)], [1, 2], [2, 2]),  # multiples of each
     )
 
-    @pytest.mark.parametrize("coeffs, ops, params", coeffs_and_ops_and_params)
-    def test_call_succeeds_for_different_shapes(self, coeffs, ops, params):
+    @pytest.mark.parametrize("coeffs, ops, params, num_terms", coeffs_and_ops_and_params)
+    def test_call_succeeds_for_different_shapes(self, coeffs, ops, params, num_terms):
         """Test that calling the ParametrizedHamiltonian succeeds for
         different numbers of H_fixed and H_parametrized terms"""
         pH = ParametrizedHamiltonian(coeffs, ops)
         pH(params, 0.5)
+        assert len(pH.ops_fixed) == num_terms[0]
+        assert len(pH.ops_parametrized) == num_terms[1]
 
     def test_call_returns_expected_results(self):
         """Test result of calling the ParametrizedHamiltonian makes sense"""
