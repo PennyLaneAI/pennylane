@@ -22,7 +22,7 @@ except ImportError:
 def rect(x, ti, tf):
     """Applies a rectangular function to the provided ``x``, such that:
 
-    - ``rect(f, ti, tf) == x / 2`` if ``t == ti``
+    - ``rect(f, ti, tf) == x / 2`` if ``t == ti`` or ``t == tf``
     - ``rect(f, ti, tf) == x`` if ``ti < t < tf``
     - ``rect(f, ti, tf) == 0`` otherwise
 
