@@ -170,6 +170,7 @@ class TestCall:
     def test_call_with_qutrit_operators(self):
         """Test that the ParametrizedHamiltonian can be created and called to initialize an
         operator consisting of qutrit operations"""
+
         def f(x, t):
             return x + 2 * t
 
@@ -191,6 +192,23 @@ class TestCall:
             )
         )
 
+    def test_call_raises_error(self):
+        """Test that if the user calls a `ParametrizedHamiltonian` with the incorrect number
+        of parameters, an error is raised."""
+
+        def f(x, t):
+            return x + 2 * t
+
+        coeffs = [f, 2]
+        obs = [qml.GellMann(wires=0, index=1), qml.GellMann(wires=0, index=2)]
+        H = ParametrizedHamiltonian(coeffs, obs)
+
+        with pytest.raises(
+            ValueError,
+            match="The length of the params argument and the number of scalar-valued functions must be the same",
+        ):
+            H(params=[1, 2], t=0.5)
+
 
 class TestInteractionWithOperators:
     """Test that arithmetic operations involving or creating ParametrizedHamiltonians behave as expected"""
@@ -211,18 +229,19 @@ class TestInteractionWithOperators:
         """Test that a Hamiltonian and SProd can be added to a ParametrizedHamiltonian, and
         will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed"""
         pH = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
-
+        params = [1, 2]
         # Adding on the right
         new_pH = pH + H
         assert pH.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
         assert new_pH.coeffs_fixed[0] == coeff
-
+        assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(pH(params, t=0.5) + H))
         # Adding on the left
         new_pH = H + pH
         assert pH.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
         assert new_pH.coeffs_fixed[0] == coeff
+        assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(pH(params, t=0.5) + H))
 
     @pytest.mark.parametrize("op", ops)
     def test_add_other_operators(self, op):
