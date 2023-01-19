@@ -469,15 +469,17 @@ class DiagonalQubitUnitary(Operation):
 class SpecialUnitary(Operation):
     r"""Gate from the group :math:`SU(N)` with :math:`N=2^n` for :math:`n` qubits.
 
+    We use the following parametrization of a special unitary operator:
+
     .. math::
 
         U(\theta) &= e^{A(\theta)}\\
         A(\theta) &= \sum_{m=1}^d i \theta_m P_m\\
         P_m &\in {I, X, Y, Z}^{\otimes n} \setminus \{I^{\otimes n}\}
 
-    This means, :math:`U(\theta)` is the exponential of the skew-Hermitian operator
-    :math:`A(\theta)`, which in turn is parametrized as a linear combination of
-    Pauli words with coefficients :math:`\theta`.
+    This means, :math:`U(\theta)` is the exponential of operator :math:`A(\theta)`,
+    which in turn is a linear combination of Pauli words with coefficients :math:`i\theta`
+    and satisfies :math:`A(\theta)^\dagger=-A(\theta)` (it is *skew-Hermitian*).
     Note that this gate takes an exponential number :math:`d=4^n-1` of parameters.
 
     **Details:**
@@ -489,11 +491,12 @@ class SpecialUnitary(Operation):
 
     .. math::
 
-        \frac{\partial}{\partial\theta_\ell} f(U(\theta)) &= -i \sum_{m=1}^d \omega_{\ell m} \frac{\mathrm{d}}{\mathrm{d} x} f(e^{ixP_m} U(\theta))
+        \frac{\partial}{\partial\theta_\ell} f(U(\theta)) &= -i \sum_{m=1}^d \omega_{\ell m}
+        \frac{\mathrm{d}}{\mathrm{d} x} f(e^{ixP_m} U(\theta))
 
       where :math:`f` is an expectation value depending on :math:`U(\theta)` and the derivative
-      of the Pauli rotation gates can be computed with the two-term parameter-shift rule
-      (also see: :class:`~.PauliRot`).
+      of the Pauli rotation gates :math:`e^{ixP_m}` can be computed with the two-term
+      parameter-shift rule (also see: :class:`~.PauliRot`).
 
     Args:
         theta (tensor_like): Pauli coordinates of the exponent :math:`A(\theta)`.
@@ -504,12 +507,13 @@ class SpecialUnitary(Operation):
         id (str or None): String representing the operation (optional)
 
     Raises:
-        ValueError: If the shape of the input parameters does not match the Lie algebra
-            dimension :math:`d=4*n-1` for :math:`n` qubits.
+        ValueError: If the shape of the input parameter does not match the Lie algebra
+            dimension :math:`d=4*n-1` for :math:`n` wires.
 
     **Examples**
 
-    Simple examples of this operation are single-qubit Pauli rotation gates:
+    Simple examples of this operation are single-qubit Pauli rotation gates, which can be
+    created by setting all but one parameter :math:`\theta_m` to zero:
 
     >>> x = 0.412
     >>> theta = x * np.array([1, 0, 0]) # The first entry belongs to the Pauli word "X"
@@ -521,10 +525,12 @@ class SpecialUnitary(Operation):
     >>> qml.math.allclose(su.matrix(), rx.matrix())
     True
 
-    More interestingly, multiple Pauli words can be activated simultaneously, giving
-    access to more complex operations. For two qubits, this may look like this:
+    However, ``SpecialUnitary`` gates go beyong such rotations: Multiple Pauli words
+    can be activated simultaneously, giving access to more complex operations.
+    For two qubits, this could look like this:
 
     >>> wires = [0, 1]
+    # Activating the Pauli words ["IY", "IZ", "XX", "XY", "YY", "YZ", "ZY", "ZZ"]
     >>> theta = 0.3 * np.array([0, 1, 2, 0, -1, 1, 0, 0, 0, 1, 1, 1, 0, 0, -1])
     >>> len(theta) == 4 ** len(wires) - 1 # theta contains one parameter per Pauli word
     True
@@ -538,6 +544,14 @@ class SpecialUnitary(Operation):
              0.71621665+0.50686226j,  0.1380692 +0.02252197j],
            [-0.34495668-0.35307844j,  0.10817019-0.21404059j,
             -0.29040522+0.00830631j,  0.15015337-0.76933485j]])
+
+    The parameters ``theta`` refer to all Pauli words (except for the identity) in
+    lexicographical order, which looks like the following for one and two qubits:
+
+    >>> qml.ops.qubit.matrix_ops.pauli_words(1)
+    ['X', 'Y', 'Z']
+    >>> qml.ops.qubit.matrix_ops.pauli_words(2)
+    ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
     """
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
