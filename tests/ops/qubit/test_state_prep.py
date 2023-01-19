@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
+from pennylane.operation import Operation, AllWires
 
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
@@ -51,12 +51,31 @@ def test_labelling_matrix_cache(op, mat, base):
     assert op.label() == base
 
     cache = {"matrices": []}
-    assert op.label(cache=cache) == base + "(M0)"
+    assert op.label(cache=cache) == f"{base}(M0)"
     assert qml.math.allclose(cache["matrices"][0], mat)
 
     cache = {"matrices": [0, mat, 0]}
-    assert op.label(cache=cache) == base + "(M1)"
+    assert op.label(cache=cache) == f"{base}(M1)"
     assert len(cache["matrices"]) == 3
+
+
+class TestStatePrepInterface:
+    """Test the StatePrepInterface class."""
+
+    # pylint:disable=unused-argument,too-few-public-methods
+    def test_basic_stateprep(self):
+        """Tests a basic implementation of the StatePrepInterface."""
+
+        class DefaultPrep(Operation, qml.ops.qubit.StatePrepInterface):
+            """A dummy class that assumes it was given a state vector."""
+
+            num_wires = AllWires
+
+            def state_vector(self, wire_order=None, interface="autograd"):
+                return self.parameters[0]
+
+        prep_op = DefaultPrep([1, 0], wires=[0])
+        assert np.array_equal(prep_op.state_vector(), [1, 0])
 
 
 class TestDecomposition:
