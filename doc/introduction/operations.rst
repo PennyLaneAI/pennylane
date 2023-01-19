@@ -59,6 +59,7 @@ Operator to Operator functions
     ~pennylane.generator
     ~pennylane.map_wires
     ~pennylane.ops.dot
+    ~pennylane.evolve
 
 These operator functions act on operators to produce new operators.
 
