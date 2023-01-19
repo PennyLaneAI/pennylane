@@ -25,8 +25,11 @@ from pennylane.devices.null_qubit import NullQubit
 from pennylane import Tracker
 
 
-
-@pytest.fixture(name="nullqubit_device", scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
+@pytest.fixture(
+    name="nullqubit_device",
+    scope="function",
+    params=[(np.float32, np.complex64), (np.float64, np.complex128)],
+)
 def fixture_nullqubit_device(request):
     """Create a NullQubit device with the indicated number of wires,
     parametrizing over real and complex dtypes."""
@@ -64,10 +67,11 @@ def test_dtype_errors():
 
 def test_custom_op_with_matrix():
     """Test that a dummy op with a matrix is supported."""
-    #pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods
 
     class DummyOp(qml.operation.Operation):
         """Placeholder Operation on a single wire."""
+
         num_wires = 1
 
         def compute_matrix(self):
@@ -299,7 +303,8 @@ class TestVar:
 
 class TestSample:
     """Tests that samples are properly (not) calculated."""
-    #pylint: disable=too-few-public-methods
+
+    # pylint: disable=too-few-public-methods
 
     def test_sample_values(self):
         """Tests if the samples returned by sample have
@@ -672,7 +677,7 @@ class TestTensorExpval:
 
     def test_hermitian_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        #pylint: disable=unused-argument
+        # pylint: disable=unused-argument
         dev = nullqubit_device(wires=2)
 
         A = np.array(
@@ -690,7 +695,7 @@ class TestTensorExpval:
 
     def test_hermitian_two_wires_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        #pylint: disable=unused-argument
+        # pylint: disable=unused-argument
         dev = nullqubit_device(wires=3)
 
         A = np.array(
@@ -828,7 +833,7 @@ class TestTensorVar:
 
     def test_hermitian_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
-        #pylint: disable=unused-argument
+        # pylint: disable=unused-argument
         dev = nullqubit_device(wires=2)
 
         A = np.array(
@@ -846,7 +851,7 @@ class TestTensorVar:
 
     def test_hermitian_two_wires_identity_expectation(self, nullqubit_device, theta, phi, varphi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        #pylint: disable=unused-argument
+        # pylint: disable=unused-argument
         dev = nullqubit_device(wires=3)
 
         A = np.array(
@@ -1144,7 +1149,8 @@ class TestOpCallIntegration:
 
 class TestState:
     """Unit test for state and density_matrix operations."""
-    #pylint: disable=too-few-public-methods
+
+    # pylint: disable=too-few-public-methods
     dev = qml.device("null.qubit", wires=3)
 
     @pytest.mark.parametrize(
@@ -1174,7 +1180,8 @@ class TestTrackerIntegration:
 
         class callback_wrapper:
             """Callback wrapping class"""
-            #pylint: disable=too-few-public-methods
+
+            # pylint: disable=too-few-public-methods
 
             @staticmethod
             def callback(totals=None, history=None, latest=None):
@@ -1217,7 +1224,8 @@ class TestTrackerIntegration:
 
         class callback_wrapper:
             """Callback wrapping class"""
-            #pylint: disable=too-few-public-methods
+
+            # pylint: disable=too-few-public-methods
 
             @staticmethod
             def callback(totals=None, history=None, latest=None):
