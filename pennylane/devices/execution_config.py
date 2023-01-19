@@ -15,7 +15,7 @@
 Contains the :class:`ExecutionConfig` data class.
 """
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, Union, Sequence
+from typing import Optional, Tuple, Union, Sequence, List
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
@@ -44,9 +44,12 @@ class ExecutionConfig:
     shots: int = None
     """The number of shots for an execution."""
 
-    _shots: int = field(init=False, repr=False)
-    _shot_vector: list[ShotTuple] = field(init=False, repr=False)
-    _raw_shot_sequence: list[int] = field(init=False, repr=False)
+    shot_vector: List[ShotTuple] = None
+    """List of groupings of shots for an execution."""
+
+    _shots: int = field(init=False, repr=False, default=None)
+    _shot_vector: List[ShotTuple] = field(init=False, repr=False, default=None)
+    _raw_shot_sequence: List[int] = field(init=False, repr=False, default=None)
     """Private attributes for storing shot information"""
 
     gradient_method: Optional[str] = None
@@ -84,60 +87,49 @@ class ExecutionConfig:
             )
 
         if self.device_options is None:
-            self.device_options = {}
+            # self.device_options = {}
+            object.__setattr__(self, "device_options", {})
 
         if self.gradient_keyword_arguments is None:
-            self.gradient_keyword_arguments = {}
+            # self.gradient_keyword_arguments = {}
+            object.__setattr__(self, "gradient_keyword_arguments", {})
 
         if any(arg not in SUPPORTED_GRADIENT_KWARGS for arg in self.gradient_keyword_arguments):
             raise ValueError(
                 f"All gradient_keyword_arguments keys must be in {SUPPORTED_GRADIENT_KWARGS}, got unexpected values: {set(self.gradient_keyword_arguments) - set(SUPPORTED_GRADIENT_KWARGS)}"
             )
 
-    @property
-    def shots(self):
-        """The number of shots for an execution"""
-        return self._shots
+        # Initialize private shot attributes
+        shots, shot_vector, raw_shot_sequence = None, None, None
 
-    @shots.setter
-    def shots(self, shots: Union[int, Tuple[int]]):
-        """Changes the number of shots.
-
-        Args:
-            shots (Union[int, Tuple[int]]): number of circuit evaluations/random samples used to estimate
-                expectation values of observables
-
-        Raises:
-            DeviceError: if number of shots is less than 1
-        """
-        if shots is None:
+        if self.shots is None:
             # analytic mode
-            self._shots = shots
-            self._shot_vector = None
-            self._raw_shot_sequence = None
+            shots = self.shots
+            shot_vector = None
+            raw_shot_sequence = None
 
-        elif isinstance(shots, int):
+        elif isinstance(self.shots, int):
             # sampling mode (unbatched)
-            if shots < 1:
+            if self.shots < 1:
                 raise DeviceError(
-                    f"The specified number of shots needs to be at least 1. Got {shots}."
+                    f"The specified number of shots needs to be at least 1. Got {self.shots}."
                 )
 
-            self._shots = shots
-            self._shot_vector = None
+            shots = self.shots
+            shot_vector = None
 
-        elif isinstance(shots, Sequence) and not isinstance(shots, str):
+        elif isinstance(self.shots, Sequence) and not isinstance(self.shots, str):
             # batched sampling mode
-            self._shots, self._shot_vector = _process_shot_sequence(shots)
-            self._raw_shot_sequence = shots
+            shots, shot_vector = _process_shot_sequence(self.shots)
+            raw_shot_sequence = self.shots
 
         else:
             raise DeviceError(
                 "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
 
-    @property
-    def shot_vector(self):
-        """list[.ShotTuple[int, int]]: Returns the shot vector, a sparse
-        representation of the shot sequence"""
-        return self._shot_vector
+        object.__setattr__(self, "_shots", shots)
+        object.__setattr__(self, "_shot_vector", shot_vector)
+        object.__setattr__(self, "_raw_shot_sequence", raw_shot_sequence)
+        object.__setattr__(self, "shots", shots)
+        object.__setattr__(self, "shot_vector", shot_vector)
