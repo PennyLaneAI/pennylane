@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for the purity module"""
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, too-many-arguments
 
 import pytest
 
