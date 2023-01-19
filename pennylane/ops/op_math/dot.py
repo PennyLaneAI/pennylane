@@ -20,6 +20,7 @@ from typing import Sequence
 
 import pennylane as qml
 from pennylane.operation import Operator
+
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
