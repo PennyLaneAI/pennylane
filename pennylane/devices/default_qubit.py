@@ -95,6 +95,7 @@ class DefaultQubit(QubitDevice):
         "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",
+        "SpecialUnitary",
         "MultiControlledX",
         "IntegerComparator",
         "DiagonalQubitUnitary",
