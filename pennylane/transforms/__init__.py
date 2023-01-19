@@ -52,6 +52,7 @@ containing quantum operations) that are used to construct QNodes.
     ~apply_controlled_Q
     ~quantum_monte_carlo
     ~transforms.insert
+    ~transforms.insert_paulirot
 
 Transforms for circuit compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -202,6 +203,7 @@ from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
+from .insert_paulirot import insert_paulirot
 from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
 from .optimization import (
     cancel_inverses,

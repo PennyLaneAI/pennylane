@@ -34,17 +34,17 @@ _pauli_letters = ["I", "X", "Y", "Z"]
 
 @lru_cache
 def pauli_basis(num_wires):
-    r"""Compute all elements of the Pauli basis of the Lie algebra :math:`\mathfrak{su}(n)`.
+    r"""Compute all elements of the Pauli basis of the Lie algebra :math:`\mathfrak{su}(N)`.
 
     Args:
         num_wires (int): The number of wires on which the associated Pauli group acts.
 
     Returns:
-        ndarray: All Pauli basis elements of :math:`\mathfrak{su}(n)`.
+        ndarray: All Pauli basis elements of :math:`\mathfrak{su}(N)`.
 
     The basis has :math:`d=4^n-1` elements for :math:`n` qubits, yielding an output tensor
     with shape ``(4**num_wires-1, 2**num_wires, 2**num_wires)`` and :math:`16^n-4^n` entries.
-    The identity Pauli word :math:`I^{\otimes n}` does not belong to :math:`\mathfrak{su}(n)`
+    The identity Pauli word :math:`I^{\otimes n}` does not belong to :math:`\mathfrak{su}(N)`
     and therefore is not included.
 
     The basis elements are ordered (choose the description that suits you most)
@@ -85,7 +85,7 @@ def pauli_basis(num_wires):
 @lru_cache
 def pauli_words(num_wires):
     r"""Compute all :math:`n`-qubit Pauli words except ``"I"*num_wires``,
-    corresponding to the Pauli basis of the Lie algebra :math:`\mathfrak{su}(n)`.
+    corresponding to the Pauli basis of the Lie algebra :math:`\mathfrak{su}(N)`.
 
     Args:
         num_wires (int): The number of wires, or number of letters per word.
@@ -129,7 +129,7 @@ def special_unitary_matrix(theta, num_wires):
         tensor_like: matrix of the special unitary corresponding to ``theta``. It
             has the shape ``(2**num_wires, 2**num_wires)``.
 
-    The :math:`4^n-1` Pauli basis elements of the Lie algebra :math:`\mathfrak{su}(n)`
+    The :math:`4^n-1` Pauli basis elements of the Lie algebra :math:`\mathfrak{su}(N)`
     for :math:`n` qubits are
     :math:`P_m\in\{I, X, Y, Z\}^{\otimes n}\setminus\{I^{\otimes n}\}`, and the special
     unitary matrix is computed as
