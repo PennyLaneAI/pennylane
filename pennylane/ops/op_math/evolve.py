@@ -43,12 +43,12 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     Returns:
         Union[.Evolution, ~pennylane.ops.op_math.evolve.ParametrizedEvolution]: evolution operator
 
-    .. seealso:: :class:`~pennylane.ops.op_math.evolve.ParametrizedEvolution`
-    .. seealso:: :class:`~pennylane.ops.op_math.exp.Evolution`
+    .. seealso:: :class:`.ParametrizedEvolution`
+    .. seealso:: :class:`.Evolution`
 
     **Examples**
 
-    We can use ``qml.evolve`` to compute the evolution of any PL operator:
+    We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
 
     >>> op = qml.s_prod(2, qml.PauliX(0))
     >>> qml.evolve(op)
