@@ -144,7 +144,7 @@ class TestClassicalShadow:
             "classical shadow measurement"
         )
         with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
-            res.shape()
+            res.shape(None, wires)
 
     def test_shape_matches(self, wires):
         """Test that the shape of the MeasurementProcess matches the shape

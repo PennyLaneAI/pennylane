@@ -125,8 +125,18 @@ class TestExpval:
     )
     def test_shape(self, obs):
         """Test that the shape is correct."""
+        total_wires = 3
         res = qml.expval(obs)
-        assert res.shape() == (1,)
+        dev = qml.device("default.qubit", wires=total_wires)
+        config = qml.devices.ExecutionConfig()
+        assert res.shape(dev, total_wires) == (1,)
+        assert res.shape(config, total_wires) == (1,)
+
+        # Test new shape
+        qml.enable_return()
+        assert res.shape(dev, total_wires) == ()
+        assert res.shape(config, total_wires) == ()
+        qml.disable_return()
 
     @pytest.mark.parametrize(
         "obs",
@@ -134,10 +144,19 @@ class TestExpval:
     )
     def test_shape_shot_vector(self, obs):
         """Test that the shape is correct with the shot vector too."""
+        total_wires = 3
         res = qml.expval(obs)
         shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev) == (len(shot_vector),)
+        dev = qml.device("default.qubit", wires=total_wires, shots=shot_vector)
+        config = qml.devices.ExecutionConfig(shots=shot_vector)
+        assert res.shape(dev, total_wires) == (len(shot_vector),)
+        assert res.shape(config, total_wires) == (len(shot_vector),)
+
+        # Test new shape
+        qml.enable_return()
+        assert res.shape(dev, total_wires) == ((), (), ())
+        assert res.shape(config, total_wires) == ((), (), ())
+        qml.disable_return()
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
     def test_projector_expval(self, shots, mocker):

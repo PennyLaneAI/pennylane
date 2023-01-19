@@ -97,17 +97,34 @@ class TestProbs:
     @pytest.mark.parametrize("shots", [None, 10])
     def test_shape(self, wires, shots):
         """Test that the shape is correct."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        total_wires = 3
+        dev = qml.device("default.qubit", wires=total_wires, shots=shots)
+        config = qml.devices.ExecutionConfig(shots=shots)
         res = qml.probs(wires=wires)
-        assert res.shape(dev) == (1, 2 ** len(wires))
+        assert res.shape(dev, total_wires) == (1, 2 ** len(wires))
+        assert res.shape(config, total_wires) == (1, 2 ** len(wires))
+
+        # Test new shape
+        qml.enable_return()
+        assert res.shape(dev, total_wires) == (2 ** len(wires),)
+        assert res.shape(config, total_wires) == (2 ** len(wires),)
+        qml.disable_return()
 
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
     def test_shape_shot_vector(self, wires):
         """Test that the shape is correct with the shot vector too."""
+        total_wires = 3
         res = qml.probs(wires=wires)
         shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev) == (len(shot_vector), 2 ** len(wires))
+        dev = qml.device("default.qubit", wires=total_wires, shots=shot_vector)
+        config = qml.devices.ExecutionConfig(shots=shot_vector)
+        assert res.shape(dev, total_wires) == (len(shot_vector), 2 ** len(wires))
+        assert res.shape(config, total_wires) == (len(shot_vector), 2 ** len(wires))
+
+        # Test new shape
+        qml.enable_return()
+        assert res.shape(dev, total_wires) == (2 ** len(wires), 2 ** len(wires), 2 ** len(wires))
+        assert res.shape(config, total_wires) == (2 ** len(wires), 2 ** len(wires), 2 ** len(wires))
 
     @pytest.mark.parametrize(
         "measurement",
@@ -120,7 +137,7 @@ class TestProbs:
             MeasurementShapeError,
             match="The config argument is required to obtain the shape of the measurement",
         ):
-            measurement.shape()
+            measurement.shape(None, 1)
 
     @pytest.mark.parametrize("wires", [[0], [0, 1], [1, 0, 2]])
     def test_annotating_probs(self, wires):

@@ -126,7 +126,7 @@ class TestMeasurementProcess:
         msg = "The config argument is required to obtain the shape of the measurement"
 
         with pytest.raises(MeasurementShapeError, match=msg):
-            measurement.shape()
+            measurement.shape(None, 1)
 
     def test_undefined_shape_error(self):
         """Test that an error is raised for a measurement with an undefined shape"""

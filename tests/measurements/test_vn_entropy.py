@@ -356,7 +356,7 @@ class TestIntegration:
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
         # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
+        tol = 1e-8 if diff_method == "backprop" else 1e-5  # pylint: disable=unused-variable
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
 
