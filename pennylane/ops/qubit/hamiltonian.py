@@ -375,8 +375,11 @@ class Hamiltonian(Observable):
                [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
                [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
         """
-
-        n = len(self.wires)
+        if wire_order is None:
+            wires = self.wires
+        else:
+            wires = wire_order
+        n = len(wires)
         matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
 
         coeffs = qml.math.toarray(self.data)
@@ -398,7 +401,7 @@ class Hamiltonian(Observable):
             # i_count tracks the number of consecutive single-wire identity matrices encountered
             # in order to avoid unnecessary Kronecker products, since I_n x I_m = I_{n+m}
             i_count = 0
-            for wire_lab in self.wires:
+            for wire_lab in wires:
                 if wire_lab in op.wires:
                     if i_count > 0:
                         mat.append(scipy.sparse.eye(2**i_count, format="coo"))
@@ -427,7 +430,7 @@ class Hamiltonian(Observable):
                 temp_mats = []
 
         matrix += sum(temp_mats)
-        return expand_matrix(matrix, wires=self.wires, wire_order=wire_order)
+        return matrix
 
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
