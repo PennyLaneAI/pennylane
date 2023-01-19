@@ -20,7 +20,8 @@ Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 from dataclasses import replace
 import pytest
 
-from pennylane.devices import ExecutionConfig, DeviceError
+from pennylane.devices import ExecutionConfig
+from pennylane._device import DeviceError
 
 
 def test_default_values():
