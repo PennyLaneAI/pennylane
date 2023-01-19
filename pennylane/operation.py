@@ -102,7 +102,6 @@ import warnings
 from enum import IntEnum
 from typing import List
 
-
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
