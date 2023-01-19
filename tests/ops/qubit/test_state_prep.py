@@ -77,6 +77,17 @@ class TestStatePrepInterface:
         prep_op = DefaultPrep([1, 0], wires=[0])
         assert np.array_equal(prep_op.state_vector(), [1, 0])
 
+    def test_child_must_implement_state_vector(self):
+        """Tests that a child class that does not implement state_vector fails."""
+
+        class NoStatePrepOp(Operation, qml.ops.qubit.StatePrepInterface):
+            """A dummy class that assumes it was given a state vector."""
+
+            num_wires = AllWires
+
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+            NoStatePrepOp(wires=[0])
+
 
 class TestDecomposition:
     def test_BasisState_decomposition(self):
