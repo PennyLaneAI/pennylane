@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autoray registrations"""
-import numbers
 
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
@@ -256,27 +255,32 @@ def _ndim_tf(tensor):
 ar.register_function("tensorflow", "ndim", _ndim_tf)
 
 
+# def _take_tf(tensor, indices, axis=None):
+#     """Implement a TensorFlow version of np.take"""
+#     tf = _i("tf")
+
+#     if isinstance(indices, numbers.Number):
+#         indices = [indices]
+
+#     indices = tf.convert_to_tensor(indices)
+
+#     if np.any(indices < 0):
+#         # Unlike NumPy, TensorFlow doesn't support negative indices.
+#         dim_length = tf.size(tensor).numpy() if axis is None else tf.shape(tensor)[axis]
+#         indices = tf.where(indices >= 0, indices, indices + dim_length)
+
+#     if axis is None:
+#         # Unlike NumPy, if axis=None TensorFlow defaults to the first
+#         # dimension rather than flattening the array.
+#         data = tf.reshape(tensor, [-1])
+#         return tf.gather(data, indices)
+
+#     return tf.gather(tensor, indices, axis=axis)
+
+
 def _take_tf(tensor, indices, axis=None):
-    """Implement a TensorFlow version of np.take"""
     tf = _i("tf")
-
-    if isinstance(indices, numbers.Number):
-        indices = [indices]
-
-    indices = tf.convert_to_tensor(indices)
-
-    if np.any(indices < 0):
-        # Unlike NumPy, TensorFlow doesn't support negative indices.
-        dim_length = tf.size(tensor).numpy() if axis is None else tf.shape(tensor)[axis]
-        indices = tf.where(indices >= 0, indices, indices + dim_length)
-
-    if axis is None:
-        # Unlike NumPy, if axis=None TensorFlow defaults to the first
-        # dimension rather than flattening the array.
-        data = tf.reshape(tensor, [-1])
-        return tf.gather(data, indices)
-
-    return tf.gather(tensor, indices, axis=axis)
+    return tf.experimental.numpy.take(tensor, indices, axis=axis)
 
 
 ar.register_function("tensorflow", "take", _take_tf)

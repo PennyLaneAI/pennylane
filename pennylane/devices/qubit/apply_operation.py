@@ -22,13 +22,6 @@ from pennylane import math
 SQRT2INV = 1 / math.sqrt(2)
 
 
-def _get_slice(index, axis, num_axes):
-    """docstring"""
-    idx = [slice(None)] * num_axes
-    idx[axis] = index
-    return tuple(idx)
-
-
 def apply_operation_einsum(op: qml.operation.Operator, state):
     """Apply ``Operator`` to ``state`` using ``matheinsum``. This is more efficent at lower qubit
     numbers.
@@ -76,7 +69,7 @@ def apply_operation_tensordot(op: qml.operation.Operator, state):
     total_indices = len(state.shape)
     num_indices = len(op.wires)
     reshaped_mat = math.reshape(mat, [2] * (num_indices * 2))
-    axes = (tuple(range(num_indices, 2 * num_indices)), op.wires)
+    axes = (tuple(range(num_indices, 2 * num_indices)), tuple(op.wires))
 
     tdot = math.tensordot(reshaped_mat, state, axes=axes)
 
@@ -160,7 +153,7 @@ def apply_y(op: qml.PauliY, state):
 @apply_operation.register
 def apply_phase(op: qml.PhaseShift, state):
     """Apply PhaseShift operator to state."""
-    shift = math.exp(1j * op.data[0])
+    shift = math.exp(math.multiply(1j, op.data[0]))
 
     state0 = math.take(state, 0, axis=op.wires[0])
     state1 = math.multiply(shift, math.take(state, 1, axis=op.wires[0]))
@@ -179,7 +172,7 @@ def apply_hadamard(op: qml.Hadamard, state):
 def apply_cnot(op: qml.CNOT, state):
     """Apply cnot gate to state."""
 
-    target_axes = [op.wires[1] - 1] if op.wires[1] > op.wires[0] else [op.wires[1]]
+    target_axes = (op.wires[1] - 1) if op.wires[1] > op.wires[0] else (op.wires[1])
 
     state0 = math.take(state, 0, axis=op.wires[0])
     state_x = math.roll(math.take(state, 1, axis=op.wires[0]), 1, target_axes)
