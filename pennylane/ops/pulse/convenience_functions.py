@@ -19,13 +19,20 @@ except ImportError:
     has_jax = False
 
 
-def piecewise(x, ti, tf):
-    """Returns the value ``x`` only when ``ti <= t <= tf``. Otherwise returns 0.
+def rect(x, ti, tf):
+    """Applies a rectangular function to the provided ``x``, such that:
 
-    If ``x`` is a callable, ``x(p, t)`` will be returned instead.
+    - ``rect(f, ti, tf) == x / 2`` if ``t == ti``
+    - ``rect(f, ti, tf) == x`` if ``ti < t < tf``
+    - ``rect(f, ti, tf) == 0`` otherwise
+
+    .. note::
+
+        ``x`` can be a callable that accepts two arguments: trainable parameters and time. In this
+        case, the rectangular function is applied to ``x(params, t)``.
 
     Args:
-        input (float | callable): a scalar or a function that accepts two arguments: the trainable
+        x (float | callable): a scalar or a function that accepts two arguments: the trainable
             parameters and time
         ti (float): initial time
         tf (float): final time
