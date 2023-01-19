@@ -12,20 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file contains the ``piecewise`` pulse convenience function."""
+has_jax = True
+try:
+    import jax.numpy as jnp
+except ImportError:
+    has_jax = False
 
-import jax
 
+def piecewise(x, ti, tf):
+    """Returns the value ``x`` only when ``ti <= t <= tf``. Otherwise returns 0.
 
-def piecewise(index, ti, tf):
-    """Returns a function that evaluates to a constant when time ``t`` is between ``ti`` and ``tf``.
+    If ``x`` is a callable, ``x(p, t)`` will be returned instead.
 
     Args:
-        index (int): parameter index that we want to return
+        input (float | callable): a scalar or a function that accepts two arguments: the trainable
+            parameters and time
         ti (float): initial time
         tf (float): final time
     """
+    if not has_jax:
+        raise ImportError(
+            "Module jax is required for ``ParametrizedEvolution`` class. "
+            "You can install jax via: pip install jax"
+        )
+    if not callable(x):
 
-    def _constant(params, t):
-        return jax.lax.cond(ti < t < tf, lambda: params[index], lambda: 0)
+        def f(_, __):
+            return jnp.array(x)
 
-    return _constant
+    else:
+        f = x
+
+    return lambda p, t: jnp.piecewise(p, [ti <= t <= tf], [f], t)
