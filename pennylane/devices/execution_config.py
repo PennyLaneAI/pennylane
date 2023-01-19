@@ -40,7 +40,7 @@ class ExecutionConfig:
     """
 
     # pylint: disable=too-many-instance-attributes
-    
+
     shots: int = None
     """The number of shots for an execution."""
 
