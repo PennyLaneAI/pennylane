@@ -72,6 +72,10 @@ class SymbolicOp(Operator):
             self.queue()
 
     @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
     def base(self) -> Operator:
         """The base operator."""
         return self.hyperparameters["base"]
