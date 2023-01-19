@@ -155,7 +155,7 @@ class TestClassicalShadow:
         circuit.construct((), {})
 
         res = qml.execute([circuit.tape], circuit.device, None)[0]
-        expected_shape = qml.classical_shadow(wires=range(wires)).shape(config=circuit.device)
+        expected_shape = qml.classical_shadow(wires=range(wires)).shape(circuit.device, wires)
 
         assert res.shape == expected_shape
 
@@ -360,7 +360,7 @@ class TestExpvalMeasurement:  # pylint: disable=missing-class-docstring
         circuit.construct((H,), {})
 
         res = qml.execute([circuit.tape], circuit.device, None)[0]
-        expected_shape = qml.shadow_expval(H).shape()
+        expected_shape = qml.shadow_expval(H).shape(circuit.device, wires)
 
         assert res.shape == expected_shape
 
