@@ -88,7 +88,7 @@ class TestInitialization:
         )
 
     def test_H_fixed(self):
-        """Test that H_fixed is an Operator of the expected form"""
+        """Test that H_fixed() is an Operator of the expected form"""
         H_fixed = test_example.H_fixed()
         op = qml.op_sum(qml.s_prod(1, qml.PauliX(0)), qml.s_prod(2, qml.PauliY(1)))
         assert qml.equal(H_fixed, op)
