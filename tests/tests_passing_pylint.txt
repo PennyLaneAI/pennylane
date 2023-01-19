@@ -1,5 +1,4 @@
-tests/data/test_dataset.py
-tests/data/test_dataset_access.py
+tests/data/**
 tests/ops/op_math/test_parametrized_hamiltonian.py
 tests/ops/op_math/test_evolve.py
 tests/devices/test_execution_config.py
