@@ -29,7 +29,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
-from pennylane.math import expand_matrix
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 
