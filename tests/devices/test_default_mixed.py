@@ -1009,7 +1009,7 @@ class TestApply:
     def test_apply_specialunitary(self, tol, num_wires):
         """Tests that a special unitary is correctly applied"""
         np.random.seed(2514)
-        theta = np.random.random(4**num_wires-1)
+        theta = np.random.random(4**num_wires - 1)
 
         dev = qml.device("default.mixed", wires=num_wires)
         dev.apply([qml.SpecialUnitary(theta, wires=list(range(num_wires)))])
