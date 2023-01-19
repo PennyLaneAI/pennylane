@@ -222,12 +222,6 @@ class TestPrefactorReturn:
         assert gen.name == "SparseHamiltonian"
         assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
 
-    def test_inverse(self):
-        """Test an inverted generator is correct"""
-        gen, prefactor = qml.generator(ObservableOp(0.5, wires=0).inv(), format="prefactor")
-        assert prefactor == 0.6
-        assert gen.name == "PauliX"
-
 
 class TestObservableReturn:
     """Tests for format="observable". This format preserves the initial generator
@@ -264,28 +258,6 @@ class TestObservableReturn:
         gen = qml.generator(SparseOp, format="observable")(0.5, wires=0)
         assert gen.name == "SparseHamiltonian"
         assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
-
-    def test_hermitian_inverse(self):
-        """Test a Hermitian inverted generator is correct"""
-        gen = qml.generator(HermitianOp(0.5, wires=0).inv(), format="observable")
-        assert gen.name == "Hermitian"
-        assert np.all(gen.parameters[0] == -HermitianOp.H)
-
-    def test_sparse_hamiltonian_inverse(self):
-        """Test a SparseHamiltonian inverted generator is correct"""
-        gen = qml.generator(SparseOp(0.5, wires=0).inv(), format="observable")
-        assert gen.name == "SparseHamiltonian"
-        assert np.all(gen.parameters[0].toarray() == -SparseOp.H.toarray())
-
-    def test_hamiltonian_inverse(self):
-        """Test a Hamiltonian inverted generator is correct"""
-        expected = -qml.matrix(HamiltonianOp(0.23, wires=[0, 1]).generator())
-
-        gen = qml.generator(HamiltonianOp(0.5, wires=[0, 1]).inv(), format="observable")
-        assert gen.name == "Hamiltonian"
-
-        res = qml.matrix(gen)
-        assert np.allclose(res, expected)
 
 
 class TestHamiltonianReturn:
@@ -333,29 +305,3 @@ class TestHamiltonianReturn:
 
         expected = qml.pauli_decompose(SparseOp.H.toarray(), hide_identity=True)
         assert gen.compare(expected)
-
-    def test_hermitian_inverse(self):
-        """Test a Hermitian inverted generator is correct"""
-        expected = qml.pauli_decompose(HermitianOp.H, hide_identity=True)
-
-        gen = qml.generator(HermitianOp(0.5, wires=0).inv(), format="hamiltonian")
-        assert gen.name == "Hamiltonian"
-        assert gen.compare(-1.0 * expected)
-
-    def test_sparse_hamiltonian_inverse(self):
-        """Test a SparseHamiltonian inverted generator is correct"""
-        expected = qml.pauli_decompose(SparseOp.H.toarray(), hide_identity=True)
-
-        gen = qml.generator(SparseOp(0.5, wires=0).inv(), format="hamiltonian")
-        assert gen.name == "Hamiltonian"
-        assert gen.compare(-1.0 * expected)
-
-    def test_hamiltonian_inverse(self):
-        """Test a Hamiltonian inverted generator is correct"""
-        expected = -qml.matrix(HamiltonianOp(0.23, wires=[0, 1]).generator())
-
-        gen = qml.generator(HamiltonianOp(0.5, wires=[0, 1]).inv(), format="hamiltonian")
-        assert gen.name == "Hamiltonian"
-
-        res = qml.matrix(gen)
-        assert np.allclose(res, expected)

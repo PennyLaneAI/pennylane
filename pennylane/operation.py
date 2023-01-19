@@ -102,7 +102,6 @@ import warnings
 from enum import IntEnum
 from typing import List
 
-
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
@@ -766,9 +765,6 @@ class Operator(abc.ABC):
         "my_label"
         >>> op.label(decimals=2, base_label="my_label")
         "my_label\n(1.23)"
-        >>> op.inv()
-        >>> op.label()
-        "RX⁻¹"
 
         If the operation has a matrix-valued parameter and a cache dictionary is provided,
         unique matrices will be cached in the ``'matrices'`` key list. The label will contain
@@ -1502,31 +1498,7 @@ class Operation(Operator):
     @property
     def inverse(self):
         """Boolean determining if the inverse of the operation was requested."""
-        return self._inverse
-
-    @inverse.setter
-    def inverse(self, boolean):
-        warnings.warn(
-            "In-place inversion with inverse is deprecated. Please use qml.adjoint or"
-            " qml.pow instead.",
-            UserWarning,
-        )
-        self._inverse = boolean
-
-    def inv(self):
-        """Inverts the operator.
-
-        This method concatenates a string to the name of the operation,
-        to indicate that the inverse will be used for computations.
-
-        Any subsequent call of this method will toggle between the original
-        operation and the inverse of the operation.
-
-        Returns:
-            :class:`Operator`: operation to be inverted
-        """
-        self.inverse = not self._inverse
-        return self
+        return False
 
     def matrix(self, wire_order=None):
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
@@ -1815,6 +1787,7 @@ class Tensor(Observable):
     # pylint: disable=abstract-method
     return_type = None
     tensor = True
+    has_matrix = True
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
 
@@ -1828,6 +1801,7 @@ class Tensor(Observable):
         self._eigvals_cache = None
         self.obs: List[Observable] = []
         self._args = args
+        self._batch_size = None
         self.queue(init=True)
 
     def label(self, decimals=None, base_label=None, cache=None):

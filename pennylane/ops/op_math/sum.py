@@ -17,14 +17,15 @@ computing the sum of operations.
 """
 import itertools
 from copy import copy
-from typing import List
 from functools import reduce
+from typing import List
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
@@ -84,6 +85,17 @@ class Sum(CompositeOp):
 
     .. note::
         Currently this operator can not be queued in a circuit as an operation, only measured terminally.
+
+    .. note::
+
+        This operator supports batched operands:
+        >>> op = qml.op_sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+        >>> op = qml.op_sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :func:`~.ops.op_math.op_sum`
 
@@ -179,25 +191,21 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
-        mats_and_wires_gen = (
-            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
+        gen = (
+            (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
             for op in self
         )
 
-        reduced_mat, sum_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
-        )
+        reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
+        gen = ((op.sparse_matrix(), op.wires) for op in self)
 
-        reduced_mat, sum_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
-        )
+        reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 

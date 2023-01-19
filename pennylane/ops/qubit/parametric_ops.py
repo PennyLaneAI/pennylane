@@ -124,8 +124,7 @@ class RX(Operation):
         return [RX(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        new_op = CRX(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return CRX(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -222,8 +221,7 @@ class RY(Operation):
         return [RY(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        new_op = CRY(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return CRY(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -360,8 +358,7 @@ class RZ(Operation):
         return [RZ(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        new_op = CRZ(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return CRZ(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -527,8 +524,7 @@ class PhaseShift(Operation):
         return [PhaseShift(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        new_op = ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
@@ -1414,8 +1410,7 @@ class Rot(Operation):
         return Rot(-omega, -theta, -phi, wires=self.wires)
 
     def _controlled(self, wire):
-        new_op = CRot(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return CRot(*self.parameters, wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         return self.data
