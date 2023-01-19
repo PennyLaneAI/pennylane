@@ -15,7 +15,7 @@
 """
 Unit tests for the ParametrizedHamiltonian class
 """
-
+# pylint: disable=no-member
 import pytest
 
 import pennylane as qml
@@ -62,30 +62,28 @@ class TestInitialization:
         and the list of observables don't match"""
         coeffs = [1, 2, f1]
         obs = [qml.PauliX(0), qml.PauliY(1)]
-        with pytest.raises(
-            ValueError, match="number of coefficients and operators does not match."
-        ):
+        # fmt: off
+        with pytest.raises(ValueError, match="number of coefficients and operators does not match."):
+            # fmt: on
             ParametrizedHamiltonian(coeffs, obs)
 
     def test_H_fixed_lists(self):
         """Test that attributes H_fixed_ops and H_fixed_coeffs are as expected"""
-        assert test_example.H_coeffs_fixed == [1, 2]
+        assert test_example.coeffs_fixed == [1, 2]
         assert np.all(
             [
                 qml.equal(op1, op2)
-                for op1, op2 in zip(test_example.H_ops_fixed, [qml.PauliX(0), qml.PauliY(1)])
+                for op1, op2 in zip(test_example.ops_fixed, [qml.PauliX(0), qml.PauliY(1)])
             ]
         )
 
     def test_H_parametrized_lists(self):
         """Test that attributes H_parametrized_ops and H_parametrized_coeffs are as expected"""
-        assert test_example.H_coeffs_parametrized == [f1, f2]
+        assert test_example.coeffs_parametrized == [f1, f2]
         assert np.all(
             [
                 qml.equal(op1, op2)
-                for op1, op2 in zip(
-                    test_example.H_ops_parametrized, [qml.PauliZ(2), qml.Hadamard(3)]
-                )
+                for op1, op2 in zip(test_example.ops_parametrized, [qml.PauliZ(2), qml.Hadamard(3)])
             ]
         )
 
@@ -170,6 +168,9 @@ class TestCall:
         assert qml.equal(H_parametrized, expected_H_parametrized)
 
     def test_call_with_qutrit_operators(self):
+        """Test that the ParametrizedHamiltonian can be created and called to initialize an
+        operator consisting of qutrit operations"""
+
         def f(x, t):
             return x + 2 * t
 
@@ -191,6 +192,23 @@ class TestCall:
             )
         )
 
+    def test_call_raises_error(self):
+        """Test that if the user calls a `ParametrizedHamiltonian` with the incorrect number
+        of parameters, an error is raised."""
+
+        def f(x, t):
+            return x + 2 * t
+
+        coeffs = [f, 2]
+        obs = [qml.GellMann(wires=0, index=1), qml.GellMann(wires=0, index=2)]
+        H = ParametrizedHamiltonian(coeffs, obs)
+
+        with pytest.raises(
+            ValueError,
+            match="The length of the params argument and the number of scalar-valued functions must be the same",
+        ):
+            H(params=[1, 2], t=0.5)
+
 
 class TestInteractionWithOperators:
     """Test that arithmetic operations involving or creating ParametrizedHamiltonians behave as expected"""
@@ -211,18 +229,19 @@ class TestInteractionWithOperators:
         """Test that a Hamiltonian and SProd can be added to a ParametrizedHamiltonian, and
         will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed"""
         pH = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
-
+        params = [1, 2]
         # Adding on the right
         new_pH = pH + H
         assert pH.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
-        assert new_pH.H_coeffs_fixed[0] == coeff
-
+        assert new_pH.coeffs_fixed[0] == coeff
+        assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(pH(params, t=0.5) + H))
         # Adding on the left
         new_pH = H + pH
         assert pH.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
-        assert new_pH.H_coeffs_fixed[0] == coeff
+        assert new_pH.coeffs_fixed[0] == coeff
+        assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(pH(params, t=0.5) + H))
 
     @pytest.mark.parametrize("op", ops)
     def test_add_other_operators(self, op):
@@ -246,7 +265,7 @@ class TestInteractionWithOperators:
         class DummyObject:  # pylint: disable=too-few-public-methods
             pass
 
-        with pytest.raises(ValueError, match="Cannot add ParametrizedHamiltonian and"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             _ = H + DummyObject()
 
     def test_adding_two_parametrized_hamiltonians(self):
@@ -270,7 +289,7 @@ class TestInteractionWithOperators:
         function and an Observable"""
         pH = f1 * qml.PauliX(0)
         assert isinstance(pH, ParametrizedHamiltonian)
-        assert len(pH.H_coeffs_fixed) == 0
+        assert len(pH.coeffs_fixed) == 0
         assert isinstance(pH.H_parametrized(param, 0.5), qml.ops.SProd)
 
 
