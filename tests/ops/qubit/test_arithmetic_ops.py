@@ -33,8 +33,6 @@ label_data = [
 def test_label(op, label):
     assert op.label() == label
     assert op.label(decimals=2) == label
-    op.inv()
-    assert op.label() == label + "⁻¹"
 
 
 class TestQubitCarry:
@@ -361,13 +359,11 @@ class TestIntegerComparator:
     def test_label_method(self):
         """Test label method"""
 
-        op, label1, label2 = qml.IntegerComparator(2, wires=(0, 1, 2, 3)), ">=2", ">=2"
+        op = qml.IntegerComparator(2, wires=(0, 1, 2, 3))
+        label = ">=2"
 
-        assert op.label() == label1
-        assert op.label(decimals=2) == label1
-
-        op.inv()
-        assert op.label() == label2
+        assert op.label() == label
+        assert op.label(decimals=2) == label
 
     @pytest.mark.parametrize(
         "value,wires,geq,expected_error_message",
@@ -406,7 +402,7 @@ class TestIntegerComparator:
         @qml.qnode(dev)
         def f(bitstring, tape, geq):
             qml.BasisState(bitstring, wires=range(num_wires + num_workers))
-            qml.IntegerComparator(2, wires=(0, 1, 2), geq=geq).inv()
+            qml.adjoint(qml.IntegerComparator(2, wires=(0, 1, 2), geq=geq), lazy=False)
             for op in tape.operations:
                 op.queue()
             return qml.probs(wires=range(num_wires + num_workers))

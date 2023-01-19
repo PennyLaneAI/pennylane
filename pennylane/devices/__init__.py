@@ -46,3 +46,4 @@ from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .null_qubit import NullQubit
+from .execution_config import ExecutionConfig
