@@ -20,7 +20,7 @@ Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 from dataclasses import replace
 import pytest
 
-from pennylane.devices import ExecutionConfig
+from pennylane.devices import ExecutionConfig, DeviceError
 
 
 def test_default_values():
@@ -79,3 +79,14 @@ def test_shots():
     assert exec_conf.shot_vector is None
     assert exec_conf._raw_shot_sequence is None
     assert exec_conf.shots is None
+
+
+def test_invalid_shots():
+    """Test that correct errors are raised when invalid shots are specified"""
+    with pytest.raises(DeviceError, match="The specified number of shots needs to be at least 1"):
+        _ = ExecutionConfig(shots=0)
+
+    with pytest.raises(
+        DeviceError, match="Shots must be a single non-negative integer or a sequence"
+    ):
+        _ = ExecutionConfig(shots="Hello world")
