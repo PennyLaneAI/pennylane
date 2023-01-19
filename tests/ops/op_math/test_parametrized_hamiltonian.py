@@ -141,7 +141,7 @@ class TestCall:
             [1.2, f1, 2.3, f2],
             [qml.PauliX(0) for i in range(4)],
             [1, 2],
-            [2, 2]
+            [2, 2],
         ),  # multiples of each
     )
 
@@ -211,11 +211,9 @@ class TestCall:
         coeffs = [f, 2]
         obs = [qml.GellMann(wires=0, index=1), qml.GellMann(wires=0, index=2)]
         H = ParametrizedHamiltonian(coeffs, obs)
-
-        with pytest.raises(
-            ValueError,
-            match="The length of the params argument and the number of scalar-valued functions must be the same",
-        ):
+        # fmt: off
+        with pytest.raises(ValueError, match="The length of the params argument and the number of scalar-valued functions must be the same",):
+        # fmt: on
             H(params=[1, 2], t=0.5)
 
 
