@@ -186,7 +186,7 @@ class MeasurementProcess(ABC):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def shape(self, device=None, execution_config=None):
+    def shape(self, config=None, len_wires=None):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device or execution config when:
@@ -206,9 +206,9 @@ class MeasurementProcess(ABC):
         when using QNodes.
 
         Args:
-            device (.Device): a PennyLane device to use for determining the shape
-            execution_config (.ExecutionConfig): a PennyLane execution configuration to use for
-                determining the shape
+            config (Union[.Device, .ExecutionConfig]): a PennyLane device or execution
+                configuration to use for determining the shape
+            len_wires (int): total number of wires in the execution
 
         Returns:
             tuple: the output shape
@@ -217,14 +217,13 @@ class MeasurementProcess(ABC):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        shot_location = device if device is not None else execution_config
         if qml.active_return():
-            return self._shape_new(shot_location)
+            return self._shape_new(config, len_wires)
         raise qml.QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
-    def _shape_new(self, shot_location=None):
+    def _shape_new(self, config=None, len_wires=None):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device or execution configuration when:
@@ -239,8 +238,9 @@ class MeasurementProcess(ABC):
         number of wires the measurement acts on.
 
         Args:
-            shot_location (.Device or .ExecutionConfig): a PennyLane device or execution
+            config (Union[.Device, .ExecutionConfig]): a PennyLane device or execution
                 configuration to use for determining the shape
+            len_wires (int): total number of wires in the execution
 
         Returns:
             tuple: the output shape

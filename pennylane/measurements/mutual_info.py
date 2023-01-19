@@ -126,19 +126,18 @@ class MutualInfoMP(StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device=None, execution_config=None):
-        shot_location = device if device is not None else execution_config
+    def shape(self, config=None, len_wires=None):
         if qml.active_return():
-            return self._shape_new(shot_location)
-        if shot_location is None or shot_location.shot_vector is None:
+            return self._shape_new(config=config, len_wires=len_wires)
+        if config is None or config.shot_vector is None:
             return (1,)
-        num_shot_elements = sum(s.copies for s in shot_location.shot_vector)
+        num_shot_elements = sum(s.copies for s in config.shot_vector)
         return (num_shot_elements,)
 
-    def _shape_new(self, shot_location=None):
-        if shot_location is None or shot_location.shot_vector is None:
+    def _shape_new(self, config=None, len_wires=None):
+        if config is None or config.shot_vector is None:
             return ()
-        num_shot_elements = sum(s.copies for s in shot_location.shot_vector)
+        num_shot_elements = sum(s.copies for s in config.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):

@@ -139,39 +139,34 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device=None, execution_config=None):
-        shot_location = device if device is not None else execution_config
+    def shape(self, config=None, len_wires=None):
         if qml.active_return():
-            return self._shape_new(shot_location)
-        if shot_location is None:
+            return self._shape_new(config=config, len_wires=len_wires)
+        if config is None:
             raise MeasurementShapeError(
-                "The device or execution_config argument is required to obtain the shape "
-                f"of the measurement {self.__class__.__name__}."
+                "The config argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
         num_shot_elements = (
-            1
-            if shot_location.shot_vector is None
-            else sum(s.copies for s in shot_location.shot_vector)
+            1 if config.shot_vector is None else sum(s.copies for s in config.shot_vector)
         )
-        len_wires = len(self.wires)
-        dim = self._get_num_basis_states(len_wires, shot_location)
+        n_wires = len(self.wires)
+        dim = self._get_num_basis_states(n_wires, config)
         # TODO: Change/fix this (maybe??)
 
         return (num_shot_elements, dim)
 
-    def _shape_new(self, shot_location=None):
-        if shot_location is None:
+    def _shape_new(self, config=None, len_wires=None):
+        if config is None:
             raise MeasurementShapeError(
-                "The device or execution_config argument is required to obtain the shape "
-                f"of the measurement {self.__class__.__name__}."
+                "The config argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
         num_shot_elements = (
-            1
-            if shot_location.shot_vector is None
-            else sum(s.copies for s in shot_location.shot_vector)
+            1 if config.shot_vector is None else sum(s.copies for s in config.shot_vector)
         )
-        len_wires = len(self.wires)
-        dim = self._get_num_basis_states(len_wires, shot_location)
+        n_wires = len(self.wires)
+        dim = self._get_num_basis_states(n_wires, config)
         # TODO: Change/fix this (maybe??)
 
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))

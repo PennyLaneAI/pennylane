@@ -312,18 +312,17 @@ class ClassicalShadowMP(MeasurementTransform):
     def return_type(self):
         return Shadow
 
-    def shape(self, device=None, execution_config=None):
+    def shape(self, config=None, len_wires=None):
         # otherwise, the return type requires a device
-        if device is None and execution_config is None:
+        if config is None:
             raise MeasurementShapeError(
-                "The device or execution_config argument is required to obtain the "
-                "shape of a classical shadow measurement process."
+                "The config argument is required to obtain the shape of a classical shadow "
+                "measurement process."
             )
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
-        shot_location = device if device is not None else execution_config
-        return (1, 2, shot_location.shots, len(self.wires))
+        return (1, 2, config.shots, len(self.wires))
 
     def __copy__(self):
         return self.__class__(
@@ -368,7 +367,7 @@ class ShadowExpvalMP(MeasurementTransform):
     def return_type(self):
         return ShadowExpval
 
-    def shape(self, device=None, execution_config=None):
+    def shape(self, config=None, len_wires=None):
         return (1,)
 
     @property

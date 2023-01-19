@@ -155,16 +155,15 @@ class SampleMP(SampleMeasurement):
         return self.obs is None
 
     # pylint: disable=protected-access
-    def shape(self, device=None, execution_config=None):
-        shot_location = device if device is not None else execution_config
+    def shape(self, config=None, len_wires=None):
         if qml.active_return():
-            return self._shape_new(shot_location)
-        if shot_location is None:
+            return self._shape_new(config=config, len_wires=len_wires)
+        if config is None:
             raise MeasurementShapeError(
-                "The device or execution_config argument is required to obtain the shape "
-                f"of the measurement {self.__class__.__name__}."
+                "The config argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
-        if shot_location.shot_vector is not None:
+        if config.shot_vector is not None:
             if self.obs is None:
                 # TODO: revisit when qml.sample without an observable fully
                 # supports shot vectors
@@ -174,37 +173,35 @@ class SampleMP(SampleMeasurement):
                 )
             return tuple(
                 (shot_val,) if shot_val != 1 else tuple()
-                for shot_val in shot_location._raw_shot_sequence
+                for shot_val in config._raw_shot_sequence
             )
-        len_wires = len(shot_location.wires)
         return (
-            (1, shot_location.shots)
+            (1, config.shots)
             if self.obs is not None
-            else (1, shot_location.shots, len_wires)
+            else (1, config.shots, len_wires)
         )
 
-    def _shape_new(self, shot_location=None):
-        if shot_location is None:
+    def _shape_new(self, config=None, len_wires=None):
+        if config is None:
             raise MeasurementShapeError(
-                "The device or execution_config argument is required to obtain the shape of the "
-                f"measurement {self.__class__.__name__}."
+                "The config argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
             )
-        if shot_location.shot_vector is not None:
+        if config.shot_vector is not None:
             if self.obs is None:
                 return tuple(
-                    (shot_val, len(shot_location.wires))
+                    (shot_val, len(config.wires))
                     if shot_val != 1
-                    else (len(shot_location.wires),)
-                    for shot_val in shot_location._raw_shot_sequence
+                    else (len(config.wires),)
+                    for shot_val in config._raw_shot_sequence
                 )
             return tuple(
                 (shot_val,) if shot_val != 1 else tuple()
-                for shot_val in shot_location._raw_shot_sequence
+                for shot_val in config._raw_shot_sequence
             )
         if self.obs is None:
-            len_wires = len(shot_location.wires)
-            return (shot_location.shots, len_wires) if shot_location.shots != 1 else (len_wires,)
-        return (shot_location.shots,) if shot_location.shots != 1 else ()
+            return (config.shots, len_wires) if config.shots != 1 else (len_wires,)
+        return (config.shots,) if config.shots != 1 else ()
 
     def process_samples(
         self,
