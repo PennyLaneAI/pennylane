@@ -69,11 +69,9 @@ def hadamard_grad(
     if all(g == "0" for g in diff_methods):
         return _all_zero_grad_new(tape, shots)
 
-    gradient_tapes = []
-    print("diff methods", diff_methods)
     method_map = choose_grad_methods(diff_methods, argnum)
+
     argnum = [i for i, dm in method_map.items() if dm == "A"]
-    print("method maps", method_map)
 
     # Get default for aux_wire
     aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
@@ -95,7 +93,7 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
 
     gradient_data = []
 
-    for id_argnum in tape.trainable_params:
+    for id_argnum, _ in enumerate(tape.trainable_params):
 
         if id_argnum not in argnums:
             # parameter has zero gradient
@@ -112,20 +110,21 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
         coeffs.extend(sub_coeffs)
 
         num_tape = 0
+
         for gen in generators:
 
             if isinstance(trainable_op, qml.Rot):
                 # Given that we only used Z as generator, we need to apply some gates before and after the generator.
                 if p_idx == 0:
                     op_temp = ops_to_trainable_op.pop(-1)
-                    ops_after_trainable_op = op_temp + ops_after_trainable_op
+                    ops_after_trainable_op = [op_temp] + ops_after_trainable_op
                 elif p_idx == 1:
-                    ops_to_add_before = [qml.RZ(-trainable_op.data[1], wires=trainable_op.wires),
+                    ops_to_add_before = [qml.RZ(-trainable_op.data[2], wires=trainable_op.wires),
                                          qml.RX(qml.numpy.pi/2, wires=trainable_op.wires)]
                     ops_to_trainable_op.extend(ops_to_add_before)
 
                     ops_to_add_after = [qml.RX(-qml.numpy.pi/2, wires=trainable_op.wires),
-                                        qml.RZ(trainable_op.data[1], wires=trainable_op.wires)]
+                                        qml.RZ(trainable_op.data[2], wires=trainable_op.wires)]
                     ops_after_trainable_op = ops_to_add_after + ops_after_trainable_op
 
             ctrl_gen = qml.ctrl(gen, control=aux_wire).decomposition()
@@ -152,6 +151,7 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
 
             num_tape += 1
             g_tapes.append(new_tape)
+
         gradient_data.append(num_tape)
 
     def processing_fn(results):
@@ -169,6 +169,11 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
                 grads.append(qml.math.zeros(()))
             else:
                 grads.append(sum(final_res[idx: idx + num_tape]))
+
+        if len(grads) == 1:
+            # TODO: Update here
+            return np.array(grads[0])
+
         return tuple(grads)
 
     return g_tapes, processing_fn
@@ -180,11 +185,11 @@ def _get_generators(trainable_op):
     # For PhaseShift, we need to separate the generator in two unitaries (Hardware compatibility)
     if isinstance(trainable_op, (qml.PhaseShift, qml.U1)):
         generators = [qml.Identity(wires=trainable_op.wires), qml.PauliZ(wires=trainable_op.wires)]
-        coeffs = [0.5, 0.5]
+        coeffs = [-0.5, -0.5]
     # For rotation it possible to only use CZ by applying some other rotations in the main function
     elif isinstance(trainable_op, qml.Rot):
         generators = [qml.PauliZ(wires=trainable_op.wires)]
-        coeffs = [0.5]
+        coeffs = [-0.5]
     else:
         generators = trainable_op.generator().ops
         coeffs = trainable_op.generator().coeffs
