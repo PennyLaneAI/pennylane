@@ -7,6 +7,7 @@
 * A new operation `SpecialUnitary` was added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
+  [(#3651)](https://github.com/PennyLaneAI/pennylane/pull/3651)
  
   The new operation takes a single argument, a one-dimensional `tensor_like`
   of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
@@ -31,6 +32,8 @@
   >>> qml.math.allclose(su.matrix(), rx.matrix())
   True
   ```
+  
+  This operation supports parameter broadcasting/batching.
   
 * `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
