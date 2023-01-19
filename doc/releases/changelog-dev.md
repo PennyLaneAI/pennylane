@@ -176,7 +176,37 @@
           [ 0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j,  0.   +0.j   ],
           [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
   ```
+  
+* Added `ParametrizedHamiltonian`, a callable that holds information representing a linear combination of operators 
+  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the `Operator` for 
+  the specified parameters.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  
+  ```pycon
+  f1 = lambda p, t: p * np.sin(t) * (t - 1)
+  f2 = lambda p, t: p[0] * np.cos(p[1]* t ** 2)
 
+  XX = qml.PauliX(1) @ qml.PauliX(1)
+  YY = qml.PauliY(0) @ qml.PauliY(0)
+  ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
+
+  H =  2 * XX + f1 * YY + f2 * ZZ
+  ```
+  ```pycon
+  >>> H
+  ParametrizedHamiltonian: terms=3
+  >>> params = [1.2, [2.3, 3.4]]
+  >>> H(params, t=0.5)
+  (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
+  ```
+  The same `ParametrizedHamiltonian` can also be constructed via a list of coefficients and operators:
+
+  ```pycon
+  >>> coeffs = [2, f1, f2]
+  >>> ops = [XX, YY, ZZ]
+  >>> H =  qml.ops.dot(coeffs, ops)
+  ```
+  
 <h3>Improvements</h3>
 
 * Most channels in are now fully differentiable in all interfaces.
