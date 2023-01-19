@@ -18,14 +18,13 @@ and CV circuit simulators that can be used with PennyLane without the need for a
 dependencies. They may also be used in the PennyLane test suite in order
 to verify and test quantum gradient computations.
 
-:class:`~.QuantumDevice` in an experimantal interface for the next generation of devices that
-will eventually replace :class:`~.Device` and :class:`~.QubitDevice`.
+
 
 .. currentmodule:: pennylane.devices
 .. autosummary::
     :toctree: api
 
-    QuantumDevice
+
     default_qubit
     default_qubit_jax
     default_qubit_torch
@@ -35,6 +34,20 @@ will eventually replace :class:`~.Device` and :class:`~.QubitDevice`.
     default_mixed
     default_qutrit
     tests
+
+Next generation devices
+-----------------------
+
+:class:`~.QuantumDevice` in an experimantal interface for the next generation of devices that
+will eventually replace :class:`~.Device` and :class:`~.QubitDevice`.
+
+.. currentmodule:: pennylane.devices
+.. autosummary::
+    :toctree: api
+
+    ExecutionConfig
+    QuantumDevice
+
 """
 
 from .device_api import QuantumDevice
