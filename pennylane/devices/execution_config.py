@@ -15,7 +15,7 @@
 Contains the :class:`ExecutionConfig` data class.
 """
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, Union, Sequence, List
+from typing import Optional, Sequence, List
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
