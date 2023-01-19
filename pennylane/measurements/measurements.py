@@ -186,7 +186,7 @@ class MeasurementProcess(ABC):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def shape(self, config=None, len_wires=None):
+    def shape(self, config, len_wires):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device or execution config when:
@@ -223,7 +223,7 @@ class MeasurementProcess(ABC):
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
-    def _shape_new(self, config=None, len_wires=None):
+    def _shape_new(self, config, len_wires):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device or execution configuration when:

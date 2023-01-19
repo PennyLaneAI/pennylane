@@ -139,9 +139,9 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, config=None, len_wires=None):
+    def shape(self, config, len_wires):
         if qml.active_return():
-            return self._shape_new(config=config, len_wires=len_wires)
+            return self._shape_new(config, len_wires)
         if config is None:
             raise MeasurementShapeError(
                 "The config argument is required to obtain the shape of the measurement "
@@ -156,7 +156,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
         return (num_shot_elements, dim)
 
-    def _shape_new(self, config=None, len_wires=None):
+    def _shape_new(self, config, len_wires):  # pylint: disable=unused-argument
         if config is None:
             raise MeasurementShapeError(
                 "The config argument is required to obtain the shape of the measurement "

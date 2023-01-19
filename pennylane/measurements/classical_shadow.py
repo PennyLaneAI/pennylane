@@ -312,7 +312,7 @@ class ClassicalShadowMP(MeasurementTransform):
     def return_type(self):
         return Shadow
 
-    def shape(self, config=None, len_wires=None):
+    def shape(self, config, len_wires): # pylint: disable=unused-argument
         # otherwise, the return type requires a device
         if config is None:
             raise MeasurementShapeError(
@@ -367,7 +367,7 @@ class ShadowExpvalMP(MeasurementTransform):
     def return_type(self):
         return ShadowExpval
 
-    def shape(self, config=None, len_wires=None):
+    def shape(self, config, len_wires): # pylint: disable=unused-argument
         return (1,)
 
     @property

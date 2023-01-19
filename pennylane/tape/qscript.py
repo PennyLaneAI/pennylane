@@ -687,7 +687,7 @@ class QuantumScript:
         Returns:
             tuple: output shape
         """
-        return measurement_process.shape(device)
+        return measurement_process.shape(device, len(device.wires))
 
     @staticmethod
     def _multi_homogenous_measurement_shape(mps, device):
@@ -744,7 +744,7 @@ class QuantumScript:
 
             elif isinstance(mps[0], SampleMP):
 
-                dim = mps[0].shape(device)
+                dim = mps[0].shape(device, len(device.wires))
                 shape = (len(mps),) + dim[1:]
 
             # No other measurement type to check
@@ -886,7 +886,9 @@ class QuantumScript:
                 "Parameter broadcasting when using a shot vector is not supported yet."
             )
 
-        shapes = tuple(meas_process.shape(device) for meas_process in self.measurements)
+        shapes = tuple(
+            meas_process.shape(device, len(device.wires)) for meas_process in self.measurements
+        )
 
         if self.batch_size is not None:
             shapes = tuple((self.batch_size,) + shape for shape in shapes)

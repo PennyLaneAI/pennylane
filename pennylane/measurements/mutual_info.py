@@ -126,15 +126,15 @@ class MutualInfoMP(StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, config=None, len_wires=None):
+    def shape(self, config, len_wires):
         if qml.active_return():
-            return self._shape_new(config=config, len_wires=len_wires)
+            return self._shape_new(config, len_wires)
         if config is None or config.shot_vector is None:
             return (1,)
         num_shot_elements = sum(s.copies for s in config.shot_vector)
         return (num_shot_elements,)
 
-    def _shape_new(self, config=None, len_wires=None):
+    def _shape_new(self, config, len_wires):    # pylint: disable=unused-argument
         if config is None or config.shot_vector is None:
             return ()
         num_shot_elements = sum(s.copies for s in config.shot_vector)

@@ -150,9 +150,9 @@ class StateMP(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def shape(self, config=None, len_wires=None):
+    def shape(self, config, len_wires):
         if qml.active_return():
-            return self._shape_new(config=config, len_wires=len_wires)
+            return self._shape_new(config, len_wires)
         num_shot_elements = (
             1
             if (config is None or config.shot_vector is None)
@@ -170,10 +170,10 @@ class StateMP(StateMeasurement):
                 f"{self.__class__.__name__}."
             )
         # qml.state()
-        dim = 2 ** len_wires
+        dim = 2**len_wires
         return (num_shot_elements, dim)
 
-    def _shape_new(self, config=None, len_wires=None):
+    def _shape_new(self, config, len_wires):
         num_shot_elements = (
             1
             if (config is None or config.shot_vector is None)
@@ -196,7 +196,7 @@ class StateMP(StateMeasurement):
                 f"{self.__class__.__name__}."
             )
 
-        dim = 2 ** len_wires
+        dim = 2**len_wires
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
     # pylint: disable=redefined-outer-name
