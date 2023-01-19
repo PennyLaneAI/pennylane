@@ -120,8 +120,21 @@ class TestInitialization:
         """Test the ``shape`` method."""
         meas = qml.vn_entropy(wires=0)
         dev = qml.device("default.qubit", wires=1, shots=shots)
+        config = qml.devices.ExecutionConfig(shots=shots)
 
         assert meas.shape(dev) == shape
+        assert meas.shape(config) == shape
+
+    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
+    def test_shape_new(self, shots, shape):
+        """Test the ``shape_new`` method."""
+        qml.enable_return()
+        meas = qml.vn_entropy(wires=0)
+        dev = qml.device("default.qubit", wires=1, shots=shots)
+        config = qml.devices.ExecutionConfig(shots=shots)
+        assert meas.shape(dev) == shape
+        assert meas.shape(config) == shape
+        qml.disable_return()
 
 
 class TestIntegration:

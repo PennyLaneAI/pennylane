@@ -72,8 +72,21 @@ class TestInitialization:
     def test_shape(self, shots, shape):
         """Test that the shape is correct."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
+        config = qml.devices.ExecutionConfig(shots=shots)
         res = qml.mutual_info(wires0=[0], wires1=[1])
         assert res.shape(dev) == shape
+        assert res.shape(config) == shape
+
+    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
+    def test_shape_new(self, shots, shape):
+        """Test the ``shape_new`` method."""
+        qml.enable_return()
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        res = qml.mutual_info(wires0=[0], wires1=[1])
+        config = qml.devices.ExecutionConfig(shots=shots)
+        assert res.shape(dev) == shape
+        assert res.shape(config) == shape
+        qml.disable_return()
 
     def test_properties(self):
         """Test that the properties are correct."""

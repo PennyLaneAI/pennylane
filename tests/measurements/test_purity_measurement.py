@@ -1,3 +1,20 @@
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Unit tests for the purity module"""
+
+# pylint: disable=unused-argument
+
 import pytest
 
 import numpy as np
@@ -54,7 +71,9 @@ class TestPurity:
         """Test the ``shape`` method."""
         meas = qml.purity(wires=0)
         dev = qml.device("default.qubit", wires=1, shots=shots)
+        config = qml.devices.ExecutionConfig(shots=shots)
         assert meas.shape(dev) == shape
+        assert meas.shape(config) == shape
 
     @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
     def test_shape_new(self, shots, shape):
@@ -62,7 +81,9 @@ class TestPurity:
         qml.enable_return()
         meas = qml.purity(wires=0)
         dev = qml.device("default.qubit", wires=1, shots=shots)
+        config = qml.devices.ExecutionConfig(shots=shots)
         assert meas.shape(dev) == shape
+        assert meas.shape(config) == shape
         qml.disable_return()
 
     @pytest.mark.parametrize("device", devices)

@@ -719,7 +719,7 @@ class QuantumScript:
                 "Getting the output shape of a quantum script with multiple state measurements is not supported."
             )
 
-        shot_vector = device._shot_vector
+        shot_vector = device.shot_vector
         if shot_vector is None:
             if isinstance(mps[0], (ExpectationMP, VarianceMP)):
 
@@ -764,7 +764,7 @@ class QuantumScript:
         """
         shape = tuple()
 
-        shot_vector = device._shot_vector
+        shot_vector = device.shot_vector
 
         # Shot vector was defined
         if isinstance(mps[0], (ExpectationMP, VarianceMP)):
@@ -846,7 +846,7 @@ class QuantumScript:
                     "measurements is unsupported."
                 )
 
-        if device._shot_vector is None and self.batch_size is not None:
+        if device.shot_vector is None and self.batch_size is not None:
             # insert the batch dimension
             output_shape = output_shape[:1] + (self.batch_size,) + output_shape[1:]
 
