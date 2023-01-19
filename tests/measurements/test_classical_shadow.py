@@ -133,19 +133,18 @@ class TestClassicalShadow:
     def test_measurement_process_shape(self, wires, shots, seed):
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
-        exec_conf = qml.devices.ExecutionConfig(shots=shots + 1)
+        config = qml.devices.ExecutionConfig(shots=shots + 1)
         res = qml.classical_shadow(wires=range(wires), seed=seed)
-        assert res.shape(device=dev) == (1, 2, shots, wires)
-        assert res.shape(execution_config=exec_conf) == (1, 2, shots + 1, wires)
-        assert res.shape(device=dev, execution_config=exec_conf) == (1, 2, shots, wires)
+        assert res.shape(dev) == (1, 2, shots, wires)
+        assert res.shape(config) == (1, 2, shots + 1, wires)
 
         # test an error is raised when device is None
         msg = (
-            "The device or execution_config argument is required to obtain the shape of a "
+            "The config argument is required to obtain the shape of a "
             "classical shadow measurement"
         )
         with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
-            res.shape(device=None, execution_config=None)
+            res.shape()
 
     def test_shape_matches(self, wires):
         """Test that the shape of the MeasurementProcess matches the shape
@@ -156,7 +155,7 @@ class TestClassicalShadow:
         circuit.construct((), {})
 
         res = qml.execute([circuit.tape], circuit.device, None)[0]
-        expected_shape = qml.classical_shadow(wires=range(wires)).shape(device=circuit.device)
+        expected_shape = qml.classical_shadow(wires=range(wires)).shape(config=circuit.device)
 
         assert res.shape == expected_shape
 
@@ -344,13 +343,12 @@ class TestExpvalMeasurement:  # pylint: disable=missing-class-docstring
     def test_measurement_process_shape(self, wires, shots):
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
-        exec_conf = qml.devices.ExecutionConfig(shots=shots + 1)
+        config = qml.devices.ExecutionConfig(shots=shots + 1)
         H = qml.PauliZ(0)
         res = qml.shadow_expval(H)
         assert res.shape() == (1,)
         assert res.shape(dev) == (1,)
-        assert res.shape(execution_config=exec_conf) == (1,)
-        assert res.shape(device=dev, execution_config=exec_conf) == (1,)
+        assert res.shape(config) == (1,)
 
     def test_shape_matches(self):
         """Test that the shape of the MeasurementProcess matches the shape

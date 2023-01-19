@@ -123,7 +123,7 @@ class TestMeasurementProcess:
     def test_no_device_error(self, measurement):
         """Test that an error is raised when a measurement that requires a device
         or execution config is called without one"""
-        msg = "The device or execution_config argument is required to obtain the shape of the measurement"
+        msg = "The config argument is required to obtain the shape of the measurement"
 
         with pytest.raises(MeasurementShapeError, match=msg):
             measurement.shape()
