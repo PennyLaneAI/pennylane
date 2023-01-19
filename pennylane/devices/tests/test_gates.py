@@ -335,10 +335,6 @@ U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / sqr
 # single qubit Hermitian observable
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
-# parameters for SpecialUnitary
-thetas = [np.array([0.4, -0.1, 0.2]), np.ones(15) / 3]
-
-
 # ===============================================================
 
 # pylint: disable=too-few-public-methods
@@ -540,10 +536,10 @@ class TestGatesQubit:
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.parametrize("theta", thetas)
-    def test_special_unitary(self, device, init_state, theta, tol, skip_if):
+    @pytest.mark.parametrize("theta_", [np.array([0.4, -0.1, 0.2]), np.ones(15) / 3])
+    def test_special_unitary(self, device, init_state, theta_, tol, skip_if):
         """Test SpecialUnitary gate."""
-        n_wires = int(np.log(len(theta) + 1) / np.log(4))
+        n_wires = int(np.log(len(theta_) + 1) / np.log(4))
         dev = device(n_wires)
 
         if "SpecialUnitary" not in dev.operations:
@@ -556,13 +552,14 @@ class TestGatesQubit:
         @qml.qnode(dev)
         def circuit():
             qml.QubitStateVector(rnd_state, wires=range(n_wires))
-            qml.SpecialUnitary(theta, wires=list(range(n_wires)))
+            qml.SpecialUnitary(theta_, wires=list(range(n_wires)))
             return qml.probs(wires=range(n_wires))
 
         res = circuit()
 
-        basis = qml.ops.qubit.matrix_ops.pauli_basis(n_wires)
-        mat = qml.math.expm(1j * np.tensordot(theta, basis, axes=[[0], [0]]))
+        # Disabling Pylint test because qml.ops can be misunderstood as qml.ops.qubit.ops
+        basis = qml.ops.qubit.matrix_ops.pauli_basis(n_wires)  # pylint: disable=no-member
+        mat = qml.math.expm(1j * np.tensordot(theta_, basis, axes=[[0], [0]]))
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 

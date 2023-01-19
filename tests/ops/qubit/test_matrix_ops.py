@@ -670,8 +670,10 @@ class TestSpecialUnitary:
         wires = list(range(n))
         U = qml.SpecialUnitary(theta, wires)
         U_dagger = qml.adjoint(qml.SpecialUnitary)(theta, wires)
+        U_dagger_inplace = qml.SpecialUnitary(theta, wires).adjoint()
         U_minustheta = qml.SpecialUnitary(-theta, wires)
         assert qml.math.allclose(U.matrix(), U_dagger.matrix().conj().T)
+        assert qml.math.allclose(U.matrix(), U_dagger_inplace.matrix().conj().T)
         assert qml.math.allclose(U_minustheta.matrix(), U_dagger.matrix())
 
     @pytest.mark.parametrize(
