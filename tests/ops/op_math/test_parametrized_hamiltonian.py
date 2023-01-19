@@ -137,7 +137,12 @@ class TestCall:
         ),  # no H_parametrized term, multiple H_fixed terms
         ([1.2], [qml.PauliX(0)], [], [1, 0]),  # no H_parametrized term, one H_fixed term
         ([1, f1], [qml.PauliX(3), qml.PauliY(2)], [1], [1, 1]),  # one of each
-        ([1.2, f1, 2.3, f2], [qml.PauliX(0) for i in range(4)], [1, 2], [2, 2]),  # multiples of each
+        (
+            [1.2, f1, 2.3, f2],
+            [qml.PauliX(0) for i in range(4)],
+            [1, 2],
+            [2, 2]
+        ),  # multiples of each
     )
 
     @pytest.mark.parametrize("coeffs, ops, params, num_terms", coeffs_and_ops_and_params)
