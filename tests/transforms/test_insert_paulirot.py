@@ -18,7 +18,11 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.ops.qubit.matrix_ops import pauli_basis
-from pennylane.transforms.insert_paulirot import get_one_parameter_generators, get_one_parameter_coeffs
+from pennylane.transforms.insert_paulirot import (
+    get_one_parameter_generators,
+    get_one_parameter_coeffs,
+)
+
 
 @pytest.mark.parametrize("n", [1, 2, 3])
 class TestGetOneParameterGenerators:
@@ -30,13 +34,18 @@ class TestGetOneParameterGenerators:
     def test_Omegas_jax(self, n, use_jit):
         """Test that generators are computed correctly in JAX."""
         import jax
+
         jax.config.update("jax_enable_x64", True)
         from jax import numpy as jnp
 
         np.random.seed(14521)
         d = 4**n - 1
         theta = jnp.array(np.random.random(d))
-        fn = jax.jit(get_one_parameter_generators, static_argnums=[1, 2]) if use_jit else get_one_parameter_generators
+        fn = (
+            jax.jit(get_one_parameter_generators, static_argnums=[1, 2])
+            if use_jit
+            else get_one_parameter_generators
+        )
         Omegas = fn(theta, n, "jax")
         assert Omegas.shape == (d, 2**n, 2**n)
         assert all(jnp.allclose(O.conj().T, -O) for O in Omegas)
@@ -77,6 +86,7 @@ class TestGetOneParameterGenerators:
         assert Omegas.shape == (d, 2**n, 2**n)
         assert all(qml.math.allclose(qml.math.conj(qml.math.T(O)), -O) for O in Omegas)
 
+
 @pytest.mark.parametrize("n", [1, 2])
 class TestGetOneParameterGeneratorsDiffability:
     """Tests for the effective generators computing function
@@ -87,13 +97,18 @@ class TestGetOneParameterGeneratorsDiffability:
     def test_Omegas_jacobian_jax(self, n, use_jit):
         """Test that generators are differentiable in JAX."""
         import jax
+
         jax.config.update("jax_enable_x64", True)
         from jax import numpy as jnp
 
         np.random.seed(14521)
         d = 4**n - 1
         theta = jnp.array(np.random.random(d), dtype=jnp.complex128)
-        fn = jax.jit(get_one_parameter_generators, static_argnums=[1, 2]) if use_jit else get_one_parameter_generators
+        fn = (
+            jax.jit(get_one_parameter_generators, static_argnums=[1, 2])
+            if use_jit
+            else get_one_parameter_generators
+        )
         dOmegas = jax.jacobian(fn, holomorphic=True)(theta, n, "jax")
         assert dOmegas.shape == (d, 2**n, 2**n, d)
 
@@ -133,6 +148,7 @@ class TestGetOneParameterGeneratorsDiffability:
         dOmegas = qml.jacobian(get_one_parameter_generators)(theta, n, "autograd")
         assert dOmegas.shape == (d, 2**n, 2**n, d)
 
+
 @pytest.mark.parametrize("n", [1, 2, 3])
 class TestGetOneParameterCoeffs:
     """Tests for the coefficients of effective generators computing function
@@ -143,13 +159,18 @@ class TestGetOneParameterCoeffs:
     def test_omegas_jax(self, n, use_jit):
         """Test that the coefficients of the generators are computed correctly in JAX."""
         import jax
+
         jax.config.update("jax_enable_x64", True)
         from jax import numpy as jnp
 
         np.random.seed(14521)
         d = 4**n - 1
         theta = jnp.array(np.random.random(d))
-        fn = jax.jit(get_one_parameter_coeffs, static_argnums=[1, 2]) if use_jit else get_one_parameter_coeffs
+        fn = (
+            jax.jit(get_one_parameter_coeffs, static_argnums=[1, 2])
+            if use_jit
+            else get_one_parameter_coeffs
+        )
         omegas = fn(theta, n, "jax")
         assert omegas.shape == (d, d)
         assert jnp.allclose(omegas.real, 0)
@@ -213,4 +234,5 @@ class TestGetOneParameterCoeffs:
 
 class TestInsertPauliRot:
     """Tests for the qfunc_transform insert_paulirot."""
+
     WIP
