@@ -63,7 +63,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     >>> qml.evolve(H)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
-    Please check the :class:`~.evolve.ParametrizedEvolution` class for more information.
+    Please check the :class:`.ParametrizedEvolution` class for more information.
     """
     if isinstance(op, ParametrizedHamiltonian):
         return ParametrizedEvolution(H=op)
@@ -106,7 +106,7 @@ class ParametrizedEvolution(Operation):
 
     .. note::
 
-        To execute two :class:`ParametrizedHamiltonian``s simultaneously one must wrap them with the
+        To execute two :class:`ParametrizedHamiltonian`s simultaneously one must wrap them with the
         same ``ParametrizedEvolution`` gate.
 
     **Example**
