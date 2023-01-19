@@ -19,17 +19,12 @@ except ImportError:
     has_jax = False
 
 
-def rect(x, ti, tf):
-    """Applies a rectangular function to the provided ``x``, such that:
-
-    - ``rect(f, ti, tf) == x / 2`` if ``t == ti``
-    - ``rect(f, ti, tf) == x`` if ``ti < t < tf``
-    - ``rect(f, ti, tf) == 0`` otherwise
+def window(x, ti, tf):
+    """Evaluates the given function/scalar ``x``inside the time window ``[ti, tf]``.
 
     .. note::
 
-        ``x`` can be a callable that accepts two arguments: trainable parameters and time. In this
-        case, the rectangular function is applied to ``x(params, t)``.
+        If ``x`` is a callable, it must accepts two arguments: the trainable parameters and time.
 
     Args:
         x (float | callable): a scalar or a function that accepts two arguments: the trainable
@@ -45,9 +40,13 @@ def rect(x, ti, tf):
     if not callable(x):
 
         def f(_, __):
-            return jnp.array(x)
+            return jnp.array(x, dtype=float)
 
     else:
         f = x
 
-    return lambda p, t: jnp.piecewise(p, [ti <= t <= tf], [f], t)
+    def _window(p, t):
+        p = jnp.array(p, dtype=float)  # if p is an integer, f(p, t) will be cast to an integer
+        return jnp.piecewise(p, [ti <= t <= tf], [f], t)
+
+    return _window
