@@ -14,12 +14,12 @@
 """
 Contains the :class:`ExecutionConfig` data class.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Tuple, Union, Sequence
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
-from pennylane._device import _process_shot_sequence, DeviceError
+from pennylane._device import _process_shot_sequence, DeviceError, ShotTuple
 
 SUPPORTED_GRADIENT_METHODS = [
     "best",
@@ -31,13 +31,23 @@ SUPPORTED_GRADIENT_METHODS = [
 ]
 
 
-@dataclass
+@dataclass(frozen=True)
 class ExecutionConfig:
     """
     A class to configure the execution of a quantum circuit on a device.
 
     See the Attributes section to learn more about the various configurable options.
     """
+
+    # pylint: disable=too-many-instance-attributes
+    
+    shots: int = None
+    """The number of shots for an execution."""
+
+    _shots: int = field(init=False, repr=False)
+    _shot_vector: list[ShotTuple] = field(init=False, repr=False)
+    _raw_shot_sequence: list[int] = field(init=False, repr=False)
+    """Private attributes for storing shot information"""
 
     gradient_method: Optional[str] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
@@ -90,11 +100,11 @@ class ExecutionConfig:
         return self._shots
 
     @shots.setter
-    def shots(self, shots):
+    def shots(self, shots: Union[int, Tuple[int]]):
         """Changes the number of shots.
 
         Args:
-            shots Union(int, Tuple[int]): number of circuit evaluations/random samples used to estimate
+            shots (Union[int, Tuple[int]]): number of circuit evaluations/random samples used to estimate
                 expectation values of observables
 
         Raises:
