@@ -97,7 +97,7 @@ class TestMeasurementProcess:
         num_wires = 3
         dev = qml.device("default.qubit", wires=num_wires, shots=None)
 
-        assert measurement.shape(dev) == expected_shape
+        assert measurement.shape(dev, num_wires) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measurements_finite_shots)
     def test_output_shapes_finite_shots(self, measurement, expected_shape):
@@ -107,7 +107,7 @@ class TestMeasurementProcess:
         num_shots = 10
         dev = qml.device("default.qubit", wires=num_wires, shots=num_shots)
 
-        assert measurement.shape(dev) == expected_shape
+        assert measurement.shape(dev, num_wires) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measurements_shot_vector)
     def test_output_shapes_shot_vector(self, measurement, expected_shape):
@@ -117,7 +117,7 @@ class TestMeasurementProcess:
         shot_vector = [10, 20, 30]
         dev = qml.device("default.qubit", wires=num_wires, shots=shot_vector)
 
-        assert measurement.shape(dev) == expected_shape
+        assert measurement.shape(dev, num_wires) == expected_shape
 
     @pytest.mark.parametrize("measurement", [qml.probs(wires=[0, 1]), qml.state(), qml.sample()])
     def test_no_device_error(self, measurement):
@@ -131,10 +131,11 @@ class TestMeasurementProcess:
     def test_undefined_shape_error(self):
         """Test that an error is raised for a measurement with an undefined shape"""
         measurement = qml.counts(wires=[0, 1])
+        dev = qml.device("default.qubit", wires=2)
         msg = "The shape of the measurement CountsMP is not defined"
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            measurement.shape()
+            measurement.shape(dev, 2)
 
 
 class TestOutputShape:

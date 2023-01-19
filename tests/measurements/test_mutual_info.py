@@ -74,8 +74,8 @@ class TestInitialization:
         dev = qml.device("default.qubit", wires=3, shots=shots)
         config = qml.devices.ExecutionConfig(shots=shots)
         res = qml.mutual_info(wires0=[0], wires1=[1])
-        assert res.shape(dev) == shape
-        assert res.shape(config) == shape
+        assert res.shape(dev, 3) == shape
+        assert res.shape(config, 3) == shape
 
     @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
     def test_shape_new(self, shots, shape):
@@ -84,8 +84,8 @@ class TestInitialization:
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.mutual_info(wires0=[0], wires1=[1])
         config = qml.devices.ExecutionConfig(shots=shots)
-        assert res.shape(dev) == shape
-        assert res.shape(config) == shape
+        assert res.shape(dev, 3) == shape
+        assert res.shape(config, 3) == shape
         qml.disable_return()
 
     def test_properties(self):

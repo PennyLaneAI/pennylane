@@ -135,8 +135,8 @@ class TestClassicalShadow:
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         config = qml.devices.ExecutionConfig(shots=shots + 1)
         res = qml.classical_shadow(wires=range(wires), seed=seed)
-        assert res.shape(dev) == (1, 2, shots, wires)
-        assert res.shape(config) == (1, 2, shots + 1, wires)
+        assert res.shape(dev, wires) == (1, 2, shots, wires)
+        assert res.shape(config, wires) == (1, 2, shots + 1, wires)
 
         # test an error is raised when device is None
         msg = (
@@ -346,9 +346,8 @@ class TestExpvalMeasurement:  # pylint: disable=missing-class-docstring
         config = qml.devices.ExecutionConfig(shots=shots + 1)
         H = qml.PauliZ(0)
         res = qml.shadow_expval(H)
-        assert res.shape() == (1,)
-        assert res.shape(dev) == (1,)
-        assert res.shape(config) == (1,)
+        assert res.shape(dev, wires) == (1,)
+        assert res.shape(config, wires) == (1,)
 
     def test_shape_matches(self):
         """Test that the shape of the MeasurementProcess matches the shape

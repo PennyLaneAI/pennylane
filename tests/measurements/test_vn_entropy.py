@@ -122,8 +122,8 @@ class TestInitialization:
         dev = qml.device("default.qubit", wires=1, shots=shots)
         config = qml.devices.ExecutionConfig(shots=shots)
 
-        assert meas.shape(dev) == shape
-        assert meas.shape(config) == shape
+        assert meas.shape(dev, 1) == shape
+        assert meas.shape(config, 1) == shape
 
     @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
     def test_shape_new(self, shots, shape):
@@ -132,8 +132,8 @@ class TestInitialization:
         meas = qml.vn_entropy(wires=0)
         dev = qml.device("default.qubit", wires=1, shots=shots)
         config = qml.devices.ExecutionConfig(shots=shots)
-        assert meas.shape(dev) == shape
-        assert meas.shape(config) == shape
+        assert meas.shape(dev, 1) == shape
+        assert meas.shape(config, 1) == shape
         qml.disable_return()
 
 
