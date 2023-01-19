@@ -22,6 +22,8 @@ import pennylane as qml
 from pennylane.operation import Operator
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
+from .parametrized_hamiltonian import ParametrizedHamiltonian
+
 
 def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.

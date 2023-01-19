@@ -255,6 +255,7 @@ Utility functions
     ~pennylane.qchem.givens_decomposition
     ~pennylane.qchem.hf_state
     ~pennylane.import_operator
+    ~pennylane.qchem.mol_data
     ~pennylane.qchem.read_structure
 
 :html:`</div>`

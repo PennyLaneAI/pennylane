@@ -121,6 +121,13 @@
 * Support `qml.math.size` with torch tensors.
   [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
+* Added `ParametrizedEvolution`, which computes the time evolution of a `ParametrizedHamiltonian`.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+
+* Added `qml.evolve`, which accepts an operator or a `ParametrizedHamiltonian` and returns another
+  operator that computes its evolution.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+
 * Support `qml.math.matmul` with a torch tensor and an autograd tensor.
   [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
 
@@ -176,7 +183,37 @@
           [ 0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j,  0.   +0.j   ],
           [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
   ```
+  
+* Added `ParametrizedHamiltonian`, a callable that holds information representing a linear combination of operators 
+  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the `Operator` for 
+  the specified parameters.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  
+  ```pycon
+  f1 = lambda p, t: p * np.sin(t) * (t - 1)
+  f2 = lambda p, t: p[0] * np.cos(p[1]* t ** 2)
 
+  XX = qml.PauliX(1) @ qml.PauliX(1)
+  YY = qml.PauliY(0) @ qml.PauliY(0)
+  ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
+
+  H =  2 * XX + f1 * YY + f2 * ZZ
+  ```
+  ```pycon
+  >>> H
+  ParametrizedHamiltonian: terms=3
+  >>> params = [1.2, [2.3, 3.4]]
+  >>> H(params, t=0.5)
+  (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
+  ```
+  The same `ParametrizedHamiltonian` can also be constructed via a list of coefficients and operators:
+
+  ```pycon
+  >>> coeffs = [2, f1, f2]
+  >>> ops = [XX, YY, ZZ]
+  >>> H =  qml.ops.dot(coeffs, ops)
+  ```
+  
 <h3>Improvements</h3>
 
 * Most channels in are now fully differentiable in all interfaces.
@@ -236,7 +273,21 @@
 * The GellMann operators now include their index in the displayed representation.
   [(#3641)](https://github.com/PennyLaneAI/pennylane/pull/3641)
 
+* Introduce the `ExecutionConfig` data class.
+  [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
+
 <h3>Breaking changes</h3>
+
+* `Operator.inv()` and the `Operator.inverse` setter are removed. Please use `qml.adjoint` or `qml.pow` instead.
+  [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
+  
+  Instead of 
+  
+  >>> qml.PauliX(0).inv()
+  
+  use
+  
+  >>> qml.adjoint(qml.PauliX(0))
 
 * The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
@@ -258,6 +309,9 @@
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
+
+* Added hyperlink text for an URL in the `qml.qchem.mol_data` docstring.
+  [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
 
 <h3>Bug fixes</h3>
 

@@ -189,8 +189,7 @@ class QubitUnitary(Operation):
         return super().pow(z)
 
     def _controlled(self, wire):
-        new_op = qml.ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return qml.ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
@@ -332,11 +331,10 @@ class DiagonalQubitUnitary(Operation):
         return [DiagonalQubitUnitary(casted_data**z, wires=self.wires)]
 
     def _controlled(self, control):
-        new_op = DiagonalQubitUnitary(
+        return DiagonalQubitUnitary(
             qml.math.hstack([np.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=control + self.wires,
         )
-        return new_op.inv() if self.inverse else new_op
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
