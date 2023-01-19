@@ -17,8 +17,8 @@ Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 
 # pylint: disable=protected-access
 
-import pytest
 from dataclasses import replace
+import pytest
 
 from pennylane.devices import ExecutionConfig
 
