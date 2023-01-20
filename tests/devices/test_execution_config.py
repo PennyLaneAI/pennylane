@@ -68,7 +68,7 @@ def test_shots():
     assert shot_vector[2].copies == 3
     assert shot_vector[3].shots == 3
     assert shot_vector[3].copies == 1
-    assert exec_conf._raw_shot_sequence == shotlist
+    assert exec_conf._raw_shot_sequence == tuple(shotlist)
     assert exec_conf.shots == 22
 
     exec_conf = replace(exec_conf, shots=3)
