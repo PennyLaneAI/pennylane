@@ -24,6 +24,15 @@ import pennylane as qml
 from pennylane.ops import ParametrizedHamiltonian
 
 
+def test_error_raised_if_jax_not_installed():
+    """Test that an error is raised if a convenience function is called without jax installed"""
+    with pytest.raises(ImportError, match="Module jax is required"):
+        qml.pulse.constant(windows=[(2, 8)])
+    with pytest.raises(ImportError, match="Module jax is required"):
+        qml.pulse.piecewise(x=10, windows=[(2, 8)])
+
+
+@pytest.mark.jax
 class TestConstant:
     """Unit tests for the ``constant`` function."""
 
@@ -60,7 +69,6 @@ class TestConstant:
             else:
                 assert c(p=1, t=t) == 0
 
-    @pytest.mark.jax
     def test_constant_is_jittable(self):
         """Test that the callable returned by the ``constant`` function is jittable."""
         import jax
@@ -75,6 +83,7 @@ class TestConstant:
                 assert c(p=1, t=t) == 0
 
 
+@pytest.mark.jax
 class TestPiecewise:
     """Unit tests for the ``piecewise`` function."""
 
@@ -135,23 +144,21 @@ class TestPiecewise:
                 assert c(p=param, t=t) == 0
 
 
-def f1(p, t):
-    return p * t
-
-
-windows1 = [(0, 0.5), (1, 1.5)]
-windows2 = [(0.5, 1)]
-
-coeffs = [qml.pulse.piecewise(f1, windows1), qml.pulse.constant(windows2)]
-ops = [qml.PauliX(0), qml.PauliY(1)]
-
-
 @pytest.mark.jax
 class TestIntegration:
     """Unit tests testing the integration of convenience functions with parametrized hamiltonians."""
 
     def test_parametrized_hamiltonian(self):
         """Test that convenience functions can be used to define parametrized hamiltonians."""
+
+        def f1(p, t):
+            return p * t
+
+        windows1 = [(0, 0.5), (1, 1.5)]
+        windows2 = [(0.5, 1)]
+
+        coeffs = [qml.pulse.piecewise(f1, windows1), qml.pulse.constant(windows2)]
+        ops = [qml.PauliX(0), qml.PauliY(1)]
         H = qml.ops.dot(coeffs, ops)
 
         assert isinstance(H, ParametrizedHamiltonian)
@@ -172,6 +179,14 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
+        def f1(p, t):
+            return p * t
+
+        windows1 = [(0, 0.5), (1, 1.5)]
+        windows2 = [(0.5, 1)]
+
+        coeffs = [qml.pulse.piecewise(f1, windows1), qml.pulse.constant(windows2)]
+        ops = [qml.PauliX(0), qml.PauliY(1)]
         H = qml.ops.dot(coeffs, ops)
 
         t = (1, 2)

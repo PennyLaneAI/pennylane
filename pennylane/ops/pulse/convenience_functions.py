@@ -48,7 +48,7 @@ def piecewise(x: Union[float, Callable], windows: List[Tuple[float]]):
     """
     if not has_jax:
         raise ImportError(
-            "Module jax is required for ``ParametrizedEvolution`` class. "
+            "Module jax is required for any pulse-related convenience function. "
             "You can install jax via: pip install jax"
         )
     if not callable(x):
