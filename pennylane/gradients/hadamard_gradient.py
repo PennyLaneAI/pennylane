@@ -92,7 +92,7 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
     coeffs = []
 
     gradient_data = []
-
+    measurements_probs = [idx for idx, m in enumerate(tape.measurements) if isinstance(m, qml.measurements.ProbabilityMP)]
     for id_argnum, _ in enumerate(tape.trainable_params):
 
         if id_argnum not in argnums:
@@ -120,10 +120,10 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
                     ops_after_trainable_op = [op_temp] + ops_after_trainable_op
                 elif p_idx == 1:
                     ops_to_add_before = [qml.RZ(-trainable_op.data[2], wires=trainable_op.wires),
-                                         qml.RX(qml.numpy.pi/2, wires=trainable_op.wires)]
+                                         qml.RX(qml.numpy.pi / 2, wires=trainable_op.wires)]
                     ops_to_trainable_op.extend(ops_to_add_before)
 
-                    ops_to_add_after = [qml.RX(-qml.numpy.pi/2, wires=trainable_op.wires),
+                    ops_to_add_after = [qml.RX(-qml.numpy.pi / 2, wires=trainable_op.wires),
                                         qml.RZ(trainable_op.data[2], wires=trainable_op.wires)]
                     ops_after_trainable_op = ops_to_add_after + ops_after_trainable_op
 
@@ -131,45 +131,42 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
             hadamard = [qml.Hadamard(wires=aux_wire)]
             ops = ops_to_trainable_op + hadamard + ctrl_gen + hadamard + ops_after_trainable_op
 
+            measurements = []
             # Add the Y measurement on the aux qubit
             for m in tape.measurements:
-                measurements = []
-                new_tapes = []
-                if isinstance(m, qml.measurements.ExpectationMP):
-                    if isinstance(m.obs, qml.operation.Tensor):
-                        obs_new = m.obs.obs.copy()
-                    else:
-                        if m.obs:
-                            obs_new = [m.obs]
-                        else:
-                            obs_new = [qml.PauliZ(wires=i) for i in m.wires]
 
-                    obs_new.append(qml.PauliY(wires=aux_wire))
-                    obs_new = qml.operation.Tensor(*obs_new)
-                    measurements.append(qml.expval(op=obs_new))
-                    new_tapes.append(qml.tape.QuantumTape(ops=ops, measurements=measurements))
+                if isinstance(m.obs, qml.operation.Tensor):
+                    obs_new = m.obs.obs.copy()
                 else:
-                    for i in range(2):
-                        measurements = []
-                        obs_new = [qml.Projector([i], wires=m.wires)]
-                        obs_new.append(qml.PauliY(wires=aux_wire))
-                        obs_new = qml.operation.Tensor(*obs_new)
-                        measurements.append(qml.expval(op=obs_new))
-                        new_tapes.append(qml.tape.QuantumTape(ops=ops, measurements=measurements))
+                    if m.obs:
+                        obs_new = [m.obs]
+                    else:
+                        obs_new = [qml.PauliZ(wires=i) for i in m.wires]
+
+                obs_new.append(qml.PauliY(wires=aux_wire))
+                obs_new = qml.operation.Tensor(*obs_new)
+
+                if isinstance(m, qml.measurements.ExpectationMP):
+                    measurements.append(qml.expval(op=obs_new))
+                else:
+                    measurements.append(qml.probs(op=obs_new))
+
+            new_tape = qml.tape.QuantumTape(ops=ops, measurements=measurements)
             def stop_at(obj):
                 return ~qml.operation.is_measurement(obj)
 
             # Expand measurements only
-            print([new_tape.circuit for new_tape in new_tapes])
-            new_tapes = [qml.tape.tape.expand_tape(new_tape, stop_at=stop_at, expand_measurements=True) for new_tape in new_tapes]
+            new_tape = qml.tape.tape.expand_tape(new_tape, stop_at=stop_at, expand_measurements=True)
             num_tape += 1
-            g_tapes.extend(new_tapes)
+            g_tapes.append(new_tape)
 
         gradient_data.append(num_tape)
 
     def processing_fn(results):
         # TODO interface compatibility
-        print("internal", results)
+        multi_measurements = len(tape.measurements) > 1
+        multi_params = len(tape.trainable_params) > 1
+
         grads = []
         final_res = []
         for coeff, res in zip(coeffs, results):
@@ -177,6 +174,25 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
                 final_res.append([2 * coeff * r for r in res])
             else:
                 final_res.append(2 * coeff * res)
+
+        # Post process for probs
+        if measurements_probs:
+            projector = np.array([1, -1])
+            for idx, res in enumerate(final_res):
+                if multi_measurements:
+                    for prob_idx in measurements_probs:
+                        prob = tape.measurements[prob_idx]
+                        wires = prob.wires
+                        num_wires = len(wires)
+                        res_reshaped = qml.math.reshape(res[prob_idx], (2 ** num_wires, 2))
+                        final_res[idx][prob_idx] = qml.math.tensordot(res_reshaped, projector, axes=[[1], [0]])
+                else:
+                    prob_idx = measurements_probs[0]
+                    prob = tape.measurements[prob_idx]
+                    wires = prob.wires
+                    num_wires = len(wires)
+                    res = qml.math.reshape(res, (2 ** num_wires, 2))
+                    final_res[idx] = qml.math.tensordot(res, projector, axes=[[1], [0]])
 
         for idx, num_tape in enumerate(gradient_data):
             if num_tape is None:
@@ -186,19 +202,16 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
             else:
                 grads.append(sum(final_res[idx: idx + num_tape]))
 
-        multi_measurements = len(tape.measurements) > 1
-        multi_params = len(tape.trainable_params) > 1
-
         if not multi_measurements and not multi_params:
             return np.array(grads[0])
 
-        if multi_params or multi_measurements:
+        if (multi_params and not multi_measurements) or (not multi_params and multi_measurements):
             grads_tuple = tuple(grads)
             return grads_tuple
 
         # Reordering to match the right shape for multiple measurements
         grads_reorder = [[0] * len(tape.trainable_params) for _ in range(len(tape.measurements))]
-        print(grads_reorder)
+
         for i in range(len(tape.measurements)):
             for j in range(len(tape.trainable_params)):
                 grads_reorder[i][j] = grads[j][i]

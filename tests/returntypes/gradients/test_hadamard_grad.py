@@ -593,193 +593,211 @@ class TestParameterShiftRule:
         assert len(res[1]) == 2
 
         expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
-        print(res, expected)
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    def test_diff_single_probs(self):
-            """Test diff of single probabilities."""
-            dev = qml.device("default.qubit", wires=3)
-            x = 0.543
-            y = -0.654
+    def test_diff_single_probs(self, tol):
+        """Test diff of single probabilities."""
+        dev = qml.device("default.qubit", wires=3)
+        x = 0.543
+        y = -0.654
 
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RX(x, wires=[0])
-                qml.RY(y, wires=[1])
-                qml.CNOT(wires=[0, 1])
-                qml.probs(wires=[1])
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[1])
 
-            tape = qml.tape.QuantumScript.from_queue(q)
-            tapes, fn = qml.gradients.hadamard_grad(tape)
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tapes, fn = qml.gradients.hadamard_grad(tape)
+        assert len(tapes) == 2
 
-            res = fn(dev.batch_execute(tapes))
+        res = fn(dev.batch_execute(tapes))
 
-            expected = np.array(
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert res[0].shape == (2,)
+        assert res[1].shape == (2,)
+
+        expected = np.array(
+            [
+                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
+                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+            ]
+        )
+
+        assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
+
+    def test_prob_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+
+        dev = qml.device("default.qubit", wires=3)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=[0, 1])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tapes, fn = qml.gradients.hadamard_grad(tape)
+        assert len(tapes) == 2
+
+        res = fn(dev.batch_execute(tapes))
+        print("res", res)
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 2
+
+        # assert res[0][0]
+        # assert res[0][1]
+
+        assert isinstance(res[1], tuple)
+        assert len(res[1]) == 2
+
+        assert res[1][0].shape == (4, )
+        assert res[1][1].shape == (4, )
+
+        expval_expected = [-2 * np.sin(x) / 2, 0]
+        probs_expected = (
+            np.array(
                 [
-                    [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+                    [
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
                 ]
             )
-            print(res, expected)
+            / 2
+        )
+        # Expvals
+        assert np.allclose(res[0][0], expval_expected[0])
+        assert np.allclose(res[0][1], expval_expected[1])
 
-    # def test_prob_expectation_values(self, tol):
-    #     """Tests correct output shape and evaluation for a tape
-    #     with prob and expval outputs"""
-    #
-    #     dev = qml.device("default.qubit", wires=3)
-    #     x = 0.543
-    #     y = -0.654
-    #
-    #     with qml.queuing.AnnotatedQueue() as q:
-    #         qml.RX(x, wires=[0])
-    #         qml.RY(y, wires=[1])
-    #         qml.CNOT(wires=[0, 1])
-    #         qml.expval(qml.PauliZ(0))
-    #         #qml.probs(wires=[0])
-    #
-    #     tape = qml.tape.QuantumScript.from_queue(q)
-    #     tapes, fn = qml.gradients.hadamard_grad(tape)
-    #     # assert len(tapes) == 2
-    #
-    #     res = fn(dev.batch_execute(tapes))
-    #     print("res", res)
-    #     # assert len(res) == 2
-    #     #
-    #     # for r in res:
-    #     #     assert len(r) == 2
-    #
-    #     expval_expected = [-2 * np.sin(x) / 2, 0]
-    #     probs_expected = (
-    #         np.array(
-    #             [
-    #                 [
-    #                     -(np.cos(y / 2) ** 2 * np.sin(x)),
-    #                     -(np.cos(x / 2) ** 2 * np.sin(y)),
-    #                 ],
-    #                 [
-    #                     -(np.sin(x) * np.sin(y / 2) ** 2),
-    #                     (np.cos(x / 2) ** 2 * np.sin(y)),
-    #                 ],
-    #                 [
-    #                     (np.sin(x) * np.sin(y / 2) ** 2),
-    #                     (np.sin(x / 2) ** 2 * np.sin(y)),
-    #                 ],
-    #                 [
-    #                     (np.cos(y / 2) ** 2 * np.sin(x)),
-    #                     -(np.sin(x / 2) ** 2 * np.sin(y)),
-    #                 ],
-    #             ]
-    #         )
-    #         / 2
-    #     )
-    #     print("exp", expval_expected, probs_expected)
-    #     # # Expvals
-    #     # assert np.allclose(res[0][0], expval_expected[0])
-    #     # assert np.allclose(res[0][1], expval_expected[1])
-    #     #
-    #     # # Probs
-    #     # assert np.allclose(res[1][0], probs_expected[:, 0])
-    #     # assert np.allclose(res[1][1], probs_expected[:, 1])
-    #
-    #
-    # def cost1(x):
-    #     qml.Rot(*x, wires=0)
-    #     return qml.expval(qml.PauliZ(0))
-    #
-    # def cost2(x):
-    #     qml.Rot(*x, wires=0)
-    #     return [qml.expval(qml.PauliZ(0))]
-    #
-    # def cost3(x):
-    #     qml.Rot(*x, wires=0)
-    #     return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
-    #
-    # def cost4(x):
-    #     qml.Rot(*x, wires=0)
-    #     return qml.probs([0, 1])
-    #
-    # def cost5(x):
-    #     qml.Rot(*x, wires=0)
-    #     return [qml.probs([0, 1])]
-    #
-    # def cost6(x):
-    #     qml.Rot(*x, wires=0)
-    #     return [qml.probs([0, 1]), qml.probs([2, 3])]
-    #
-    # costs_and_expected_expval = [
-    #     (cost1, [3], False),
-    #     (cost2, [3], True),
-    #     (cost3, [2, 3], True),
-    # ]
-    #
-    # @pytest.mark.parametrize("cost, expected_shape, list_output", costs_and_expected_expval)
-    # def test_output_shape_matches_qnode_expval(self, cost, expected_shape, list_output):
-    #     """Test that the transform output shape matches that of the QNode."""
-    #     dev = qml.device("default.qubit", wires=4)
-    #
-    #     x = np.random.rand(3)
-    #     circuit = qml.QNode(cost, dev)
-    #
-    #     res = qml.gradients.param_shift(circuit)(x)
-    #     assert isinstance(res, tuple)
-    #     assert len(res) == expected_shape[0]
-    #
-    #     if len(expected_shape) > 1:
-    #         for r in res:
-    #             assert isinstance(r, tuple)
-    #             assert len(r) == expected_shape[1]
-    #
-    # costs_and_expected_probs = [
-    #     (cost4, [3, 4], False),
-    #     (cost5, [3, 4], True),
-    #     (cost6, [2, 3, 4], True),
-    # ]
-    #
-    # @pytest.mark.parametrize("cost, expected_shape, list_output", costs_and_expected_probs)
-    # def test_output_shape_matches_qnode_probs(self, cost, expected_shape, list_output):
-    #     """Test that the transform output shape matches that of the QNode."""
-    #     dev = qml.device("default.qubit", wires=4)
-    #
-    #     x = np.random.rand(3)
-    #     circuit = qml.QNode(cost, dev)
-    #
-    #     res = qml.gradients.param_shift(circuit)(x)
-    #     assert isinstance(res, tuple)
-    #     assert len(res) == expected_shape[0]
-    #
-    #     if len(expected_shape) > 2:
-    #         for r in res:
-    #             assert isinstance(r, tuple)
-    #             assert len(r) == expected_shape[1]
-    #
-    #             for idx in range(len(r)):
-    #                 assert isinstance(r[idx], qml.numpy.ndarray)
-    #                 assert len(r[idx]) == expected_shape[2]
-    #
-    #     elif len(expected_shape) > 1:
-    #         for r in res:
-    #             assert isinstance(r, qml.numpy.ndarray)
-    #             assert len(r) == expected_shape[1]
-    #
-    # def test_multi_measure_no_warning(self):
-    #     """Test computing the gradient of a tape that contains multiple
-    #     measurements omits no warnings."""
-    #     import warnings
-    #
-    #     dev = qml.device("default.qubit", wires=4)
-    #
-    #     par1 = qml.numpy.array(0.3)
-    #     par2 = qml.numpy.array(0.1)
-    #
-    #     with qml.queuing.AnnotatedQueue() as q:
-    #         qml.RY(par1, wires=0)
-    #         qml.RX(par2, wires=1)
-    #         qml.probs(wires=[1, 2])
-    #         qml.expval(qml.PauliZ(0))
-    #
-    #     tape = qml.tape.QuantumScript.from_queue(q)
-    #     with warnings.catch_warnings(record=True) as record:
-    #         tapes, fn = qml.gradients.param_shift(tape)
-    #         fn(dev.batch_execute(tapes))
-    #
-    #     assert len(record) == 0
+        # Probs
+        assert np.allclose(res[1][0], probs_expected[:, 0])
+        assert np.allclose(res[1][1], probs_expected[:, 1])
+
+
+
+    def cost1(x):
+        qml.Rot(*x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    def cost2(x):
+        qml.Rot(*x, wires=0)
+        return [qml.expval(qml.PauliZ(0))]
+
+    def cost3(x):
+        qml.Rot(*x, wires=0)
+        return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+
+    def cost4(x):
+        qml.Rot(*x, wires=0)
+        return qml.probs([0, 1])
+
+    def cost5(x):
+        qml.Rot(*x, wires=0)
+        return [qml.probs([0, 1])]
+
+    def cost6(x):
+        qml.Rot(*x, wires=0)
+        return [qml.probs([0, 1]), qml.probs([2, 3])]
+
+    costs_and_expected_expval = [
+        (cost1, [3], False),
+        (cost2, [3], True),
+        (cost3, [2, 3], True),
+    ]
+
+    @pytest.mark.parametrize("cost, expected_shape, list_output", costs_and_expected_expval)
+    def test_output_shape_matches_qnode_expval(self, cost, expected_shape, list_output):
+        """Test that the transform output shape matches that of the QNode."""
+        dev = qml.device("default.qubit", wires=4)
+
+        x = np.random.rand(3)
+        circuit = qml.QNode(cost, dev)
+
+        res = qml.gradients.hadamard_grad(circuit)(x)
+        assert isinstance(res, tuple)
+        assert len(res) == expected_shape[0]
+
+        if len(expected_shape) > 1:
+            for r in res:
+                assert isinstance(r, tuple)
+                assert len(r) == expected_shape[1]
+
+    costs_and_expected_probs = [
+        (cost4, [3, 4], False),
+        (cost5, [3, 4], True),
+        (cost6, [2, 3, 4], True),
+    ]
+
+    @pytest.mark.parametrize("cost, expected_shape, list_output", costs_and_expected_probs)
+    def test_output_shape_matches_qnode_probs(self, cost, expected_shape, list_output):
+        """Test that the transform output shape matches that of the QNode."""
+        dev = qml.device("default.qubit", wires=5)
+
+        x = np.random.rand(3)
+        circuit = qml.QNode(cost, dev)
+
+        res = qml.gradients.hadamard_grad(circuit)(x)
+        assert isinstance(res, tuple)
+        assert len(res) == expected_shape[0]
+
+        if len(expected_shape) > 2:
+            for r in res:
+                assert isinstance(r, tuple)
+                assert len(r) == expected_shape[1]
+
+                for idx in range(len(r)):
+                    assert isinstance(r[idx], qml.numpy.ndarray)
+                    assert len(r[idx]) == expected_shape[2]
+
+        elif len(expected_shape) > 1:
+            for r in res:
+                assert isinstance(r, qml.numpy.ndarray)
+                assert len(r) == expected_shape[1]
+
+    def test_multi_measure_no_warning(self):
+        """Test computing the gradient of a tape that contains multiple
+        measurements omits no warnings."""
+        import warnings
+
+        dev = qml.device("default.qubit", wires=4)
+
+        par1 = qml.numpy.array(0.3)
+        par2 = qml.numpy.array(0.1)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RY(par1, wires=0)
+            qml.RX(par2, wires=1)
+            qml.probs(wires=[1, 2])
+            qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        with warnings.catch_warnings(record=True) as record:
+            tapes, fn = qml.gradients.hadamard_grad(tape)
+            fn(dev.batch_execute(tapes))
+
+        assert len(record) == 0
