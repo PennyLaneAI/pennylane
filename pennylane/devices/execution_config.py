@@ -44,7 +44,7 @@ class ExecutionConfig:
     shots: int = None
     """The number of shots for an execution."""
 
-    shot_vector: List[ShotTuple] = None
+    shot_vector: List[ShotTuple] = field(init=False, repr=False, default=None)
     """List of groupings of shots for an execution."""
 
     _shots: int = field(init=False, repr=False, default=None)
@@ -87,11 +87,9 @@ class ExecutionConfig:
             )
 
         if self.device_options is None:
-            # self.device_options = {}
             object.__setattr__(self, "device_options", {})
 
         if self.gradient_keyword_arguments is None:
-            # self.gradient_keyword_arguments = {}
             object.__setattr__(self, "gradient_keyword_arguments", {})
 
         if any(arg not in SUPPORTED_GRADIENT_KWARGS for arg in self.gradient_keyword_arguments):

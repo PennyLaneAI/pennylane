@@ -155,9 +155,9 @@ class SampleMP(SampleMeasurement):
         return self.obs is None
 
     # pylint: disable=protected-access
-    def shape(self, config, len_wires):
+    def shape(self, config, num_wires):
         if qml.active_return():
-            return self._shape_new(config, len_wires)
+            return self._shape_new(config, num_wires)
         if config is None:
             raise MeasurementShapeError(
                 "The config argument is required to obtain the shape of the measurement "
@@ -174,9 +174,9 @@ class SampleMP(SampleMeasurement):
             return tuple(
                 (shot_val,) if shot_val != 1 else tuple() for shot_val in config._raw_shot_sequence
             )
-        return (1, config.shots) if self.obs is not None else (1, config.shots, len_wires)
+        return (1, config.shots) if self.obs is not None else (1, config.shots, num_wires)
 
-    def _shape_new(self, config, len_wires):
+    def _shape_new(self, config, num_wires):
         if config is None:
             raise MeasurementShapeError(
                 "The config argument is required to obtain the shape of the measurement "
@@ -185,14 +185,14 @@ class SampleMP(SampleMeasurement):
         if config.shot_vector is not None:
             if self.obs is None:
                 return tuple(
-                    (shot_val, len(config.wires)) if shot_val != 1 else (len(config.wires),)
+                    (shot_val, num_wires) if shot_val != 1 else (num_wires,)
                     for shot_val in config._raw_shot_sequence
                 )
             return tuple(
                 (shot_val,) if shot_val != 1 else tuple() for shot_val in config._raw_shot_sequence
             )
         if self.obs is None:
-            return (config.shots, len_wires) if config.shots != 1 else (len_wires,)
+            return (config.shots, num_wires) if config.shots != 1 else (num_wires,)
         return (config.shots,) if config.shots != 1 else ()
 
     def process_samples(

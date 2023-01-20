@@ -186,7 +186,7 @@ class MeasurementProcess(ABC):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def shape(self, config, len_wires):
+    def shape(self, config, num_wires):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device or execution config when:
@@ -208,7 +208,7 @@ class MeasurementProcess(ABC):
         Args:
             config (Union[.Device, .ExecutionConfig]): a PennyLane device or execution
                 configuration to use for determining the shape
-            len_wires (int): total number of wires in the execution
+            num_wires (int): total number of wires in the execution
 
         Returns:
             tuple: the output shape
@@ -218,12 +218,12 @@ class MeasurementProcess(ABC):
                 unrecognized and cannot deduce the numeric type
         """
         if qml.active_return():
-            return self._shape_new(config, len_wires)
+            return self._shape_new(config, num_wires)
         raise qml.QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
-    def _shape_new(self, config, len_wires):
+    def _shape_new(self, config, num_wires):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device or execution configuration when:
@@ -240,7 +240,7 @@ class MeasurementProcess(ABC):
         Args:
             config (Union[.Device, .ExecutionConfig]): a PennyLane device or execution
                 configuration to use for determining the shape
-            len_wires (int): total number of wires in the execution
+            num_wires (int): total number of wires in the execution
 
         Returns:
             tuple: the output shape

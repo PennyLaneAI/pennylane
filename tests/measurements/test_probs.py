@@ -125,6 +125,7 @@ class TestProbs:
         qml.enable_return()
         assert res.shape(dev, total_wires) == (2 ** len(wires), 2 ** len(wires), 2 ** len(wires))
         assert res.shape(config, total_wires) == (2 ** len(wires), 2 ** len(wires), 2 ** len(wires))
+        qml.diable_return()
 
     @pytest.mark.parametrize(
         "measurement",

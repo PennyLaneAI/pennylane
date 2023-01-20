@@ -311,25 +311,54 @@ class TestSample:
             qml.Hermitian(np.diag([1.0, 2.0]), 0),
         ],
     )
-    def test_shape(self, obs):
+    @pytest.mark.parametrize("shots", [1, 10])
+    def test_shape(self, obs, shots):
         """Test that the shape is correct."""
-        shots = 10
         dev = qml.device("default.qubit", wires=3, shots=shots)
+        config = qml.devices.ExecutionConfig(shots=shots)
         res = qml.sample(obs) if obs is not None else qml.sample()
         expected = (1, shots) if obs is not None else (1, shots, 3)
-        assert res.shape(dev) == expected
+        assert res.shape(dev, 3) == expected
+        assert res.shape(config, 3) == expected
+
+        # Test new shape
+        qml.enable_return()
+        if shots == 1:
+            expected = (3,) if obs is None else ()
+        else:
+            expected = (shots, 3) if obs is None else (shots,)
+        assert res.shape(dev, 3) == expected
+        assert res.shape(config, 3) == expected
+        qml.disable_return()
 
     @pytest.mark.parametrize(
         "obs",
-        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+        [
+            qml.PauliZ(0),
+            qml.Hermitian(np.diag([1, 2]), 0),
+            qml.Hermitian(np.diag([1.0, 2.0]), 0),
+            None,
+        ],
     )
     def test_shape_shot_vector(self, obs):
         """Test that the shape is correct with the shot vector too."""
         shot_vector = (1, 2, 3)
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        res = qml.sample(obs)
-        expected = ((), (2,), (3,))
-        assert res.shape(dev) == expected
+        config = qml.devices.ExecutionConfig(shots=shot_vector)
+
+        if obs is not None:
+            res = qml.sample(obs)
+            expected = ((), (2,), (3,))
+            assert res.shape(dev, 3) == expected
+            assert res.shape(config, 3) == expected
+
+        # Test new shape
+        qml.enable_return()
+        res = qml.sample(obs) if obs is not None else qml.sample()
+        expected = ((), (2,), (3,)) if obs is not None else ((3,), (2, 3), (3, 3))
+        assert res.shape(dev, 3) == expected
+        assert res.shape(config, 3) == expected
+        qml.disable_return()
 
     def test_shape_shot_vector_no_obs(self):
         """Test that the shape is correct with the shot vector and no observable too."""

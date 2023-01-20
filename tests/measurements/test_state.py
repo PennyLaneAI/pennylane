@@ -325,15 +325,32 @@ class TestState:
     def test_shape(self, shots):
         """Test that the shape is correct for qml.state."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
+        config = qml.devices.ExecutionConfig(shots=shots)
         res = qml.state()
-        assert res.shape(dev) == (1, 2**3)
+        assert res.shape(dev, 3) == (1, 2**3)
+        assert res.shape(config, 3) == (1, 2**3)
+
+        # Test new shape
+        qml.enable_return()
+        assert res.shape(dev, 3) == (2**3,)
+        assert res.shape(config, 3) == (2**3,)
+        qml.disable_return()
 
     @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
     def test_shape_shot_vector(self, s_vec):
         """Test that the shape is correct for qml.state with the shot vector too."""
         dev = qml.device("default.qubit", wires=3, shots=s_vec)
+        config = qml.devices.ExecutionConfig(shots=s_vec)
         res = qml.state()
-        assert res.shape(dev) == (3, 2**3)
+        assert res.shape(dev, 3) == (3, 2**3)
+        assert res.shape(config, 3) == (3, 2**3)
+
+        # Test new shape
+        qml.enable_return()
+        expected = ((2**3,), (2**3,), (2**3,))
+        assert res.shape(dev, 3) == expected
+        assert res.shape(config, 3) == expected
+        qml.disable_return()
 
     def test_numeric_type(self):
         """Test that the numeric type of state measurements."""
@@ -696,12 +713,29 @@ class TestDensityMatrix:
     def test_shape(self, shots):
         """Test that the shape is correct for qml.density_matrix."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
+        config = qml.devices.ExecutionConfig(shots=shots)
         res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(dev) == (1, 2**2, 2**2)
+        assert res.shape(dev, 3) == (1, 2**2, 2**2)
+        assert res.shape(config, 3) == (1, 2**2, 2**2)
+
+        # Test new shape
+        qml.enable_return()
+        assert res.shape(dev, 3) == (2**2, 2**2)
+        assert res.shape(config, 3) == (2**2, 2**2)
+        qml.disable_return()
 
     @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
     def test_shape_shot_vector(self, s_vec):
         """Test that the shape is correct for qml.density_matrix with the shot vector too."""
         dev = qml.device("default.qubit", wires=3, shots=s_vec)
+        config = qml.devices.ExecutionConfig(shots=s_vec)
         res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(dev) == (3, 2**2, 2**2)
+        assert res.shape(dev, 3) == (3, 2**2, 2**2)
+        assert res.shape(config, 3) == (3, 2**2, 2**2)
+
+        # Test new shape
+        qml.enable_return()
+        expected = ((2**2, 2**2), (2**2, 2**2), (2**2, 2**2))
+        assert res.shape(dev, 3) == expected
+        assert res.shape(config, 3) == expected
+        qml.disable_return()
