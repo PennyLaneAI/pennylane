@@ -4,9 +4,9 @@
 
 <h3>New features since last release</h3>
 
-<h4>Uncategorized - put new features here</h4>
+<h4>Uncategorized - add new features here</h4>
 
-<h4>Pulse</h4>
+<h4>Feel the pulse 🔊</h4>
 
 * Added `ParametrizedHamiltonian`, a callable that holds information representing a linear combination of operators 
   with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the `Operator` for 
