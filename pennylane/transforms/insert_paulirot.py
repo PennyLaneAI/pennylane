@@ -23,7 +23,7 @@ def _trainable_zeros_like(tensor):
 
 
 def _trainable_zeros_like(tensor):
-    return qml.math.where(tensor != 0, tensor, 0)
+    return qml.math.where(tensor == 0, tensor, 0)
 
 
 def get_one_parameter_generators(theta, num_wires, interface="jax"):
@@ -127,7 +127,7 @@ def get_one_parameter_generators(theta, num_wires, interface="jax"):
     # Move parameter axis to first place
     jac = qml.math.transpose(jac, [2, 0, 1])
     # Compute the Omegas from the Jacobian. The adjoint of U(theta) is realized via -theta
-    return special_unitary_matrix(-theta, num_wires) @ jac
+    return qml.math.tensordot(jac, special_unitary_matrix(-theta, num_wires), axes=[[1], [1]])
 
 
 def get_one_parameter_coeffs(theta, num_wires, interface="jax"):
@@ -313,6 +313,7 @@ def insert_paulirot(tape):
             qml.apply(op)
             continue
 
+        theta = op.data[0]
         # Determine the interface of the SpecialUnitary gate
         interface = qml.math.get_interface(theta)
         if interface == "numpy":
@@ -321,7 +322,6 @@ def insert_paulirot(tape):
             continue
 
         num_wires = len(op.wires)
-        theta = op.data[0]
         # Get all Pauli words for the basis of the Lie algebra for this gate
         words = pauli_words(num_wires)
 
@@ -332,7 +332,7 @@ def insert_paulirot(tape):
         # Create zero parameters for each Pauli rotation gate that take over the trace of theta
         zeros = _trainable_zeros_like(theta)
         # Apply the linear map omega to the zeros to create the correct preprocessing Jacobian
-        zeros = qml.math.tensordot(parameter_rotation, zeros, axes=[[1], [0]])
+        zeros = qml.math.tensordot(omega, zeros, axes=[[1], [0]])
 
         # Apply Pauli rotations that yield the Pauli basis derivatives
         [qml.PauliRot(zero, word, wires=op.wires) for zero, word in zip(zeros, words)]
