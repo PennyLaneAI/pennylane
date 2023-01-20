@@ -322,6 +322,8 @@
 * The `StatePrep` class has been added as an interface that state-prep operators must implement.
   [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
 
+* Add `qml.devices.qubit.create_initial_state` to create an initial state for an execution.
+
 <h3>Breaking changes</h3>
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
