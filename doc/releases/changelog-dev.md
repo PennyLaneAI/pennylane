@@ -4,8 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* Added a `measured_wires` property to the `QuantumScript` class.
-
 * `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
@@ -218,6 +216,9 @@
   
 <h3>Improvements</h3>
 
+* Added a `measured_wires` property to the `QuantumScript` class.
+  [(#3655)](https://github.com/PennyLaneAI/pennylane/pull/3655)
+
 * Most channels in are now fully differentiable in all interfaces.
   [(#3612)](https://github.com/PennyLaneAI/pennylane/pull/3612)
 
@@ -374,3 +375,4 @@ Borja Requena
 Matthew Silverman
 Antal Száva
 David Wierichs
+Marcus Edwards

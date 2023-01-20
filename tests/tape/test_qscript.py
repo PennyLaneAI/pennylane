@@ -27,6 +27,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumScript
+from pennylane.wires import Wires
 
 
 class TestInitialization:
@@ -46,7 +47,7 @@ class TestInitialization:
         assert qs._ops == []
         assert qs._prep == []
         assert qs._measurements == []
-        assert qs._measured_wires == []
+        assert qs._measured_wires == qml.wires.Wires([])
         assert qs._par_info == []
         assert qs._trainable_params == []
         assert qs._graph is None
@@ -89,7 +90,7 @@ class TestInitialization:
         qs = QuantumScript(measurements=m)
         assert len(qs._measurements) == 1
         assert isinstance(qs._measurements, list)
-        assert isinstance(qs._measured_wires, list)
+        assert isinstance(qs._measured_wires, Wires)
         assert qs._measurements[0].return_type is qml.measurements.State
 
     @pytest.mark.parametrize(

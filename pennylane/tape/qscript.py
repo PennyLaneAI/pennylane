@@ -231,6 +231,7 @@ class QuantumScript:
     @property
     def measured_wires(self) -> List[int]:
         """Returns the measured wires"""
+        self._update_measured_wires()
         return self._measured_wires
 
     @property
