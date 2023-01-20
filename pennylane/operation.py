@@ -166,7 +166,7 @@ The ``operation`` module provides the following:
     ~has_unitary_gen
     ~is_measurement
     ~is_trainable
-    ~no_tape
+    ~not_tape
 
 Other
 ^^^^^
