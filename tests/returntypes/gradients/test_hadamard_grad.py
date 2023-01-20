@@ -14,52 +14,11 @@
 """
 Tests for the gradients.hadamard_gradient module.
 """
-import pytest
-
-from pennylane import numpy as np
-
-import pennylane as qml
-from pennylane.gradients import hadamard_grad
-
-
-class TestFiniteDiff:
-    """Tests for the finite difference gradient transform"""
-
-    def test_single_expectation_value(self, tol):
-        """Tests correct output shape and evaluation for a tape
-        with a single expval output"""
-        dev = qml.device("default.qubit", wires=3)
-        x = 0.543
-        y = -0.654
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.PauliZ(wires=0)
-            qml.RX(x, wires=[0])
-            qml.PauliZ(wires=0)
-            qml.RY(y, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))  # , qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        tapes, fn = hadamard_grad(tape)
-
-        res = fn(dev.batch_execute(tapes))
-        print("res", res)
-        # assert res.shape == (1, 2)
-
-        expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
-        print(expected)
-        # assert np.allclose(res, expected, atol=tol, rtol=0)
 
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.gradients import hadamard_grad
-from pennylane.gradients.parameter_shift import _get_operation_recipe, _put_zeros_in_pdA2_involutory
-from pennylane.devices import DefaultQubit
-from pennylane.operation import Observable, AnyWires
 
 
 def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
@@ -119,9 +78,9 @@ class TestHadamardGrad:
         tapes, fn = qml.gradients.hadamard_grad(tape)
         assert len(tapes) == 1
         assert tapes[0].batch_size == None
-        print(tapes[0].circuit)
+
         res = fn(dev.batch_execute(tapes))
-        print(res)
+
         assert isinstance(res, tuple)
         assert len(res) == 2
         assert res[0].shape == ()
@@ -379,10 +338,6 @@ class TestHadamardGrad:
         tapes, _ = qml.gradients.hadamard_grad(circuit.tape)
         assert tapes == []
 
-
-class TestParameterShiftRule:
-    """Tests for the parameter shift implementation"""
-
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.U1])
     def test_pauli_rotation_gradient(self, G, theta, tol):
@@ -411,7 +366,7 @@ class TestParameterShiftRule:
 
         tapes, fn = qml.gradients.param_shift(tape)
         param_shift_val = fn(dev.batch_execute(tapes))
-        print(hadamard_val, param_shift_val)
+
         assert np.allclose(hadamard_val, param_shift_val, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
@@ -434,42 +389,60 @@ class TestParameterShiftRule:
         assert len(tapes) == num_params
 
         hadamard_val = fn(dev.batch_execute(tapes))
-        print(hadamard_val)
+
         assert isinstance(hadamard_val, tuple)
         assert len(hadamard_val) == num_params
 
         tapes, fn = qml.gradients.param_shift(tape)
         param_val = fn(dev.batch_execute(tapes))
-        print(param_val)
+
         for a_val, n_val in zip(hadamard_val, param_val):
             assert np.allclose(a_val, n_val, atol=tol, rtol=0)
 
-    # TODO: add test
-    # @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
-    # def test_controlled_rotation_gradient(self, G, tol):
-    #     """Test gradient of controlled rotation gates"""
-    #     dev = qml.device("default.qubit", wires=2)
-    #     b = 0.123
-    #
-    #     with qml.queuing.AnnotatedQueue() as q:
-    #         qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
-    #         G(b, wires=[0, 1])
-    #         qml.expval(qml.PauliX(0))
-    #
-    #     tape = qml.tape.QuantumScript.from_queue(q)
-    #     tape.trainable_params = {1}
-    #
-    #     res = dev.execute(tape)
-    #     assert np.allclose(res, -np.cos(b / 2), atol=tol, rtol=0)
-    #
-    #     tapes, fn = qml.gradients.param_shift(tape)
-    #     grad = fn(dev.batch_execute(tapes))
-    #     expected = np.sin(b / 2) / 2
-    #     assert np.allclose(grad, expected, atol=tol, rtol=0)
-    #
-    #     tapes, fn = qml.gradients.finite_diff(tape)
-    #     numeric_val = fn(dev.batch_execute(tapes))
-    #     assert np.allclose(grad, numeric_val, atol=tol, rtol=0)
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
+    def test_controlled_rotation_gradient(self, G, theta, tol):
+        """Test gradient of controlled rotation gates"""
+        dev = qml.device("default.qubit", wires=3)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            G(theta, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = {1}
+
+        res = dev.execute(tape)
+        assert np.allclose(res, -np.cos(theta / 2), atol=tol, rtol=0)
+
+        tapes, fn = qml.gradients.hadamard_grad(tape)
+        hadamard_val = fn(dev.batch_execute(tapes))
+        expected = np.sin(theta / 2) / 2
+
+        assert np.allclose(hadamard_val, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("G", [qml.IsingXX, qml.IsingYY, qml.IsingZZ])
+    def test_ising_gradient(self, G, theta, tol):
+        """Test gradient of controlled rotation gates"""
+        dev = qml.device("default.qubit", wires=3)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            G(theta, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = {1}
+
+        tapes, fn = qml.gradients.hadamard_grad(tape)
+        hadamard_val = fn(dev.batch_execute(tapes))
+
+        tapes, fn = qml.gradients.param_shift(tape)
+        param_shift_val = fn(dev.batch_execute(tapes))
+        print(param_shift_val, hadamard_val)
+        assert np.allclose(hadamard_val, param_shift_val, atol=tol, rtol=0)
 
     # TODO: add test
     # @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
@@ -567,7 +540,6 @@ class TestParameterShiftRule:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-
     def test_multiple_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
@@ -650,21 +622,22 @@ class TestParameterShiftRule:
         assert len(tapes) == 2
 
         res = fn(dev.batch_execute(tapes))
-        print("res", res)
+
         assert isinstance(res, tuple)
         assert len(res) == 2
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == 2
 
+        # TODO: add test
         # assert res[0][0]
         # assert res[0][1]
 
         assert isinstance(res[1], tuple)
         assert len(res[1]) == 2
 
-        assert res[1][0].shape == (4, )
-        assert res[1][1].shape == (4, )
+        assert res[1][0].shape == (4,)
+        assert res[1][1].shape == (4,)
 
         expval_expected = [-2 * np.sin(x) / 2, 0]
         probs_expected = (
@@ -697,8 +670,6 @@ class TestParameterShiftRule:
         # Probs
         assert np.allclose(res[1][0], probs_expected[:, 0])
         assert np.allclose(res[1][1], probs_expected[:, 1])
-
-
 
     def cost1(x):
         qml.Rot(*x, wires=0)
