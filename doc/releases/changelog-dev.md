@@ -4,32 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Added a new template that implements a canonical 2-complete linear (2-CCL) swap network
-  described in [arXiv:1905.05118](https://arxiv.org/abs/1905.05118).
-  [(#3447)](https://github.com/PennyLaneAI/pennylane/pull/3447)
-
-  ```python3
-  dev = qml.device('default.qubit', wires=5)
-  weights = np.random.random(size=TwoLocalSwapNetwork.shape(len(dev.wires)))
-  acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
-                                   if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
-  @qml.qnode(dev)
-  def swap_network_circuit():
-     qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
-     return qml.state()
-  ```
-
-  ```pycon
-  >>> print(weights)
-  tensor([0.20308242, 0.91906199, 0.67988804, 0.81290256, 0.08708985,
-          0.81860084, 0.34448344, 0.05655892, 0.61781612, 0.51829044], requires_grad=True)
-  >>> qml.draw(swap_network_circuit, expansion_strategy = 'device')()
-  0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤  State
-  1: ─╰RY(0.20)─╰SWAP─╭●────────╭SWAP─╰RY(0.09)─╰SWAP─╭●────────╭SWAP─╰RY(0.62)─╰SWAP─┤  State
-  2: ─╭●────────╭SWAP─╰RY(0.68)─╰SWAP─╭●────────╭SWAP─╰RY(0.34)─╰SWAP─╭●────────╭SWAP─┤  State
-  3: ─╰RY(0.92)─╰SWAP─╭●────────╭SWAP─╰RY(0.82)─╰SWAP─╭●────────╭SWAP─╰RY(0.52)─╰SWAP─┤  State
-  4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
-  ```
+<h4>Do more with gradients</h4>
 
 * The JAX-JIT interface now supports higher-order gradient computation with the new return types system.
   [(#3498)](https://github.com/PennyLaneAI/pennylane/pull/3498)
@@ -67,6 +42,40 @@
      DeviceArray(0.41614684, dtype=float64, weak_type=True))))
   ```
 
+<h4>New ops and measurements</h4>
+
+* The function `max_entropy` is added to compute the maximum entropy of a quantum state.
+  [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
+
+* Added a new template that implements a canonical 2-complete linear (2-CCL) swap network
+  described in [arXiv:1905.05118](https://arxiv.org/abs/1905.05118).
+  [(#3447)](https://github.com/PennyLaneAI/pennylane/pull/3447)
+
+  ```python3
+  dev = qml.device('default.qubit', wires=5)
+  weights = np.random.random(size=TwoLocalSwapNetwork.shape(len(dev.wires)))
+  acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
+                                   if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
+  @qml.qnode(dev)
+  def swap_network_circuit():
+     qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
+     return qml.state()
+  ```
+
+  ```pycon
+  >>> print(weights)
+  tensor([0.20308242, 0.91906199, 0.67988804, 0.81290256, 0.08708985,
+          0.81860084, 0.34448344, 0.05655892, 0.61781612, 0.51829044], requires_grad=True)
+  >>> qml.draw(swap_network_circuit, expansion_strategy = 'device')()
+  0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤  State
+  1: ─╰RY(0.20)─╰SWAP─╭●────────╭SWAP─╰RY(0.09)─╰SWAP─╭●────────╭SWAP─╰RY(0.62)─╰SWAP─┤  State
+  2: ─╭●────────╭SWAP─╰RY(0.68)─╰SWAP─╭●────────╭SWAP─╰RY(0.34)─╰SWAP─╭●────────╭SWAP─┤  State
+  3: ─╰RY(0.92)─╰SWAP─╭●────────╭SWAP─╰RY(0.82)─╰SWAP─╭●────────╭SWAP─╰RY(0.52)─╰SWAP─┤  State
+  4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
+  ```
+
+<h4>QChem</h4>
+
 * The qchem workflow is modified to support both Autograd and JAX frameworks.
   [(#3458)](https://github.com/PennyLaneAI/pennylane/pull/3458)
   [(#3462)](https://github.com/PennyLaneAI/pennylane/pull/3462)
@@ -93,34 +102,6 @@
   >>> jax.grad(qml.qchem.hf_energy(mol))(*args)
   >>> DeviceArray([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]], dtype=float32)
   ```
-  
-* The function `load_basisset` is added to extract qchem basis set data from the Basis Set Exchange
-  library.
-  [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
-  
-* The function `max_entropy` is added to compute the maximum entropy of a quantum state.
-  [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
-
-* Added `qml.ops.dot` function to compute the dot product between a vector and a list of operators.
-
-  ```pycon
-  >>> coeffs = np.array([1.1, 2.2])
-  >>> ops = [qml.PauliX(0), qml.PauliY(0)]
-  >>> qml.ops.dot(coeffs, ops)
-  (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
-  >>> qml.ops.dot(coeffs, ops, pauli=True)
-  1.1 * X(0)
-  + 2.2 * Y(0)
-  ```
-
-  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
-
-* Added `ParametrizedEvolution`, which computes the time evolution of a `ParametrizedHamiltonian`.
-  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
-
-* Added `qml.evolve`, which accepts an operator or a `ParametrizedHamiltonian` and returns another
-  operator that computes its evolution.
-  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
 
 * Added `qml.qchem.givens_decomposition` method that decompose a unitary into a sequence
   of Givens rotation gates with phase shifts and a diagonal phase matrix.
@@ -174,7 +155,13 @@
           [ 0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j,  0.   +0.j   ],
           [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
   ```
-  
+
+* The function `load_basisset` is added to extract qchem basis set data from the Basis Set Exchange
+  library.
+  [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
+
+<h4>Pulse</h4>
+
 * Added `ParametrizedHamiltonian`, a callable that holds information representing a linear combination of operators 
   with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the `Operator` for 
   the specified parameters.
@@ -204,7 +191,28 @@
   >>> ops = [XX, YY, ZZ]
   >>> H =  qml.ops.dot(coeffs, ops)
   ```
-  
+
+* Added `ParametrizedEvolution`, which computes the time evolution of a `ParametrizedHamiltonian`.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+
+* Added `qml.evolve`, which accepts an operator or a `ParametrizedHamiltonian` and returns another
+  operator that computes its evolution.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+
+* Added `qml.ops.dot` function to compute the dot product between a vector and a list of operators.
+
+  ```pycon
+  >>> coeffs = np.array([1.1, 2.2])
+  >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+  >>> qml.ops.dot(coeffs, ops)
+  (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+  >>> qml.ops.dot(coeffs, ops, pauli=True)
+  1.1 * X(0)
+  + 2.2 * Y(0)
+  ```
+
+  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
+
 <h3>Improvements</h3>
 
 * Support `qml.math.matmul` with a torch tensor and an autograd tensor.
