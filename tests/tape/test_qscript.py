@@ -46,6 +46,7 @@ class TestInitialization:
         assert qs._ops == []
         assert qs._prep == []
         assert qs._measurements == []
+        assert qs._measured_wires == []
         assert qs._par_info == []
         assert qs._trainable_params == []
         assert qs._graph is None
@@ -88,6 +89,7 @@ class TestInitialization:
         qs = QuantumScript(measurements=m)
         assert len(qs._measurements) == 1
         assert isinstance(qs._measurements, list)
+        assert isinstance(qs._measured_wires, list)
         assert qs._measurements[0].return_type is qml.measurements.State
 
     @pytest.mark.parametrize(
@@ -127,6 +129,21 @@ class TestUpdate:
         qs._update()
         assert qs._graph is None
         assert qs._specs is None
+
+    def test_update_measured_wires(self):
+        """Test that on construction measured_wires is set."""
+        prep = [qml.BasisState([1, 1], wires=(-1, -2))]
+        ops = [qml.S(0), qml.T("a"), qml.S(0)]
+        measurement = [
+            qml.probs(wires=(-1)),
+            qml.expval(qml.Hermitian(2 * np.eye(2), wires=-2)),
+            PauliX(-1),
+        ]
+
+        qs = QuantumScript(ops, measurement, prep)
+        assert -1 in qs.measured_wires
+        assert -2 in qs.measured_wires
+        assert len(qs.measured_wires) == 2
 
     def test_update_circuit_info_wires(self):
         """Test that on construction wires and num_wires are set."""

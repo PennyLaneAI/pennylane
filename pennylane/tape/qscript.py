@@ -169,6 +169,11 @@ class QuantumScript:
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
+        self._measured_wires = (
+            []
+            if measurements is None
+            else set(wire for m in self.measurements for wire in m.wires if m.obs is not None)
+        )
 
         self._par_info = []
         """list[dict[str, Operator or int]]: Parameter information.
@@ -225,6 +230,11 @@ class QuantumScript:
     # ========================================================
     # QSCRIPT properties
     # ========================================================
+
+    @property
+    def measured_wires(self) -> List[int]:
+        """Returns the measured wires"""
+        return self._measured_wires
 
     @property
     def interface(self):
@@ -365,6 +375,7 @@ class QuantumScript:
         # The following line requires _par_info to be up to date
         self._update_trainable_params()  # Updates the _trainable_params; O(1)
 
+        self._update_measured_wires()
         self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
         self._update_batch_size()  # Updates _batch_size; O(ops)
 
@@ -429,7 +440,7 @@ class QuantumScript:
         self._obs_sharing_wires = []
         self._obs_sharing_wires_id = []
 
-        if len(obs_wires) != len(set(obs_wires)):
+        if len(obs_wires) != len(self._measured_wires):
             c = Counter(obs_wires)
             repeated_wires = {w for w in obs_wires if c[w] > 1}
 
@@ -437,6 +448,25 @@ class QuantumScript:
                 if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
                     self._obs_sharing_wires.append(m.obs)
                     self._obs_sharing_wires_id.append(i)
+
+    def _update_measured_wires(self):
+        """Updates the measured wires straightforwardly.
+
+        Sets:
+            _measured_wires (int): The wires measured in this QuantumScript
+        """
+
+        def extract_wires(obs):
+            for wire in obs.wires:
+                if wire not in self._measured_wires:
+                    self._measured_wires.append(wire)
+
+        for m in self.measurements:
+            if isinstance(m.obs, list):
+                for obs in m.obs:
+                    extract_wires(obs)
+            elif m.obs is not None:
+                extract_wires(m.obs)
 
     def _update_batch_size(self):
         """Infer the batch_size of the quantum script from the batch sizes of its operations
@@ -1001,6 +1031,7 @@ class QuantumScript:
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self.batch_size
         new_qscript._output_dim = self.output_dim
+        new_qscript._update_measured_wires()
 
         return new_qscript
 
