@@ -20,8 +20,13 @@ from pennylane.ops.qubit.matrix_ops import special_unitary_matrix, pauli_basis, 
 # pylint: disable=import-outside-toplevel
 
 
-def _trainable_zeros_like(tensor):
-    return tensor - qml.math.convert_like(qml.math.to_numpy(tensor), tensor)
+def _detach(array, interface):
+    """Detach an array from its trace and return just its numerical values."""
+    if interface == "jax":
+        import jax
+
+        return jax.lax.stop_gradient(array)
+    return qml.math.convert_like(qml.math.to_numpy(array), array)
 
 
 def get_one_parameter_generators(theta, num_wires, interface="jax"):
@@ -326,7 +331,8 @@ def insert_paulirot(tape):
         omega = qml.math.real(2j * get_one_parameter_coeffs(theta, num_wires, interface))
 
         # Create zero parameters for each Pauli rotation gate that take over the trace of theta
-        zeros = _trainable_zeros_like(theta)
+        detached_theta = _detach(theta, interface)
+        zeros = theta - detached_theta
         # Apply the linear map omega to the zeros to create the correct preprocessing Jacobian
         zeros = qml.math.tensordot(omega, zeros, axes=[[1], [0]])
 
@@ -334,4 +340,4 @@ def insert_paulirot(tape):
         _ = [qml.PauliRot(zero, word, wires=op.wires) for zero, word in zip(zeros, words)]
 
         # Apply the original operation, which is no longer trainable
-        qml.SpecialUnitary(qml.math.to_numpy(theta), wires=op.wires, id=op.id)
+        qml.SpecialUnitary(detached_theta, wires=op.wires, id=op.id)

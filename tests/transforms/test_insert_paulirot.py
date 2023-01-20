@@ -460,6 +460,7 @@ arg_dims = [(1,), (3,), (3, 15)]
 class TestInsertPauliRotQfunc:
     """Tests for the qfunc_transform insert_paulirot when applied to a qfunc."""
 
+    @pytest.mark.jax
     def test_trainability_jax(self, qfunc, new_diff_method, dims):
         """Test trainability and that the parameter dependencies are correct, so that the Jacobian
         is correct in JAX. When new_diff_method="backprop", the automatic differentiation of the
@@ -483,6 +484,7 @@ class TestInsertPauliRotQfunc:
         assert all(qml.math.shape(j) == qml.math.shape(nj) for j, nj in zip(jac, new_jac))
         assert all(qml.math.allclose(j, nj) for j, nj in zip(jac, new_jac))
 
+    @pytest.mark.torch
     def test_trainability_torch(self, qfunc, new_diff_method, dims):
         """Test trainability and that the parameter dependencies are correct, so that the Jacobian
         is correct in Torch. When new_diff_method="backprop", the automatic differentiation of the
@@ -510,6 +512,7 @@ class TestInsertPauliRotQfunc:
         assert all(qml.math.shape(j) == qml.math.shape(nj) for j, nj in zip(jac, new_jac))
         assert all(qml.math.allclose(j, nj) for j, nj in zip(jac, new_jac))
 
+    @pytest.mark.tf
     def test_trainability_tf(self, qfunc, new_diff_method, dims):
         """Test trainability and that the parameter dependencies are correct, so that the Jacobian
         is correct in Tensorflow. When new_diff_method="backprop", the automatic differentiation of
