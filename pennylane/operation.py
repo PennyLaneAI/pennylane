@@ -101,7 +101,7 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
     the finite-difference method of gradient computation.
 
 Contents
-^^^^^^^^
+--------
 
 .. currentmodule:: pennylane.operation
 
@@ -112,6 +112,7 @@ Operator Types
 
 .. autosummary::
     :toctree: api
+    :inheritance-diagram:
 
     ~Operator
     ~Operation
@@ -122,10 +123,11 @@ Operator Types
     ~Channel
     ~Tensor
 
-.. inheritance-diagram:: Operator, Operation, Observable, CV, CVObservable, CVOperation, Channel, Tensor
-
 Errors
 ^^^^^^
+
+When an :class:`~.Operator` method is undefined, it raises a error type that depends
+on the method that is undefined.
 
 .. currentmodule:: pennylane.operation
 
@@ -146,6 +148,9 @@ Errors
 
 Boolean Functions
 ^^^^^^^^^^^^^^^^^
+
+:class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
+The ``operation`` module provides the following:
 
 .. currentmodule:: pennylane.operation
 
@@ -183,7 +188,8 @@ PennyLane contains a mechanism for storing lists of operations with similar
 attributes and behaviour (for example, those that are their own inverses).
 The attributes below are already included, and are used primarily for the
 purpose of compilation transforms. New attributes can be added by instantiating
-new :class:`~pennylane.ops.qubit.attributes.Attribute` objects.
+new :class:`~pennylane.ops.qubit.attributes.Attribute` objects. Please note that
+these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane.operation``.
 
 .. currentmodule:: pennylane
 
