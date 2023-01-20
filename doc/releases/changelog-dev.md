@@ -310,6 +310,9 @@
 
 <h3>Documentation</h3>
 
+* Updated the code example in `qml.SparseHamiltonian` with the correct wire range.
+  [(#3643)](https://github.com/PennyLaneAI/pennylane/pull/3643)
+  
 * Added hyperlink text for an URL in the `qml.qchem.mol_data` docstring.
   [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
 
