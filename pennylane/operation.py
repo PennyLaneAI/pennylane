@@ -883,7 +883,7 @@ class Operator(abc.ABC):
 
         self._check_batching(params)
 
-        self.data = list(params)  #: list[Any]: parameters of the operator
+        self.data = [qml.math.array(p) for p in params]
 
         if do_queue:
             self.queue()
