@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Tests for the qfunc_transform ``insert_paulirot`` and its utility functions.
+"""
 
 from functools import partial
 import pytest
@@ -26,12 +29,12 @@ from pennylane.transforms.insert_paulirot import (
 )
 
 
-@pytest.mark.parametrize("n", [1, 2, 3])
 class TestGetOneParameterGenerators:
     """Tests for the effective generators computing function
     get_one_parameter_generators."""
 
     @pytest.mark.jax
+    @pytest.mark.parametrize("n", [1, 2, 3])
     @pytest.mark.parametrize("use_jit", [True, False])
     def test_Omegas_jax(self, n, use_jit):
         """Test that generators are computed correctly in JAX."""
@@ -53,6 +56,7 @@ class TestGetOneParameterGenerators:
         assert all(jnp.allclose(O.conj().T, -O) for O in Omegas)
 
     @pytest.mark.tf
+    @pytest.mark.parametrize("n", [1, 2, 3])
     def test_Omegas_tf(self, n):
         """Test that generators are computed correctly in Tensorflow."""
         import tensorflow as tf
@@ -65,6 +69,7 @@ class TestGetOneParameterGenerators:
         assert all(qml.math.allclose(qml.math.conj(qml.math.T(O)), -O) for O in Omegas)
 
     @pytest.mark.torch
+    @pytest.mark.parametrize("n", [1, 2, 3])
     def test_Omegas_torch(self, n):
         """Test that generators are computed correctly in Torch."""
         import torch
@@ -79,6 +84,7 @@ class TestGetOneParameterGenerators:
     # Autograd does not support differentiating expm.
     @pytest.mark.xfail
     @pytest.mark.autograd
+    @pytest.mark.parametrize("n", [1, 2, 3])
     def test_Omegas_autograd(self, n):
         """Test that generators are computed correctly in Autograd."""
         np.random.seed(14521)
@@ -88,16 +94,16 @@ class TestGetOneParameterGenerators:
         assert Omegas.shape == (d, 2**n, 2**n)
         assert all(qml.math.allclose(qml.math.conj(qml.math.T(O)), -O) for O in Omegas)
 
-    def test_Omegas_raises_autograd(self, n):
+    def test_Omegas_raises_autograd(self):
         """Test that computing generators raises an error when attempting to use Autograd."""
         with pytest.raises(NotImplementedError, match="expm is not differentiable in Autograd"):
-            Omegas = get_one_parameter_generators(None, None, "autograd")
+            get_one_parameter_generators(None, None, "autograd")
 
-    def test_Omegas_raises_unknown_interface(self, n):
+    def test_Omegas_raises_unknown_interface(self):
         """Test that computing generators raises an error when attempting
         to use an unknown interface."""
         with pytest.raises(NotImplementedError, match="The interface interface is not supported"):
-            Omegas = get_one_parameter_generators(None, None, "interface")
+            get_one_parameter_generators(None, None, "interface")
 
 
 @pytest.mark.parametrize("n", [1, 2])
@@ -146,7 +152,8 @@ class TestGetOneParameterGeneratorsDiffability:
         np.random.seed(14521)
         d = 4**n - 1
         theta = torch.tensor(np.random.random(d), requires_grad=True)
-        fn = lambda theta: get_one_parameter_generators(theta, n, "torch")
+        def fn(theta):
+            return get_one_parameter_generators(theta, n, "torch")
         dOmegas = torch.autograd.functional.jacobian(fn, theta)
         assert dOmegas.shape == (d, 2**n, 2**n, d)
 
@@ -252,7 +259,8 @@ def make_ones(interface):
         import jax
 
         jax.config.update("jax_enable_x64", True)
-        ones = lambda x: jax.numpy.array(jax.numpy.ones(x))
+        def ones(x):
+            return jax.numpy.array(jax.numpy.ones(x))
     elif interface == "torch":
         import torch
 
@@ -260,7 +268,8 @@ def make_ones(interface):
     elif interface == "tensorflow":
         import tensorflow as tf
 
-        ones = lambda x: tf.Variable(np.ones(x))
+        def ones(x):
+            return tf.Variable(np.ones(x))
     return ones
 
 
@@ -416,17 +425,20 @@ class TestInsertPauliRotTape:
 
 
 def qfunc_without_SU(x):
+    """A quantum function without SpecialUnitary."""
     qml.RX(x, 0)
     return qml.expval(qml.PauliZ(0))
 
 
 def qfunc_with_single_SU(theta):
+    """A quantum function with a single SpecialUnitary."""
     qml.RX(0.2, 0)
     qml.SpecialUnitary(theta, 0)
     return qml.expval(qml.PauliZ(0))
 
 
 def qfunc_with_two_SUs(theta, phi):
+    """A quantum function with two SpecialUnitary gates."""
     qml.RX(2.31, 0)
     qml.SpecialUnitary(theta, 0)
     qml.SpecialUnitary(phi, [1, 0])
