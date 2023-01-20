@@ -2554,7 +2554,7 @@ class StatePrep(Operation):
     @abc.abstractmethod
     def state_vector(self, wire_order=None, interface="autograd"):
         """
-        Returns a vector to be used as an initial state for a circuit.
+        Returns the initial state vector for a circuit given a state preparation.
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels
