@@ -4,6 +4,61 @@
 
 <h3>New features since last release</h3>
 
+<h4>Uncategorized - put new features here</h4>
+
+<h4>Pulse</h4>
+
+* Added `ParametrizedHamiltonian`, a callable that holds information representing a linear combination of operators 
+  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the `Operator` for 
+  the specified parameters.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  
+  ```pycon
+  f1 = lambda p, t: p * np.sin(t) * (t - 1)
+  f2 = lambda p, t: p[0] * np.cos(p[1]* t ** 2)
+
+  XX = qml.PauliX(1) @ qml.PauliX(1)
+  YY = qml.PauliY(0) @ qml.PauliY(0)
+  ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
+
+  H =  2 * XX + f1 * YY + f2 * ZZ
+  ```
+  ```pycon
+  >>> H
+  ParametrizedHamiltonian: terms=3
+  >>> params = [1.2, [2.3, 3.4]]
+  >>> H(params, t=0.5)
+  (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
+  ```
+  The same `ParametrizedHamiltonian` can also be constructed via a list of coefficients and operators:
+
+  ```pycon
+  >>> coeffs = [2, f1, f2]
+  >>> ops = [XX, YY, ZZ]
+  >>> H =  qml.ops.dot(coeffs, ops)
+  ```
+
+* Added `ParametrizedEvolution`, which computes the time evolution of a `ParametrizedHamiltonian`.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+
+* Added `qml.evolve`, which accepts an operator or a `ParametrizedHamiltonian` and returns another
+  operator that computes its evolution.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+
+* Added `qml.ops.dot` function to compute the dot product between a vector and a list of operators.
+
+  ```pycon
+  >>> coeffs = np.array([1.1, 2.2])
+  >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+  >>> qml.ops.dot(coeffs, ops)
+  (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+  >>> qml.ops.dot(coeffs, ops, pauli=True)
+  1.1 * X(0)
+  + 2.2 * Y(0)
+  ```
+
+  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
+
 <h4>Do more with gradients</h4>
 
 * The JAX-JIT interface now supports higher-order gradient computation with the new return types system.
@@ -40,38 +95,6 @@
      DeviceArray(-4.54411427e-17, dtype=float64, weak_type=True)),
     (DeviceArray(-1.76855671e-17, dtype=float64, weak_type=True),
      DeviceArray(0.41614684, dtype=float64, weak_type=True))))
-  ```
-
-<h4>New ops and measurements</h4>
-
-* The function `max_entropy` is added to compute the maximum entropy of a quantum state.
-  [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
-
-* Added a new template that implements a canonical 2-complete linear (2-CCL) swap network
-  described in [arXiv:1905.05118](https://arxiv.org/abs/1905.05118).
-  [(#3447)](https://github.com/PennyLaneAI/pennylane/pull/3447)
-
-  ```python3
-  dev = qml.device('default.qubit', wires=5)
-  weights = np.random.random(size=TwoLocalSwapNetwork.shape(len(dev.wires)))
-  acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
-                                   if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
-  @qml.qnode(dev)
-  def swap_network_circuit():
-     qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
-     return qml.state()
-  ```
-
-  ```pycon
-  >>> print(weights)
-  tensor([0.20308242, 0.91906199, 0.67988804, 0.81290256, 0.08708985,
-          0.81860084, 0.34448344, 0.05655892, 0.61781612, 0.51829044], requires_grad=True)
-  >>> qml.draw(swap_network_circuit, expansion_strategy = 'device')()
-  0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤  State
-  1: ─╰RY(0.20)─╰SWAP─╭●────────╭SWAP─╰RY(0.09)─╰SWAP─╭●────────╭SWAP─╰RY(0.62)─╰SWAP─┤  State
-  2: ─╭●────────╭SWAP─╰RY(0.68)─╰SWAP─╭●────────╭SWAP─╰RY(0.34)─╰SWAP─╭●────────╭SWAP─┤  State
-  3: ─╰RY(0.92)─╰SWAP─╭●────────╭SWAP─╰RY(0.82)─╰SWAP─╭●────────╭SWAP─╰RY(0.52)─╰SWAP─┤  State
-  4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
   ```
 
 <h4>QChem</h4>
@@ -160,58 +183,37 @@
   library.
   [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
 
-<h4>Pulse</h4>
+<h4>New ops and measurements</h4>
 
-* Added `ParametrizedHamiltonian`, a callable that holds information representing a linear combination of operators 
-  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the `Operator` for 
-  the specified parameters.
-  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
-  
-  ```pycon
-  f1 = lambda p, t: p * np.sin(t) * (t - 1)
-  f2 = lambda p, t: p[0] * np.cos(p[1]* t ** 2)
+* The function `max_entropy` is added to compute the maximum entropy of a quantum state.
+  [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
 
-  XX = qml.PauliX(1) @ qml.PauliX(1)
-  YY = qml.PauliY(0) @ qml.PauliY(0)
-  ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
+* Added a new template that implements a canonical 2-complete linear (2-CCL) swap network
+  described in [arXiv:1905.05118](https://arxiv.org/abs/1905.05118).
+  [(#3447)](https://github.com/PennyLaneAI/pennylane/pull/3447)
 
-  H =  2 * XX + f1 * YY + f2 * ZZ
-  ```
-  ```pycon
-  >>> H
-  ParametrizedHamiltonian: terms=3
-  >>> params = [1.2, [2.3, 3.4]]
-  >>> H(params, t=0.5)
-  (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
-  ```
-  The same `ParametrizedHamiltonian` can also be constructed via a list of coefficients and operators:
-
-  ```pycon
-  >>> coeffs = [2, f1, f2]
-  >>> ops = [XX, YY, ZZ]
-  >>> H =  qml.ops.dot(coeffs, ops)
+  ```python3
+  dev = qml.device('default.qubit', wires=5)
+  weights = np.random.random(size=TwoLocalSwapNetwork.shape(len(dev.wires)))
+  acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
+                                   if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
+  @qml.qnode(dev)
+  def swap_network_circuit():
+     qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
+     return qml.state()
   ```
 
-* Added `ParametrizedEvolution`, which computes the time evolution of a `ParametrizedHamiltonian`.
-  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
-
-* Added `qml.evolve`, which accepts an operator or a `ParametrizedHamiltonian` and returns another
-  operator that computes its evolution.
-  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
-
-* Added `qml.ops.dot` function to compute the dot product between a vector and a list of operators.
-
   ```pycon
-  >>> coeffs = np.array([1.1, 2.2])
-  >>> ops = [qml.PauliX(0), qml.PauliY(0)]
-  >>> qml.ops.dot(coeffs, ops)
-  (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
-  >>> qml.ops.dot(coeffs, ops, pauli=True)
-  1.1 * X(0)
-  + 2.2 * Y(0)
+  >>> print(weights)
+  tensor([0.20308242, 0.91906199, 0.67988804, 0.81290256, 0.08708985,
+          0.81860084, 0.34448344, 0.05655892, 0.61781612, 0.51829044], requires_grad=True)
+  >>> qml.draw(swap_network_circuit, expansion_strategy = 'device')()
+  0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤  State
+  1: ─╰RY(0.20)─╰SWAP─╭●────────╭SWAP─╰RY(0.09)─╰SWAP─╭●────────╭SWAP─╰RY(0.62)─╰SWAP─┤  State
+  2: ─╭●────────╭SWAP─╰RY(0.68)─╰SWAP─╭●────────╭SWAP─╰RY(0.34)─╰SWAP─╭●────────╭SWAP─┤  State
+  3: ─╰RY(0.92)─╰SWAP─╭●────────╭SWAP─╰RY(0.82)─╰SWAP─╭●────────╭SWAP─╰RY(0.52)─╰SWAP─┤  State
+  4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
   ```
-
-  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
 <h3>Improvements</h3>
 
