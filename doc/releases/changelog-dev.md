@@ -279,9 +279,6 @@
 * Introduce the `StatePrep` class as an interface that state-prep operators must implement.
   [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
 
-* Add `qml.interfaces.create_initial_state` to create an initial state for an execution.
-  [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
-
 <h3>Breaking changes</h3>
 
 * `Operator.inv()` and the `Operator.inverse` setter are removed. Please use `qml.adjoint` or `qml.pow` instead.
