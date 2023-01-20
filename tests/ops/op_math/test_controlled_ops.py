@@ -405,18 +405,15 @@ class TestControlledQubitUnitary:
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(0.12)
 
-    @pytest.mark.parametrize("inverse", (True, False))
-    def test_controlled(self, inverse):
+    def test_controlled(self):
         """Test the _controlled method for ControlledQubitUnitary."""
 
         U = qml.PauliX(0).compute_matrix()
 
         original = qml.ControlledQubitUnitary(U, control_wires=(0, 1), wires=4, control_values="01")
-        original.inverse = inverse
         expected = qml.ControlledQubitUnitary(
             U, control_wires=(0, 1, "a"), wires=4, control_values="011"
         )
-        expected.inverse = inverse
 
         out = original._controlled("a")  # pylint: disable=protected-access
         assert qml.equal(out, expected)
