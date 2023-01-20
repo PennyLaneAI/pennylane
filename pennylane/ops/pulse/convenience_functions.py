@@ -15,7 +15,6 @@
 """This file contains convenience functions for pulse programming."""
 
 import numpy as np
-import pennylane as qml
 
 has_jax = True
 try:
@@ -24,7 +23,7 @@ except ImportError:
     has_jax = False
 
 
-def pwc_from_array(t):
+def pwc(t):
     """Create a function that is piecewise-constant in time, based on the params for a TDHamiltonian.
 
     Args:
@@ -38,7 +37,7 @@ def pwc_from_array(t):
     **Example**
 
     >>> t1, t2 = 1, 3
-    >>> f1 = pwc_from_array((t1, t2))
+    >>> f1 = pwc((t1, t2))
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed parameters and a time,
     it will assign the array at ``params[index]`` as the constants in the piecewise function, and select
@@ -72,8 +71,8 @@ def pwc_from_array(t):
         params = jnp.array(list(params) + [0])
 
         # get idx from timestamp, then set idx=0 if idx is out of bounds for the array
-        idx = jnp.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
-        idx = jnp.where((idx >= 0) & (idx <= num_bins), idx, -1)
+        idx = num_bins / (t2 - t1) * (t - t1)
+        idx = jnp.where((idx >= 0) & (idx <= num_bins), jnp.array(idx, dtype=int), -1)
 
         return params[idx]
 
@@ -133,9 +132,13 @@ def pwc_from_function(t, num_bins):
         time_bins = np.linspace(t1, t2, num_bins)
 
         def wrapper(params, t):
-            constants = jnp.array(fn(params, time_bins))
-            idx = qml.math.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
-            return jnp.where((t >= t1) & (t <= t2), constants[idx], 0)
+            constants = jnp.array(list(fn(params, time_bins)) + [0])
+
+            idx = num_bins / (t2 - t1) * (t - t1)
+            # check interval is within 0 to num_bins, then cast to int, to avoid casting outcomes between -1 and 0 as 0
+            idx = jnp.where((idx >= 0) & (idx <= num_bins), jnp.array(idx, dtype=int), -1)
+
+            return constants[idx]
 
         return wrapper
 
