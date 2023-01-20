@@ -65,7 +65,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, exp, op_sum, pow, prod, s_prod, evolve
+from pennylane.ops import adjoint, ctrl, exp, op_sum, pow, prod, s_prod, evolve, pulse
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
