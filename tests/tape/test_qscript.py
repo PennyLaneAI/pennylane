@@ -137,7 +137,7 @@ class TestUpdate:
         measurement = [
             qml.probs(wires=(-1)),
             qml.expval(qml.Hermitian(2 * np.eye(2), wires=-2)),
-            qml.PauliX(-1)
+            qml.PauliX(-1),
         ]
 
         qs = QuantumScript(ops, measurement, prep)
