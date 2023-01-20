@@ -15,11 +15,13 @@
 Unit tests for the convenience functions used in pulsed programming.
 """
 import inspect
+from functools import reduce
 
 import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops import ParametrizedHamiltonian
 
 
 class TestConstant:
@@ -131,3 +133,77 @@ class TestPiecewise:
                 assert qml.math.allclose(c(p=param, t=t), f(param, t))
             else:
                 assert c(p=param, t=t) == 0
+
+
+def f(p, t):
+    return p * t
+
+
+windows1 = [(0, 4), (8, 10)]
+windows2 = [(5, 8)]
+
+coeffs = [qml.pulse.piecewise(f, windows1), qml.pulse.constant(windows2)]
+ops = [qml.PauliX(0), qml.PauliY(1)]
+
+H = qml.ops.dot(coeffs, ops)
+
+
+class TestIntegration:
+    """Unit tests testing the integration of convenience functions with parametrized hamiltonians."""
+
+    def test_parametrized_hamiltonian(self):
+        """Test that convenience functions can be used to define parametrized hamiltonians."""
+        assert isinstance(H, ParametrizedHamiltonian)
+        # assert that at t=4.5 both functions are 0
+        assert qml.math.allequal(qml.matrix(H(params=[1, 2], t=4.5)), 0)
+        # assert that at t=3 only the first coefficient is non-zero
+        true_mat = qml.matrix(f(1, 3) * qml.PauliX(0), wire_order=[0, 1])
+        assert qml.math.allequal(qml.matrix(H(params=[1, 2], t=3)), true_mat)
+        # assert that at t=6 only the second coefficient is non-zero
+        true_mat = qml.matrix(2 * qml.PauliY(1), wire_order=[0, 1])
+        assert qml.math.allequal(qml.matrix(H(params=[1, 2], t=6)), true_mat)
+
+    @pytest.mark.jax
+    def test_qnode(self):
+        """Test that the evolution of a parametrized hamiltonian defined with convenience functions
+        can be executed on a QNode."""
+        import jax
+        import jax.numpy as jnp
+
+        t = (1, 10)
+
+        def generator(params):
+            time_step = 1e-3
+            times = jnp.arange(*t, step=time_step)
+            for ti in times:
+                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.evolve(H)(params=params, t=t)
+            return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+
+        @jax.jit
+        @qml.qnode(dev)
+        def jitted_circuit(params):
+            qml.evolve(H)(params=params, t=t)
+            return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+
+        @qml.qnode(dev, interface="jax")
+        def true_circuit(params):
+            true_mat = reduce(lambda x, y: y @ x, generator(params))
+            qml.QubitUnitary(U=true_mat, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        params = jnp.array([1.0, 2.0])
+
+        assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
+        assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=5e-3)
+        assert qml.math.allclose(
+            jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
+        )
+        assert qml.math.allclose(
+            jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
+        )
