@@ -2544,8 +2544,11 @@ class CVObservable(CV, Observable):
         return self.heisenberg_expand(U, wire_order)
 
 
-class StatePrepInterface(abc.ABC):
+class StatePrep(Operation):
     """An interface for state-prep operations."""
+
+    grad_method = None
+    _queue_category = "_prep"
 
     # pylint:disable=too-few-public-methods
     @abc.abstractmethod

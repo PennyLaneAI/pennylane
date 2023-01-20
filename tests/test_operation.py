@@ -30,7 +30,7 @@ from pennylane.operation import (
     Operator,
     Tensor,
     operation_derivative,
-    StatePrepInterface,
+    StatePrep,
 )
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
@@ -2117,14 +2117,14 @@ class TestCVOperation:
             op.heisenberg_expand(U_high_order, op.wires)
 
 
-class TestStatePrepInterface:
-    """Test the StatePrepInterface class."""
+class TestStatePrep:
+    """Test the StatePrep interface."""
 
     # pylint:disable=unused-argument,too-few-public-methods
     def test_basic_stateprep(self):
-        """Tests a basic implementation of the StatePrepInterface."""
+        """Tests a basic implementation of the StatePrep interface."""
 
-        class DefaultPrep(Operation, StatePrepInterface):
+        class DefaultPrep(StatePrep):
             """A dummy class that assumes it was given a state vector."""
 
             num_wires = qml.operation.AllWires
@@ -2138,8 +2138,8 @@ class TestStatePrepInterface:
     def test_child_must_implement_state_vector(self):
         """Tests that a child class that does not implement state_vector fails."""
 
-        class NoStatePrepOp(Operation, StatePrepInterface):
-            """A dummy class that assumes it was given a state vector."""
+        class NoStatePrepOp(StatePrep):
+            """A class that is missing the state_vector implementation."""
 
             num_wires = qml.operation.AllWires
 

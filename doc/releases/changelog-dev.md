@@ -276,7 +276,7 @@
 * Introduce the `ExecutionConfig` data class.
   [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
 
-* Introduce the `StatePrepInterface` class as an interface that state-prep operators must implement.
+* Introduce the `StatePrep` class as an interface that state-prep operators must implement.
   [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
 
 <h3>Breaking changes</h3>
