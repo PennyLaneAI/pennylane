@@ -135,14 +135,14 @@ class TestPiecewise:
                 assert c(p=param, t=t) == 0
 
 
-def f(p, t):
+def f1(p, t):
     return p * t
 
 
 windows1 = [(0, 4), (8, 10)]
 windows2 = [(5, 8)]
 
-coeffs = [qml.pulse.piecewise(f, windows1), qml.pulse.constant(windows2)]
+coeffs = [qml.pulse.piecewise(f1, windows1), qml.pulse.constant(windows2)]
 ops = [qml.PauliX(0), qml.PauliY(1)]
 
 H = qml.ops.dot(coeffs, ops)
@@ -157,7 +157,7 @@ class TestIntegration:
         # assert that at t=4.5 both functions are 0
         assert qml.math.allequal(qml.matrix(H(params=[1, 2], t=4.5)), 0)
         # assert that at t=3 only the first coefficient is non-zero
-        true_mat = qml.matrix(f(1, 3) * qml.PauliX(0), wire_order=[0, 1])
+        true_mat = qml.matrix(f1(1, 3) * qml.PauliX(0), wire_order=[0, 1])
         assert qml.math.allequal(qml.matrix(H(params=[1, 2], t=3)), true_mat)
         # assert that at t=6 only the second coefficient is non-zero
         true_mat = qml.matrix(2 * qml.PauliY(1), wire_order=[0, 1])
