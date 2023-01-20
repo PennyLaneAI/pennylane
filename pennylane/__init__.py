@@ -38,6 +38,7 @@ from pennylane.pauli import pauli_decompose
 import pennylane.resource
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
+import pennylane.ops.pulse as pulse
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
