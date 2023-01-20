@@ -123,9 +123,10 @@ class TestProbs:
 
         # Test new shape
         qml.enable_return()
-        assert res.shape(dev, total_wires) == (2 ** len(wires), 2 ** len(wires), 2 ** len(wires))
-        assert res.shape(config, total_wires) == (2 ** len(wires), 2 ** len(wires), 2 ** len(wires))
-        qml.diable_return()
+        expected = ((2 ** len(wires),), (2 ** len(wires),), (2 ** len(wires),))
+        assert res.shape(dev, total_wires) == expected
+        assert res.shape(config, total_wires) == expected
+        qml.disable_return()
 
     @pytest.mark.parametrize(
         "measurement",

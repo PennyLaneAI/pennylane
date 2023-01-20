@@ -15,7 +15,8 @@
 Contains the :class:`ExecutionConfig` data class.
 """
 from dataclasses import dataclass, field
-from typing import Optional, Sequence, List
+from typing import Optional, Sequence, Tuple
+from frozendict import frozendict
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
@@ -44,21 +45,21 @@ class ExecutionConfig:
     shots: int = None
     """The number of shots for an execution."""
 
-    shot_vector: List[ShotTuple] = field(init=False, repr=False, default=None)
+    shot_vector: Tuple[ShotTuple] = field(init=False, repr=False, default=None)
     """List of groupings of shots for an execution."""
 
     _shots: int = field(init=False, repr=False, default=None)
-    _shot_vector: List[ShotTuple] = field(init=False, repr=False, default=None)
-    _raw_shot_sequence: List[int] = field(init=False, repr=False, default=None)
+    _shot_vector: Tuple[ShotTuple] = field(init=False, repr=False, default=None)
+    _raw_shot_sequence: Tuple[int] = field(init=False, repr=False, default=None)
     """Private attributes for storing shot information"""
 
     gradient_method: Optional[str] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: dict = None
+    gradient_keyword_arguments: frozendict = None
     """Arguments used to control a gradient transform"""
 
-    device_options: dict = None
+    device_options: frozendict = None
     """Various options for the device executing a quantum circuit"""
 
     interface: str = "autograd"
@@ -87,10 +88,10 @@ class ExecutionConfig:
             )
 
         if self.device_options is None:
-            object.__setattr__(self, "device_options", {})
+            object.__setattr__(self, "device_options", frozendict({}))
 
         if self.gradient_keyword_arguments is None:
-            object.__setattr__(self, "gradient_keyword_arguments", {})
+            object.__setattr__(self, "gradient_keyword_arguments", frozendict({}))
 
         if any(arg not in SUPPORTED_GRADIENT_KWARGS for arg in self.gradient_keyword_arguments):
             raise ValueError(
@@ -127,7 +128,9 @@ class ExecutionConfig:
             )
 
         object.__setattr__(self, "_shots", shots)
-        object.__setattr__(self, "_shot_vector", shot_vector)
-        object.__setattr__(self, "_raw_shot_sequence", raw_shot_sequence)
         object.__setattr__(self, "shots", shots)
-        object.__setattr__(self, "shot_vector", shot_vector)
+        if shot_vector is not None:
+            object.__setattr__(self, "_shot_vector", tuple(shot_vector))
+            object.__setattr__(self, "shot_vector", tuple(shot_vector))
+        if raw_shot_sequence is not None:
+            object.__setattr__(self, "_raw_shot_sequence", tuple(raw_shot_sequence))

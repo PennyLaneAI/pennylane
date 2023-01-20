@@ -272,11 +272,11 @@ class MeasurementProcess(ABC):
         Returns:
             int: the number of basis states
         """
-        if isinstance(config, qml.Device):
-            cutoff = getattr(config, "cutoff", None)
-        else:
-            cutoff = config.device_options.get("cutoff", None)
-
+        cutoff = (
+            config.device_options.get("cutoff", None)
+            if isinstance(config, qml.devices.ExecutionConfig)
+            else getattr(config, "cutoff", None)
+        )
         base = 2 if cutoff is None else cutoff
         return base**num_wires
 
