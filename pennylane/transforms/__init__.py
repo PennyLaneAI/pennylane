@@ -81,6 +81,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
     :toctree: api
 
     ~transforms.zyz_decomposition
+    ~transforms.xyx_decomposition
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.pattern_matching
@@ -195,7 +196,7 @@ from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
 from .compile import compile
-from .decompositions import zyz_decomposition, two_qubit_decomposition
+from .decompositions import zyz_decomposition, xyx_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
@@ -204,6 +205,7 @@ from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
 from .insert_paulirot import insert_paulirot
+
 from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
 from .optimization import (
     cancel_inverses,
