@@ -477,10 +477,9 @@ class TestInsertPauliRotQfunc:
         # Test QNode jacobians
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(new_qfunc, dev, interface="jax")
-        new_qnode = qml.QNode(new_qfunc, dev, interface="jax", diff_method=new_diff_method)
         jac = jax.jacobian(qnode, argnums=list(range(len(dims))))(*args)
+        new_qnode = qml.QNode(new_qfunc, dev, interface="jax", diff_method=new_diff_method)
         new_jac = jax.jacobian(new_qnode, argnums=list(range(len(dims))))(*args)
-        print(jac, new_jac)
         assert all(qml.math.shape(j) == qml.math.shape(nj) for j, nj in zip(jac, new_jac))
         assert all(qml.math.allclose(j, nj) for j, nj in zip(jac, new_jac))
 
@@ -505,8 +504,8 @@ class TestInsertPauliRotQfunc:
         # Test QNode jacobians
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(new_qfunc, dev, interface="torch")
-        new_qnode = qml.QNode(new_qfunc, dev, interface="torch", diff_method=new_diff_method)
         jac = torch.autograd.functional.jacobian(qnode, args)
+        new_qnode = qml.QNode(new_qfunc, dev, interface="torch", diff_method=new_diff_method)
         new_jac = torch.autograd.functional.jacobian(new_qnode, args)
         assert all(qml.math.shape(j) == qml.math.shape(nj) for j, nj in zip(jac, new_jac))
         assert all(qml.math.allclose(j, nj) for j, nj in zip(jac, new_jac))

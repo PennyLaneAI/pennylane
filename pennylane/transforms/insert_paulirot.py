@@ -24,10 +24,6 @@ def _trainable_zeros_like(tensor):
     return tensor - qml.math.convert_like(qml.math.to_numpy(tensor), tensor)
 
 
-def _trainable_zeros_like(tensor):
-    return qml.math.where(tensor == 0, tensor, 0)
-
-
 def get_one_parameter_generators(theta, num_wires, interface="jax"):
     r"""Compute the generators of one-parameter groups that reproduce
     the partial derivatives of a special unitary gate.

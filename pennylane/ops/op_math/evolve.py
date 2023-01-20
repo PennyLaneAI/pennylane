@@ -208,6 +208,7 @@ class ParametrizedEvolution(Operation):
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
+            # return -1j * self.H(self.params, t=t) @ y
             return -1j * qml.matrix(self.H(self.params, t=t)) @ y
 
         result = odeint(fun, y0, self.t)
