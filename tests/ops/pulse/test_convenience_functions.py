@@ -139,8 +139,8 @@ def f1(p, t):
     return p * t
 
 
-windows1 = [(0, 4), (8, 10)]
-windows2 = [(5, 8)]
+windows1 = [(0, 0.5), (1, 1.5)]
+windows2 = [(0.5, 1)]
 
 coeffs = [qml.pulse.piecewise(f1, windows1), qml.pulse.constant(windows2)]
 ops = [qml.PauliX(0), qml.PauliY(1)]
@@ -174,7 +174,7 @@ class TestIntegration:
 
         H = qml.ops.dot(coeffs, ops)
 
-        t = (1, np.pi)
+        t = (1, 2)
 
         def generator(params):
             time_step = 1e-3
