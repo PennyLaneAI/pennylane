@@ -184,8 +184,8 @@
           [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
   ```
   
-* Added `ParametrizedHamiltonian`, a callable that holds information representing a linear combination of operators 
-  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the `Operator` for 
+* Added `ParametrizedHamiltonian`, a callable that holds information representing a linear combination of operators
+  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the `Operator` for
   the specified parameters.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
   
@@ -199,6 +199,7 @@
 
   H =  2 * XX + f1 * YY + f2 * ZZ
   ```
+
   ```pycon
   >>> H
   ParametrizedHamiltonian: terms=3
@@ -206,6 +207,7 @@
   >>> H(params, t=0.5)
   (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
   ```
+
   The same `ParametrizedHamiltonian` can also be constructed via a list of coefficients and operators:
 
   ```pycon
@@ -276,12 +278,15 @@
 * Introduce the `ExecutionConfig` data class.
   [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
 
+* All input parameters that are lists are casted into vanilla numpy arrays.
+  [(#3659)](https://github.com/PennyLaneAI/pennylane/pull/3659)
+
 <h3>Breaking changes</h3>
 
 * `Operator.inv()` and the `Operator.inverse` setter are removed. Please use `qml.adjoint` or `qml.pow` instead.
   [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
   
-  Instead of 
+  Instead of
   
   >>> qml.PauliX(0).inv()
   
