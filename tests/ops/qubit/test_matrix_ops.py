@@ -317,15 +317,12 @@ class TestQubitUnitary:
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
-    @pytest.mark.parametrize("inverse", (True, False))
-    def test_controlled(self, inverse):
+    def test_controlled(self):
         """Test QubitUnitary's controlled method."""
         U = qml.PauliX.compute_matrix()
         base = qml.QubitUnitary(U, wires=0)
-        base.inverse = inverse
 
         expected = qml.ControlledQubitUnitary(U, control_wires="a", wires=0)
-        expected.inverse = inverse
 
         out = base._controlled("a")
         assert qml.equal(out, expected)

@@ -76,3 +76,6 @@ from .tapering import (
     taper_hf,
     taper_operation,
 )
+from .givens_decomposition import (
+    givens_decomposition,
+)
