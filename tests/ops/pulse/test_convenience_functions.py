@@ -164,6 +164,7 @@ class TestIntegration:
         true_mat = qml.matrix(2 * qml.PauliY(1), wire_order=[0, 1])
         assert qml.math.allequal(qml.matrix(H(params=[1, 2], t=6)), true_mat)
 
+    @pytest.mark.slow
     @pytest.mark.jax
     def test_qnode(self):
         """Test that the evolution of a parametrized hamiltonian defined with convenience functions
@@ -173,7 +174,7 @@ class TestIntegration:
 
         H = qml.ops.dot(coeffs, ops)
 
-        t = (1, 10)
+        t = (1, np.pi)
 
         def generator(params):
             time_step = 1e-3
@@ -183,22 +184,22 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @jax.jit
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def jitted_circuit(params):
             qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @qml.qnode(dev, interface="jax")
         def true_circuit(params):
             true_mat = reduce(lambda x, y: y @ x, generator(params))
             qml.QubitUnitary(U=true_mat, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         params = jnp.array([1.0, 2.0])
 
