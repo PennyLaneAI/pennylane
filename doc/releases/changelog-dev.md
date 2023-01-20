@@ -291,11 +291,14 @@
   
   Instead of 
   
+  ```pycon
   >>> qml.PauliX(0).inv()
+  ```
   
   use
-  
+  ```pycon
   >>> qml.adjoint(qml.PauliX(0))
+  ```
 
 * The target wires of the unitary for `ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
