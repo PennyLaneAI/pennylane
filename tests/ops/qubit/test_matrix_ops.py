@@ -174,7 +174,7 @@ class TestQubitUnitary:
         out = qml.QubitUnitary(U, wires=range(num_wires)).matrix()
 
         # verify output type
-        assert isinstance(out, tf.Tensor)
+        assert isinstance(out, tf.Variable)
 
         # verify equivalent to input state
         assert qml.math.allclose(out, U)
