@@ -105,64 +105,76 @@ Contents
 
 .. currentmodule:: pennylane.operation
 
-<b>Operator Types:</b>
+Operator Types
+^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.operation
 
 .. autosummary::
     :toctree: api
 
-    ~.Operator
-    ~.Operation
-    ~.Observable
-    ~.CV
-    ~.CVObservable
-    ~.CVOperation
-    ~.Channel
-    ~.Tensor
+    ~Operator
+    ~Operation
+    ~Observable
+    ~CV
+    ~CVObservable
+    ~CVOperation
+    ~Channel
+    ~Tensor
 
 .. inheritance-diagram:: Operator, Operation, Observable, CV, CVObservable, CVOperation, Channel, Tensor
 
-<b>Errors</b>
+Errors
+^^^^^^
+
+.. currentmodule:: pennylane.operation
 
 .. autosummary::
     :toctree: api
 
-    ~.OperatorPropertyUndefined
-    ~.AdjointUndefinedError
-    ~.DecompositionUndefinedError
-    ~.DiagGatesUndefinedError
-    ~.EigvalsUndefinedError
-    ~.GeneratorUndefinedError
-    ~.MatrixUndefinedError
-    ~.ParameterFrequenciesUndefinedError
-    ~.PowUndefinedError
-    ~.SparseMatrixUndefinedError
-    ~.TermsUndefinedError
+    ~OperatorPropertyUndefined
+    ~AdjointUndefinedError
+    ~DecompositionUndefinedError
+    ~DiagGatesUndefinedError
+    ~EigvalsUndefinedError
+    ~GeneratorUndefinedError
+    ~MatrixUndefinedError
+    ~ParameterFrequenciesUndefinedError
+    ~PowUndefinedError
+    ~SparseMatrixUndefinedError
+    ~TermsUndefinedError
 
-<b>Boolean Functions</b>
+Boolean Functions
+^^^^^^^^^^^^^^^^^
 
-.. autosummary::
-    :toctree: api
-
-    ~.defines_diagonalizing_gates
-    ~.gen_is_multi_term_hamiltonian
-    ~.has_gen
-    ~.has_grad_method
-    ~.has_multipar
-    ~.has_nopar
-    ~.has_unitary_gen
-    ~.is_measurement
-    ~.is_trainable
-    ~.no_tape
-
-<b>Other:</b>
+.. currentmodule:: pennylane.operation
 
 .. autosummary::
     :toctree: api
 
-    ~.operation_derivative
-    ~.WiresEnum
-    ~.AllWires
-    ~.AnyWires
+    ~defines_diagonalizing_gates
+    ~gen_is_multi_term_hamiltonian
+    ~has_gen
+    ~has_grad_method
+    ~has_multipar
+    ~has_nopar
+    ~has_unitary_gen
+    ~is_measurement
+    ~is_trainable
+    ~no_tape
+
+Other
+^^^^^
+
+.. currentmodule:: pennylane.operation
+
+.. autosummary::
+    :toctree: api
+
+    ~operation_derivative
+    ~WiresEnum
+    ~AllWires
+    ~AnyWires
 
 Operation attributes
 ^^^^^^^^^^^^^^^^^^^^
