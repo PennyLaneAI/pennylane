@@ -4,9 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* `qml.purity` is added as a measurement process for purity
-  [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
-
 * Added a new template that implements a canonical 2-complete linear (2-CCL) swap network
   described in [arXiv:1905.05118](https://arxiv.org/abs/1905.05118).
   [(#3447)](https://github.com/PennyLaneAI/pennylane/pull/3447)
@@ -215,6 +212,9 @@
   ```
   
 <h3>Improvements</h3>
+
+* `qml.purity` is added as a measurement process for purity
+  [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
 * Most channels in are now fully differentiable in all interfaces.
   [(#3612)](https://github.com/PennyLaneAI/pennylane/pull/3612)
