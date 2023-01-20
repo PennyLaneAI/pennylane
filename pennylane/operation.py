@@ -1288,6 +1288,8 @@ class Operator(abc.ABC):
             return qml.op_sum(self, other)
         if other == 0:
             return self
+        if isinstance(other, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
+            return other.__add__(self)
         try:
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         except ValueError:
@@ -1297,6 +1299,8 @@ class Operator(abc.ABC):
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
+        if callable(other):
+            return qml.ops.ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
         try:
             return qml.s_prod(scalar=other, operator=self)
         except ValueError:
@@ -1856,6 +1860,7 @@ class Tensor(Observable):
         copied_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
         copied_op.obs = self.obs.copy()
         copied_op._eigvals_cache = self._eigvals_cache
+        copied_op._batch_size = self._batch_size
         return copied_op
 
     def __repr__(self):
@@ -2250,6 +2255,7 @@ class Tensor(Observable):
         new_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
         new_op.obs = [obs.map_wires(wire_map) for obs in self.obs]
         new_op._eigvals_cache = self._eigvals_cache
+        new_op._batch_size = self._batch_size
         return new_op
 
 
