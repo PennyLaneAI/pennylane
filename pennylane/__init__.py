@@ -38,7 +38,6 @@ from pennylane.pauli import pauli_decompose
 import pennylane.resource
 import pennylane.qchem
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, taper_operation, import_operator
-import pennylane.ops.pulse as pulse
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
@@ -66,7 +65,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, exp, op_sum, pow, prod, s_prod, evolve
+from pennylane.ops import adjoint, ctrl, exp, op_sum, pow, prod, s_prod, evolve, pulse
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
