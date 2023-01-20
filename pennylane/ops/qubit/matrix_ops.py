@@ -104,7 +104,8 @@ class QubitUnitary(Operation):
                 UserWarning,
             )
 
-        U = np.array(U)  # cast U to a tensor
+        if isinstance(U, list):
+            U = np.array(U)  # cast U to a tensor
 
         super().__init__(U, wires=wires, do_queue=do_queue, id=id)
 
