@@ -14,6 +14,7 @@
 """
 Unit tests for :mod:`pennylane.operation`.
 """
+import copy
 import itertools
 from functools import reduce
 
@@ -1077,6 +1078,19 @@ class TestTensor:
             ValueError, match="Can only perform tensor products between observables"
         ):
             Tensor(T, qml.CNOT(wires=[0, 1]))
+
+    def test_copy(self):
+        """Test that information is copied correctly"""
+        X = qml.PauliX(0)
+        Y = qml.PauliY(2)
+        T = Tensor(X, Y)
+        assert T.obs == [X, Y]
+
+        T2 = copy.copy(T)
+        assert T2 is not T
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(T2.obs, T.obs))
+        assert T2._eigvals_cache == T._eigvals_cache
+        assert T2._batch_size == T._batch_size
 
     def test_warning_for_overlapping_wires(self):
         """Test that creating a Tensor with overlapping wires raises a warning"""
