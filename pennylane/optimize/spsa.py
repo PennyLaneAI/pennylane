@@ -259,7 +259,14 @@ class SPSAOptimizer:
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
         try:
-            if np.prod(objective_fn.func(*args).shape(objective_fn.device)) > 1:
+            if (
+                np.prod(
+                    objective_fn.func(*args).shape(
+                        objective_fn.device, len(objective_fn.device.wires)
+                    )
+                )
+                > 1
+            ):
                 raise ValueError(
                     "The objective function must be a scalar function for the gradient "
                     "to be computed."

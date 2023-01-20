@@ -107,7 +107,7 @@ def test_shape_unrecognized_error():
         qml.QuantumFunctionError,
         match="The shape of the measurement NotValidMeasurement is not defined",
     ):
-        mp.shape(dev)
+        mp.shape(dev, 2)
 
 
 @pytest.mark.parametrize(
