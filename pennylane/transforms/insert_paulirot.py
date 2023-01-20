@@ -16,6 +16,7 @@ gates for hardware-based differentiation of SpecialUnitary."""
 import pennylane as qml
 from pennylane.transforms.qfunc_transforms import qfunc_transform
 from pennylane.ops.qubit.matrix_ops import special_unitary_matrix, pauli_basis, pauli_words
+# pylint: disable=import-outside-toplevel
 
 
 def _trainable_zeros_like(tensor):

@@ -14,6 +14,7 @@
 """
 Tests for the qfunc_transform ``insert_paulirot`` and its utility functions.
 """
+# pylint: disable=import-outside-toplevel
 
 from functools import partial
 import pytest
