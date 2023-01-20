@@ -2121,18 +2121,18 @@ class TestStatePrep:
     """Test the StatePrep interface."""
 
     # pylint:disable=unused-argument,too-few-public-methods
+    class DefaultPrep(StatePrep):
+        """A dummy class that assumes it was given a state vector."""
+
+        num_wires = qml.operation.AllWires
+
+        def state_vector(self, wire_order=None, interface="autograd"):
+            return qml.math.array(self.parameters[0], like=interface)
+
     def test_basic_stateprep(self):
         """Tests a basic implementation of the StatePrep interface."""
 
-        class DefaultPrep(StatePrep):
-            """A dummy class that assumes it was given a state vector."""
-
-            num_wires = qml.operation.AllWires
-
-            def state_vector(self, wire_order=None, interface="autograd"):
-                return self.parameters[0]
-
-        prep_op = DefaultPrep([1, 0], wires=[0])
+        prep_op = self.DefaultPrep([1, 0], wires=[0])
         assert np.array_equal(prep_op.state_vector(), [1, 0])
 
     def test_child_must_implement_state_vector(self):
@@ -2145,6 +2145,23 @@ class TestStatePrep:
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_create_initial_state_no_state_prep(self, interface):
+        """Tests that create_initial_state works without a state-prep operation."""
+        state = qml.interfaces.create_initial_state([0, 1], like=interface)
+        assert qml.math.allequal(state, [1, 0, 0, 0])
+        assert qml.math.get_interface(state) == interface
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_create_initial_state_with_state_prep(self, interface):
+        """Tests that create_initial_state works with a state-prep operation."""
+        prep_op = self.DefaultPrep([1 / 2] * 4, wires=[0, 1])
+        state = qml.interfaces.create_initial_state([0, 1], prep_operation=prep_op, like=interface)
+        assert qml.math.allequal(state, [1 / 2] * 4)
+        assert qml.math.get_interface(state) == interface
 
 
 class TestCriteria:

@@ -27,7 +27,7 @@ import inspect
 import warnings
 from contextlib import _GeneratorContextManager
 from functools import wraps, partial
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Union, Iterable
 
 from cachetools import LRUCache
 
@@ -750,3 +750,27 @@ def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
         else:
             from .jax import execute as _execute
     return _execute
+
+
+def create_initial_state(
+    wires: Union[qml.wires.Wires, Iterable],
+    prep_operation: qml.operation.StatePrep = None,
+    like: str = "autograd",
+):
+    r"""
+    Returns an initial state, defaulting to :math:`\ket{0}` if no state-prep operator is provided.
+
+    Args:
+        wires (Union[Wires, Iterable]): The wires to be present in the initial state
+        prep_operation (Optional[StatePrep]): An operation to prepare the initial state
+        like (Optional[str]): The machine learning interface used to create the initial state
+
+    Returns:
+        array: The initial state of a circuit
+    """
+    if not prep_operation:
+        state = qml.numpy.zeros(2 ** len(wires))
+        state[0] = 1
+        return qml.math.array(state, like=like)
+
+    return prep_operation.state_vector(wire_order=wires, interface=like)
