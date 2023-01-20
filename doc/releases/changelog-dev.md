@@ -32,6 +32,8 @@
   True
   ```
   
+  This operation supports parameter broadcasting/batching.
+  
 * `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
