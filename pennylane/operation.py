@@ -2544,6 +2544,26 @@ class CVObservable(CV, Observable):
         return self.heisenberg_expand(U, wire_order)
 
 
+class StatePrepInterface(abc.ABC):
+    """An interface for state-prep operations."""
+
+    # pylint:disable=too-few-public-methods
+    @abc.abstractmethod
+    def state_vector(self, wire_order=None, interface="autograd"):
+        """
+        Returns a vector to be used as an initial state for a circuit.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels
+                from the operator's wires
+            interface (str): The name of the machine learning framework to use.
+                Will be determined automatically if not provided
+
+        Returns:
+            array: A state vector for all wires in a circuit
+        """
+
+
 def operation_derivative(operation) -> np.ndarray:
     r"""Calculate the derivative of an operation.
 

@@ -15,32 +15,11 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
-# pylint:disable=arguments-differ
-from abc import ABC, abstractmethod
-
+# pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 
 state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
-
-
-class StatePrepInterface(ABC):  # pylint:disable=too-few-public-methods
-    """An interface for state-prep operations."""
-
-    @abstractmethod
-    def state_vector(self, wire_order=None, interface="autograd"):
-        """
-        Returns a vector to be used as an initial state for a circuit.
-
-        Args:
-            wire_order (Iterable): global wire order, must contain all wire labels
-                from the operator's wires
-            interface (str): The name of the machine learning framework to use.
-                Will be determined automatically if not provided
-
-        Returns:
-            array: A state vector for all wires in a circuit
-        """
 
 
 class BasisState(Operation):
