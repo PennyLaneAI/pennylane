@@ -56,7 +56,7 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
-        lazy=True (bool): If ``lazy=False``, a simplification will be peformed such that when any of the operators is already a product operator, its operands will be used instead.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.

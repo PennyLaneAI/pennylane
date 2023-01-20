@@ -41,14 +41,14 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
         op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
 
     Returns:
-        Union[.Evolution, ~evolve.ParametrizedEvolution]: evolution operator
+        Union[.Evolution, ~pennylane.ops.op_math.evolve.ParametrizedEvolution]: evolution operator
 
-    .. seealso:: :class:`~.evolve.ParametrizedEvolution`
-    .. seealso:: :class:`~.ops.op_math.exp.Evolution`
+    .. seealso:: :class:`.ParametrizedEvolution`
+    .. seealso:: :class:`.Evolution`
 
     **Examples**
 
-    We can use ``qml.evolve`` to compute the evolution of any PL operator:
+    We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
 
     >>> op = qml.s_prod(2, qml.PauliX(0))
     >>> qml.evolve(op)
@@ -63,12 +63,12 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     >>> qml.evolve(H)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
-    Please check the :class:`~.evolve.ParametrizedEvolution` class for more information.
+    Please check the :class:`.ParametrizedEvolution` class for more information.
     """
     if isinstance(op, ParametrizedHamiltonian):
         return ParametrizedEvolution(H=op)
 
-    return Evolution(generator=op, param=-1.0)
+    return Evolution(generator=op, param=1.0)
 
 
 class ParametrizedEvolution(Operation):
@@ -106,7 +106,7 @@ class ParametrizedEvolution(Operation):
 
     .. note::
 
-        To execute two :class:`ParametrizedHamiltonian``s simultaneously one must wrap them with the
+        To execute two :class:`ParametrizedHamiltonian`s simultaneously one must wrap them with the
         same ``ParametrizedEvolution`` gate.
 
     **Example**

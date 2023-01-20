@@ -23,10 +23,6 @@ import pennylane as qml
 from pennylane.operation import AnyWires
 from pennylane.ops import Evolution, ParametrizedEvolution, ParametrizedHamiltonian, QubitUnitary
 
-pytest_mark = pytest.mark.jax
-jax = pytest.importorskip("jax")
-jnp = pytest.importorskip("jax.numpy")
-
 
 class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
     """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
@@ -52,6 +48,7 @@ def time_independent_hamiltonian():
 
 
 def time_dependent_hamiltonian():
+    import jax.numpy as jnp
 
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
 
@@ -65,6 +62,13 @@ def time_dependent_hamiltonian():
     return ParametrizedHamiltonian(coeffs, ops)
 
 
+def test_error_raised_if_jax_not_installed():
+    """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
+    with pytest.raises(ImportError, match="Module jax is required"):
+        ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))
+
+
+@pytest.mark.jax
 class TestInitialization:
     """Unit tests for the ParametrizedEvolution class."""
 
@@ -110,6 +114,7 @@ class TestInitialization:
             _ = ParametrizedEvolution(H=H, params=[1, 2], t=2)
 
 
+@pytest.mark.jax
 class TestMatrix:
     """Test matrix method."""
 
@@ -128,6 +133,8 @@ class TestMatrix:
         """Test matrix method for a time dependent hamiltonian. This test approximates the
         time-ordered exponential with a product of exponentials using small time steps.
         For more information, see https://en.wikipedia.org/wiki/Ordered_exponential."""
+        import jax
+        import jax.numpy as jnp
 
         H = time_dependent_hamiltonian()
 
@@ -146,12 +153,16 @@ class TestMatrix:
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
 
 
+@pytest.mark.jax
 class TestIntegration:
     """Integration tests for the ParametrizedEvolution class."""
 
     # pylint: disable=unused-argument
     def test_time_independent_hamiltonian(self):
         """Test the execution of a time independent hamiltonian."""
+        import jax
+        import jax.numpy as jnp
+
         H = time_independent_hamiltonian()
 
         dev = qml.device("default.qubit", wires=2)
@@ -191,6 +202,8 @@ class TestIntegration:
         """Test the execution of a time dependent hamiltonian. This test approximates the
         time-ordered exponential with a product of exponentials using small time steps.
         For more information, see https://en.wikipedia.org/wiki/Ordered_exponential."""
+        import jax
+        import jax.numpy as jnp
 
         H = time_dependent_hamiltonian()
 
@@ -232,6 +245,7 @@ class TestIntegration:
         )
 
 
+@pytest.mark.jax
 class TestEvolveConstructor:
     """Unit tests for the evolve function"""
 
@@ -246,7 +260,7 @@ class TestEvolveConstructor:
         """Test that the matrix of the evolved function is correct."""
         op = qml.s_prod(2, qml.PauliX(0))
         final_op = qml.evolve(op)
-        mat = qml.math.expm(-1j * qml.matrix(op))
+        mat = qml.math.expm(1j * qml.matrix(op))
         assert qml.math.allequal(qml.matrix(final_op), mat)
 
     def test_evolve_returns_parametrized_evolution(self):
