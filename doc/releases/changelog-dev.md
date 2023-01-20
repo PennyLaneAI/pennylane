@@ -275,7 +275,6 @@
 
 * Introduce the `ExecutionConfig` data class.
   [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
->>>>>>> master
 
 <h3>Breaking changes</h3>
 
