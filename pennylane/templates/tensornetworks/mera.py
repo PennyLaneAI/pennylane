@@ -228,24 +228,17 @@ class MERA(Operation):
         if block.__code__.co_argcount > 2:
             for idx, w in enumerate(ind_gates):
 
-                with qml.tape.QuantumTape() as tape1:
-                    block(*weights[idx], wires=w)
-
-                op_list += list(tape1)
+                script = qml.tape.make_qscript(block)(*weights[idx], wires=w)
+                op_list += list(script)
         elif block.__code__.co_argcount == 2:
             for idx, w in enumerate(ind_gates):
 
-                with qml.tape.QuantumTape() as tape2:
-                    block(weights[idx], wires=w)
-
-                op_list += list(tape2)
+                script = qml.tape.make_qscript(block)(weights[idx], wires=w)
+                op_list += list(script)
         else:
-            for idx, w in enumerate(ind_gates):
-
-                with qml.tape.QuantumTape() as tape3:
-                    block(wires=w)
-
-                op_list += list(tape3)
+            for w in ind_gates:
+                script = qml.tape.make_qscript(block)(wires=w)
+                op_list += list(script)
 
         return op_list
 

@@ -32,7 +32,7 @@ OPTIONS = {"single", "double", "double_odd", "chain", "ring", "pyramid", "all_to
 def wires_ring(wires):
     """Wire sequence for the ring pattern"""
 
-    if len(wires) in [0, 1]:
+    if len(wires) in {0, 1}:
         return []
 
     if len(wires) == 2:
@@ -40,8 +40,7 @@ def wires_ring(wires):
         # to avoid duplication of single gate
         return [wires.subset([0, 1])]
 
-    sequence = [wires.subset([i, i + 1], periodic_boundary=True) for i in range(len(wires))]
-    return sequence
+    return [wires.subset([i, i + 1], periodic_boundary=True) for i in range(len(wires))]
 
 
 def wires_pyramid(wires):
@@ -77,12 +76,12 @@ PATTERN_TO_WIRES = {
 # define required number of parameters
 PATTERN_TO_NUM_PARAMS = {
     "single": len,  # Use the length of the given wires.
-    "double": lambda wires: 0 if len(wires) in [0, 1] else len(wires) // 2,
-    "double_odd": lambda wires: 0 if len(wires) in [0, 1] else (len(wires) - 1) // 2,
-    "chain": lambda wires: 0 if len(wires) in [0, 1] else len(wires) - 1,
-    "ring": lambda wires: 0 if len(wires) in [0, 1] else (1 if len(wires) == 2 else len(wires)),
-    "pyramid": lambda w: 0 if len(w) in [0, 1] else sum(i + 1 for i in range(len(w) // 2)),
-    "all_to_all": lambda wires: 0 if len(wires) in [0, 1] else len(wires) * (len(wires) - 1) // 2,
+    "double": lambda wires: 0 if len(wires) in {0, 1} else len(wires) // 2,
+    "double_odd": lambda wires: 0 if len(wires) in {0, 1} else (len(wires) - 1) // 2,
+    "chain": lambda wires: 0 if len(wires) in {0, 1} else len(wires) - 1,
+    "ring": lambda wires: 0 if len(wires) in {0, 1} else (1 if len(wires) == 2 else len(wires)),
+    "pyramid": lambda w: 0 if len(w) in {0, 1} else sum(i + 1 for i in range(len(w) // 2)),
+    "all_to_all": lambda wires: 0 if len(wires) in {0, 1} else len(wires) * (len(wires) - 1) // 2,
     "custom": lambda wires: len(wires) if wires is not None else None,
 }
 ###################
@@ -560,11 +559,11 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     wire_sequence, parameters = _preprocess(parameters, pattern, wires)
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         if parameters is None:
             for i in range(len(wire_sequence)):
                 unitary(wires=wire_sequence[i], **kwargs)
         else:
             for i in range(len(wire_sequence)):
                 unitary(*parameters[i], wires=wire_sequence[i], **kwargs)
-    return list(tape)
+    return list(qml.tape.QuantumScript.from_queue(q))

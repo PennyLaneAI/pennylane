@@ -215,21 +215,18 @@ class TTN(Operation):
         if block.__code__.co_argcount > 2:
             for idx, w in enumerate(ind_gates):
 
-                with qml.tape.QuantumTape() as tape:
-                    block(*weights[idx], wires=w)
-                op_list += list(tape)
+                script = qml.tape.make_qscript(block)(*weights[idx], wires=w)
+                op_list += list(script)
 
         elif block.__code__.co_argcount == 2:
             for idx, w in enumerate(ind_gates):
-                with qml.tape.QuantumTape() as tape:
-                    block(weights[idx], wires=w)
-                op_list += list(tape)
+                script = qml.tape.make_qscript(block)(weights[idx], wires=w)
+                op_list += list(script)
 
         else:
             for idx, w in enumerate(ind_gates):
-                with qml.tape.QuantumTape() as tape:
-                    block(wires=w)
-                op_list += list(tape)
+                script = qml.tape.make_qscript(block)(wires=w)
+                op_list += list(script)
 
         return op_list
 

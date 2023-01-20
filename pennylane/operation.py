@@ -1234,10 +1234,10 @@ class Operator(abc.ABC):
         raise AdjointUndefinedError
 
     def expand(self):
-        """Returns a quantum script that has contains the decomposition of the operator.
+        """Returns a tape that contains the decomposition of the operator.
 
         Returns:
-            .QuantumScript: quantum script
+            .QuantumTape: quantum tape
         """
         if not self.has_decomposition:
             raise DecompositionUndefinedError

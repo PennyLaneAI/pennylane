@@ -178,10 +178,8 @@ class MPS(Operation):
         """
         decomp = []
         for idx, w in enumerate(ind_gates):
-            with qml.tape.QuantumTape() as tape:
-                block(weights=weights[idx][:], wires=w.tolist())
-
-            decomp += list(tape)
+            script = qml.tape.make_qscript(block)(weights=weights[idx][:], wires=w.tolist())
+            decomp += list(script)
         return decomp
 
     @staticmethod
