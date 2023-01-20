@@ -15,4 +15,4 @@
 This module contains classes and functions used in pulse programming.
 """
 
-from .convenience_functions import window
+from .convenience_functions import constant, piecewise

@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This file contains the ``piecewise`` pulse convenience function."""
-from typing import Callable, Tuple, Union
+"""This file contains convenience functions for pulse programming."""
+from typing import Callable, List, Tuple, Union
 
 has_jax = True
 try:
@@ -21,17 +21,30 @@ except ImportError:
     has_jax = False
 
 
-def window(x: Union[float, Callable], *cond: Tuple[float, Tuple[float]]):
-    """Evaluates the given function/scalar ``x``inside the time windows defined in ``cond``.
+def constant(windows: List[Tuple[float]]):
+    """Returns a callable ``f(p, t)`` that returns ``p`` inside the time
+    windows defined in ``windows``.
+
+    Args:
+        windows (Tuple[float, Tuple[float]]): list of tuples containing time windows where x is
+            evaluated
+    """
+    return piecewise(x=lambda p, _: p, windows=windows)
+
+
+def piecewise(x: Union[float, Callable], windows: List[Tuple[float]]):
+    """Returns a callable ``f(p, t)`` that evaluates the given function/scalar ``x``inside the time
+    windows defined in ``windows``.
 
     .. note::
 
-        If ``x`` is a callable, it must accepts two arguments: the trainable parameters and time.
+        If ``x`` is a function, it must accepts two arguments: the trainable parameters and time.
 
     Args:
         x (Union[float, Callable]): a scalar or a function that accepts two arguments: the trainable
             parameters and time
-        cond (Tuple[float, Tuple[float]]): tuple of tuples containing time windows where x is evaluated
+        windows (Tuple[float, Tuple[float]]): list of tuples containing time windows where x is
+            evaluated
     """
     if not has_jax:
         raise ImportError(
@@ -40,14 +53,16 @@ def window(x: Union[float, Callable], *cond: Tuple[float, Tuple[float]]):
         )
     if not callable(x):
 
-        def f(_, __):
+        def _f(_, __):
             return jnp.array(x, dtype=float)
 
     else:
-        f = x
+        _f = x
 
-    def _window(p, t):
+    def f(p, t):
         p = jnp.array(p, dtype=float)  # if p is an integer, f(p, t) will be cast to an integer
-        return jnp.where(jnp.any(jnp.array([(t >= ti) & (t <= tf) for ti, tf in cond])), f(p, t), 0)
+        return jnp.where(
+            jnp.any(jnp.array([(t >= ti) & (t <= tf) for ti, tf in windows])), _f(p, t), 0
+        )
 
-    return _window
+    return f
