@@ -221,9 +221,6 @@ class GellMann(Observable):
     def __repr__(self):
         return f"GellMann{self.hyperparameters['index']}(wires=[{self.wires[0]}])"
 
-    def __repr__(self):
-        return f"GellMann(wires=[{self.wires[0]}], index={self.hyperparameters['index']})"
-
     _eigvecs = {
         1: np.array(
             [[1 / np.sqrt(2), -1 / np.sqrt(2), 0], [1 / np.sqrt(2), 1 / np.sqrt(2), 0], [0, 0, 1]],
