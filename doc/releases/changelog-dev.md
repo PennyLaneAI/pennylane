@@ -290,6 +290,9 @@
   keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
+* Implemented the XYX single-qubit unitary decomposition. 
+  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628) 
+
 * Allow `Sum` and `Prod` to have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
@@ -340,6 +343,9 @@
 
 <h3>Documentation</h3>
 
+* Updated the code example in `qml.SparseHamiltonian` with the correct wire range.
+  [(#3643)](https://github.com/PennyLaneAI/pennylane/pull/3643)
+  
 * Added hyperlink text for an URL in the `qml.qchem.mol_data` docstring.
   [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
 
@@ -385,6 +391,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Ikko Ashimine
 Utkarsh Azad
+Cristian Boghiu
 Astral Cai
 Lillian M. A. Frederiksen
 Soran Jahangiri
