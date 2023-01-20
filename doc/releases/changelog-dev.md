@@ -6,7 +6,7 @@
 
 * A new `qfunc_transform` called `insert_paulirot` was added. It adds `PauliRot`
   gates with vanishing rotation angles to circuits that contain `SpecialUnitary` gates
-  [(#3656)](https://github.com/PennyLaneAI/pennylane/pull/3656)
+  [(#3657)](https://github.com/PennyLaneAI/pennylane/pull/3657)
 
   For quantum functions that contain `SpecialUnitary` gates (see below for the newly
   added operation), this transform adds `PauliRot` gates in such a way that 
