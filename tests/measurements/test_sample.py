@@ -19,6 +19,7 @@ import pennylane as qml
 from pennylane.measurements import Sample
 from pennylane.operation import EigvalsUndefinedError, Operator
 
+# pylint: disable=protected-access, no-member, too-few-public-methods
 
 # TODO: Remove this when new CustomMP are the default
 def custom_measurement_process(device, spy):

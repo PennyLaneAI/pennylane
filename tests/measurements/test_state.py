@@ -283,7 +283,7 @@ class TestState:
     def test_gradient_with_passthru_autograd(self):
         """Test that the gradient of the state is accessible when using default.qubit.autograd
         with the backprop diff_method."""
-        from pennylane import numpy as anp
+        from pennylane import numpy as anp  # pylint: disable=reimported
 
         dev = qml.device("default.qubit.autograd", wires=1)
 

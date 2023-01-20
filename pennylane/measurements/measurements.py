@@ -255,7 +255,7 @@ class MeasurementProcess(ABC):
 
     @staticmethod
     @functools.lru_cache()
-    def _get_num_basis_states(num_wires, device):
+    def _get_num_basis_states(num_wires, config):
         """Auxiliary function to determine the number of basis states given the
         number of systems and a quantum device.
 
@@ -267,12 +267,16 @@ class MeasurementProcess(ABC):
 
         Args:
             num_wires (int): the number of qubits/qumodes
-            device (.Device): a PennyLane device
+            config (.Device or .ExecutionConfig): a PennyLane device or execution config
 
         Returns:
             int: the number of basis states
         """
-        cutoff = getattr(device, "cutoff", None)
+        if isinstance(config, qml.Device):
+            cutoff = getattr(config, "cutoff", None)
+        else:
+            cutoff = config.device_options.get("cutoff", None)
+
         base = 2 if cutoff is None else cutoff
         return base**num_wires
 
