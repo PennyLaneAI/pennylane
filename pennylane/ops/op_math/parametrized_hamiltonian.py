@@ -186,6 +186,7 @@ class ParametrizedHamiltonian:
     @property
     def ops(self):
         """Return the operators defining the ``ParametrizedHamiltonian``.
+
         Returns:
             Iterable[Observable]): observables in the Hamiltonian expression
         """

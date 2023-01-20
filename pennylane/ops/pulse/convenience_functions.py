@@ -38,8 +38,7 @@ def pwc_from_array(t):
     **Example**
 
     >>> t1, t2 = 1, 3
-    >>> index = 0
-    >>> f1 = pwc_from_array((t1, t2), index)
+    >>> f1 = pwc_from_array((t1, t2))
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed parameters and a time,
     it will assign the array at ``params[index]`` as the constants in the piecewise function, and select
@@ -55,6 +54,11 @@ def pwc_from_array(t):
     >>> f1(params, 2.5)  # next bin
     tensor(17.77777778, requires_grad=True)
     """
+    if not has_jax:
+        raise ImportError(
+            "Module jax is required for any pulse-related convenience function. "
+            "You can install jax via: pip install jax"
+        )
 
     if isinstance(t, tuple):
         t1, t2 = t
@@ -64,7 +68,13 @@ def pwc_from_array(t):
 
     def func(params, t):
         num_bins = len(params)
-        idx = qml.math.array(num_bins / (t2 - t1) * (t - t1)).astype(int)
+        # include 0 as an additional option for function output
+        params = jnp.array(list(params) + [0])
+
+        # get idx from timestamp, then set idx=0 if idx is out of bounds for the array
+        idx = jnp.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
+        idx = jnp.where((idx >= 0) & (idx <= num_bins), idx, -1)
+
         return params[idx]
 
     return func
@@ -107,6 +117,11 @@ def pwc_from_function(t, num_bins):
     DeviceArray(10.666666, dtype=float32)
 
     """
+    if not has_jax:
+        raise ImportError(
+            "Module jax is required for any pulse-related convenience function. "
+            "You can install jax via: pip install jax"
+        )
 
     if isinstance(t, tuple):
         t1, t2 = t
@@ -119,8 +134,8 @@ def pwc_from_function(t, num_bins):
 
         def wrapper(params, t):
             constants = jnp.array(fn(params, time_bins))
-            idx = qml.math.array(num_bins / (t2 - t1) * (t - t1)).astype(int)
-            return constants[idx]
+            idx = qml.math.array(num_bins / (t2 - t1) * (t - t1), dtype=int)
+            return jnp.where((t >= t1) & (t <= t2), constants[idx], 0)
 
         return wrapper
 
