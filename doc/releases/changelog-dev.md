@@ -59,7 +59,7 @@
 
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
-<h4>Do more with gradients</h4>
+<h4>Always differentiable 📈</h4>
 
 * The JAX-JIT interface now supports higher-order gradient computation with the new return types system.
   [(#3498)](https://github.com/PennyLaneAI/pennylane/pull/3498)
@@ -97,8 +97,6 @@
      DeviceArray(0.41614684, dtype=float64, weak_type=True))))
   ```
 
-<h4>QChem</h4>
-
 * The qchem workflow is modified to support both Autograd and JAX frameworks.
   [(#3458)](https://github.com/PennyLaneAI/pennylane/pull/3458)
   [(#3462)](https://github.com/PennyLaneAI/pennylane/pull/3462)
@@ -126,7 +124,9 @@
   >>> DeviceArray([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]], dtype=float32)
   ```
 
-* Added `qml.qchem.givens_decomposition` method that decompose a unitary into a sequence
+<h4>Tools for quantum chemistry and other applications 🛠️</h4>
+
+* Added `qml.qchem.givens_decomposition` method that decomposes a unitary into a sequence
   of Givens rotation gates with phase shifts and a diagonal phase matrix.
   [(#3573)](https://github.com/PennyLaneAI/pennylane/pull/3573)
 
@@ -182,8 +182,6 @@
 * The function `load_basisset` is added to extract qchem basis set data from the Basis Set Exchange
   library.
   [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
-
-<h4>New ops and measurements</h4>
 
 * The function `max_entropy` is added to compute the maximum entropy of a quantum state.
   [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
