@@ -152,7 +152,6 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         )
         n_wires = len(self.wires)
         dim = self._get_num_basis_states(n_wires, config)
-        # TODO: Change/fix this (maybe??)
 
         return (num_shot_elements, dim)
 
@@ -167,7 +166,6 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         )
         n_wires = len(self.wires)
         dim = self._get_num_basis_states(n_wires, config)
-        # TODO: Change/fix this (maybe??)
 
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
