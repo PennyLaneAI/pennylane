@@ -278,7 +278,7 @@
 * Introduce the `ExecutionConfig` data class.
   [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
 
-* All input parameters that are lists are casted into vanilla numpy arrays.
+* All input parameters that are lists are cast into vanilla numpy arrays.
   [(#3659)](https://github.com/PennyLaneAI/pennylane/pull/3659)
 
 <h3>Breaking changes</h3>
