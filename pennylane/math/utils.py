@@ -532,11 +532,11 @@ def in_backprop(tensor, interface=None):
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
 
 
-def pwc_from_array(dt, index):
+def pwc_from_array(t, index):
     """Create a function that is piecewise-constant in time, based on the params for a TDHamiltonian.
 
     Args:
-        dt(Union[float, tuple(float, float)]: the total duration as a float, or the start and end time as floats.
+        t(Union[float, tuple(float, float)]: the total duration as a float, or the start and end time as floats.
         index(int): the index at which the relevant parameter array is located in the overall ``params`` variable
 
     Returns:
@@ -551,7 +551,7 @@ def pwc_from_array(dt, index):
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed parameters and a time,
     it will assign the array at ``params[index]`` as the constants in the piecewise function, and select
-    the constant corresponding to the specified time, based on the previously specified interval ``t1`` to ``t2``.
+    the constant corresponding to the specified time, based on the time interval defined by ``t``.
 
     >>> params = [np.linspace(10, 20, 10)]
     >>> f1(params, 2)
@@ -564,11 +564,11 @@ def pwc_from_array(dt, index):
     tensor(17.77777778, requires_grad=True)
     """
 
-    if isinstance(dt, tuple):
-        t1, t2 = dt
+    if isinstance(t, tuple):
+        t1, t2 = t
     else:
         t1 = 0
-        t2 = dt
+        t2 = t
 
     def func(params, t):
         params = params[index]
@@ -583,25 +583,24 @@ def pwc_from_array(dt, index):
     return func
 
 
-def pwc_from_function(dt, num_bins):
+def pwc_from_function(t, num_bins):
     """
     Decorator to turn a smooth function into a piecewise constant function.
 
     Args:
-        t1(float): start time
-        t2(float): end time
-        num_bins: number of bins for time-binning the function
+        t(Union[float, tuple(float)]):
+        num_bins(int): number of bins for time-binning the function
 
     Returns:
-        a function that takes some smooth function `f(params, t)` and converts it to a
-        piecewise constant function spanning `t1` to `t2` in `num_bins` bins.
+        a function that takes some smooth function ``f(params, t)`` and converts it to a
+        piecewise constant function spanning time ``t`` in `num_bins` bins.
 
     **Example**
 
     >>> def f0(params, t): return params[0] * t + params[1]
-    >>> dt = 10
+    >>> t = 10
     >>> num_bins = 10
-    >>> f1 = pwc_from_function(dt, num_bins)(f0)
+    >>> f1 = pwc_from_function(t, num_bins)(f0)
     >>> f1([2, 4], 3), f0([2, 4], 3)
     (DeviceArray(10.666666, dtype=float32), DeviceArray(10, dtype=int32))
 
@@ -615,18 +614,18 @@ def pwc_from_function(dt, num_bins):
 
     The same effect can be achieved by decorating the smooth function:
 
-    >>> @pwc_from_function(dt, num_bins)
+    >>> @pwc_from_function(t, num_bins)
     >>> def fn(params, t): return params[0] * t + params[1]
     >>> fn([2, 4], 3)
     DeviceArray(10.666666, dtype=float32)
 
     """
 
-    if isinstance(dt, tuple):
-        t1, t2 = dt
+    if isinstance(t, tuple):
+        t1, t2 = t
     else:
         t1 = 0
-        t2 = dt
+        t2 = t
 
     def inner(fn):
         time_bins = np.linspace(t1, t2, num_bins)
