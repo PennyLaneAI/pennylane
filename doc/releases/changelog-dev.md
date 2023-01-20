@@ -115,9 +115,6 @@
 
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
-* Support `qml.math.size` with torch tensors.
-  [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
-
 * Added `ParametrizedEvolution`, which computes the time evolution of a `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
 
@@ -212,6 +209,9 @@
   ```
   
 <h3>Improvements</h3>
+
+* Support `qml.math.size` with torch tensors.
+  [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
 * `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
