@@ -104,6 +104,8 @@ class QubitUnitary(Operation):
                 UserWarning,
             )
 
+        U = qml.math.array(U)  # cast U to a tensor
+
         super().__init__(U, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod

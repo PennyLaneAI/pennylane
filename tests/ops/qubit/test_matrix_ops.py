@@ -91,6 +91,14 @@ class TestQubitUnitary:
 
         assert qml.math.allclose(mat_to_pow, new_mat)
 
+    def test_qubit_unitary_input_casted_to_array(self):
+        """Test that the matrix passed to ``QubitUnitary`` is casted to a numpy array."""
+        U = [[1, 0], [0, 1]]
+        unitary = qml.QubitUnitary(U, wires=0)
+
+        assert isinstance(unitary.parameters[0], np.ndarray)
+        assert isinstance(unitary.matrix(), np.ndarray)
+
     @pytest.mark.autograd
     @pytest.mark.parametrize(
         "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
@@ -166,7 +174,7 @@ class TestQubitUnitary:
         out = qml.QubitUnitary(U, wires=range(num_wires)).matrix()
 
         # verify output type
-        assert isinstance(out, tf.Variable)
+        assert isinstance(out, tf.Tensor)
 
         # verify equivalent to input state
         assert qml.math.allclose(out, U)
