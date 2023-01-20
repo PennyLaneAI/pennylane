@@ -321,7 +321,7 @@ class DiagonalQubitUnitary(Operation):
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
 
     def pow(self, z):
-        casted_data = qml.math.cast(self.data[0], np.complex128)
+        cast_data = qml.math.cast(self.data[0], np.complex128)
         return [DiagonalQubitUnitary(casted_data**z, wires=self.wires)]
 
     def _controlled(self, control):
