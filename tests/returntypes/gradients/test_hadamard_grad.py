@@ -567,10 +567,65 @@ class TestParameterShiftRule:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
-    # TODO: add tests
-    # def test_multiple_expectation_values(self, tol):
+
+    def test_multiple_expectation_values(self, tol):
+        """Tests correct output shape and evaluation for a tape
+        with multiple expval outputs"""
+        dev = qml.device("default.qubit", wires=3)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliX(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tapes, fn = qml.gradients.hadamard_grad(tape)
+        assert len(tapes) == 2
+
+        res = fn(dev.batch_execute(tapes))
+
+        assert len(res) == 2
+        assert len(res[0]) == 2
+        assert len(res[1]) == 2
+
+        expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
+        print(res, expected)
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+
+    def test_diff_single_probs(self):
+            """Test diff of single probabilities."""
+            dev = qml.device("default.qubit", wires=3)
+            x = 0.543
+            y = -0.654
+
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.probs(wires=[1])
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            tapes, fn = qml.gradients.hadamard_grad(tape)
+
+            res = fn(dev.batch_execute(tapes))
+
+            expected = np.array(
+                [
+                    [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
+                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+                ]
+            )
+            print(res, expected)
+
+    # def test_prob_expectation_values(self, tol):
     #     """Tests correct output shape and evaluation for a tape
-    #     with multiple expval outputs"""
+    #     with prob and expval outputs"""
+    #
     #     dev = qml.device("default.qubit", wires=3)
     #     x = 0.543
     #     y = -0.654
@@ -580,45 +635,18 @@ class TestParameterShiftRule:
     #         qml.RY(y, wires=[1])
     #         qml.CNOT(wires=[0, 1])
     #         qml.expval(qml.PauliZ(0))
-    #         qml.expval(qml.PauliX(1))
+    #         #qml.probs(wires=[0])
     #
     #     tape = qml.tape.QuantumScript.from_queue(q)
     #     tapes, fn = qml.gradients.hadamard_grad(tape)
-    #     assert len(tapes) == 2
+    #     # assert len(tapes) == 2
     #
     #     res = fn(dev.batch_execute(tapes))
-    #     assert len(res) == 2
-    #     assert len(res[0]) == 2
-    #     assert len(res[1]) == 2
-    #
-    #     expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
-    #     assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-    #     assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
-    #
-    # def test_prob_expectation_values(self, tol):
-    #     """Tests correct output shape and evaluation for a tape
-    #     with prob and expval outputs"""
-    #
-    #     dev = qml.device("default.qubit", wires=2)
-    #     x = 0.543
-    #     y = -0.654
-    #
-    #     with qml.queuing.AnnotatedQueue() as q:
-    #         qml.RX(x, wires=[0])
-    #         qml.RY(y, wires=[1])
-    #         qml.CNOT(wires=[0, 1])
-    #         qml.expval(qml.PauliZ(0))
-    #         qml.probs(wires=[0, 1])
-    #
-    #     tape = qml.tape.QuantumScript.from_queue(q)
-    #     tapes, fn = qml.gradients.hadamard_grad(tape)
-    #     assert len(tapes) == 2
-    #
-    #     res = fn(dev.batch_execute(tapes))
-    #     assert len(res) == 2
-    #
-    #     for r in res:
-    #         assert len(r) == 2
+    #     print("res", res)
+    #     # assert len(res) == 2
+    #     #
+    #     # for r in res:
+    #     #     assert len(r) == 2
     #
     #     expval_expected = [-2 * np.sin(x) / 2, 0]
     #     probs_expected = (
@@ -644,14 +672,14 @@ class TestParameterShiftRule:
     #         )
     #         / 2
     #     )
-    #
-    #     # Expvals
-    #     assert np.allclose(res[0][0], expval_expected[0])
-    #     assert np.allclose(res[0][1], expval_expected[1])
-    #
-    #     # Probs
-    #     assert np.allclose(res[1][0], probs_expected[:, 0])
-    #     assert np.allclose(res[1][1], probs_expected[:, 1])
+    #     print("exp", expval_expected, probs_expected)
+    #     # # Expvals
+    #     # assert np.allclose(res[0][0], expval_expected[0])
+    #     # assert np.allclose(res[0][1], expval_expected[1])
+    #     #
+    #     # # Probs
+    #     # assert np.allclose(res[1][0], probs_expected[:, 0])
+    #     # assert np.allclose(res[1][1], probs_expected[:, 1])
     #
     #
     # def cost1(x):
