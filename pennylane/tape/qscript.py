@@ -36,6 +36,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Observable, Operator
 from pennylane.queuing import AnnotatedQueue, process_queue
+from pennylane.wires import Wires
 
 _empty_wires = qml.wires.Wires([])
 
@@ -169,11 +170,7 @@ class QuantumScript:
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
-        self._measured_wires = (
-            []
-            if measurements is None
-            else set(wire for m in self.measurements for wire in m.wires if m.obs is not None)
-        )
+        self._measured_wires = Wires([])
 
         self._par_info = []
         """list[dict[str, Operator or int]]: Parameter information.
@@ -455,18 +452,13 @@ class QuantumScript:
         Sets:
             _measured_wires (int): The wires measured in this QuantumScript
         """
-
-        def extract_wires(obs):
-            for wire in obs.wires:
-                if wire not in self._measured_wires:
-                    self._measured_wires.append(wire)
+        wires = []
 
         for m in self.measurements:
-            if isinstance(m.obs, list):
-                for obs in m.obs:
-                    extract_wires(obs)
-            elif m.obs is not None:
-                extract_wires(m.obs)
+            if m.obs is not None:
+                wires.append(m.obs.wires)
+
+        self._measured_wires = Wires.all_wires([*wires, self._measured_wires])
 
     def _update_batch_size(self):
         """Infer the batch_size of the quantum script from the batch sizes of its operations
