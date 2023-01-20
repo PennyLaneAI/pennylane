@@ -145,14 +145,15 @@ windows2 = [(5, 8)]
 coeffs = [qml.pulse.piecewise(f1, windows1), qml.pulse.constant(windows2)]
 ops = [qml.PauliX(0), qml.PauliY(1)]
 
-H = qml.ops.dot(coeffs, ops)
 
-
+@pytest.mark.jax
 class TestIntegration:
     """Unit tests testing the integration of convenience functions with parametrized hamiltonians."""
 
     def test_parametrized_hamiltonian(self):
         """Test that convenience functions can be used to define parametrized hamiltonians."""
+        H = qml.ops.dot(coeffs, ops)
+
         assert isinstance(H, ParametrizedHamiltonian)
         # assert that at t=4.5 both functions are 0
         assert qml.math.allequal(qml.matrix(H(params=[1, 2], t=4.5)), 0)
@@ -169,6 +170,8 @@ class TestIntegration:
         can be executed on a QNode."""
         import jax
         import jax.numpy as jnp
+
+        H = qml.ops.dot(coeffs, ops)
 
         t = (1, 10)
 
