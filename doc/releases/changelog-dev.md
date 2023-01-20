@@ -260,6 +260,9 @@
   keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
+* Implemented the XYX single-qubit unitary decomposition. 
+  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628) 
+
 * Allow `Sum` and `Prod` to have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
@@ -358,6 +361,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Ikko Ashimine
 Utkarsh Azad
+Cristian Boghiu
 Astral Cai
 Lillian M. A. Frederiksen
 Soran Jahangiri
