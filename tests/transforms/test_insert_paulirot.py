@@ -152,8 +152,10 @@ class TestGetOneParameterGeneratorsDiffability:
         np.random.seed(14521)
         d = 4**n - 1
         theta = torch.tensor(np.random.random(d), requires_grad=True)
+
         def fn(theta):
             return get_one_parameter_generators(theta, n, "torch")
+
         dOmegas = torch.autograd.functional.jacobian(fn, theta)
         assert dOmegas.shape == (d, 2**n, 2**n, d)
 
@@ -259,8 +261,10 @@ def make_ones(interface):
         import jax
 
         jax.config.update("jax_enable_x64", True)
+
         def ones(x):
             return jax.numpy.array(jax.numpy.ones(x))
+
     elif interface == "torch":
         import torch
 
@@ -270,6 +274,7 @@ def make_ones(interface):
 
         def ones(x):
             return tf.Variable(np.ones(x))
+
     return ones
 
 

@@ -90,10 +90,13 @@ def get_one_parameter_generators(theta, num_wires, interface="jax"):
     elif interface in ["torch", "autograd"]:
         # TODO check whether we can add support for Autograd using eigenvalue decomposition
         if interface == "autograd":
-            raise NotImplementedError("The matrix exponential expm is not differentiable in Autograd.")
+            raise NotImplementedError(
+                "The matrix exponential expm is not differentiable in Autograd."
+            )
 
         def real_matrix(theta):
             return qml.math.real(special_unitary_matrix(theta, num_wires))
+
         def imag_matrix(theta):
             return qml.math.imag(special_unitary_matrix(theta, num_wires))
 
