@@ -1860,6 +1860,7 @@ class Tensor(Observable):
         copied_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
         copied_op.obs = self.obs.copy()
         copied_op._eigvals_cache = self._eigvals_cache
+        copied_op._batch_size = self._batch_size
         return copied_op
 
     def __repr__(self):
@@ -2254,6 +2255,7 @@ class Tensor(Observable):
         new_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
         new_op.obs = [obs.map_wires(wire_map) for obs in self.obs]
         new_op._eigvals_cache = self._eigvals_cache
+        new_op._batch_size = self._batch_size
         return new_op
 
 
