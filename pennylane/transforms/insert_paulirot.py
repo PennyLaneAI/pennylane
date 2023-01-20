@@ -87,26 +87,21 @@ def get_one_parameter_generators(theta, num_wires, interface="jax"):
         theta = qml.math.cast_like(theta, 1j)
         jac = jax.jacobian(special_unitary_matrix, argnums=0, holomorphic=True)(theta, num_wires)
 
-    elif interface == "torch":
-        import torch
+    elif interface in ["torch", "autograd"]:
+        # TODO check whether we can add support for Autograd using eigenvalue decomposition
+        if interface == "autograd":
+            raise NotImplementedError("The matrix exponential expm is not differentiable in Autograd.")
 
-        real_matrix = lambda theta: qml.math.real(special_unitary_matrix(theta, num_wires))
-        imag_matrix = lambda theta: qml.math.imag(special_unitary_matrix(theta, num_wires))
+        def real_matrix(theta):
+            return qml.math.real(special_unitary_matrix(theta, num_wires))
+        def imag_matrix(theta):
+            return qml.math.imag(special_unitary_matrix(theta, num_wires))
+
+        import torch
 
         # These lines compute the Jacobian of compute_matrix every time -> to be optimized
         real_jac = torch.autograd.functional.jacobian(real_matrix, theta)
         imag_jac = torch.autograd.functional.jacobian(imag_matrix, theta)
-        jac = real_jac + 1j * imag_jac
-
-    elif interface == "autograd":
-        raise NotImplementedError(f"The matrix exponential expm is not differentiable in Autograd.")
-        # TODO check whether we can add support for Autograd using eigenvalue decomposition
-        real_matrix = lambda theta: qml.math.real(special_unitary_matrix(theta, num_wires))
-        imag_matrix = lambda theta: qml.math.imag(special_unitary_matrix(theta, num_wires))
-
-        # These lines compute the Jacobian of compute_matrix every time -> to be optimized
-        real_jac = qml.jacobian(real_matrix, theta)
-        imag_jac = qml.jacobian(imag_matrix, theta)
         jac = real_jac + 1j * imag_jac
 
     elif interface in ("tensorflow", "tf"):
@@ -335,7 +330,7 @@ def insert_paulirot(tape):
         zeros = qml.math.tensordot(omega, zeros, axes=[[1], [0]])
 
         # Apply Pauli rotations that yield the Pauli basis derivatives
-        [qml.PauliRot(zero, word, wires=op.wires) for zero, word in zip(zeros, words)]
+        _ = [qml.PauliRot(zero, word, wires=op.wires) for zero, word in zip(zeros, words)]
 
         # Apply the original operation, which is no longer trainable
         qml.SpecialUnitary(qml.math.to_numpy(theta), wires=op.wires, id=op.id)
