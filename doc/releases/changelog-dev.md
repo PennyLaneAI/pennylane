@@ -4,6 +4,18 @@
 
 <h3>New features since last release</h3>
 
+* A new `qfunc_transform` called `insert_paulirot` was added. It adds `PauliRot`
+  gates with vanishing rotation angles to circuits that contain `SpecialUnitary` gates
+  [(#3656)](https://github.com/PennyLaneAI/pennylane/pull/3656)
+
+  For quantum functions that contain `SpecialUnitary` gates (see below for the newly
+  added operation), this transform adds `PauliRot` gates in such a way that 
+  hardware-compatible gradient computations are enabled.
+  This transform usually will be used internally and does not need to be called
+  manually.
+  For more details see
+  [`insert_paulirot` transform](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.insert_paulirot.html).
+  
 * A new operation `SpecialUnitary` was added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
