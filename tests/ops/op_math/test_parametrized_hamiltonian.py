@@ -16,13 +16,11 @@
 Unit tests for the ParametrizedHamiltonian class
 """
 # pylint: disable=no-member
-
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.op_math import ParametrizedHamiltonian
-
 from pennylane.wires import Wires
 
 
@@ -32,7 +30,6 @@ def f1(p, t):
 
 def f2(p, t):
     return p * np.cos(t**2)
-
 
 
 param = [1.2, 2.3]
@@ -240,22 +237,18 @@ class TestInteractionWithOperators:
         will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed"""
         pH = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
         params = [1, 2]
-        
         # Adding on the right
         new_pH = pH + H
         assert pH.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
         assert new_pH.coeffs_fixed[0] == coeff
         assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(pH(params, t=0.5) + H))
-
         # Adding on the left
         new_pH = H + pH
         assert pH.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
-
         assert new_pH.coeffs_fixed[0] == coeff
         assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(pH(params, t=0.5) + H))
-
 
     @pytest.mark.parametrize("op", ops)
     def test_add_other_operators(self, op):

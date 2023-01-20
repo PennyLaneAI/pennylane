@@ -23,7 +23,6 @@ from pennylane.wires import Wires
 
 # pylint: disable= too-many-instance-attributes
 class ParametrizedHamiltonian:
-
     r"""Callable object holding the information representing a parametrized Hamiltonian.
 
     Passing parameters to the ``ParametrizedHamiltonian`` returns an
@@ -149,7 +148,6 @@ class ParametrizedHamiltonian:
             )
         return self.H_fixed() + self.H_parametrized(params, t)
 
-
     def __repr__(self):
         return f"ParametrizedHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
 
@@ -196,7 +194,6 @@ class ParametrizedHamiltonian:
     def __add__(self, H):
         r"""The addition operation between a ``ParametrizedHamiltonian`` and an ``Operator``
         or ``ParametrizedHamiltonian``."""
-        
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
