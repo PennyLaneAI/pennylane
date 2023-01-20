@@ -52,7 +52,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
 
     >>> op = qml.s_prod(2, qml.PauliX(0))
     >>> qml.evolve(op)
-    Exp((-0-1j) 2*(PauliX(wires=[0])))
+    Exp(1j 2*(PauliX(wires=[0])))
 
     When evolving a :class:`.ParametrizedHamiltonian` class, then a :class:`.ParametrizedEvolution`
     instance is returned:
@@ -106,8 +106,8 @@ class ParametrizedEvolution(Operation):
 
     .. note::
 
-        To execute two :class:`ParametrizedHamiltonian`s simultaneously one must wrap them with the
-        same ``ParametrizedEvolution`` gate.
+        To execute two :class:`ParametrizedHamiltonian` instances simultaneously one must wrap them
+        with the same ``ParametrizedEvolution`` gate.
 
     **Example**
 
