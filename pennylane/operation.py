@@ -15,6 +15,14 @@ r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
 
+.. warning::
+
+    Unless you are a PennyLane or plugin developer, you likely do not need
+    to use these classes directly.
+
+    See the :doc:`main operations page <../introduction/operations>` for
+    details on available operations and observables.
+
 Description
 -----------
 
@@ -91,6 +99,94 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 .. note::
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
+
+Contents
+^^^^^^^^
+
+.. currentmodule:: pennylane.operation
+
+<b>Operator Types:</b>
+
+.. autosummary::
+    :toctree: api
+
+    ~.Operator
+    ~.Operation
+    ~.Observable
+    ~.CV
+    ~.CVObservable
+    ~.CVOperation
+    ~.Channel
+    ~.Tensor
+
+.. inheritance-diagram:: Operator, Operation, Observable, CV, CVObservable, CVOperation, Channel, Tensor
+
+<b>Errors</b>
+
+.. autosummary::
+    :toctree: api
+
+    ~.OperatorPropertyUndefined
+    ~.AdjointUndefinedError
+    ~.DecompositionUndefinedError
+    ~.DiagGatesUndefinedError
+    ~.EigvalsUndefinedError
+    ~.GeneratorUndefinedError
+    ~.MatrixUndefinedError
+    ~.ParameterFrequenciesUndefinedError
+    ~.PowUndefinedError
+    ~.SparseMatrixUndefinedError
+    ~.TermsUndefinedError
+
+<b>Boolean Functions</b>
+
+.. autosummary::
+    :toctree: api
+
+    ~.defines_diagonalizing_gates
+    ~.gen_is_multi_term_hamiltonian
+    ~.has_gen
+    ~.has_grad_method
+    ~.has_multipar
+    ~.has_nopar
+    ~.has_unitary_gen
+    ~.is_measurement
+    ~.is_trainable
+    ~.no_tape
+
+<b>Other:</b>
+
+.. autosummary::
+    :toctree: api
+
+    ~.operation_derivative
+    ~.WiresEnum
+    ~.AllWires
+    ~.AnyWires
+
+Operation attributes
+^^^^^^^^^^^^^^^^^^^^
+
+PennyLane contains a mechanism for storing lists of operations with similar
+attributes and behaviour (for example, those that are their own inverses).
+The attributes below are already included, and are used primarily for the
+purpose of compilation transforms. New attributes can be added by instantiating
+new :class:`~pennylane.ops.qubit.attributes.Attribute` objects.
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~ops.qubit.attributes.Attribute
+    ~ops.qubit.attributes.composable_rotations
+    ~ops.qubit.attributes.diagonal_in_z_basis
+    ~ops.qubit.attributes.has_unitary_generator
+    ~ops.qubit.attributes.self_inverses
+    ~ops.qubit.attributes.supports_broadcasting
+    ~ops.qubit.attributes.symmetric_over_all_wires
+    ~ops.qubit.attributes.symmetric_over_control_wires
+
 """
 # pylint:disable=access-member-before-definition
 import abc
