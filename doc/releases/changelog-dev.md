@@ -122,9 +122,6 @@
   operator that computes its evolution.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
 
-* Support `qml.math.matmul` with a torch tensor and an autograd tensor.
-  [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
-
 * Added `qml.qchem.givens_decomposition` method that decompose a unitary into a sequence
   of Givens rotation gates with phase shifts and a diagonal phase matrix.
   [(#3573)](https://github.com/PennyLaneAI/pennylane/pull/3573)
@@ -209,6 +206,9 @@
   ```
   
 <h3>Improvements</h3>
+
+* Support `qml.math.matmul` with a torch tensor and an autograd tensor.
+  [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
 
 * Support `qml.math.size` with torch tensors.
   [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
