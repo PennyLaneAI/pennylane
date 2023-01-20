@@ -121,6 +121,13 @@
 * Support `qml.math.size` with torch tensors.
   [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
+* Added `ParametrizedEvolution`, which computes the time evolution of a `ParametrizedHamiltonian`.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+
+* Added `qml.evolve`, which accepts an operator or a `ParametrizedHamiltonian` and returns another
+  operator that computes its evolution.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+
 * Support `qml.math.matmul` with a torch tensor and an autograd tensor.
   [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
 
@@ -337,8 +344,9 @@
 * `Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
-* Set `Tensor._batch_size` to None during initialization.
+* Set `Tensor._batch_size` to None during initialization, copying and `map_wires`.
   [(#3642)](https://github.com/PennyLaneAI/pennylane/pull/3642)
+  [(#3661)](https://github.com/PennyLaneAI/pennylane/pull/3661)
 
 * Set `Tensor.has_matrix` to `True`.
   [(#3647)](https://github.com/PennyLaneAI/pennylane/pull/3647)
