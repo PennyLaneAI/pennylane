@@ -158,11 +158,11 @@ class TestIntegration:
         # assert that at t=2 both functions are 0
         assert qml.math.allequal(qml.matrix(H(params=[1, 2], t=2)), 0)
         # assert that at t=0.3 only the first coefficient is non-zero
-        true_mat = qml.matrix(f1(1, 3) * qml.PauliX(0), wire_order=[0, 1])
-        assert qml.math.allequal(qml.matrix(H(params=[1, 2], t=0.3)), true_mat)
+        true_mat = qml.matrix(f1(1, 0.3) * qml.PauliX(0), wire_order=[0, 1])
+        assert qml.math.allclose(qml.matrix(H(params=[1, 2], t=0.3)), true_mat)
         # assert that at t=0.7 only the second coefficient is non-zero
         true_mat = qml.matrix(2 * qml.PauliY(1), wire_order=[0, 1])
-        assert qml.math.allequal(qml.matrix(H(params=[1, 2], t=0.7)), true_mat)
+        assert qml.math.allclose(qml.matrix(H(params=[1, 2], t=0.7)), true_mat)
 
     @pytest.mark.slow
     @pytest.mark.jax
