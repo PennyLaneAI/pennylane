@@ -610,7 +610,7 @@ class TestMetricTensor:
         assert mt.shape == mt013.shape
         assert qml.math.allclose(mt[:2, :2], mt013[:2, :2], atol=tol, rtol=0)
         assert qml.math.allclose(mt[3, 3], mt013[3, 3], atol=tol, rtol=0)
-        assert qml.math.allclose(zeros[2, :], mt013[2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt013[2, :], atol=tol, rtol=0)
         assert qml.math.allclose(zeros[:, 2], mt013[:, 2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
