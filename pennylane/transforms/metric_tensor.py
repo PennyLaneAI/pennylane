@@ -439,15 +439,17 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
             # no tape needs to be created for this block
             continue
 
-        coeffs_list.append([])
-        obs_list.append([])
+        layer_coeffs, layer_obs = [], []
 
         # for each operation in the layer, get the generator
         for p, op in zip(param_idx, curr_ops):
             if p in argnum:
                 obs, s = qml.generator(op)
-                obs_list[-1].append(obs)
-                coeffs_list[-1].append(s)
+                layer_obs.append(obs)
+                layer_coeffs.append(s)
+
+        coeffs_list.append(layer_coeffs)
+        obs_list.append(layer_obs)
 
         # Create a quantum tape with all operations
         # prior to the parametrized layer, and the rotations
@@ -458,7 +460,7 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
                 # generators of interest and thus need not be applied.
                 qml.apply(op)
 
-            for o, param_in_argnum in zip(obs_list[-1], in_argnum_list[-1]):
+            for o, param_in_argnum in zip(layer_obs, in_argnum_list[-1]):
                 if param_in_argnum:
                     o.diagonalizing_gates()
 
