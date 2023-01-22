@@ -611,7 +611,7 @@ class TestMetricTensor:
         assert qml.math.allclose(mt[:2, :2], mt013[:2, :2], atol=tol, rtol=0)
         assert qml.math.allclose(mt[3, 3], mt013[3, 3], atol=tol, rtol=0)
         assert qml.math.allclose(0, mt013[2, :], atol=tol, rtol=0)
-        assert qml.math.allclose(zeros[:, 2], mt013[:, 2], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt013[:, 2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
         res = qml.execute(tapes, dev, None, interface=interface)
@@ -620,8 +620,8 @@ class TestMetricTensor:
         assert len(tapes) == 1
         assert mt.shape == mt23.shape
         assert qml.math.allclose(mt[2:, 2:], mt23[2:, 2:], atol=tol, rtol=0)
-        assert qml.math.allclose(zeros[:2, :], mt23[:2, :], atol=tol, rtol=0)
-        assert qml.math.allclose(zeros[:, :2], mt23[:, :2], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt23[:2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt23[:, :2], atol=tol, rtol=0)
 
         tapes, proc_fn = qml.metric_tensor(tape, argnum=0)
         res = qml.execute(tapes, dev, None, interface=interface)
@@ -630,8 +630,8 @@ class TestMetricTensor:
         assert len(tapes) == 1
         assert mt.shape == mt0.shape
         assert qml.math.allclose(mt[0, 0], mt0[0, 0], atol=tol, rtol=0)
-        assert qml.math.allclose(zeros[1:, :], mt0[1:, :], atol=tol, rtol=0)
-        assert qml.math.allclose(zeros[:, 1:], mt0[:, 1:], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt0[1:, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt0[:, 1:], atol=tol, rtol=0)
 
     def test_argnum_metric_tensor_errors(self):
         """Test that argnum successfully reduces the number of tapes and gives
