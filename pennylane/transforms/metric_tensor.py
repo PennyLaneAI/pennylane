@@ -267,10 +267,12 @@ def metric_tensor(
     elif isinstance(argnum, int):
         argnum = [argnum]
     if any(i not in tape.trainable_params for i in argnum):
-        warnings.warn(
+        raise ValueError(
             "Some parameters specified in argnum are not in the "
             f"trainable parameters {tape.trainable_params} of the tape "
-            "and will be ignored."
+            "and will be ignored. This may be caused by attempting to "
+            "differentiate with respect to parameters that are not marked "
+            "as trainable."
         )
 
     # pylint: disable=too-many-arguments

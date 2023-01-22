@@ -633,16 +633,32 @@ class TestMetricTensor:
         assert qml.math.allclose(zeros[1:, :], mt0[1:, :], atol=tol, rtol=0)
         assert qml.math.allclose(zeros[:, 1:], mt0[:, 1:], atol=tol, rtol=0)
 
-        warning = ''.join([
-            "Some parameters specified in argnum are not in the ",
-            "trainable parameters \[0, 1, 2, 3\] of the tape ",
-            "and will be ignored."
-        ])
-        with pytest.warns(UserWarning, match=warning):
+    def test_argnum_metric_tensor_errors(self):
+        """Test that argnum successfully reduces the number of tapes and gives
+        the desired outcome."""
+        dev = qml.device("default.qubit", wires=3)
+
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(weights[2], wires=1)
+            qml.RZ(weights[3], wires=0)
+
+        weights = np.array([0.1, 0.2, 0.3, 0.5], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            circuit(weights)
+
+        error_msg = (
+            "Some parameters specified in argnum are not in the "
+            "trainable parameters \[0, 1, 2, 3\] of the tape "
+            "and will be ignored. This may be caused by attempting to "
+            "differentiate with respect to parameters that are not marked "
+            "as trainable."
+        )
+        with pytest.raises(ValueError, match=error_msg):
             tapes, proc_fn = qml.metric_tensor(tape, argnum=4)
-        res = qml.execute(tapes, dev, None, interface=interface)
-        mt4 = proc_fn(res)
-        assert qml.math.allclose(zeros, mt4, atol=tol, rtol=0)
 
     def test_multi_qubit_gates(self):
         """Test that a tape with Ising gates has the correct metric tensor tapes."""
