@@ -28,16 +28,19 @@ qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", "backward", "jax-python"],
     ["default.qubit", "adjoint", "forward", "jax-python"],
     ["default.qubit", "adjoint", "backward", "jax-python"],
+    ["default.qubit", "spsa", "backward", "jax-python"],
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
     ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
+    ["default.qubit", "spsa", "backward", "jax-jit"],
     # Auto
     ["default.qubit", "finite-diff", "backward", "auto"],
     ["default.qubit", "parameter-shift", "backward", "auto"],
     ["default.qubit", "adjoint", "forward", "auto"],
     ["default.qubit", "adjoint", "backward", "auto"],
+    ["default.qubit", "spsa", "backward", "auto"],
 ]
 
 pytestmark = pytest.mark.jax
@@ -45,6 +48,10 @@ pytestmark = pytest.mark.jax
 jax = pytest.importorskip("jax")
 config = pytest.importorskip("jax.config")
 config.config.update("jax_enable_x64", True)
+
+TOL_FOR_SPSA = 1.0
+SEED_FOR_SPSA = 32651
+H_FOR_SPSA = 0.01
 
 
 @pytest.mark.parametrize("dev_name,diff_method,mode,interface", qubit_device_and_diff_method)
@@ -174,6 +181,10 @@ class TestQNode:
         """Test that operation and nested tape expansion
         is differentiable"""
 
+        if diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
+
         class U3(qml.U3):
             def expand(self):
                 theta, phi, lam = self.data
@@ -219,11 +230,13 @@ vv_qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", "backward", "jax-python"],
     ["default.qubit", "adjoint", "forward", "jax-python"],
     ["default.qubit", "adjoint", "backward", "jax-python"],
+    ["default.qubit", "spsa", "backward", "jax-python"],
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
     ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
+    ["default.qubit", "spsa", "backward", "jax-jit"],
 ]
 
 
@@ -243,6 +256,10 @@ class TestVectorValuedQNode:
             spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
         elif diff_method == "finite-diff":
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
+        elif diff_method == "spsa":
+            spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -268,7 +285,7 @@ class TestVectorValuedQNode:
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]).T
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        if diff_method in ("parameter-shift", "finite-diff"):
+        if diff_method in ("parameter-shift", "finite-diff", "spsa"):
             spy.assert_called()
 
     def test_jacobian_forward_mode_raises(
@@ -313,6 +330,10 @@ class TestVectorValuedQNode:
             spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
         elif diff_method == "finite-diff":
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
+        elif diff_method == "spsa":
+            spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -331,7 +352,7 @@ class TestVectorValuedQNode:
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]).T
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        if diff_method in ("parameter-shift", "finite-diff"):
+        if diff_method in ("parameter-shift", "finite-diff", "spsa"):
             spy.assert_called()
 
         # call the Jacobian with new parameters
@@ -344,8 +365,8 @@ class TestVectorValuedQNode:
 
     def test_jacobian_options(self, dev_name, diff_method, mode, interface, mocker, tol):
         """Test setting jacobian options"""
-        if diff_method != "finite-diff":
-            pytest.skip("Test only applies to finite diff.")
+        if diff_method not in {"finite-diff", "spsa"}:
+            pytest.skip("Test only applies to finite diff and spsa.")
 
         spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
 
@@ -353,7 +374,7 @@ class TestVectorValuedQNode:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev, interface=interface, diff_method="finite-diff", h=1e-8, approx_order=2)
+        @qnode(dev, interface=interface, diff_method=diff_method, h=1e-8, approx_order=2)
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
@@ -478,7 +499,10 @@ class TestQubitIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
         if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support probs")
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
         x = jax.numpy.array(0.543)
@@ -505,7 +529,10 @@ class TestQubitIntegration:
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
         if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support probs")
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=3)
         x = jax.numpy.array(0.543)
@@ -528,7 +555,7 @@ class TestQubitIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
+        if diff_method in {"finite-diff", "parameter-shift", "spsa"} and interface == "jax-jit":
 
             with pytest.raises(
                 InterfaceUnsupportedError,
@@ -617,7 +644,10 @@ class TestQubitIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support probs")
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
         x = jax.numpy.array(0.543)
@@ -1000,6 +1030,9 @@ class TestQubitIntegration:
         """Test that the variance of a projector is correctly returned"""
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support projectors")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
         P = jax.numpy.array([1])
@@ -1032,6 +1065,9 @@ class TestQubitIntegration:
             pytest.skip(
                 "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
             )
+        if diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
         dev1 = qml.device(dev_name, wires=3)
 
         @qnode(dev1, diff_method=diff_method, interface=interface, mode=mode)
@@ -1143,7 +1179,12 @@ class TestQubitIntegration:
 
 @pytest.mark.parametrize(
     "diff_method,kwargs",
-    [["finite-diff", {}], ("parameter-shift", {}), ("parameter-shift", {"force_order2": True})],
+    [
+        ["finite-diff", {}],
+        ["spsa", {"num_directions": 100, "h": 0.05}],
+        ("parameter-shift", {}),
+        ("parameter-shift", {"force_order2": True}),
+    ],
 )
 @pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
 class TestCV:
@@ -1152,6 +1193,8 @@ class TestCV:
     def test_first_order_observable(self, diff_method, kwargs, interface, tol):
         """Test variance of a first order CV observable"""
         dev = qml.device("default.gaussian", wires=1)
+        if diff_method == "spsa":
+            tol = TOL_FOR_SPSA
 
         r = 0.543
         phi = -0.654
@@ -1179,6 +1222,8 @@ class TestCV:
     def test_second_order_observable(self, diff_method, kwargs, interface, tol):
         """Test variance of a second order CV expectation value"""
         dev = qml.device("default.gaussian", wires=1)
+        if diff_method == "spsa":
+            tol = TOL_FOR_SPSA
 
         n = 0.12
         a = 0.765
@@ -1228,7 +1273,7 @@ class TestTapeExpansion:
     ):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""
-        if diff_method not in ("parameter-shift", "finite-diff"):
+        if diff_method not in ("parameter-shift", "finite-diff", "spsa"):
             pytest.skip("Only supports gradient transforms")
 
         if max_diff > 1:
@@ -1266,13 +1311,16 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_analytic(
-        self, dev_name, diff_method, mode, max_diff, interface, mocker
+        self, dev_name, diff_method, mode, max_diff, interface, mocker, tol
     ):
         """Test that the Hamiltonian is not expanded if there
         are non-commuting groups and the number of shots is None
         and the first and second order gradients are correctly evaluated"""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         if max_diff > 1:
             pytest.skip("JAX only supports first derivatives")
@@ -1281,7 +1329,13 @@ class TestTapeExpansion:
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(dev, interface=interface, diff_method=diff_method, mode=mode, max_diff=max_diff)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            mode=mode,
+            max_diff=max_diff,
+        )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
             qml.templates.AngleEmbedding(data, wires=[0, 1])
@@ -1295,7 +1349,7 @@ class TestTapeExpansion:
         # test output
         res = circuit(d, w, c)
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
-        assert np.allclose(res, expected)
+        assert np.allclose(res, expected, atol=tol)
         spy.assert_not_called()
 
         # test gradients
@@ -1305,14 +1359,14 @@ class TestTapeExpansion:
             -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
         ]
         expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
-        assert np.allclose(grad[0], expected_w)
-        assert np.allclose(grad[1], expected_c)
+        assert np.allclose(grad[0], expected_w, atol=tol)
+        assert np.allclose(grad[1], expected_c, atol=tol)
 
         # test second-order derivatives
         if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
 
             grad2_c = jax.jacobian(jax.grad(circuit, argnum=2), argnum=2)(d, w, c)
-            assert np.allclose(grad2_c, 0)
+            assert np.allclose(grad2_c, 0, atol=tol)
 
             grad2_w_c = jax.jacobian(jax.grad(circuit, argnum=1), argnum=2)(d, w, c)
             expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
@@ -1320,7 +1374,7 @@ class TestTapeExpansion:
                 -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
                 -np.sin(d[1] + w[1]),
             ]
-            assert np.allclose(grad2_w_c, expected)
+            assert np.allclose(grad2_w_c, expected, atol=tol)
 
     # @pytest.mark.xfail(reason="Will fail since expval(H) expands to a vector valued return for finite-shots")
     @pytest.mark.parametrize("max_diff", [1, 2])
@@ -1330,8 +1384,16 @@ class TestTapeExpansion:
         """Test that the Hamiltonian is expanded if there
         are non-commuting groups and the number of shots is finite
         and the first and second order gradients are correctly evaluated"""
-        if diff_method in ("adjoint", "backprop", "finite-diff"):
+        gradient_kwargs = {}
+        tol = 0.1
+        if diff_method in ("adjoint", "backprop"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            gradient_kwargs = {"h": H_FOR_SPSA}
+            tol = TOL_FOR_SPSA
+        elif diff_method == "finite-diff":
+            gradient_kwargs = {"h": 0.1}
 
         if max_diff > 1:
             pytest.skip("JAX only supports first derivatives")
@@ -1340,7 +1402,14 @@ class TestTapeExpansion:
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(dev, interface=interface, diff_method=diff_method, mode=mode, max_diff=max_diff)
+        @qnode(
+            dev,
+            interface=interface,
+            diff_method=diff_method,
+            mode=mode,
+            max_diff=max_diff,
+            **gradient_kwargs
+        )
         def circuit(data, weights, coeffs):
             weights = weights.reshape(1, -1)
             qml.templates.AngleEmbedding(data, wires=[0, 1])
@@ -1356,7 +1425,7 @@ class TestTapeExpansion:
         # test output
         res = circuit(d, w, c)
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
-        assert np.allclose(res, expected, atol=0.1)
+        assert np.allclose(res, expected, atol=tol)
         spy.assert_called()
 
         # test gradients
@@ -1366,8 +1435,8 @@ class TestTapeExpansion:
             -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
         ]
         expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
-        assert np.allclose(grad[0], expected_w, atol=0.1)
-        assert np.allclose(grad[1], expected_c, atol=0.1)
+        assert np.allclose(grad[0], expected_w, atol=tol)
+        assert np.allclose(grad[1], expected_c, atol=tol)
 
     #     # test second-order derivatives
     #     if diff_method == "parameter-shift" and max_diff == 2:
@@ -1391,6 +1460,7 @@ jit_qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", "backward"],
     ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
+    ["default.qubit", "spsa", "backward"],
 ]
 
 
@@ -1405,6 +1475,9 @@ class TestJIT:
 
         if diff_method == "adjoint":
             pytest.xfail(reason="The adjoint method is not using host-callback currently")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         @jax.jit
         @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
@@ -1431,6 +1504,9 @@ class TestJIT:
 
         if diff_method == "adjoint":
             pytest.xfail(reason="The adjoint method is not using host-callback currently")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         @jax.jit
         @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
@@ -1462,7 +1538,10 @@ class TestJIT:
     def test_probability_differentiation_jit(self, dev_name, diff_method, mode, tol):
         """Tests differentiating a jitted QNode that returns probabilities"""
         if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support probs")
+            pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         dev = qml.device(dev_name, wires=2)
         x = jax.numpy.array(0.543)
@@ -1566,6 +1645,9 @@ class TestJIT:
 
         if diff_method == "adjoint":
             pytest.xfail(reason="The adjoint method is not using host-callback currently")
+        if diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         @jax.jit
         @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
