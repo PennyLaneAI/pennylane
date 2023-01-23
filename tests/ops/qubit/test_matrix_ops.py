@@ -66,6 +66,20 @@ class TestUtilitiesForSpecialUnitary:
         assert matrix.shape == (2**n, 2**n)
         assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
 
+    @pytest.mark.parametrize("n", [1, 2])
+    @pytest.mark.parametrize("seed", [214, 2491, 8623])
+    def test_special_unitary_matrix_random_broadcasted(self, n, seed):
+        """Test that ``special_unitary_matrix`` returns a correctly-shaped
+        unitary matrix for broadcasted random input parameters."""
+        np.random.seed(seed)
+        d = 4**n - 1
+        theta = np.random.random((2, d))
+        matrix = special_unitary_matrix(theta, n)
+        assert matrix.shape == (2, 2**n, 2**n)
+        assert all(np.allclose(m @ m.conj().T, np.eye(2**n)) for m in matrix)
+        separate_matrices = [special_unitary_matrix(t, n) for t in theta]
+        assert qml.math.allclose(separate_matrices, matrix)
+
     @pytest.mark.parametrize("n", [1, 2, 3])
     def test_special_unitary_matrix_single_param(self, n):
         """Test that ``special_unitary_matrix`` returns a Pauli rotation matrix for
