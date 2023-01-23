@@ -21,18 +21,18 @@ except ImportError:
     has_jax = False
 
 
-def constant(windows: List[Tuple[float]]):
+def constant(windows: List[Tuple[float]] = None):
     """Returns a callable ``f(p, t)`` that returns ``p`` inside the time
     windows defined in ``windows``.
 
     Args:
-        windows (Tuple[float, Tuple[float]]): list of tuples containing time windows where x is
-            evaluated
+        windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where
+        ``f(p, t)`` is evaluated. If ``None``, it is always evaluated. Defaults to ``None``.
     """
     return piecewise(x=lambda p, _: p, windows=windows)
 
 
-def piecewise(x: Union[float, Callable], windows: List[Tuple[float]]):
+def piecewise(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     """Returns a callable ``f(p, t)`` that evaluates the given function/scalar ``x``inside the time
     windows defined in ``windows``.
 
@@ -43,8 +43,8 @@ def piecewise(x: Union[float, Callable], windows: List[Tuple[float]]):
     Args:
         x (Union[float, Callable]): a scalar or a function that accepts two arguments: the trainable
             parameters and time
-        windows (Tuple[float, Tuple[float]]): list of tuples containing time windows where x is
-            evaluated
+        windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where x is
+            evaluated. If ``None`` it is always evaluated. Defaults to ``None``.
     """
     if not has_jax:
         raise ImportError(
@@ -61,8 +61,10 @@ def piecewise(x: Union[float, Callable], windows: List[Tuple[float]]):
 
     def f(p, t):
         p = jnp.array(p, dtype=float)  # if p is an integer, f(p, t) will be cast to an integer
-        return jnp.where(
-            jnp.any(jnp.array([(t >= ti) & (t <= tf) for ti, tf in windows])), _f(p, t), 0
-        )
+        if windows is not None:
+            return jnp.where(
+                jnp.any(jnp.array([(t >= ti) & (t <= tf) for ti, tf in windows])), _f(p, t), 0
+            )
+        return _f(p, t)
 
     return f

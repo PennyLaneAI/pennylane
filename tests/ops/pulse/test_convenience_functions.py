@@ -69,6 +69,15 @@ class TestConstant:
             else:
                 assert c(p=1, t=t) == 0
 
+    def test_constant_returns_correct_value_no_windows(self):
+        """Test that the ``constant`` function always returns the input parameter when no windows
+        are specified"""
+        c = qml.pulse.constant()
+
+        times = np.arange(0, 10, step=1e-2)
+        for t in times:
+            assert c(p=0.5, t=t) == 0.5
+
     def test_constant_is_jittable(self):
         """Test that the callable returned by the ``constant`` function is jittable."""
         import jax
@@ -124,6 +133,19 @@ class TestPiecewise:
                 assert qml.math.allclose(c(p=param, t=t), f(param, t))
             else:
                 assert c(p=param, t=t) == 0
+
+    def test_constant_returns_correct_value_no_windows(self):
+        """Test that the ``constant`` function always returns the input parameter when no windows
+        are specified"""
+
+        def f(p, t):
+            return p * t
+
+        c = qml.pulse.piecewise(x=f)
+
+        times = np.arange(0, 10, step=1e-2)
+        for t in times:
+            assert c(p=0.5, t=t) == f(0.5, t)
 
     @pytest.mark.jax
     def test_piecewise_is_jittable(self):
