@@ -30,7 +30,7 @@ from .gradient_transform import (
 )
 
 
-def hadamard_grad(
+def _hadamard_grad(
     tape,
     argnum=None,
     shots=None,
@@ -87,12 +87,12 @@ def hadamard_grad(
             "Hadamard test for gradient of variance is not implemented yet."
         )
 
-    g_tapes, processing_fn = expval_hadamard_grad(tape, argnum, aux_wire)
+    g_tapes, processing_fn = _expval_hadamard_grad(tape, argnum, aux_wire)
 
     return g_tapes, processing_fn
 
 
-def expval_hadamard_grad(tape, argnum, aux_wire):
+def _expval_hadamard_grad(tape, argnum, aux_wire):
     r"""Transform a QNode to compute the hadamard test gradient of all gate
     parameters with respect to its inputs. This function is adapted to the new return system.
 
@@ -104,8 +104,6 @@ def expval_hadamard_grad(tape, argnum, aux_wire):
 
     Returns:
         function or tuple[list[QuantumTape], function]
-
-    **Example**
 
     """
     argnums = argnum or tape.trainable_params
@@ -325,5 +323,5 @@ def _get_generators(trainable_op):
 
 
 hadamard_grad = gradient_transform(
-    hadamard_grad, expand_fn=expand_invalid_trainable_hadamard_gradient
+    _hadamard_grad, expand_fn=expand_invalid_trainable_hadamard_gradient
 )

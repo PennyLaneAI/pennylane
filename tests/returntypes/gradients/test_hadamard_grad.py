@@ -128,7 +128,7 @@ class TestHadamardGrad:
     def test_independent_parameter(self, mocker):
         """Test that an independent parameter is skipped
         during the Jacobian computation."""
-        spy = mocker.spy(qml.gradients.hadamard_gradient, "expval_hadamard_grad")
+        spy = mocker.spy(qml.gradients.hadamard_gradient, "_expval_hadamard_grad")
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
