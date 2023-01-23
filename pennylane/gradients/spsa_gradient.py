@@ -328,7 +328,7 @@ def _spsa_grad_new(
                     qml.math.tensordot(qml.math.convert_like(_coeffs, res), res, axes=[[0], [0]])
                     + grads
                 )
-            grads = grads / num_directions
+            grads = grads * (1 / num_directions)
             if num_trainable_params == 1:
                 return qml.math.convert_like(grads[0], res)
             return tuple(qml.math.convert_like(g, res) for g in grads)
@@ -349,7 +349,7 @@ def _spsa_grad_new(
             grads.append(tuple(qml.math.convert_like(g, grad) for g in grad))
 
         if num_trainable_params == 1:
-            return grads[0]
+            return tuple(g[0] for g in grads)
         return tuple(grads)
 
     def processing_fn(results):
@@ -601,7 +601,7 @@ def spsa_grad(
         )
         # Use only the non-zero part of `direction` for the shifts, to skip redundant zero shifts
         _shifts = qml.math.tensordot(h * shifts, direction[indices], axes=0)
-        all_coeffs.append(qml.math.tensordot(coeffs / h**n, inv_direction, axes=0))
+        all_coeffs.append(qml.math.tensordot(coeffs * (h ** (-n)), inv_direction, axes=0))
         g_tapes = generate_multishifted_tapes(tape, indices, _shifts)
         gradient_tapes.extend(g_tapes)
 
@@ -624,12 +624,16 @@ def spsa_grad(
                 + grads
             )
 
-        grads = grads / num_directions
+        grads = grads * (1 / num_directions)
 
         # The following is for backwards compatibility; currently,
         # the device stacks multiple measurement arrays, even if not the same
         # size, resulting in a ragged array. (-> new return type system)
-        if hasattr(grads, "dtype") and grads.dtype is np.dtype("object"):
+        if (
+            hasattr(grads, "dtype")
+            and grads.dtype is np.dtype("object")
+            and qml.math.ndim(grads[0]) > 0
+        ):
             grads = qml.math.moveaxis(
                 qml.math.array([qml.math.hstack(gs) for gs in zip(*grads)]), 0, -1
             )
