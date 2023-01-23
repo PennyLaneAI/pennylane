@@ -262,7 +262,7 @@ class TestUpdate:
         assert p_id_0 == 0
 
     def test_get_operation_return_index(self):
-        """Tests the tape method get_operation"""
+        """Tests the tape method get_operation with `return_op_index` bool."""
         ops = [
             qml.RX(1.2, wires=0),
             qml.Rot(2.3, 3.4, 5.6, wires=0),
