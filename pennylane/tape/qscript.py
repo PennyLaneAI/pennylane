@@ -569,6 +569,25 @@ class QuantumScript:
         info = self._par_info[t_idx]
         return info["op"], info["op_idx"], info["p_idx"]
 
+    def _get_operation(self, idx):
+        """Returns the trainable operation, the operation index and the corresponding operation argument
+        index, for a specified trainable parameter index.
+
+        Args:
+            idx (int): the trainable parameter index
+
+        Returns:
+            tuple[.Operation, int, int]: tuple containing the corresponding
+            operation, operation index and an integer representing the argument index,
+            for the provided trainable parameter.
+        """
+        # get the index of the parameter in the script
+        t_idx = self.trainable_params[idx]
+
+        # get the info for the parameter
+        info = self._par_info[t_idx]
+        return info["op"], info["op_idx"], info["p_idx"]
+
     def get_parameters(
         self, trainable_only=True, operations_only=False, **kwargs
     ):  # pylint:disable=unused-argument
