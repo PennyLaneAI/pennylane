@@ -378,6 +378,9 @@
 * Set `Tensor.has_matrix` to `True`.
   [(#3647)](https://github.com/PennyLaneAI/pennylane/pull/3647)
 
+* Fixed a bug in `qml.Hamiltonian` where setting the `data` attribute didn't update the Hamiltonian coefficients.
+  [(#)]()
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
