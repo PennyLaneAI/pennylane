@@ -39,9 +39,9 @@ def pwc(t):
     >>> t1, t2 = 1, 3
     >>> f1 = pwc((t1, t2))
 
-    The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed parameters and a time,
-    it will assign the array at ``params[index]`` as the constants in the piecewise function, and select
-    the constant corresponding to the specified time, based on the time interval defined by ``t``.
+    The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed an array of parameters and
+    a time, it will assign the array as the constants in the piecewise function, and select the constant corresponding
+    to the specified time, based on the time interval defined by ``t``.
 
     >>> params = [np.linspace(10, 20, 10)]
     >>> f1(params, 2)
