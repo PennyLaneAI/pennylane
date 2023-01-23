@@ -29,6 +29,63 @@ def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
 
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
+    working_wires = [None, qml.wires.Wires(2)]
+    already_used_wires = [qml.wires.Wires(0), qml.wires.Wires(1)]
+
+    @pytest.mark.parametrize("aux_wire", working_wires)
+    def test_aux_wire(self, aux_wire):
+        """Test the aux wire is available."""
+        # One qubit is added to the device 2 + 1
+        dev = qml.device("default.qubit", wires=3)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+
+        tapes, fn = qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
+        assert len(tapes) == 2
+
+    @pytest.mark.parametrize("aux_wire", already_used_wires)
+    def test_aux_wire_already_used_wires(self, aux_wire):
+        """Test the aux wire is available."""
+        dev = qml.device("default.qubit", wires=3)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+
+        with pytest.raises(qml.QuantumFunctionError, match="The auxiliary wire is already used in the tape"):
+            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
+
+    @pytest.mark.parametrize("aux_wire", working_wires + already_used_wires)
+    def test_device_not_enough_wires(self, aux_wire):
+        """Test that an error is raised when the device cannot accept an auxiliary wire because it is full."""
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+
+        with pytest.raises(qml.QuantumFunctionError, match="The device has no free wire for the auxiliary wire."):
+            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
 
     def test_empty_circuit(self):
         """Test that an empty circuit works correctly"""
@@ -374,7 +431,7 @@ class TestHadamardGrad:
 
         """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
         dev = qml.device("default.qubit", wires=2)
-        params = np.array([theta, theta**3, np.sqrt(2) * theta])
+        params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
@@ -646,27 +703,27 @@ class TestHadamardGrad:
 
         expval_expected = [-2 * np.sin(x) / 2, 0]
         probs_expected = (
-            np.array(
-                [
+                np.array(
                     [
-                        -(np.cos(y / 2) ** 2 * np.sin(x)),
-                        -(np.cos(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        -(np.sin(x) * np.sin(y / 2) ** 2),
-                        (np.cos(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        (np.sin(x) * np.sin(y / 2) ** 2),
-                        (np.sin(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        (np.cos(y / 2) ** 2 * np.sin(x)),
-                        -(np.sin(x / 2) ** 2 * np.sin(y)),
-                    ],
-                ]
-            )
-            / 2
+                        [
+                            -(np.cos(y / 2) ** 2 * np.sin(x)),
+                            -(np.cos(x / 2) ** 2 * np.sin(y)),
+                        ],
+                        [
+                            -(np.sin(x) * np.sin(y / 2) ** 2),
+                            (np.cos(x / 2) ** 2 * np.sin(y)),
+                        ],
+                        [
+                            (np.sin(x) * np.sin(y / 2) ** 2),
+                            (np.sin(x / 2) ** 2 * np.sin(y)),
+                        ],
+                        [
+                            (np.cos(y / 2) ** 2 * np.sin(x)),
+                            -(np.sin(x / 2) ** 2 * np.sin(y)),
+                        ],
+                    ]
+                )
+                / 2
         )
         # Expvals
         assert np.allclose(res[0][0], expval_expected[0])

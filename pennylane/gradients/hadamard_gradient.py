@@ -71,8 +71,15 @@ def hadamard_grad(
 
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
+    if device_wires and len(tape.wires) == len(device_wires):
+        raise qml.QuantumFunctionError("The device has no free wire for the auxiliary wire.")
+
     # Get default for aux_wire
-    aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
+    if aux_wire is None:
+        aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
+    else:
+        if aux_wire.labels[0] in tape.wires:
+            raise qml.QuantumFunctionError("The auxiliary wire is already used in the tape.")
 
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise qml.QuantumFunctionError(
