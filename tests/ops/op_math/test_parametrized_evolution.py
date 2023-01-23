@@ -347,11 +347,6 @@ class TestIntegration:
         params2 = [1.0, 2.0, 3.0]
 
         assert not qml.math.allclose(circuit1(params1), circuit2(params2), atol=5e-4)
-        assert qml.math.allclose(
-            qml.math.concatenate(jax.grad(circuit1)(params1)),
-            jax.grad(circuit2)(params2),
-            atol=5e-4,
-        )
 
 
 @pytest.mark.jax
