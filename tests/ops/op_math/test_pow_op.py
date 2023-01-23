@@ -341,19 +341,21 @@ class TestProperties:
         assert op._queue_category is None
 
     def test_batching_properties(self, power_method):
-        """Test that Pow batching behavior mirrors that of the base."""
+        """Test the batching properties and methods."""
 
-        class DummyOp(qml.operation.Operator):
-            ndim_params = (0, 2)
-            num_wires = 1
+        # base is batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = power_method(base, z=1)
+        assert op.batch_size == 3
 
-        param1 = [0.3] * 3
-        param2 = [[[0.3, 1.2]]] * 3
+        # coeff is batched
+        base = qml.RX(1, 0)
+        op = power_method(base, z=np.array([1.2, 2.3, 3.4]))
+        assert op.batch_size == 3
 
-        base = DummyOp(param1, param2, wires=0)
-        op: Pow = power_method(base=base, z=3)
-
-        assert op.ndim_params == (0, 2)
+        # both are batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = power_method(base, z=np.array([1.2, 2.3, 3.4]))
         assert op.batch_size == 3
 
     op_pauli_reps = (
@@ -584,6 +586,34 @@ class TestQueueing:
 
 class TestMatrix:
     """Test the matrix method for the power operator."""
+
+    def test_base_batching_support(self):
+        """Test that Pow matrix has base batching support."""
+        x = np.array([-1, -2, -3])
+        op = Pow(qml.RX(x, 0), z=3)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), z=3).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_coeff_batching_support(self):
+        """Test that Pow matrix has coeff batching support."""
+        x = np.array([-1, -2, -3])
+        op = Pow(qml.PauliX(0), z=x)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.PauliX(0), i).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_base_and_coeff_batching_support(self):
+        """Test that Pow matrix has base and coeff batching support."""
+        x = np.array([-1, -2, -3])
+        y = np.array([1, 2, 3])
+        op = Pow(qml.RX(x, 0), z=y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
 
     def check_matrix(self, param, z):
         """Interface-independent helper function that checks that the matrix of a power op

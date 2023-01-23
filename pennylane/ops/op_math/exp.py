@@ -175,7 +175,7 @@ class Exp(ScalarSymbolicOp, Operation):
     @property
     def coeff(self):
         """The numerical coefficient of the operator in the exponent."""
-        return self.scalar
+        return self._scalar
 
     @property
     def num_params(self):
@@ -227,15 +227,6 @@ class Exp(ScalarSymbolicOp, Operation):
         string_base = qml.pauli.pauli_word_to_string(self.base)
         return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
 
-    @property
-    def _batched_coeff(self):
-        """Returns a boolean specifying whether the ``self.coeff`` is broadcasted or not.
-
-        Returns:
-            bool: if True, ``self.coeff`` is broadcasted
-        """
-        return math.size(self.coeff) > 1
-
     def matrix(self, wire_order=None):
 
         coeff_interface = math.get_interface(self.coeff)
@@ -247,7 +238,8 @@ class Exp(ScalarSymbolicOp, Operation):
             # but at least this provides as much trainablility as possible
             try:
                 eigvals = self.eigvals()
-                if self._batched_coeff:
+                if qml.math.size(self._scalar) > 1:
+                    # scalar is batched
                     eigvals_mat = math.stack(math.diag(e) for e in eigvals)
                 else:
                     eigvals_mat = math.diag(eigvals)
@@ -262,13 +254,14 @@ class Exp(ScalarSymbolicOp, Operation):
                     "Use a different interface if you need backpropagation.",
                     UserWarning,
                 )
-        base_mat = (
-            qml.matrix(self.base) if isinstance(self.base, qml.Hamiltonian) else self.base.matrix()
-        )
-        if coeff_interface == "torch":
-            # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
-            base_mat = math.convert_like(base_mat, self.coeff)
-        mat = math.expm(self.coeff * base_mat)
+
+        mats = []
+        for coeff, mat in self._broadcasted_scalar_and_mat():
+            if coeff_interface == "torch":
+                # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
+                mat = math.convert_like(mat, self.coeff)
+            mats.append(math.expm(coeff * mat))
+        mat = mats[0] if len(mats) == 1 else qml.math.stack(mats)
 
         return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
@@ -305,7 +298,7 @@ class Exp(ScalarSymbolicOp, Operation):
         """
         base_eigvals = math.convert_like(self.base.eigvals(), self.coeff)
         base_eigvals = math.cast_like(base_eigvals, self.coeff)
-        if self._batched_coeff:
+        if qml.math.size(self._scalar) > 1:
             # exp coeff is broadcasted
             return qml.math.stack([qml.math.exp(c * base_eigvals) for c in self.coeff])
         return qml.math.exp(self.coeff * base_eigvals)
@@ -411,6 +404,10 @@ class Evolution(Exp):
     @property
     def coeff(self):
         return 1j * self.data[0]
+
+    @property
+    def scalar(self):
+        return self.coeff
 
     @property
     def num_params(self):

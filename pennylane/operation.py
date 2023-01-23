@@ -1328,9 +1328,7 @@ class Operator(abc.ABC):
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
-        if isinstance(other, numbers.Number):
-            return qml.pow(self, z=other)
-        return NotImplemented
+        return qml.pow(self, z=other)
 
 
 # =============================================================================

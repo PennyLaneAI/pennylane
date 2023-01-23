@@ -129,22 +129,51 @@ class TestProperties:
     def test_batching_properties(self):
         """Test the batching properties and methods."""
 
+        # base is batched
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
         op = Exp(base)
+        assert op.batch_size == 3
+
+        # coeff is batched
+        base = qml.RX(1, 0)
+        op = Exp(base, coeff=np.array([1.2, 2.3, 3.4]))
+        assert op.batch_size == 3
+
+        # both are batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = Exp(base, coeff=np.array([1.2, 2.3, 3.4]))
         assert op.batch_size == 3
 
 
 class TestMatrix:
     """Test the matrix method."""
 
-    def test_batching_support(self):
-        """Test that adjoint matrix has batching support."""
+    def test_base_batching_support(self):
+        """Test that Pow matrix has base batching support."""
         x = np.array([-1, -2, -3])
-        op = Exp(qml.PauliX(0), -0.5j * x)
-        rx = qml.RX(x, wires=0)
+        op = Exp(qml.RX(x, 0), 3)
         mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.RX(i, 0), 3).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
 
-        assert qml.math.allclose(mat, rx.matrix())
+    def test_coeff_batching_support(self):
+        """Test that Pow matrix has coeff batching support."""
+        x = np.array([-1, -2, -3])
+        op = Exp(qml.PauliX(0), x)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.PauliX(0), i).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_base_and_coeff_batching_support(self):
+        """Test that Pow matrix has base and coeff batching support."""
+        x = np.array([-1, -2, -3])
+        y = np.array([1, 2, 3])
+        op = Exp(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
     def test_tensor_base_isingxx(self):

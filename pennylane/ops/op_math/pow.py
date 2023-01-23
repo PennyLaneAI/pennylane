@@ -30,7 +30,6 @@ from pennylane.operation import (
 )
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
-from pennylane.wires import Wires
 
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
 
@@ -224,11 +223,7 @@ class Pow(ScalarSymbolicOp):
     @property
     def z(self):
         """The exponent."""
-        return self.scalar
-
-    @property
-    def ndim_params(self):
-        return self.base.ndim_params
+        return self._scalar
 
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
@@ -238,18 +233,13 @@ class Pow(ScalarSymbolicOp):
         )
 
     def matrix(self, wire_order=None):
-        if isinstance(self.base, qml.Hamiltonian):
-            base_matrix = qml.matrix(self.base)
-        else:
-            base_matrix = self.base.matrix()
-
-        if isinstance(self.z, int):
-            mat = qmlmath.linalg.matrix_power(base_matrix, self.z)
-        else:
-            mat = fractional_matrix_power(base_matrix, self.z)
-
-        if wire_order is None or self.wires == Wires(wire_order):
-            return mat
+        mats = []
+        for z, mat in self._broadcasted_scalar_and_mat():
+            if isinstance(z, int):
+                mats.append(qmlmath.linalg.matrix_power(mat, z))
+            else:
+                mats.append(fractional_matrix_power(mat, z))
+        mat = mats[0] if len(mats) == 1 else qml.math.stack(mats)
 
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 

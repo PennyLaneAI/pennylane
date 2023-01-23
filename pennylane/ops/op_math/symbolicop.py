@@ -158,9 +158,14 @@ class ScalarSymbolicOp(SymbolicOp):
     _name = "CoeffSymbolicOp"
 
     def __init__(self, base, scalar: float, do_queue=True, id=None):
-        self.scalar = scalar
+        self._scalar = scalar
         super().__init__(base, do_queue=do_queue, id=id)
         self._batch_size = None
+
+    @property
+    def scalar(self):
+        """Returns the scalar coefficient of the operator."""
+        return self._scalar
 
     @property
     def batch_size(self):
@@ -170,14 +175,34 @@ class ScalarSymbolicOp(SymbolicOp):
         return self._batch_size
 
     def _check_and_compute_batch_size(self):
-        coeff_size = qml.math.size(self.scalar)
-        if coeff_size == 1:
+        scalar_size = qml.math.size(self._scalar)
+        if scalar_size == 1:
             # coeff is not batched
             return self.base.batch_size
         # coeff is batched
-        if self.base.batch_size is not None and self.base.batch_size != coeff_size:
+        if self.base.batch_size is not None and self.base.batch_size != scalar_size:
             raise ValueError(
                 "Broadcasting was attempted but the broadcasted dimensions "
-                f"do not match: {coeff_size}, {self.base.batch_size}."
+                f"do not match: {scalar_size}, {self.base.batch_size}."
             )
-        return coeff_size
+        return scalar_size
+
+    def _broadcasted_scalar_and_mat(self):
+        # compute base matrix
+        if isinstance(self.base, qml.Hamiltonian):
+            base_matrix = qml.matrix(self.base)
+        else:
+            base_matrix = self.base.matrix()
+
+        scalar_size = qml.math.size(self.scalar)
+        if scalar_size != 1 and scalar_size == self.base.batch_size:
+            # both base and scalar are broadcasted
+            return ((s, m) for s, m in zip(self.scalar, base_matrix))
+        if self.base.batch_size is not None:
+            # only base is broadcasted
+            return ((self.scalar, ar2) for ar2 in base_matrix)
+        if scalar_size == self.batch_size:
+            # only scalar is broadcasted
+            return ((s, base_matrix) for s in self.scalar)
+        # none are broadcasted
+        return ((self.scalar, base_matrix),)
