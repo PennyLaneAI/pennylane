@@ -379,7 +379,7 @@
   [(#3647)](https://github.com/PennyLaneAI/pennylane/pull/3647)
 
 * Fixed a bug in `qml.Hamiltonian` where setting the `data` attribute didn't update the Hamiltonian coefficients.
-  [(#)]()
+  [(#3668)](https://github.com/PennyLaneAI/pennylane/pull/3668)
 
 <h3>Contributors</h3>
 

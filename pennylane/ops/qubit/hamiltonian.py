@@ -235,7 +235,7 @@ class Hamiltonian(Observable):
         Raises:
         ValueError: if the number of coefficients does not match the number of observables
         """
-        if qml.math.shape(data)[0] != qml.math.shape(self._ops)[0]:
+        if qml.math.shape(data)[0] != qml.math.shape(self.ops)[0]:
             raise ValueError("The number of coefficients and operators does not match.")
         self._data = list(data)
         self._coeffs = qml.math.stack(data) if data else []
