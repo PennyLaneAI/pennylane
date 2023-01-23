@@ -349,7 +349,7 @@
 * Child classes of `QuantumScript` now return their own type when using `SomeChildClass.from_queue`.
   [(#3501)](https://github.com/PennyLaneAI/pennylane/pull/3501)
 
-* A typo has been fixed in the calculation of error messages in operation.py
+* A typo has been fixed in the calculation and error messages in `operation.py`
   [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
 
 * `Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
