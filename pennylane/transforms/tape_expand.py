@@ -163,7 +163,6 @@ expand_trainable_multipar = create_expand_fn(
     docstring=_expand_trainable_multipar_doc,
 )
 
-
 _expand_nonunitary_gen_doc = """Expand out a tape so that all its parametrized
 operations have a unitary generator.
 
@@ -187,7 +186,6 @@ expand_nonunitary_gen = create_expand_fn(
     docstring=_expand_nonunitary_gen_doc,
 )
 
-
 _expand_invalid_trainable_doc = """Expand out a tape so that it supports differentiation
 of requested operations.
 
@@ -210,6 +208,50 @@ expand_invalid_trainable = create_expand_fn(
     stop_at=not_tape | is_measurement | (~is_trainable) | has_grad_method,
     docstring=_expand_invalid_trainable_doc,
 )
+
+_expand_invalid_trainable_doc_hadamard = """Expand out a tape so that it supports differentiation
+of requested operations.
+
+This is achieved by decomposing all trainable operations that have
+``Operation.grad_method=None`` until all resulting operations
+have a defined gradient method, up to maximum depth ``depth``. Note that this
+might not be possible, in which case the gradient rule will fail to apply.
+
+Args:
+    tape (.QuantumTape): the input tape to expand
+    depth (int) : the maximum expansion depth
+    **kwargs: additional keyword arguments are ignored
+
+Returns:
+    .QuantumTape: the expanded tape
+"""
+
+
+@qml.BooleanFn
+def is_hadamard_grad_compatible(obj):
+    return obj.name in hadamard_comp_list
+
+
+expand_invalid_trainable_hadamard_gradient = create_expand_fn(
+    depth=10,
+    stop_at=not_tape | is_measurement | (~is_trainable) | is_hadamard_grad_compatible,
+    docstring=_expand_invalid_trainable_doc_hadamard,
+)
+
+hadamard_comp_list = [
+    "RX",
+    "RY",
+    "RZ",
+    "Rot",
+    "PhaseShift",
+    "U1",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "IsingXX",
+    "IsingYY",
+    "IsingZZ",
+]
 
 
 @contextlib.contextmanager

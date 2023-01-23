@@ -19,6 +19,7 @@ import pennylane as qml
 import pennylane.numpy as np
 from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP
 from pennylane.transforms.metric_tensor import _get_aux_wire
+from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
 from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
 
 from .gradient_transform import (
@@ -29,7 +30,6 @@ from .gradient_transform import (
 )
 
 
-@gradient_transform
 def hadamard_grad(
     tape,
     argnum=None,
@@ -52,6 +52,7 @@ def hadamard_grad(
     **Example**
 
     """
+
     if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."
@@ -321,3 +322,8 @@ def _get_generators(trainable_op):
         coeffs = trainable_op.generator().coeffs
 
     return coeffs, generators
+
+
+hadamard_grad = gradient_transform(
+    hadamard_grad, expand_fn=expand_invalid_trainable_hadamard_gradient
+)

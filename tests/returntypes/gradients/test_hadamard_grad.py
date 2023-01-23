@@ -29,6 +29,7 @@ def grad_fn(tape, dev, fn=qml.gradients.hadamard_grad, **kwargs):
 
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
+
     working_wires = [None, qml.wires.Wires(2)]
     already_used_wires = [qml.wires.Wires(0), qml.wires.Wires(1)]
 
@@ -66,7 +67,9 @@ class TestHadamardGrad:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        with pytest.raises(qml.QuantumFunctionError, match="The auxiliary wire is already used in the tape"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="The auxiliary wire is already used in the tape"
+        ):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
 
     @pytest.mark.parametrize("aux_wire", working_wires + already_used_wires)
@@ -84,7 +87,9 @@ class TestHadamardGrad:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
-        with pytest.raises(qml.QuantumFunctionError, match="The device has no free wire for the auxiliary wire."):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="The device has no free wire for the auxiliary wire."
+        ):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
 
     def test_empty_circuit(self):
@@ -431,7 +436,7 @@ class TestHadamardGrad:
 
         """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
         dev = qml.device("default.qubit", wires=2)
-        params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
@@ -506,46 +511,42 @@ class TestHadamardGrad:
 
         assert np.allclose(hadamard_val, param_shift_val, atol=tol, rtol=0)
 
-    # TODO: add test
-    # @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
-    # def test_CRot_gradient(self, theta, tol):
-    #     """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
-    #     gate is correct."""
-    #     dev = qml.device("default.qubit", wires=2)
-    #     a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
-    #
-    #     with qml.queuing.AnnotatedQueue() as q:
-    #         qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
-    #         qml.CRot(a, b, c, wires=[0, 1])
-    #         qml.expval(qml.PauliX(0))
-    #
-    #     tape = qml.tape.QuantumScript.from_queue(q)
-    #     tape.trainable_params = {1, 2, 3}
-    #
-    #     res = dev.execute(tape)
-    #     expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
-    #     assert np.allclose(res, expected, atol=tol, rtol=0)
-    #
-    #     tapes, fn = qml.gradients.param_shift(tape)
-    #     assert len(tapes) == 4 * len(tape.trainable_params)
-    #
-    #     grad = fn(dev.batch_execute(tapes))
-    #     expected = np.array(
-    #         [
-    #             0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
-    #             0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
-    #             0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
-    #         ]
-    #     )
-    #     assert isinstance(grad, tuple)
-    #     assert len(grad) == 3
-    #     for idx, g in enumerate(grad):
-    #         assert np.allclose(g, expected[idx], atol=tol, rtol=0)
-    #
-    #     tapes, fn = qml.gradients.finite_diff(tape)
-    #     numeric_val = fn(dev.batch_execute(tapes))
-    #     for idx, g in enumerate(grad):
-    #         assert np.allclose(g, numeric_val[idx], atol=tol, rtol=0)
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
+    def test_CRot_gradient_expansion(self, theta, tol):
+        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
+        gate is correct."""
+        dev = qml.device("default.qubit", wires=3)
+        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qml.CRot(a, b, c, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = {1, 2, 3}
+
+        res = dev.execute(tape)
+        expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        tapes, fn = qml.gradients.hadamard_grad(tape)
+
+        grad = fn(dev.batch_execute(tapes))
+
+        expected = np.array(
+            [
+                0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+                0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
+                0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+            ]
+        )
+
+        assert isinstance(grad, tuple)
+        assert len(grad) == 5
+        assert np.allclose(-grad[1] / 2, expected[0], atol=tol, rtol=0)
+        assert np.allclose(-grad[2] / 2, expected[1], atol=tol, rtol=0)
+        assert np.allclose(-grad[1] / 2, expected[2], atol=tol, rtol=0)
 
     def test_gradients_agree_finite_differences(self, tol):
         """Tests that the parameter-shift rule agrees with the first and second
@@ -703,27 +704,27 @@ class TestHadamardGrad:
 
         expval_expected = [-2 * np.sin(x) / 2, 0]
         probs_expected = (
-                np.array(
+            np.array(
+                [
                     [
-                        [
-                            -(np.cos(y / 2) ** 2 * np.sin(x)),
-                            -(np.cos(x / 2) ** 2 * np.sin(y)),
-                        ],
-                        [
-                            -(np.sin(x) * np.sin(y / 2) ** 2),
-                            (np.cos(x / 2) ** 2 * np.sin(y)),
-                        ],
-                        [
-                            (np.sin(x) * np.sin(y / 2) ** 2),
-                            (np.sin(x / 2) ** 2 * np.sin(y)),
-                        ],
-                        [
-                            (np.cos(y / 2) ** 2 * np.sin(x)),
-                            -(np.sin(x / 2) ** 2 * np.sin(y)),
-                        ],
-                    ]
-                )
-                / 2
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                ]
+            )
+            / 2
         )
         # Expvals
         assert np.allclose(res[0][0], expval_expected[0])
