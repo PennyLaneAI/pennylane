@@ -88,8 +88,8 @@ class ParametrizedEvolution(Operation):
         H (ParametrizedHamiltonian): hamiltonian to evolve
         params (ndarray): trainable parameters
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
-            If a list of two floats, it corresponds to the initial time and the final time of the
-            evolution. Note that such absolute times only have meaning within an instance of
+            If a list of floats, the odeint solver will use all the provided time values.
+            Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
         time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
             Defaults to "t".
@@ -156,6 +156,25 @@ class ParametrizedEvolution(Operation):
     >>> jax.grad(circuit)(params)
     Array([-4.8066125,  3.7038102, -1.3294725, -2.4061902,  0.6811545,
         -0.5226515], dtype=float32)
+
+    One can also provide a list of time values that the odeint will use to calculate the parametrized
+    hamiltonian's evolution:
+
+    >>> t = [0.1, 0.5, 4, 6.7, 9, 10]
+    >>> @qml.qnode(dev, interface="jax")
+    ... def circuit(params):
+    ...     qml.evolve(H1 + H2)(params, t=t)
+    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+    >>> params = [1., 2., 3., 1., 2., 3.]
+    >>> circuit(params)
+    Array(-0.70151234, dtype=float32)
+    >>> jax.grad(circuit)(params)
+    [Array(-7.0066605, dtype=float32),
+    Array(-2.634847, dtype=float32),
+    Array(-1.3918445, dtype=float32),
+    Array(-3.5436776, dtype=float32),
+    Array(-0.4881613, dtype=float32),
+    Array(-0.55397415, dtype=float32)]
     """
 
     _name = "ParametrizedEvolution"
