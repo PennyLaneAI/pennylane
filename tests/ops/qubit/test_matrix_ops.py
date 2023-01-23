@@ -38,6 +38,16 @@ class TestUtilitiesForSpecialUnitary:
         assert np.allclose(basis, basis.conj().transpose([0, 2, 1]))
         assert all(np.allclose(np.eye(2**n), b @ b) for b in basis)
 
+    def test_pauli_basis_raises_too_few_wires(self):
+        """Test that pauli_basis raises an error if less than one wire is given."""
+        with pytest.raises(ValueError, match="Require at least one"):
+            basis = pauli_basis(0)
+
+    def test_pauli_basis_raises_too_many_wires(self):
+        """Test that pauli_basis raises an error if too many wires are given."""
+        with pytest.raises(ValueError, match="Creating the Pauli basis tensor"):
+            basis = pauli_basis(8)
+
     @pytest.mark.parametrize("n", [1, 2, 3])
     def test_pauli_words(self, n):
         """Test that the Pauli words are correct."""
@@ -60,6 +70,18 @@ class TestUtilitiesForSpecialUnitary:
         """Test that ``special_unitary_matrix`` returns a correctly-shaped
         unitary matrix for random input parameters."""
         np.random.seed(seed)
+        d = 4**n - 1
+        theta = np.random.random(d)
+        matrix = special_unitary_matrix(theta, n)
+        assert matrix.shape == (2**n, 2**n)
+        assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
+
+    @pytest.mark.parametrize("seed", [214, 8623])
+    def test_special_unitary_matrix_random_many_wires(self, seed):
+        """Test that ``special_unitary_matrix`` returns a correctly-shaped
+        unitary matrix for random input parameters and more than 5 wires."""
+        np.random.seed(seed)
+        n = 6
         d = 4**n - 1
         theta = np.random.random(d)
         matrix = special_unitary_matrix(theta, n)

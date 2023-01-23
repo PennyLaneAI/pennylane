@@ -32,7 +32,7 @@ _pauli_letters = ["I", "X", "Y", "Z"]
 """Single-qubit Pauli letters that make up Pauli words."""
 
 
-@lru_cache
+@lru_cache(maxsize=7)
 def pauli_basis(num_wires):
     r"""Compute all elements of the Pauli basis of the Lie algebra :math:`\mathfrak{su}(N)`.
 
@@ -79,6 +79,12 @@ def pauli_basis(num_wires):
     >>> pauli_basis(3).shape
     (63, 8, 8)
     """
+    if num_wires < 1:
+        raise ValueError(f"Require at least one wire, got {num_wires}.")
+    if num_wires > 7:
+        raise ValueError(
+            f"Creating the Pauli basis tensor for more than 7 wires (got {num_wires}) is deactivated."
+        )
     return reduce(np.kron, (_paulis for _ in range(num_wires)))[1:]
 
 
@@ -138,7 +144,7 @@ def special_unitary_matrix(theta, num_wires):
 
         U(\theta) = \exp(i\sum_{m=1}^d \theta_m P_m)
 
-    See :func:`~.ops.qubit.matrix_ops.pauli_basis` for the ordering of Pauli words.
+    See :func:`~.ops.qubit.matrix_ops.pauli_words` for the ordering of Pauli words.
 
     ..admonition::
 
@@ -146,7 +152,14 @@ def special_unitary_matrix(theta, num_wires):
         ``(4**num_wires, 2**num_wires, 2**num_wires)``, which requires at least
         ``4 ** (2 * num_wires - 13)`` GB of memory (at default precision).
     """
-    A = qml.math.tensordot(theta, pauli_basis(num_wires), axes=[[-1], [0]])
+    if num_wires > 5:
+        theta = qml.math.hstack([[0], theta])
+        A = sum(
+            t * reduce(np.kron, letters)
+            for t, letters in zip(theta, product(_paulis, repeat=num_wires))
+        )
+    else:
+        A = qml.math.tensordot(theta, pauli_basis(num_wires), axes=[[-1], [0]])
     return qml.math.expm(1j * A)
 
 
