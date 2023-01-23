@@ -418,6 +418,11 @@ class TestHadamardGrad:
 
         tapes, fn = qml.gradients.hadamard_grad(tape)
         hadamard_val = fn(dev.batch_execute(tapes))
+
+        tapes, fn = qml.gradients.hadamard_grad(tape)
+        param_shift_val = fn(dev.batch_execute(tapes))
+        assert np.allclose(hadamard_val, param_shift_val, atol=tol, rtol=0)
+
         expected = np.sin(theta / 2) / 2
 
         assert np.allclose(hadamard_val, expected, atol=tol, rtol=0)
@@ -431,7 +436,7 @@ class TestHadamardGrad:
         with qml.queuing.AnnotatedQueue() as q:
             qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             G(theta, wires=[0, 1])
-            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliZ(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {1}
@@ -441,7 +446,7 @@ class TestHadamardGrad:
 
         tapes, fn = qml.gradients.param_shift(tape)
         param_shift_val = fn(dev.batch_execute(tapes))
-        print(param_shift_val, hadamard_val)
+
         assert np.allclose(hadamard_val, param_shift_val, atol=tol, rtol=0)
 
     # TODO: add test

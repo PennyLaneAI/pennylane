@@ -29,7 +29,6 @@ from .gradient_transform import (
 )
 
 
-
 @gradient_transform
 def hadamard_grad(
     tape,
@@ -281,7 +280,7 @@ def _get_generators(trainable_op):
     elif isinstance(trainable_op, qml.IsingXX):
         generators = [
             qml.prod(
-                qml.PauliZ(wires=trainable_op.wires[0]), qml.PauliZ(wires=trainable_op.wires[1])
+                qml.PauliX(wires=trainable_op.wires[0]), qml.PauliX(wires=trainable_op.wires[1])
             )
         ]
         coeffs = [-0.5]
