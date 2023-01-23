@@ -567,7 +567,7 @@ class QuantumScript:
 
         # get the info for the parameter
         info = self._par_info[t_idx]
-        return info["op"], info["op_idx"], info["p_idx"]
+        return info["op"], info["p_idx"]
 
     def _get_operation(self, idx):
         """Returns the trainable operation, the operation index and the corresponding operation argument
