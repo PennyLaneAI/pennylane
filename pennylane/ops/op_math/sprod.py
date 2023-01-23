@@ -28,7 +28,7 @@ from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
 
-from .symbolicop import SymbolicOp
+from .symbolicop import ScalarSymbolicOp
 
 
 def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
@@ -68,7 +68,7 @@ def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
     return sprod_op
 
 
-class SProd(SymbolicOp):
+class SProd(ScalarSymbolicOp):
     r"""Arithmetic operator representing the scalar product of an
     operator with the given scalar.
 
@@ -120,14 +120,11 @@ class SProd(SymbolicOp):
     _name = "SProd"
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
-        self.scalar = scalar
-        self._check_scalar_is_valid()
-        super().__init__(base=base, do_queue=do_queue, id=id)
+        _check_scalar_is_valid(scalar)
+        super().__init__(base=base, scalar=scalar, do_queue=do_queue, id=id)
 
         if base_pauli_rep := getattr(self.base, "_pauli_rep", None):
-            pr = {}
-            for pw, coeff in base_pauli_rep.items():
-                pr[pw] = qnp.dot(coeff, self.scalar)  # to support dispatching over interfaces
+            pr = {pw: qnp.dot(coeff, self.scalar) for pw, coeff in base_pauli_rep.items()}
             self._pauli_rep = qml.pauli.PauliSentence(pr)
         else:
             self._pauli_rep = None
@@ -281,19 +278,20 @@ class SProd(SymbolicOp):
             return SProd(scalar=self.scalar, base=new_base).simplify()
         return SProd(scalar=self.scalar, base=new_base)
 
-    def _check_scalar_is_valid(self):
-        """Check that ``self.scalar`` is valid.
 
-        Raises:
-            ValueError: if ``self.scalar`` is not valid
-        """
-        backend = autoray.infer_backend(self.scalar)
-        # TODO: Remove shape check when supporting batching
-        if not (
-            (backend == "builtins" and isinstance(self.scalar, numbers.Number))
-            or (backend in SUPPORTED_INTERFACES and qml.math.shape(self.scalar) == ())
-        ):
-            raise ValueError(
-                f"Cannot compute the scalar product of a scalar value with backend `{backend}` and "
-                f"type `{type(self.scalar)}`"
-            )
+def _check_scalar_is_valid(scalar):
+    """Check that ``self.scalar`` is valid.
+
+    Raises:
+        ValueError: if ``self.scalar`` is not valid
+    """
+    backend = autoray.infer_backend(scalar)
+    # TODO: Remove shape check when supporting batching
+    if not (
+        (backend == "builtins" and isinstance(scalar, numbers.Number))
+        or (backend in SUPPORTED_INTERFACES and qml.math.shape(scalar) == ())
+    ):
+        raise ValueError(
+            f"Cannot compute the scalar product of a scalar value with backend `{backend}` and "
+            f"type `{type(scalar)}`"
+        )

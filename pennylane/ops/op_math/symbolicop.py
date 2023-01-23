@@ -16,6 +16,7 @@ This submodule defines a base class for symbolic operations representing operato
 """
 from copy import copy
 
+import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
@@ -24,14 +25,14 @@ class SymbolicOp(Operator):
     """Developer-facing base class for single-operator symbolic operators.
 
     Args:
-        base (~.operation.Operator): The base operation that is modified symbolicly
+        base (~.operation.Operator): the base operation that is modified symbolicly
         do_queue (bool): indicates whether the operator should be
             recorded when created in a tape context
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
     This *developer-facing* class can serve as a parent to single base symbolic operators, such as
-    :class:`~.ops.op_math.Adjoint` and :class:`~.ops.op_math.Pow`.
+    :class:`~.ops.op_math.Adjoint`.
 
     New symbolic operators can inherit from this class to receive some common default behavior, such
     as deferring properties to the base class, copying the base class during a shallow copy, and
@@ -62,7 +63,7 @@ class SymbolicOp(Operator):
         return copied_op
 
     # pylint: disable=super-init-not-called
-    def __init__(self, base=None, do_queue=True, id=None):
+    def __init__(self, base, do_queue=True, id=None):
         self.hyperparameters["base"] = base
         self._id = id
         self.queue_idx = None
@@ -136,3 +137,47 @@ class SymbolicOp(Operator):
         new_op = copy(self)
         new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
         return new_op
+
+
+class ScalarSymbolicOp(SymbolicOp):
+    """Developer-facing base class for single-operator symbolic operators that contain a
+    scalar coefficient.
+
+    Args:
+        base (~.operation.Operator): the base operation that is modified symbolicly
+        coeff (float): the scalar coefficient
+        do_queue (bool): indicates whether the operator should be recorded when created in a tape
+            context
+        id (str): custom label given to an operator instance, can be useful for some applications
+            where the instance has to be identified
+
+    This *developer-facing* class can serve as a parent to single base symbolic operators, such as
+    :class:`~.ops.op_math.SProd` and :class:`~.ops.op_math.Pow`.
+    """
+
+    _name = "CoeffSymbolicOp"
+
+    def __init__(self, base, scalar: float, do_queue=True, id=None):
+        self.scalar = scalar
+        super().__init__(base, do_queue=do_queue, id=id)
+        self._batch_size = None
+
+    @property
+    def batch_size(self):
+        if self._batch_size is None:
+            self._batch_size = self._check_and_compute_batch_size()
+
+        return self._batch_size
+
+    def _check_and_compute_batch_size(self):
+        coeff_size = qml.math.size(self.scalar)
+        if coeff_size == 1:
+            # coeff is not batched
+            return self.base.batch_size
+        # coeff is batched
+        if self.base.batch_size is not None and self.base.batch_size != coeff_size:
+            raise ValueError(
+                "Broadcasting was attempted but the broadcasted dimensions "
+                f"do not match: {coeff_size}, {self.base.batch_size}."
+            )
+        return coeff_size

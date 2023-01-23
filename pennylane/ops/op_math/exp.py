@@ -32,7 +32,7 @@ from pennylane.operation import (
 )
 from pennylane.wires import Wires
 
-from .symbolicop import SymbolicOp
+from .symbolicop import ScalarSymbolicOp
 
 
 def exp(op, coeff=1, id=None):
@@ -86,7 +86,7 @@ def exp(op, coeff=1, id=None):
     return Exp(op, coeff, id=id)
 
 
-class Exp(SymbolicOp, Operation):
+class Exp(ScalarSymbolicOp, Operation):
     """A symbolic operator representating the exponential of a operator.
 
     Args:
@@ -136,23 +136,9 @@ class Exp(SymbolicOp, Operation):
     _name = "Exp"
 
     def __init__(self, base=None, coeff=1, do_queue=True, id=None):
-        super().__init__(base, do_queue=do_queue, id=id)
+        super().__init__(base, scalar=coeff, do_queue=do_queue, id=id)
         self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
-        self._batch_size = self._check_and_compute_batch_size(coeff)
-
-    def _check_and_compute_batch_size(self, coeff):
-        coeff_size = math.size(coeff)
-        if coeff_size == 1:
-            # coeff is not batched
-            return self.base.batch_size
-        # coeff is batched
-        if self.base.batch_size is not None and self.base.batch_size != coeff_size:
-            raise ValueError(
-                "Broadcasting was attempted but the broadcasted dimensions "
-                f"do not match: {coeff_size}, {self.base.batch_size}."
-            )
-        return coeff_size
 
     def __repr__(self):
         return (
@@ -189,7 +175,7 @@ class Exp(SymbolicOp, Operation):
     @property
     def coeff(self):
         """The numerical coefficient of the operator in the exponent."""
-        return self.data[0][0]
+        return self.scalar
 
     @property
     def num_params(self):

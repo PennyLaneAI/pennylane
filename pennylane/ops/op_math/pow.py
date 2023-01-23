@@ -32,7 +32,7 @@ from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
-from .symbolicop import SymbolicOp
+from .symbolicop import ScalarSymbolicOp, SymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
@@ -128,7 +128,7 @@ class PowOperation(Operation):
         return self.base.control_wires
 
 
-class Pow(SymbolicOp):
+class Pow(ScalarSymbolicOp):
     """Symbolic operator denoting an operator raised to a power.
 
     Args:
@@ -197,7 +197,7 @@ class Pow(SymbolicOp):
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
-        super().__init__(base, do_queue=do_queue, id=id)
+        super().__init__(base, scalar=z, do_queue=do_queue, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
             if (
@@ -224,7 +224,7 @@ class Pow(SymbolicOp):
     @property
     def z(self):
         """The exponent."""
-        return self.hyperparameters["z"]
+        return self.scalar
 
     @property
     def ndim_params(self):
