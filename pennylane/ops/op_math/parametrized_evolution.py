@@ -88,7 +88,7 @@ class ParametrizedEvolution(Operation):
         H (ParametrizedHamiltonian): hamiltonian to evolve
         params (ndarray): trainable parameters
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
-            If a list of floats, the odeint solver will use all the provided time values.
+            If a list of floats, the ``odeint`` solver will use all the provided time values, and perform intermediate steps if necessary. It is recommended to just provide a start and end time.
             Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
         time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
@@ -160,7 +160,7 @@ class ParametrizedEvolution(Operation):
     One can also provide a list of time values that the odeint will use to calculate the parametrized
     hamiltonian's evolution:
 
-    >>> t = [0.1, 0.5, 4, 6.7, 9, 10]
+    >>> t = jnp.linspace(0., 10., 0.1)
     >>> @qml.qnode(dev, interface="jax")
     ... def circuit(params):
     ...     qml.evolve(H1 + H2)(params, t=t)
