@@ -186,14 +186,14 @@ class TestUpdate:
 
         p_i = qs._par_info
 
-        assert p_i[0] == {"op": ops[0], "p_idx": 0}
-        assert p_i[1] == {"op": ops[1], "p_idx": 0}
-        assert p_i[2] == {"op": ops[1], "p_idx": 1}
-        assert p_i[3] == {"op": ops[1], "p_idx": 2}
-        assert p_i[4] == {"op": ops[2], "p_idx": 0}
-        assert p_i[5] == {"op": ops[3], "p_idx": 0}
-        assert p_i[6] == {"op": ops[3], "p_idx": 1}
-        assert p_i[7] == {"op": m[0].obs, "p_idx": 0}
+        assert p_i[0] == {"op": ops[0], "op_idx": 0, "p_idx": 0}
+        assert p_i[1] == {"op": ops[1], "op_idx": 1, "p_idx": 0}
+        assert p_i[2] == {"op": ops[1], "op_idx": 1, "p_idx": 1}
+        assert p_i[3] == {"op": ops[1], "op_idx": 1, "p_idx": 2}
+        assert p_i[4] == {"op": ops[2], "op_idx": 2, "p_idx": 0}
+        assert p_i[5] == {"op": ops[3], "op_idx": 3, "p_idx": 0}
+        assert p_i[6] == {"op": ops[3], "op_idx": 3, "p_idx": 1}
+        assert p_i[7] == {"op": m[0].obs, "op_idx": 0, "p_idx": 0}
 
         assert qs._trainable_params == list(range(8))
 

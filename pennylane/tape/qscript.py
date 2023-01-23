@@ -398,12 +398,16 @@ class QuantumScript:
             _par_info (list): Parameter information
         """
         self._par_info = []
-        for op in self.operations:
-            self._par_info.extend({"op": op, "p_idx": i} for i, d in enumerate(op.data))
+        for idx, op in enumerate(self.operations):
+            self._par_info.extend(
+                {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
+            )
 
-        for m in self.measurements:
+        for idx, m in enumerate(self.measurements):
             if m.obs is not None:
-                self._par_info.extend({"op": m.obs, "p_idx": i} for i, d in enumerate(m.obs.data))
+                self._par_info.extend(
+                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
+                )
 
     def _update_trainable_params(self):
         """Set the trainable parameters
@@ -563,7 +567,7 @@ class QuantumScript:
 
         # get the info for the parameter
         info = self._par_info[t_idx]
-        return info["op"], info["p_idx"]
+        return info["op"], info["op_idx"], info["p_idx"]
 
     def get_parameters(
         self, trainable_only=True, operations_only=False, **kwargs
