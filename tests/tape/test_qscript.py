@@ -293,7 +293,6 @@ class TestUpdate:
         _, obs_id_0, p_id_0 = qs._get_operation(7)
         assert obs_id_0 == 0 and p_id_0 == 0
 
-
     def test_update_observables(self):
         """This method needs to be more thoroughly tested, and probably even reconsidered in
         its design. I can't find any unittests in `test_tape.py`."""
