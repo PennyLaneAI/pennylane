@@ -228,15 +228,10 @@ Returns:
 
 
 @qml.BooleanFn
-def is_hadamard_grad_compatible(obj):
+def _is_hadamard_grad_compatible(obj):
+    """Check if the operation is compatible with Hadmard gradient transform."""
     return obj.name in hadamard_comp_list
 
-
-expand_invalid_trainable_hadamard_gradient = create_expand_fn(
-    depth=10,
-    stop_at=not_tape | is_measurement | (~is_trainable) | is_hadamard_grad_compatible,
-    docstring=_expand_invalid_trainable_doc_hadamard,
-)
 
 hadamard_comp_list = [
     "RX",
@@ -252,6 +247,13 @@ hadamard_comp_list = [
     "IsingYY",
     "IsingZZ",
 ]
+
+
+expand_invalid_trainable_hadamard_gradient = create_expand_fn(
+    depth=10,
+    stop_at=not_tape | is_measurement | (~is_trainable) | _is_hadamard_grad_compatible,
+    docstring=_expand_invalid_trainable_doc_hadamard,
+)
 
 
 @contextlib.contextmanager

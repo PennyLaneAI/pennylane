@@ -262,8 +262,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
 
 def _get_generators(trainable_op):
-    """From a trainable operation, extract the unitary generators and their coefficients.
-    """
+    """From a trainable operation, extract the unitary generators and their coefficients."""
     # For PhaseShift, we need to separate the generator in two unitaries (Hardware compatibility)
     if isinstance(trainable_op, (qml.PhaseShift, qml.U1)):
         generators = [qml.Identity(wires=trainable_op.wires), qml.PauliZ(wires=trainable_op.wires)]
