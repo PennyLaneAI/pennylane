@@ -93,18 +93,8 @@ def _hadamard_grad(
 
 
 def _expval_hadamard_grad(tape, argnum, aux_wire):
-    r"""Transform a QNode to compute the hadamard test gradient of all gate
-    parameters with respect to its inputs. This function is adapted to the new return system.
-
-    Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
-        argnum (int or list[int] or None): Trainable parameter indices to differentiate
-            with respect to. If not provided, the derivatives with respect to all
-            trainable parameters are returned.
-
-    Returns:
-        function or tuple[list[QuantumTape], function]
-
+    r"""It computes the hadamard test gradient for a given of all trainable gate parameters with respect to its inputs.
+    The auxiliary wire is the wire which is used to apply the hadamard gates and controlled gates.
     """
     # pylint: disable=too-many-statements
     argnums = argnum or tape.trainable_params
