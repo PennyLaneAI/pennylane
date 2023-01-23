@@ -213,8 +213,8 @@ _expand_invalid_trainable_doc_hadamard = """Expand out a tape so that it support
 of requested operations.
 
 This is achieved by decomposing all trainable operations that have
-``Operation.grad_method=None`` until all resulting operations
-have a defined gradient method, up to maximum depth ``depth``. Note that this
+are not in the Hadamard compatible list until all resulting operations
+are in the list up to maximum depth ``depth``. Note that this
 might not be possible, in which case the gradient rule will fail to apply.
 
 Args:
@@ -229,7 +229,7 @@ Returns:
 
 @qml.BooleanFn
 def _is_hadamard_grad_compatible(obj):
-    """Check if the operation is compatible with Hadmard gradient transform."""
+    """Check if the operation is compatible with Hadamard gradient transform."""
     return obj.name in hadamard_comp_list
 
 
