@@ -106,7 +106,7 @@ Contents
 .. currentmodule:: pennylane.operation
 
 Operator Types
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.operation
 
@@ -124,10 +124,11 @@ Operator Types
 
 .. currentmodule:: pennylane.operation
 
-.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation
+.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor
+    :parts: 1
 
 Errors
-^^^^^^
+~~~~~~
 
 When an :class:`~.Operator` method is undefined, it raises a error type that depends
 on the method that is undefined.
@@ -150,7 +151,7 @@ on the method that is undefined.
     ~TermsUndefinedError
 
 Boolean Functions
-^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~
 
 :class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
 The ``operation`` module provides the following:
@@ -172,7 +173,7 @@ The ``operation`` module provides the following:
     ~not_tape
 
 Other
-^^^^^
+~~~~~
 
 .. currentmodule:: pennylane.operation
 
@@ -185,7 +186,7 @@ Other
     ~AnyWires
 
 Operation attributes
-^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~
 
 PennyLane contains a mechanism for storing lists of operations with similar
 attributes and behaviour (for example, those that are their own inverses).
