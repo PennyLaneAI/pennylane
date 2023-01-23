@@ -24,7 +24,7 @@ def hamiltonian_grad(tape, idx):
         tape (qml.tape.QuantumTape): tape with a single Hamiltonian expectation as measurement
         idx (int): index of parameter that we differentiate with respect to
     """
-    op, p_idx = tape.get_operation(idx)
+    op, _, p_idx = tape.get_operation(idx)
     new_tape = tape.copy(copy_operations=True)
 
     # get position in queue
