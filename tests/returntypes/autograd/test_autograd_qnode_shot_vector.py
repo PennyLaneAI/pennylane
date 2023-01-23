@@ -25,9 +25,16 @@ shots_and_num_copies = [(((5, 2), 1, 10), 4), ((1, 10, (5, 2)), 4)]
 shots_and_num_copies_hess = [(((5, 1), 10), 2), ((10, (5, 1)), 2)]
 
 qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", {"h": 10e-2}],
+    ["default.qubit", "finite-diff", {"h": 0.05}],
     ["default.qubit", "parameter-shift", {}],
+    ["default.qubit", "spsa", {"h": 0.05, "num_directions": 20}],
 ]
+
+TOLS = {
+    "finite-diff": 0.3,
+    "parameter-shift": 1e-2,
+    "spsa": 0.3,
+}
 
 
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
@@ -482,6 +489,8 @@ class TestReturnShotVectorHessian:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
+        if diff_method == "spsa":
+            pytest.skip("SPSA does not support iterated differentiation in Autograd.")
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = np.array(0.1)
@@ -513,6 +522,8 @@ class TestReturnShotVectorHessian:
         self, dev_name, diff_method, gradient_kwargs, shots, num_copies
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
+        if diff_method == "spsa":
+            pytest.skip("SPSA does not support iterated differentiation in Autograd.")
 
         dev = qml.device(dev_name, wires=2, shots=shots)
 
@@ -538,9 +549,6 @@ class TestReturnShotVectorHessian:
         assert hess.shape == (num_copies, 5, 2, 2)
 
 
-finite_diff_shot_vec_tol = 0.3
-param_shift_shot_vec_tol = 10e-3
-
 shots_and_num_copies = [((1000000, 900000, 800000), 3), ((1000000, (900000, 2)), 3)]
 
 
@@ -554,6 +562,7 @@ class TestReturnShotVectorIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
+        np.random.seed(42)
         dev = qml.device(dev_name, wires=2, shots=shots)
         x = np.array(0.543)
         y = np.array(-0.654)
@@ -575,7 +584,7 @@ class TestReturnShotVectorIntegration:
         assert len(all_res) == 2
 
         expected = np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)])
-        tol = finite_diff_shot_vec_tol if diff_method == "finite-diff" else param_shift_shot_vec_tol
+        tol = TOLS[diff_method]
 
         for res, exp in zip(all_res, expected):
             assert isinstance(res, np.ndarray)
@@ -626,7 +635,7 @@ class TestReturnShotVectorIntegration:
             ]
         )
 
-        tol = finite_diff_shot_vec_tol if diff_method == "finite-diff" else param_shift_shot_vec_tol
+        tol = TOLS[diff_method]
 
         for res, exp in zip(all_res, expected):
             assert isinstance(res, np.ndarray)
