@@ -112,7 +112,6 @@ Operator Types
 
 .. autosummary::
     :toctree: api
-    :inheritance-diagram:
 
     ~Operator
     ~Operation
@@ -122,6 +121,10 @@ Operator Types
     ~CVOperation
     ~Channel
     ~Tensor
+
+.. currentmodule:: pennylane.operation
+
+.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation
 
 Errors
 ^^^^^^
