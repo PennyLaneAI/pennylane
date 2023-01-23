@@ -18,7 +18,7 @@
 This file contains the ``ParametrizedEvolution`` operator and the ``evolve`` constructor.
 """
 
-from typing import Union
+from typing import List, Union
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation, Operator
@@ -165,7 +165,7 @@ class ParametrizedEvolution(Operation):
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
-        t=None,
+        t: Union[float, List[float]] = None,
         time="t",
         do_queue=True,
         id=None,

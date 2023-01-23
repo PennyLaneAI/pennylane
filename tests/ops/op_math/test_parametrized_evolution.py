@@ -16,6 +16,8 @@ Unit tests for the ParametrizedEvolution class
 """
 from functools import reduce
 
+import numpy as np
+
 # pylint: disable=unused-argument, too-few-public-methods
 import pytest
 
@@ -93,6 +95,19 @@ class TestInitialization:
         assert ev.parameters == []
         assert ev.num_params == 0
 
+    def test_list_of_times(self):
+        """Test the initialization."""
+        import jax.numpy as jnp
+
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        t = np.arange(0, 10, 0.01)
+        ev = ParametrizedEvolution(H=H, params=[1, 2], t=t)
+
+        assert isinstance(ev.t, jnp.ndarray)
+        assert qml.math.allclose(ev.t, t)
+
     def test_has_matrix_true(self):
         """Test that a parametrized evolution always has ``has_matrix=True``."""
         ops = [qml.PauliX(0), qml.PauliY(1)]
@@ -122,10 +137,10 @@ class TestMatrix:
     def test_time_independent_hamiltonian(self):
         """Test matrix method for a time independent hamiltonian."""
         H = time_independent_hamiltonian()
-        t = 4
+        t = np.arange(0, 4, 0.001)
         params = [1, 2]
         ev = ParametrizedEvolution(H=H, params=params, t=t)
-        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=max(t))) * max(t))
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-3)
 
     @pytest.mark.slow
@@ -138,15 +153,13 @@ class TestMatrix:
 
         H = time_dependent_hamiltonian()
 
-        t = jnp.pi / 4
+        t = jnp.arange(0, jnp.pi / 4, 0.001)
         params = [1, 2]
         ev = ParametrizedEvolution(H=H, params=params, t=t)
 
         def generator(params):
-            time_step = 1e-3
-            times = jnp.arange(0, t, step=time_step)
-            for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
+            for ti in t:
+                yield jax.scipy.linalg.expm(-1j * 0.001 * qml.matrix(H(params, t=ti)))
 
         true_mat = reduce(lambda x, y: y @ x, generator(params))
 
