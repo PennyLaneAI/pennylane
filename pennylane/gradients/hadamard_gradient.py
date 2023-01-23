@@ -106,6 +106,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         function or tuple[list[QuantumTape], function]
 
     """
+    # pylint: disable=too-many-statements
     argnums = argnum or tape.trainable_params
     g_tapes = []
     coeffs = []
@@ -193,8 +194,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
         gradient_data.append(num_tape)
 
-    def processing_fn(results):
-
+    def processing_fn(results):  # pylint: disable=too-many-branches
         # TODO interface compatibility
         multi_measurements = len(tape.measurements) > 1
         multi_params = len(tape.trainable_params) > 1
@@ -262,6 +262,8 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
 
 def _get_generators(trainable_op):
+    """From a trainable operation, extract the unitary generators and their coefficients.
+    """
     # For PhaseShift, we need to separate the generator in two unitaries (Hardware compatibility)
     if isinstance(trainable_op, (qml.PhaseShift, qml.U1)):
         generators = [qml.Identity(wires=trainable_op.wires), qml.PauliZ(wires=trainable_op.wires)]
