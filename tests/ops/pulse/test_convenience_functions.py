@@ -266,12 +266,6 @@ class TestIntegration:  # see Albert's tests
             qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        @jax.jit
-        @qml.qnode(dev, interface="jax")
-        def jitted_circuit(params):
-            qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
         @qml.qnode(dev, interface="jax")
         def true_circuit(params):
             true_mat = reduce(lambda x, y: y @ x, generator(params))
@@ -282,13 +276,40 @@ class TestIntegration:  # see Albert's tests
         params = [constants, constants]
 
         assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
-        assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=5e-3)
-
         assert qml.math.allclose(
             jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
         )
+
+    def test_qnode_pwc_jit(self):
+        """Test that the evolution of a parametrized hamiltonian defined with a pwc function can executed on
+        a QNode using jax-jit, and the results don't differ from execution without jitting."""
+        import jax
+
+        f1 = qml.pulse.pwc((1, 6))
+        f2 = qml.pulse.pwc((0.5, 3))
+        H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
+
+        t = (0, 4)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(H)(params=params, t=t)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def jitted_circuit(params):
+            qml.evolve(H)(params=params, t=t)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        constants = np.linspace(0, 9, 10)
+        params = [constants, constants]
+
+        assert qml.math.allclose(jitted_circuit(params), circuit(params), atol=5e-3)
         assert qml.math.allclose(
-            jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
+            jax.grad(jitted_circuit)(params), jax.grad(circuit)(params), atol=5e-3
         )
 
     def test_parametrized_hamiltonian_with_pwc_from_function(self):
@@ -357,12 +378,6 @@ class TestIntegration:  # see Albert's tests
             qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        @jax.jit
-        @qml.qnode(dev, interface="jax")
-        def jitted_circuit(params):
-            qml.evolve(H)(params=params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
         @qml.qnode(dev, interface="jax")
         def true_circuit(params):
             true_mat = reduce(lambda x, y: y @ x, generator(params))
@@ -372,11 +387,43 @@ class TestIntegration:  # see Albert's tests
         params = [1.2, [2.3, 3.4]]
 
         assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
-        assert qml.math.allclose(jitted_circuit(params), true_circuit(params), atol=5e-3)
-
         assert qml.math.allclose(
             jax.grad(circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
         )
+
+    def test_qnode_pwc_from_function_jit(self):
+        """Test that the evolution of a ParametrizedHamiltonian defined with a function decorated by pwc_from_function
+        can be executed on a QNode using jax-jit, and the results don't differ from an execution without jitting."""
+        import jax
+
+        @qml.pulse.pwc_from_function((2, 5), 20)
+        def f1(params, t):
+            return params + t
+
+        @qml.pulse.pwc_from_function((3, 7), 10)
+        def f2(params, t):
+            return params[0] + params[1] * t**2
+
+        H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
+
+        t = (1, 4)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(H)(params=params, t=t)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def jitted_circuit(params):
+            qml.evolve(H)(params=params, t=t)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        params = (1.2, [2.3, 3.4])
+
+        assert qml.math.allclose(jitted_circuit(params), circuit(params), atol=5e-3)
         assert qml.math.allclose(
-            jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
+            jax.grad(jitted_circuit)(params), jax.grad(circuit)(params), atol=5e-3
         )
