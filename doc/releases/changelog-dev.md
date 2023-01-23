@@ -190,7 +190,7 @@
 * A new function called `max_entropy` has been added to compute the maximum entropy of a quantum state.
   [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
 
-* A new template has been added that implements a canonical 2-complete linear (2-CCL) swap network
+* A new template called `TwoLocalSwapNetwork` has been added that implements a canonical 2-complete linear (2-CCL) swap network
   described in [arXiv:1905.05118](https://arxiv.org/abs/1905.05118).
   [(#3447)](https://github.com/PennyLaneAI/pennylane/pull/3447)
 
