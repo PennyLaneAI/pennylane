@@ -15,12 +15,12 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import itertools
-import warnings
 from functools import reduce
+import copy
 
 import numpy as np
 import pytest
-from gate_data import CNOT, II, SWAP, TADD, TSWAP, I, Toffoli, X
+from gate_data import CNOT, I, Toffoli, X
 from numpy.linalg import multi_dot
 
 import pennylane as qml
@@ -29,7 +29,8 @@ from pennylane.operation import Operation, Operator, Tensor, operation_derivativ
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use, no-member, protected-access, pointless-statement
+# pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
+# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -187,7 +188,7 @@ class TestOperatorConstruction:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
-    def test_broadcasted_params(self, params, exp_batch_size):
+    def test_broadcasted_params_autograd(self, params, exp_batch_size):
         r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly with Autograd parameters."""
 
@@ -203,7 +204,7 @@ class TestOperatorConstruction:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
-    def test_broadcasted_params(self, params, exp_batch_size):
+    def test_broadcasted_params_jax(self, params, exp_batch_size):
         r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly with JAX parameters."""
         import jax
@@ -220,7 +221,7 @@ class TestOperatorConstruction:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
-    def test_broadcasted_params(self, params, exp_batch_size):
+    def test_broadcasted_params_tf(self, params, exp_batch_size):
         r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly with TensorFlow parameters."""
         import tensorflow as tf
@@ -237,7 +238,7 @@ class TestOperatorConstruction:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
-    def test_broadcasted_params(self, params, exp_batch_size):
+    def test_broadcasted_params_torch(self, params, exp_batch_size):
         r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly with Torch parameters."""
         import torch
@@ -290,7 +291,7 @@ class TestOperatorConstruction:
             num_wires = 1
 
         op = DummyOp(wires=0)
-        op.name = "MyOp"
+        op.name = "MyOp"  # pylint: disable=attribute-defined-outside-init
         assert op.name == "MyOp"
 
     def test_default_hyperparams(self):
@@ -463,8 +464,8 @@ class TestOperatorConstruction:
                 return self._ndim_params
 
         def fun(x):
-            op0 = qml.RX(x, 0)
-            op1 = MyRX(x, 0)
+            _ = qml.RX(x, 0)
+            _ = MyRX(x, 0)
 
         # No kwargs
         fun0 = tf.function(fun)
@@ -652,7 +653,7 @@ class TestOperationConstruction:
         with pytest.raises(
             qml.operation.OperatorPropertyUndefined, match="DummyOp does not have parameter"
         ):
-            op.parameter_frequencies
+            _ = op.parameter_frequencies
 
     @pytest.mark.parametrize("num_param", [1, 2])
     def test_frequencies_parameter_dependent(self, num_param):
@@ -876,7 +877,7 @@ class TestOperatorIntegration:
             r"""Dummy custom operator"""
             num_wires = 1
 
-        with pytest.raises(ValueError, match="Cannot raise an Operator"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             _ = DummyOp(wires=[0]) ** DummyOp(wires=[0])
 
     def test_sum_with_operator(self):
@@ -985,6 +986,30 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+    def test_dunder_method_with_new_class(self):
+        """Test that when calling any Operator dunder method with a non-supported class that
+        has its right dunder method defined, the class' right dunder method is called."""
+
+        class Dummy:
+            def __radd__(self, other):
+                return True
+
+            def __rsub__(self, other):
+                return True
+
+            def __rmul__(self, other):
+                return True
+
+            def __rmatmul__(self, other):
+                return True
+
+        op = qml.PauliX(0)
+        dummy = Dummy()
+        assert op + dummy is True
+        assert op - dummy is True
+        assert op * dummy is True
+        assert op @ dummy is True
+
     @pytest.mark.torch
     def test_mul_scalar_torch_tensor(self):
         """Test the __mul__ dunder method with a scalar torch tensor."""
@@ -1027,114 +1052,13 @@ class TestOperatorIntegration:
 
     def test_mul_with_not_supported_object_raises_error(self):
         """Test that the __mul__ dunder method raises an error when using a non-supported object."""
-        with pytest.raises(ValueError, match="Cannot multiply Observable by"):
+        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'PauliX'"):
             _ = "dummy" * qml.PauliX(0)
 
     def test_matmul_with_not_supported_object_raises_error(self):
         """Test that the __matmul__ dunder method raises an error when using a non-supported object."""
-        with pytest.raises(ValueError, match="Can only perform tensor products between operators."):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             _ = qml.PauliX(0) @ "dummy"
-
-
-class TestInverse:
-    """Test inverse of operations"""
-
-    def test_operation_inverse_using_dummy_operation(self):
-        some_param = 0.5
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom Operation"""
-            num_wires = 1
-
-        # Check that the name of the Operation is initialized fine
-        dummy_op = DummyOp(some_param, wires=[1])
-
-        assert not dummy_op.inverse
-
-        dummy_op_class_name = dummy_op.name
-
-        # Check that the name of the Operation was modified when applying the inverse
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            assert dummy_op.inv().name == dummy_op_class_name + ".inv"
-        assert dummy_op.inverse
-
-        # Check that the name of the Operation is the original again, once applying the inverse a second time
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            assert dummy_op.inv().name == dummy_op_class_name
-        assert not dummy_op.inverse
-
-    def test_inv_queuing(self):
-        """Test that inv updates the inverse property in place during queuing."""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom Operation"""
-            num_wires = 1
-
-        with qml.queuing.AnnotatedQueue() as q:
-            with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-                op = DummyOp(wires=[0]).inv()
-            assert op.inverse is True
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        assert op.inverse is True
-
-    def test_inverse_integration(self):
-        """Test that the inv integrates with qnode execution. An operation followed by the inverse
-        operation should leave the state unchanged.
-        """
-
-        dev1 = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev1)
-        def circuit():
-            qml.RX(1.234, wires=0)
-            qml.RX(1.234, wires=0).inv()
-            return qml.state()
-
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            assert qml.math.allclose(circuit()[0], 1)
-
-    def test_inverse_operations_not_supported(self):
-        """Test that the inverse of operations is not currently
-        supported on the default gaussian device"""
-
-        dev1 = qml.device("default.gaussian", wires=2)
-
-        @qml.qnode(dev1)
-        def mean_photon_gaussian(mag_alpha, phase_alpha, phi):
-            qml.Displacement(mag_alpha, phase_alpha, wires=0)
-            qml.Rotation(phi, wires=0).inv()
-            return qml.expval(qml.NumberOperator(0))
-
-        with pytest.raises(
-            qml.DeviceError,
-            match=r"inverse of gates are not supported on device default\.gaussian",
-        ):
-            mean_photon_gaussian(0.015, 0.02, 0.005)
-
-    @pytest.fixture(scope="function")
-    def qnode_for_inverse(self, mock_device):
-        """Provides a QNode for the subsequent tests of inv"""
-
-        def circuit(x):
-            qml.RZ(x, wires=[1]).inv()
-            qml.RZ(x, wires=[1]).inv().inv()
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
-
-        node = qml.QNode(circuit, mock_device)
-        node.construct([1.0], {})
-
-        return node
-
-    def test_operation_inverse_defined(self, qnode_for_inverse):
-        """Test that the inverse of an operation is added to the QNode queue and the operation is an instance
-        of the original class"""
-        assert qnode_for_inverse.qtape.operations[0].name == "RZ.inv"
-        assert qnode_for_inverse.qtape.operations[0].inverse
-        assert issubclass(qnode_for_inverse.qtape.operations[0].__class__, qml.operation.Operation)
-        assert qnode_for_inverse.qtape.operations[1].name == "RZ"
-        assert not qnode_for_inverse.qtape.operations[1].inverse
-        assert issubclass(qnode_for_inverse.qtape.operations[1].__class__, qml.operation.Operation)
 
 
 class TestTensor:
@@ -1165,7 +1089,7 @@ class TestTensor:
             Tensor(X, Y)
 
         with pytest.warns(UserWarning, match="Tensor object acts on overlapping wires"):
-            op @ qml.PauliZ(1)
+            _ = op @ qml.PauliZ(1)
 
     def test_queuing_defined_outside(self):
         """Test the queuing of a Tensor object."""
@@ -1254,6 +1178,17 @@ class TestTensor:
         Y = qml.PauliY(2)
         t = Tensor(X, Y)
         assert t.name == [X.name, Y.name]
+
+    def test_batch_size(self):
+        """Test that the batch_size attribute of the Tensor is initialized as None."""
+        X = qml.PauliX(0)
+        Y = qml.PauliY(2)
+        t = Tensor(X, Y)
+        assert t.batch_size is None
+
+    def test_has_matrix(self):
+        """Test that the Tensor class has a ``has_matrix`` static attribute set to True."""
+        assert Tensor.has_matrix is True
 
     def test_num_wires(self):
         """Test that the correct number of wires is returned"""
@@ -1382,17 +1317,13 @@ class TestTensor:
         Y = qml.CNOT(wires=[0, 1])
         Z = qml.PauliZ(0)
 
-        with pytest.raises(
-            ValueError, match="Can only perform tensor products between observables"
-        ):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             T = X @ Z
-            T @ Y
+            _ = T @ Y
 
-        with pytest.raises(
-            ValueError, match="Can only perform tensor products between observables"
-        ):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             T = X @ Z
-            4 @ T
+            _ = 4 @ T
 
     def test_eigvals(self):
         """Test that the correct eigenvalues are returned for the Tensor"""
@@ -1525,7 +1456,7 @@ class TestTensor:
         with pytest.raises(NotImplementedError, match="wire_order"):
             O.matrix(wire_order=[1, 0])
 
-    def test_tensor_matrix_partial_wires_overlap_warning(self, tol):
+    def test_tensor_matrix_partial_wires_overlap_warning(self):
         """Tests that a warning is raised if the wires the factors in
         the tensor product act on have partial overlaps."""
         H = np.diag([1, 2, 3, 4])
@@ -1536,7 +1467,7 @@ class TestTensor:
             with pytest.warns(UserWarning, match="partially overlapping"):
                 O.matrix()
 
-    def test_tensor_matrix_too_large_warning(self, tol):
+    def test_tensor_matrix_too_large_warning(self):
         """Tests that a warning is raised if wires occur in multiple of the
         factors in the tensor product, leading to a wrongly-sized matrix."""
         O = qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(0)
@@ -1584,7 +1515,7 @@ class TestTensor:
 
         O = tensor_observable
         for idx, obs in enumerate(O.non_identity_obs):
-            assert type(obs) == type(expected[idx])
+            assert isinstance(obs, type(expected[idx]))
             assert obs.wires == expected[idx].wires
 
     tensor_obs_pruning = [
@@ -1613,10 +1544,9 @@ class TestTensor:
     def test_prune(self, tensor_observable, expected):
         """Tests that the prune method returns the expected Tensor or single non-Tensor Observable."""
         O = tensor_observable
-        O_expected = expected
 
         O_pruned = O.prune()
-        assert type(O_pruned) == type(expected)
+        assert isinstance(O_pruned, type(expected))
         assert O_pruned.wires == expected.wires
 
     def test_prune_while_queuing_return_tensor(self):
@@ -1692,6 +1622,18 @@ class TestTensor:
         with pytest.raises(ValueError, match="Can only compute"):
             t.sparse_matrix()
 
+    def test_copy(self):
+        """Test copying of a Tensor."""
+        tensor = Tensor(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
+        copied_tensor = copy.copy(tensor)
+        copied_tensor1 = tensor.__copy__()
+        for c in [copied_tensor, copied_tensor1]:
+            assert c is not tensor
+            assert c.wires == Wires([0, 1, 2])
+            assert c.batch_size == tensor.batch_size == None
+            for obs1, obs2 in zip(c.obs, tensor.obs):
+                assert qml.equal(obs1, obs2)
+
     def test_map_wires(self):
         """Test the map_wires method."""
         tensor = Tensor(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
@@ -1701,6 +1643,7 @@ class TestTensor:
         assert tensor is not mapped_tensor
         assert tensor.wires == Wires([0, 1, 2])
         assert mapped_tensor.wires == Wires([10, 11, 12])
+        assert mapped_tensor.batch_size == tensor.batch_size
         for obs1, obs2 in zip(mapped_tensor.obs, final_obs):
             assert qml.equal(obs1, obs2)
 
@@ -1894,15 +1837,18 @@ class TestTensorObservableOperations:
         obs = qml.PauliZ(0)
         tensor = qml.PauliZ(0) @ qml.PauliX(1)
         A = [[1, 0], [0, -1]]
-        with pytest.raises(ValueError, match="Cannot add Observable"):
-            obs + A
-            tensor + A
-        with pytest.raises(ValueError, match="Cannot multiply Observable"):
-            obs * A
-            A * tensor
-        with pytest.raises(ValueError, match="Cannot subtract"):
-            obs - A
-            tensor - A
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = obs + A
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = tensor + A
+        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'PauliZ'"):
+            _ = obs * A
+        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'Tensor'"):
+            _ = A * tensor
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = obs - A
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = tensor - A
 
 
 # Dummy class inheriting from Operator
@@ -2081,16 +2027,6 @@ class TestOperationDerivative:
 
         assert np.allclose(derivative, expected_derivative)
 
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            op.inv()
-        derivative_inv = operation_derivative(op)
-        expected_derivative_inv = 0.5 * np.array(
-            [[-np.sin(p / 2), 1j * np.cos(p / 2)], [1j * np.cos(p / 2), -np.sin(p / 2)]]
-        )
-
-        assert not np.allclose(derivative, derivative_inv)
-        assert np.allclose(derivative_inv, expected_derivative_inv)
-
     def test_phase(self):
         """Test if the function correctly returns the derivative of PhaseShift"""
         p = 0.3
@@ -2255,13 +2191,12 @@ def test_docstring_example_of_operator_class(tol):
     Operator class docstring, as well as in the 'adding_operators'
     page in the developer guide."""
 
-    import pennylane as qml
-
     class FlipAndRotate(qml.operation.Operation):
 
         num_wires = qml.operation.AnyWires
         grad_method = "A"
 
+        # pylint: disable=too-many-arguments
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=True, id=None):
 
             if do_flip and wire_flip is None:

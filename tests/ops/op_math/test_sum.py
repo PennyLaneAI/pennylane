@@ -1005,3 +1005,53 @@ class TestArithmetic:
             assert s1.wires == s2.wires
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
+
+
+class TestSupportsBroadcasting:
+    """Test that the Sum operator supports broadcasting if its operands support broadcasting."""
+
+    def test_batch_size_all_batched(self):
+        """Test that the batch_size is correct when all operands are batched."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = Sum(base, base, base)
+        assert op.batch_size == 3
+
+    def test_batch_size_not_all_batched(self):
+        """Test that the batch_size is correct when all operands are not batched."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = Sum(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3]), wires=2))
+        assert op.batch_size == 3
+
+    def test_batch_size_None(self):
+        """Test that the batch size is none if no operands have batching."""
+        prod_op = Sum(qml.PauliX(0), qml.RX(1.0, wires=0))
+        assert prod_op.batch_size is None
+
+    def test_matrix_all_batched(self):
+        """Test that Sum matrix has batching support when all operands are batched."""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        y = qml.numpy.array([0.4, 0.5, 0.6])
+        op = Sum(qml.RX(x, wires=0), qml.RY(y, wires=2), qml.PauliZ(1))
+        mat = op.matrix()
+        sum_list = [
+            Sum(qml.RX(i, wires=0), qml.RY(j, wires=2), qml.PauliZ(1)) for i, j in zip(x, y)
+        ]
+        compare = qml.math.stack([s.matrix() for s in sum_list])
+        assert qml.math.allclose(mat, compare)
+        assert mat.shape == (3, 8, 8)
+
+    def test_matrix_not_all_batched(self):
+        """Test that Sum matrix has batching support when all operands are not batched."""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        y = 0.5
+        z = qml.numpy.array([0.4, 0.5, 0.6])
+        op = Sum(qml.RX(x, wires=0), qml.RY(y, wires=2), qml.RZ(z, wires=1))
+        mat = op.matrix()
+        batched_y = [y for _ in x]
+        sum_list = [
+            Sum(qml.RX(i, wires=0), qml.RY(j, wires=2), qml.RZ(k, wires=1))
+            for i, j, k in zip(x, batched_y, z)
+        ]
+        compare = qml.math.stack([s.matrix() for s in sum_list])
+        assert qml.math.allclose(mat, compare)
+        assert mat.shape == (3, 8, 8)

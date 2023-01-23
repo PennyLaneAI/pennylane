@@ -21,6 +21,8 @@ from typing import Sequence
 import pennylane as qml
 from pennylane.operation import Operator
 
+from .parametrized_hamiltonian import ParametrizedHamiltonian
+
 
 def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
@@ -62,17 +64,20 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     than using ``pauli=False``, but it only works for pauli words
     (see :func:`pennylane.pauli.is_pauli_word`).
     """
-    if qml.math.shape(coeffs)[0] != len(ops):
+    if len(coeffs) != len(ops):
         raise ValueError("Number of coefficients and operators does not match.")
     if len(coeffs) == 0 and len(ops) == 0:
         raise ValueError("Cannot compute the dot product of an empty sequence.")
+
+    if any(callable(c) for c in coeffs):
+        return ParametrizedHamiltonian(coeffs, ops)
 
     if pauli:
         return _pauli_dot(coeffs, ops)
 
     operands = []
     for coeff, op in zip(coeffs, ops):
-        operands.append(op if coeff == 1 else qml.s_prod(coeff, op))
+        operands.append(qml.s_prod(coeff, op))
     return qml.op_sum(*operands) if len(operands) > 1 else operands[0]
 
 

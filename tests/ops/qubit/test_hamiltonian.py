@@ -14,6 +14,7 @@
 """
 Tests for the Hamiltonian class.
 """
+from collections.abc import Iterable
 from unittest.mock import patch
 
 import numpy as np
@@ -22,7 +23,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.wires import Wires
-from collections.abc import Iterable
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -857,21 +857,21 @@ class TestHamiltonian:
         """Tests that the arithmetic operations thrown the correct errors"""
         H = qml.Hamiltonian([1], [qml.PauliZ(0)])
         A = [[1, 0], [0, -1]]
-        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
-            H @ A
-        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
-            H.__rmatmul__(A)
-        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
-            H + A
-        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
-            H * A
-        with pytest.raises(ValueError, match="Cannot subtract"):
-            H - A
-        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H @ A
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = A @ H
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H + A
+        with pytest.raises(TypeError, match="can't multiply sequence by non-int"):
+            _ = H * A
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H - A
+        with pytest.raises(TypeError, match="unsupported operand type"):
             H += A
-        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             H *= A
-        with pytest.raises(ValueError, match="Cannot subtract"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             H -= A
 
     def test_hamiltonian_queue_outside(self):

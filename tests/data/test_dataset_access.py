@@ -484,9 +484,6 @@ class TestLoad:
         assert data.molecule == "H2_6-31G_0.46_molecule"
         assert data._dtype == "qchem"
         assert data._folder == os.path.join(dest, "datasets/qchem/H2/6-31G/0.46")
-        assert data._prefix == os.path.join(
-            dest, "datasets/qchem/H2/6-31G/0.46/H2_6-31G_0.46_{}.dat"
-        )
         assert data._fullfile is None
 
     def test_successful_load_many(self, tmp_path):

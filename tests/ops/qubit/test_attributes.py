@@ -21,6 +21,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 
 from pennylane.ops.qubit.attributes import Attribute
+from pennylane.ops import Controlled
 
 # Dummy attribute
 new_attribute = Attribute(["PauliX", "PauliY", "PauliZ", "Hadamard", "RZ"])
@@ -286,14 +287,12 @@ class TestSupportsBroadcasting:
         op = qml.ControlledQubitUnitary(U, wires=wires, control_wires=[1, "10"])
 
         mat1 = op.matrix()
-        mat2 = qml.ControlledQubitUnitary.compute_matrix(U, u_wires=wires, control_wires=[1, "10"])
         single_mats = [
             qml.ControlledQubitUnitary(_U, wires=wires, control_wires=[1, "10"]).matrix()
             for _U in U
         ]
 
         assert qml.math.allclose(mat1, single_mats)
-        assert qml.math.allclose(mat2, single_mats)
 
     def test_diagonal_qubit_unitary(self):
         """Test that DiagonalQubitUnitary, which is marked as supporting parameter broadcasting,

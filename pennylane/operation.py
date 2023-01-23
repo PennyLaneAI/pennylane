@@ -765,9 +765,6 @@ class Operator(abc.ABC):
         "my_label"
         >>> op.label(decimals=2, base_label="my_label")
         "my_label\n(1.23)"
-        >>> op.inv()
-        >>> op.label()
-        "RX⁻¹"
 
         If the operation has a matrix-valued parameter and a cache dictionary is provided,
         unique matrices will be cached in the ``'matrices'`` key list. The label will contain
@@ -1291,33 +1288,35 @@ class Operator(abc.ABC):
             return qml.op_sum(self, other)
         if other == 0:
             return self
+        if isinstance(other, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
+            return other.__add__(self)
         try:
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
-        except ValueError as e:
-            raise ValueError(f"Cannot add Operator and {type(other)}") from e
+        except ValueError:
+            return NotImplemented
 
     __radd__ = __add__
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
+        if callable(other):
+            return qml.ops.ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
         try:
             return qml.s_prod(scalar=other, operator=self)
-        except ValueError as e:
-            raise ValueError(f"Cannot multiply Operator and {type(other)}.") from e
+        except ValueError:
+            return NotImplemented
 
     __rmul__ = __mul__
 
     def __matmul__(self, other):
         """The product operation between Operator objects."""
-        if isinstance(other, Operator):
-            return qml.prod(self, other)
-        raise ValueError("Can only perform tensor products between operators.")
+        return qml.prod(self, other) if isinstance(other, Operator) else NotImplemented
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, (Operator, numbers.Number)):
             return self + (-other)
-        raise ValueError(f"Cannot subtract {type(other)} from Operator.")
+        return NotImplemented
 
     def __rsub__(self, other):
         """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
@@ -1331,7 +1330,7 @@ class Operator(abc.ABC):
         r"""The power operation of an Operator object."""
         if isinstance(other, numbers.Number):
             return qml.pow(self, z=other)
-        raise ValueError(f"Cannot raise an Operator with an exponent of type {type(other)}")
+        return NotImplemented
 
 
 # =============================================================================
@@ -1499,31 +1498,7 @@ class Operation(Operator):
     @property
     def inverse(self):
         """Boolean determining if the inverse of the operation was requested."""
-        return self._inverse
-
-    @inverse.setter
-    def inverse(self, boolean):
-        warnings.warn(
-            "In-place inversion with inverse is deprecated. Please use qml.adjoint or"
-            " qml.pow instead.",
-            UserWarning,
-        )
-        self._inverse = boolean
-
-    def inv(self):
-        """Inverts the operator.
-
-        This method concatenates a string to the name of the operation,
-        to indicate that the inverse will be used for computations.
-
-        Any subsequent call of this method will toggle between the original
-        operation and the inverse of the operation.
-
-        Returns:
-            :class:`Operator`: operation to be inverted
-        """
-        self.inverse = not self._inverse
-        return self
+        return False
 
     def matrix(self, wire_order=None):
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
@@ -1700,10 +1675,7 @@ class Observable(Operator):
         if isinstance(other, Observable):
             return Tensor(self, other)
 
-        try:
-            return super().__matmul__(other=other)
-        except ValueError as e:
-            raise ValueError("Can only perform tensor products between operators.") from e
+        return super().__matmul__(other=other)
 
     def _obs_data(self):
         r"""Extracts the data from a Observable or Tensor and serializes it in an order-independent fashion.
@@ -1771,10 +1743,8 @@ class Observable(Operator):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
-        try:
-            return super().__add__(other=other)
-        except ValueError as e:
-            raise ValueError(f"Cannot add Observable and {type(other)}") from e
+
+        return super().__add__(other=other)
 
     __radd__ = __add__
 
@@ -1782,21 +1752,16 @@ class Observable(Operator):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
         if isinstance(a, (int, float)):
             return qml.Hamiltonian([a], [self], simplify=True)
-        try:
-            return super().__mul__(other=a)
-        except ValueError as e:
-            raise ValueError(f"Cannot multiply Observable by {type(a)}") from e
+
+        return super().__mul__(other=a)
 
     __rmul__ = __mul__
 
     def __sub__(self, other):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
-            return self.__add__(other.__mul__(-1))
-        try:
-            return super().__sub__(other=other)
-        except ValueError as e:
-            raise ValueError(f"Cannot subtract {type(other)} from Observable") from e
+            return self + (-1 * other)
+        return super().__sub__(other=other)
 
 
 class Tensor(Observable):
@@ -1822,6 +1787,7 @@ class Tensor(Observable):
     # pylint: disable=abstract-method
     return_type = None
     tensor = True
+    has_matrix = True
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
 
@@ -1835,6 +1801,7 @@ class Tensor(Observable):
         self._eigvals_cache = None
         self.obs: List[Observable] = []
         self._args = args
+        self._batch_size = None
         self.queue(init=True)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1893,6 +1860,7 @@ class Tensor(Observable):
         copied_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
         copied_op.obs = self.obs.copy()
         copied_op._eigvals_cache = self._eigvals_cache
+        copied_op._batch_size = self._batch_size
         return copied_op
 
     def __repr__(self):
@@ -1986,7 +1954,7 @@ class Tensor(Observable):
             self.obs.append(other)
 
         else:
-            raise ValueError("Can only perform tensor products between observables.")
+            return NotImplemented
 
         wires = [op.wires for op in self.obs]
         if len(wires) != len(set(wires)):
@@ -2008,7 +1976,7 @@ class Tensor(Observable):
             QueuingManager.remove(other)
             return self
 
-        raise ValueError("Can only perform tensor products between observables.")
+        return NotImplemented
 
     __imatmul__ = __matmul__
 
@@ -2287,6 +2255,7 @@ class Tensor(Observable):
         new_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
         new_op.obs = [obs.map_wires(wire_map) for obs in self.obs]
         new_op._eigvals_cache = self._eigvals_cache
+        new_op._batch_size = self._batch_size
         return new_op
 
 
