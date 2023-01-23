@@ -2129,7 +2129,7 @@ class TestStatePrep:
 
             num_wires = qml.operation.AllWires
 
-            def state_vector(self, wire_order=None, interface="autograd"):
+            def state_vector(self, wire_order=None):
                 return self.parameters[0]
 
         prep_op = DefaultPrep([1, 0], wires=[0])

@@ -2552,15 +2552,13 @@ class StatePrep(Operation):
 
     # pylint:disable=too-few-public-methods
     @abc.abstractmethod
-    def state_vector(self, wire_order=None, interface="autograd"):
+    def state_vector(self, wire_order=None):
         """
         Returns the initial state vector for a circuit given a state preparation.
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels
                 from the operator's wires
-            interface (str): The name of the machine learning framework to use.
-                Will be determined automatically if not provided
 
         Returns:
             array: A state vector for all wires in a circuit
