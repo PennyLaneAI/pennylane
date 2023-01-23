@@ -563,13 +563,12 @@ class QuantumScript:
             operation, and an integer representing the argument index,
             for the provided trainable parameter.
         """
-        if not return_op_index:
-            warnings.warn(
-                "The get_operation will soon be updated to also return the index of the trainable operation in the tape."
-                "If you want to switch to the new behavior, you can pass `return_op_index==True`"
-            )
-        else:
+        if return_op_index:
             return self._get_operation(idx)
+        warnings.warn(
+            "The get_operation will soon be updated to also return the index of the trainable operation in the tape."
+            "If you want to switch to the new behavior, you can pass `return_op_index=True`"
+        )
 
         # get the index of the parameter in the script
         t_idx = self.trainable_params[idx]
