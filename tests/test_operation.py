@@ -412,6 +412,20 @@ class TestOperatorConstruction:
         assert MyOp.has_decomposition is False
         assert MyOp(wires=0).has_decomposition is False
 
+    def test_decomposition_with_non_op_fails(self):
+        """Test that a decomposition with some non-Operator elements fails."""
+
+        class BadDecompOp(qml.operation.Operator):
+            num_wires = 1
+
+            @staticmethod
+            def compute_decomposition(*args, **kwargs):
+                return [qml.Identity(0), ()]
+
+        bad_op = BadDecompOp(wires=[0])
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
+            bad_op.decomposition()
+
     def test_has_diagonalizing_gates_true_compute_diagonalizing_gates(self):
         """Test has_diagonalizing_gates property detects
         overriding of `compute_diagonalizing_gates` method."""
