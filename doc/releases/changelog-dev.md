@@ -183,11 +183,11 @@
           [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
   ```
 
-* A `load_basisset` function has been added to extract `qchem` basis set data from the Basis Set Exchange
+* A new function called `load_basisset` has been added to extract `qchem` basis set data from the Basis Set Exchange
   library.
   [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
 
-* A `max_entropy` function has been added to compute the maximum entropy of a quantum state.
+* A new function called `max_entropy` has been added to compute the maximum entropy of a quantum state.
   [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
 
 * A new template has been added that implements a canonical 2-complete linear (2-CCL) swap network
