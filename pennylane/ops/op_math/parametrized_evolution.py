@@ -160,7 +160,7 @@ class ParametrizedEvolution(Operation):
     One can also provide a list of time values that the odeint will use to calculate the parametrized
     hamiltonian's evolution:
 
-    >>> t = [0.1, 0.5, 4, 6.7, 9, 10]
+    >>> t = jnp.linspace(0., 10., 0.1)
     >>> @qml.qnode(dev, interface="jax")
     ... def circuit(params):
     ...     qml.evolve(H1 + H2)(params, t=t)
