@@ -360,6 +360,10 @@ class TestValidation:
         assert qn.diff_method == "finite-diff"
         assert qn.gradient_fn is qml.gradients.finite_diff
 
+        qn = QNode(dummyfunc, dev, diff_method="spsa")
+        assert qn.diff_method == "spsa"
+        assert qn.gradient_fn is qml.gradients.spsa_grad
+
         qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
         assert qn.gradient_fn is qml.gradients.param_shift
@@ -906,7 +910,7 @@ class TestIntegration:
         assert cache != {}
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff"])
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa"])
     def test_single_expectation_value_with_argnum_one(self, diff_method, tol):
         """Tests correct output shape and evaluation for a QNode
         with a single expval output where only one parameter is chosen to

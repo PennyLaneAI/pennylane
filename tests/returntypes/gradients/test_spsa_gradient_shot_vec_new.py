@@ -477,7 +477,6 @@ class TestSpsaGradient:
 
         assert all(t == q for t, q in zip(transform, expected))
 
-    @pytest.mark.skip("The SPSA gradient is not integrated with QNode diff_method yet.")
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rather than a number."""
@@ -495,6 +494,9 @@ class TestSpsaGradient:
 
             def __mul__(self, other):
                 return SpecialObject(self.val * other)
+
+            def __rmul__(self, other):
+                return self * other
 
             def __add__(self, other):
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
