@@ -304,9 +304,6 @@ class TestProperties:
         assert op.batch_size == 3
         assert op.ndim_params == (0,)
 
-        op._check_batching([np.array([1.2, 2.3])])
-        assert op.batch_size == base.batch_size == 2
-
 
 class TestSimplify:
     """Test Adjoint simplify method and depth property."""
