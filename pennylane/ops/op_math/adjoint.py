@@ -273,10 +273,11 @@ class Adjoint(SymbolicOp):
     def has_decomposition(self):
         return self.base.has_adjoint or self.base.has_decomposition
 
-    def decomposition(self):
-        if self.base.has_adjoint:
-            return [self.base.adjoint()]
-        base_decomp = self.base.decomposition()
+    @staticmethod
+    def compute_decomposition(*args, wires, base, **kwargs):
+        if base.has_adjoint:
+            return [base.adjoint()]
+        base_decomp = base.decomposition()
         return [Adjoint(op) for op in reversed(base_decomp)]
 
     def eigvals(self):

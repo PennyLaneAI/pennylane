@@ -1061,9 +1061,14 @@ class Operator(abc.ABC):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        return self.compute_decomposition(
+        decomp = self.compute_decomposition(
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
+        if not all(isinstance(op, Operator) for op in decomp):
+            raise DecompositionUndefinedError(
+                "All elements in an Operator decomposition must be Operators"
+            )
+        return decomp
 
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
