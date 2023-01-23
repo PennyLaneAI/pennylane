@@ -18,7 +18,6 @@ and measurement samples using AnnotatedQueues.
 """
 import contextlib
 import copy
-import functools
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Sequence, Tuple, Union
@@ -254,7 +253,6 @@ class MeasurementProcess(ABC):
         )
 
     @staticmethod
-    @functools.lru_cache()
     def _get_num_basis_states(num_wires, config):
         """Auxiliary function to determine the number of basis states given the
         number of systems and a quantum device.

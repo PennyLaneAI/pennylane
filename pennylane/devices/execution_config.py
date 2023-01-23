@@ -16,7 +16,6 @@ Contains the :class:`ExecutionConfig` data class.
 """
 from dataclasses import dataclass, field
 from typing import Optional, Sequence, Tuple
-from frozendict import frozendict
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
@@ -56,10 +55,10 @@ class ExecutionConfig:
     gradient_method: Optional[str] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: frozendict = None
+    gradient_keyword_arguments: dict = None
     """Arguments used to control a gradient transform"""
 
-    device_options: frozendict = None
+    device_options: dict = None
     """Various options for the device executing a quantum circuit"""
 
     interface: str = "autograd"
@@ -88,10 +87,10 @@ class ExecutionConfig:
             )
 
         if self.device_options is None:
-            object.__setattr__(self, "device_options", frozendict({}))
+            object.__setattr__(self, "device_options", {})
 
         if self.gradient_keyword_arguments is None:
-            object.__setattr__(self, "gradient_keyword_arguments", frozendict({}))
+            object.__setattr__(self, "gradient_keyword_arguments", {})
 
         if any(arg not in SUPPORTED_GRADIENT_KWARGS for arg in self.gradient_keyword_arguments):
             raise ValueError(

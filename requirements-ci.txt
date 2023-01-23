@@ -10,4 +10,3 @@ dask[delayed]
 autoray
 matplotlib
 requests
-frozendict
