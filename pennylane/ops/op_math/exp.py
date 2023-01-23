@@ -139,10 +139,10 @@ class Exp(SymbolicOp, Operation):
         super().__init__(base, do_queue=do_queue, id=id)
         self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
-        self._batch_size = self._check_and_compute_batch_size()
+        self._batch_size = self._check_and_compute_batch_size(coeff)
 
-    def _check_and_compute_batch_size(self):
-        coeff_size = math.size(self.coeff)
+    def _check_and_compute_batch_size(self, coeff):
+        coeff_size = math.size(coeff)
         if coeff_size == 1:
             # coeff is not batched
             return self.base.batch_size
@@ -415,7 +415,16 @@ class Evolution(Exp):
 
     def __init__(self, generator, param, do_queue=True, id=None):
         super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
-        self.param = param
+        self._data = [param]
+
+    @property
+    def param(self):
+        """A real coefficient with ``1j`` factored out."""
+        return self.data[0]
+
+    @property
+    def coeff(self):
+        return 1j * self.data[0]
 
     @property
     def num_params(self):
