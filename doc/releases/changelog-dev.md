@@ -47,7 +47,7 @@
 * A new function called `qml.evolve` has been added that returns the evolution of an operator or a `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
 
-* Added `qml.ops.dot` function to compute the dot product between a vector and a list of operators.
+* A new function called `qml.ops.dot` has been added to compute the dot product between a vector and a list of operators.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
   ```pycon
