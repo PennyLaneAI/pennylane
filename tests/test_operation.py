@@ -16,6 +16,7 @@ Unit tests for :mod:`pennylane.operation`.
 """
 import itertools
 from functools import reduce
+import copy
 
 import numpy as np
 import pytest
@@ -1621,6 +1622,18 @@ class TestTensor:
         with pytest.raises(ValueError, match="Can only compute"):
             t.sparse_matrix()
 
+    def test_copy(self):
+        """Test copying of a Tensor."""
+        tensor = Tensor(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
+        copied_tensor = copy.copy(tensor)
+        copied_tensor1 = tensor.__copy__()
+        for c in [copied_tensor, copied_tensor1]:
+            assert c is not tensor
+            assert c.wires == Wires([0, 1, 2])
+            assert c.batch_size == tensor.batch_size == None
+            for obs1, obs2 in zip(c.obs, tensor.obs):
+                assert qml.equal(obs1, obs2)
+
     def test_map_wires(self):
         """Test the map_wires method."""
         tensor = Tensor(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
@@ -1630,6 +1643,7 @@ class TestTensor:
         assert tensor is not mapped_tensor
         assert tensor.wires == Wires([0, 1, 2])
         assert mapped_tensor.wires == Wires([10, 11, 12])
+        assert mapped_tensor.batch_size == tensor.batch_size
         for obs1, obs2 in zip(mapped_tensor.obs, final_obs):
             assert qml.equal(obs1, obs2)
 

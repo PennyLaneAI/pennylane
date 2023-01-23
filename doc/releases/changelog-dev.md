@@ -4,6 +4,30 @@
 
 <h3>New features since last release</h3>
 
+* The gradient transform `qml.gradients.spsa_grad` is now registered as a
+  differentiation method for `QNode`s.
+  [#3440](https://github.com/PennyLaneAI/pennylane/pull/3440)
+
+  The SPSA gradient transform can now also be used implicitly by marking a `QNode`
+  as differentiable with SPSA. It can be selected via
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev, interface="jax", diff_method="spsa", h=0.05, num_directions=20)
+  ... def circuit(x):
+  ...     qml.RX(x, 0)
+  ...     qml.RX(x, 1)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> jax.jacobian(circuit)(jax.numpy.array(0.5)) 
+  DeviceArray(-0.4792258, dtype=float32, weak_type=True)
+  ```
+
+  The argument `num_directions` determines how many directions of simultaneous
+  perturbation are used and therefore the number of circuit evaluations, up
+  to a prefactor. See the
+  [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details.
+  Note: The full SPSA optimization method is already available as `SPSAOptimizer`.
+
 * `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
@@ -121,6 +145,13 @@
 * Support `qml.math.size` with torch tensors.
   [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
+* Added `ParametrizedEvolution`, which computes the time evolution of a `ParametrizedHamiltonian`.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+
+* Added `qml.evolve`, which accepts an operator or a `ParametrizedHamiltonian` and returns another
+  operator that computes its evolution.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+
 * Support `qml.math.matmul` with a torch tensor and an autograd tensor.
   [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
 
@@ -176,7 +207,37 @@
           [ 0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j,  0.   +0.j   ],
           [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
   ```
+  
+* Added `ParametrizedHamiltonian`, a callable that holds information representing a linear combination of operators 
+  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the `Operator` for 
+  the specified parameters.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  
+  ```pycon
+  f1 = lambda p, t: p * np.sin(t) * (t - 1)
+  f2 = lambda p, t: p[0] * np.cos(p[1]* t ** 2)
 
+  XX = qml.PauliX(1) @ qml.PauliX(1)
+  YY = qml.PauliY(0) @ qml.PauliY(0)
+  ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
+
+  H =  2 * XX + f1 * YY + f2 * ZZ
+  ```
+  ```pycon
+  >>> H
+  ParametrizedHamiltonian: terms=3
+  >>> params = [1.2, [2.3, 3.4]]
+  >>> H(params, t=0.5)
+  (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
+  ```
+  The same `ParametrizedHamiltonian` can also be constructed via a list of coefficients and operators:
+
+  ```pycon
+  >>> coeffs = [2, f1, f2]
+  >>> ops = [XX, YY, ZZ]
+  >>> H =  qml.ops.dot(coeffs, ops)
+  ```
+  
 <h3>Improvements</h3>
 
 * Most channels in are now fully differentiable in all interfaces.
@@ -222,6 +283,9 @@
 * Improve lazy-loading in `Dataset.read()` so it is more universally supported. Also added the `assign_to`
   keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
+
+* Implemented the XYX single-qubit unitary decomposition. 
+  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628) 
 
 * Allow `Sum` and `Prod` to have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
@@ -273,6 +337,9 @@
 
 <h3>Documentation</h3>
 
+* Updated the code example in `qml.SparseHamiltonian` with the correct wire range.
+  [(#3643)](https://github.com/PennyLaneAI/pennylane/pull/3643)
+  
 * Added hyperlink text for an URL in the `qml.qchem.mol_data` docstring.
   [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
 
@@ -304,8 +371,9 @@
 * `Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
-* Set `Tensor._batch_size` to None during initialization.
+* Set `Tensor._batch_size` to None during initialization, copying and `map_wires`.
   [(#3642)](https://github.com/PennyLaneAI/pennylane/pull/3642)
+  [(#3661)](https://github.com/PennyLaneAI/pennylane/pull/3661)
 
 * Set `Tensor.has_matrix` to `True`.
   [(#3647)](https://github.com/PennyLaneAI/pennylane/pull/3647)
@@ -317,6 +385,7 @@ This release contains contributions from (in alphabetical order):
 Juan Miguel Arrazola
 Ikko Ashimine
 Utkarsh Azad
+Cristian Boghiu
 Astral Cai
 Lillian M. A. Frederiksen
 Soran Jahangiri
