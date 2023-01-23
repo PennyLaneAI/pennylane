@@ -257,6 +257,102 @@ class TestIntegration:
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
         )
 
+    def test_two_commuting_parametrized_hamiltonians(self):
+        """Test that the evolution of two parametrized hamiltonians that commute with each other
+        is equal to evolve the two hamiltonians simultaneously."""
+        import jax
+        import jax.numpy as jnp
+
+        def f1(p, t):
+            return p * t
+
+        def f2(p, t):
+            return jnp.sin(t) * (p - 1)
+
+        coeffs = [1, f1, f2]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliX(2)]
+        H1 = qml.ops.dot(coeffs, ops)
+
+        def f3(p, t):
+            return jnp.cos(t) * (p + 1)
+
+        coeffs = [7, f3]
+        ops = [qml.PauliX(0), qml.PauliX(2)]
+        H2 = qml.ops.dot(coeffs, ops)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit1(params):
+            qml.evolve(H1)(params[0], t=2)
+            qml.evolve(H2)(params[1], t=2)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit2(params):
+            qml.evolve(H1 + H2)(params, t=2)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+        params1 = [(1.0, 2.0), (3.0,)]
+        params2 = [1.0, 2.0, 3.0]
+
+        assert qml.math.allclose(circuit1(params1), circuit2(params2), atol=5e-4)
+        assert qml.math.allclose(
+            qml.math.concatenate(jax.grad(circuit1)(params1)),
+            jax.grad(circuit2)(params2),
+            atol=5e-4,
+        )
+
+    def test_two_non_commuting_parametrized_hamiltonians(self):
+        """Test that the evolution of two non-commuting parametrized hamiltonians is different to
+        evolving the two hamiltonians simultaneously."""
+        import jax
+        import jax.numpy as jnp
+
+        def f1(p, t):
+            return p * t
+
+        def f2(p, t):
+            return jnp.sin(t) * (p - 1)
+
+        coeffs = [1, f1, f2]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        H1 = qml.ops.dot(coeffs, ops)
+
+        def f3(p, t):
+            return jnp.cos(t) * (p + 1)
+
+        coeffs = [7, f3]
+        ops = [qml.PauliY(0), qml.PauliX(2)]
+        H2 = qml.ops.dot(coeffs, ops)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit1(params):
+            qml.evolve(H1)(params[0], t=2)
+            qml.evolve(H2)(params[1], t=2)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit2(params):
+            qml.evolve(H1 + H2)(params, t=2)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+        params1 = [(1.0, 2.0), (3.0,)]
+        params2 = [1.0, 2.0, 3.0]
+
+        assert not qml.math.allclose(circuit1(params1), circuit2(params2), atol=5e-4)
+        assert qml.math.allclose(
+            qml.math.concatenate(jax.grad(circuit1)(params1)),
+            jax.grad(circuit2)(params2),
+            atol=5e-4,
+        )
+
 
 @pytest.mark.jax
 class TestEvolveConstructor:
