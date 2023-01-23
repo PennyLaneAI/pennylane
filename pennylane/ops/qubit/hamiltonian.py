@@ -220,6 +220,27 @@ class Hamiltonian(Observable):
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
     @property
+    def data(self):
+        """Return the operator data
+
+        Returns:
+            List[float]: coefficients in the Hamiltonian expression as a list
+        """
+        return self._data
+
+    @data.setter
+    def data(self, data):
+        """Set the operator data, and update the coefficients accordingly.
+
+        Raises:
+        ValueError: if the number of coefficients does not match the number of observables
+        """
+        if qml.math.shape(data)[0] != qml.math.shape(self._ops)[0]:
+            raise ValueError("The number of coefficients and operators does not match.")
+        self._data = list(data)
+        self._coeffs = qml.math.stack(data) if data else []
+
+    @property
     def coeffs(self):
         """Return the coefficients defining the Hamiltonian.
 
@@ -383,7 +404,7 @@ class Hamiltonian(Observable):
 
         # hotfix: We `self.data`, since `self.parameters` returns a copy of the data and is now returned in
         # self.terms(). To be improved soon.
-        self.data = new_coeffs
+        self._data = new_coeffs
         # hotfix: We overwrite the hyperparameter entry, which is now returned in self.terms().
         # To be improved soon.
         self.hyperparameters["ops"] = new_ops

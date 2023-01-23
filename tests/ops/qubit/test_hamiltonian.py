@@ -686,6 +686,21 @@ class TestHamiltonian:
         assert H.label() == "𝓗"
         assert H.label(decimals=2) == "𝓗"
 
+    @pytest.mark.parametrize("data", [(1.5, -2.0, 0.3), (1.0,), (0.5, -1.0, 1.4, 0.3)])
+    def test_data_setter(self, data):
+        """Tests that data and coefficients are set correctly when data is updated."""
+        H = qml.Hamiltonian((0.1, 0.2, 0.3), (qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)))
+        if len(data) != 3:
+            with pytest.raises(
+                ValueError, match="The number of coefficients and operators does not match"
+            ):
+                H.data = data
+
+        else:
+            H.data = data
+            assert H.data == list(data)
+            assert H.coeffs == list(data)
+
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_str))
     def test_hamiltonian_str(self, terms, string):
         """Tests that the __str__ function for printing is correct"""
