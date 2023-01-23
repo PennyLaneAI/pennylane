@@ -27,7 +27,7 @@ class TestDecomposition:
         ("wires", "acquaintances", "weights", "fermionic", "shift"),
         [
             (4, None, None, True, False),
-            (5, lambda index, wires, param: (), None, True, False),
+            (5, lambda index, wires, param: qml.Identity(index), None, True, False),
             (5, lambda index, wires, param: qml.CNOT(index), None, False, False),
             (6, lambda index, wires, param: qml.CRX(param, index), np.random.rand(15), True, False),
             (6, lambda index, wires, param: qml.CRY(param, index), np.random.rand(15), True, True),
@@ -51,12 +51,10 @@ class TestDecomposition:
 
         # number of gates
         assert len(queue) == sum(
-            [
-                2 * len(i)
-                if acquaintances is not None and acquaintances([0, 1], [0, 1], 0.0)
-                else len(i)
-                for i in qubit_pairs
-            ]
+            2 * len(i)
+            if acquaintances is not None and acquaintances([0, 1], [0, 1], 0.0)
+            else len(i)
+            for i in qubit_pairs
         )
 
         # complete gate set
@@ -66,7 +64,7 @@ class TestDecomposition:
             for pair in pairs:
                 if ac_op and ac_op([0, 1], [0, 1], 0.0):
                     gate_order.append(ac_op(pair, pair, next(itrweights, 0.0)))
-                sw_op = qml.SWAP(pair) if not fermionic else qml.FermionicSWAP(np.pi, pair)
+                sw_op = qml.FermionicSWAP(np.pi, pair) if fermionic else qml.SWAP(pair)
                 gate_order.append(sw_op)
 
         for op1, op2 in zip(queue, gate_order):
