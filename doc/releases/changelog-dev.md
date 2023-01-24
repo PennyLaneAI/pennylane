@@ -4,6 +4,30 @@
 
 <h3>New features since last release</h3>
 
+* The gradient transform `qml.gradients.spsa_grad` is now registered as a
+  differentiation method for `QNode`s.
+  [#3440](https://github.com/PennyLaneAI/pennylane/pull/3440)
+
+  The SPSA gradient transform can now also be used implicitly by marking a `QNode`
+  as differentiable with SPSA. It can be selected via
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev, interface="jax", diff_method="spsa", h=0.05, num_directions=20)
+  ... def circuit(x):
+  ...     qml.RX(x, 0)
+  ...     qml.RX(x, 1)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> jax.jacobian(circuit)(jax.numpy.array(0.5)) 
+  DeviceArray(-0.4792258, dtype=float32, weak_type=True)
+  ```
+
+  The argument `num_directions` determines how many directions of simultaneous
+  perturbation are used and therefore the number of circuit evaluations, up
+  to a prefactor. See the
+  [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details.
+  Note: The full SPSA optimization method is already available as `SPSAOptimizer`.
+
 * `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
@@ -263,6 +287,9 @@
   keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
+* Implemented the XYX single-qubit unitary decomposition. 
+  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628) 
+
 * Allow `Sum` and `Prod` to have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
@@ -317,6 +344,12 @@
 
 <h3>Documentation</h3>
 
+* Organizes the module for documentation for ``operation``.
+  [(#3664)](https://github.com/PennyLaneAI/pennylane/pull/3664)
+
+* Updated the code example in `qml.SparseHamiltonian` with the correct wire range.
+  [(#3643)](https://github.com/PennyLaneAI/pennylane/pull/3643)
+  
 * Added hyperlink text for an URL in the `qml.qchem.mol_data` docstring.
   [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
 
@@ -348,20 +381,26 @@
 * `Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
-* Set `Tensor._batch_size` to None during initialization.
+* Set `Tensor._batch_size` to None during initialization, copying and `map_wires`.
   [(#3642)](https://github.com/PennyLaneAI/pennylane/pull/3642)
+  [(#3661)](https://github.com/PennyLaneAI/pennylane/pull/3661)
 
 * Set `Tensor.has_matrix` to `True`.
   [(#3647)](https://github.com/PennyLaneAI/pennylane/pull/3647)
+
+* Fixed typo in the example of IsingZZ gate decomposition
+  [(#3676)](https://github.com/PennyLaneAI/pennylane/pull/3676)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso-Linaje
 Juan Miguel Arrazola
 Ikko Ashimine
 Utkarsh Azad
 Miriam Beddig
+Cristian Boghiu
 Astral Cai
 Lillian M. A. Frederiksen
 Soran Jahangiri
