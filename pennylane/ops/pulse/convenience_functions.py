@@ -29,12 +29,12 @@ def constant(windows: List[Tuple[float]] = None):
         windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where
         ``f(p, t)`` is evaluated. If ``None``, it is always evaluated. Defaults to ``None``.
     """
-    return piecewise(x=lambda p, _: p, windows=windows)
+    return rect(x=lambda p, _: p, windows=windows)
 
 
-def piecewise(x: Union[float, Callable], windows: List[Tuple[float]] = None):
-    """Returns a callable ``f(p, t)`` that evaluates the given function/scalar ``x``inside the time
-    windows defined in ``windows``.
+def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
+    """Multiplies ``x`` by a rectangular function, returning a callable ``f(p, t)`` that evaluates
+    the given function/scalar ``x``inside the time windows defined in ``windows``.
 
     .. note::
 

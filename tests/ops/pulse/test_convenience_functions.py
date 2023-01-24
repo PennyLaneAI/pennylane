@@ -29,7 +29,7 @@ def test_error_raised_if_jax_not_installed():
     with pytest.raises(ImportError, match="Module jax is required"):
         qml.pulse.constant(windows=[(2, 8)])
     with pytest.raises(ImportError, match="Module jax is required"):
-        qml.pulse.piecewise(x=10, windows=[(2, 8)])
+        qml.pulse.rect(x=10, windows=[(2, 8)])
 
 
 @pytest.mark.jax
@@ -99,7 +99,7 @@ class TestPiecewise:
     def test_piecewise_returns_callable(self):
         """Test that the ``piecewise`` convenience function returns a callable with two arguments
         corresponding to the trainable parameters and time."""
-        c = qml.pulse.piecewise(x=10, windows=[0, 10])  # return 10 when time is between 0 and 10
+        c = qml.pulse.rect(x=10, windows=[0, 10])  # return 10 when time is between 0 and 10
         argspec = inspect.getfullargspec(c)
 
         assert callable(c)
@@ -108,7 +108,7 @@ class TestPiecewise:
     def test_piecewise_returns_correct_value_single_window(self):
         """Test that the ``piecewise`` function returns the correct value only when t is inside
         the window."""
-        c = qml.pulse.piecewise(x=10, windows=[(4, 8)])
+        c = qml.pulse.rect(x=10, windows=[(4, 8)])
 
         times = np.arange(0, 10, step=1e-2)
         for t in times:
@@ -124,7 +124,7 @@ class TestPiecewise:
         def f(p, t):
             return p * t
 
-        c = qml.pulse.piecewise(x=f, windows=[(4, 8), (0, 1), (9, 10)])
+        c = qml.pulse.rect(x=f, windows=[(4, 8), (0, 1), (9, 10)])
 
         times = np.arange(0, 10, step=1e-2)
         param = 10
@@ -141,7 +141,7 @@ class TestPiecewise:
         def f(p, t):
             return p * t
 
-        c = qml.pulse.piecewise(x=f)
+        c = qml.pulse.rect(x=f)
 
         times = np.arange(0, 10, step=1e-2)
         for t in times:
@@ -155,7 +155,7 @@ class TestPiecewise:
         def f(p, t):
             return p * t
 
-        c = jax.jit(qml.pulse.piecewise(x=f, windows=[(4, 8), (0, 1), (9, 10)]))
+        c = jax.jit(qml.pulse.rect(x=f, windows=[(4, 8), (0, 1), (9, 10)]))
 
         times = np.arange(0, 10, step=1e-2)
         param = 10
@@ -179,7 +179,7 @@ class TestIntegration:
         windows1 = [(0, 0.5), (1, 1.5)]
         windows2 = [(0.5, 1)]
 
-        coeffs = [qml.pulse.piecewise(f1, windows1), qml.pulse.constant(windows2)]
+        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant(windows2)]
         ops = [qml.PauliX(0), qml.PauliY(1)]
         H = qml.ops.dot(coeffs, ops)
 
@@ -207,7 +207,7 @@ class TestIntegration:
         windows1 = [(0, 0.5), (1, 1.5)]
         windows2 = [(0.5, 1)]
 
-        coeffs = [qml.pulse.piecewise(f1, windows1), qml.pulse.constant(windows2)]
+        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant(windows2)]
         ops = [qml.PauliX(0), qml.PauliY(1)]
         H = qml.ops.dot(coeffs, ops)
 
