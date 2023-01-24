@@ -102,6 +102,7 @@ import warnings
 from enum import IntEnum
 from typing import List
 
+import autoray
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
@@ -116,6 +117,8 @@ from .utils import pauli_eigs
 # =============================================================================
 # Errors
 # =============================================================================
+
+SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
 
 
 class OperatorPropertyUndefined(Exception):
@@ -1290,10 +1293,12 @@ class Operator(abc.ABC):
             return self
         if isinstance(other, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
             return other.__add__(self)
-        try:
+        backend = autoray.infer_backend(other)
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
-        except ValueError:
-            return NotImplemented
+        return NotImplemented
 
     __radd__ = __add__
 
@@ -1301,10 +1306,12 @@ class Operator(abc.ABC):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
             return qml.ops.ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
-        try:
+        backend = autoray.infer_backend(other)
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
             return qml.s_prod(scalar=other, operator=self)
-        except ValueError:
-            return NotImplemented
+        return NotImplemented
 
     __rmul__ = __mul__
 
@@ -1328,7 +1335,12 @@ class Operator(abc.ABC):
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
-        return qml.pow(self, z=other)
+        backend = autoray.infer_backend(other)
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
+            return qml.pow(self, z=other)
+        return NotImplemented
 
 
 # =============================================================================
