@@ -96,6 +96,13 @@ class ParametrizedEvolution(Operation):
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
+    Kwargs:
+        rtol (float, optional): relative local error tolerance for solver. Defaults to 1.4e-8.
+        atol (float, optional): absolute local error tolerance for solver. Defaults to 1.4e-8.
+        mxstep (int, optional): maximum number of steps to take for each timepoint. Defaults to
+            ``jnp.inf``.
+        hmax (float, optional): maximum step size allowed. Defaults to ``jnp.inf``.
+
     .. warning::
 
         The time argument ``t`` corresponds to the time window used to compute the scalar-valued
@@ -186,6 +193,7 @@ class ParametrizedEvolution(Operation):
         time="t",
         do_queue=True,
         id=None,
+        **odeint_kwargs
     ):
         if not has_jax:
             raise ImportError(
@@ -198,6 +206,7 @@ class ParametrizedEvolution(Operation):
         self.H = H
         self.time = time
         self.params = params
+        self.odeint_kwargs = odeint_kwargs
         if t is None:
             self.t = None
         else:
@@ -227,6 +236,6 @@ class ParametrizedEvolution(Operation):
             """dy/dt = -i H(t) y"""
             return -1j * qml.matrix(self.H(self.params, t=t)) @ y
 
-        result = odeint(fun, y0, self.t)
+        result = odeint(fun, y0, self.t, **self.odeint_kwargs)
         mat = result[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
