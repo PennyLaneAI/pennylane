@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the ``typing.py`` file."""
+import sys
+
 import numpy as np
 import pytest
 
 import pennylane.numpy as pnp
 from pennylane.typing import TensorLike
+
+if sys.version_info < 3.10:
+    pytestmark = pytest.mark.skip
 
 
 class TestTensor:
