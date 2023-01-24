@@ -64,7 +64,7 @@ wire_specs_list = [
     # (["a", "b"], ["a", "b"], "a", ["a", "b"]),
 ]
 
-diff_methods = ["device", "backprop", "adjoint", "parameter-shift", "finite-diff"]
+diff_methods = ["device", "backprop", "adjoint", "parameter-shift", "finite-diff", "spsa"]
 return_types = [
     "StateCost",  # scalar cost function of the state
     "StateVector",  # the state directly
@@ -277,13 +277,13 @@ class TestSupportedConfs:
         with pytest.raises(QuantumFunctionError, match=msg):
             circuit = get_qnode(None, "backprop", return_type, None, wire_specs)
 
-    @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift", "finite-diff"])
+    @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift", "finite-diff", "spsa"])
     @pytest.mark.parametrize("return_type", return_types)
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_none_all(self, diff_method, return_type, shots, wire_specs):
         """Test interface=None and diff_method in [adjoint, parameter-shift,
-        finite-diff] has a working forward pass"""
+        finite-diff, spsa] has a working forward pass"""
         warn_msg = (
             "Requested adjoint differentiation to be computed with finite shots. "
             "Adjoint differentiation always calculated exactly."
@@ -420,12 +420,13 @@ class TestSupportedConfs:
     )
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
-    def test_all_finitediff_nonstate(self, interface, return_type, shots, wire_specs):
-        """Test diff_method=finite-diff works for all interfaces and
+    @pytest.mark.parametrize("diff_method", ["finite-diff", "spsa"])
+    def test_all_finitediff_nonstate(self, interface, return_type, shots, wire_specs, diff_method):
+        """Test diff_method in ['finite-diff', 'spsa'] works for all interfaces and
         return_types except State and DensityMatrix"""
 
         # correctness is already tested in other test files
-        circuit = get_qnode(interface, "finite-diff", return_type, shots, wire_specs)
+        circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
         if shots is not None and return_type in (VnEntropy, MutualInfo):
 
@@ -438,8 +439,9 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("return_type", ["StateCost", "StateVector", "DensityMatrix"])
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
-    def test_all_finitediff_state(self, interface, return_type, shots, wire_specs):
-        """Test diff_method=finite-diff fails for all interfaces and
+    @pytest.mark.parametrize("diff_method", ["finite-diff", "spsa"])
+    def test_all_finitediff_state(self, interface, return_type, shots, wire_specs, diff_method):
+        """Test diff_method in ['finite-diff', 'spsa'] fails for all interfaces and
         the return_types State and DensityMatrix"""
 
         # this error message is a bit cryptic, but it's consistent across
@@ -449,7 +451,7 @@ class TestSupportedConfs:
         complex = return_type == "StateVector"
 
         with pytest.raises(ValueError, match=msg):
-            circuit = get_qnode(interface, "finite-diff", return_type, shots, wire_specs)
+            circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
             x = get_variable(interface, wire_specs, complex=complex)
 
             if shots is not None:
@@ -461,7 +463,7 @@ class TestSupportedConfs:
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
-        "diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"]
+        "diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff", "spsa"]
     )
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_sample_none_shots(self, interface, diff_method, wire_specs):
@@ -478,7 +480,7 @@ class TestSupportedConfs:
             circuit(x)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff"])
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa"])
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_sample_finite_shots(self, interface, diff_method, wire_specs):
         """Test sample measurement works for all interfaces and diff_methods
