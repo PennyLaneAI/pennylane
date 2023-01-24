@@ -121,6 +121,7 @@ Operator Types
     ~CVOperation
     ~Channel
     ~Tensor
+    ~StatePrep
 
 .. currentmodule:: pennylane.operation
 
