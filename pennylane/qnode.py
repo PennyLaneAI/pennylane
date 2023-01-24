@@ -352,7 +352,7 @@ class QNode:
         self,
         func,
         device,
-        interface="autograd",
+        interface="auto",
         diff_method="best",
         expansion_strategy="gradient",
         max_expansion=10,

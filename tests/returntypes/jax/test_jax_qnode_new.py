@@ -21,13 +21,13 @@ from pennylane import qnode
 from pennylane.tape import QuantumScript
 
 qubit_device_and_diff_method = [
-    ["default.qubit", "backprop", "forward", "jax"],
+    ["default.qubit", "backprop", "forward"],
     # Python
-    ["default.qubit", "finite-diff", "backward", "jax-python"],
-    ["default.qubit", "parameter-shift", "backward", "jax-python"],
-    ["default.qubit", "adjoint", "forward", "jax-python"],
-    ["default.qubit", "adjoint", "backward", "jax-python"],
-    ["default.qubit", "spsa", "backward", "jax-python"],
+    ["default.qubit", "finite-diff", "backward"],
+    ["default.qubit", "parameter-shift", "backward"],
+    ["default.qubit", "adjoint", "forward"],
+    ["default.qubit", "adjoint", "backward"],
+    ["default.qubit", "spsa", "backward"],
 ]
 
 pytestmark = pytest.mark.jax
@@ -41,19 +41,19 @@ SEED_FOR_SPSA = 32651
 H_FOR_SPSA = 0.05
 
 
-@pytest.mark.parametrize("dev_name,diff_method,mode,interface", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
 class TestQNode:
     """Test that using the QNode with JAX integrates with the PennyLane
     stack"""
 
-    def test_execution_with_interface(self, dev_name, diff_method, mode, interface):
+    def test_execution_with_interface(self, dev_name, diff_method, mode):
         """Test execution works with the interface"""
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
+        @qnode(dev, diff_method=diff_method, mode=mode)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -61,8 +61,6 @@ class TestQNode:
 
         a = np.array(0.1, requires_grad=True)
         circuit(a)
-
-        assert circuit.interface == interface
 
         # the tape is able to deduce trainable parameters
         assert circuit.qtape.trainable_params == [0]
@@ -72,7 +70,7 @@ class TestQNode:
         assert isinstance(grad, jax.Array)
         assert grad.shape == ()
 
-    def test_changing_trainability(self, dev_name, diff_method, mode, interface, mocker, tol):
+    def test_changing_trainability(self, dev_name, diff_method, mode, mocker, tol):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method != "parameter-shift":
@@ -83,7 +81,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qnode(dev, interface=interface, diff_method="parameter-shift")
+        @qnode(dev, diff_method="parameter-shift")
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -122,7 +120,7 @@ class TestQNode:
         circuit(a, b)
         assert circuit.qtape.trainable_params == [1]
 
-    def test_classical_processing(self, dev_name, diff_method, mode, interface, tol):
+    def test_classical_processing(self, dev_name, diff_method, mode, tol):
         """Test classical processing within the quantum tape"""
         qml.disable_return()
         a = jax.numpy.array(0.1)
@@ -131,7 +129,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
+        @qnode(dev, diff_method=diff_method, mode=mode)
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
@@ -145,7 +143,7 @@ class TestQNode:
 
         assert len(res) == 2
 
-    def test_matrix_parameter(self, dev_name, diff_method, mode, interface, tol):
+    def test_matrix_parameter(self, dev_name, diff_method, mode, tol):
         """Test that the jax interface works correctly
         with a matrix parameter"""
         U = jax.numpy.array([[0, 1], [1, 0]])
@@ -153,7 +151,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
+        @qnode(dev, diff_method=diff_method, mode=mode)
         def circuit(U, a):
             qml.QubitUnitary(U, wires=0)
             qml.RY(a, wires=0)
@@ -165,7 +163,7 @@ class TestQNode:
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == [1]
 
-    def test_differentiable_expand(self, dev_name, diff_method, mode, interface, tol):
+    def test_differentiable_expand(self, dev_name, diff_method, mode, tol):
         """Test that operation and nested tape expansion
         is differentiable"""
 
@@ -189,7 +187,7 @@ class TestQNode:
         a = jax.numpy.array(0.1)
         p = jax.numpy.array([0.1, 0.2, 0.3])
 
-        @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
+        @qnode(dev, diff_method=diff_method, mode=mode)
         def circuit(a, p):
             qml.RX(a, wires=0)
             U3(p[0], p[1], p[2], wires=0)
@@ -214,7 +212,7 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_jacobian_options(self, dev_name, diff_method, mode, interface, mocker, tol):
+    def test_jacobian_options(self, dev_name, diff_method, mode, mocker, tol):
         """Test setting jacobian options"""
         if diff_method != "finite-diff":
             pytest.skip("Test only applies to finite diff.")
@@ -225,7 +223,7 @@ class TestQNode:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qnode(dev, interface=interface, diff_method="finite-diff", h=1e-8, approx_order=2)
+        @qnode(dev, diff_method="finite-diff", h=1e-8, approx_order=2)
         def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
