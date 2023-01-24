@@ -240,7 +240,7 @@
   >>> H =  qml.ops.dot(coeffs, ops)
   ```
   
-* Add `typing.Tensor` type.
+* Add `typing.TensorLike` type.
   [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
 
 <h3>Improvements</h3>
