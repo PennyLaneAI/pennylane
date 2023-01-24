@@ -14,6 +14,7 @@
 """
 Unit tests for the qubit matrix-based operations.
 """
+#pylint: disable=import-outside-toplevel
 import numpy as np
 import pytest
 from gate_data import H, I, S, T, X, Z
@@ -224,8 +225,9 @@ class TestQubitUnitary:
         from jax import numpy as jnp
 
         U = jnp.array(U)
-        f = lambda m: qml.QubitUnitary(m, wires=range(num_wires)).matrix()
-        out = jax.jit(f)(U)
+        def mat_fn(m):
+            return qml.QubitUnitary(m, wires=range(num_wires)).matrix()
+        out = jax.jit(mat_fn)(U)
         assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).matrix())
 
     @pytest.mark.parametrize(
@@ -318,6 +320,7 @@ class TestQubitUnitary:
 
     def test_controlled(self):
         """Test QubitUnitary's controlled method."""
+        # pylint: disable=protected-access
         U = qml.PauliX.compute_matrix()
         base = qml.QubitUnitary(U, wires=0)
 
@@ -360,6 +363,7 @@ class TestDiagonalQubitUnitary:
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qml.DiagonalQubitUnitary."""
+        # pylint: disable=protected-access
         D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
         op = qml.DiagonalQubitUnitary(D, wires=[1, 2, 3])
         with qml.queuing.AnnotatedQueue() as q:
@@ -373,6 +377,7 @@ class TestDiagonalQubitUnitary:
     def test_controlled_broadcasted(self):
         """Test that the correct controlled operation is created when
         controlling a qml.DiagonalQubitUnitary with a broadcasted diagonal."""
+        # pylint: disable=protected-access
         D = np.array([[1j, 1, -1j, 1], [1, -1, 1j, -1]])
         op = qml.DiagonalQubitUnitary(D, wires=[1, 2])
         with qml.queuing.AnnotatedQueue() as q:
@@ -515,27 +520,28 @@ class TestDiagonalQubitUnitary:
         assert np.allclose(grad, expected)
 
 
-label_data = [
-    (X, qml.QubitUnitary(X, wires=0)),
-    (X, qml.ControlledQubitUnitary(X, control_wires=0, wires=1)),
-    ([1, 1], qml.DiagonalQubitUnitary([1, 1], wires=0)),
-]
+labels = [X, X, [1, 1]]
+ops = [qml.QubitUnitary(X, wires=0), qml.ControlledQubitUnitary(X, control_wires=0, wires=1),qml.DiagonalQubitUnitary([1, 1], wires=0)]
 
-
-@pytest.mark.parametrize("mat, op", label_data)
 class TestUnitaryLabels:
-    def test_no_cache(self, mat, op):
+    """Test the label of matrix operations."""
+
+    @pytest.mark.parametrize("op", ops)
+    def test_no_cache(self, op):
         """Test labels work without a provided cache."""
         assert op.label() == "U"
 
-    def test_matrices_not_in_cache(self, mat, op):
+    @pytest.mark.parametrize("op", ops)
+    def test_matrices_not_in_cache(self, op):
         """Test provided cache doesn't have a 'matrices' keyword."""
         assert op.label(cache={}) == "U"
 
-    def test_cache_matrices_not_list(self, mat, op):
+    @pytest.mark.parametrize("op", ops)
+    def test_cache_matrices_not_list(self, op):
         """Test 'matrices' key pair is not a list."""
         assert op.label(cache={"matrices": 0}) == "U"
 
+    @pytest.mark.parametrize("mat, op", zip(labels, ops))
     def test_empty_cache_list(self, mat, op):
         """Test matrices list is provided, but empty. Operation should have `0` label and matrix
         should be added to cache."""
@@ -543,6 +549,7 @@ class TestUnitaryLabels:
         assert op.label(cache=cache) == "U(M0)"
         assert qml.math.allclose(cache["matrices"][0], mat)
 
+    @pytest.mark.parametrize("mat, op", zip(labels, ops))
     def test_something_in_cache_list(self, mat, op):
         """If something exists in the matrix list, but parameter is not in the list, then parameter
         added to list and label given number of its position."""
@@ -552,6 +559,7 @@ class TestUnitaryLabels:
         assert len(cache["matrices"]) == 2
         assert qml.math.allclose(cache["matrices"][1], mat)
 
+    @pytest.mark.parametrize("mat, op", zip(labels, ops))
     def test_matrix_already_in_cache_list(self, mat, op):
         """If the parameter already exists in the matrix cache, then the label uses that index and the
         matrix cache is unchanged."""
