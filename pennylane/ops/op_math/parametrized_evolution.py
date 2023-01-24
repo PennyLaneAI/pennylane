@@ -15,10 +15,10 @@
 # pylint: disable=too-few-public-methods,function-redefined
 
 """
-This file contains the ``ParametrizedEvolution`` operator.
+This file contains the ``ParametrizedEvolution`` operator and the ``evolve`` constructor.
 """
 
-from typing import Union
+from typing import List, Union
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation, Operator
@@ -88,8 +88,8 @@ class ParametrizedEvolution(Operation):
         H (ParametrizedHamiltonian): hamiltonian to evolve
         params (ndarray): trainable parameters
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
-            If a list of two floats, it corresponds to the initial time and the final time of the
-            evolution. Note that such absolute times only have meaning within an instance of
+            If a list of floats, the ``odeint`` solver will use all the provided time values, and perform intermediate steps if necessary. It is recommended to just provide a start and end time.
+            Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
         time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
             Defaults to "t".
@@ -156,6 +156,23 @@ class ParametrizedEvolution(Operation):
     >>> jax.grad(circuit)(params)
     Array([-4.8066125,  3.7038102, -1.3294725, -2.4061902,  0.6811545,
         -0.5226515], dtype=float32)
+
+    One can also provide a list of time values that the odeint will use to calculate the parametrized
+    hamiltonian's evolution. Keep in mind that our odeint solver uses an adaptive step size, thus
+    it might use intermediate time values.
+
+    >>> t = jnp.arange(0., 10.1, 0.1)
+    >>> @qml.qnode(dev, interface="jax")
+    ... def circuit(params):
+    ...     qml.evolve(H1 + H2)(params, t=t)
+    ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+    >>> circuit(params)
+    Array(-0.78236955, dtype=float32)
+    >>> jax.grad(circuit)(params)
+    Array([-4.8066125 ,  3.703827  , -1.3297377 , -2.406232  ,  0.6811726 ,
+        -0.52277344], dtype=float32)
+
+    Given that we used the same time window ([0, 10]), the results are the same as before.
     """
 
     _name = "ParametrizedEvolution"
@@ -165,7 +182,7 @@ class ParametrizedEvolution(Operation):
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
-        t=None,
+        t: Union[float, List[float]] = None,
         time="t",
         do_queue=True,
         id=None,

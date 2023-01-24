@@ -10,6 +10,16 @@
  
   The new operation takes a single argument, a one-dimensional `tensor_like`
   of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
+
+  The parameter `theta` refers to all Pauli words (except for the identity) in lexicographical 
+  order, which looks like the following for one and two qubits:
+
+  ```pycon
+  >>> qml.ops.qubit.matrix_ops.pauli_words(1) # 4**1-1 = 3 Pauli words
+  ['X', 'Y', 'Z']
+  >>> qml.ops.qubit.matrix_ops.pauli_words(2) # 4**2-1 = 15 Pauli words
+  ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ'] 
+  ```
   
   For example, on a single qubit, we may define
   
@@ -366,6 +376,9 @@
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
+
+* Organizes the module for documentation for ``operation``.
+  [(#3664)](https://github.com/PennyLaneAI/pennylane/pull/3664)
 
 * Updated the code example in `qml.SparseHamiltonian` with the correct wire range.
   [(#3643)](https://github.com/PennyLaneAI/pennylane/pull/3643)
