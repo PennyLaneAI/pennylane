@@ -32,7 +32,7 @@ _pauli_letters = "IXYZ"
 """Single-qubit Pauli letters that make up Pauli words."""
 
 
-@lru_cache(maxsize=7)
+@lru_cache
 def pauli_basis(num_wires):
     r"""Compute all elements of the Pauli basis of the Lie algebra :math:`\mathfrak{su}(N)`.
 
@@ -207,6 +207,14 @@ class SpecialUnitary(Operation):
         ValueError: If the shape of the input parameter does not match the Lie algebra
             dimension :math:`d=4*n-1` for :math:`n` wires.
 
+    The parameter ``theta`` refers to all Pauli words (except for the identity) in
+    lexicographical order, which looks like the following for one and two qubits:
+
+    >>> qml.ops.qubit.matrix_ops.pauli_words(1) # 4**1-1 = 3 Pauli words
+    ['X', 'Y', 'Z']
+    >>> qml.ops.qubit.matrix_ops.pauli_words(2) # 4**2-1 = 15 Pauli words
+    ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
+
     **Examples**
 
     Simple examples of this operation are single-qubit Pauli rotation gates, which can be
@@ -242,13 +250,6 @@ class SpecialUnitary(Operation):
            [-0.34495668-0.35307844j,  0.10817019-0.21404059j,
             -0.29040522+0.00830631j,  0.15015337-0.76933485j]])
 
-    The parameters ``theta`` refer to all Pauli words (except for the identity) in
-    lexicographical order, which looks like the following for one and two qubits:
-
-    >>> qml.ops.qubit.matrix_ops.pauli_words(1)
-    ['X', 'Y', 'Z']
-    >>> qml.ops.qubit.matrix_ops.pauli_words(2)
-    ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
     """
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""

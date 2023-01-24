@@ -14,7 +14,7 @@
 """
 Unit tests for the qubit matrix-based operations.
 """
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 import numpy as np
 import pytest
 from gate_data import H, I, S, T, X, Z
@@ -225,8 +225,10 @@ class TestQubitUnitary:
         from jax import numpy as jnp
 
         U = jnp.array(U)
+
         def mat_fn(m):
             return qml.QubitUnitary(m, wires=range(num_wires)).matrix()
+
         out = jax.jit(mat_fn)(U)
         assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).matrix())
 
@@ -521,7 +523,12 @@ class TestDiagonalQubitUnitary:
 
 
 labels = [X, X, [1, 1]]
-ops = [qml.QubitUnitary(X, wires=0), qml.ControlledQubitUnitary(X, control_wires=0, wires=1),qml.DiagonalQubitUnitary([1, 1], wires=0)]
+ops = [
+    qml.QubitUnitary(X, wires=0),
+    qml.ControlledQubitUnitary(X, control_wires=0, wires=1),
+    qml.DiagonalQubitUnitary([1, 1], wires=0),
+]
+
 
 class TestUnitaryLabels:
     """Test the label of matrix operations."""
