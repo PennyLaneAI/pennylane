@@ -100,9 +100,9 @@ class TestInitialization:
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2, mxstep=10)
+        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2, mxstep=10, hmax=1, atol=1e-3, rtol=1e-6)
 
-        assert ev.odeint_kwargs == {"mxstep": 10}
+        assert ev.odeint_kwargs == {"mxstep": 10, "hmax": 1, "atol": 1e-3, "rtol": 1e-6}
 
     def test_list_of_times(self):
         """Test the initialization."""
