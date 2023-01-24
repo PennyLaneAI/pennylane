@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Uncategorized - add new features here</h4>
+<h4>Add new features here</h4>
 
 <h4>Feel the pulse 🔊</h4>
 
