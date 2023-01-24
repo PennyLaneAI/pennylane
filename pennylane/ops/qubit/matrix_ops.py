@@ -146,7 +146,7 @@ def special_unitary_matrix(theta, num_wires):
 
     See :func:`~.ops.qubit.matrix_ops.pauli_words` for the ordering of Pauli words.
 
-    ..admonition::
+    .. admonition::
 
         Note that this method internally handles a complex-valued tensor of size
         ``(4**num_wires, 2**num_wires, 2**num_wires)``, which requires at least
@@ -500,7 +500,7 @@ class SpecialUnitary(Operation):
     * Number of wires: Any
     * Number of parameters: 1
     * Number of dimensions per parameter: (1,)
-    * Gradient recipe:
+    * Gradient recipe
 
     .. math::
 
@@ -615,7 +615,7 @@ class SpecialUnitary(Operation):
         Returns:
             tensor_like: canonical matrix
 
-        ..admonition::
+        .. admonition::
 
             Note that this method internally handles a complex-valued tensor of size
             ``(4**num_wires, 2**num_wires, 2**num_wires)``, which requires at least
