@@ -21,14 +21,15 @@ from autograd.numpy.numpy_boxes import ArrayBox
 Tensor = Union[int, float, bool, complex, bytes, str, np.ndarray, ArrayBox]
 
 with contextlib.suppress(ImportError):
-    import jax.numpy as jnp
+    from jax.numpy import ndarray
 
-    Tensor = Union[Tensor, jnp.ndarray]
+    Tensor = Union[Tensor, ndarray]
 with contextlib.suppress(ImportError):
-    import torch
+    from torch import Tensor as torchTensor
 
-    Tensor = Union[Tensor, torch.Tensor]
+    Tensor = Union[Tensor, torchTensor]
 with contextlib.suppress(ImportError):
-    import tensorflow as tf
+    from tensorflow import Tensor as tfTensor
+    from tensorflow import Variable
 
-    Tensor = Union[Tensor, tf.Tensor, tf.Variable]
+    Tensor = Union[Tensor, tfTensor, Variable]
