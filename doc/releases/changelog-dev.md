@@ -337,6 +337,9 @@
 
 <h3>Documentation</h3>
 
+* Organizes the module for documentation for ``operation``.
+  [(#3664)](https://github.com/PennyLaneAI/pennylane/pull/3664)
+
 * Updated the code example in `qml.SparseHamiltonian` with the correct wire range.
   [(#3643)](https://github.com/PennyLaneAI/pennylane/pull/3643)
   
@@ -378,10 +381,14 @@
 * Set `Tensor.has_matrix` to `True`.
   [(#3647)](https://github.com/PennyLaneAI/pennylane/pull/3647)
 
+* Fixed typo in the example of IsingZZ gate decomposition
+  [(#3676)](https://github.com/PennyLaneAI/pennylane/pull/3676)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso-Linaje
 Juan Miguel Arrazola
 Ikko Ashimine
 Utkarsh Azad
