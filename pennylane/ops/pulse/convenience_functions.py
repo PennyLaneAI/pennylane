@@ -33,8 +33,8 @@ def pwc(timespan):
     Returns:
             func: a function that contains two arguments, one for the trainable parameters(array) and
             one for time(int). When called, the function uses the array of parameters to create evenly sized bins
-            within the ``pwc``, with bin value set by the array. It then selects the value the parameter array
-            corresponding to the specified time.
+            within the ``timespan``, with each bin value set by an element of the array. It then selects the value
+            the parameter array corresponding to the specified time.
 
     **Example**
 
@@ -86,7 +86,8 @@ def pwc_from_function(timespan, num_bins):
     Decorator to turn a smooth function into a piecewise constant function.
 
     Args:
-            t(Union[float, tuple(float)]):
+            timespan(Union[float, tuple(float)]): The timespan defining the region where the function is non-zero.
+              If an integer is provided, the timespan is defined as ``(0, timespan)``.
             num_bins(int): number of bins for time-binning the function
 
     Returns:
@@ -113,7 +114,8 @@ def pwc_from_function(timespan, num_bins):
     The same effect can be achieved by decorating the smooth function:
 
     >>> @pwc_from_function(timespan, num_bins)
-    >>> def fn(params, t): return params[0] * t + params[1]
+    ... def fn(params, t):
+    ...      return params[0] * t + params[1]
     >>> fn([2, 4], 3)
     DeviceArray(10.666666, dtype=float32)
 

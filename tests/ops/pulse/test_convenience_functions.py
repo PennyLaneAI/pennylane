@@ -42,7 +42,7 @@ class TestPWC:
 
     def test_t_out_of_bounds_returns_0(self):
         """Tests that requesting a value for the pwc function outside the defined window returns 0"""
-        f_pwc = qml.pulse.pwc(t=(1, 3))
+        f_pwc = qml.pulse.pwc(timespan=(1, 3))
         constants = np.linspace(0, 12, 13)
 
         assert f_pwc(constants, 1.5) != 0
@@ -51,7 +51,7 @@ class TestPWC:
 
     def test_bins_match_params_array(self):
         """Test the pwc function contains bins matching the array of constants passed as params"""
-        f_pwc = qml.pulse.pwc(t=(1, 3))
+        f_pwc = qml.pulse.pwc(timespan=(1, 3))
         constants = np.linspace(0, 12, 13)
 
         y = [float(f_pwc(constants, i)) for i in np.linspace(1, 3, 100)]
@@ -127,9 +127,9 @@ class TestPWC_from_function:
         def f_initial(param, t):
             return t**2 + param
 
-        f_pwc = qml.pulse.pwc_from_function(t=9, num_bins=10)(f_initial)
+        f_pwc = qml.pulse.pwc_from_function(timespan=9, num_bins=10)(f_initial)
 
-        @qml.pulse.pwc_from_function(t=9, num_bins=10)
+        @qml.pulse.pwc_from_function(timespan=9, num_bins=10)
         def f_decorated(param, t):
             return t**2 + param
 
@@ -149,7 +149,7 @@ class TestPWC_from_function:
         def f_initial(param, t):
             return t + param
 
-        f_pwc = qml.pulse.pwc_from_function(t=9, num_bins=num_bins)(f_initial)
+        f_pwc = qml.pulse.pwc_from_function(timespan=9, num_bins=num_bins)(f_initial)
 
         # check that there are only a limited number of unique output values for the pwc function
         y = [float(f_pwc(2, i)) for i in np.linspace(0, 9, 1000)]
@@ -162,7 +162,7 @@ class TestPWC_from_function:
         def f_initial(param, t):
             return t + param
 
-        f_pwc = qml.pulse.pwc_from_function(t=(1, 3), num_bins=10)(f_initial)
+        f_pwc = qml.pulse.pwc_from_function(timespan=(1, 3), num_bins=10)(f_initial)
 
         assert f_pwc(3, 1.5) != 0
         assert f_pwc(3, 0) == 0
