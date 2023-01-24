@@ -158,23 +158,21 @@ class ParametrizedEvolution(Operation):
         -0.5226515], dtype=float32)
 
     One can also provide a list of time values that the odeint will use to calculate the parametrized
-    hamiltonian's evolution:
+    hamiltonian's evolution. Keep in mind that our odeint solver uses an adaptive step size, thus
+    it might use intermediate time values.
 
-    >>> t = jnp.arange(0., 10., 0.1)
+    >>> t = jnp.arange(0., 10.1, 0.1)
     >>> @qml.qnode(dev, interface="jax")
     ... def circuit(params):
     ...     qml.evolve(H1 + H2)(params, t=t)
     ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
-    >>> params = [1., 2., 3., 1., 2., 3.]
     >>> circuit(params)
-    Array(-0.70678467, dtype=float32)
+    Array(-0.78236955, dtype=float32)
     >>> jax.grad(circuit)(params)
-    [Array(-6.8412867, dtype=float32),
-    Array(0.46040794, dtype=float32),
-    Array(-1.4755505, dtype=float32),
-    Array(-3.4380102, dtype=float32),
-    Array(0.08788125, dtype=float32),
-    Array(-0.5297489, dtype=float32)]
+    Array([-4.8066125 ,  3.703827  , -1.3297377 , -2.406232  ,  0.6811726 ,
+        -0.52277344], dtype=float32)
+
+    Given that we used the same time window ([0, 10]), the results are
     """
 
     _name = "ParametrizedEvolution"
