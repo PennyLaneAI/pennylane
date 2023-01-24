@@ -1418,7 +1418,7 @@ class Operator(abc.ABC):
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
-            return qml.pulse.ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
+            return qml.pulse.ParametrizedHamiltonian([other], [self])
         try:
             return qml.s_prod(scalar=other, operator=self)
         except ValueError:
