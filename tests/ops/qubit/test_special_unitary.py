@@ -28,9 +28,8 @@ from pennylane.ops.qubit.special_unitary import (
 from pennylane.wires import Wires
 
 
-class TestUtilitiesForSpecialUnitary:
-    """Test the utility functions ``pauli_basis``, ``pauli_words`` and ``special_unitary_matrix``
-    that are used by the Operation SpecialUnitary."""
+class TestPauliUtils:
+    """Test the utility functions ``pauli_basis`` and ``pauli_words``."""
 
     def test_pauli_basis_letters(self):
         """Test that the hardcoded Pauli letters and matrices match the PennyLane
@@ -75,6 +74,9 @@ class TestUtilitiesForSpecialUnitary:
 
         # The words are sorted lexicographically
         assert sorted(words) == words
+
+class TestSpecialUnitaryMatrix:
+    """Test the special_unitary_matrix utility function."""
 
     @pytest.mark.parametrize("n", [1, 2, 3])
     @pytest.mark.parametrize("seed", [214, 2491, 8623])
