@@ -16,6 +16,8 @@ Unit tests for the ParametrizedEvolution class
 """
 from functools import reduce
 
+import numpy as np
+
 # pylint: disable=unused-argument, too-few-public-methods
 import pytest
 
@@ -93,6 +95,19 @@ class TestInitialization:
         assert ev.parameters == []
         assert ev.num_params == 0
 
+    def test_list_of_times(self):
+        """Test the initialization."""
+        import jax.numpy as jnp
+
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        t = np.arange(0, 10, 0.01)
+        ev = ParametrizedEvolution(H=H, params=[1, 2], t=t)
+
+        assert isinstance(ev.t, jnp.ndarray)
+        assert qml.math.allclose(ev.t, t)
+
     def test_has_matrix_true(self):
         """Test that a parametrized evolution always has ``has_matrix=True``."""
         ops = [qml.PauliX(0), qml.PauliY(1)]
@@ -122,10 +137,10 @@ class TestMatrix:
     def test_time_independent_hamiltonian(self):
         """Test matrix method for a time independent hamiltonian."""
         H = time_independent_hamiltonian()
-        t = 4
+        t = np.arange(0, 4, 0.001)
         params = [1, 2]
         ev = ParametrizedEvolution(H=H, params=params, t=t)
-        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+        true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=max(t))) * max(t))
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-3)
 
     @pytest.mark.slow
@@ -138,15 +153,13 @@ class TestMatrix:
 
         H = time_dependent_hamiltonian()
 
-        t = jnp.pi / 4
+        t = jnp.arange(0, jnp.pi / 4, 0.001)
         params = [1, 2]
         ev = ParametrizedEvolution(H=H, params=params, t=t)
 
         def generator(params):
-            time_step = 1e-3
-            times = jnp.arange(0, t, step=time_step)
-            for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
+            for ti in t:
+                yield jax.scipy.linalg.expm(-1j * 0.001 * qml.matrix(H(params, t=ti)))
 
         true_mat = reduce(lambda x, y: y @ x, generator(params))
 
@@ -242,6 +255,54 @@ class TestIntegration:
         )
         assert qml.math.allclose(
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=5e-3
+        )
+
+    def test_two_commuting_parametrized_hamiltonians(self):
+        """Test that the evolution of two parametrized hamiltonians that commute with each other
+        is equal to evolve the two hamiltonians simultaneously."""
+        import jax
+        import jax.numpy as jnp
+
+        def f1(p, t):
+            return p * t
+
+        def f2(p, t):
+            return jnp.sin(t) * (p - 1)
+
+        coeffs = [1, f1, f2]
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliX(2)]
+        H1 = qml.ops.dot(coeffs, ops)
+
+        def f3(p, t):
+            return jnp.cos(t) * (p + 1)
+
+        coeffs = [7, f3]
+        ops = [qml.PauliX(0), qml.PauliX(2)]
+        H2 = qml.ops.dot(coeffs, ops)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit1(params):
+            qml.evolve(H1)(params[0], t=2)
+            qml.evolve(H2)(params[1], t=2)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit2(params):
+            qml.evolve(H1 + H2)(params, t=2)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+        params1 = [(1.0, 2.0), (3.0,)]
+        params2 = [1.0, 2.0, 3.0]
+
+        assert qml.math.allclose(circuit1(params1), circuit2(params2), atol=5e-4)
+        assert qml.math.allclose(
+            qml.math.concatenate(jax.grad(circuit1)(params1)),
+            jax.grad(circuit2)(params2),
+            atol=5e-4,
         )
 
 
