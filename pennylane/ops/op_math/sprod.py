@@ -240,9 +240,10 @@ class SProd(ScalarSymbolicOp):
         Returns:
             tensor_like: matrix representation
         """
-        if isinstance(self.base, qml.Hamiltonian):
-            return self.scalar * qml.matrix(self.base, wire_order=wire_order)
-        return self.scalar * self.base.matrix(wire_order=wire_order)
+        mats = [
+            scalar * mat for scalar, mat in self._broadcasted_scalar_and_mat(wire_order=wire_order)
+        ]
+        return mats[0] if len(mats) == 1 else qml.math.stack(mats)
 
     @property
     def _queue_category(self):  # don't queue scalar prods as they might not be Unitary!
@@ -286,10 +287,9 @@ def _check_scalar_is_valid(scalar):
         ValueError: if ``self.scalar`` is not valid
     """
     backend = autoray.infer_backend(scalar)
-    # TODO: Remove shape check when supporting batching
     if not (
         (backend == "builtins" and isinstance(scalar, numbers.Number))
-        or (backend in SUPPORTED_INTERFACES and qml.math.shape(scalar) == ())
+        or backend in SUPPORTED_INTERFACES
     ):
         raise ValueError(
             f"Cannot compute the scalar product of a scalar value with backend `{backend}` and "

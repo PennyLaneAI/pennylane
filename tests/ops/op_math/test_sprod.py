@@ -235,6 +235,34 @@ class TestMscMethods:
 class TestMatrix:
     """Tests of the matrix of a SProd class."""
 
+    def test_base_batching_support(self):
+        """Test that Pow matrix has base batching support."""
+        x = np.array([-1, -2, -3])
+        op = qml.s_prod(3, qml.RX(x, 0))
+        mat = op.matrix()
+        true_mat = qml.math.stack([qml.s_prod(3, qml.RX(i, 0)).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_coeff_batching_support(self):
+        """Test that Pow matrix has coeff batching support."""
+        x = np.array([-1, -2, -3])
+        op = qml.s_prod(x, qml.PauliX(0))
+        mat = op.matrix()
+        true_mat = qml.math.stack([qml.s_prod(i, qml.PauliX(0)).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_base_and_coeff_batching_support(self):
+        """Test that Pow matrix has base and coeff batching support."""
+        x = np.array([-1, -2, -3])
+        y = np.array([1, 2, 3])
+        op = qml.s_prod(y, qml.RX(x, 0))
+        mat = op.matrix()
+        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
     @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op, mat", param_ops + non_param_ops)
     def test_various_ops(self, scalar, op, mat):
@@ -555,6 +583,32 @@ class TestProperties:
         op = qml.s_prod(2, base)
         assert op._pauli_rep is None
 
+    def test_batching_properties(self):
+        """Test the batching properties and methods."""
+
+        # base is batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = qml.s_prod(0.5, base)
+        assert op.batch_size == 3
+
+        # coeff is batched
+        base = qml.RX(1, 0)
+        op = qml.s_prod(np.array([1.2, 2.3, 3.4]), base)
+        assert op.batch_size == 3
+
+        # both are batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = qml.s_prod(np.array([1.2, 2.3, 3.4]), base)
+        assert op.batch_size == 3
+
+    def test_different_batch_sizes_raises_error(self):
+        """Test that using different batch sizes for base and scalar raises an error."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        with pytest.raises(
+            ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
+        ):
+            _ = qml.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
+
 
 class TestSimplify:
     """Test SProd simplify method and depth property."""
@@ -816,7 +870,7 @@ class TestIntegration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
-    def test_torch(self, diff_method):
+    def test_jax(self, diff_method):
         """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
         is requested for a given interface."""
 

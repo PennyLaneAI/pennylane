@@ -160,22 +160,19 @@ class ScalarSymbolicOp(SymbolicOp):
     def __init__(self, base, scalar: float, do_queue=True, id=None):
         self._scalar = scalar
         super().__init__(base, do_queue=do_queue, id=id)
-        self._batch_size = None
+        self._batch_size = self._check_and_compute_batch_size(scalar)
+
+    @property
+    def batch_size(self):
+        return self._batch_size
 
     @property
     def scalar(self):
         """Returns the scalar coefficient of the operator."""
         return self._scalar
 
-    @property
-    def batch_size(self):
-        if self._batch_size is None:
-            self._batch_size = self._check_and_compute_batch_size()
-
-        return self._batch_size
-
-    def _check_and_compute_batch_size(self):
-        scalar_size = qml.math.size(self._scalar)
+    def _check_and_compute_batch_size(self, scalar):
+        scalar_size = qml.math.size(scalar)
         if scalar_size == 1:
             # coeff is not batched
             return self.base.batch_size
@@ -187,12 +184,12 @@ class ScalarSymbolicOp(SymbolicOp):
             )
         return scalar_size
 
-    def _broadcasted_scalar_and_mat(self):
+    def _broadcasted_scalar_and_mat(self, wire_order=None):
         # compute base matrix
         if isinstance(self.base, qml.Hamiltonian):
-            base_matrix = qml.matrix(self.base)
+            base_matrix = qml.matrix(self.base, wire_order=wire_order)
         else:
-            base_matrix = self.base.matrix()
+            base_matrix = self.base.matrix(wire_order=wire_order)
 
         scalar_size = qml.math.size(self.scalar)
         if scalar_size != 1 and scalar_size == self.base.batch_size:
