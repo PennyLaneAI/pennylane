@@ -15,6 +15,7 @@
 This submodule contains the operation SpecialUnitary and
 its utility functions.
 """
+# pylint: disable=arguments-differ
 from functools import lru_cache, reduce
 from itertools import product
 
