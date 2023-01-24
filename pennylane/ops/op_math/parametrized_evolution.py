@@ -96,11 +96,10 @@ class ParametrizedEvolution(Operation):
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
-    Kwargs:
+    Keyword Args:
         rtol (float, optional): relative local error tolerance for solver. Defaults to 1.4e-8.
         atol (float, optional): absolute local error tolerance for solver. Defaults to 1.4e-8.
-        mxstep (int, optional): maximum number of steps to take for each timepoint. Defaults to
-            ``jnp.inf``.
+        mxstep (int, optional): maximum number of steps to take for each timepoint. Defaults to ``jnp.inf``.
         hmax (float, optional): maximum step size allowed. Defaults to ``jnp.inf``.
 
     .. warning::
