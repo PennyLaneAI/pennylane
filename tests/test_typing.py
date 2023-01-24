@@ -20,7 +20,7 @@ import pytest
 import pennylane.numpy as pnp
 from pennylane.typing import TensorLike
 
-if sys.version_info < 3.10:
+if sys.version_info.minor < 10:  # python version <= 3.10
     pytestmark = pytest.mark.skip
 
 
