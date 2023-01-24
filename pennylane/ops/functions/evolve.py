@@ -17,9 +17,8 @@ This module contains the qml.evolve function.
 from typing import Union
 
 from pennylane.operation import Operator
-
 from pennylane.ops import Evolution
-from pennylane.pulse import ParametrizedHamiltonian, ParametrizedEvolution
+from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 
 def evolve(op: Union[Operator, ParametrizedHamiltonian]):
