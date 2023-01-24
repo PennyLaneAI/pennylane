@@ -23,16 +23,18 @@ except ImportError:
     has_jax = False
 
 
-def pwc(t):
+def pwc(timespan):
     """Create a function that is piecewise-constant in time, based on the params for a TDHamiltonian.
 
     Args:
-            t(Union[float, tuple(float, float)]: the total duration as a float, or the start and end time as floats.
-            index(int): the index at which the relevant parameter array is located in the overall ``params`` variable
+            timespan(Union[float, tuple(float, float)]: The timespan defining the region where the function is non-zero.
+              If an integer is provided, the timespan is defined as ``(0, timespan)``.
 
     Returns:
-            func: a function that can be passed the full ``params`` variable and ``t``, and will return the
-                    corresponding constant
+            func: a function that contains two arguments, one for the trainable parameters(array) and
+            one for time(int). When called, the function uses the array of parameters to create evenly sized bins
+            within the ``pwc``, with bin value set by the array. It then selects the value the parameter array
+            corresponding to the specified time.
 
     **Example**
 
@@ -41,7 +43,7 @@ def pwc(t):
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed an array of parameters and
     a time, it will assign the array as the constants in the piecewise function, and select the constant corresponding
-    to the specified time, based on the time interval defined by ``t``.
+    to the specified time, based on the time interval defined by ``timespan``.
 
     >>> params = [np.linspace(10, 20, 10)]
     >>> f1(params, 2)
@@ -59,11 +61,11 @@ def pwc(t):
             "You can install jax via: pip install jax"
         )
 
-    if isinstance(t, tuple):
-        t1, t2 = t
+    if isinstance(timespan, tuple):
+        t1, t2 = timespan
     else:
         t1 = 0
-        t2 = t
+        t2 = timespan
 
     def func(params, t):
         num_bins = len(params)
@@ -79,7 +81,7 @@ def pwc(t):
     return func
 
 
-def pwc_from_function(t, num_bins):
+def pwc_from_function(timespan, num_bins):
     """
     Decorator to turn a smooth function into a piecewise constant function.
 
@@ -94,9 +96,9 @@ def pwc_from_function(t, num_bins):
     **Example**
 
     >>> def f0(params, t): return params[0] * t + params[1]
-    >>> t = 10
+    >>> timespan = 10
     >>> num_bins = 10
-    >>> f1 = pwc_from_function(t, num_bins)(f0)
+    >>> f1 = pwc_from_function(timespan, num_bins)(f0)
     >>> f1([2, 4], 3), f0([2, 4], 3)
     (DeviceArray(10.666666, dtype=float32), DeviceArray(10, dtype=int32))
 
@@ -110,7 +112,7 @@ def pwc_from_function(t, num_bins):
 
     The same effect can be achieved by decorating the smooth function:
 
-    >>> @pwc_from_function(t, num_bins)
+    >>> @pwc_from_function(timespan, num_bins)
     >>> def fn(params, t): return params[0] * t + params[1]
     >>> fn([2, 4], 3)
     DeviceArray(10.666666, dtype=float32)
@@ -122,11 +124,11 @@ def pwc_from_function(t, num_bins):
             "You can install jax via: pip install jax"
         )
 
-    if isinstance(t, tuple):
-        t1, t2 = t
+    if isinstance(timespan, tuple):
+        t1, t2 = timespan
     else:
         t1 = 0
-        t2 = t
+        t2 = timespan
 
     def inner(fn):
         time_bins = np.linspace(t1, t2, num_bins)
