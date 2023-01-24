@@ -171,9 +171,13 @@ class SampleMP(SampleMeasurement):
                     "Getting the output shape of a measurement returning samples along with "
                     "a device with a shot vector is not supported."
                 )
-            return tuple(
-                (shot_val,) if shot_val != 1 else tuple() for shot_val in config._raw_shot_sequence
-            )
+
+            shape_list = []
+            for s in config.shot_vector:
+                partial_tuple = [(s.shots,) if s.shots != 1 else tuple()] * s.copies
+                shape_list.extend(partial_tuple)
+            return tuple(shape_list)
+
         return (1, config.shots) if self.obs is not None else (1, config.shots, num_wires)
 
     def _shape_new(self, config, num_wires):
@@ -183,14 +187,18 @@ class SampleMP(SampleMeasurement):
                 f"{self.__class__.__name__}."
             )
         if config.shot_vector is not None:
-            if self.obs is None:
-                return tuple(
-                    (shot_val, num_wires) if shot_val != 1 else (num_wires,)
-                    for shot_val in config._raw_shot_sequence
-                )
-            return tuple(
-                (shot_val,) if shot_val != 1 else tuple() for shot_val in config._raw_shot_sequence
-            )
+            shape_list = []
+            for s in config.shot_vector:
+                if self.obs is not None:
+                    partial_tuple = [(s.shots,) if s.shots != 1 else tuple()] * s.copies
+                else:
+                    partial_tuple = [
+                        (s.shots, num_wires) if s.shots != 1 else (num_wires,)
+                    ] * s.copies
+
+                shape_list.extend(partial_tuple)
+            return tuple(shape_list)
+
         if self.obs is None:
             return (config.shots, num_wires) if config.shots != 1 else (num_wires,)
         return (config.shots,) if config.shots != 1 else ()
