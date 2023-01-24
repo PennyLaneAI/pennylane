@@ -104,6 +104,24 @@ class TestInitialization:
 
         assert ev.odeint_kwargs == {"mxstep": 10, "hmax": 1, "atol": 1e-3, "rtol": 1e-6}
 
+    def test_update_attributes(self):
+        """Test that the ``ParametrizedEvolution`` attributes can be updated using the ``__call__`` method."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(H=H, mxstep=10)
+
+        assert ev.params is None
+        assert ev.t is None
+        assert ev.odeint_kwargs == {"mxstep": 10}
+        params = [1, 2, 3]
+        t = 6
+        ev(params, t, atol=1e-6, rtol=1e-4)
+
+        assert qml.math.allequal(ev.params, params)
+        assert qml.math.allequal(ev.t, [0, 6])
+        assert ev.odeint_kwargs == {"mxstep": 10, "atol": 1e-6, "rtol": 1e-4}
+
     def test_list_of_times(self):
         """Test the initialization."""
         import jax.numpy as jnp

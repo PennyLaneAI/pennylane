@@ -213,9 +213,11 @@ class ParametrizedEvolution(Operation):
             self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
         super().__init__(wires=H.wires, do_queue=do_queue, id=id)
 
-    def __call__(self, params, t):
+    def __call__(self, params, t, **odeint_kwargs):
         self.params = params
         self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
+        if odeint_kwargs:
+            self.odeint_kwargs.update(odeint_kwargs)
         return self
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
