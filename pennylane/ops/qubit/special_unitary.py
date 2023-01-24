@@ -15,7 +15,7 @@
 This submodule contains the operation SpecialUnitary and
 its utility functions.
 """
-# pylint: disable=arguments-differ
+# pylint: disable=arguments-differ, import-outside-toplevel
 from functools import lru_cache, reduce
 from itertools import product
 
@@ -414,6 +414,8 @@ class SpecialUnitary(Operation):
            [-0.34495668-0.35307844j,  0.10817019-0.21404059j,
             -0.29040522+0.00830631j,  0.15015337-0.76933485j]])
 
+    The ``SpecialUnitary`` operation can be differentiated with hardware-compatible
+    differentiation techniques.
     """
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
@@ -540,6 +542,11 @@ class TmpPauliRot(PauliRot):
     removes itself if its angle remained at zero.
 
     For details see :class:`~.PauliRot`.
+
+    .. warning::
+
+        Do not add this operation to the supported operations of any device.
+        Wrong results and/or severe performance degradations may result.
     """
 
     # Deactivate the matrix property of qml.PauliRot in order to force decomposition
