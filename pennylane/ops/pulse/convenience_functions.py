@@ -28,6 +28,22 @@ def constant(windows: List[Tuple[float]] = None):
     Args:
         windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where
         ``f(p, t)`` is evaluated. If ``None``, it is always evaluated. Defaults to ``None``.
+
+    **Example**
+
+    The ``constant`` function can be used to create a parametrized hamiltonian
+
+    >>> windows = [(1, 7), (9, 14)]
+    >>> H = qml.pulse.constant(windows) * qml.PauliX(0)
+
+    When calling the parametrized hamiltonian, ``constant`` will return the input parameter only
+    when the time is inside the given time windows
+
+    >>> params = [5]
+    >>> H(params, t=8)  # t is outside the time windows
+    0.0*(PauliX(wires=[0]))
+    >>> H(params, t=5)  # t is inside the time windows
+    5.0*(PauliX(wires=[0]))
     """
     return rect(x=lambda p, _: p, windows=windows)
 
@@ -45,6 +61,37 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
             parameters and time
         windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where x is
             evaluated. If ``None`` it is always evaluated. Defaults to ``None``.
+
+    **Example**
+
+    The ``rect`` function can be used to create a parametrized hamiltonian
+
+    >>> def f1(p, t):
+    ...     return jnp.polyval(p, t)
+    >>> windows = [(1, 7), (9, 14)]
+    >>> H = qml.pulse.rect(f1, windows) * qml.PauliX(0)
+
+    When calling the parametrized hamiltonian, ``rect`` will evaluate the given function only
+    when the time is inside the given time windows
+
+    >>> params = [jnp.ones(4)]
+    >>> H(params, t=8)  # t is outside the time windows
+    0.0*(PauliX(wires=[0]))
+    >>> H(params, t=5)  # t is inside the time windows
+    156.0*(PauliX(wires=[0]))
+
+    One can also pass a scalar to the ``rect`` function
+
+    >>> H = qml.pulse.rect(10, windows) * qml.PauliX(0)
+
+    In this case, ``rect`` will return the given scalar only when the time is inside the provided
+    time windows
+
+    >>> params = [None]  # the parameter value won't be used!
+    >>> H(params, t=8)
+    0.0*(PauliX(wires=[0]))
+    >>> H(params, t=5)
+    10.0*(PauliX(wires=[0]))
     """
     if not has_jax:
         raise ImportError(
