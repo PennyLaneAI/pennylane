@@ -22,6 +22,7 @@ from itertools import product
 import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.ops.qubit.parametric_ops import PauliRot
 
 _pauli_matrices = np.array(
     [[[1, 0], [0, 1]], [[0, 1], [1, 0]], [[0, -1j], [1j, 0]], [[1, 0], [0, -1]]]
@@ -524,7 +525,7 @@ class SpecialUnitary(Operation):
             ]
             return paulirots + [SpecialUnitary(detached_theta, wires=wires)]
 
-        return [QubitUnitary(special_unitary_matrix(theta, num_wires), wires=wires)]
+        return [qml.QubitUnitary(special_unitary_matrix(theta, num_wires), wires=wires)]
 
     def adjoint(self):
         return SpecialUnitary(-self.data[0], wires=self.wires)
