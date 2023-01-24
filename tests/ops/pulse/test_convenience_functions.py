@@ -25,7 +25,13 @@ import numpy as np
 import pennylane as qml
 from pennylane.ops.op_math import ParametrizedHamiltonian
 
-pytest.importorskip("jax")
+
+def test_error_raised_if_jax_not_installed():
+    """Test that an error is raised if a convenience function is called without jax installed"""
+    with pytest.raises(ImportError, match="Module jax is required"):
+        qml.pulse.pwc(10)
+    with pytest.raises(ImportError, match="Module jax is required"):
+        qml.pulse.pwc_from_function(10, 10)
 
 
 @pytest.mark.jax
