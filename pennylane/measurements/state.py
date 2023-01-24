@@ -151,6 +151,19 @@ class StateMP(StateMeasurement):
         return complex
 
     def shape(self, config, num_wires):
+        if qml.active_return():
+            return self._shape_new(config, num_wires)
+
+        if self.wires:
+            # qml.density_matrix()
+            dim = 2 ** len(self.wires)
+            return (1, dim, dim)
+
+        # qml.state()
+        dim = 2**num_wires
+        return (1, dim)
+
+    def _shape_new(self, config, num_wires):  # pylint: disable=unused-argument
         if self.wires:
             # qml.density_matrix()
             dim = 2 ** len(self.wires)

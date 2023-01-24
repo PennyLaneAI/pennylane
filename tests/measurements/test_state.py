@@ -327,9 +327,9 @@ class TestState:
         dev = qml.device("default.qubit", wires=3, shots=shots)
         config = qml.devices.ExecutionConfig(shots=shots)
         res = qml.state()
-        assert res.shape(None, 3) == (2**3,)
-        assert res.shape(dev, 3) == (2**3,)
-        assert res.shape(config, 3) == (2**3,)
+        assert res.shape(None, 3) == (1, 2**3)
+        assert res.shape(dev, 3) == (1, 2**3)
+        assert res.shape(config, 3) == (1, 2**3)
 
         # Test new shape
         qml.enable_return()
@@ -701,9 +701,9 @@ class TestDensityMatrix:
         dev = qml.device("default.qubit", wires=3, shots=shots)
         config = qml.devices.ExecutionConfig(shots=shots)
         res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(None, 3) == (2**2, 2**2)
-        assert res.shape(dev, 3) == (2**2, 2**2)
-        assert res.shape(config, 3) == (2**2, 2**2)
+        assert res.shape(None, 3) == (1, 2**2, 2**2)
+        assert res.shape(dev, 3) == (1, 2**2, 2**2)
+        assert res.shape(config, 3) == (1, 2**2, 2**2)
 
         # Test new shape
         qml.enable_return()
