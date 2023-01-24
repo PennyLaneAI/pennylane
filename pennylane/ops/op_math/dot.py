@@ -21,7 +21,7 @@ from typing import Sequence
 import pennylane as qml
 from pennylane.operation import Operator
 
-from .parametrized_hamiltonian import ParametrizedHamiltonian
+from pennylane.pulse import ParametrizedHamiltonian
 
 
 def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
