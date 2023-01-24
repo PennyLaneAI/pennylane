@@ -364,5 +364,5 @@ class TestEvolveConstructor:
         param_evolution = final_op(params=[], t=1)
         assert isinstance(param_evolution, ParametrizedEvolution)
         assert param_evolution.H is H
-        assert param_evolution.params == []
+        assert qml.math.allequal(param_evolution.params == [])
         assert qml.math.allequal(param_evolution.t == [0, 1])
