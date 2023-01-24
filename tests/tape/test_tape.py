@@ -1814,8 +1814,8 @@ measures = [
     (qml.var(qml.PauliZ(0)), (1,)),
     (qml.probs(wires=[0]), (1, 2)),
     (qml.probs(wires=[0, 1]), (1, 4)),
-    (qml.state(), (1, 8)),  # Assumes 3-qubit device
-    (qml.density_matrix(wires=[0, 1]), (1, 4, 4)),
+    (qml.state(), (8,)),  # Assumes 3-qubit device
+    (qml.density_matrix(wires=[0, 1]), (4, 4)),
     (
         qml.sample(qml.PauliZ(0)),
         None,
