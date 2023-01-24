@@ -75,6 +75,7 @@ class TestPauliUtils:
         # The words are sorted lexicographically
         assert sorted(words) == words
 
+
 class TestSpecialUnitaryMatrix:
     """Test the special_unitary_matrix utility function."""
 
