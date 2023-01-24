@@ -16,5 +16,5 @@ This module contains classes and functions used in pulse programming.
 """
 
 from .convenience_functions import constant, rect
+from .parametrized_evolution import ParametrizedEvolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-from .evolve import ParametrizedEvolution
