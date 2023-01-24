@@ -27,7 +27,6 @@ from semantic_version import SimpleSpec, Version
 from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import QueuingManager, apply
 
-import pennylane.pulse
 import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
@@ -66,7 +65,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, exp, op_sum, pow, prod, s_prod, evolve
+from pennylane.ops import adjoint, ctrl, exp, op_sum, pow, prod, s_prod
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -106,6 +105,7 @@ from pennylane.vqe import ExpvalCost, VQECost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
 import pennylane.data
+import pennylane.pulse
 
 # collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
