@@ -22,7 +22,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
 from pennylane.wires import Wires
-from pennylane.ops.qubit.parametric_ops import PauliRot
 
 
 class QubitUnitary(Operation):
