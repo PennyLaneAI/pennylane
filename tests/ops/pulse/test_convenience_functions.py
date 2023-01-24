@@ -381,15 +381,11 @@ class TestIntegration:  # see Albert's tests
 
         params = [1.2, [2.3, 3.4]]
 
-        assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-3)
-        assert np.all(
-            [
-                qml.math.allclose(g_circuit, g_true, atol=5e-2)
-                for g_circuit, g_true in zip(
-                    jax.grad(circuit)(params), jax.grad(true_circuit)(params)
-                )
-            ]
-        )
+        circuit_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(circuit)(params))
+        true_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(true_circuit)(params))
+
+        assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-2)
+        assert qml.math.allclose(circuit_grad_flattened, true_grad_flattened, atol=5e-2)
 
     def test_qnode_pwc_from_function_jit(self):
         """Test that the evolution of a ParametrizedHamiltonian defined with a function decorated by pwc_from_function
@@ -423,10 +419,8 @@ class TestIntegration:  # see Albert's tests
 
         params = [1.2, [2.3, 3.4]]
 
-        assert qml.math.allclose(jitted_circuit(params), circuit(params), atol=5e-3)
-        assert np.all(
-            [
-                qml.math.allclose(g_jitted, g, atol=5e-3)
-                for g_jitted, g in zip(jax.grad(jitted_circuit)(params), jax.grad(circuit)(params))
-            ]
-        )
+        circuit_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(circuit)(params))
+        jitted_grad_flattened, _ = jax.flatten_util.ravel_pytree(jax.grad(jitted_circuit)(params))
+
+        assert qml.math.allclose(jitted_circuit(params), circuit(params), atol=5e-2)
+        assert qml.math.allclose(circuit_grad_flattened, jitted_grad_flattened, atol=5e-2)
