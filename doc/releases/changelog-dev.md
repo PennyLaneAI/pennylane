@@ -208,8 +208,8 @@
           [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
   ```
   
-* Added `ParametrizedHamiltonian`, a callable that holds information representing a linear combination of operators 
-  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the `Operator` for 
+* Added `ParametrizedHamiltonian`, a callable that holds information representing a linear combination of operators
+  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the `Operator` for
   the specified parameters.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
   
@@ -223,6 +223,7 @@
 
   H =  2 * XX + f1 * YY + f2 * ZZ
   ```
+
   ```pycon
   >>> H
   ParametrizedHamiltonian: terms=3
@@ -230,6 +231,7 @@
   >>> H(params, t=0.5)
   (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
   ```
+
   The same `ParametrizedHamiltonian` can also be constructed via a list of coefficients and operators:
 
   ```pycon
@@ -238,6 +240,9 @@
   >>> H =  qml.ops.dot(coeffs, ops)
   ```
   
+* Add `typing.Tensor` type.
+  [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
+
 <h3>Improvements</h3>
 
 * Most channels in are now fully differentiable in all interfaces.
@@ -284,8 +289,8 @@
   keyword argument to specify that the contents of the file being read should be directly assigned to an attribute.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
-* Implemented the XYX single-qubit unitary decomposition. 
-  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628) 
+* Implemented the XYX single-qubit unitary decomposition.
+  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628)
 
 * Allow `Sum` and `Prod` to have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
@@ -308,7 +313,7 @@
 * `Operator.inv()` and the `Operator.inverse` setter are removed. Please use `qml.adjoint` or `qml.pow` instead.
   [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
   
-  Instead of 
+  Instead of
   
   >>> qml.PauliX(0).inv()
   
