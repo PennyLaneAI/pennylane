@@ -46,7 +46,7 @@ class TestTensor:
         tensor = torch.Tensor(1)
         assert isinstance(tensor, TensorLike.__args__)
 
-    @pytest.mark.tensorflow
+    @pytest.mark.tf
     def test_tf_tensor_is_tensor_like(self):
         """Tests that a tensorflow Tensor is a Tensor"""
         import tensorflow as tf
