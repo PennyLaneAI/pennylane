@@ -1,6 +1,4 @@
 tests/data/**
-tests/ops/op_math/test_parametrized_hamiltonian.py
-tests/ops/op_math/test_evolve.py
 tests/devices/test_execution_config.py
 tests/qchem/test_givens_rotations.py
 tests/templates/test_subroutines/test_basis_rotation.py
@@ -9,4 +7,6 @@ tests/ops/op_math/test_controlled.py
 tests/ops/op_math/test_dot.py
 tests/test_operation.py
 tests/ops/qutrit/test_qutrit_observables.py
-tests/ops/pulse/test_convenience_functions.py
+tests/pulse/test_parametrized_hamiltonian.py
+tests/pulse/test_evolve.py
+tests/pulse/test_convenience_functions.py

@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ops import ParametrizedHamiltonian
+from pennylane.pulse import ParametrizedHamiltonian
 
 
 def test_error_raised_if_jax_not_installed():

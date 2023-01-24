@@ -21,7 +21,8 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import AnyWires
-from pennylane.ops import Evolution, ParametrizedEvolution, ParametrizedHamiltonian, QubitUnitary
+from pennylane.ops import Evolution, QubitUnitary
+from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 
 class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
