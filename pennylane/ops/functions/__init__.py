@@ -25,8 +25,10 @@ This module contains functions that act on operators and tapes.
     ~is_commuting
     ~is_hermitian
     ~is_unitary
+    ~map_wires
     ~matrix
     ~simplify
+    ~evolve
 
 """
 from .eigvals import eigvals
@@ -38,3 +40,4 @@ from .is_unitary import is_unitary
 from .map_wires import map_wires
 from .matrix import matrix
 from .simplify import simplify
+from .evolve import evolve

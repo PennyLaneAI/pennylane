@@ -27,6 +27,7 @@ from semantic_version import SimpleSpec, Version
 from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import QueuingManager, apply
 
+import pennylane.pulse
 import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
@@ -65,7 +66,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, exp, op_sum, pow, prod, s_prod, evolve, pulse
+from pennylane.ops import adjoint, ctrl, exp, op_sum, pow, prod, s_prod, evolve
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
