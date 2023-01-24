@@ -358,6 +358,14 @@ class TestProperties:
         op = power_method(base, z=np.array([1.2, 2.3, 3.4]))
         assert op.batch_size == 3
 
+    def test_different_batch_sizes_raises_error(self, power_method):
+        """Test that using different batch sizes for base and scalar raises an error."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        with pytest.raises(
+            ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
+        ):
+            _ = power_method(base, np.array([0.1, 1.2, 2.3, 3.4]))
+
     op_pauli_reps = (
         (qml.PauliZ(wires=0), 1, qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1})),
         (qml.PauliX(wires=1), 2, qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),  # identity
