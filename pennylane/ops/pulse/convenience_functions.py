@@ -24,22 +24,22 @@ except ImportError:
 
 
 def pwc(timespan):
-    """Create a function that is piecewise-constant in time, based on the params for a TDHamiltonian.
+    """Creates a function that is piecewise-constant in time.
 
     Args:
             timespan(Union[float, tuple(float, float)]: The timespan defining the region where the function is non-zero.
               If an integer is provided, the timespan is defined as ``(0, timespan)``.
 
     Returns:
-            func: a function that contains two arguments, one for the trainable parameters(array) and
-            one for time(int). When called, the function uses the array of parameters to create evenly sized bins
-            within the ``timespan``, with each bin value set by an element of the array. It then selects the value
-            the parameter array corresponding to the specified time.
+            func: a function that takes two arguments, an array of trainable parameters and a `float` defining the
+            time at which the function is evaluated. When called, the function uses the array of parameters to
+            create evenly sized bins within the ``timespan``, with each bin value set by an element of the array.
+            It then selects the value the parameter array corresponding to the specified time.
 
     **Example**
 
-    >>> t1, t2 = 1, 3
-    >>> f1 = pwc((t1, t2))
+    >>> timespan = (1, 3)
+    >>> f1 = pwc(timespan)
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed an array of parameters and
     a time, it will assign the array as the constants in the piecewise function, and select the constant corresponding
@@ -96,20 +96,24 @@ def pwc_from_function(timespan, num_bins):
 
     **Example**
 
-    >>> def f0(params, t): return params[0] * t + params[1]
-    >>> timespan = 10
-    >>> num_bins = 10
-    >>> f1 = pwc_from_function(timespan, num_bins)(f0)
-    >>> f1([2, 4], 3), f0([2, 4], 3)
+    .. code-block:: python3
+
+        def smooth_function(params, t):
+            return params[0] * t + params[1]
+
+        timespan = 10
+        num_bins = 10
+
+        binned_function = pwc_from_function(timespan, num_bins)(f0)
+
+    >>> binned_function([2, 4], 3), smooth_function([2, 4], 3)  # t = 3
     (DeviceArray(10.666666, dtype=float32), DeviceArray(10, dtype=int32))
 
-    >>> f1([2, 4], 3.2), f0([2, 4], 3.2)
+    >>> binned_function([2, 4], 3.2), smooth_function([2, 4], 3.2)  # t = 3.2
     (DeviceArray(10.666666, dtype=float32), DeviceArray(10.4, dtype=float32))
 
-    >>> f1([2, 4], 4.5), f0([2, 4], 4.5)
+    >>> binned_function([2, 4], 4.5), smooth_function([2, 4], 4.5)  # t = 4.5
     (DeviceArray(12.888889, dtype=float32), DeviceArray(13., dtype=float32))
-
-    # ToDo: can we include images in the docs for the version rendered for the website? Would be clearest way to illustrate
 
     The same effect can be achieved by decorating the smooth function:
 
