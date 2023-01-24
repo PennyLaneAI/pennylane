@@ -60,7 +60,7 @@ def pauli_basis(num_wires):
       - such that for three qubits, the first basis elements are the Pauli words
         ``"IIX", ""IIY", "IIZ", "IXI", "IXX", "IXY", "IXZ", "IYI"...``
 
-    .. admonition::
+    .. note::
 
         Note that this method internally handles a complex-valued tensor of size
         ``(4**num_wires, 2**num_wires, 2**num_wires)``, which requires at least
@@ -146,7 +146,7 @@ def special_unitary_matrix(theta, num_wires):
 
     See :func:`~.ops.qubit.matrix_ops.pauli_words` for the ordering of Pauli words.
 
-    .. admonition::
+    .. note::
 
         Note that this method internally handles a complex-valued tensor of size
         ``(4**num_wires, 2**num_wires, 2**num_wires)``, which requires at least
@@ -300,7 +300,7 @@ class SpecialUnitary(Operation):
         Returns:
             tensor_like: canonical matrix
 
-        .. admonition::
+        .. note::
 
             Note that this method internally handles a complex-valued tensor of size
             ``(4**num_wires, 2**num_wires, 2**num_wires)``, which requires at least
