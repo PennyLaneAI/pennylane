@@ -174,8 +174,7 @@ class SampleMP(SampleMeasurement):
 
             shape_list = []
             for s in config.shot_vector:
-                partial_tuple = [(s.shots,) if s.shots != 1 else tuple()] * s.copies
-                shape_list.extend(partial_tuple)
+                shape_list.extend([(s.shots,) if s.shots != 1 else tuple()] * s.copies)
             return tuple(shape_list)
 
         return (1, config.shots) if self.obs is not None else (1, config.shots, num_wires)
@@ -188,15 +187,14 @@ class SampleMP(SampleMeasurement):
             )
         if config.shot_vector is not None:
             shape_list = []
-            for s in config.shot_vector:
-                if self.obs is not None:
-                    partial_tuple = [(s.shots,) if s.shots != 1 else tuple()] * s.copies
-                else:
-                    partial_tuple = [
+            if self.obs is not None:
+                for s in config.shot_vector:
+                    shape_list.extend([(s.shots,) if s.shots != 1 else tuple()] * s.copies)
+            else:
+                for s in config.shot_vector:
+                    shape_list.extend([
                         (s.shots, num_wires) if s.shots != 1 else (num_wires,)
-                    ] * s.copies
-
-                shape_list.extend(partial_tuple)
+                    ] * s.copies)
             return tuple(shape_list)
 
         if self.obs is None:

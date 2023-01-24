@@ -19,7 +19,7 @@ from typing import Sequence
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import State, StateMeasurement
+from .measurements import MeasurementShapeError, State, StateMeasurement
 
 
 def state():
@@ -153,25 +153,51 @@ class StateMP(StateMeasurement):
     def shape(self, config, num_wires):
         if qml.active_return():
             return self._shape_new(config, num_wires)
+        num_shot_elements = (
+            1
+            if (config is None or config.shot_vector is None)
+            else sum(s.copies for s in config.shot_vector)
+        )
 
         if self.wires:
             # qml.density_matrix()
             dim = 2 ** len(self.wires)
-            return (1, dim, dim)
+            return (num_shot_elements, dim, dim)
 
+        if config is None:
+            raise MeasurementShapeError(
+                "The config argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
+            )
         # qml.state()
         dim = 2**num_wires
-        return (1, dim)
+        return (num_shot_elements, dim)
 
-    def _shape_new(self, config, num_wires):  # pylint: disable=unused-argument
+    def _shape_new(self, config, num_wires):
+        num_shot_elements = (
+            1
+            if (config is None or config.shot_vector is None)
+            else sum(s.copies for s in config.shot_vector)
+        )
+
         if self.wires:
             # qml.density_matrix()
             dim = 2 ** len(self.wires)
-            return (dim, dim)
+            return (
+                (dim, dim)
+                if num_shot_elements == 1
+                else tuple((dim, dim) for _ in range(num_shot_elements))
+            )
 
         # qml.state()
+        if config is None:
+            raise MeasurementShapeError(
+                "The config argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
+            )
+
         dim = 2**num_wires
-        return (dim,)
+        return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
     # pylint: disable=redefined-outer-name
     def process_state(self, state: Sequence[complex], wire_order: Wires):

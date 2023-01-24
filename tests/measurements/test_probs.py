@@ -130,7 +130,7 @@ class TestProbs:
 
     @pytest.mark.parametrize(
         "measurement",
-        [qml.probs(wires=[0]), qml.sample(qml.PauliZ(0))],
+        [qml.probs(wires=[0]), qml.state(), qml.sample(qml.PauliZ(0))],
     )
     def test_shape_no_device_error(self, measurement):
         """Test that an error is raised if a device is not passed when querying
