@@ -122,6 +122,7 @@ def pauli_words(num_wires):
     """
     return ["".join(letters) for letters in list(product(_pauli_letters, repeat=num_wires))[1:]]
 
+
 def _detach(array, interface):
     """Detach an array from its trace and return just its numerical values."""
     if interface == "jax":
@@ -169,6 +170,7 @@ def special_unitary_matrix(theta, num_wires):
     else:
         A = qml.math.tensordot(theta, pauli_basis(num_wires), axes=[[-1], [0]])
     return qml.math.expm(1j * A)
+
 
 def get_one_parameter_generators(theta, num_wires, interface="jax"):
     r"""Compute the generators of one-parameter groups that reproduce
@@ -322,6 +324,7 @@ def get_one_parameter_coeffs(theta, num_wires, interface="jax"):
     basis = pauli_basis(num_wires)
     generators = get_one_parameter_generators(theta, num_wires, interface)
     return qml.math.tensordot(basis, generators, axes=[[1, 2], [2, 1]]) / 2**num_wires
+
 
 class SpecialUnitary(Operation):
     r"""Gate from the group :math:`SU(N)` with :math:`N=2^n` for :math:`n` qubits.
@@ -515,13 +518,17 @@ class SpecialUnitary(Operation):
             zeros = qml.math.tensordot(omega, zeros, axes=[[1], [0]])
 
             # Apply Pauli rotations that yield the Pauli basis derivatives
-            paulirots = [TmpPauliRot(zero, word, wires=wires, id="SU(N) byproduct") for zero, word in zip(zeros, words)]
+            paulirots = [
+                TmpPauliRot(zero, word, wires=wires, id="SU(N) byproduct")
+                for zero, word in zip(zeros, words)
+            ]
             return paulirots + [SpecialUnitary(detached_theta, wires=wires)]
 
         return [QubitUnitary(special_unitary_matrix(theta, num_wires), wires=wires)]
 
     def adjoint(self):
         return SpecialUnitary(-self.data[0], wires=self.wires)
+
 
 class TmpPauliRot(PauliRot):
     r"""A custom version of qml.PauliRot that is inserted with rotation angle zero when
@@ -557,7 +564,7 @@ class TmpPauliRot(PauliRot):
         Decomposes TmpPauliRot into :class`~.PauliRot` if ``theta`` is non-zero,
         otherwise removes the operation by returning an empty decomposition.
         """
-        if qml.math.isclose(theta, theta*0):
+        if qml.math.isclose(theta, theta * 0):
             return []
         return [PauliRot(theta, pauli_word, wires)]
 
