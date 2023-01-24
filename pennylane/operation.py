@@ -226,7 +226,6 @@ from scipy.sparse import coo_matrix, eye, kron
 
 import pennylane as qml
 from pennylane.math import expand_matrix
-from pennylane.pulse import ParametrizedHamiltonian
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
@@ -1407,7 +1406,7 @@ class Operator(abc.ABC):
             return qml.op_sum(self, other)
         if other == 0:
             return self
-        if isinstance(other, ParametrizedHamiltonian):  # pylint: disable=no-member
+        if isinstance(other, qml.pulse.ParametrizedHamiltonian):  # pylint: disable=no-member
             return other.__add__(self)
         try:
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
@@ -1419,7 +1418,7 @@ class Operator(abc.ABC):
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
-            return ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
+            return qml.pulse.ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
         try:
             return qml.s_prod(scalar=other, operator=self)
         except ValueError:
