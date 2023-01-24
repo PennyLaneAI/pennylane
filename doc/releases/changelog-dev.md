@@ -6,33 +6,6 @@
 
 <h4>Uncategorized - add new features here</h4>
 
-* The gradient transform `qml.gradients.spsa_grad` is now registered as a
-  differentiation method for `QNode`s.
-  [#3440](https://github.com/PennyLaneAI/pennylane/pull/3440)
-
-  The SPSA gradient transform can now also be used implicitly by marking a `QNode`
-  as differentiable with SPSA. It can be selected via
-
-  ```pycon
-  >>> dev = qml.device("default.qubit", wires=2)
-  >>> @qml.qnode(dev, interface="jax", diff_method="spsa", h=0.05, num_directions=20)
-  ... def circuit(x):
-  ...     qml.RX(x, 0)
-  ...     qml.RX(x, 1)
-  ...     return qml.expval(qml.PauliZ(0))
-  >>> jax.jacobian(circuit)(jax.numpy.array(0.5)) 
-  DeviceArray(-0.4792258, dtype=float32, weak_type=True)
-  ```
-
-  The argument `num_directions` determines how many directions of simultaneous
-  perturbation are used and therefore the number of circuit evaluations, up
-  to a prefactor. See the
-  [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details.
-  Note: The full SPSA optimization method is already available as `SPSAOptimizer`.
-
-* `qml.purity` is added as a measurement process for purity
-  [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
-
 <h4>Feel the pulse 🔊</h4>
 
 * Parameterized Hamiltonians can now be created with the addition of `ParametrizedHamiltonian`.
@@ -89,6 +62,30 @@
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
 <h4>Always differentiable 📈</h4>
+
+* The gradient transform `qml.gradients.spsa_grad` is now registered as a
+  differentiation method for `QNode`s.
+  [#3440](https://github.com/PennyLaneAI/pennylane/pull/3440)
+
+  The SPSA gradient transform can now also be used implicitly by marking a `QNode`
+  as differentiable with SPSA. It can be selected via
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev, interface="jax", diff_method="spsa", h=0.05, num_directions=20)
+  ... def circuit(x):
+  ...     qml.RX(x, 0)
+  ...     qml.RX(x, 1)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> jax.jacobian(circuit)(jax.numpy.array(0.5)) 
+  DeviceArray(-0.4792258, dtype=float32, weak_type=True)
+  ```
+
+  The argument `num_directions` determines how many directions of simultaneous
+  perturbation are used and therefore the number of circuit evaluations, up
+  to a prefactor. See the
+  [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details.
+  Note: The full SPSA optimization method is already available as `SPSAOptimizer`.
 
 * The JAX-JIT interface now supports higher-order gradient computation with the new return types system.
   [(#3498)](https://github.com/PennyLaneAI/pennylane/pull/3498)
@@ -245,6 +242,9 @@
   ```
 
 <h3>Improvements</h3>
+
+* `qml.purity` is added as a measurement process for purity
+  [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
 * `qml.math.matmul` now supports PyTorch and Autograd tensors.
   [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
