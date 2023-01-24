@@ -337,6 +337,9 @@
 
 <h3>Documentation</h3>
 
+* Organizes the module for documentation for ``operation``.
+  [(#3664)](https://github.com/PennyLaneAI/pennylane/pull/3664)
+
 * Updated the code example in `qml.SparseHamiltonian` with the correct wire range.
   [(#3643)](https://github.com/PennyLaneAI/pennylane/pull/3643)
   
