@@ -18,18 +18,18 @@ from typing import Union
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
-Tensor = Union[int, float, bool, complex, bytes, str, np.ndarray, ArrayBox]
+TensorLike = Union[int, float, bool, complex, bytes, str, np.ndarray, ArrayBox]
 
 with contextlib.suppress(ImportError):
     from jax.numpy import ndarray
 
-    Tensor = Union[Tensor, ndarray]
+    TensorLike = Union[TensorLike, ndarray]
 with contextlib.suppress(ImportError):
     from torch import Tensor as torchTensor
 
-    Tensor = Union[Tensor, torchTensor]
+    TensorLike = Union[TensorLike, torchTensor]
 with contextlib.suppress(ImportError):
     from tensorflow import Tensor as tfTensor
     from tensorflow import Variable
 
-    Tensor = Union[Tensor, tfTensor, Variable]
+    TensorLike = Union[TensorLike, tfTensor, Variable]

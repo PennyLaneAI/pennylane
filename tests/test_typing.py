@@ -16,17 +16,17 @@ import numpy as np
 import pytest
 
 import pennylane.numpy as pnp
-from pennylane.typing import Tensor
+from pennylane.typing import TensorLike
 
 
 class TestTensor:
     def test_numpy_array(self):
         """Tests that a numpy array is a Tensor"""
-        assert isinstance(np.array(1), Tensor)
+        assert isinstance(np.array(1), TensorLike)
 
     def test_pennylane_tensor(self):
         """Tests that a PennyLane numpy tensor is a Tensor"""
-        assert isinstance(pnp.array(1), Tensor)
+        assert isinstance(pnp.array(1), TensorLike)
 
     @pytest.mark.jax
     def test_jax_array_is_tensor_like(self):
@@ -35,7 +35,7 @@ class TestTensor:
 
         tensor = jax.numpy.array(1)
         assert isinstance(tensor, jax.Array)
-        assert isinstance(tensor, Tensor)
+        assert isinstance(tensor, TensorLike)
 
     @pytest.mark.torch
     def test_torch_tensor_is_tensor_like(self):
@@ -43,7 +43,7 @@ class TestTensor:
         import torch
 
         tensor = torch.Tensor(1)
-        assert isinstance(tensor, Tensor)
+        assert isinstance(tensor, TensorLike)
 
     @pytest.mark.tensorflow
     def test_tf_tensor_is_tensor_like(self):
@@ -52,6 +52,6 @@ class TestTensor:
 
         tensor = tf.constant([1, 2, 3])
         assert isinstance(tensor, tf.Tensor)
-        assert isinstance(tensor, Tensor)
+        assert isinstance(tensor, TensorLike)
         var = tf.Variable(9)
-        assert isinstance(var, Tensor)
+        assert isinstance(var, TensorLike)
