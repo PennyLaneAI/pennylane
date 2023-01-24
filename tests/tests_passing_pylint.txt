@@ -10,3 +10,4 @@ tests/ops/op_math/test_dot.py
 tests/test_operation.py
 tests/ops/qutrit/test_qutrit_observables.py
 tests/ops/qubit/test_special_unitary.py
+tests/ops/qubit/test_matrix_ops.py
