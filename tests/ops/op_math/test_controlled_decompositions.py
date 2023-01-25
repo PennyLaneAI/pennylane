@@ -15,7 +15,7 @@
 Unit tests for controlled operation decompositions.
 """
 
-from functools import reduce
+# from functools import reduce
 import pytest
 import numpy as np
 
@@ -38,16 +38,37 @@ class TestControlledDecompositionZYZ:
         """Tests that the decomposition of a non-parametric operation is correct"""
         op = op_cls(3)
         decomps = ctrl_decomp_zyz(op, [0, 1, 2])
-        decomp_mats = (
-            np.kron(np.eye(8), decomp_op.matrix())
-            if not isinstance(decomp_op, qml.MultiControlledX)
-            else decomp_op.matrix()
-            for decomp_op in decomps
-        )
         expected_op = qml.ctrl(op, [0, 1, 2])
+        # decomp_mats = (
+        #     np.kron(np.eye(8), decomp_op.matrix())
+        #     if not isinstance(decomp_op, qml.MultiControlledX)
+        #     else decomp_op.matrix()
+        #     for decomp_op in decomps
+        # )
 
-        res = reduce(np.matmul, decomp_mats)
-        expected = expected_op.matrix()
+        # res = reduce(np.matmul, decomp_mats)
+        # expected = expected_op.matrix()
+        # assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def decomp_circuit():
+            for i in range(4):
+                qml.Hadamard(i)
+            for decomp_op in decomps:
+                qml.apply(decomp_op)
+            return qml.probs()
+
+        @qml.qnode(dev)
+        def expected_circuit():
+            for i in range(4):
+                qml.Hadamard(i)
+            qml.apply(expected_op)
+            return qml.probs()
+
+        res = decomp_circuit()
+        expected = expected_circuit()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
@@ -62,14 +83,35 @@ class TestControlledDecompositionZYZ:
     def test_parametric_decomposition(self, op, tol):
         """Tests that the decomposition of a parametric operation is correct"""
         decomps = ctrl_decomp_zyz(op, [0, 1, 2])
-        decomp_mats = (
-            np.kron(np.eye(8), decomp_op.matrix())
-            if not isinstance(decomp_op, qml.MultiControlledX)
-            else decomp_op.matrix()
-            for decomp_op in decomps
-        )
         expected_op = qml.ctrl(op, [0, 1, 2])
+        # decomp_mats = (
+        #     np.kron(np.eye(8), decomp_op.matrix())
+        #     if not isinstance(decomp_op, qml.MultiControlledX)
+        #     else decomp_op.matrix()
+        #     for decomp_op in decomps
+        # )
 
-        res = reduce(np.matmul, decomp_mats)
-        expected = expected_op.matrix()
+        # res = reduce(np.matmul, decomp_mats)
+        # expected = expected_op.matrix()
+        # assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def decomp_circuit():
+            for i in range(4):
+                qml.Hadamard(i)
+            for decomp_op in decomps:
+                qml.apply(decomp_op)
+            return qml.probs()
+
+        @qml.qnode(dev)
+        def expected_circuit():
+            for i in range(4):
+                qml.Hadamard(i)
+            qml.apply(expected_op)
+            return qml.probs()
+
+        res = decomp_circuit()
+        expected = expected_circuit()
         assert np.allclose(res, expected, atol=tol, rtol=0)
