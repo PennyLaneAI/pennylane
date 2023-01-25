@@ -101,12 +101,12 @@ class TestStateVector:
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
         [
-            (2, None, 3),
-            (2, [1, 2], 3),
-            (3, [0, 1, 2], 3),
-            (3, ["a", 1, 2], 3),
-            (3, [1, 2, 0], 6),
-            (3, [1, 2, "a"], 6),
+            (2, None, (1, 1)),
+            (2, [1, 2], (1, 1)),
+            (3, [0, 1, 2], (0, 1, 1)),
+            (3, ["a", 1, 2], (0, 1, 1)),
+            (3, [1, 2, 0], (1, 1, 0)),
+            (3, [1, 2, "a"], (1, 1, 0)),
         ],
     )
     def test_QubitStateVector_state_vector(self, num_wires, wire_order, one_position):
@@ -115,7 +115,7 @@ class TestStateVector:
         ket = qsv_op.state_vector(wire_order=wire_order)
         assert ket[one_position] == 1
         ket[one_position] = 0  # everything else should be zero, as we assert below
-        assert np.allclose(np.zeros(2**num_wires), ket)
+        assert np.allclose(np.zeros((2,) * num_wires), ket)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])

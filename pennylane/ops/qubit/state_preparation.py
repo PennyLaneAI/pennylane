@@ -156,7 +156,7 @@ class QubitStateVector(StatePrep):
 
     def state_vector(self, wire_order=None):
         if wire_order is None:
-            return self.parameters[0]
+            return reshape(self.parameters[0], (2,) * len(self.wires))
 
         wires = Wires(wire_order)
         if not wires.contains_wires(self.wires):
@@ -168,7 +168,7 @@ class QubitStateVector(StatePrep):
 
         ket = np.zeros((2,) * num_wires)
         ket[tuple(indices)] = reshape(self.parameters[0], (2,) * len(self.wires))
-        return convert_like(reshape(ket, 2**num_wires), self.parameters[0])
+        return convert_like(ket, self.parameters[0])
 
 
 class QubitDensityMatrix(Operation):
