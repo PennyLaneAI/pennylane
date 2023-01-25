@@ -110,7 +110,8 @@ class ParametrizedEvolution(Operation):
         id (str or None): id for the scalar product operator. Default is None.
 
     Keyword Args:
-        rtol, atol (float, optional): Relative and absolute error tolerance. The error is estimated
+        atol (float, optional): Absolute error tolerance. Defaults to 1.4e-8.
+        rtol (float, optional): Relative error tolerance. The error is estimated
             from comparing a 4th and 5th order Runge-Kutta step in the Dopri5 algorithm. This error
             is guaranteed to stay below tol = atol + rtol * abs(y) through adaptive step size
             selection. Defaults to 1.4e-8.
