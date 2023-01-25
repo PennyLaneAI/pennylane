@@ -1408,7 +1408,7 @@ class Operator(abc.ABC):
             return qml.op_sum(self, other)
         if other == 0:
             return self
-        if isinstance(other, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
+        if isinstance(other, qml.pulse.ParametrizedHamiltonian):
             return other.__add__(self)
         backend = autoray.infer_backend(other)
         if (backend == "builtins" and isinstance(other, numbers.Number)) or (
@@ -1422,7 +1422,7 @@ class Operator(abc.ABC):
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
-            return qml.ops.ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
+            return qml.ops.ParametrizedHamiltonian([other], [self])
         backend = autoray.infer_backend(other)
         if (backend == "builtins" and isinstance(other, numbers.Number)) or (
             backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
