@@ -641,7 +641,7 @@ class TestMatrix:
 
     @pytest.mark.torch
     def test_batching_torch(self):
-        """Test that Pow matrix has batching support with the jax interface."""
+        """Test that Pow matrix has batching support with the torch interface."""
         import torch
 
         x = torch.tensor([-1, -2, -3])
@@ -654,7 +654,7 @@ class TestMatrix:
 
     @pytest.mark.tf
     def test_batching_tf(self):
-        """Test that Pow matrix has batching support with the jax interface."""
+        """Test that Pow matrix has batching support with the tensorflow interface."""
         import tensorflow as tf
 
         x = tf.constant([-1.0, -2.0, -3.0])
