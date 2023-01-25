@@ -16,7 +16,8 @@
 Unit tests for the convenience functions used in pulsed programming.
 """
 import inspect
-from functools import reduce
+from functools import partial
+import sys
 
 import pytest
 
@@ -26,7 +27,8 @@ import pennylane as qml
 from pennylane.ops.op_math import ParametrizedHamiltonian
 
 
-# error expected to be raised locally - test will pass in CI, where it will be run without jax installed
+# pylint:disable = consider-iterating-dictionary
+@pytest.mark.skipif("jax" in sys.modules.keys(), reason="fails if jax is installed")
 def test_error_raised_if_jax_not_installed():
     """Test that an error is raised if a convenience function is called without jax installed"""
     with pytest.raises(ImportError, match="Module jax is required"):
@@ -213,7 +215,43 @@ class TestPWC_from_function:
 
 
 @pytest.mark.jax
-class TestIntegration:  # see Albert's tests
+class TestIntegration:
+    def integral_pwc(  # pylint:disable = too-many-arguments
+        self, t1, t2, num_bins, integration_bounds, fn, params, pwc_from_function=False
+    ):
+        from jax import numpy as jnp
+
+        # constants set by array if pwc, constants must be found if pwc_from_function
+        constants = jnp.array(params)
+        if pwc_from_function:
+            time_bins = np.linspace(t1, t2, num_bins)
+            constants = jnp.array(list(fn(params, time_bins)) + [0])
+
+        # get start and end point as indicies, without casting to int
+        start = num_bins / (t2 - t1) * (integration_bounds[0] - t1)
+        end = num_bins / (t2 - t1) * (integration_bounds[1] - t1)
+
+        # get indices of bins that are completely within the integration window
+        complete_indices = np.linspace(
+            int(start) + 1, int(end) - 1, int(end) - int(start) - 1, dtype=int
+        )
+        relevant_indices = np.array([i for i in complete_indices if -1 < i < num_bins])
+        # find area contributed by bins that are completely within the integration window
+        bin_width = (t2 - t1) / num_bins
+        main_area = np.sum(constants[relevant_indices] * bin_width)
+
+        # if start index is not out of range, add contribution from partial bin at start
+        if start >= 0:
+            width = bin_width * 1 - (start - int(start))
+            main_area += constants[int(start)] * width
+
+        # if end index is not out of range, add contribution from partial bin at end
+        if end < num_bins:
+            width = bin_width * (end - int(end))
+            main_area += constants[int(end)] * width
+
+        return main_area
+
     def test_parametrized_hamiltonian_with_pwc(self):
         """Test that a pwc function can be used to create a ParametrizedHamiltonian"""
 
@@ -247,19 +285,12 @@ class TestIntegration:  # see Albert's tests
     def test_qnode_pwc(self):
         """Test that the evolution of a parametrized hamiltonian defined with a pwc function be executed on a QNode."""
         import jax
-        import jax.numpy as jnp
 
         f1 = qml.pulse.pwc((1, 6))
         f2 = qml.pulse.pwc((0.5, 3))
         H = f1 * qml.PauliX(0) + f2 * qml.PauliY(1)
 
         t = (0, 4)
-
-        def generator(params):
-            time_step = 1e-3
-            times = jnp.arange(*t, step=time_step)
-            for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -270,8 +301,14 @@ class TestIntegration:  # see Albert's tests
 
         @qml.qnode(dev, interface="jax")
         def true_circuit(params):
-            true_mat = reduce(lambda x, y: y @ x, generator(params))
-            qml.QubitUnitary(U=true_mat, wires=[0, 1])
+            # ops X0 and Y1 are commuting - time evolution of f1*X0 + f2*X1 is exp(-i*F1*X0)exp(-i*F2*Y1)
+            # Where Fj = integral of fj(p,t)dt over evolution time t
+            coeff1 = partial(self.integral_pwc, 1, 6, 10, (0, 4), f1)
+            coeff2 = partial(self.integral_pwc, 0.5, 3, 10, (0, 4), f2)
+            qml.prod(
+                qml.exp(qml.PauliX(0), -1j * coeff1(params[0])),
+                qml.exp(qml.PauliY(1), -1j * coeff2(params[1])),
+            )
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         constants = np.linspace(0, 9, 10)
@@ -348,14 +385,10 @@ class TestIntegration:  # see Albert's tests
         )
         assert qml.math.allequal(qml.matrix(H(params, t=4)), true_mat)
 
-    @pytest.mark.slow
-    @pytest.mark.xfail  # passing locally but failing in CI - unclear why but believed to be an issue with the test
-    @pytest.mark.skip
     def test_qnode_pwc_from_function(self):
         """Test that the evolution of a ParametrizedHamiltonian defined with a function decorated by pwc_from_function
         can be executed on a QNode."""
         import jax
-        import jax.numpy as jnp
 
         @qml.pulse.pwc_from_function((2, 5), 20)
         def f1(params, t):
@@ -369,12 +402,6 @@ class TestIntegration:  # see Albert's tests
 
         t = (1, 4)
 
-        def generator(params):
-            time_step = 1e-3
-            times = jnp.arange(*t, step=time_step)
-            for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="jax")
@@ -384,8 +411,14 @@ class TestIntegration:  # see Albert's tests
 
         @qml.qnode(dev, interface="jax")
         def true_circuit(params):
-            true_mat = reduce(lambda x, y: y @ x, generator(params))
-            qml.QubitUnitary(U=true_mat, wires=[0, 1])
+            # ops X0 and Y1 are commuting - time evolution of f1*X0 + f2*X1 is exp(-i*F1*X0)exp(-i*F2*Y1)
+            # Where Fj = integral of fj(p,t)dt over evolution time t
+            coeff1 = partial(self.integral_pwc, 2, 5, 20, (1, 4), f1)
+            coeff2 = partial(self.integral_pwc, 3, 7, 10, (1, 4), f2)
+            qml.prod(
+                qml.exp(qml.PauliX(0), -1j * coeff1(params[0], pwc_from_function=True)),
+                qml.exp(qml.PauliY(1), -1j * coeff2(params[1], pwc_from_function=True)),
+            )
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         params = [1.2, [2.3, 3.4]]
