@@ -560,7 +560,7 @@ class QuantumScript:
             return_op_index (bool): Whether the function also returns the operation index.
         Returns:
             tuple[.Operation, int, int]: tuple containing the corresponding
-            operation, and an integer representing the argument index,
+            operation, the operation index, and an integer representing the argument index,
             for the provided trainable parameter.
         """
         if return_op_index:
