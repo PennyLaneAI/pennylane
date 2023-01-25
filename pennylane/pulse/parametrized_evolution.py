@@ -21,9 +21,8 @@ This file contains the ``ParametrizedEvolution`` operator and the ``evolve`` con
 from typing import List, Union
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.operation import AnyWires, Operation
 
-from .exp import Evolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 has_jax = True
@@ -32,43 +31,6 @@ try:
     from jax.experimental.ode import odeint
 except ImportError as e:
     has_jax = False
-
-
-def evolve(op: Union[Operator, ParametrizedHamiltonian]):
-    """Returns a new operator that computes the evolution of ``op``.
-
-    Args:
-        op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
-
-    Returns:
-        Union[.Evolution, ~pennylane.ops.op_math.evolve.ParametrizedEvolution]: evolution operator
-
-    .. seealso:: :class:`.ParametrizedEvolution`
-    .. seealso:: :class:`.Evolution`
-
-    **Examples**
-
-    We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
-
-    >>> op = qml.s_prod(2, qml.PauliX(0))
-    >>> qml.evolve(op)
-    Exp((-0-1j) 2*(PauliX(wires=[0])))
-
-    When evolving a :class:`.ParametrizedHamiltonian` class, then a :class:`.ParametrizedEvolution`
-    instance is returned:
-
-    >>> coeffs = [lambda p, t: p * t for _ in range(4)]
-    >>> ops = [qml.PauliX(i) for i in range(4)]
-    >>> H = qml.ops.dot(coeffs, ops)
-    >>> qml.evolve(H)
-    ParametrizedEvolution(wires=[0, 1, 2, 3])
-
-    Please check the :class:`.ParametrizedEvolution` class for more information.
-    """
-    if isinstance(op, ParametrizedHamiltonian):
-        return ParametrizedEvolution(H=op)
-
-    return Evolution(generator=op, param=1.0)
 
 
 class ParametrizedEvolution(Operation):
