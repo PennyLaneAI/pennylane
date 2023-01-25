@@ -22,12 +22,11 @@ import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
 
-class typing:
+class _Typing:
     """Class containing useful PennyLane types."""
 
-    @classmethod
     @property
-    def TensorLike(cls):
+    def TensorLike(self):
         """Returns a ``Union`` of all tensor-like types, which includes any scalar or sequence
         that can be interpreted as a pennylane tensor, including lists and tuples. Any argument
         accepted by ``pnp.array`` is tensor-like.
@@ -62,3 +61,6 @@ class typing:
 
             tensor_like = Union[tensor_like, tfTensor, Variable]
         return tensor_like
+
+
+typing = _Typing()
