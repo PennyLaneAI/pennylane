@@ -44,7 +44,8 @@
   True
   ```
   
-  This operation supports parameter broadcasting/batching.
+  This operation can be differentiated with hardware-compatible methods like parameter shifts,
+  and it supports parameter broadcasting/batching.
 
 <h4>Feel the pulse 🔊</h4>
 
