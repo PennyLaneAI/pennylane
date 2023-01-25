@@ -285,6 +285,10 @@ class batch_transform:
 
         def _wrapper(*args, **kwargs):
             shots = kwargs.pop("shots", False)
+
+            if qnode.interface == "auto":
+                qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
             qnode.construct(args, kwargs)
             tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
 

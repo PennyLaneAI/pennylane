@@ -327,6 +327,9 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     def _expand_fn(tape):
         return self.expand_fn(tape, *targs, **tkwargs)
 
+    if qnode.interface == "auto":
+        qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
+
     cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
