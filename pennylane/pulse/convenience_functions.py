@@ -141,15 +141,15 @@ def pwc(timespan):
     a time, it will assign the array as the constants in the piecewise function, and select the constant corresponding
     to the specified time, based on the time interval defined by ``timespan``.
 
-    >>> params = np.linspace(10, 20, 10)
+    >>> params = [10, 11, 12, 13, 14]
     >>> f1(params, 2)
-    tensor(15.55555556, requires_grad=True)
+    Array(12, dtype=int32)
 
     >>> f1(params, 2.1)  # same bin
-    tensor(15.55555556, requires_grad=True)
+    Array(12, dtype=int32)
 
     >>> f1(params, 2.5)  # next bin
-    tensor(17.77777778, requires_grad=True)
+    Array(13, dtype=int32)
     """
     if not has_jax:
         raise ImportError(
