@@ -19,7 +19,7 @@ import pennylane.numpy as pnp
 from pennylane import typing
 
 
-class TestTensor:
+class TestTensorLike:
     def test_numpy_array(self):
         """Tests that a numpy array is a Tensor"""
         # Using `isinstance` with `Union` types is only supported from python 3.10
