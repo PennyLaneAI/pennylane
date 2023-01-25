@@ -797,6 +797,12 @@ class QNode:
         override_shots = False
         old_interface = self.interface
         if old_interface == "auto":
+            if args is None:
+                warnings.warn(
+                    "The interface is automatically determined from parameters, but there are none."
+                    "PennyLane numpy objects are returned, if you desire another ML framework, specify"
+                    "the interface in the QNode."
+                )
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         if not self._qfunc_uses_shots_arg:
