@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file contains different PennyLane types."""
+import contextlib
+
 # pylint: disable=import-outside-toplevel, too-few-public-methods
 import sys
 from typing import Union
@@ -44,9 +46,12 @@ class typing:
         tensor_like = Union[int, float, bool, complex, bytes, str, np.ndarray, ArrayBox]
 
         if "jax" in sys.modules:
-            from jax.numpy import ndarray
+            # Need to add this because (for an unknown reason) when executing
+            # ``pytest tests/ -m torch`` without jax installed, ``sys.modules`` contains a "jax" module.
+            with contextlib.suppress(ImportError):
+                from jax.numpy import ndarray
 
-            tensor_like = Union[tensor_like, ndarray]
+                tensor_like = Union[tensor_like, ndarray]
         if "torch" in sys.modules:
             from torch import Tensor as torchTensor
 
