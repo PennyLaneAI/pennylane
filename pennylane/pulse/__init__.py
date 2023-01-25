@@ -13,6 +13,28 @@
 # limitations under the License.
 """
 This module contains classes and functions used in pulse programming.
+
+Time evolution classes
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.pulse
+
+.. autosummary::
+    :toctree: api
+
+    ~ParametrizedHamiltonian
+    ~ParametrizedEvolution
+
+Convenience Functions
+~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.pulse
+
+.. autosummary::
+    :toctree: api
+
+    ~constant
+    ~rect
 """
 
 from .convenience_functions import constant, rect
