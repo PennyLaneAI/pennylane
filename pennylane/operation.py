@@ -223,7 +223,7 @@ from typing import List
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
-
+import autoray
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
@@ -234,6 +234,8 @@ from .utils import pauli_eigs
 # =============================================================================
 # Errors
 # =============================================================================
+
+SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
 
 
 class OperatorPropertyUndefined(Exception):
@@ -1408,10 +1410,12 @@ class Operator(abc.ABC):
             return self
         if isinstance(other, qml.pulse.ParametrizedHamiltonian):
             return other.__add__(self)
-        try:
+        backend = autoray.infer_backend(other)
+        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
+            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
+        ):
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
-        except ValueError:
-            return NotImplemented
+        return NotImplemented
 
     __radd__ = __add__
 
@@ -1419,10 +1423,12 @@ class Operator(abc.ABC):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
-        try:
+        backend = autoray.infer_backend(other)
+        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
+            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
+        ):
             return qml.s_prod(scalar=other, operator=self)
-        except ValueError:
-            return NotImplemented
+        return NotImplemented
 
     __rmul__ = __mul__
 
