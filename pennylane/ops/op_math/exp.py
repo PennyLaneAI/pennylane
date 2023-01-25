@@ -228,7 +228,7 @@ class Exp(ScalarSymbolicOp, Operation):
         return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
 
     def matrix(self, wire_order=None):
-        scalar = [self.scalar] if qml.math.size(self.scalar) == 1 else self.scalar
+        scalar = [self.scalar] if qml.math.ndim(self.scalar) == 0 else self.scalar
         coeff_interface = math.get_interface(*scalar)
         if coeff_interface == "autograd" and math.requires_grad(self.scalar):
             # math.expm is not differentiable with autograd
