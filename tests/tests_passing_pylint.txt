@@ -11,3 +11,4 @@ tests/ops/qutrit/test_qutrit_observables.py
 tests/pulse/test_parametrized_hamiltonian.py
 tests/pulse/test_parametrized_evolution.py
 tests/pulse/test_convenience_functions.py
+tests/ops/qubit/test_state_prep.py

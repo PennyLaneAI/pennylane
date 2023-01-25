@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
+from pennylane.wires import WireError
 
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
@@ -93,3 +93,40 @@ class TestDecomposition:
 
         op = qml.QubitStateVector(U, wires=wires)
         assert op.batch_size == 3
+
+
+class TestStateVector:
+    """Test the state_vector() method of various state-prep operations."""
+
+    @pytest.mark.parametrize(
+        "num_wires,wire_order,one_position",
+        [
+            (2, None, 3),
+            (2, [1, 2], 3),
+            (3, [0, 1, 2], 3),
+            (3, ["a", 1, 2], 3),
+            (3, [1, 2, 0], 6),
+            (3, [1, 2, "a"], 6),
+        ],
+    )
+    def test_QubitStateVector_state_vector(self, num_wires, wire_order, one_position):
+        """Tests that QubitStateVector state_vector returns kets as expected."""
+        qsv_op = qml.QubitStateVector([0, 0, 0, 1], wires=[1, 2])
+        ket = qsv_op.state_vector(wire_order=wire_order)
+        assert ket[one_position] == 1
+        ket[one_position] = 0  # everything else should be zero, as we assert below
+        assert np.allclose(np.zeros(2**num_wires), ket)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_QubitStateVector_state_vector_preserves_parameter_type(self, interface):
+        """Tests that given an array of some type, the resulting state vector is also that type."""
+        qsv_op = qml.QubitStateVector(qml.math.array([0, 0, 0, 1], like=interface), wires=[1, 2])
+        assert qml.math.get_interface(qsv_op.state_vector()) == interface
+        assert qml.math.get_interface(qsv_op.state_vector(wire_order=[0, 1, 2])) == interface
+
+    def test_QubitStateVector_state_vector_bad_wire_order(self):
+        """Tests that the provided wire_order must contain the wires in the operation."""
+        qsv_op = qml.QubitStateVector([0, 0, 0, 1], wires=[0, 1])
+        with pytest.raises(WireError, match="wire_order must contain all QubitStateVector wires"):
+            qsv_op.state_vector(wire_order=[1, 2])

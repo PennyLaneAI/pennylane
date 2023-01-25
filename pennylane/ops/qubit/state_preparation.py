@@ -16,8 +16,11 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
-from pennylane.operation import AnyWires, Operation
+from pennylane import numpy as np
+from pennylane.math import convert_like, reshape
+from pennylane.operation import AnyWires, Operation, StatePrep
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.wires import Wires, WireError
 
 state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
 
@@ -89,7 +92,7 @@ class BasisState(Operation):
         return [BasisStatePreparation(n, wires)]
 
 
-class QubitStateVector(Operation):
+class QubitStateVector(StatePrep):
     r"""QubitStateVector(state, wires)
     Prepare subsystems using the given ket vector in the computational basis.
 
@@ -127,11 +130,6 @@ class QubitStateVector(Operation):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    grad_method = None
-
-    # This is a temporary attribute to fix the operator queuing behaviour
-    _queue_category = "_prep"
-
     @staticmethod
     def compute_decomposition(state, wires):
         r"""Representation of the operator as a product of other operators (static method). :
@@ -155,6 +153,22 @@ class QubitStateVector(Operation):
 
         """
         return [MottonenStatePreparation(state, wires)]
+
+    def state_vector(self, wire_order=None):
+        if wire_order is None:
+            return self.parameters[0]
+
+        wires = Wires(wire_order)
+        if not wires.contains_wires(self.wires):
+            raise WireError("Custom wire_order must contain all QubitStateVector wires")
+        num_wires = len(wires)
+        indices = [0] * num_wires
+        for base_wire_idx in [wires.index(w) for w in self.wires]:
+            indices[base_wire_idx] = slice(None)  # same as ":"
+
+        ket = np.zeros((2,) * num_wires)
+        ket[tuple(indices)] = reshape(self.parameters[0], (2,) * len(self.wires))
+        return convert_like(reshape(ket, 2**num_wires), self.parameters[0])
 
 
 class QubitDensityMatrix(Operation):
