@@ -181,6 +181,7 @@ class TestMolecule:
         r"""Test that the molecule object contains the correct basis set and non-default basis data
         for a given molecule.
         """
+        pytest.importorskip("basis_set_exchange")
         mol = qchem.Molecule(symbols, geometry, load_data=load_data, normalize=False)
 
         assert set(map(type, mol.basis_set)) == {qchem.BasisFunction}
