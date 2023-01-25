@@ -557,7 +557,7 @@ class QuantumScript:
 
         Args:
             idx (int): the trainable parameter index
-            return_op_index (bool): The function also returns the operation index.
+            return_op_index (bool): Whether the function also returns the operation index.
         Returns:
             tuple[.Operation, int, int]: tuple containing the corresponding
             operation, and an integer representing the argument index,

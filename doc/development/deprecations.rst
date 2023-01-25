@@ -9,7 +9,7 @@ Pending deprecations
 * The ``get_operation`` tape method is updated to return the operation index as well, changing its signature.
 
   - The new signature is available by changing the arg ``return_op_index`` to ``True`` in v0.29
-  - Replaces the old signature with the new one in v0.30
+  - The old signature is replaced with the new one in v0.30
 
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
