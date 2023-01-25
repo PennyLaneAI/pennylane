@@ -6,149 +6,92 @@
 Pulse Control
 =============
 
-The :mod:`~.pulse` module provides functions and classes used to implement pulse-level control of quantum systems.
-It contains a ``ParametrizedHamiltonian`` class to define the interaction between pulses and
+Pulse control is used in a variety of quantum systems for low-level control of quantum operations. A
+time-dependent electromagnetic field tuned to the characteristic energies is applied,
+leading to a time-dependent Hamiltonian interaction :math:`H(t)`. We call driving the system with such an
+electromagnetic field for a fixed time window a *pulse sequence*. These pulse sequences can then be tuned to
+implement the higher level gates used for quantum computation.
+
+The :mod:`~.pulse` module provides functions and classes used to simulate pulse-level control of quantum
+systems. It contains a :class:`~.ParametrizedHamiltonian` class, which can be used to define the time-dependent
+Hamiltonian describing the interaction between the applied pulses and the system. The
+:class:`~.ParametrizedHamiltonian` can be used to create a :class:`~.ParametrizedEvolution`
+(:class:`~.Operation`) that provides the time evolution of the Hamiltonian. The :mod:`~.pulse` module also
+includes several convenience functions for defining pulse envelopes.
+
+The :mod:`~.pulse` module relies on the external package `JAX <https://jax.readthedocs.io/en/latest/>`_, which
+requires separate installation. The module is written for ``jax`` and will not work with the other machine learning
+frameworks typically encountered in PennyLane.
 
 
-
-The :mod:`~.pulse` module requires the external package `JAX <https://jax.readthedocs.io/en/latest/>`_, which
-requires separate installation.
-
-It contains a differentiable Hartree-Fock solver and the functionality to construct a
-fully-differentiable molecular Hamiltonian that can be used as input to quantum algorithms
-such as the variational quantum eigensolver (VQE) algorithm. The :mod:`~.qchem` module
-also provides tools for building other observables such as molecular dipole moment, spin
-and particle number observables.
 
 Creating a parametrized Hamiltonian
 -----------------------------------
 
-The :mod:`~.qchem` module provides access to a driver function :func:`~.molecular_hamiltonian`
-to generate the electronic Hamiltonian in a single call. For example,
+The :mod:`~.pulse` module provides a framework to create a time-dependent Hamiltonian of the form
+
+.. math:: H(p, t) = H_\text{drift} + \sum_j f_j(p, t) H_j
+
+with constant operators :math:`H_j` and scalar functions :math:`f_j(p, t)` that may depend on
+parameters :math:`p` and time :math:`t`.
+
+.. note::
+    The :class:`~.ParametrizedHamiltonian` is not a PennyLane :class:`~.Operator`. If an :class:`~.Operator`
+    representing the :class:`~.ParametrizedHamiltonian` is needed, the initialized :class:`~.ParametrizedHamiltonian`
+    must be called with fixed parameters and time.
+
+Defining a ``ParametrizedHamiltonian`` requires coefficients and operators. In the example below, we define a
+Hamiltonian with a single drift term, and two parametrized terms.
 
 .. code-block:: python
 
     import pennylane as qml
-    from jax import numpy as jnp
+    from jax import numpy as np
 
-    symbols = ["H", "H"]
-    geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
+    # defining the coefficients fj(v, t) for the two parametrized terms
+    f1 = lambda p, t: p * np.sin(t) * (t - 1)
+    f2 = lambda p, t: p[0] * np.cos(p[1]* t ** 2)
 
+    # defining the operations for the three terms in the Hamiltonian
+    XX = qml.PauliX(0) @ qml.PauliX(1)
+    YY = qml.PauliY(0) @ qml.PauliY(1)
+    ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
 
-  ```pycon
-  f1 = lambda p, t: p * np.sin(t) * (t - 1)
-  f2 = lambda p, t: p[0] * np.cos(p[1]* t ** 2)
-
-  XX = qml.PauliX(1) @ qml.PauliX(1)
-  YY = qml.PauliY(0) @ qml.PauliY(0)
-  ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
-
-  H =  2 * XX + f1 * YY + f2 * ZZ
-  ```
-  ```pycon
-  >>> H
-  ParametrizedHamiltonian: terms=3
-  >>> params = [1.2, [2.3, 3.4]]
-  >>> H(params, t=0.5)
-  (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
-  ```
-
-  The same `ParametrizedHamiltonian` can also be constructed via a list of coefficients and operators:
-
-  ```pycon
-  >>> coeffs = [2, f1, f2]
-  >>> ops = [XX, YY, ZZ]
-  >>> H =  qml.ops.dot(coeffs, ops)
-  ```
-
-where:
-
-* ``hamiltonian`` is the qubit Hamiltonian of the molecule represented as a PennyLane Hamiltonian and
-
-* ``qubits`` is the number of qubits needed to perform the quantum simulation.
-
-The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular Hamiltonian
-with an external backend that uses the
-`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
-electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate
-installation. This backend is non-differentiable and can be selected by setting
-``method='pyscf'`` in :func:`~.molecular_hamiltonian`. Additionally, if the electronic Hamiltonian
-is built independently using `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it
-can be readily converted to a PennyLane observable using the
-:func:`~.pennylane.import_operator` function.
-
-Furthermore, the net charge,
-the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
-`atomic basis functions <https://www.basissetexchange.org/>`_ and the active space can also be
-specified for each backend.
+There are two way to construct a :class:`~.ParametrizedHamiltonian` from the coefficients and operators:
 
 .. code-block:: python
 
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(
-        symbols,
-        geometry,
-        charge=0,
-        mult=1,
-        basis='sto-3g',
-        method='pyscf',
-        active_electrons=2,
-        active_orbitals=2
-    )
+    # Option 1
+    H1 =  2 * XX + f1 * YY + f2 * ZZ
 
-Importing molecular structure data
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    # Option 2
+    coeffs = [2, f1, f2]
+    ops = [XX, YY, ZZ]
+    H2 =  qml.ops.dot(coeffs, ops)
 
-The atomic structure of a molecule can be either defined as an array or imported from an external
-file using the :func:`~.read_structure` function:
+The :class:`~.ParametrizedHamiltonian` is a callable, and can return an :class:`~.Operator` if passed a set of
+parameters and a time at which to evaluate the coefficients :math:`f_j`.
 
 .. code-block:: python
 
-    symbols, geometry = qml.qchem.read_structure('h2.xyz')
+    >>> H1
+    ParametrizedHamiltonian: terms=3
+    >>> params = [1.2, [2.3, 3.4]]  # f1 takes a single parameter, f2 takes 2
+    >>> H1(params, t=0.5)
+    (2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
+    >>> qml.equal(H1(params, t=0.5), H2(params, t=0.5))
+    True
 
+.. warning::
+    Order matters here. When initializing the :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients
+    should come before parametrized terms to prevent discrepancy in the wire order. When passing parameters, ensure
+    that the order of the coefficient functions and the order of the parameters match.
 
-VQE simulations
----------------
+Convenience functions for building a ParametrizedHamiltonian
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Variational Quantum Eigensolver (VQE) is a hybrid quantum-classical computational scheme,
-where a quantum computer is used to prepare the trial wave function of a molecule and to measure
-the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
-find its ground state.
-
-PennyLane supports treating Hamiltonians just like any other observable, and the
-expectation value of a Hamiltonian can be calculated using ``qml.expval``:
-
-.. code-block:: python
-
-    dev = qml.device('default.qubit', wires=4)
-
-    symbols = ["H", "H"]
-    geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
-
-    @qml.qnode(dev)
-    def circuit(params):
-        qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
-        qml.DoubleExcitation(params, wires=[0, 1, 2, 3])
-        return qml.expval(hamiltonian)
-
-    params = np.array(0.20885146442480412, requires_grad=True)
-    circuit(params)
-
-.. code-block:: text
-
-    tensor(-1.13618912, requires_grad=True)
-
-The circuit parameter can be optimized using the interface of choice.
-
-.. note::
-
-    For more details on VQE and the quantum chemistry functionality available in
-    :mod:`~pennylane.qchem`, check out the PennyLane quantum chemistry tutorials.
-
-
-Convenience functions for building hamiltonians
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The convenience functions currently available in PennyLane to assist in creating coefficients functions
+for a :class:`~.ParametrizedHamiltonian` are:
 
 :html:`<div class="summary-table">`
 
@@ -158,12 +101,53 @@ Convenience functions for building hamiltonians
     ~pennylane.pulse.constant
     ~pennylane.pulse.pwc
     ~pennylane.pulse.pwc_from_function
-    ~pennylane.qchem.rect
-
+    ~pennylane.pulse.rect
 
 :html:`</div>`
 
-Quantum chemistry functions and classes
----------------------------------------
+Further examples
+^^^^^^^^^^^^^^^^
 
-PennyLane supports the following quantum chemistry functions and classes.
+A few additional examples are provided here...
+
+The ``rect`` function defines can be used to create a parametrized hamiltonian
+
+.. code-block:: python
+
+    >>> def f1(p, t):
+    ...     return jnp.polyval(p, t)
+    >>> windows = [(1, 7), (9, 14)]
+    >>> H = qml.pulse.rect(f1, windows) * qml.PauliX(0)
+
+# pwc example also once merged
+
+
+
+ParametrizedEvolution
+---------------------
+
+A :class:`~.ParametrizedEvolution` is the solution :math:`U(t_1, t_2)` to the time-dependent
+Schrodinger equation for a :class:`~.ParametrizedHamiltonian`:
+
+.. math:: \frac{d}{d t}U(t) = -i H(p, t) U(t).
+
+Creation of the :class:`~.ParametrizedEvolution` uses an a numerical ordinary differential equation
+solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_).
+
+EXAMPLE
+
+The parameters can be updated...
+A call of a :class:`~.ParametrizedEvolution` will return a normal :class:`~Operator` defining the time
+evolution for the input parameters.
+
+.. note::
+    The :class:`~.ParametrizedEvolution` does not have parameters defined in the intial... etc.
+
+
+
+During a pulse sequence, the state evolves according to the time-dependent Schrodinger equation
+
+.. math:: \frac{\partial}{\partial t} |\psi\rangle = -i H(t) |\psi\rangle
+
+realizing a unitary evolution :math:`U(t_0, t_1)` from times :math:`t_0` to :math:`t_1` of the input state, i.e.
+:math:`|\psi(t_1)\rangle = U(t_0, t_1) |\psi(t_0)\rangle`.
