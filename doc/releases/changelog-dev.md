@@ -14,8 +14,8 @@
 * Parameterized Hamiltonians can now be created with the addition of `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
 
-  A `ParametrizedHamiltonian` holds information representing a linear combination of operators 
-  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the operator for 
+  A `ParametrizedHamiltonian` holds information representing a linear combination of operators
+  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the operator for
   the specified parameters.
   
   ```pycon
@@ -28,6 +28,7 @@
 
   H =  2 * XX + f1 * YY + f2 * ZZ
   ```
+
   ```pycon
   >>> H
   ParametrizedHamiltonian: terms=3
@@ -62,6 +63,7 @@
   1.1 * X(0)
   + 2.2 * Y(0)
   ```
+
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
 <h4>Always differentiable 📈</h4>
@@ -214,6 +216,24 @@
   library.
   [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
 
+* A new function called `max_entropy` has been added to compute the maximum entropy of a quantum state.
+  [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
+
+* A new template called `TwoLocalSwapNetwork` has been added that implements a canonical 2-complete linear (2-CCL) swap network
+  described in [arXiv:1905.05118](https://arxiv.org/abs/1905.05118).
+  [(#3447)](https://github.com/PennyLaneAI/pennylane/pull/3447)
+
+  ```python3
+  dev = qml.device('default.qubit', wires=5)
+  weights = np.random.random(size=TwoLocalSwapNetwork.shape(len(dev.wires)))
+  acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
+                                   if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
+  @qml.qnode(dev)
+  def swap_network_circuit():
+     qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
+     return qml.state()
+  ```
+
   ```pycon
   >>> print(weights)
   tensor([0.20308242, 0.91906199, 0.67988804, 0.81290256, 0.08708985,
@@ -306,7 +326,7 @@
 * `Operator.inv()` and the `Operator.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
   [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
   
-  For example, instead of 
+  For example, instead of
   
   ```pycon
   >>> qml.PauliX(0).inv()
