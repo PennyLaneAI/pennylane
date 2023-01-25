@@ -178,9 +178,8 @@ class MPS(Operation):
         """
         decomp = []
         for idx, w in enumerate(ind_gates):
-            script = qml.tape.make_qscript(block)(weights=weights[idx][:], wires=w.tolist())
-            decomp += list(script)
-        return decomp
+            decomp += qml.tape.make_qscript(block)(weights=weights[idx][:], wires=w.tolist())
+        return [qml.apply(op) for op in decomp] if qml.QueuingManager.recording() else decomp
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires):

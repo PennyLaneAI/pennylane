@@ -227,20 +227,15 @@ class MERA(Operation):
         op_list = []
         if block.__code__.co_argcount > 2:
             for idx, w in enumerate(ind_gates):
-
-                script = qml.tape.make_qscript(block)(*weights[idx], wires=w)
-                op_list += list(script)
+                op_list += qml.tape.make_qscript(block)(*weights[idx], wires=w)
         elif block.__code__.co_argcount == 2:
             for idx, w in enumerate(ind_gates):
-
-                script = qml.tape.make_qscript(block)(weights[idx], wires=w)
-                op_list += list(script)
+                op_list += qml.tape.make_qscript(block)(weights[idx], wires=w)
         else:
             for w in ind_gates:
-                script = qml.tape.make_qscript(block)(wires=w)
-                op_list += list(script)
+                op_list += qml.tape.make_qscript(block)(wires=w)
 
-        return op_list
+        return [qml.apply(op) for op in op_list] if qml.QueuingManager.recording() else op_list
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires):
