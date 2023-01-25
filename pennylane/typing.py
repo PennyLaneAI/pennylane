@@ -23,24 +23,23 @@ from autograd.numpy.numpy_boxes import ArrayBox
 class typing:
     """Class containing useful PennyLane types."""
 
-    tensor_like = Union[int, float, bool, complex, bytes, str, np.ndarray, ArrayBox]
-
     @classmethod
     @property
     def TensorLike(cls):
         """Returns a union of types that are considered tensor-like."""
+        tensor_like = Union[int, float, bool, complex, bytes, str, np.ndarray, ArrayBox]
 
         if "jax" in sys.modules:
             from jax.numpy import ndarray
 
-            cls.tensor_like = Union[cls.tensor_like, ndarray]
+            tensor_like = Union[tensor_like, ndarray]
         if "torch" in sys.modules:
             from torch import Tensor as torchTensor
 
-            cls.tensor_like = Union[cls.tensor_like, torchTensor]
+            tensor_like = Union[tensor_like, torchTensor]
         if "tensorflow" in sys.modules or "tensorflow-macos" in sys.modules:
             from tensorflow import Tensor as tfTensor
             from tensorflow import Variable
 
-            cls.tensor_like = Union[cls.tensor_like, tfTensor, Variable]
-        return cls.tensor_like
+            tensor_like = Union[tensor_like, tfTensor, Variable]
+        return tensor_like
