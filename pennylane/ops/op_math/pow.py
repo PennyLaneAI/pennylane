@@ -223,7 +223,11 @@ class Pow(ScalarSymbolicOp):
     @property
     def z(self):
         """The exponent."""
-        return self.scalar
+        return self.hyperparameters["z"]
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
 
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
