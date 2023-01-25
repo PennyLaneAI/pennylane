@@ -50,7 +50,7 @@ def constant(windows: List[Tuple[float]] = None):
 
 def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     """Multiplies ``x`` by a rectangular function, returning a callable ``f(p, t)`` that evaluates
-    the given function/scalar ``x``inside the time windows defined in ``windows``.
+    the given function/scalar ``x`` inside the time windows defined in ``windows``.
 
     .. note::
 
