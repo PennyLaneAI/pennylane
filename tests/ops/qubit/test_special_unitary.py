@@ -216,6 +216,16 @@ class TestSpecialUnitary:
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
+    @pytest.mark.parametrize("n, theta, expected", special_matrix_cases)
+    def test_matrix_representation_special_cases(self, n, theta, expected):
+        """Tests that ``special_unitary_matrix`` returns the correct matrices
+        for a few specific cases."""
+        wires = list(range(n))
+        res_static = qml.SpecialUnitary.compute_matrix(theta, n)
+        res_dynamic = qml.SpecialUnitary(theta, wires).matrix()
+        assert qml.math.allclose(res_static, expected)
+        assert qml.math.allclose(res_dynamic, expected)
+
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_matrix_representation_broadcasted(self, n, theta, tol):
         """Test that the matrix representation is defined correctly for
