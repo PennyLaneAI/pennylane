@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""appling operation to a statevector."""
+"""Functions to apply an operation to a state vector."""
 from functools import singledispatch
 from string import ascii_letters as ABC
 
@@ -23,12 +23,12 @@ SQRT2INV = 1 / math.sqrt(2)
 
 
 def apply_operation_einsum(op: qml.operation.Operator, state):
-    """Apply ``Operator`` to ``state`` using ``matheinsum``. This is more efficent at lower qubit
+    """Apply ``Operator`` to ``state`` using ``einsum``. This is more efficent at lower qubit
     numbers.
 
     Args:
-        op (Operator): Operator to apply to the
-        state (array[complex]): input state
+        op (Operator): Operator to apply to the quantum state
+        state (array[complex]): Input quantum state
 
     Returns:
         array[complex]: output_state
@@ -59,8 +59,8 @@ def apply_operation_tensordot(op: qml.operation.Operator, state):
     numbers.
 
     Args:
-        op (Operator): Operator to apply to the
-        state (array[complex]): input state
+        op (Operator): Operator to apply to the quantum state
+        state (array[complex]): Input quantum state
 
     Returns:
         array[complex]: output_state
@@ -86,7 +86,7 @@ def apply_operation(op: qml.operation.Operator, state):
 
     Args:
         op (Operator): The operation to apply to ``state``
-        state (ndarray): The starting state.
+        state (tensor_like): The starting state.
 
     Returns:
         ndarray: output state
@@ -131,7 +131,7 @@ def apply_operation(op: qml.operation.Operator, state):
 
 @apply_operation.register
 def apply_x(op: qml.PauliX, state):
-    """Apply paulix operator to state"""
+    """Apply :class:`pennylane.PauliX` operator to the quantum state"""
     return math.roll(state, 1, op.wires[0])
 
 
