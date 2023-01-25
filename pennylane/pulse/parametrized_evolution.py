@@ -86,8 +86,8 @@ class ParametrizedEvolution(Operation):
 
     .. note::
 
-        To execute two :class:`ParametrizedHamiltonian`s simultaneously one must wrap them with the
-        same ``ParametrizedEvolution`` gate.
+        To execute two :class:`ParametrizedHamiltonian` instances simultaneously one must wrap them
+        with the same ``ParametrizedEvolution`` gate.
 
     **Example**
 
