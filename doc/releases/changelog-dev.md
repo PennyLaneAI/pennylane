@@ -278,14 +278,14 @@
   in 10 bins, and returns zero outside the interval.
   
   ```pycon
-  #t=2 and t=2.1 are within the same bin
+  # t=2 and t=2.1 are within the same bin
   >>> f1(3, 2), f1(3, 2.1)
   (DeviceArray(6., dtype=float32), DeviceArray(6., dtype=float32))
   # next bin
   >>> f1(3, 2.2)
   DeviceArray(6.6666665, dtype=float32)
   # outside the interval t=(2, 4)
-  >>>f1(3, 5)
+  >>> f1(3, 5)
   DeviceArray(0., dtype=float32)
   ```
   
