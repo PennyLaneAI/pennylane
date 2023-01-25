@@ -236,7 +236,7 @@ class TestMatrix:
     """Tests of the matrix of a SProd class."""
 
     def test_base_batching_support(self):
-        """Test that Pow matrix has base batching support."""
+        """Test that SProd matrix has base batching support."""
         x = np.array([-1, -2, -3])
         op = qml.s_prod(3, qml.RX(x, 0))
         mat = op.matrix()
@@ -245,7 +245,7 @@ class TestMatrix:
         assert mat.shape == (3, 2, 2)
 
     def test_coeff_batching_support(self):
-        """Test that Pow matrix has coeff batching support."""
+        """Test that SProd matrix has coeff batching support."""
         x = np.array([-1, -2, -3])
         op = qml.s_prod(x, qml.PauliX(0))
         mat = op.matrix()
@@ -254,7 +254,7 @@ class TestMatrix:
         assert mat.shape == (3, 2, 2)
 
     def test_base_and_coeff_batching_support(self):
-        """Test that Pow matrix has base and coeff batching support."""
+        """Test that SProd matrix has base and coeff batching support."""
         x = np.array([-1, -2, -3])
         y = np.array([1, 2, 3])
         op = qml.s_prod(y, qml.RX(x, 0))
@@ -265,7 +265,7 @@ class TestMatrix:
 
     @pytest.mark.jax
     def test_batching_jax(self):
-        """Test that Pow matrix has batching support with the jax interface."""
+        """Test that SProd matrix has batching support with the jax interface."""
         import jax.numpy as jnp
 
         x = jnp.array([-1, -2, -3])
@@ -279,7 +279,7 @@ class TestMatrix:
 
     @pytest.mark.torch
     def test_batching_torch(self):
-        """Test that Pow matrix has batching support with the jax interface."""
+        """Test that SProd matrix has batching support with the jax interface."""
         import torch
 
         x = torch.tensor([-1, -2, -3])
@@ -293,7 +293,7 @@ class TestMatrix:
 
     @pytest.mark.tf
     def test_batching_tf(self):
-        """Test that Pow matrix has batching support with the jax interface."""
+        """Test that SProd matrix has batching support with the jax interface."""
         import tensorflow as tf
 
         x = tf.constant([-1.0, -2.0, -3.0])

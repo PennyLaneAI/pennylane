@@ -626,6 +626,45 @@ class TestMatrix:
         assert qml.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
+    @pytest.mark.jax
+    def test_batching_jax(self):
+        """Test that Pow matrix has batching support with the jax interface."""
+        import jax.numpy as jnp
+
+        x = jnp.array([-1, -2, -3])
+        y = jnp.array([1, 2, 3])
+        op = Pow(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    @pytest.mark.torch
+    def test_batching_torch(self):
+        """Test that Pow matrix has batching support with the jax interface."""
+        import torch
+
+        x = torch.tensor([-1, -2, -3])
+        y = torch.tensor([1, 2, 3])
+        op = Pow(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    @pytest.mark.tf
+    def test_batching_tf(self):
+        """Test that Pow matrix has batching support with the jax interface."""
+        import tensorflow as tf
+
+        x = tf.constant([-1.0, -2.0, -3.0])
+        y = tf.constant([1.0, 2.0, 3.0])
+        op = Pow(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
     def check_matrix(self, param, z):
         """Interface-independent helper function that checks that the matrix of a power op
         of an IsingZZ is the same as the matrix for its decomposition."""

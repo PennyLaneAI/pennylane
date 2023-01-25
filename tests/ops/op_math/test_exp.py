@@ -157,7 +157,7 @@ class TestMatrix:
     """Test the matrix method."""
 
     def test_base_batching_support(self):
-        """Test that Pow matrix has base batching support."""
+        """Test that Exp matrix has base batching support."""
         x = np.array([-1, -2, -3])
         op = Exp(qml.RX(x, 0), 3)
         mat = op.matrix()
@@ -166,7 +166,7 @@ class TestMatrix:
         assert mat.shape == (3, 2, 2)
 
     def test_coeff_batching_support(self):
-        """Test that Pow matrix has coeff batching support."""
+        """Test that Exp matrix has coeff batching support."""
         x = np.array([-1, -2, -3])
         op = Exp(qml.PauliX(0), x)
         mat = op.matrix()
@@ -175,7 +175,7 @@ class TestMatrix:
         assert mat.shape == (3, 2, 2)
 
     def test_base_and_coeff_batching_support(self):
-        """Test that Pow matrix has base and coeff batching support."""
+        """Test that Exp matrix has base and coeff batching support."""
         x = np.array([-1, -2, -3])
         y = np.array([1, 2, 3])
         op = Exp(qml.RX(x, 0), y)
@@ -183,6 +183,48 @@ class TestMatrix:
         true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
         assert qml.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
+
+    @pytest.mark.jax
+    def test_batching_jax(self):
+        """Test that Exp matrix has batching support with the jax interface."""
+        import jax.numpy as jnp
+
+        x = jnp.array([-1, -2, -3])
+        y = jnp.array([1, 2, 3])
+        op = Exp(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+        assert isinstance(mat, jnp.ndarray)
+
+    @pytest.mark.torch
+    def test_batching_torch(self):
+        """Test that Exp matrix has batching support with the jax interface."""
+        import torch
+
+        x = torch.tensor([-1, -2, -3])
+        y = torch.tensor([1, 2, 3])
+        op = Exp(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+        assert isinstance(mat, torch.Tensor)
+
+    @pytest.mark.tf
+    def test_batching_tf(self):
+        """Test that Exp matrix has batching support with the jax interface."""
+        import tensorflow as tf
+
+        x = tf.constant([-1.0, -2.0, -3.0])
+        y = tf.constant([1.0, 2.0, 3.0])
+        op = Exp(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+        assert isinstance(mat, tf.Tensor)
 
     def test_tensor_base_isingxx(self):
         """Test that isingxx can be created with a tensor base."""
