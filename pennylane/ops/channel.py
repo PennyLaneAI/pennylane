@@ -19,7 +19,6 @@ quantum channels supported by PennyLane, as well as their conventions.
 import warnings
 
 import pennylane.math as np
-
 from pennylane.operation import AnyWires, Channel
 
 
@@ -718,12 +717,11 @@ class QubitChannel(Channel):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
-    num_params = 1
     num_wires = AnyWires
     grad_method = None
 
     def __init__(self, K_list, wires=None, do_queue=True, id=None):
-        super().__init__(K_list, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*K_list, wires=wires, do_queue=do_queue, id=id)
 
         # check all Kraus matrices are square matrices
         if not all(K.shape[0] == K.shape[1] for K in K_list):
@@ -747,13 +745,8 @@ class QubitChannel(Channel):
         if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
             raise ValueError("Only trace preserving channels can be applied.")
 
-    def _check_batching(self, params):
-        """Treat the Kraus matrices as independent parameters when checking for a
-        batch dimension."""
-        super()._check_batching(*params)
-
     @staticmethod
-    def compute_kraus_matrices(K_list):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(*kraus_matrices):  # pylint:disable=arguments-differ
         """Kraus matrices representing the QubitChannel channel.
 
         Args:
@@ -769,7 +762,7 @@ class QubitChannel(Channel):
         >>> all(np.allclose(r, k) for r, k  in zip(res, K_list))
         True
         """
-        return K_list
+        return list(kraus_matrices)
 
 
 class ThermalRelaxationError(Channel):
