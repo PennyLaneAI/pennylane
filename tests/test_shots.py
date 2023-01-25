@@ -26,9 +26,9 @@ class TestShotAPI:
     def test_None_construction(self):
         """Tests the constructor when shots is None."""
         shots = ShotAPI(None)
-        assert shots.shot_list is None
-        assert shots.shot_vector is None
-        assert shots.total_shots is None
+        assert shots.shot_list == []
+        assert shots.shot_vector == []
+        assert shots.total_shots == 0
 
     def test_int_construction(self):
         """Tests the constructor when shots is an int."""
@@ -62,3 +62,9 @@ class TestShotAPI:
             match="Shots must be a single non-negative integer or a sequence of non-negative integers.",
         ):
             _ = ShotAPI(shot_arg)
+
+    def test_zero_shots_fails(self):
+        with pytest.raises(
+            ValueError, match="The specified number of shots needs to be at least 1. Got 0."
+        ):
+            _ = ShotAPI(0)

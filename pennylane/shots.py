@@ -25,11 +25,10 @@ class ShotAPI:
 
     # pylint:disable=too-few-public-methods
 
-    total_shots, shot_vector, shot_list = None, None, None
+    total_shots, shot_vector, shot_list = 0, [], []
 
     @singledispatchmethod
     def __init__(self, shots):
-        print("calling main")
         if shots is not None:
             raise ValueError(
                 "Shots must be a single non-negative integer or a sequence of non-negative integers."
@@ -37,7 +36,6 @@ class ShotAPI:
 
     @__init__.register
     def __int_init__(self, shots: int):
-        print("calling int")
         if shots < 1:
             raise ValueError(f"The specified number of shots needs to be at least 1. Got {shots}.")
         self.total_shots = shots
@@ -89,6 +87,14 @@ class ShotAPI:
             split_at_repeated = np.split(shots, np.diff(shots).nonzero()[0] + 1)
             self.shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
             self.total_shots = int(np.sum(np.prod(self.shot_vector, axis=1)))
+
+    def has_partitioned_shots(self):
+        """Checks if the device was instructed to perform executions with partitioned shots.
+
+        Returns:
+            bool: whether or not shots are partitioned
+        """
+        return len(self.shot_list) > 1
 
 
 # TODO: should the set_shots contextmanager move here?
