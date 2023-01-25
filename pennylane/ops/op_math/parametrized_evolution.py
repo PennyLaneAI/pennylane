@@ -113,7 +113,7 @@ class ParametrizedEvolution(Operation):
         atol (float, optional): Absolute error tolerance. Defaults to 1.4e-8.
         rtol (float, optional): Relative error tolerance. The error is estimated
             from comparing a 4th and 5th order Runge-Kutta step in the Dopri5 algorithm. This error
-            is guaranteed to stay below tol = atol + rtol * abs(y) through adaptive step size
+            is guaranteed to stay below ``tol = atol + rtol * abs(y)`` through adaptive step size
             selection. Defaults to 1.4e-8.
         mxstep (int, optional): maximum number of steps to take for each timepoint. Defaults to
             ``jnp.inf``.
