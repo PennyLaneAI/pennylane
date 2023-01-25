@@ -277,7 +277,12 @@ class gradient_transform(qml.batch_transform):
         # to take into account that classical processing may be present
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
+
+        if qnode.interface == "auto":
+            qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
+
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
+
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
 
         def jacobian_wrapper(*args, **kwargs):

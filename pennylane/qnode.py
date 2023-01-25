@@ -730,6 +730,9 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
+        if self.interface == "auto":
+            self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
         self._tape = make_qscript(self.func)(*args, **kwargs)
         self._qfunc_output = self.tape._qfunc_output
 
@@ -804,6 +807,7 @@ class QNode:
                     "the interface in the QNode."
                 )
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            print(self.interface)
 
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
