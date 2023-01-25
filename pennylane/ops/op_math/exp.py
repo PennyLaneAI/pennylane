@@ -256,7 +256,8 @@ class Exp(ScalarSymbolicOp, Operation):
                 )
         return super().matrix(wire_order=wire_order)
 
-    def _matrix(self, scalar, mat):
+    @staticmethod
+    def _matrix(scalar, mat):
         if math.get_interface(scalar) == "torch":
             # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
             mat = math.convert_like(mat, scalar)

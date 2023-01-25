@@ -181,7 +181,8 @@ class ScalarSymbolicOp(SymbolicOp):
         return scalar_size
 
     @abstractmethod
-    def _matrix(self, scalar, mat):
+    @staticmethod
+    def _matrix(scalar, mat):
         """Scalar-matrix operation that doesn't take into account batching.
 
         ``ScalarSymbolicOp.matrix`` will call this method to compute the matrix for a single scalar
