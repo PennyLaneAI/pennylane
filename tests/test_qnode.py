@@ -496,11 +496,11 @@ class TestValidation:
             == "<QNode: wires=1, device='default.qubit', interface='auto', diff_method='best'>"
         )
 
-        qn = QNode(func, dev, interface="jax")
+        qn = QNode(func, dev, interface="autograd")
 
         assert (
             qn.__repr__()
-            == "<QNode: wires=1, device='default.qubit.jax', interface='jax', diff_method='best'>"
+            == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
         )
 
     @pytest.mark.autograd

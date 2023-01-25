@@ -109,6 +109,8 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
             return m[0] if len(m) == 1 else m
 
         if isinstance(input, QNode):
+            if input.gradient_kwargs is None:
+                input.gradient_kwargs = {}
             return QNode(
                 func=qfunc,
                 device=input.device,

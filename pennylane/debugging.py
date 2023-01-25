@@ -14,6 +14,7 @@
 """
 This module contains functionality for debugging quantum programs on simulator devices.
 """
+import pennylane as qml
 from pennylane import DeviceError
 
 
@@ -81,6 +82,9 @@ def snapshots(qnode):
     """
 
     def get_snapshots(*args, **kwargs):
+        if qnode.interface == "auto":
+            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
         with _Debugger(qnode.device) as dbg:
             results = qnode(*args, **kwargs)
         dbg.snapshots["execution_results"] = results

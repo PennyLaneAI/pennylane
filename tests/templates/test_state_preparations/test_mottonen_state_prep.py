@@ -245,7 +245,7 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(state_vector):
             qml.MottonenStatePreparation(state_vector, wires=range(n_wires))
             return qml.expval(qml.PauliX(wires=0))
