@@ -93,11 +93,11 @@ class TestConstant:
 
 
 @pytest.mark.jax
-class TestPiecewise:
-    """Unit tests for the ``piecewise`` function."""
+class TestRect:
+    """Unit tests for the ``rect`` function."""
 
-    def test_piecewise_returns_callable(self):
-        """Test that the ``piecewise`` convenience function returns a callable with two arguments
+    def test_rect_returns_callable(self):
+        """Test that the ``rect`` convenience function returns a callable with two arguments
         corresponding to the trainable parameters and time."""
         c = qml.pulse.rect(x=10, windows=[0, 10])  # return 10 when time is between 0 and 10
         argspec = inspect.getfullargspec(c)
@@ -105,8 +105,8 @@ class TestPiecewise:
         assert callable(c)
         assert argspec.args == ["p", "t"]
 
-    def test_piecewise_returns_correct_value_single_window(self):
-        """Test that the ``piecewise`` function returns the correct value only when t is inside
+    def test_rect_returns_correct_value_single_window(self):
+        """Test that the ``rect`` function returns the correct value only when t is inside
         the window."""
         c = qml.pulse.rect(x=10, windows=[(4, 8)])
 
@@ -117,8 +117,8 @@ class TestPiecewise:
             else:
                 assert c(p=1, t=t) == 0
 
-    def test_piecewise_returns_correct_value_multiple_windows(self):
-        """Test that the ``piecewise`` function returns the correct value only when t is inside
+    def test_rect_returns_correct_value_multiple_windows(self):
+        """Test that the ``rect`` function returns the correct value only when t is inside
         the window."""
 
         def f(p, t):
@@ -134,8 +134,8 @@ class TestPiecewise:
             else:
                 assert c(p=param, t=t) == 0
 
-    def test_constant_returns_correct_value_no_windows(self):
-        """Test that the ``constant`` function always returns the input parameter when no windows
+    def test_rect_returns_correct_value_no_windows(self):
+        """Test that the ``rect`` function always returns the correct value when no windows
         are specified"""
 
         def f(p, t):
@@ -148,8 +148,9 @@ class TestPiecewise:
             assert c(p=0.5, t=t) == f(0.5, t)
 
     @pytest.mark.jax
-    def test_piecewise_is_jittable(self):
-        """Test that the callable returned by the ``piecewise`` function is jittable."""
+    def test_rect_is_jittable(self):
+        """Test that the callable returned by the ``rect`` function is jittable."""
+
         import jax
 
         def f(p, t):

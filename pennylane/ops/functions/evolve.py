@@ -39,7 +39,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
 
     >>> op = qml.s_prod(2, qml.PauliX(0))
     >>> qml.evolve(op)
-    Exp((-0-1j) 2*(PauliX(wires=[0])))
+    Exp(1j 2*(PauliX(wires=[0])))
 
     When evolving a :class:`.ParametrizedHamiltonian` class, then a :class:`.ParametrizedEvolution`
     instance is returned:
@@ -48,6 +48,12 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     >>> ops = [qml.PauliX(i) for i in range(4)]
     >>> H = qml.ops.dot(coeffs, ops)
     >>> qml.evolve(H)
+    ParametrizedEvolution(wires=[0, 1, 2, 3])
+
+    The :class:`.ParametrizedEvolution` instance can then be called to update the needed attributes
+    to compute the evolution of the :class:`.ParametrizedHamiltonian`:
+
+    >>> qml.evolve(H)(params=[1., 2., 3.], t=[4, 10], atol=1e-6, mxstep=1)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
     Please check the :class:`.ParametrizedEvolution` class for more information.
