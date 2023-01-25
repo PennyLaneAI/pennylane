@@ -186,16 +186,156 @@ class TestUpdate:
 
         p_i = qs._par_info
 
-        assert p_i[0] == {"op": ops[0], "p_idx": 0}
-        assert p_i[1] == {"op": ops[1], "p_idx": 0}
-        assert p_i[2] == {"op": ops[1], "p_idx": 1}
-        assert p_i[3] == {"op": ops[1], "p_idx": 2}
-        assert p_i[4] == {"op": ops[2], "p_idx": 0}
-        assert p_i[5] == {"op": ops[3], "p_idx": 0}
-        assert p_i[6] == {"op": ops[3], "p_idx": 1}
-        assert p_i[7] == {"op": m[0].obs, "p_idx": 0}
+        assert p_i[0] == {"op": ops[0], "op_idx": 0, "p_idx": 0}
+        assert p_i[1] == {"op": ops[1], "op_idx": 1, "p_idx": 0}
+        assert p_i[2] == {"op": ops[1], "op_idx": 1, "p_idx": 1}
+        assert p_i[3] == {"op": ops[1], "op_idx": 1, "p_idx": 2}
+        assert p_i[4] == {"op": ops[2], "op_idx": 2, "p_idx": 0}
+        assert p_i[5] == {"op": ops[3], "op_idx": 3, "p_idx": 0}
+        assert p_i[6] == {"op": ops[3], "op_idx": 3, "p_idx": 1}
+        assert p_i[7] == {"op": m[0].obs, "op_idx": 0, "p_idx": 0}
 
         assert qs._trainable_params == list(range(8))
+
+    def test_get_operation(self):
+        """Tests the tape method get_operation"""
+        ops = [
+            qml.RX(1.2, wires=0),
+            qml.Rot(2.3, 3.4, 5.6, wires=0),
+            qml.PauliX(wires=0),
+            qml.QubitUnitary(np.eye(2), wires=0),
+            qml.U2(-1, -2, wires=0),
+        ]
+        m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
+        qs = QuantumScript(ops, m)
+
+        with pytest.warns(
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+        ):
+            op_0, p_id_0 = qs.get_operation(0)
+            assert op_0 == ops[0] and p_id_0 == 0
+
+        with pytest.warns(
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+        ):
+            op_1, p_id_1 = qs.get_operation(1)
+            assert op_1 == ops[1] and p_id_1 == 0
+
+        with pytest.warns(
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+        ):
+            op_2, p_id_2 = qs.get_operation(2)
+            assert op_2 == ops[1] and p_id_2 == 1
+
+        with pytest.warns(
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+        ):
+            op_3, p_id_3 = qs.get_operation(3)
+            assert op_3 == ops[1] and p_id_3 == 2
+
+        with pytest.warns(
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+        ):
+            op_4, p_id_4 = qs.get_operation(4)
+            assert op_4 == ops[3] and p_id_4 == 0
+
+        with pytest.warns(
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+        ):
+            op_5, p_id_5 = qs.get_operation(5)
+            assert op_5 == ops[4] and p_id_5 == 0
+
+        with pytest.warns(
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+        ):
+            op_6, p_id_6 = qs.get_operation(6)
+            assert op_6 == ops[4] and p_id_6 == 1
+
+        with pytest.warns(
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+        ):
+            _, p_id_0 = qs.get_operation(7)
+            assert p_id_0 == 0
+
+    def test_get_operation_return_index(self):
+        """Tests the tape method get_operation with `return_op_index` bool."""
+        ops = [
+            qml.RX(1.2, wires=0),
+            qml.Rot(2.3, 3.4, 5.6, wires=0),
+            qml.PauliX(wires=0),
+            qml.QubitUnitary(np.eye(2), wires=0),
+            qml.U2(-1, -2, wires=0),
+        ]
+        m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
+        qs = QuantumScript(ops, m)
+
+        op_0, op_id_0, p_id_0 = qs.get_operation(0, True)
+        assert op_0 == ops[0] and op_id_0 == 0 and p_id_0 == 0
+
+        op_1, op_id_1, p_id_1 = qs.get_operation(1, True)
+        assert op_1 == ops[1] and op_id_1 == 1 and p_id_1 == 0
+
+        op_2, op_id_2, p_id_2 = qs.get_operation(2, True)
+        assert op_2 == ops[1] and op_id_2 == 1 and p_id_2 == 1
+
+        op_3, op_id_3, p_id_3 = qs.get_operation(3, True)
+        assert op_3 == ops[1] and op_id_3 == 1 and p_id_3 == 2
+
+        op_4, op_id_4, p_id_4 = qs.get_operation(4, True)
+        assert op_4 == ops[3] and op_id_4 == 3 and p_id_4 == 0
+
+        op_5, op_id_5, p_id_5 = qs.get_operation(5, True)
+        assert op_5 == ops[4] and op_id_5 == 4 and p_id_5 == 0
+
+        op_6, op_id_6, p_id_6 = qs.get_operation(6, True)
+        assert op_6 == ops[4] and op_id_6 == 4 and p_id_6 == 1
+
+        _, obs_id_0, p_id_0 = qs.get_operation(7, True)
+        assert obs_id_0 == 0 and p_id_0 == 0
+
+    def test_get_operation_private(self):
+        """Tests the tape method _get_operation"""
+        ops = [
+            qml.RX(1.2, wires=0),
+            qml.Rot(2.3, 3.4, 5.6, wires=0),
+            qml.PauliX(wires=0),
+            qml.QubitUnitary(np.eye(2), wires=0),
+            qml.U2(-1, -2, wires=0),
+        ]
+        m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
+        qs = QuantumScript(ops, m)
+
+        op_0, op_id_0, p_id_0 = qs._get_operation(0)
+        assert op_0 == ops[0] and op_id_0 == 0 and p_id_0 == 0
+
+        op_1, op_id_1, p_id_1 = qs._get_operation(1)
+        assert op_1 == ops[1] and op_id_1 == 1 and p_id_1 == 0
+
+        op_2, op_id_2, p_id_2 = qs._get_operation(2)
+        assert op_2 == ops[1] and op_id_2 == 1 and p_id_2 == 1
+
+        op_3, op_id_3, p_id_3 = qs._get_operation(3)
+        assert op_3 == ops[1] and op_id_3 == 1 and p_id_3 == 2
+
+        op_4, op_id_4, p_id_4 = qs._get_operation(4)
+        assert op_4 == ops[3] and op_id_4 == 3 and p_id_4 == 0
+
+        op_5, op_id_5, p_id_5 = qs._get_operation(5)
+        assert op_5 == ops[4] and op_id_5 == 4 and p_id_5 == 0
+
+        op_6, op_id_6, p_id_6 = qs._get_operation(6)
+        assert op_6 == ops[4] and op_id_6 == 4 and p_id_6 == 1
+
+        _, obs_id_0, p_id_0 = qs._get_operation(7)
+        assert obs_id_0 == 0 and p_id_0 == 0
 
     def test_update_observables(self):
         """This method needs to be more thoroughly tested, and probably even reconsidered in
