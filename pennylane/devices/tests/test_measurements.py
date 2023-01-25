@@ -1618,13 +1618,13 @@ class TestStateMeasurement:
 
         _skip_test_for_braket(dev)
 
-        dev.measurement_map[StateMP] = "test_method"
-        dev.test_method = lambda obs, shot_range=None, bin_size=None: 2
-
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit():
             qml.PauliX(0)
             return qml.state()
+
+        circuit.device.measurement_map[StateMP] = "test_method"
+        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert circuit() == 2
 
