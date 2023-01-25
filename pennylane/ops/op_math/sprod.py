@@ -216,6 +216,8 @@ class SProd(ScalarSymbolicOp):
 
     @staticmethod
     def _matrix(scalar, mat):
+        if qml.math.get_interface(scalar) == "tensorflow":
+            scalar = qml.math.cast_like(scalar, mat)
         return scalar * mat
 
     @property
