@@ -72,7 +72,7 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     >>> H = qml.pulse.rect(f1, windows) * qml.PauliX(0)
 
     When calling the parametrized hamiltonian, ``rect`` will evaluate the given function only
-    when the time is inside the given time windows
+    inside the time windows
 
     >>> params = [jnp.ones(4)]
     >>> H(params, t=8)  # t is outside the time windows
