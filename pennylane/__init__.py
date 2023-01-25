@@ -112,7 +112,7 @@ from .collections import QNodeCollection, dot, map, sum
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
-from .typing import typing
+from ._typing import typing
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
