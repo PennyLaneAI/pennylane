@@ -16,11 +16,11 @@ Unit tests for the `pennylane.draw_text` function.
 """
 
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.drawer import tape_text
-from pennylane.drawer.tape_text import _add_grouping_symbols, _add_op, _add_measurement
+from pennylane.drawer.tape_text import _add_grouping_symbols, _add_measurement, _add_op
 from pennylane.tape import QuantumScript, QuantumTape
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
@@ -378,7 +378,7 @@ class TestShowMatrices:
         expected = (
             "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
             "1: ─╰QubitStateVector(M0)────────┤         \n"
-            "M0 = \n[1.0, 0.0]\n"
+            "M0 = \n[1. 0.]\n"
             "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
 
@@ -395,11 +395,11 @@ class TestShowMatrices:
             "1: ─╰QubitStateVector(M2)────────┤         \n"
             "M0 = \n[[1. 0.]\n [0. 1.]]\n"
             "M1 = \n[[-1. -0. -0.]\n [-0. -1. -0.]\n [-0. -0. -1.]]\n"
-            "M2 = \n[1.0, 0.0]"
+            "M2 = \n[1. 0.]"
         )
 
         assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
-        assert cache["matrices"][2] == [1.0, 0.0]
+        assert qml.math.allequal(cache["matrices"][2], [1.0, 0.0])
 
 
 # @pytest.mark.skip("Nested tapes are being deprecated")

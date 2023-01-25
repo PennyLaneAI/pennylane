@@ -316,6 +316,9 @@
 * The `ExecutionConfig` data class has been added .
   [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
 
+* All `Operator`'s input parameters that are lists are cast into vanilla numpy arrays.
+  [(#3659)](https://github.com/PennyLaneAI/pennylane/pull/3659)
+
 <h3>Breaking changes</h3>
 
 * `Operator.inv()` and the `Operator.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
