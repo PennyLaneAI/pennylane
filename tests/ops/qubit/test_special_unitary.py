@@ -32,6 +32,7 @@ from pennylane.wires import Wires
 
 
 mapped_params_cases = [
+    (1, [0.2], "Z", [0.0, 0.0, 0.2]),
     (1, [0.2], ["Y"], [0.0, 0.2, 0.0]),
     (1, [0.2, 0.1], ["X", "Z"], [0.2, 0.0, 0.1]),
     (1, [0.2, 0.1], ["Z", "X"], [0.1, 0.0, 0.2]),
@@ -323,6 +324,16 @@ n_and_theta = [(1, theta_1), (2, theta_2)]
 
 class TestSpecialUnitary:
     """Tests for the Operation ``SpecialUnitary``."""
+
+    @pytest.mark.parametrize("n, x, words, exp", mapped_params_cases)
+    def test_param_mapping_alias(self, n, x, words, exp):
+        """Test that using the parameter mapping of sparse input
+        parameters to initialize SpecialUnitary works."""
+        wires = list(range(n))
+        op_map = qml.SpecialUnitary(x, wires, words=words)
+        op_full_par = qml.SpecialUnitary(exp, wires)
+
+        assert qml.equal(op_map, op_full_par)
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_decomposition(self, n, theta):
