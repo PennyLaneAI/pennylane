@@ -1422,7 +1422,7 @@ class Operator(abc.ABC):
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
-            return qml.ops.ParametrizedHamiltonian([other], [self])
+            return qml.pulse.ParametrizedHamiltonian([other], [self])
         backend = autoray.infer_backend(other)
         if (backend == "builtins" and isinstance(other, numbers.Number)) or (
             backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
