@@ -9,7 +9,7 @@
 * A new operation `SpecialUnitary` was added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
-  [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
+  [(#3678)](https://github.com/PennyLaneAI/pennylane/pull/3678)
  
   The new operation takes a single argument, a one-dimensional `tensor_like`
   of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
