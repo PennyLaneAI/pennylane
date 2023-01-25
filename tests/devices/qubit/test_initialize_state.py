@@ -37,7 +37,7 @@ class TestInitializeState:
     def test_create_initial_state_no_state_prep(self, interface):
         """Tests that create_initial_state works without a state-prep operation."""
         state = create_initial_state([0, 1], like=interface)
-        assert qml.math.allequal(state, [1, 0, 0, 0])
+        assert qml.math.allequal(state, [[1, 0], [0, 0]])
         assert qml.math.get_interface(state) == interface
 
     @pytest.mark.all_interfaces

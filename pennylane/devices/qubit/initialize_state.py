@@ -36,8 +36,9 @@ def create_initial_state(
         array: The initial state of a circuit
     """
     if not prep_operation:
-        state = np.zeros(2 ** len(wires))
-        state[0] = 1
+        num_wires = len(wires)
+        state = np.zeros((2,) * num_wires)
+        state[(0,) * num_wires] = 1
         return qml.math.array(state, like=like)
 
     return prep_operation.state_vector(wire_order=wires)
