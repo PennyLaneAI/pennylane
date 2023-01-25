@@ -165,9 +165,7 @@ def pwc(timespan):
 
     def func(params, t):
         num_bins = len(params)
-        # include 0 as an additional option for function output
-        params = jnp.array(list(params) + [0])
-
+        params = jnp.concatenate([jnp.array(params), jnp.zeros(1)])
         # get idx from timestamp, then set idx=0 if idx is out of bounds for the array
         idx = num_bins / (t2 - t1) * (t - t1)
         idx = jnp.where((idx >= 0) & (idx <= num_bins), jnp.array(idx, dtype=int), -1)
