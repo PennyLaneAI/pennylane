@@ -142,6 +142,9 @@
 
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
+* Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
+  a single-qubit operation and the control wires.
+
 * Support `qml.math.size` with torch tensors.
   [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
 
@@ -392,6 +395,7 @@ Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Mudit Pandey
 Borja Requena
 Matthew Silverman
 Antal Száva
