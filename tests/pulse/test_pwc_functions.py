@@ -23,7 +23,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops.op_math import ParametrizedHamiltonian
+from pennylane.pulse.parametrized_hamiltonian import ParametrizedHamiltonian
 
 
 # error expected to be raised locally - test will pass in CI, where it will be run without jax installed
