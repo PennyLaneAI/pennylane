@@ -180,8 +180,8 @@ class ScalarSymbolicOp(SymbolicOp):
             )
         return scalar_size
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def _matrix(scalar, mat):
         """Scalar-matrix operation that doesn't take into account batching.
 

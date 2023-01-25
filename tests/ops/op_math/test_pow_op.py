@@ -346,16 +346,19 @@ class TestProperties:
         # base is batched
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
         op = power_method(base, z=1)
+        assert op.ndim_params == base.ndim_params
         assert op.batch_size == 3
 
         # coeff is batched
         base = qml.RX(1, 0)
         op = power_method(base, z=np.array([1.2, 2.3, 3.4]))
+        assert op.ndim_params == base.ndim_params
         assert op.batch_size == 3
 
         # both are batched
         base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
         op = power_method(base, z=np.array([1.2, 2.3, 3.4]))
+        assert op.ndim_params == base.ndim_params
         assert op.batch_size == 3
 
     def test_different_batch_sizes_raises_error(self, power_method):
