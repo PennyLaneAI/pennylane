@@ -26,7 +26,21 @@ class typing:
     @classmethod
     @property
     def TensorLike(cls):
-        """Returns a union of types that are considered tensor-like."""
+        """Returns a ``Union`` of all tensor-like types, which includes any scalar or sequence
+        that can be interpreted as a pennylane tensor, including lists and tuples. Any argument
+        accepted by ``pnp.array`` is tensor-like.
+
+        **Examples**
+        For ``python >= 3.10``, ``typing.TensorLike`` can be used in ``isinstance`` checks:
+
+        >>> from pennylane import typing
+        >>> isinstance(4, typing.TensorLike)
+        True
+        >>> isinstance([2, 6, 8], typing.TensorLike)
+        True
+        >>> isinstance(torch.tensor([1, 2, 3]), typing.TensorLike)
+        True
+        """
         tensor_like = Union[int, float, bool, complex, bytes, str, np.ndarray, ArrayBox]
 
         if "jax" in sys.modules:
