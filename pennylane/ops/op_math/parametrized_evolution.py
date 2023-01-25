@@ -63,6 +63,11 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     >>> qml.evolve(H)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
+    The :class:`.ParametrizedEvolution` instance can then be called to update the needed attributes
+    to compute the evolution of the :class:`.ParametrizedHamiltonian`:
+
+    >>> qml.evolve(H)(params=[1., 2., 3.], t=[4, 10], atol=1e-6, mxstep=1)
+
     Please check the :class:`.ParametrizedEvolution` class for more information.
     """
     if isinstance(op, ParametrizedHamiltonian):
@@ -84,11 +89,19 @@ class ParametrizedEvolution(Operation):
 
     Under the hood, it is using a numerical ordinary differential equation solver.
 
+    .. note::
+
+        The default parameters of the numerical ordinary differential equation solver can be
+        overwritten when calling the :class:`ParametrizedEvolution` class:
+
+        >>> qml.evolve(H)(params=[1., 2., 3.], t=[4, 10], mxstep=1, atol=1e-6)
+
     Args:
         H (ParametrizedHamiltonian): hamiltonian to evolve
         params (ndarray): trainable parameters
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
-            If a list of floats, the ``odeint`` solver will use all the provided time values, and perform intermediate steps if necessary. It is recommended to just provide a start and end time.
+            If a list of floats, the ``odeint`` solver will use all the provided time values, and
+            perform intermediate steps if necessary. It is recommended to just provide a start and end time.
             Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
         time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
