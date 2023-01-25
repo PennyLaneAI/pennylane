@@ -329,6 +329,7 @@ class TestAdjointJacobianQNode:
         with pytest.warns(
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
         ):
+
             @qml.qnode(dev, interface="autograd", diff_method="adjoint")
             def circ(x):
                 qml.RX(x, wires=0)
