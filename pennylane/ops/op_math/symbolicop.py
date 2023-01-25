@@ -14,6 +14,7 @@
 """
 This submodule defines a base class for symbolic operations representing operator math.
 """
+from abc import abstractmethod
 from copy import copy
 
 import pennylane as qml
@@ -184,22 +185,61 @@ class ScalarSymbolicOp(SymbolicOp):
             )
         return scalar_size
 
-    def _broadcasted_scalar_and_mat(self, wire_order=None):
+    @abstractmethod
+    def _scalar_op(self, scalar, mat):
+        """Scalar-matrix operation that doesn't take into account batching.
+
+        ``ScalarSymbolicOp.matrix`` will call this method to compute the matrix for a single scalar
+        and base matrix.
+
+        Args:
+            scalar (Union[int, float]): non-broadcasted scalar
+            mat (ndarray): non-broadcasted matrix
+        """
+
+    def matrix(self, wire_order=None):
+        r"""Representation of the operator as a matrix in the computational basis.
+
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
+
+        If the matrix depends on trainable parameters, the result
+        will be cast in the same autodifferentiation framework as the parameters.
+
+        A ``MatrixUndefinedError`` is raised if the base matrix representation has not been defined.
+
+        .. seealso:: :meth:`~.Operator.compute_matrix`
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the
+            operator's wires
+
+        Returns:
+            tensor_like: matrix representation
+        """
         # compute base matrix
         if isinstance(self.base, qml.Hamiltonian):
-            base_matrix = qml.matrix(self.base, wire_order=wire_order)
+            base_matrix = qml.matrix(self.base)
         else:
-            base_matrix = self.base.matrix(wire_order=wire_order)
+            base_matrix = self.base.matrix()
 
+        # compute scalar operation on base matrix taking batching into account
         scalar_size = qml.math.size(self.scalar)
-        if scalar_size != 1 and scalar_size == self.base.batch_size:
-            # both base and scalar are broadcasted
-            return ((s, m) for s, m in zip(self.scalar, base_matrix))
-        if self.base.batch_size is not None:
+        if scalar_size != 1:
+            if scalar_size == self.base.batch_size:
+                # both base and scalar are broadcasted
+                mat = qml.math.stack(
+                    [self._scalar_op(s, m) for s, m in zip(self.scalar, base_matrix)]
+                )
+            else:
+                # only scalar is broadcasted
+                mat = qml.math.stack([self._scalar_op(s, base_matrix) for s in self.scalar])
+        elif self.base.batch_size is not None:
             # only base is broadcasted
-            return ((self.scalar, ar2) for ar2 in base_matrix)
-        if scalar_size == self.batch_size:
-            # only scalar is broadcasted
-            return ((s, base_matrix) for s in self.scalar)
-        # none are broadcasted
-        return ((self.scalar, base_matrix),)
+            mat = qml.math.stack([self._scalar_op(self.scalar, ar2) for ar2 in base_matrix])
+        else:
+            # none are broadcasted
+            mat = self._scalar_op(self.scalar, base_matrix)
+
+        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)

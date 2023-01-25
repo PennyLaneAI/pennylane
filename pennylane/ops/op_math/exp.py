@@ -228,9 +228,9 @@ class Exp(ScalarSymbolicOp, Operation):
         return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
 
     def matrix(self, wire_order=None):
-
-        coeff_interface = math.get_interface(self.coeff)
-        if coeff_interface == "autograd" and math.requires_grad(self.coeff):
+        scalar = [self.scalar] if qml.math.size(self.scalar) == 1 else self.scalar
+        coeff_interface = math.get_interface(*scalar)
+        if coeff_interface == "autograd" and math.requires_grad(self.scalar):
             # math.expm is not differentiable with autograd
             # So we try to do a differentiable construction if possible
             #
@@ -238,11 +238,11 @@ class Exp(ScalarSymbolicOp, Operation):
             # but at least this provides as much trainablility as possible
             try:
                 eigvals = self.eigvals()
-                if qml.math.size(self._scalar) > 1:
-                    # scalar is batched
-                    eigvals_mat = math.stack(math.diag(e) for e in eigvals)
-                else:
-                    eigvals_mat = math.diag(eigvals)
+                eigvals_mat = (
+                    math.stack(math.diag(e) for e in eigvals)
+                    if len(scalar) > 1
+                    else math.diag(eigvals)
+                )
                 if len(self.diagonalizing_gates()) == 0:
                     return expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
                 diagonalizing_mat = qml.matrix(self.diagonalizing_gates, wire_order=self.wires)()
@@ -254,16 +254,13 @@ class Exp(ScalarSymbolicOp, Operation):
                     "Use a different interface if you need backpropagation.",
                     UserWarning,
                 )
+        return super().matrix(wire_order=wire_order)
 
-        mats = []
-        for coeff, mat in self._broadcasted_scalar_and_mat():
-            if coeff_interface == "torch":
-                # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
-                mat = math.convert_like(mat, self.coeff)
-            mats.append(math.expm(coeff * mat))
-        mat = mats[0] if len(mats) == 1 else qml.math.stack(mats)
-
-        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+    def _scalar_op(self, scalar, mat):
+        if math.get_interface(scalar) == "torch":
+            # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
+            mat = math.convert_like(mat, self.coeff)
+        return math.expm(scalar * mat)
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -391,6 +388,7 @@ class Evolution(Exp):
     """
 
     _name = "Evolution"
+    num_params = 1
 
     def __init__(self, generator, param, do_queue=True, id=None):
         super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
@@ -404,14 +402,6 @@ class Evolution(Exp):
     @property
     def coeff(self):
         return 1j * self.data[0]
-
-    @property
-    def scalar(self):
-        return self.coeff
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None, cache=None):
         param = (
