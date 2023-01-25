@@ -316,8 +316,8 @@
 * The `ExecutionConfig` data class has been added .
   [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
 
-* Added `execution_config=None` keyword argument to the `shape` method of `MeasurementProcess` and its subclasses.
-  [(#3640)](https://github.com/PennyLaneAI/pennylane/pull/3640)
+* All `Operator`'s input parameters that are lists are cast into vanilla numpy arrays.
+  [(#3659)](https://github.com/PennyLaneAI/pennylane/pull/3659)
 
 <h3>Breaking changes</h3>
 
