@@ -17,6 +17,7 @@ Unit tests for the SpecialUnitary operation and its utility functions.
 # pylint:disable=import-outside-toplevel
 from functools import partial
 import numpy as np
+from scipy.linalg import expm
 import pytest
 import pennylane as qml
 from pennylane.ops.qubit.special_unitary import (
@@ -81,6 +82,24 @@ class TestPauliUtils:
         assert sorted(words) == words
 
 
+eye = np.eye(15)
+special_matrix_cases = [
+    (1, [0.2, 0.1, 2.1], expm([[2.1j, 0.2j + 0.1], [0.2j - 0.1, -2.1j]])),
+    (
+        2,
+        [0.2, 0.3, 0.1] + [0] * 12,
+        np.kron(np.eye(2), expm([[0.1j, 0.2j + 0.3], [0.2j - 0.3, -0.1j]])),
+    ),
+    (
+        2,
+        eye[0] + eye[3] + eye[4],
+        np.kron(qml.RX(-2, 0).matrix(), qml.RX(-2, 0).matrix()) @ qml.IsingXX(-2, [0, 1]).matrix(),
+    ),
+    (2, 0.6 * (eye[4] + eye[9]), qml.IsingXY(2.4, [0, 1]).matrix()),
+    (2, 0.8 * eye[-1], qml.IsingZZ(-1.6, [0, 1]).matrix()),
+]
+
+
 class TestSpecialUnitaryMatrix:
     """Test the special_unitary_matrix utility function."""
 
@@ -135,6 +154,21 @@ class TestSpecialUnitaryMatrix:
             paulirot_matrix = qml.PauliRot(-2 * x, word, wires=list(range(n))).matrix()
             assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
             assert np.allclose(paulirot_matrix, matrix)
+
+    @pytest.mark.parametrize("n, theta, expected", special_matrix_cases)
+    def test_special_unitary_matrix_special_cases(self, n, theta, expected):
+        """Tests that ``special_unitary_matrix`` returns the correct matrices
+        for a few specific cases."""
+        matrix = special_unitary_matrix(theta, n)
+        assert qml.math.allclose(matrix, expected)
+
+    def test_special_unitary_matrix_special_cases_broadcasted(self):
+        """Tests that ``special_unitary_matrix`` returns the correct matrices
+        for a few specific cases broadcasted together."""
+        _, thetas, exp = zip(*special_matrix_cases[1:])
+        theta = np.stack(thetas)
+        matrix = special_unitary_matrix(theta, 2)
+        assert qml.math.allclose(matrix, np.stack(exp))
 
 
 class TestDetach:
@@ -645,6 +679,16 @@ class TestSpecialUnitary:
         expected = special_unitary_matrix(theta, n)
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
+
+    @pytest.mark.parametrize("n, theta, expected", special_matrix_cases)
+    def test_matrix_representation_special_cases(self, n, theta, expected):
+        """Tests that ``special_unitary_matrix`` returns the correct matrices
+        for a few specific cases."""
+        wires = list(range(n))
+        res_static = qml.SpecialUnitary.compute_matrix(theta, n)
+        res_dynamic = qml.SpecialUnitary(theta, wires).matrix()
+        assert qml.math.allclose(res_static, expected)
+        assert qml.math.allclose(res_dynamic, expected)
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_matrix_representation_broadcasted(self, n, theta, tol):

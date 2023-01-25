@@ -438,13 +438,13 @@ class SpecialUnitary(Operation):
         if len(theta_shape) not in {1, 2}:
             raise ValueError(
                 "Expected the parameters to have one or two dimensions without or with "
-                f"broadcasting, respectively. The parameters have the shape {theta_shape}"
+                f"broadcasting, respectively. The parameters have shape {theta_shape}"
             )
 
         if theta_shape[-1] != expected_dim:
             raise ValueError(
                 f"Expected the parameters to have shape ({expected_dim},) or (batch_size, "
-                f"{expected_dim}). The parameters have the shape {theta_shape}"
+                f"{expected_dim}). The parameters have shape {theta_shape}"
             )
 
         super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
@@ -489,7 +489,7 @@ class SpecialUnitary(Operation):
 
         This ``Operation`` is decomposed into the corresponding ``QubitUnitary``.
 
-        .. seealso:: :meth:`~.QubitUnitary.decomposition`.
+        .. seealso:: :meth:`~.SpecialUnitary.decomposition`.
 
         Args:
             theta (tensor_like): Pauli coordinates of the exponent :math:`A(\theta)`
