@@ -69,6 +69,10 @@ There are two way to construct a :class:`~.ParametrizedHamiltonian` from the coe
     ops = [XX, YY, ZZ]
     H2 =  qml.ops.dot(coeffs, ops)
 
+.. warning::
+    Don't try to iteratively create the callables using a lambda function in the way that does not work.
+    # TODO: write this clearly with an example
+
 The :class:`~.ParametrizedHamiltonian` is a callable, and can return an :class:`~.Operator` if passed a set of
 parameters and a time at which to evaluate the coefficients :math:`f_j`.
 
@@ -125,6 +129,15 @@ The ``rect`` function defines can be used to create a parametrized hamiltonian
 
 ParametrizedEvolution
 ---------------------
+# ToDo: consolidate and clarify into information
+
+During a pulse sequence, the state evolves according to the time-dependent Schrodinger equation
+
+.. math:: \frac{\partial}{\partial t} |\psi\rangle = -i H(t) |\psi\rangle
+
+realizing a unitary evolution :math:`U(t_0, t_1)` from times :math:`t_0` to :math:`t_1` of the input state, i.e.
+:math:`|\psi(t_1)\rangle = U(t_0, t_1) |\psi(t_0)\rangle`.
+
 
 A :class:`~.ParametrizedEvolution` is the solution :math:`U(t_1, t_2)` to the time-dependent
 Schrodinger equation for a :class:`~.ParametrizedHamiltonian`:
@@ -134,7 +147,10 @@ Schrodinger equation for a :class:`~.ParametrizedHamiltonian`:
 Creation of the :class:`~.ParametrizedEvolution` uses an a numerical ordinary differential equation
 solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_).
 
-EXAMPLE
+
+SIMPLE EXAMPLE using qml.evolve to create a Parametrized evolution
+
+
 
 The parameters can be updated...
 A call of a :class:`~.ParametrizedEvolution` will return a normal :class:`~Operator` defining the time
@@ -145,9 +161,52 @@ evolution for the input parameters.
 
 
 
-During a pulse sequence, the state evolves according to the time-dependent Schrodinger equation
 
-.. math:: \frac{\partial}{\partial t} |\psi\rangle = -i H(t) |\psi\rangle
 
-realizing a unitary evolution :math:`U(t_0, t_1)` from times :math:`t_0` to :math:`t_1` of the input state, i.e.
-:math:`|\psi(t_1)\rangle = U(t_0, t_1) |\psi(t_0)\rangle`.
+The :class:`~.ParametrizedEvolution` can be implemented in the QNode in the same way as other Operations in
+PennyLane. To look at an example of this, let's start with two instances of :class:`~.ParametrizedHamiltonian`:
+
+.. code-block:: python
+
+    ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+    coeffs = [lambda p, t: p for _ in range(3)]  #ToDo: use different example? comment on this?
+    H1 = qml.ops.dot(coeffs, ops)  # time-independent parametrized hamiltonian
+
+.. code-block:: python
+    ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
+    coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
+    H2 = qml.ops.dot(coeffs, ops) # time-dependent parametrized hamiltonian
+
+Now we can execute the evolution of these parametrized hamiltonians applied simultaneously:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=3)
+    @qml.qnode(dev, interface="jax")
+    def circuit(params):
+        qml.evolve(H1 + H2)(params, t=[0, 10])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+    params = jnp.array([1., 2., 3.])
+    circuit(params)
+    >>> Array(-0.78236955, dtype=float32)
+
+We can also compute the gradient of this evolution with respect to the input parameters:
+
+.. code-block:: python
+
+    jax.grad(circuit)(params)
+    >>> Array([-4.8066125,  3.7038102, -1.3294725, -2.4061902,  0.6811545,
+        -0.5226515], dtype=float32)
+
+.. warning::
+    In this example, it is important that ``H1`` and ``H2`` are included in the same ``qml.evolve`` operation.
+    For non-commuting operations, applying ``qml.evolve(H1)(params, t=[0, 10])`` followed by
+    ``qml.evolve(H2)(params, t=[0, 10])`` will NOT apply the two pulses simultaneously, despite the overlapping
+    time window. Instead, it will execute ``H1`` in the ``[0, 10]`` time window, and then subsequently execute
+    ``H2`` using the same time window to calculate the evolution, but without taking into account how the time
+    evolution of ``H1`` affects the evolution of ``H2`` and vice versa.
+
+
+
+
