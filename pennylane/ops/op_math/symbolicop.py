@@ -181,7 +181,7 @@ class ScalarSymbolicOp(SymbolicOp):
         return scalar_size
 
     @abstractmethod
-    def _scalar_op(self, scalar, mat):
+    def _matrix(self, scalar, mat):
         """Scalar-matrix operation that doesn't take into account batching.
 
         ``ScalarSymbolicOp.matrix`` will call this method to compute the matrix for a single scalar
@@ -224,17 +224,15 @@ class ScalarSymbolicOp(SymbolicOp):
         if scalar_size != 1:
             if scalar_size == self.base.batch_size:
                 # both base and scalar are broadcasted
-                mat = qml.math.stack(
-                    [self._scalar_op(s, m) for s, m in zip(self.scalar, base_matrix)]
-                )
+                mat = qml.math.stack([self._matrix(s, m) for s, m in zip(self.scalar, base_matrix)])
             else:
                 # only scalar is broadcasted
-                mat = qml.math.stack([self._scalar_op(s, base_matrix) for s in self.scalar])
+                mat = qml.math.stack([self._matrix(s, base_matrix) for s in self.scalar])
         elif self.base.batch_size is not None:
             # only base is broadcasted
-            mat = qml.math.stack([self._scalar_op(self.scalar, ar2) for ar2 in base_matrix])
+            mat = qml.math.stack([self._matrix(self.scalar, ar2) for ar2 in base_matrix])
         else:
             # none are broadcasted
-            mat = self._scalar_op(self.scalar, base_matrix)
+            mat = self._matrix(self.scalar, base_matrix)
 
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)

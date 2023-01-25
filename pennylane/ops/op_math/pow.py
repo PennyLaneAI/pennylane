@@ -232,7 +232,7 @@ class Pow(ScalarSymbolicOp):
             f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
         )
 
-    def _scalar_op(self, scalar, mat):
+    def _matrix(self, scalar, mat):
         if isinstance(scalar, int):
             return qmlmath.linalg.matrix_power(mat, scalar)
         return fractional_matrix_power(mat, scalar)

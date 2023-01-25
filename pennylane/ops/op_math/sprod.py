@@ -214,7 +214,7 @@ class SProd(ScalarSymbolicOp):
     def has_matrix(self):
         return isinstance(self.base, qml.Hamiltonian) or self.base.has_matrix
 
-    def _scalar_op(self, scalar, mat):
+    def _matrix(self, scalar, mat):
         return scalar * mat
 
     @property
