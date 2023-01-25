@@ -25,7 +25,13 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import Operation, Operator, Tensor, operation_derivative
+from pennylane.operation import (
+    Operation,
+    Operator,
+    Tensor,
+    operation_derivative,
+    StatePrep,
+)
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
@@ -2118,6 +2124,36 @@ class TestCVOperation:
         with pytest.raises(ValueError, match="Only order-1 and order-2 arrays supported"):
             U_high_order = np.array([np.eye(3)] * 3)
             op.heisenberg_expand(U_high_order, op.wires)
+
+
+class TestStatePrep:
+    """Test the StatePrep interface."""
+
+    # pylint:disable=unused-argument,too-few-public-methods
+    def test_basic_stateprep(self):
+        """Tests a basic implementation of the StatePrep interface."""
+
+        class DefaultPrep(StatePrep):
+            """A dummy class that assumes it was given a state vector."""
+
+            num_wires = qml.operation.AllWires
+
+            def state_vector(self, wire_order=None):
+                return self.parameters[0]
+
+        prep_op = DefaultPrep([1, 0], wires=[0])
+        assert np.array_equal(prep_op.state_vector(), [1, 0])
+
+    def test_child_must_implement_state_vector(self):
+        """Tests that a child class that does not implement state_vector fails."""
+
+        class NoStatePrepOp(StatePrep):
+            """A class that is missing the state_vector implementation."""
+
+            num_wires = qml.operation.AllWires
+
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+            NoStatePrepOp(wires=[0])
 
 
 class TestCriteria:
