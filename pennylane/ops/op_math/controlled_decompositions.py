@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,22 +19,6 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-# ctrl_ops_dict = {
-#     "CNOT": qml.PauliX,
-#     "CZ": qml.PauliZ,
-#     "CY": qml.PauliY,
-#     "CH": qml.Hadamard,
-#     "CRX": qml.RX,
-#     "CRZ": qml.RZ,
-#     "CRY": qml.RY,
-#     "CRot": qml.Rot,
-#     "ControlledPhaseShift": qml.PhaseShift,
-#     # Only focus on controlled operations with one control qubit for now
-#     # "CCZ": qml.PauliZ,
-#     # "Toffoli": qml.PauliX,
-#     # "MultiControlledX": qml.PauliX,
-# }
-
 
 def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     """Decompose a controlled single-qubit operation given the target operation
@@ -49,7 +33,16 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     Returns:
         list[Operation]: the decomposed operations
+
+    Raises:
+        ValueError: if `target_operation` is not a single-qubit operation
     """
+    if len(target_operation.wires) != 1:
+        raise ValueError(
+            "The target operation must be a single-qubit operation, instead "
+            f"got {target_operation.__class__.__name__}."
+        )
+
     target_wires = target_operation.wires
     try:
         phi, theta, omega = target_operation.single_qubit_rot_angles()
