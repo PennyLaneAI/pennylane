@@ -17,7 +17,7 @@ Unit tests for the convenience functions used in pulsed programming.
 """
 import inspect
 from functools import partial
-import sys
+import sys  # pylint:disable = unused-import
 
 import pytest
 
@@ -28,7 +28,8 @@ from pennylane.ops.op_math import ParametrizedHamiltonian
 
 
 # pylint:disable = consider-iterating-dictionary
-@pytest.mark.skipif("jax" in sys.modules.keys(), reason="fails if jax is installed")
+# @pytest.mark.skipif("jax" in sys.modules.keys(), reason="fails if jax is installed")  # skip in local test environment
+@pytest.mark.skipif(False, reason="testing how codecov works")
 def test_error_raised_if_jax_not_installed():
     """Test that an error is raised if a convenience function is called without jax installed"""
     with pytest.raises(ImportError, match="Module jax is required"):
