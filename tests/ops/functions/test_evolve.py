@@ -47,6 +47,8 @@ class TestEvolveConstructor:
         assert isinstance(final_op, ParametrizedEvolution)
         assert final_op.params is None
         assert final_op.t is None
-        param_evolution = final_op(params=[], t=1)
+        param_evolution = final_op(params=[1, 2, 3], t=1)
         assert isinstance(param_evolution, ParametrizedEvolution)
         assert param_evolution.H is H
+        assert qml.math.allequal(param_evolution.params, [1, 2, 3])
+        assert qml.math.allequal(param_evolution.t, [0, 1])
