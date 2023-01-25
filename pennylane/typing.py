@@ -44,22 +44,24 @@ class _Typing:
         """
         tensor_like = Union[int, float, bool, complex, bytes, str, np.ndarray, ArrayBox]
 
+        # Need to add ``contextlib.suppress`` because (for an unknown reason) github workflows
+        # enter these if statements even if the libraries are not imported nor installed.
         if "jax" in sys.modules:
-            # Need to add this because (for an unknown reason) when executing
-            # ``pytest tests/ -m torch`` without jax installed, ``sys.modules`` contains a "jax" module.
             with contextlib.suppress(ImportError):
                 from jax.numpy import ndarray
 
                 tensor_like = Union[tensor_like, ndarray]
         if "torch" in sys.modules:
-            from torch import Tensor as torchTensor
+            with contextlib.suppress(ImportError):
+                from torch import Tensor as torchTensor
 
-            tensor_like = Union[tensor_like, torchTensor]
+                tensor_like = Union[tensor_like, torchTensor]
         if "tensorflow" in sys.modules or "tensorflow-macos" in sys.modules:
-            from tensorflow import Tensor as tfTensor
-            from tensorflow import Variable
+            with contextlib.suppress(ImportError):
+                from tensorflow import Tensor as tfTensor
+                from tensorflow import Variable
 
-            tensor_like = Union[tensor_like, tfTensor, Variable]
+                tensor_like = Union[tensor_like, tfTensor, Variable]
         return tensor_like
 
 
