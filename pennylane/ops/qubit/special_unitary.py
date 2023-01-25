@@ -123,8 +123,42 @@ def pauli_words(num_wires):
     return ["".join(letters) for letters in list(product(_pauli_letters, repeat=num_wires))[1:]]
 
 
+letter_counter = {"I": "0", "X": "1", "Y": "2", "Z": "3"}
+
+
+def _params_to_pauli_basis(params, words):
+    """Create a new zeros tensor and set the entries corresponding
+    to the given Pauli words in the Pauli basis to the values given in ``params``.
+    The Pauli basis is ordered lexicographically to determine the indices."""
+    if isinstance(words, str):
+        words = [words]
+    num_words = len(words)
+    par_shape = qml.math.shape(params)
+    if not 0 != num_words == len(set(words)) == par_shape[-1]:
+        raise ValueError(
+            f"Expected as many unique Pauli words as parameters, but at least one. Got {par_shape[-1]} parameters and words {words}"
+        )
+    n = len(words[0])
+    if "I" * n in words:
+        raise ValueError(
+            "The identity is not a valid Pauli basis element for the Lie algebra su(n)."
+        )
+    ids = tuple(int("".join(letter_counter[letter] for letter in w), base=4) - 1 for w in words)
+
+    output_shape = (
+        4**n - 1
+        if len(par_shape) == 1
+        else (
+            4**n - 1,
+            par_shape[0],
+        )
+    )
+    zeros = qml.math.cast_like(qml.math.convert_like(np.zeros(output_shape), params), params)
+    return qml.math.T(qml.math.scatter_element_add(zeros, [ids], qml.math.T(params)))
+
+
 def special_unitary_matrix(theta, num_wires):
-    r"""Compute the matrix of an element in SU(N), given by the Pauli basis coordinated
+    r"""Compute the matrix of an element in SU(N), given by the Pauli basis coordinates
     of the associated Lie algebra element.
 
     Args:
@@ -250,7 +284,17 @@ class SpecialUnitary(Operation):
            [-0.34495668-0.35307844j,  0.10817019-0.21404059j,
             -0.29040522+0.00830631j,  0.15015337-0.76933485j]])
 
+    Alternatively, it is possible to pass the parameters for specific Pauli words and
+    indicate the selection and order of words with the optional argument ``words``:
+
+    >>> x = [0.2, 0.4]
+    >>> words = ["IX", "YY"] # The first parameter will be used for IX, the second for YY
+    >>> qml.SpecialUnitary(x, wires=[0, 1], words=words)
+    SpecialUnitary(array([0.2, 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.4, 0. , 0. , 0. ,
+           0. , 0. ]), wires=[0, 1])
+
     """
+    # pylint: disable=too-many-arguments
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -263,9 +307,11 @@ class SpecialUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, theta, wires, do_queue=True, id=None):
+    def __init__(self, theta, wires, words=None, do_queue=True, id=None):
         num_wires = 1 if isinstance(wires, int) else len(wires)
         self.hyperparameters["num_wires"] = num_wires
+        if words is not None:
+            theta = _params_to_pauli_basis(theta, words)
         theta_shape = qml.math.shape(theta)
         expected_dim = 4**num_wires - 1
 

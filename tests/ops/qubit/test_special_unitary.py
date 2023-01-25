@@ -15,6 +15,7 @@
 Unit tests for the SpecialUnitary operation and its utility functions.
 """
 # pylint:disable=import-outside-toplevel
+from functools import partial
 import numpy as np
 from scipy.linalg import expm
 import pytest
@@ -25,8 +26,35 @@ from pennylane.ops.qubit.special_unitary import (
     special_unitary_matrix,
     _pauli_letters,
     _pauli_matrices,
+    _params_to_pauli_basis,
 )
 from pennylane.wires import Wires
+
+
+mapped_params_cases = [
+    (1, [0.2], ["Y"], [0.0, 0.2, 0.0]),
+    (1, [0.2, 0.1], ["X", "Z"], [0.2, 0.0, 0.1]),
+    (1, [0.2, 0.1], ["Z", "X"], [0.1, 0.0, 0.2]),
+    (2, [0.9, 0.3, 0.2], ["ZZ", "XX", "YY"], [0] * 4 + [0.3] + [0] * 4 + [0.2] + [0] * 4 + [0.9]),
+    (1, [[0.2, 0.1], [0.4, 0.9]], ["Z", "X"], [[0.1, 0.0, 0.2], [0.9, 0.0, 0.4]]),
+    (
+        2,
+        [[0.9, 0.3, 0.2], [0.4, 0.1, 0.7]],
+        ["ZZ", "XX", "YY"],
+        [
+            [0] * 4 + [0.3] + [0] * 4 + [0.2] + [0] * 4 + [0.9],
+            [0] * 4 + [0.1] + [0] * 4 + [0.7] + [0] * 4 + [0.4],
+        ],
+    ),
+]
+
+faulty_params_cases = [
+    ([0.2], ["X", "Z"]),
+    ([0.6, 0.2], ["X"]),
+    ([0.6, 0.2], ["X", "X"]),
+    ([0.2], []),
+    ([], []),
+]
 
 
 class TestPauliUtils:
@@ -75,6 +103,128 @@ class TestPauliUtils:
 
         # The words are sorted lexicographically
         assert sorted(words) == words
+
+    @pytest.mark.parametrize("x, words", faulty_params_cases)
+    def test_params_to_pauli_basis_errors(self, x, words):
+        """Test that an error is raised if there are no Pauli words given,
+        if the number of words does not match the number of parameters, or if
+        the Pauli words are not unique."""
+        with pytest.raises(ValueError, match="Expected as many unique Pauli words as parameters"):
+            _params_to_pauli_basis(x, words)
+
+    def test_params_to_pauli_basis_error_identity(self):
+        """Test that an error is raised if the identity is among the Pauli words."""
+        with pytest.raises(ValueError, match="The identity is not a valid"):
+            _params_to_pauli_basis([0.1], ["II"])
+        with pytest.raises(ValueError, match="The identity is not a valid"):
+            _params_to_pauli_basis([0.1, 0.6], ["Z", "I"])
+
+    @pytest.mark.parametrize("n, x, words, exp", mapped_params_cases)
+    def test_params_to_pauli_basis(self, n, x, words, exp):
+        """Test that parameters are mapped correctly to a Pauli basis coordinate vector
+        with _params_to_pauli_basis."""
+        # pylint:disable=unused-argument
+        theta = _params_to_pauli_basis(x, words)
+        assert qml.math.shape(theta) == qml.math.shape(exp)
+        assert qml.math.allclose(theta, exp)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("n, x, words, exp", mapped_params_cases)
+    def test_params_to_pauli_basis_jax(self, n, x, words, exp):
+        """Test that parameters in JAX are mapped correctly to a Pauli basis coordinate vector
+        with _params_to_pauli_basis and that it is differentiable."""
+        import jax
+
+        x = jax.numpy.array(x)
+        theta = _params_to_pauli_basis(x, words)
+        assert qml.math.shape(theta) == qml.math.shape(exp)
+        assert qml.math.allclose(theta, exp)
+        jac = jax.jacobian(_params_to_pauli_basis)(x, words)
+        assert qml.math.shape(jac) == qml.math.shape(exp) + qml.math.shape(x)
+        sorting = np.argsort(words)
+        if qml.math.ndim(x) == 1:
+            ids = np.where(exp)[0]
+            for i, idx in enumerate(ids):
+                assert qml.math.allclose(jac[:, sorting[i]], np.eye(4**n - 1)[idx])
+        else:
+            ids = np.where(exp[0])[0]
+            for i, idx in enumerate(ids):
+                for batch_idx in range(qml.math.shape(x)[0]):
+                    assert qml.math.allclose(
+                        jac[batch_idx, :, batch_idx, sorting[i]], np.eye(4**n - 1)[idx]
+                    )
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("n, x, words, exp", mapped_params_cases)
+    def test_params_to_pauli_basis_torch(self, n, x, words, exp):
+        """Test that parameters in Torch are mapped correctly to a Pauli basis coordinate vector
+        with _params_to_pauli_basis and that it is differentiable."""
+        import torch
+
+        x = torch.tensor(x, requires_grad=True)
+        theta = _params_to_pauli_basis(x, words)
+        assert qml.math.shape(theta) == qml.math.shape(exp)
+        assert qml.math.allclose(theta, exp)
+        jac = torch.autograd.functional.jacobian(partial(_params_to_pauli_basis, words=words), x)
+        assert qml.math.shape(jac) == qml.math.shape(exp) + qml.math.shape(x)
+        sorting = np.argsort(words)
+        if qml.math.ndim(x) == 1:
+            ids = np.where(exp)[0]
+            for i, idx in enumerate(ids):
+                assert qml.math.allclose(jac[:, sorting[i]], np.eye(4**n - 1)[idx])
+        else:
+            ids = np.where(exp[0])[0]
+            for i, idx in enumerate(ids):
+                for batch_idx in range(qml.math.shape(x)[0]):
+                    assert qml.math.allclose(
+                        jac[batch_idx, :, batch_idx, sorting[i]], np.eye(4**n - 1)[idx]
+                    )
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("n, x, words, exp", mapped_params_cases)
+    def test_params_to_pauli_basis_autograd(self, n, x, words, exp):
+        """Test that parameters in Autograd are mapped correctly to a Pauli basis coordinate vector
+        with _params_to_pauli_basis and that it is differentiable."""
+        x = qml.numpy.array(x, requires_grad=True)
+        if qml.math.ndim(x) > 1:
+            pytest.skip("Autograd scatter_element_add does not support broadcasting.")
+        theta = _params_to_pauli_basis(x, words)
+        assert qml.math.shape(theta) == qml.math.shape(exp)
+        assert qml.math.allclose(theta, exp)
+        jac = qml.jacobian(_params_to_pauli_basis, argnum=0)(x, words)
+        assert qml.math.shape(jac) == qml.math.shape(exp) + qml.math.shape(x)
+        sorting = np.argsort(words)
+        ids = np.where(exp)[0]
+        for i, idx in enumerate(ids):
+            assert qml.math.allclose(jac[:, sorting[i]], np.eye(4**n - 1)[idx])
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("n, x, words, exp", mapped_params_cases)
+    def test_params_to_pauli_basis_tf(self, n, x, words, exp):
+        """Test that parameters in Tensorflow are mapped correctly to a Pauli basis coordinate vector
+        with _params_to_pauli_basis and that it is differentiable."""
+        import tensorflow as tf
+
+        x = tf.Variable(x)
+        theta = _params_to_pauli_basis(x, words)
+        assert qml.math.shape(theta) == qml.math.shape(exp)
+        assert qml.math.allclose(theta, exp)
+        with tf.GradientTape() as t:
+            out = _params_to_pauli_basis(x, words)
+        jac = t.jacobian(out, x)
+        assert qml.math.shape(jac) == qml.math.shape(exp) + qml.math.shape(x)
+        sorting = np.argsort(words)
+        if qml.math.ndim(x) == 1:
+            ids = np.where(exp)[0]
+            for i, idx in enumerate(ids):
+                assert qml.math.allclose(jac[:, sorting[i]], np.eye(4**n - 1)[idx])
+        else:
+            ids = np.where(exp[0])[0]
+            for i, idx in enumerate(ids):
+                for batch_idx in range(qml.math.shape(x)[0]):
+                    assert qml.math.allclose(
+                        jac[batch_idx, :, batch_idx, sorting[i]], np.eye(4**n - 1)[idx]
+                    )
 
 
 eye = np.eye(15)

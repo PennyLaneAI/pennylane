@@ -9,6 +9,7 @@
 * A new operation `SpecialUnitary` was added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
+  [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
  
   The new operation takes a single argument, a one-dimensional `tensor_like`
   of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
@@ -42,6 +43,17 @@
   >>> rx = qml.RX(-2 * x, 0) # RX introduces a prefactor -0.5 that has to be compensated
   >>> qml.math.allclose(su.matrix(), rx.matrix())
   True
+  ```
+
+  Alternatively, it is possible to pass the parameters for specific Pauli words and
+  indicate the selection and order of words with the optional argument `words`:
+
+  ```pycon
+  >>> x = [0.2, 0.4]
+  >>> words = ["IX", "YY"] # The first parameter will be used for IX, the second for YY
+  >>> qml.SpecialUnitary(x, wires=[0, 1], words=words)
+  SpecialUnitary(array([0.2, 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.4, 0. , 0. , 0. ,
+          0. , 0. ]), wires=[0, 1])
   ```
   
   This operation supports parameter broadcasting/batching.
