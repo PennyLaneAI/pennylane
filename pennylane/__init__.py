@@ -105,6 +105,7 @@ from pennylane.vqe import ExpvalCost, VQECost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
 import pennylane.data
+import pennylane.pulse
 
 # collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
