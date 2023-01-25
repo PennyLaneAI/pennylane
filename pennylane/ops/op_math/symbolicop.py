@@ -159,18 +159,13 @@ class ScalarSymbolicOp(SymbolicOp):
     _name = "CoeffSymbolicOp"
 
     def __init__(self, base, scalar: float, do_queue=True, id=None):
-        self._scalar = scalar
+        self.scalar = scalar
         super().__init__(base, do_queue=do_queue, id=id)
         self._batch_size = self._check_and_compute_batch_size(scalar)
 
     @property
     def batch_size(self):
         return self._batch_size
-
-    @property
-    def scalar(self):
-        """Returns the scalar coefficient of the operator."""
-        return self._scalar
 
     def _check_and_compute_batch_size(self, scalar):
         scalar_size = qml.math.size(scalar)
