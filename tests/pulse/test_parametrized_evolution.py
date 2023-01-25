@@ -23,7 +23,8 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import AnyWires
-from pennylane.ops import Evolution, ParametrizedEvolution, ParametrizedHamiltonian, QubitUnitary
+from pennylane.ops import QubitUnitary
+from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 
 class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
@@ -304,36 +305,3 @@ class TestIntegration:
             jax.grad(circuit2)(params2),
             atol=5e-4,
         )
-
-
-@pytest.mark.jax
-class TestEvolveConstructor:
-    """Unit tests for the evolve function"""
-
-    def test_evolve_returns_evolution_op(self):
-        """Test that the evolve function returns the `Evolution` operator when the input is
-        a generic operator."""
-        op = qml.s_prod(2, qml.PauliX(0))
-        final_op = qml.evolve(op)
-        assert isinstance(final_op, Evolution)
-
-    def test_matrix(self):
-        """Test that the matrix of the evolved function is correct."""
-        op = qml.s_prod(2, qml.PauliX(0))
-        final_op = qml.evolve(op)
-        mat = qml.math.expm(1j * qml.matrix(op))
-        assert qml.math.allequal(qml.matrix(final_op), mat)
-
-    def test_evolve_returns_parametrized_evolution(self):
-        """Test that the evolve function returns a ParametrizedEvolution with `params=None` and `t=None`
-        when the input is a ParametrizedHamiltonian."""
-        coeffs = [1, 2, 3]
-        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        H = ParametrizedHamiltonian(coeffs=coeffs, observables=ops)
-        final_op = qml.evolve(H)
-        assert isinstance(final_op, ParametrizedEvolution)
-        assert final_op.params is None
-        assert final_op.t is None
-        param_evolution = final_op(params=[], t=1)
-        assert isinstance(param_evolution, ParametrizedEvolution)
-        assert param_evolution.H is H
