@@ -11,6 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The module for various qubit-based devices and relevant common code."""
+"""
+Submodule for performing qubit-based simulations of quantum circuits.
+This submodule is internal and subject to change without a deprecation cycle. Use
+at your own discretion.
+.. currentmodule:: pennylane.devices.qubit
+.. autosummary::
+    :toctree: api
+
+    create_initial_state
+"""
 
 from .initialize_state import create_initial_state
