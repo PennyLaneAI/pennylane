@@ -807,7 +807,6 @@ class QNode:
                     "the interface in the QNode."
                 )
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
-            print(self.interface)
 
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
