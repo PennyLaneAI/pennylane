@@ -270,9 +270,9 @@
   [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
   
   ```pycon
-  @pwc_from_function(t=(2, 4), num_bins=10)
-  def f1(p, t):
-      return p * t
+  >>> @pwc_from_function(t=(2, 4), num_bins=10)
+  ... def f1(p, t):
+  ...     return p * t
   ```
   The resulting function approximates the same of `p**2 * t` on the interval `t=(2, 4)` 
   in 10 bins, and returns zero outside the interval.

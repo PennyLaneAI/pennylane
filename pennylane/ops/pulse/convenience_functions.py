@@ -34,7 +34,8 @@ def pwc(timespan):
             func: a function that takes two arguments, an array of trainable parameters and a `float` defining the
             time at which the function is evaluated. When called, the function uses the array of parameters to
             create evenly sized bins within the ``timespan``, with each bin value set by an element of the array.
-            It then selects the value the parameter array corresponding to the specified time.
+            It then selects the value of the parameter array corresponding to the specified time, based on the
+            assigned binning.
 
     **Example**
 
@@ -45,7 +46,7 @@ def pwc(timespan):
     a time, it will assign the array as the constants in the piecewise function, and select the constant corresponding
     to the specified time, based on the time interval defined by ``timespan``.
 
-    >>> params = [np.linspace(10, 20, 10)]
+    >>> params = np.linspace(10, 20, 10)
     >>> f1(params, 2)
     tensor(15.55555556, requires_grad=True)
 
