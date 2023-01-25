@@ -27,21 +27,21 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
-    This function returns the following linear combination: :math:`\sum_{k=0}^{N-1} c_k O_k`, where
-    :math:`c_k` and :math:`O_k` are the elements inside the ``coeffs`` and ``ops`` arguments respectively.
+    This function returns the following linear combination: :math:`\sum_{k} c_k O_k`, where
+    :math:`c_k` and :math:`O_k` are the elements inside the ``coeffs`` and ``ops`` arguments, respectively.
 
     Args:
         coeffs (Sequence[float]): sequence containing the coefficients of the linear combination
         ops (Sequence[Operator]): sequence containing the operators of the linear combination
-        pauli (bool, optional): If True, a :class:`pennylane.pauli.pauli_arithmetic.PauliSentence`
+        pauli (bool, optional): If ``True``, a :class:`~.PauliSentence`
             operator is used to represent the linear combination. If False, a :class:`Sum` operator
-            is returned. Defaults to False.
+            is returned. Defaults to ``False``.
 
     Raises:
         ValueError: if the number of coefficients and operators does not match or if they are empty
 
     Returns:
-        .Sum | .Operator: operator describing the linear combination
+        Sum or Operator: operator describing the linear combination
 
     **Example**
 
@@ -62,7 +62,7 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
 
     Using ``pauli=True`` and then converting the result to an :class:`~.Operator` is much faster
     than using ``pauli=False``, but it only works for pauli words
-    (see :func:`pennylane.pauli.is_pauli_word`).
+    (see :func:`~.is_pauli_word`).
     """
     if len(coeffs) != len(ops):
         raise ValueError("Number of coefficients and operators does not match.")

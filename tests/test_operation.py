@@ -528,6 +528,17 @@ class TestOperatorConstruction:
         op = DummyOp(wires=0)
         assert op._pauli_rep is None
 
+    def test_list_params_casted_into_numpy_array(self):
+        """Test that list parameters are casted into numpy arrays."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp([1, 2, 3], wires=0)
+
+        assert isinstance(op.data[0], np.ndarray)
+
 
 class TestOperationConstruction:
     """Test custom operations construction."""
