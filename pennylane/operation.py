@@ -121,10 +121,11 @@ Operator Types
     ~CVOperation
     ~Channel
     ~Tensor
+    ~StatePrep
 
 .. currentmodule:: pennylane.operation
 
-.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor
+.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrep
     :parts: 1
 
 Errors
@@ -2666,6 +2667,27 @@ class CVObservable(CV, Observable):
         p = self.parameters
         U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
         return self.heisenberg_expand(U, wire_order)
+
+
+class StatePrep(Operation):
+    """An interface for state-prep operations."""
+
+    grad_method = None
+    _queue_category = "_prep"
+
+    # pylint:disable=too-few-public-methods
+    @abc.abstractmethod
+    def state_vector(self, wire_order=None):
+        """
+        Returns the initial state vector for a circuit given a state preparation.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels
+                from the operator's wires
+
+        Returns:
+            array: A state vector for all wires in a circuit
+        """
 
 
 def operation_derivative(operation) -> np.ndarray:
