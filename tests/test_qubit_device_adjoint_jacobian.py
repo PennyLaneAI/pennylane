@@ -321,11 +321,15 @@ class TestAdjointJacobianQNode:
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 
+        @qml.qnode(dev, diff_method="adjoint")
+        def circ(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
         with pytest.warns(
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
         ):
-
-            @qml.qnode(dev, diff_method="adjoint")
+            @qml.qnode(dev, interface="autograd", diff_method="adjoint")
             def circ(x):
                 qml.RX(x, wires=0)
                 return qml.expval(qml.PauliZ(0))

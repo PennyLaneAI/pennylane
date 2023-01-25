@@ -1615,15 +1615,16 @@ class TestStateMeasurement:
     def test_method_overriden_by_device(self, device):
         """Test that the device can override a measurement process."""
         dev = device(2)
+
         _skip_test_for_braket(dev)
+
+        dev.measurement_map[StateMP] = "test_method"
+        dev.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(0)
             return qml.state()
-
-        circuit.device.measurement_map[StateMP] = "test_method"
-        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert circuit() == 2
 
