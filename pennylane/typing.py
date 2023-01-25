@@ -12,24 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file contains different PennyLane types."""
-import contextlib
+# pylint: disable=import-outside-toplevel, too-few-public-methods
+import sys
 from typing import Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
-TensorLike = Union[int, float, bool, complex, bytes, str, np.ndarray, ArrayBox]
 
-with contextlib.suppress(ImportError):
-    from jax.numpy import ndarray
+class typing:
+    """Class containing useful PennyLane types."""
 
-    TensorLike = Union[TensorLike, ndarray]
-with contextlib.suppress(ImportError):
-    from torch import Tensor as torchTensor
+    tensor_like = Union[int, float, bool, complex, bytes, str, np.ndarray, ArrayBox]
 
-    TensorLike = Union[TensorLike, torchTensor]
-with contextlib.suppress(ImportError):
-    from tensorflow import Tensor as tfTensor
-    from tensorflow import Variable
+    @classmethod
+    @property
+    def TensorLike(cls):
+        """Returns a union of types that are considered tensor-like."""
 
-    TensorLike = Union[TensorLike, tfTensor, Variable]
+        if "jax" in sys.modules:
+            from jax.numpy import ndarray
+
+            cls.tensor_like = Union[cls.tensor_like, ndarray]
+        if "torch" in sys.modules:
+            from torch import Tensor as torchTensor
+
+            cls.tensor_like = Union[cls.tensor_like, torchTensor]
+        if "tensorflow" in sys.modules or "tensorflow-macos" in sys.modules:
+            from tensorflow import Tensor as tfTensor
+            from tensorflow import Variable
+
+            cls.tensor_like = Union[cls.tensor_like, tfTensor, Variable]
+        return cls.tensor_like
