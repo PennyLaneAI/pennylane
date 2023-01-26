@@ -265,7 +265,7 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
                     "will be used to evaluate the metric tensor with the adjoint method.",
                     UserWarning,
                 )
-            qnode = qnode.qnode.qnodes[0]
+            qnode = qnode.qnodes.qnodes[0]
         device = qnode.device
 
     cjac_fn = qml.transforms.classical_jacobian(
