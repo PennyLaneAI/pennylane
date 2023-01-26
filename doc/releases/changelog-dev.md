@@ -363,10 +363,6 @@
   Please provide a seed to each individual function instead if you want controllable results.
   [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
 
-* `qml.dot` no longer corresponds to the function in `pennylane/collections/dot.py`. It now
-  redirects to the function `pennylane/ops/functions/dot.py` instead.
-  [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
-
 <h3>Deprecations</h3>
 
 * Deprecate the `collections` module.
