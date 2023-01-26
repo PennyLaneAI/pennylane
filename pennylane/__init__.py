@@ -107,8 +107,6 @@ from pennylane.shadows import ClassicalShadow
 import pennylane.data
 import pennylane.pulse
 
-# collections needs to be imported after all other pennylane imports
-from .collections import QNodeCollection, dot, map, sum
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
@@ -357,4 +355,12 @@ def __getattr__(name):
         import pennylane.grouping as grouping  # pylint:disable=import-outside-toplevel,consider-using-from-import
 
         return grouping
+    if name in {"QNodeCollection", "map", "sum"}:
+        warnings.warn(
+            "The qml.collections module is deprecated and will be removed soon. ",
+            UserWarning,
+        )
+        import pennylane.collections as collections  # pylint:disable=import-outside-toplevel
+
+        return getattr(collections, name)
     raise AttributeError(f"Module {__name__} has no attribute {name}")
