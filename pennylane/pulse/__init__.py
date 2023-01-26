@@ -37,6 +37,6 @@ Convenience Functions
     ~rect
 """
 
-from .convenience_functions import constant, rect
+from .convenience_functions import constant, rect, pwc, pwc_from_function
 from .parametrized_evolution import ParametrizedEvolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
