@@ -1363,12 +1363,7 @@ class Operator(abc.ABC):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        decomp_fn = (
-            qml.adjoint(self.decomposition, lazy=False)
-            if getattr(self, "inverse", False)
-            else self.decomposition
-        )
-        qscript = qml.tape.make_qscript(decomp_fn)()
+        qscript = qml.tape.make_qscript(self.decomposition)()
 
         if not self.data:
             # original operation has no trainable parameters
@@ -1621,43 +1616,12 @@ class Operation(Operator):
         )
 
     @property
-    def inverse(self):
-        """Boolean determining if the inverse of the operation was requested."""
-        return False
-
-    def matrix(self, wire_order=None):
-        canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
-
-        if self.inverse:
-            canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
-
-        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
-
-    def eigvals(self):
-        op_eigvals = super().eigvals()
-
-        return qml.math.conj(op_eigvals) if self.inverse else op_eigvals
-
-    @property
     def base_name(self):
-        """If inverse is requested, this is the name of the original
-        operator to be inverted."""
+        """Holdover from when in-place inversion changed then name. To be removed."""
         return self.__class__.__name__
-
-    @property
-    def name(self):
-        """Name of the operator."""
-        return f"{self._name}.inv" if self.inverse else self._name
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        if self.inverse:
-            base_label = base_label or self.__class__.__name__
-            base_label += "⁻¹"
-        return super().label(decimals=decimals, base_label=base_label, cache=cache)
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
-        self._inverse = False
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
         # check the grad_recipe validity
