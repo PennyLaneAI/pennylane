@@ -19,8 +19,9 @@ from collections import defaultdict
 from typing import Sequence
 
 import pennylane as qml
+from pennylane.collections import QNodeCollection
+from pennylane.collections import dot as col_dot
 from pennylane.operation import Operator
-
 from pennylane.pulse import ParametrizedHamiltonian
 
 
@@ -64,6 +65,9 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     than using ``pauli=False``, but it only works for pauli words
     (see :func:`~.is_pauli_word`).
     """
+    if isinstance(coeffs, QNodeCollection) or isinstance(ops, QNodeCollection):
+        return col_dot(coeffs, ops)
+
     if len(coeffs) != len(ops):
         raise ValueError("Number of coefficients and operators does not match.")
     if len(coeffs) == 0 and len(ops) == 0:
@@ -75,9 +79,7 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     if pauli:
         return _pauli_dot(coeffs, ops)
 
-    operands = []
-    for coeff, op in zip(coeffs, ops):
-        operands.append(qml.s_prod(coeff, op))
+    operands = [qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)]
     return qml.op_sum(*operands) if len(operands) > 1 else operands[0]
 
 
