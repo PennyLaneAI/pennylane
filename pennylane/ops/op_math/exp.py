@@ -258,9 +258,13 @@ class Exp(ScalarSymbolicOp, Operation):
 
     @staticmethod
     def _matrix(scalar, mat):
-        if math.get_interface(scalar) == "torch":
+        scalar_interface = math.get_interface(scalar)
+        if scalar_interface == "torch":
             # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
             mat = math.convert_like(mat, scalar)
+        elif scalar_interface == "tensorflow" and not math.iscomplex(scalar):
+            # cast scalar to complex to avoid an error
+            scalar = math.cast_like(scalar, mat)
         return math.expm(scalar * mat)
 
     # pylint: disable=arguments-differ
