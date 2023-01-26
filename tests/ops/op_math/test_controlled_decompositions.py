@@ -116,28 +116,17 @@ class TestControlledDecompositionZYZ:
         op = qml.Rot(phi, theta, omega, wires=0)
         decomps = ctrl_decomp_zyz(op, Wires(control_wires))
 
-        assert len(decomps) == 7
-        assert isinstance(decomps[2], control_gate)
-        assert isinstance(decomps[5], control_gate)
-        assert isinstance(decomps[0], qml.RZ)
-        assert isinstance(decomps[4], qml.RZ)
-        assert isinstance(decomps[6], qml.RZ)
-        assert isinstance(decomps[1], qml.RY)
-        assert isinstance(decomps[3], qml.RY)
-
-        decomp_angles = [
-            0.123,
-            0.456 / 2,
-            None,
-            -0.456 / 2,
-            -(0.123 + 0.789) / 2,
-            None,
-            (0.789 - 0.123) / 2,
+        expected_ops = [
+            qml.RZ(0.123, wires=0),
+            qml.RY(0.456 / 2, wires=0),
+            control_gate(wires=control_wires + [0]),
+            qml.RY(-0.456 / 2, wires=0),
+            qml.RZ(-(0.123 + 0.789) / 2, wires=0),
+            control_gate(wires=control_wires + [0]),
+            qml.RZ((0.789 - 0.123) / 2, wires=0),
         ]
-
-        for i in range(7):
-            if i in {2, 5}:
-                assert decomps[i].wires == control_wires + Wires([0])
-            else:
-                assert decomps[i].wires == Wires([0])
-                assert decomps[i].data[0] == decomp_angles[i]
+        assert all(
+            qml.equal(decomp_op, expected_op)
+            for decomp_op, expected_op in zip(decomps, expected_ops)
+        )
+        assert len(decomps) == 7
