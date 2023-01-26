@@ -17,8 +17,15 @@ Unit tests for the dot function
 import pytest
 
 import pennylane as qml
+from pennylane.collections import QNodeCollection
 from pennylane.ops import Hamiltonian, SProd, Sum
 from pennylane.pauli.pauli_arithmetic import PauliSentence
+
+
+def test_dot_qnode_collection_raises_warning():
+    """Test that a deprecation warning is raised when using qml.dot for a QNodeCollection."""
+    with pytest.warns(UserWarning, match="The dot function is deprecated"):
+        qml.dot([], QNodeCollection())
 
 
 class TestDotSum:
