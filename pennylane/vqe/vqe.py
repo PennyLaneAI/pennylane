@@ -22,7 +22,6 @@ from collections.abc import Sequence
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.collections import dot, map
 
 
 class ExpvalCost:
@@ -180,7 +179,7 @@ class ExpvalCost:
 
         self._optimize = optimize
 
-        self.qnodes = map(
+        self.qnodes = qml.map(
             ansatz, observables, device, interface=interface, diff_method=diff_method, **kwargs
         )
 
@@ -221,7 +220,7 @@ class ExpvalCost:
             self.cost_fn = cost_fn
 
         else:
-            self.cost_fn = dot(coeffs, self.qnodes)
+            self.cost_fn = qml.dot(coeffs, self.qnodes)
 
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)

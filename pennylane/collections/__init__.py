@@ -15,8 +15,9 @@
 The collections module. Contains the QNodeCollection and functions
 that process them.
 """
+from .qnode_collection import QNodeCollection
+
 from .apply import apply
 from .dot import dot
 from .map import map
-from .qnode_collection import QNodeCollection
 from .sum import sum

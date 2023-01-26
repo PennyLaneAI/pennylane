@@ -19,8 +19,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultMixed, DefaultQubit
 from pennylane.wires import Wires
+from pennylane.devices import DefaultQubit, DefaultMixed
 
 
 @pytest.fixture(scope="function")
@@ -316,7 +316,7 @@ class TestVQE:
         """Tests that the aggregate function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
         qnodes = qml.map(lambda params, **kwargs: None, observables, dev)
-        expval = qml.collections.dot(coeffs, qnodes)
+        expval = qml.dot(coeffs, qnodes)
         assert expval([]) == sum(expected)
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
@@ -1282,8 +1282,8 @@ class TestMultipleInterfaceIntegration:
 
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
-        import tensorflow as tf
         import torch
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
