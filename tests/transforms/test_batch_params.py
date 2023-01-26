@@ -334,7 +334,7 @@ def test_all_operations(mocker):
     dev = qml.device("default.qubit", wires=3)
 
     @functools.partial(qml.batch_params, all_operations=True)
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(x, weights):
         qml.RX(x, wires=0)
         qml.RY([0.2, 0.3, 0.3], wires=1)
