@@ -41,10 +41,24 @@ def op_sum(*summands, do_queue=True, id=None, lazy=True):
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
             Default is True.
         id (str or None): id for the Sum operator. Default is None.
-        lazy=True (bool): If ``lazy=False``, a simplification will be peformed such that when any of the operators is already a sum operator, its operands (summands) will be used instead.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
+            of the operators is already a sum operator, its operands (summands) will be used instead.
 
     Returns:
         ~ops.op_math.Sum: The operator representing the sum of summands.
+
+    .. note::
+
+        This operator supports batched operands:
+
+        >>> op = qml.op_sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.op_sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Sum`
 
@@ -85,17 +99,6 @@ class Sum(CompositeOp):
 
     .. note::
         Currently this operator can not be queued in a circuit as an operation, only measured terminally.
-
-    .. note::
-
-        This operator supports batched operands:
-        >>> op = qml.op_sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
-        >>> op.matrix().shape
-        (3, 4, 4)
-
-        But it doesn't support batching of operators:
-        >>> op = qml.op_sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
-        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :func:`~.ops.op_math.op_sum`
 

@@ -69,6 +69,7 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
         (3, 2, 2)
 
         But it doesn't support batching of operators:
+
         >>> op = qml.pow([qml.RX(1, wires=0), qml.RX(2, wires=0)], z=4)
         AttributeError: 'list' object has no attribute 'name'
 
