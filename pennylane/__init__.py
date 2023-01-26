@@ -360,7 +360,7 @@ def __getattr__(name):
             "The qml.collections module is deprecated and will be removed soon. ",
             UserWarning,
         )
-        import pennylane.collections as collections  # pylint:disable=import-outside-toplevel
+        from pennylane import collections  # pylint:disable=import-outside-toplevel
 
         return getattr(collections, name)
     raise AttributeError(f"Module {__name__} has no attribute {name}")
