@@ -196,13 +196,13 @@ def get_one_parameter_generators(theta, num_wires, interface="jax"):
 
         U(\theta) &= e^{A(\theta)}\\
         A(\theta) &= \sum_{m=1}^d i \theta_m P_m\\
-        P_m &\in {I, X, Y, Z}^{\otimes n} \setminus \{I^{\otimes n}\}
+        P_m &\in \{I, X, Y, Z\}^{\otimes n} \setminus \{I^{\otimes n}\}
 
     Then the partial derivatives of the gate can be shown to be given by
 
     .. math::
 
-        \frac{\partial}{\partial_\ell} U(\theta) &= U(\theta)
+        \frac{\partial}{\partial \theta_\ell} U(\theta) &= U(\theta)
         \frac{\mathrm{d}}{\mathrm{d}t}\exp\left(t\Omega_\ell(\theta)\right)\large|_{t=0}
 
     where :math:`\Omega_\ell(\theta)` is the one-parameter generator belonging to the partial
@@ -215,7 +215,7 @@ def get_one_parameter_generators(theta, num_wires, interface="jax"):
         \left(\frac{\partial}{\partial \theta_\ell}\mathfrak{Re}[U(\theta)]
         +i\frac{\partial}{\partial \theta_\ell}\mathfrak{Im}[U(\theta)]\right)
 
-    where we may compute the derivatives on the left-hand side using auto-differentiation.
+    where we may compute the derivatives :math:`\frac{\partial}{\partial \theta_\ell} U(\theta)` using auto-differentiation.
 
     .. warning::
 
