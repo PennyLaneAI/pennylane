@@ -369,7 +369,7 @@
 <h3>Deprecations</h3>
 
 * `qml.utils.sparse_hamiltonian` function has been deprecated, and usage will now raise a warning.
-   Instead, one should use the `~.Hamiltonian.sparse_matrix` method.
+  Instead, one should use the `~.Hamiltonian.sparse_matrix` method.
   [(#3236)](https://github.com/PennyLaneAI/pennylane/issues/3236)
 
 <h3>Documentation</h3>
