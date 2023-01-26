@@ -13,13 +13,16 @@
 # limitations under the License.
 """Functions to apply an operation to a state vector."""
 from functools import singledispatch
-from string import ascii_letters as ABC
+from string import ascii_letters as alphabet
 
 import pennylane as qml
 
 from pennylane import math
 
 SQRT2INV = 1 / math.sqrt(2)
+
+EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
+EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 10
 
 
 def apply_operation_einsum(op: qml.operation.Operator, state):
@@ -38,10 +41,10 @@ def apply_operation_einsum(op: qml.operation.Operator, state):
     total_indices = len(state.shape)
     num_indices = len(op.wires)
 
-    state_indices = ABC[:total_indices]
-    affected_indices = "".join(ABC[i] for i in op.wires)
+    state_indices = alphabet[:total_indices]
+    affected_indices = "".join(alphabet[i] for i in op.wires)
 
-    new_indices = ABC[total_indices : total_indices + num_indices]
+    new_indices = alphabet[total_indices : total_indices + num_indices]
 
     new_state_indices = state_indices
     for old, new in zip(affected_indices, new_indices):
@@ -73,6 +76,10 @@ def apply_operation_tensordot(op: qml.operation.Operator, state):
 
     tdot = math.tensordot(reshaped_mat, state, axes=axes)
 
+    # tensordot causes the axes given in `wires` to end up in the first positions
+    # of the resulting tensor. This corresponds to a (partial) transpose of
+    # the correct output state
+    # We'll need to invert this permutation to put the indices in the correct place
     unused_idxs = [i for i in range(total_indices) if i not in op.wires]
     perm = list(op.wires) + unused_idxs
     inv_perm = math.argsort(perm)
@@ -124,7 +131,9 @@ def apply_operation(op: qml.operation.Operator, state):
         [1., 0.]], requires_grad=True)
 
     """
-    if len(op.wires) < 3:
+    if (len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD) and (
+        math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
+    ):
         return apply_operation_einsum(op, state)
     return apply_operation_tensordot(op, state)
 
@@ -145,8 +154,9 @@ def apply_pauliz(op: qml.PauliZ, state):
 @apply_operation.register
 def apply_y(op: qml.PauliY, state):
     """Apply pauliy operator to state."""
-    state = apply_operation(qml.PauliZ(op.wires), state)
-    state = apply_operation(qml.PauliX(op.wires), state)
+    state = math.roll(state, 1, op.wires[0])
+    state1 = math.multiply(-1, math.take(state, 1, axis=op.wires[0]))
+    state = math.stack([math.take(state, 0, axis=op.wires[0]), state1], axis=op.wires[0])
     return 1j * state
 
 
@@ -158,14 +168,6 @@ def apply_phase(op: qml.PhaseShift, state):
     state0 = math.take(state, 0, axis=op.wires[0])
     state1 = math.multiply(shift, math.take(state, 1, axis=op.wires[0]))
     return math.stack([state0, state1], axis=op.wires[0])
-
-
-@apply_operation.register
-def apply_hadamard(op: qml.Hadamard, state):
-    """Apply hadamard gate to state"""
-    statex = apply_operation(qml.PauliX(op.wires), state)
-    statez = apply_operation(qml.PauliZ(op.wires), state)
-    return math.multiply(SQRT2INV, statex + statez)
 
 
 @apply_operation.register
