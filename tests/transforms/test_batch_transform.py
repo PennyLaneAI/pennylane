@@ -337,7 +337,7 @@ class TestBatchTransform:
         dev = qml.device("default.qubit", wires=1)
         dev = self.my_transform(dev, a, b)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(x):
             qml.Hadamard(wires=0)
             qml.RX(x, wires=0)
@@ -368,7 +368,7 @@ class TestBatchTransform:
         dev = qml.device("default.qubit", wires=1)
         dev = self.my_transform(a, b)(dev)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(x):
             qml.Hadamard(wires=0)
             qml.RX(x, wires=0)

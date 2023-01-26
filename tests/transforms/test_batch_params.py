@@ -26,7 +26,7 @@ def test_simple_circuit(mocker):
     dev = qml.device("default.qubit", wires=3)
 
     @qml.batch_params
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(data, x, weights):
         qml.templates.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True)
         qml.RX(x, wires=0)
@@ -50,7 +50,7 @@ def test_basic_entangler_layers(mocker):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(weights):
         qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
         qml.RY(0.2, wires=1)
@@ -70,7 +70,7 @@ def test_angle_embedding(mocker):
     dev = qml.device("default.qubit", wires=3)
 
     @qml.batch_params
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(data):
         qml.templates.AngleEmbedding(data, wires=[0, 1, 2])
         qml.RY(0.2, wires=1)
@@ -90,7 +90,7 @@ def test_mottonenstate_preparation(mocker):
     dev = qml.device("default.qubit", wires=3)
 
     @qml.batch_params
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(data, weights):
         qml.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
@@ -126,7 +126,7 @@ def test_basis_state_preparation(mocker):
     dev = qml.device("default.qubit", wires=4)
 
     @qml.batch_params
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(data, weights):
         qml.templates.BasisStatePreparation(data, wires=[0, 1, 2, 3])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2, 3])

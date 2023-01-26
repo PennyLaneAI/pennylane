@@ -383,7 +383,7 @@ class TestGradientTransformIntegration:
         when a single QNode argument and gate are present"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(x):
             qml.RX(x[0], wires=0)
             return qml.probs(wires=[0, 1])
