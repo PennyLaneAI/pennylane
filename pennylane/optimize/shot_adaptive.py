@@ -18,7 +18,6 @@ from scipy.stats import multinomial
 import pennylane as qml
 from pennylane import numpy as np
 
-
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -502,7 +501,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         new_args = self.step(objective_fn, *args, **kwargs)
 
         if isinstance(objective_fn, qml.ExpvalCost):
-            device = objective_fn.qnodes[0].device
+            device = objective_fn.qnode[0].device
         elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
             device = objective_fn.device
 

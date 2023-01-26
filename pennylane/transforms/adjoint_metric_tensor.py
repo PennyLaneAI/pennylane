@@ -16,9 +16,9 @@ Contains the adjoint_metric_tensor.
 """
 import warnings
 from itertools import chain
-from pennylane import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as np
 
 # pylint: disable=protected-access
 from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
@@ -265,7 +265,7 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
                     "will be used to evaluate the metric tensor with the adjoint method.",
                     UserWarning,
                 )
-            qnode = qnode.qnodes.qnodes[0]
+            qnode = qnode.qnode.qnodes[0]
         device = qnode.device
 
     cjac_fn = qml.transforms.classical_jacobian(

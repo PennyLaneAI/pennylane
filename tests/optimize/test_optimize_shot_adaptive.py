@@ -13,8 +13,8 @@
 # limitations under the License.
 """Tests for the shot adaptive optimizer"""
 import pytest
-from scipy.stats import multinomial
 from flaky import flaky
+from scipy.stats import multinomial
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -52,7 +52,7 @@ class TestExceptions:
 
         # test qnode cost
         with pytest.raises(ValueError, match="can only be used with devices that"):
-            opt.step(expval_cost.qnodes[0], x)
+            opt.step(expval_cost.qnode[0], x)
 
     def test_learning_error(self):
         """Test that an exception is raised if the learning rate is beyond the
@@ -81,7 +81,7 @@ class TestExceptions:
         # for a single QNode, the lipschitz constant is simply 1
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, stepsize=100.0)
         with pytest.raises(ValueError, match=f"The learning rate must be less than {2 / 1}"):
-            opt.step(expval_cost.qnodes[0], np.array(0.5, requires_grad=True))
+            opt.step(expval_cost.qnode[0], np.array(0.5, requires_grad=True))
 
     def test_unknown_objective_function(self):
         """Test that an exception is raised if an unknown objective function is passed"""
@@ -194,7 +194,7 @@ class TestSingleShotGradientIntegration:
         qml.RZ(x[1, 2], wires=0)
 
     expval_cost = catch_warn_ExpvalCost(ansatz, H, dev)
-    qnode = expval_cost.qnodes[0]
+    qnode = expval_cost.qnode[0]
 
     @pytest.mark.parametrize("cost_fn", [qnode, expval_cost])
     def test_single_array_argument_step(self, cost_fn, mocker, monkeypatch):
@@ -428,7 +428,7 @@ class TestWeightedRandomSampling:
         new_weights = opt.step(expval_cost, weights)
         spy.assert_called_once()
 
-        grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)
+        grads = opt.weighted_random_sampling(expval_cost.qnode, coeffs, 10, [0], weights)
         assert len(grads) == 1
         assert grads[0].shape == (10, *weights.shape)
 
@@ -477,7 +477,7 @@ class TestWeightedRandomSampling:
         mocker.patch(
             "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 0, 6]])
         )
-        grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)
+        grads = opt.weighted_random_sampling(expval_cost.qnode, coeffs, 10, [0], weights)
 
         assert len(spy.call_args_list) == 2
         assert len(grads) == 1
@@ -500,7 +500,7 @@ class TestWeightedRandomSampling:
         mocker.patch(
             "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]])
         )
-        grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)
+        grads = opt.weighted_random_sampling(expval_cost.qnode, coeffs, 10, [0], weights)
 
         spy_dims.assert_called_once()
         assert len(spy.call_args_list) == 3

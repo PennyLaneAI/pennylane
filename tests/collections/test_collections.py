@@ -14,8 +14,8 @@
 """
 Unit tests for the :mod:`pennylane.collection` submodule.
 """
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
 
@@ -428,7 +428,7 @@ class TestDot:
         coeffs = [0.5, -0.1]
 
         # test the dot product of tensor, qnodes
-        cost = qml.dot(coeffs, qc)
+        cost = qml.collections.dot(coeffs, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -447,7 +447,7 @@ class TestDot:
         coeffs = [0.5, -0.1]
 
         # test the dot product of tensor, qnodes
-        cost = qml.dot(coeffs, qc)
+        cost = qml.collections.dot(coeffs, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -469,7 +469,7 @@ class TestDot:
         coeffs = torch.tensor(coeffs, dtype=torch.float64)
 
         # test the dot product of tensor, qnodes
-        cost = qml.dot(coeffs, qc)
+        cost = qml.collections.dot(coeffs, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -495,7 +495,7 @@ class TestDot:
         coeffs = tf.cast(coeffs, dtype=tf.float64)
 
         # test the dot product of tensor, qnodes
-        cost = qml.dot(coeffs, qc)
+        cost = qml.collections.dot(coeffs, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -518,7 +518,7 @@ class TestDot:
         coeffs = [0.5, -0.1]
 
         # test the dot product of tensor, qnodes
-        cost = qml.dot(coeffs, qc)
+        cost = qml.collections.dot(coeffs, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -536,7 +536,7 @@ class TestDot:
         qc2 = qml.QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
-        cost = qml.dot(qc1, qc2)
+        cost = qml.collections.dot(qc1, qc2)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -556,7 +556,7 @@ class TestDot:
         qc2 = qml.QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
-        cost = qml.dot(qc1, qc2)
+        cost = qml.collections.dot(qc1, qc2)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -575,7 +575,7 @@ class TestDot:
         qc2 = qml.QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
-        cost = qml.dot(qc1, qc2)
+        cost = qml.collections.dot(qc1, qc2)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -598,7 +598,7 @@ class TestDot:
         qc2 = qml.QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
-        cost = qml.dot(qc1, qc2)
+        cost = qml.collections.dot(qc1, qc2)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -622,7 +622,7 @@ class TestDot:
         qc2 = qml.QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
-        cost = qml.dot(qc1, qc2)
+        cost = qml.collections.dot(qc1, qc2)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -641,7 +641,7 @@ class TestDot:
         coeffs = [0.5, -0.1]
 
         # test the dot product of qnodes, tensor
-        cost = qml.dot(qc, coeffs)
+        cost = qml.collections.dot(qc, coeffs)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -659,7 +659,7 @@ class TestDot:
         coeffs = [0.5, -0.1]
 
         # test the dot product of qnodes, tensor
-        cost = qml.dot(qc, coeffs)
+        cost = qml.collections.dot(qc, coeffs)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -679,7 +679,7 @@ class TestDot:
 
         coeffs = torch.tensor(coeffs, dtype=torch.float64)
         # test the dot product of qnodes, tensor
-        cost = qml.dot(qc, coeffs)
+        cost = qml.collections.dot(qc, coeffs)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -703,7 +703,7 @@ class TestDot:
 
         coeffs = tf.Variable(coeffs, dtype=tf.float64)
         # test the dot product of qnodes, tensor
-        cost = qml.dot(qc, coeffs)
+        cost = qml.collections.dot(qc, coeffs)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -725,7 +725,7 @@ class TestDot:
         coeffs = [0.5, -0.1]
 
         # test the dot product of qnodes, tensor
-        cost = qml.dot(qc, coeffs)
+        cost = qml.collections.dot(qc, coeffs)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -751,7 +751,7 @@ class TestDot:
 
         qc = qml.QNodeCollection([circuit1, circuit2])
         with pytest.raises(ValueError, match="Unknown interface invalid"):
-            qml.dot([1, 2], qc)
+            qml.collections.dot([1, 2], qc)
 
     def test_mismatching_interface(self, monkeypatch):
         """Test exception raised if the interfaces don't match"""
@@ -770,9 +770,9 @@ class TestDot:
         qc1 = qml.QNodeCollection([circuit1])
         qc2 = qml.QNodeCollection([circuit2])
         with pytest.raises(ValueError, match="have non-matching interfaces"):
-            qml.dot(qc1, qc2)
+            qml.collections.dot(qc1, qc2)
 
     def test_no_qnodes(self):
         """Test exception raised if no qnodes are provided as arguments"""
         with pytest.raises(ValueError, match="At least one argument must be a QNodeCollection"):
-            qml.dot([1, 2], [3, 4])
+            qml.collections.dot([1, 2], [3, 4])
