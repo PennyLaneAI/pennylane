@@ -34,6 +34,8 @@ Convenience Functions
     :toctree: api
 
     ~constant
+    ~pwc
+    ~pwc_from_function
     ~rect
 """
 
