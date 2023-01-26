@@ -105,7 +105,7 @@ def dot(x, y):
     and the QNodeCollection:
 
     >>> coeffs = torch.tensor([0.32, -0.2], dtype=torch.double)
-    >>> cost = qml.dot(coeffs, qnodes)
+    >>> cost = qml.collections.dot(coeffs, qnodes)
 
     .. note::
 
