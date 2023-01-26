@@ -40,7 +40,7 @@ parameters :math:`p` and time :math:`t`.
     representing the :class:`~.ParametrizedHamiltonian` is needed, the initialized :class:`~.ParametrizedHamiltonian`
     must be called with fixed parameters and time.
 
-Defining a ``ParametrizedHamiltonian`` requires coefficients and operators. In the example below, we define a
+Defining a :class:`~.ParametrizedHamiltonian` requires coefficients and operators. In the example below, we define a
 Hamiltonian with a single drift term, and two parametrized terms.
 
 .. code-block:: python
@@ -82,10 +82,10 @@ and operators:
     ``coeffs = [lambda p, t: p for _ in range(3)]``.
 
     Do **not**, however, define the function as dependent on the value that is iterated over. That is, it is not
-    possible to define ``coeffs = [lambda p, t: t**i + p for i in range(3)]`` to create a list
-    ``coeffs = [(lambda p, t: p), (lambda p, t: t + p), (lambda p, t: t**2 + p)]``. The value of ``i`` when
+    possible to define ``coeffs = [lambda p, t: p * t**i for i in range(3)]`` to create a list
+    ``coeffs = [(lambda p, t: p), (lambda p, t: p * t), (lambda p, t: p * t**2)]``. The value of ``i`` when
     creating the lambda functions is set to be the final value in the iteration, such that this will
-    produce ``coeffs = [(lambda p, t: t**2 + p)] * 3``.
+    produce ``coeffs = [(lambda p, t: p * t**2)] * 3``.
 
 
 The :class:`~.ParametrizedHamiltonian` is a callable, and can return an :class:`~.Operator` if passed a set of
@@ -129,20 +129,24 @@ Further examples
 
 A few additional examples of defining a :class:`~.ParametrizedHamiltonian` are provided here.
 
-Using a ``rect`` to create a parametrized coefficient that has a value of 0 outside the time interval
+Using ``rect`` to create a parametrized coefficient that has a value of 0 outside the time interval
 :math:`t=(1, 7)`, and within the interval is defined by ``jnp.polyval(p, t)``:
 
 .. code-block:: python
 
     from pennylane.pulse.convenience_functions import rect
 
-    >>> def f(p, t):
-    ...     return jnp.polyval(p, t)
-    >>> H = qml.pulse.rect(f1, windows=[(1, 7)]) * qml.PauliX(0)
-    >>> H([3], t=2)
-    2.7278921604156494*(PauliX(wires=[0]))  # inside the window
-    >>> H([3], t=0.5 )
-    0.0*(PauliX(wires=[0]))  # outside the window
+    def f(p, t):
+        return jnp.polyval(p, t)
+    H = qml.pulse.rect(f1, windows=[(1, 7)]) * qml.PauliX(0)
+
+    # inside the window
+    H([3], t=2)
+    >>> 2.7278921604156494*(PauliX(wires=[0]))
+
+    # outside the window
+    H([3], t=0.5 )
+    >>> 0.0*(PauliX(wires=[0]))
 
 Using a ``pwc`` to create a parametrized coefficient that is piecewise constant
 within the interval ``t``, and 0 outside it:
@@ -153,16 +157,21 @@ within the interval ``t``, and 0 outside it:
 
     f1 = pwc(timespan=(2, 7))  # TODO: maybe this should be renamed window for uniformity?
     H = f1 * qml.PauliX(0)
-    H(params=[[1, 2, 3, 4, 5]], t=2.3)  # evenly distributes outputs params[0] in the interval t=2 to t=7
+
+    # passing pwc((2, 7)) an array evenly distributes the array values in the interval t=2 to t=7
+    H(params=[[1, 2, 3, 4, 5]], t=2.3)
     >>> 1.0*(PauliX(wires=[0]))
 
-    H(params=[[1, 2, 3, 4, 5]], t=2.5)  # same bin
+    # different time, same bin, same result
+    H(params=[[1, 2, 3, 4, 5]], t=2.5)
     >>> 1.0*(PauliX(wires=[0]))
 
-    H(params=[[1, 2, 3, 4, 5]], t=3.1)  # next bin
+    # next bin
+    H(params=[[1, 2, 3, 4, 5]], t=3.1)
     >>> 2.0*(PauliX(wires=[0]))
 
-    H(params=[[1, 2, 3, 4, 5]], t=8)  # outside the window where the function is assigned non-zero values
+    # outside the window where the function is assigned non-zero values
+    H(params=[[1, 2, 3, 4, 5]], t=8)
     >>> 0.0*(PauliX(wires=[0]))
 
 ParametrizedEvolution
