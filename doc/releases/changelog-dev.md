@@ -373,6 +373,41 @@
 
 <h3>Breaking changes</h3>
 
+* The default interface is now `auto`, there is no need to specify the interface anzmore! It is automatically 
+  determined giving your `QNode` parameters.
+  
+  ```python
+  import jax
+  import jax.numpy as jnp
+  
+  qml.enable_return()
+  a = jnp.array(0.1)
+  b = jnp.array(0.2)
+  
+  dev = qml.device("default.qubit", wires=2)
+  
+  
+  @qml.qnode(dev)
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+  ```
+  ```pycon
+  >>> circuit(a, b)
+  (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))
+  
+  >>> jac = jax.jacobian(circuit)(a, b)
+  (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
+  ```
+  
+  It comes with a small overhead and the fact that is determined during the `QNode` call instead of the initialization. 
+  It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning of the call. 
+  Also without specifying the interface it is not possible to guarantee that the device will not be changed during 
+  the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) where before it was happening at 
+  initialization, therefore you should not try to track the device without specifying the interface.
+
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
   activated by setting the `return_op_index` to `True`: `get_operation(idx, return_op_index=True)`. It will become
   the default in version 0.30.
@@ -400,7 +435,16 @@
 * The tape constructed by a QNode is no longer queued to surrounding contexts.
   [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
 
-* Nested operators like `Tensor`, `Hamiltonian`, and `Adjoint` now remove their owned operators
+* Nested operators like `Tensor`, `Hamiltoniandev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.RX(0.2, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = np.array(0.1, requires_grad=True)
+        circuit(a)`, and `Adjoint` now remove their owned operators
   from the queue instead of updating their metadata to have an `"owner"`.
   [(#3282)](https://github.com/PennyLaneAI/pennylane/pull/3282)
 
