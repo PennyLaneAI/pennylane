@@ -290,8 +290,6 @@
 * Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
   [(#3236)](https://github.com/PennyLaneAI/pennylane/issues/3236)
 
-* Improve the `PauliSentence.operation()` method to avoid instantiating an `SProd` operator when
-
 * The `PauliSentence.operation()` method has been improved to avoid instantiating an `SProd` operator when
   the coefficient is equal to 1.
   [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
