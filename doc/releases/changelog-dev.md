@@ -11,8 +11,8 @@
 * Parameterized Hamiltonians can now be created with the addition of `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
 
-  A `ParametrizedHamiltonian` holds information representing a linear combination of operators 
-  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the operator for 
+  A `ParametrizedHamiltonian` holds information representing a linear combination of operators
+  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the operator for
   the specified parameters.
   
   ```pycon
@@ -25,6 +25,7 @@
 
   H =  2 * XX + f1 * YY + f2 * ZZ
   ```
+
   ```pycon
   >>> H
   ParametrizedHamiltonian: terms=3
@@ -59,6 +60,7 @@
   1.1 * X(0)
   + 2.2 * Y(0)
   ```
+
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
 <h4>Always differentiable 📈</h4>
@@ -297,8 +299,8 @@
 * Lazy-loading in the `Dataset.read()` method is more universally supported.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
-* Implemented the XYX single-qubit unitary decomposition. 
-  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628) 
+* Implemented the XYX single-qubit unitary decomposition.
+  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628)
 
 * `Sum` and `Prod` operations now have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
@@ -332,7 +334,7 @@
 * `Operator.inv()` and the `Operator.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
   [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
   
-  For example, instead of 
+  For example, instead of
   
   ```pycon
   >>> qml.PauliX(0).inv()
@@ -362,6 +364,9 @@
   [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
 
 <h3>Deprecations</h3>
+
+* Deprecate the `collections` module.
+  [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
 
 <h3>Documentation</h3>
 
