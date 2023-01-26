@@ -200,7 +200,7 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
     def processing_fn(res):
         dot_products = []
         for c, r in zip(coeffs, res):
-            if qml.math.ndim(c) == 0 and len(r) != 1:
+            if qml.math.ndim(c) == 0 and qml.math.size(r) != 1:
                 dot_products.append(qml.math.squeeze(r) * c)
             else:
                 dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
