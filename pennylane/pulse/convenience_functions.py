@@ -23,12 +23,12 @@ except ImportError:
 
 
 def constant(windows: List[Tuple[float]] = None):
-    r"""Returns a callable ``f(p, t)`` that returns ``p`` inside the time
+    """Returns a callable ``f(p, t)`` that returns ``p`` inside the time
     windows defined in ``windows``.
 
     Args:
         windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where
-        ``f(p, t)`` is evaluated. If ``None``, it is always evaluated. Defaults to ``None``.
+            ``f(p, t)`` is evaluated. If ``None``, it is always evaluated. Defaults to ``None``.
 
     **Example**
 
