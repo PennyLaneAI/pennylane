@@ -187,7 +187,7 @@ class TestInterfacesClassicalFisher:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def circ(params):
             for i in range(n_wires):
                 qml.RX(params[0], wires=i)
@@ -205,7 +205,7 @@ class TestInterfacesClassicalFisher:
         """Integration test of classical_fisher() with autograd for examples that have 0s in the probabilities and non-zero gradient"""
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def circ(params):
             qml.RZ(params[0], wires=0)
             qml.RX(params[1], wires=1)
@@ -224,7 +224,7 @@ class TestInterfacesClassicalFisher:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circ(params):
             for i in range(n_wires):
                 qml.RX(params[0], wires=i)
@@ -244,7 +244,7 @@ class TestInterfacesClassicalFisher:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circ(params):
             qml.RZ(params[0], wires=0)
             qml.RX(params[1], wires=1)
@@ -264,7 +264,7 @@ class TestInterfacesClassicalFisher:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circ(x, y, z):
             for xi in x:
                 qml.RX(xi, wires=0)
@@ -293,7 +293,7 @@ class TestInterfacesClassicalFisher:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circ(params):
             for i in range(n_wires):
                 qml.RX(params[0], wires=i)
@@ -313,7 +313,7 @@ class TestInterfacesClassicalFisher:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circ(params):
             qml.RZ(params[0], wires=0)
             qml.RX(params[1], wires=1)
@@ -333,7 +333,7 @@ class TestInterfacesClassicalFisher:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circ(x, y, z):
             for xi in x:
                 qml.RX(xi, wires=0)
@@ -362,7 +362,7 @@ class TestInterfacesClassicalFisher:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circ(params):
             for i in range(n_wires):
                 qml.RX(params[0], wires=i)
@@ -382,7 +382,7 @@ class TestInterfacesClassicalFisher:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circ(params):
             qml.RZ(params[0], wires=0)
             qml.RX(params[1], wires=1)
@@ -434,7 +434,7 @@ class TestDiffCFIM:
         """Testing diffability with an analytic example for autograd. The CFIM of this single qubit is constant, so the gradient should be zero."""
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def circ(params):
             qml.RY(params, wires=0)
             return qml.probs(wires=range(1))
@@ -459,7 +459,7 @@ class TestDiffCFIM:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circ(params):
             qml.RY(params[0], wires=0)
             return qml.probs(wires=range(1))
@@ -486,7 +486,7 @@ class TestDiffCFIM:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circ(params):
             qml.RY(params, wires=0)
             return qml.probs(wires=range(1))
@@ -512,7 +512,7 @@ class TestDiffCFIM:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circ(params):
             qml.RY(params, wires=0)
             return qml.probs(wires=range(1))
@@ -553,7 +553,7 @@ class TestDiffCFIM:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         # Compute gradients of CFIM for different interfaces
-        circuit = qml.QNode(qfunc, dev, interface="torch")
+        circuit = qml.QNode(qfunc, dev)
         weights = torch.tensor(
             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], requires_grad=True
         )
@@ -561,15 +561,15 @@ class TestDiffCFIM:
             qml.qinfo.classical_fisher(circuit), weights
         )
 
-        circuit = qml.QNode(qfunc, dev, interface="autograd")
+        circuit = qml.QNode(qfunc, dev)
         weights = pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], requires_grad=True)
         grad_autograd = qml.jacobian(qml.qinfo.classical_fisher(circuit))(weights)
 
-        circuit = qml.QNode(qfunc, dev, interface="jax")
+        circuit = qml.QNode(qfunc, dev)
         weights = jnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
         grad_jax = jax.jacobian(qml.qinfo.classical_fisher(circuit))(weights)
 
-        circuit = qml.QNode(qfunc, dev, interface="tf")
+        circuit = qml.QNode(qfunc, dev)
         weights = tf.Variable([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
         with tf.GradientTape() as tape:
             loss = qml.qinfo.classical_fisher(circuit)(weights)
