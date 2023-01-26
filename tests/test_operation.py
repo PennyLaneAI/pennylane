@@ -14,9 +14,9 @@
 """
 Unit tests for :mod:`pennylane.operation`.
 """
+import copy
 import itertools
 from functools import reduce
-import copy
 
 import numpy as np
 import pytest
@@ -25,12 +25,18 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import Operation, Operator, Tensor, operation_derivative
+from pennylane.operation import (
+    Operation,
+    Operator,
+    Tensor,
+    operation_derivative,
+    StatePrep,
+)
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
-# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment
+# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -527,6 +533,17 @@ class TestOperatorConstruction:
 
         op = DummyOp(wires=0)
         assert op._pauli_rep is None
+
+    def test_list_params_casted_into_numpy_array(self):
+        """Test that list parameters are casted into numpy arrays."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp([1, 2, 3], wires=0)
+
+        assert isinstance(op.data[0], np.ndarray)
 
 
 class TestOperationConstruction:
@@ -1625,14 +1642,12 @@ class TestTensor:
     def test_copy(self):
         """Test copying of a Tensor."""
         tensor = Tensor(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
-        copied_tensor = copy.copy(tensor)
-        copied_tensor1 = tensor.__copy__()
-        for c in [copied_tensor, copied_tensor1]:
-            assert c is not tensor
-            assert c.wires == Wires([0, 1, 2])
-            assert c.batch_size == tensor.batch_size == None
-            for obs1, obs2 in zip(c.obs, tensor.obs):
-                assert qml.equal(obs1, obs2)
+        c = copy.copy(tensor)
+        assert c is not tensor
+        assert c.wires == Wires([0, 1, 2])
+        assert c.batch_size == tensor.batch_size == None
+        for obs1, obs2 in zip(c.obs, tensor.obs):
+            assert qml.equal(obs1, obs2)
 
     def test_map_wires(self):
         """Test the map_wires method."""
@@ -2109,6 +2124,36 @@ class TestCVOperation:
         with pytest.raises(ValueError, match="Only order-1 and order-2 arrays supported"):
             U_high_order = np.array([np.eye(3)] * 3)
             op.heisenberg_expand(U_high_order, op.wires)
+
+
+class TestStatePrep:
+    """Test the StatePrep interface."""
+
+    # pylint:disable=unused-argument,too-few-public-methods
+    def test_basic_stateprep(self):
+        """Tests a basic implementation of the StatePrep interface."""
+
+        class DefaultPrep(StatePrep):
+            """A dummy class that assumes it was given a state vector."""
+
+            num_wires = qml.operation.AllWires
+
+            def state_vector(self, wire_order=None):
+                return self.parameters[0]
+
+        prep_op = DefaultPrep([1, 0], wires=[0])
+        assert np.array_equal(prep_op.state_vector(), [1, 0])
+
+    def test_child_must_implement_state_vector(self):
+        """Tests that a child class that does not implement state_vector fails."""
+
+        class NoStatePrepOp(StatePrep):
+            """A class that is missing the state_vector implementation."""
+
+            num_wires = qml.operation.AllWires
+
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+            NoStatePrepOp(wires=[0])
 
 
 class TestCriteria:
