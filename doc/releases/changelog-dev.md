@@ -417,7 +417,7 @@
 
 * `qml.utils.sparse_hamiltonian` function has been deprecated, and usage will now raise a warning.
   Instead, one should use the `~.Hamiltonian.sparse_matrix` method.
-  [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585/)
+  [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
 
 <h3>Documentation</h3>
 
