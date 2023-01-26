@@ -23,29 +23,30 @@ except ImportError:
 
 
 def constant(windows: List[Tuple[float]] = None):
-    """Returns a callable ``f(p, t)`` that returns ``p`` inside the time
-    windows defined in ``windows``.
-
-    Args:
-        windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where
-        ``f(p, t)`` is evaluated. If ``None``, it is always evaluated. Defaults to ``None``.
-
-    **Example**
-
-    The ``constant`` function can be used to create a parametrized hamiltonian
-
-    >>> windows = [(1, 7), (9, 14)]
-    >>> H = qml.pulse.constant(windows) * qml.PauliX(0)
-
-    When calling the parametrized hamiltonian, ``constant`` will return the input parameter only
-    when the time is inside the given time windows
-
-    >>> params = [5]
-    >>> H(params, t=8)  # t is outside the time windows
-    0.0*(PauliX(wires=[0]))
-    >>> H(params, t=5)  # t is inside the time windows
-    5.0*(PauliX(wires=[0]))
-    """
+    """Test"""
+    # """Returns a callable ``f(p, t)`` that returns ``p`` inside the time
+    # windows defined in ``windows``.
+    #
+    # Args:
+    #     windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where
+    #     ``f(p, t)`` is evaluated. If ``None``, it is always evaluated. Defaults to ``None``.
+    #
+    # **Example**
+    #
+    # The ``constant`` function can be used to create a parametrized hamiltonian
+    #
+    # >>> windows = [(1, 7), (9, 14)]
+    # >>> H = qml.pulse.constant(windows) * qml.PauliX(0)
+    #
+    # When calling the parametrized hamiltonian, ``constant`` will return the input parameter only
+    # when the time is inside the given time windows
+    #
+    # >>> params = [5]
+    # >>> H(params, t=8)  # t is outside the time windows
+    # 0.0*(PauliX(wires=[0]))
+    # >>> H(params, t=5)  # t is inside the time windows
+    # 5.0*(PauliX(wires=[0]))
+    # """
     return rect(x=lambda p, _: p, windows=windows)
 
 
