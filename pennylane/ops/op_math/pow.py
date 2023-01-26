@@ -54,6 +54,24 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
     Returns:
         Operator
 
+    .. note::
+
+        This operator supports a batched base, a batched coefficient and a combination of both:
+
+        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=4)
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.pow(qml.RX(1, wires=0), z=[1, 2, 3])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=[4, 5, 6])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+
+        But it doesn't support batching of operators:
+        >>> op = qml.pow([qml.RX(1, wires=0), qml.RX(2, wires=0)], z=4)
+        AttributeError: 'list' object has no attribute 'name'
+
     .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
 
     **Example**
@@ -133,24 +151,6 @@ class Pow(ScalarSymbolicOp):
     Args:
         base (~.operation.Operator): the operator to be raised to a power
         z=1 (float): the exponent
-
-    .. note::
-
-        This operator supports a batched base, a batched coefficient and a combination of both:
-
-        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=4)
-        >>> qml.matrix(op).shape
-        (3, 2, 2)
-        >>> op = qml.pow(qml.RX(1, wires=0), z=[1, 2, 3])
-        >>> qml.matrix(op).shape
-        (3, 2, 2)
-        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=[4, 5, 6])
-        >>> qml.matrix(op).shape
-        (3, 2, 2)
-
-        But it doesn't support batching of operators:
-        >>> op = qml.pow([qml.RX(1, wires=0), qml.RX(2, wires=0)], z=4)
-        AttributeError: 'list' object has no attribute 'name'
 
     **Example**
 

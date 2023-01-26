@@ -45,6 +45,24 @@ def exp(op, coeff=1, id=None):
     Returns:
        :class:`Exp`: A :class`~.operation.Operator` representing an operator exponential.
 
+    .. note::
+
+        This operator supports a batched base, a batched coefficient and a combination of both:
+
+        >>> op = qml.exp(qml.RX([1, 2, 3], wires=0), coeff=4)
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.exp(qml.RX(1, wires=0), coeff=[1, 2, 3])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.exp(qml.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+
+        But it doesn't support batching of operators:
+        >>> op = qml.exp([qml.RX(1, wires=0), qml.RX(2, wires=0)], coeff=4)
+        AttributeError: 'list' object has no attribute 'batch_size'
+
     **Example**
 
     This symbolic operator can be used to make general rotation operators:
@@ -92,24 +110,6 @@ class Exp(ScalarSymbolicOp, Operation):
     Args:
         base (~.operation.Operator): The Operator to be exponentiated
         coeff=1 (Number): A scalar coefficient of the operator.
-
-    .. note::
-
-        This operator supports a batched base, a batched coefficient and a combination of both:
-
-        >>> op = qml.exp(qml.RX([1, 2, 3], wires=0), coeff=4)
-        >>> qml.matrix(op).shape
-        (3, 2, 2)
-        >>> op = qml.exp(qml.RX(1, wires=0), coeff=[1, 2, 3])
-        >>> qml.matrix(op).shape
-        (3, 2, 2)
-        >>> op = qml.exp(qml.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])
-        >>> qml.matrix(op).shape
-        (3, 2, 2)
-
-        But it doesn't support batching of operators:
-        >>> op = qml.exp([qml.RX(1, wires=0), qml.RX(2, wires=0)], coeff=4)
-        AttributeError: 'list' object has no attribute 'batch_size'
 
     **Example**
 
