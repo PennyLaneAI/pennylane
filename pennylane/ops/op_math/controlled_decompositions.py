@@ -24,40 +24,51 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     """Decompose a controlled single-qubit operation given the target operation
 
     This function decomposes the controlled version of a single-qubit operation
-    given a target operation using the decomposition defined in Lemma 4.3 and 5.1
-    of `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
+    given a target operation using the decomposition defined in section 5 of
+    `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
+
+    .. note:: This method will add a global phase for target operations that do not
+    belong to the SU(2) group.
 
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
-        control_wires (~.wires.Wires): the control wires of the operation
+        control_wires (~.wires.Wires): the control wire of the operation
 
     Returns:
         list[Operation]: the decomposed operations
 
     Raises:
         ValueError: if `target_operation` is not a single-qubit operation
+
     """
+    # TODO: Add support for general unitaries, not just SU(2) matrices
     if len(target_operation.wires) != 1:
         raise ValueError(
             "The target operation must be a single-qubit operation, instead "
             f"got {target_operation.__class__.__name__}."
         )
 
-    target_wires = target_operation.wires
+    target_wire = target_operation.wires
+
+    if len(control_wires) > 2:
+        control_gate = qml.MultiControlledX(wires=control_wires + target_wire)
+    elif len(control_wires) == 2:
+        control_gate = qml.Toffoli(wires=control_wires + target_wire)
+    else:
+        control_gate = qml.CNOT(wires=control_wires + target_wire)
+
     try:
         phi, theta, omega = target_operation.single_qubit_rot_angles()
     except NotImplementedError:
-        zyz_decomp = qml.transforms.zyz_decomposition(
-            qml.matrix(target_operation), target_operation.wires
-        )[0]
+        zyz_decomp = qml.transforms.zyz_decomposition(qml.matrix(target_operation), target_wire)[0]
         phi, theta, omega = zyz_decomp.single_qubit_rot_angles()
 
     return [
-        qml.RZ(phi, wires=target_wires),
-        qml.RY(theta / 2, wires=target_wires),
-        qml.MultiControlledX(wires=control_wires + target_wires),
-        qml.RY(-theta / 2, wires=target_wires),
-        qml.RZ(-(phi + omega) / 2, wires=target_wires),
-        qml.MultiControlledX(wires=control_wires + target_wires),
-        qml.RZ((omega - phi) / 2, wires=target_wires),
+        qml.RZ(phi, wires=target_wire),
+        qml.RY(theta / 2, wires=target_wire),
+        control_gate,
+        qml.RY(-theta / 2, wires=target_wire),
+        qml.RZ(-(phi + omega) / 2, wires=target_wire),
+        control_gate,
+        qml.RZ((omega - phi) / 2, wires=target_wire),
     ]
