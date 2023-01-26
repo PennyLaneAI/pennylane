@@ -25,6 +25,35 @@ EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
 EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 10
 
 
+def _get_slice(index, axis, num_axes):
+    """Allows slicing along an arbitrary axis of an array or tensor.
+
+    Args:
+        index (int): the index to access
+        axis (int): the axis to slice into
+        num_axes (int): total number of axes
+
+    Returns:
+        tuple[slice or int]: a tuple that can be used to slice into an array or tensor
+
+    **Example:**
+
+    Accessing the 2 index along axis 1 of a 3-axis array:
+
+    >>> sl = _get_slice(2, 1, 3)
+    >>> sl
+    (slice(None, None, None), 2, slice(None, None, None))
+    >>> a = np.arange(27).reshape((3, 3, 3))
+    >>> a[sl]
+    array([[ 6,  7,  8],
+           [15, 16, 17],
+           [24, 25, 26]])
+    """
+    idx = [slice(None)] * num_axes
+    idx[axis] = index
+    return tuple(idx)
+
+
 def apply_operation_einsum(op: qml.operation.Operator, state):
     """Apply ``Operator`` to ``state`` using ``einsum``. This is more efficent at lower qubit
     numbers.
@@ -147,17 +176,12 @@ def apply_x(op: qml.PauliX, state):
 @apply_operation.register
 def apply_pauliz(op: qml.PauliZ, state):
     """Apply pauliz to state."""
-    state1 = math.multiply(-1, math.take(state, 1, axis=op.wires[0]))
-    return math.stack([math.take(state, 0, axis=op.wires[0]), state1], axis=op.wires[0])
+    n_wires = math.ndim(state)
+    sl_0 = _get_slice(0, op.wires[0], n_wires)
+    sl_1 = _get_slice(1, op.wires[0], n_wires)
 
-
-@apply_operation.register
-def apply_y(op: qml.PauliY, state):
-    """Apply pauliy operator to state."""
-    state = math.roll(state, 1, op.wires[0])
-    state1 = math.multiply(-1, math.take(state, 1, axis=op.wires[0]))
-    state = math.stack([math.take(state, 0, axis=op.wires[0]), state1], axis=op.wires[0])
-    return 1j * state
+    state1 = math.multiply(-1, state[sl_1])
+    return math.stack([state[sl_0], state1], axis=op.wires[0])
 
 
 @apply_operation.register
@@ -165,17 +189,21 @@ def apply_phase(op: qml.PhaseShift, state):
     """Apply PhaseShift operator to state."""
     shift = math.exp(math.multiply(1j, op.data[0]))
 
-    state0 = math.take(state, 0, axis=op.wires[0])
-    state1 = math.multiply(shift, math.take(state, 1, axis=op.wires[0]))
-    return math.stack([state0, state1], axis=op.wires[0])
+    n_wires = math.ndim(state)
+    sl_0 = _get_slice(0, op.wires[0], n_wires)
+    sl_1 = _get_slice(1, op.wires[0], n_wires)
+
+    state1 = math.multiply(shift, state[sl_1])
+    return math.stack([state[sl_0], state1], axis=op.wires[0])
 
 
 @apply_operation.register
 def apply_cnot(op: qml.CNOT, state):
     """Apply cnot gate to state."""
-
     target_axes = (op.wires[1] - 1) if op.wires[1] > op.wires[0] else (op.wires[1])
 
-    state0 = math.take(state, 0, axis=op.wires[0])
-    state_x = math.roll(math.take(state, 1, axis=op.wires[0]), 1, target_axes)
-    return math.stack([state0, state_x], axis=op.wires[0])
+    n_wires = math.ndim(state)
+    sl_0 = _get_slice(0, op.wires[0], n_wires)
+    sl_1 = _get_slice(1, op.wires[0], n_wires)
+    state_x = math.roll(state[sl_1], 1, target_axes)
+    return math.stack([state[sl_0], state_x], axis=op.wires[0])
