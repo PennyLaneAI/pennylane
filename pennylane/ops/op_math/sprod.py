@@ -80,6 +80,24 @@ class SProd(ScalarSymbolicOp):
     .. note::
         Currently this operator can not be queued in a circuit as an operation, only measured terminally.
 
+    .. note::
+
+        This operator supports a batched base, a batched coefficient and a combination of both:
+
+        >>> op = qml.s_prod(scalar=4, operator=qml.RX([1, 2, 3], wires=0))
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.s_prod(scalar=[1, 2, 3], operator=qml.RX(1, wires=0))
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.s_prod(scalar=[4, 5, 6], operator=qml.RX([1, 2, 3], wires=0))
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+
+        But it doesn't support batching of operators:
+        >>> op = qml.s_prod(scalar=4, operator=[qml.RX(1, wires=0), qml.RX(2, wires=0)])
+        AttributeError: 'list' object has no attribute 'batch_size'
+
     .. seealso:: :func:`~.ops.op_math.s_prod`
 
     **Example**
