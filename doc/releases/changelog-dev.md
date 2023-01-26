@@ -362,13 +362,21 @@
 * The `qml.GellMann` operators now include their index when displayed.
   [(#3641)](https://github.com/PennyLaneAI/pennylane/pull/3641)
 
-* The `ExecutionConfig` data class has been added .
+* The `ExecutionConfig` data class has been added.
   [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
 
 * All `Operator`'s input parameters that are lists are cast into vanilla numpy arrays.
   [(#3659)](https://github.com/PennyLaneAI/pennylane/pull/3659)
 
+* The `StatePrep` class has been added as an interface that state-prep operators must implement.
+  [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
+
 <h3>Breaking changes</h3>
+
+* The tape method `get_operation` can also now return the operation index in the tape, and it can be
+  activated by setting the `return_op_index` to `True`: `get_operation(idx, return_op_index=True)`. It will become
+  the default in version 0.30.
+  [(#3667)](https://github.com/PennyLaneAI/pennylane/pull/3667)
 
 * `Operator.inv()` and the `Operator.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
   [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
