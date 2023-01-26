@@ -47,9 +47,9 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
 
     >>> coeffs = np.array([1.1, 2.2])
     >>> ops = [qml.PauliX(0), qml.PauliY(0)]
-    >>> qml.ops.dot(coeffs, ops)
+    >>> qml.dot(coeffs, ops)
     (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
-    >>> qml.ops.dot(coeffs, ops, pauli=True)
+    >>> qml.dot(coeffs, ops, pauli=True)
     1.1 * X(0)
     + 2.2 * Y(0)
 
@@ -57,7 +57,7 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     Note that it returns a :class:`~.PauliSentence`, which is not an :class:`~.Operator`. This
     specialized representation can be converted to an operator:
 
-    >>> qml.ops.dot([1, 2], [qml.PauliX(0), qml.PauliX(0)], pauli=True).operation()
+    >>> qml.dot([1, 2], [qml.PauliX(0), qml.PauliX(0)], pauli=True).operation()
     3.0*(PauliX(wires=[0]))
 
     Using ``pauli=True`` and then converting the result to an :class:`~.Operator` is much faster

@@ -60,7 +60,7 @@ class ParametrizedHamiltonian:
         ...     return p * jnp.sin(t)
         >>> coeffs = [f1, f2]
         >>> ops = [qml.PauliX(0), qml.PauliY(1)]
-        >>> H = qml.ops.dot(coeffs, ops)
+        >>> H = qml.dot(coeffs, ops)
 
         And we call it using the following parameters:
 
@@ -155,7 +155,7 @@ class ParametrizedHamiltonian:
         """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``
         operators (or a single ``SProd`` operator in the event that there is only one term in ``H_fixed``)."""
         if self.coeffs_fixed:
-            return qml.ops.dot(self.coeffs_fixed, self.ops_fixed)  # pylint: disable=no-member
+            return qml.dot(self.coeffs_fixed, self.ops_fixed)  # pylint: disable=no-member
         return 0
 
     def H_parametrized(self, params, t):
@@ -171,7 +171,7 @@ class ParametrizedHamiltonian:
         coeffs = [f(param, t) for f, param in zip(self.coeffs_parametrized, params)]
         if len(coeffs) == 0:
             return 0
-        return qml.ops.dot(coeffs, self.ops_parametrized)  # pylint: disable=no-member
+        return qml.dot(coeffs, self.ops_parametrized)  # pylint: disable=no-member
 
     @property
     def coeffs(self):

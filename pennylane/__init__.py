@@ -352,15 +352,15 @@ def __getattr__(name):
             "The qml.grouping module is deprecated, please use qml.pauli instead.",
             UserWarning,
         )
-        import pennylane.grouping as grouping  # pylint:disable=import-outside-toplevel,consider-using-from-import
+        from pennylane import grouping  # pylint:disable=import-outside-toplevel
 
         return grouping
-    if name in {"QNodeCollection", "map", "sum"}:
+    if name in {"collections", "QNodeCollection", "map", "sum"}:
         warnings.warn(
-            "The qml.collections module is deprecated and will be removed soon. ",
+            "The qml.collections module is deprecated and will be removed soon.",
             UserWarning,
         )
         from pennylane import collections  # pylint:disable=import-outside-toplevel
 
-        return getattr(collections, name)
+        return collections if name == "collections" else getattr(collections, name)
     raise AttributeError(f"Module {__name__} has no attribute {name}")

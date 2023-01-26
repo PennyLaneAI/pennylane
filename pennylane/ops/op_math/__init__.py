@@ -65,7 +65,6 @@ from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
 from .controlled import Controlled, ControlledOp, ctrl
 from .controlled_ops import ControlledQubitUnitary
-from .dot import dot
 from .exp import Evolution, Exp, exp
 from .pow import Pow, pow
 from .prod import Prod, prod
