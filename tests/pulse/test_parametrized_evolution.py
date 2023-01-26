@@ -67,8 +67,13 @@ def time_dependent_hamiltonian():
 
 def test_error_raised_if_jax_not_installed():
     """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
-    with pytest.raises(ImportError, match="Module jax is required"):
-        ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))
+    try:
+        import jax  # pylint: disable=unused-import
+
+        pytest.skip()
+    except ImportError:
+        with pytest.raises(ImportError, match="Module jax is required"):
+            ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))
 
 
 @pytest.mark.jax
