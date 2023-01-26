@@ -46,18 +46,20 @@ Hamiltonian with a single drift term, and two parametrized terms.
 .. code-block:: python
 
     import pennylane as qml
-    from jax import numpy as np
+    from jax import numpy as jnp
 
     # defining the coefficients fj(v, t) for the two parametrized terms
-    f1 = lambda p, t: p * np.sin(t) * (t - 1)
-    f2 = lambda p, t: p[0] * np.cos(p[1]* t ** 2)
+    f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
+    f2 = lambda p, t: p[0] * jnp.cos(p[1]* t ** 2)
 
     # defining the operations for the three terms in the Hamiltonian
     XX = qml.PauliX(0) @ qml.PauliX(1)
     YY = qml.PauliY(0) @ qml.PauliY(1)
     ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
 
-There are two way to construct a :class:`~.ParametrizedHamiltonian` from the coefficients and operators:
+These functions for the parametrized terms should be defined using `jax.numpy` rather than `numpy` where relevant.
+There are two way to construct a :class:`~.ParametrizedHamiltonian` from the coefficients
+and operators:
 
 .. code-block:: python
 
@@ -129,7 +131,7 @@ The ``rect`` function defines can be used to create a parametrized hamiltonian
 
 ParametrizedEvolution
 ---------------------
-# ToDo: consolidate and clarify into information
+# ToDo: consolidate and clarify intro information
 
 During a pulse sequence, the state evolves according to the time-dependent Schrodinger equation
 
@@ -147,21 +149,32 @@ Schrodinger equation for a :class:`~.ParametrizedHamiltonian`:
 Creation of the :class:`~.ParametrizedEvolution` uses an a numerical ordinary differential equation
 solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_).
 
+.. code-block:: python
+    from jax import numpy as jnp
 
-SIMPLE EXAMPLE using qml.evolve to create a Parametrized evolution
+    f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
+    H = 2 * qml.PauliX(0) + f1 * qml.PauliY(1)
+    ev = qml.evolve(H)
+    ev
+    >>> ParametrizedEvolution(wires=[0, 1])
+
+The initial :class:`~.ParametrizedEvolution` does not have parameters defined, and so will
+not have a defined matrix. To complete initialization of the :class:`~.Operator`, it must be passed
+parameters and a time interval:
+
+.. code-block:: python
+    ev([1.2], t=[0, 4]).matrix()
+    >>> Array([[-0.14115842+0.j        ,  0.03528605+0.j        ,
+                 0.        -0.95982337j,  0.        +0.23993255j],
+               [-0.03528605+0.j        , -0.14115842+0.j        ,
+                 0.        -0.23993255j,  0.        -0.95982337j],
+               [ 0.        -0.95982337j,  0.        +0.23993255j,
+                -0.14115842+0.j        ,  0.03528605+0.j        ],
+               [ 0.        -0.23993255j,  0.        -0.95982337j,
+                -0.03528605+0.j        , -0.14115842+0.j        ]],      dtype=complex64)
 
 
-
-The parameters can be updated...
-A call of a :class:`~.ParametrizedEvolution` will return a normal :class:`~Operator` defining the time
-evolution for the input parameters.
-
-.. note::
-    The :class:`~.ParametrizedEvolution` does not have parameters defined in the intial... etc.
-
-
-
-
+The parameters can be updated by calling the :class:`~.ParametrizedEvolution` again with different inputs.
 
 The :class:`~.ParametrizedEvolution` can be implemented in the QNode in the same way as other Operations in
 PennyLane. To look at an example of this, let's start with two instances of :class:`~.ParametrizedHamiltonian`:
@@ -187,7 +200,7 @@ Now we can execute the evolution of these parametrized hamiltonians applied simu
         qml.evolve(H1 + H2)(params, t=[0, 10])
         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
-    params = jnp.array([1., 2., 3.])
+    params = jnp.array([1., 2., 3., 4., 5., 6.])
     circuit(params)
     >>> Array(-0.78236955, dtype=float32)
 
