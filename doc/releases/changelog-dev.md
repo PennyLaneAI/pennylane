@@ -323,6 +323,7 @@
   [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
 
 * `QubitStateVector` now implements the `StatePrep` interface.
+  [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
 
 <h3>Breaking changes</h3>
 
