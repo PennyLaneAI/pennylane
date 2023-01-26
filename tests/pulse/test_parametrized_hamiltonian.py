@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.ops.op_math import ParametrizedHamiltonian
+from pennylane.pulse import ParametrizedHamiltonian
 from pennylane.wires import Wires
 
 
