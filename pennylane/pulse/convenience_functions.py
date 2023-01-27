@@ -24,7 +24,7 @@ except ImportError:
 
 # pylint: disable=unused-argument
 def constant(scalar, time):
-    """Parametrized function with the signature ``f(p, t)`` that is constant in time and returns ``p``.
+    """Parametrized function that is constant in time and returns the given ``scalar``.
 
     Args:
         scalar (float): the scalar to be returned
