@@ -417,6 +417,9 @@
 * Deprecate the `collections` module.
   [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
 
+* `qml.op_sum` has been deprecated. Users should use `qml.sum` instead.
+  [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
+
 <h3>Documentation</h3>
 
 * Organizes the module for documentation for ``operation``.
