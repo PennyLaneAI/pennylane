@@ -94,7 +94,7 @@ Pending deprecations
   - Deprecated in v0.29
   - Will be removed in v0.31
 
-* ``qml.op_sum``` is deprecated. Users should sue ``qml.sum`` instead.
+* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
 
   - Deprecated in v0.29.
   - Will be removed in v0.31.
