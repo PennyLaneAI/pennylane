@@ -30,8 +30,8 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     Returns:
         Union[.Evolution, ~pennylane.ops.op_math.evolve.ParametrizedEvolution]: evolution operator
 
-    .. seealso:: :class:`.ParametrizedEvolution`
-    .. seealso:: :class:`.Evolution`
+    .. seealso::
+        :class:`.ParametrizedEvolution`, :class:`.Evolution`
 
     **Examples**
 

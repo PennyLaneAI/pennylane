@@ -31,7 +31,7 @@ def constant(scalar, time):
         scalar (float): the scalar to be returned
         time (float): Time. This argument is not used.
 
-    This function is mainly used to build a parametrized Hamiltonian that can be differentiated
+    This function is mainly used to build a :class:`~.ParametrizedHamiltonian` that can be differentiated
     with respect to its time-independent term. It is an alias for `lambda scalar, t: scalar`.
 
     **Example**
@@ -231,11 +231,13 @@ def pwc_from_function(timespan, num_bins):
     The same effect can be achieved by decorating the smooth function:
 
     .. code-block:: python
-    @pwc_from_function(timespan, num_bins)
-    def fn(params, t):
-         return params[0] * t + params[1]
-    fn([2, 4], 3)
-    >>> DeviceArray(10.666666, dtype=float32)
+
+        @pwc_from_function(timespan, num_bins)
+        def fn(params, t):
+            return params[0] * t + params[1]
+
+        fn([2, 4], 3)
+        >>> DeviceArray(10.666666, dtype=float32)
 
     """
     if not has_jax:

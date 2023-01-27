@@ -98,10 +98,10 @@ class ParametrizedEvolution(Operation):
     (ParametrizedHamiltonian: terms=3, ParametrizedHamiltonian: terms=3)
 
     .. warning::
-        The :class:`ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly checked
-         when creating a :class:`~.ParametrizedEvolution` from the :class:`ParametrizedHamiltonian`.
+        The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly checked
+        when creating a :class:`~.ParametrizedEvolution` from the :class:`~.ParametrizedHamiltonian`.
 
-    A :class:`~.ParametrizedEvolution` can be defined by passing a :class:`ParametrizedHamiltonian` to
+    A :class:`~.ParametrizedEvolution` can be defined by passing a :class:`~.ParametrizedHamiltonian` to
      :func:`~.functions.evolve`. The parameters for the Hamiltonian and ODE can then be specified by calling
      the :class:`~.ParametrizedEvolution`.
 
