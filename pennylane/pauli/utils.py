@@ -20,18 +20,18 @@ representation of Pauli words and applications, see:
 * `arXiv:1701.08213 <https://arxiv.org/abs/1701.08213>`_
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
+from functools import lru_cache, reduce
 from itertools import product
 from typing import List
-from functools import reduce, lru_cache
 
 import numpy as np
-import pennylane as qml
 
-from pennylane.wires import Wires
-from pennylane.tape import OperationRecorder
+import pennylane as qml
+from pennylane.operation import Tensor
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
-from pennylane.ops import Identity, PauliX, PauliY, PauliZ
-from pennylane.operation import Tensor, Observable
+from pennylane.tape import OperationRecorder
+from pennylane.wires import Wires
 
 # To make this quicker later on
 ID_MAT = np.eye(2)
@@ -80,19 +80,19 @@ def is_pauli_word(observable):
     >>> is_pauli_word(qml.PauliZ(0) @ qml.Hadamard(1))
     False
     """
-    if not isinstance(observable, Observable):
-        return False
-
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
-        return set(observable.name).issubset(pauli_word_names)
+        return set(observable.name).issubset(pauli_word_names) and len(observable.obs) == len(
+            observable.wires
+        )
 
     if isinstance(observable, Hamiltonian):
-        terms_pauli_word = []
-        for _, ob in zip(*observable.terms()):
-            terms_pauli_word.append(is_pauli_word(ob))
-        return all(terms_pauli_word)
+        return False if len(observable.ops) > 1 else is_pauli_word(observable.ops[0])
 
+    if isinstance(observable, Prod):
+        return all(is_pauli_word(op) for op in observable) and len(observable) == len(
+            observable.wires
+        )
     return observable.name in pauli_word_names
 
 
