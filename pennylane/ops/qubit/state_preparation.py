@@ -87,10 +87,10 @@ class BasisState(StatePrep):
         return [BasisStatePreparation(n, wires)]
 
     def state_vector(self, wire_order=None):
-        """Returns a ket vector representing the state being created."""
+        """Returns a state-vector of shape ``(2,) * num_wires``."""
         if wire_order is None:
             num_wires = len(self.wires)
-            indices = list(self.parameters[0])
+            indices = self.parameters[0]
         else:
             new_wires = Wires(wire_order)
             if not new_wires.contains_wires(self.wires):
@@ -100,8 +100,8 @@ class BasisState(StatePrep):
             for base_wire_label, value in zip(self.wires, self.parameters[0]):
                 indices[new_wires.index(base_wire_label)] = value
 
-        ket = np.zeros(2**num_wires)
-        ket[np.ravel_multi_index(indices, [2] * num_wires)] = 1
+        ket = np.zeros((2,) * num_wires)
+        ket[tuple(indices)] = 1
         return convert_like(ket, self.parameters[0])
 
 

@@ -101,21 +101,23 @@ class TestStateVector:
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
         [
-            (2, None, 1),
-            (2, [1, 2], 1),
-            (3, [0, 1, 2], 1),
-            (3, ["a", 1, 2], 1),
-            (3, [1, 2, 0], 2),
-            (3, [1, 2, "a"], 2),
+            (2, None, (0, 1)),
+            (2, [1, 2], (0, 1)),
+            (2, [2, 1], (1, 0)),
+            (3, [0, 1, 2], (0, 0, 1)),
+            (3, ["a", 1, 2], (0, 0, 1)),
+            (3, [1, 2, 0], (0, 1, 0)),
+            (3, [1, 2, "a"], (0, 1, 0)),
         ],
     )
     def test_BasisState_state_vector(self, num_wires, wire_order, one_position):
         """Tests that BasisState state_vector returns kets as expected."""
         basis_op = qml.BasisState([0, 1], wires=[1, 2])
         ket = basis_op.state_vector(wire_order=wire_order)
+        assert qml.math.shape(ket) == (2,) * num_wires
         assert ket[one_position] == 1
         ket[one_position] = 0  # everything else should be zero, as we assert below
-        assert np.allclose(np.zeros(2**num_wires), ket)
+        assert np.allclose(np.zeros((2,) * num_wires), ket)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
