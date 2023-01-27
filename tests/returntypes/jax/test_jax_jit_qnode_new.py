@@ -1680,7 +1680,7 @@ class TestJIT:
     @pytest.mark.xfail(
         reason="Non-trainable parameters are not being correctly unwrapped by the interface"
     )
-    def test_gradient_subset(self, dev_name, diff_method, mode, jacobian, tol):
+    def test_gradient_subset(self, dev_name, diff_method, mode, jacobian, tol, interface):
         """Test derivative calculation of a scalar valued QNode with respect
         to a subset of arguments"""
         a = jax.numpy.array(0.1)
@@ -1688,7 +1688,7 @@ class TestJIT:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
+        @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
@@ -2130,7 +2130,7 @@ class TestReturn:
         assert jac[1][1].shape == (4,)
 
     def test_jacobian_multiple_measurement_multiple_param_array(
-        self, dev_name, diff_method, mode, jacobian, shots, nterface
+        self, dev_name, diff_method, mode, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if diff_method == "adjoint":
