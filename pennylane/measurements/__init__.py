@@ -214,6 +214,7 @@ from .measurements import (
 )
 from .mid_measure import MeasurementValue, MeasurementValueError, MidMeasureMP, measure
 from .mutual_info import MutualInfoMP, mutual_info
+from .purity import PurityMP, purity
 from .probs import ProbabilityMP, probs
 from .sample import SampleMP, sample
 from .state import StateMP, density_matrix, state

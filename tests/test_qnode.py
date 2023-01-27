@@ -368,6 +368,10 @@ class TestValidation:
         assert qn.diff_method == "finite-diff"
         assert qn.gradient_fn is qml.gradients.finite_diff
 
+        qn = QNode(dummyfunc, dev, diff_method="spsa")
+        assert qn.diff_method == "spsa"
+        assert qn.gradient_fn is qml.gradients.spsa_grad
+
         qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
         assert qn.gradient_fn is qml.gradients.param_shift
@@ -499,6 +503,41 @@ class TestValidation:
             grad = qml.grad(circuit)(0.5)
 
         assert np.allclose(grad, 0)
+
+    def test_unrecognized_kwargs_raise_warning(self):
+        """Test that passing gradient_kwargs not included in qml.gradients.SUPPORTED_GRADIENT_KWARGS raises warning"""
+        dev = qml.device("default.qubit", wires=2)
+
+        with warnings.catch_warnings(record=True) as w:
+
+            @qml.qnode(dev, random_kwarg=qml.gradients.finite_diff)
+            def circuit(params):
+                qml.RX(params[0], wires=0)
+                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+
+            assert len(w) == 1
+            assert "not included in the list of standard qnode gradient kwargs" in str(w[0].message)
+
+    def test_incorrect_diff_method_kwargs_raise_warning(self):
+        """Tests that using one of the incorrect kwargs previously used in some examples in PennyLane
+        (grad_method, gradient_fn) to set the qnode diff_method raises a warning"""
+        dev = qml.device("default.qubit", wires=2)
+
+        with warnings.catch_warnings(record=True) as w:
+
+            @qml.qnode(dev, grad_method=qml.gradients.finite_diff)
+            def circuit(params):
+                qml.RX(params[0], wires=0)
+                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+
+            @qml.qnode(dev, gradient_fn=qml.gradients.finite_diff)
+            def circuit(params):
+                qml.RX(params[0], wires=0)
+                return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0))
+
+        assert len(w) == 2
+        assert "Use diff_method instead" in str(w[0].message)
+        assert "Use diff_method instead" in str(w[1].message)
 
 
 class TestTapeConstruction:
@@ -879,7 +918,7 @@ class TestIntegration:
         assert cache != {}
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff"])
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa"])
     def test_single_expectation_value_with_argnum_one(self, diff_method, tol):
         """Tests correct output shape and evaluation for a QNode
         with a single expval output where only one parameter is chosen to
@@ -1104,6 +1143,21 @@ class TestIntegration:
 
         with pytest.raises(ValueError, match="wires have been measured already: {1}"):
             qnode()
+
+    def test_qnode_does_not_support_nested_queuing(self):
+        """Test that operators in QNodes are not queued to surrounding contexts."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def qnode():
+            qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qnode()
+
+        assert q.queue == []
+        assert len(qnode.tape.operations) == 1
 
 
 class TestShots:

@@ -612,7 +612,7 @@ class TestSimplify:
 
     def test_simplify_with_sum_operator(self):
         """Test the simplify method a scalar product of a Sum operator."""
-        sprod_op = s_prod(0 - 3j, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        sprod_op = s_prod(0 - 3j, qml.sum(qml.PauliX(0), qml.PauliX(0)))
         final_op = s_prod(0 - 6j, qml.PauliX(0))
         simplified_op = sprod_op.simplify()
 
@@ -668,8 +668,8 @@ class TestWrapperFunc:
             sprod1 = s_prod(4, qml.PauliX(0))
             sprod2 = s_prod(3, sprod1, lazy=False)
 
-        assert q[sprod1]["owner"] is sprod2
-        assert q[sprod2]["owns"] is sprod1
+        assert len(q) == 1
+        assert q.queue[0] is sprod2
 
 
 class TestIntegration:

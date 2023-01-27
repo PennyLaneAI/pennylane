@@ -2128,6 +2128,8 @@ class TestParameterShiftRule:
     def test_multi_measure_no_warning(self):
         """Test computing the gradient of a tape that contains multiple
         measurements omits no warnings."""
+        import warnings
+
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=4, shots=shot_vec)
 
@@ -2141,7 +2143,7 @@ class TestParameterShiftRule:
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.warns(None) as record:
+        with warnings.catch_warnings(record=True) as record:
             tapes, fn = qml.gradients.param_shift(tape, shots=shot_vec)
             fn(dev.batch_execute(tapes))
 
@@ -2194,7 +2196,7 @@ class TestHamiltonianExpvalGradients:
             op1 = qml.s_prod(a, qml.PauliZ(0))
             op2 = qml.s_prod(b, qml.prod(qml.PauliZ(0), qml.PauliX(1)))
             op3 = qml.s_prod(c, qml.PauliY(0))
-            H = qml.op_sum(op1, op2, op3)
+            H = qml.sum(op1, op2, op3)
             qml.expval(H)
 
         tape = qml.tape.QuantumScript.from_queue(q)

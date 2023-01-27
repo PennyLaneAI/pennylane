@@ -14,12 +14,12 @@
 """
 Integration tests for the draw transform
 """
-import pytest
 from functools import partial
+
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.drawer import draw
 
 
@@ -172,7 +172,7 @@ class TestMatrixParameters:
         expected2 = (
             "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
             "1: ─╰QubitStateVector(M0)────────┤         \n"
-            "M0 = \n[1.0, 0.0]\n"
+            "M0 = \n[1. 0.]\n"
             "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
 

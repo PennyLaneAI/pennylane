@@ -80,7 +80,7 @@ class TestConstruction:
         """Test that qubit quantum operations correctly queue"""
         tape, ops, obs = make_tape
 
-        assert len(tape.queue) == 7
+        assert len(tape.queue) == 6
         assert tape.operations == ops
         assert tape.observables == obs
         assert tape.output_dim == 5
@@ -197,7 +197,7 @@ class TestConstruction:
             C = A @ B
             D = qml.expval(C)
 
-        assert len(tape.queue) == 4
+        assert len(tape.queue) == 1
         assert not tape.operations
         assert tape.measurements == [D]
         assert tape.observables == [C]
@@ -221,7 +221,7 @@ class TestConstruction:
             qml.expval(obs[0])
             obs += [qml.probs(wires=[0, "a"])]
 
-        assert len(tape.queue) == 5
+        assert len(tape.queue) == 4
         assert tape.operations == ops
         assert tape.observables == obs
         assert tape.output_dim == 5
@@ -906,7 +906,11 @@ class TestInverseAdjoint:
 
         with QuantumTape() as tape:
             prep = qml.BasisState(init_state, wires=[0, "a"])
-            ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
+            ops = [
+                qml.RX(p[0], wires=0),
+                qml.adjoint(qml.Rot(*p[1:], wires=0)),
+                qml.CNOT(wires=[0, "a"]),
+            ]
             m1 = qml.probs(wires=0)
             m2 = qml.probs(wires="a")
 

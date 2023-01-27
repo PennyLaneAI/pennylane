@@ -15,14 +15,11 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
-import numbers
 from typing import Union
 
-import autoray
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
@@ -63,8 +60,7 @@ def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
     sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, do_queue=do_queue, id=id)
 
     if do_queue:
-        QueuingManager.update_info(operator, owner=sprod_op)
-        QueuingManager.update_info(sprod_op, owns=operator)
+        QueuingManager.remove(operator)
 
     return sprod_op
 
@@ -122,7 +118,6 @@ class SProd(SymbolicOp):
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
         self.scalar = scalar
-        self._check_scalar_is_valid()
         super().__init__(base=base, do_queue=do_queue, id=id)
 
         if base_pauli_rep := getattr(self.base, "_pauli_rep", None):
@@ -281,20 +276,3 @@ class SProd(SymbolicOp):
         if isinstance(new_base, SProd):
             return SProd(scalar=self.scalar, base=new_base).simplify()
         return SProd(scalar=self.scalar, base=new_base)
-
-    def _check_scalar_is_valid(self):
-        """Check that ``self.scalar`` is valid.
-
-        Raises:
-            ValueError: if ``self.scalar`` is not valid
-        """
-        backend = autoray.infer_backend(self.scalar)
-        # TODO: Remove shape check when supporting batching
-        if not (
-            (backend == "builtins" and isinstance(self.scalar, numbers.Number))
-            or (backend in SUPPORTED_INTERFACES and qml.math.shape(self.scalar) == ())
-        ):
-            raise ValueError(
-                f"Cannot compute the scalar product of a scalar value with backend `{backend}` and "
-                f"type `{type(self.scalar)}`"
-            )
