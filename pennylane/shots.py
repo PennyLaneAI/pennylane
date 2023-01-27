@@ -105,6 +105,7 @@ class ShotAPI:
             )
         return super().__setattr__(name, value)
 
+    @property
     def has_partitioned_shots(self):
         """Checks if the device was instructed to perform executions with partitioned shots.
 

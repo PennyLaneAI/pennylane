@@ -32,6 +32,7 @@ import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
+import pennylane.shots
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
