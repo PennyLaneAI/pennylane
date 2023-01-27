@@ -33,8 +33,11 @@ from .composite import CompositeOp
 
 
 def op_sum(*summands, do_queue=True, id=None, lazy=True):
-    """This function is deprecated. Please use :func:`sum` instead."""
-    warnings.warn("The `op_sum` function is deprecated. Please use `sum` instead.", UserWarning)
+    """This function is deprecated and will be removed soon. Please use :func:`sum` instead."""
+    warnings.warn(
+        "The `op_sum` function is deprecated and will be removed soon. Please use `sum` instead.",
+        UserWarning,
+    )
     return sum(*summands, do_queue=do_queue, id=id, lazy=lazy)
 
 
