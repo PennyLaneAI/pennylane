@@ -28,7 +28,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
     .. note:: This method will add a global phase for target operations that do not
-    belong to the SU(2) group.
+        belong to the SU(2) group.
 
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
