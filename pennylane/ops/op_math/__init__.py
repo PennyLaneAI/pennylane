@@ -59,6 +59,14 @@ Controlled Operator Classes
 
     ~ControlledQubitUnitary
 
+Decomposition Functions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ctrl_decomp_zyz
+
 """
 
 from .adjoint import Adjoint, adjoint
