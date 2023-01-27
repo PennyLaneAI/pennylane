@@ -35,7 +35,7 @@ def constant(scalar, time):
 
     **Example**
 
-    The ``constant`` function can be used to create a parametrized hamiltonian
+    The ``constant`` function can be used to create a parametrized Hamiltonian
 
     >>> H = qml.pulse.constant * qml.PauliX(0)
 
