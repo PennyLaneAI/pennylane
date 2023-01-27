@@ -4,7 +4,7 @@ tests/qchem/test_givens_rotations.py
 tests/templates/test_subroutines/test_basis_rotation.py
 tests/ops/op_math/test_controlled_ops.py
 tests/ops/op_math/test_controlled.py
-tests/ops/op_math/test_dot.py
+tests/ops/functions/test_dot.py
 tests/ops/functions/test_evolve.py
 tests/ops/qutrit/test_qutrit_observables.py
 tests/test_operation.py
