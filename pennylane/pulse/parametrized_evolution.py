@@ -127,7 +127,7 @@ class ParametrizedEvolution(Operation):
     Array(-0.01543971, dtype=float32)
 
     .. note::
-        In the example above, the decorator jax.jit is used to compile this execution just-in-time. This means
+        In the example above, the decorator ``@jax.jit is`` used to compile this execution just-in-time. This means
         the first execution will typically take a little longer with the benefit that all following executions
         will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
         the decorator when only single executions are of interest.

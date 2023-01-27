@@ -30,7 +30,8 @@ class ParametrizedHamiltonian:
 
     The Hamiltonian can be represented as a linear combination of other operators, e.g.,
 
-    .. math::`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j`,
+    .. math::
+        H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j
 
     where the :math:`v` are trainable parameters, and t is time.
 
