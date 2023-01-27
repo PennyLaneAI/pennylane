@@ -35,11 +35,6 @@ The :mod:`~.pulse` module provides a framework to create a time-dependent Hamilt
 with constant operators :math:`H_j` and scalar functions :math:`f_j(p, t)` that may depend on
 parameters :math:`p` and time :math:`t`.
 
-.. note::
-    The :class:`~.ParametrizedHamiltonian` is not a PennyLane :class:`~.Operator`. If an :class:`~.Operator`
-    representing the :class:`~.ParametrizedHamiltonian` is needed, the initialized :class:`~.ParametrizedHamiltonian`
-    must be called with fixed parameters and time.
-
 Defining a :class:`~.ParametrizedHamiltonian` requires coefficients and operators. In the example below, we define a
 Hamiltonian with a single drift term, and two parametrized terms.
 
@@ -57,8 +52,8 @@ Hamiltonian with a single drift term, and two parametrized terms.
     YY = qml.PauliY(0) @ qml.PauliY(1)
     ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
 
-The functions defining the parameterized coefficients must have the call signature ``(p, t)``, where ``p`` can be a float,
-list or jnp.array. These functions should be defined using ``jax.numpy`` rather than ``numpy`` where relevant.
+The functions defining the parameterized coefficients must have the call signature ``(p, t)``, where ``p`` can be a ``float``,
+``list`` or ``jnp.array``. These functions should be defined using ``jax.numpy`` rather than ``numpy`` where relevant.
 
 There are two ways to construct a :class:`~.ParametrizedHamiltonian` from the coefficients
 and operators:
@@ -104,7 +99,7 @@ parameters and a time at which to evaluate the coefficients :math:`f_j`.
 .. warning::
     The order of the coefficients and operators matters. When initializing the
      :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients
-    should come before parametrized terms to prevent discrepancy in the wire order. When passing parameters, ensure
+    have to come before parametrized terms to prevent discrepancy in the wire order. When passing parameters, ensure
     that the order of the coefficient functions and the order of the parameters match.
 
 Convenience functions for building a ParametrizedHamiltonian
@@ -202,7 +197,7 @@ can be created using the :func:`~qml.evolve` function:
     >>> ParametrizedEvolution(wires=[0, 1])
 
 The initial :class:`~.ParametrizedEvolution` does not have parameters defined, and so will
-not have a defined matrix. To complete initialization of the :class:`~.Operator`, it must be passed
+not have a matrix defined. To obtain an :class:`~.Operator` with a matrix, it must be passed
 parameters and a time interval:
 
 .. code-block:: python
