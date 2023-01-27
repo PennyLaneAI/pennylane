@@ -121,10 +121,11 @@ Operator Types
     ~CVOperation
     ~Channel
     ~Tensor
+    ~StatePrep
 
 .. currentmodule:: pennylane.operation
 
-.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor
+.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrep
     :parts: 1
 
 Errors
@@ -223,7 +224,7 @@ from typing import List
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
-
+import autoray
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
@@ -234,6 +235,8 @@ from .utils import pauli_eigs
 # =============================================================================
 # Errors
 # =============================================================================
+
+SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
 
 
 class OperatorPropertyUndefined(Exception):
@@ -1001,7 +1004,7 @@ class Operator(abc.ABC):
 
         self._check_batching(params)
 
-        self.data = list(params)  #: list[Any]: parameters of the operator
+        self.data = [np.array(p) if isinstance(p, list) else p for p in params]
 
         if do_queue:
             self.queue()
@@ -1406,23 +1409,27 @@ class Operator(abc.ABC):
             return qml.op_sum(self, other)
         if other == 0:
             return self
-        if isinstance(other, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
+        if isinstance(other, qml.pulse.ParametrizedHamiltonian):
             return other.__add__(self)
-        try:
+        backend = autoray.infer_backend(other)
+        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
+            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
+        ):
             return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
-        except ValueError:
-            return NotImplemented
+        return NotImplemented
 
     __radd__ = __add__
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
-            return qml.ops.ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
-        try:
+            return qml.pulse.ParametrizedHamiltonian([other], [self])
+        backend = autoray.infer_backend(other)
+        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
+            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
+        ):
             return qml.s_prod(scalar=other, operator=self)
-        except ValueError:
-            return NotImplemented
+        return NotImplemented
 
     __rmul__ = __mul__
 
@@ -2660,6 +2667,27 @@ class CVObservable(CV, Observable):
         p = self.parameters
         U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
         return self.heisenberg_expand(U, wire_order)
+
+
+class StatePrep(Operation):
+    """An interface for state-prep operations."""
+
+    grad_method = None
+    _queue_category = "_prep"
+
+    # pylint:disable=too-few-public-methods
+    @abc.abstractmethod
+    def state_vector(self, wire_order=None):
+        """
+        Returns the initial state vector for a circuit given a state preparation.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels
+                from the operator's wires
+
+        Returns:
+            array: A state vector for all wires in a circuit
+        """
 
 
 def operation_derivative(operation) -> np.ndarray:
