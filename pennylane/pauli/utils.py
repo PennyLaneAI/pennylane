@@ -392,6 +392,14 @@ def pauli_word_to_string(pauli_word, wire_map=None):
         >>> qml.pauli.pauli_word_to_string(3 * qml.PauliX(0) @ qml.PauliY(1))
         'XY'
 
+    .. warning::
+
+        This method assumes all Pauli operators are acting on different wires, ignoring
+        any extra operators:
+
+        >>> qml.pauli.pauli_word_to_string(qml.PauliX(0) @ qml.PauliY(0) @ qml.PauliY(0))
+        'X'
+
     Args:
         pauli_word (Observable): an observable, either a :class:`~.Tensor` instance or
             single-qubit observable representing a Pauli group element.
