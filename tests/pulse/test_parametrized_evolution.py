@@ -96,6 +96,33 @@ class TestInitialization:
         assert ev.parameters == []
         assert ev.num_params == 0
 
+    def test_odeint_kwargs(self):
+        """Test the initialization with odeint kwargs."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2, mxstep=10, hmax=1, atol=1e-3, rtol=1e-6)
+
+        assert ev.odeint_kwargs == {"mxstep": 10, "hmax": 1, "atol": 1e-3, "rtol": 1e-6}
+
+    def test_update_attributes(self):
+        """Test that the ``ParametrizedEvolution`` attributes can be updated using the ``__call__`` method."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(H=H, mxstep=10)
+
+        assert ev.params is None
+        assert ev.t is None
+        assert ev.odeint_kwargs == {"mxstep": 10}
+        params = [1, 2, 3]
+        t = 6
+        ev(params, t, atol=1e-6, rtol=1e-4)
+
+        assert qml.math.allequal(ev.params, params)
+        assert qml.math.allequal(ev.t, [0, 6])
+        assert ev.odeint_kwargs == {"mxstep": 10, "atol": 1e-6, "rtol": 1e-4}
+
     def test_list_of_times(self):
         """Test the initialization."""
         import jax.numpy as jnp
@@ -140,7 +167,7 @@ class TestMatrix:
         H = time_independent_hamiltonian()
         t = np.arange(0, 4, 0.001)
         params = [1, 2]
-        ev = ParametrizedEvolution(H=H, params=params, t=t)
+        ev = ParametrizedEvolution(H=H, params=params, t=t, hmax=1, mxstep=1e4)
         true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=max(t))) * max(t))
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-3)
 
@@ -156,7 +183,7 @@ class TestMatrix:
 
         t = jnp.arange(0, jnp.pi / 4, 0.001)
         params = [1, 2]
-        ev = ParametrizedEvolution(H=H, params=params, t=t)
+        ev = ParametrizedEvolution(H=H, params=params, t=t, atol=1e-6, rtol=1e-6)
 
         def generator(params):
             for ti in t:
