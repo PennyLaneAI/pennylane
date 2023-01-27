@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Unit tests of the ``Exp`` class."""
 import pytest
 
 import pennylane as qml
@@ -85,6 +86,7 @@ class TestInitialization:
     def test_has_diagonalizing_gates(self, value, constructor):
         """Test that Exp defers has_diagonalizing_gates to base operator."""
 
+        # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
             has_diagonalizing_gates = value
@@ -107,6 +109,7 @@ class TestProperties:
 
         assert op.data == [[coeff], [phi]]
 
+    # pylint: disable=protected-access
     def test_queue_category_ops(self):
         """Test the _queue_category property."""
         assert Exp(qml.PauliX(0), -1.234j)._queue_category == "_ops"
@@ -377,7 +380,6 @@ class TestMiscMethods:
     def test_simplify_sprod(self):
         """Test that simplify merges SProd into the coefficent."""
         base = qml.adjoint(qml.PauliX(0))
-        coeff1 = 2.0
         s_op = qml.s_prod(2.0, base)
 
         op = Exp(s_op, 3j)
@@ -465,7 +467,9 @@ class TestIntegration:
         phi_grad = tape.gradient(res, phi)
 
         assert qml.math.allclose(res, tf.cos(phi))
-        assert qml.math.allclose(phi_grad, -tf.sin(phi))
+        assert qml.math.allclose(
+            phi_grad, -tf.sin(phi)  # pylint: disable=invalid-unary-operand-type
+        )
 
     @pytest.mark.torch
     def test_torch_qnode(self):
@@ -616,9 +620,8 @@ class TestIntegration:
             Exp(qml.PauliX(0), -0.5j * phi)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        qml.drawer.tape_text(tape)
 
-        assert "0: ──Exp─┤  "
+        assert qml.drawer.tape_text(tape) == "0: ──Exp(-0.6j X)─┤  "
 
 
 class TestDifferentiation:
@@ -651,9 +654,9 @@ class TestDifferentiation:
         """Test that parameter_frequencies raises an error if the op.generator() is undefined"""
         op = Exp(qml.PauliX(0), 1)
         with pytest.raises(GeneratorUndefinedError):
-            op.generator()
+            _ = op.generator()
         with pytest.raises(ParameterFrequenciesUndefinedError):
-            op.parameter_frequencies
+            _ = op.parameter_frequencies
 
     def test_parameter_frequency_with_parameters_in_base_operator(self):
         """Test that parameter_frequency raises an error for the Exp class, but not the
