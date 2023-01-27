@@ -194,7 +194,7 @@ def get_one_parameter_generators(theta, num_wires, interface="jax"):
 
     .. math::
 
-        U(\theta) &= e^{A(\theta)}\\
+        U(\theta) &= \exp\{A(\theta)\}\\
         A(\theta) &= \sum_{m=1}^d i \theta_m P_m\\
         P_m &\in \{I, X, Y, Z\}^{\otimes n} \setminus \{I^{\otimes n}\}
 
@@ -334,33 +334,41 @@ class SpecialUnitary(Operation):
 
     .. math::
 
-        U(\theta) &= e^{A(\theta)}\\
-        A(\theta) &= \sum_{m=1}^d i \theta_m P_m\\
+        U(\bm{\theta}) &= \exp\{A(\bm{\theta})\}\\
+        A(\bm{\theta}) &= \sum_{m=1}^d i \theta_m P_m\\
         P_m &\in {I, X, Y, Z}^{\otimes n} \setminus \{I^{\otimes n}\}
 
-    This means, :math:`U(\theta)` is the exponential of operator :math:`A(\theta)`,
-    which in turn is a linear combination of Pauli words with coefficients :math:`i\theta`
-    and satisfies :math:`A(\theta)^\dagger=-A(\theta)` (it is *skew-Hermitian*).
+    This means, :math:`U(\bm{\theta})` is the exponential of operator :math:`A(\bm{\theta})`,
+    which in turn is a linear combination of Pauli words with coefficients :math:`i\bm{\theta}`
+    and satisfies :math:`A(\bm{\theta})^\dagger=-A(\bm{\theta})` (it is *skew-Hermitian*).
     Note that this gate takes an exponential number :math:`d=4^n-1` of parameters.
+    See below for more theoretical background and differentiability.
 
     **Details:**
 
     * Number of wires: Any
     * Number of parameters: 1
     * Number of dimensions per parameter: (1,)
-    * Gradient recipe
+    * Gradient recipe:
 
     .. math::
 
-        \frac{\partial}{\partial\theta_\ell} f(U(\theta)) &= -i \sum_{m=1}^d \omega_{\ell m}
-        \frac{\mathrm{d}}{\mathrm{d} x} f(e^{ixP_m} U(\theta))
+        \frac{\partial}{\partial\theta_\ell} f(U(\bm{\theta})) &= \sum_{m=1}^d 2i\omega_{\ell m}
+        \frac{\mathrm{d}}{\mathrm{d} t}
+        f\left(\exp\left\{-i\frac{t}{2}G_m\right\} U(\bm{\theta})\right)\\
+        &= \sum_{m=1}^d i\omega_{\ell m}
+        \left[
+        f\left(\exp\left\{-i\frac{\pi}{4}G_m\right\} U(\bm{\theta})\right)
+        -f\left(\exp\left\{i\frac{\pi}{4}G_m\right\} U(\bm{\theta})\right)
+        \right]
 
-      where :math:`f` is an expectation value depending on :math:`U(\theta)` and the derivative
-      of the Pauli rotation gates :math:`e^{ixP_m}` can be computed with the two-term
-      parameter-shift rule (also see: :class:`~.PauliRot`).
+    where :math:`f` is an expectation value depending on :math:`U(\bm{\theta})` and the derivative
+    of the Pauli rotation gates :math:`\exp\left\{-i\frac{t}{2}G_m\right\}` follows from
+    the two-term parameter-shift rule (also see: :class:`~.PauliRot`). For details on
+    the gradient recipe, also consider the theoretical background section below.
 
     Args:
-        theta (tensor_like): Pauli coordinates of the exponent :math:`A(\theta)`.
+        theta (tensor_like): Pauli coordinates of the exponent :math:`A(\bm{\theta})`.
             See details below for the order of the Pauli words.
         wires (Sequence[int] or int): The wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
@@ -368,8 +376,8 @@ class SpecialUnitary(Operation):
         id (str or None): String representing the operation (optional)
 
     Raises:
-        ValueError: If the shape of the input parameter does not match the Lie algebra
-            dimension :math:`d=4*n-1` for :math:`n` wires.
+        ValueError: If the shape of the input does not match the Lie algebra
+            dimension :math:`d=4^n-1` for :math:`n` wires.
 
     The parameter ``theta`` refers to all Pauli words (except for the identity) in
     lexicographical order, which looks like the following for one and two qubits:
@@ -378,6 +386,12 @@ class SpecialUnitary(Operation):
     ['X', 'Y', 'Z']
     >>> qml.ops.qubit.matrix_ops.pauli_words(2) # 4**2-1 = 15 Pauli words
     ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
+
+    .. warning::
+
+        This operation only is differentiable when using the JAX, Torch or Tensorflow
+        interfaces, even when using hardware-compatible differentiation techniques like
+        the parameter-shift rule.
 
     **Examples**
 
@@ -414,8 +428,118 @@ class SpecialUnitary(Operation):
            [-0.34495668-0.35307844j,  0.10817019-0.21404059j,
             -0.29040522+0.00830631j,  0.15015337-0.76933485j]])
 
-    The ``SpecialUnitary`` operation can be differentiated with hardware-compatible
-    differentiation techniques.
+    The ``SpecialUnitary`` operation also can be differentiated with hardware-compatible
+    differentiation techniques if the JAX, Torch or Tensorflow interface is used.
+    See the theoretical background section below for details.
+
+    .. details::
+        :title: Theoretical background
+        :href: theory
+
+        We consider special unitaries parametrized in the following way:
+
+        .. math::
+
+            U(\bm{\theta}) &= \exp\{A(\bm{\theta})\}\\
+            A(\bm{\theta}) &= \sum_{m=1}^d i \theta_m G_m\\
+            G_m &\in \mathcal{P^{(n)}}=\{I, X, Y, Z\}^{\otimes n} \setminus \{I^{\otimes n}\}
+
+        where :math:`n` is the number of qubits and :math:`\theta_m` are :math:`d=4^n-1`
+        real-valued parameters. This parametrization allows us to express any special unitary
+        for the given number of qubits.
+
+        Note that this differs from a sequence of all possible Pauli rotation gates because
+        for non-commuting Pauli words :math:`G_1, G_2` we have
+        :math:`\exp\{i\theta_1G_1\}\exp\{i\theta_2G_2\}\neq \exp\{i(\theta_1G_1+\theta_2G_2)\}`.
+
+        **Differentiation**
+
+        The partial derivatives of :math:`U(\bm{\theta})` above can be expressed as
+
+        .. math::
+
+            \frac{\partial}{\partial \theta_\ell} U(\bm{\theta}) &= U(\bm{\theta})
+            \frac{\mathrm{d}}{\mathrm{d}t}\exp\left(t\Omega_\ell(\bm{\theta})\right)\large|_{t=0}\\
+            &=U(\bm{\theta})\Omega_\ell(\bm{\theta})
+
+        where :math:`\Omega_\ell(\bm{\theta})` is the *effective generator* belonging to the partial
+        derivative :math:`\partial_\ell U(\bm{\theta})` at the parameters :math:`\bm{\theta}`.
+        It can be computed via
+
+        .. math::
+
+            \Omega_\ell(\bm{\theta}) = U(\bm{\theta})^\dagger
+            \left(\frac{\partial}{\partial \theta_\ell}\mathfrak{Re}[U(\bm{\theta})]
+            +i\frac{\partial}{\partial \theta_\ell}\mathfrak{Im}[U(\bm{\theta})]\right)
+
+        where we may compute the derivatives of the real and imaginary parts of :math:`U(\bm{\theta})`
+        using auto-differentiation.
+
+        Each effective generator :math:`\Omega_\ell(\bm{\theta})` that reproduces a partial derivative
+        can be decomposed in the Pauli basis of :math:`\mathfrak{su}(N)` via
+
+        .. math::
+
+            \Omega_\ell(\bm{\theta}) = \sum_{m=1}^d \omega_{\ell m}(\bm{\theta}) G_m.
+
+        As the Pauli words are orthonormal with respect to the
+        `trace, or Frobenius, inner product <https://en.wikipedia.org/wiki/Frobenius_inner_product>`__
+        (rescaled by :math:`2^{-n}`), we can compute the coefficients using this
+        inner product (:math:`G_m` is Hermitian, so we skip the adjoint :math:`{}^\dagger`):
+
+        .. math::
+
+            \omega_{\ell m}(\bm{\theta}) = \frac{1}{2^n}\operatorname{tr}
+            \left\{G_m \Omega_\ell(\bm{\theta}) \right\}
+
+        The coefficients satisfy :math:`\omega_{\ell m}^\ast=-\omega_{\ell m}` because
+        :math:`\Omega_\ell(\bm{\theta})` is skew-Hermitian. Therefore they are purely imaginary.
+
+        Now we turn to the derivative of an expectation value-based function which uses a circuit
+        that contains a ``SpecialUnitary`` operation. Absorbing the remaining circuit into the
+        quantum state :math:`\rho` and the observable :math:`H`, this can be written as
+
+        .. math::
+            
+            f(U(\bm{\theta})) &= \operatorname{Tr}{H U(\bm{\theta})\rho U^\dagger(\bm{\theta})}\\
+            \partial_\ell f(U(\bm{\theta})) &= \operatorname{Tr}{H U(\bm{\theta})
+            [\Omega_\ell(\bm{\theta}),\rho] U^\dagger(\bm{\theta})}
+
+        Inserting the decomposition for the effective generator, we may rewrite this as a combination
+        of derivatives of Pauli rotation gates that are inserted in addition to :math:`U(\bm{\theta})`:
+
+        .. math::
+
+            \partial_\ell f(U(\bm{\theta}))
+            &= \operatorname{Tr}{H U(\bm{\theta})
+            \left[\sum_{m=1}^d \omega_{\ell m}(\bm{\theta}) G_m,\rho\right] U^\dagger(\bm{\theta})}\\
+            &= \sum_{m=1}^d 2i\omega_{\ell m}(\bm{\theta})
+            \frac{\mathrm{d}}{\mathrm{d}t}f\left(R_{G_m}(t)U(\bm{\theta})\right)\bigg|_{t=0}.
+
+        Here we abbreviated a Pauli rotation gate as :math:`R_{G_m}(t) = \exp\{-i\frac{t}{2} G_m\}`.
+        As all partial derivatives are combinations of the Pauli rotation derivatives, we may
+        write the gradient of :math:`f` as
+
+        .. math::
+
+            \nabla f(U(\bm{\theta})) = \overline{\omega}(\bm{\theta}) \cdot \bm{\mathrm{d}f}
+
+        where we defined the matrix :math:`\overline{\omega_{\ell m}}=2i\omega_{\ell m}` and
+        the vector of Pauli rotation derivatives
+        :math:`\mathrm{d}f_m=\frac{\mathrm{d}}{\mathrm{d}t}
+        f\left(R_{G_m}(t)U(\bm{\theta})\right)\bigg|_{t=0}`.
+        These derivatives can be computed with the
+        standard parameter-shift rule because Pauli words satisfy the condition :math:`G_m^2=1` 
+        (see e.g. `Mitarai et al. (2018) <https://arxiv.org/abs/1803.00745>`_).
+        Provided that we can implement the ``SpecialUnitary`` gate
+        itself, this allows us to compute :math:`\bm{\mathrm{d}f}` in a hardware-compatible 
+        manner using :math:`2d` quantum circuits.
+
+        Note that for ``SpecialUnitary`` we frequently handle objects that have one or
+        multiple dimensions of exponentially large size :math:`d=4^n-1`, and that the number
+        of quantum circuits for the differentiation scales accordingly. This strongly affects
+        the number of qubits to which we can apply a ``SpecialUnitary`` gate in practice.
+
     """
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
