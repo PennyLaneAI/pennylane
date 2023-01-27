@@ -46,7 +46,7 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
 
     >>> coeffs = [lambda p, t: p * t for _ in range(4)]
     >>> ops = [qml.PauliX(i) for i in range(4)]
-    >>> H = qml.ops.dot(coeffs, ops)
+    >>> H = qml.dot(coeffs, ops)
     >>> qml.evolve(H)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 

@@ -150,7 +150,7 @@ class TestIntegration:
 
         coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant]
         ops = [qml.PauliX(0), qml.PauliY(1)]
-        H = qml.ops.dot(coeffs, ops)
+        H = qml.dot(coeffs, ops)
 
         assert isinstance(H, ParametrizedHamiltonian)
         # assert that at t=0.3 both coefficients are non-zero
@@ -175,7 +175,7 @@ class TestIntegration:
 
         coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant]
         ops = [qml.PauliX(0), qml.PauliY(1)]
-        H = qml.ops.dot(coeffs, ops)
+        H = qml.dot(coeffs, ops)
 
         t = (1, 2)
 
