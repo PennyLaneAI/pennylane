@@ -500,7 +500,7 @@ class SpecialUnitary(Operation):
         quantum state :math:`\rho` and the observable :math:`H`, this can be written as
 
         .. math::
-            
+
             f(U(\bm{\theta})) &= \operatorname{Tr}{H U(\bm{\theta})\rho U^\dagger(\bm{\theta})}\\
             \partial_\ell f(U(\bm{\theta})) &= \operatorname{Tr}{H U(\bm{\theta})
             [\Omega_\ell(\bm{\theta}),\rho] U^\dagger(\bm{\theta})}
@@ -529,10 +529,10 @@ class SpecialUnitary(Operation):
         :math:`\mathrm{d}f_m=\frac{\mathrm{d}}{\mathrm{d}t}
         f\left(R_{G_m}(t)U(\bm{\theta})\right)\bigg|_{t=0}`.
         These derivatives can be computed with the
-        standard parameter-shift rule because Pauli words satisfy the condition :math:`G_m^2=1` 
+        standard parameter-shift rule because Pauli words satisfy the condition :math:`G_m^2=1`
         (see e.g. `Mitarai et al. (2018) <https://arxiv.org/abs/1803.00745>`_).
         Provided that we can implement the ``SpecialUnitary`` gate
-        itself, this allows us to compute :math:`\bm{\mathrm{d}f}` in a hardware-compatible 
+        itself, this allows us to compute :math:`\bm{\mathrm{d}f}` in a hardware-compatible
         manner using :math:`2d` quantum circuits.
 
         Note that for ``SpecialUnitary`` we frequently handle objects that have one or
