@@ -1,10 +1,13 @@
-tests/data/test_dataset.py
-tests/data/test_dataset_access.py
+tests/data/**
+tests/devices/test_execution_config.py
 tests/qchem/test_givens_rotations.py
 tests/templates/test_subroutines/test_basis_rotation.py
 tests/ops/op_math/test_controlled_ops.py
 tests/ops/op_math/test_controlled.py
 tests/ops/op_math/test_dot.py
-tests/test_operation.py
+tests/ops/functions/test_evolve.py
 tests/ops/qutrit/test_qutrit_observables.py
 tests/transforms/test_sign_expand.py
+tests/test_operation.py
+tests/pulse/**
+

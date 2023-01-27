@@ -100,6 +100,9 @@ class QNode:
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
 
+            * ``"spsa"``: Uses a simultaneous perturbation of all operation arguments to approximate
+              the derivative.
+
             * ``None``: QNode cannot be differentiated. Works the same as ``interface=None``.
 
         expansion_strategy (str): The strategy to use when circuit expansions or decompositions
@@ -494,9 +497,9 @@ class QNode:
             device (.Device): PennyLane device
             interface (str): name of the requested interface
             diff_method (str or .gradient_transform): The requested method of differentiation.
-                If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``, ``"device"``,
-                ``"parameter-shift"``, or ``"finite-diff"``. A gradient transform may
-                also be passed here.
+                If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``,
+                ``"device"``, ``"parameter-shift"``, ``"finite-diff"``, or ``"spsa"``.
+                A gradient transform may also be passed here.
 
         Returns:
             tuple[str or .gradient_transform, dict, .Device: Tuple containing the ``gradient_fn``,
@@ -520,10 +523,14 @@ class QNode:
         if diff_method == "finite-diff":
             return qml.gradients.finite_diff, {}, device
 
+        if diff_method == "spsa":
+            return qml.gradients.spsa_grad, {}, device
+
         if isinstance(diff_method, str):
             raise qml.QuantumFunctionError(
                 f"Differentiation method {diff_method} not recognized. Allowed "
-                "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint')."
+                "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', "
+                "'device', 'adjoint', 'spsa')."
             )
 
         if isinstance(diff_method, qml.gradients.gradient_transform):
@@ -547,7 +554,8 @@ class QNode:
         * ``"finite-diff"``
 
         The first differentiation method that is supported (going from
-        top to bottom) will be returned.
+        top to bottom) will be returned. Note that the SPSA-based gradient
+        is not included here.
 
         Args:
             device (.Device): PennyLane device
@@ -582,7 +590,8 @@ class QNode:
         * ``"finite-diff"``
 
         The first differentiation method that is supported (going from
-        top to bottom) will be returned.
+        top to bottom) will be returned. Note that the SPSA-based gradient
+        is not included here.
 
         This method is intended only for debugging purposes. Otherwise,
         :meth:`~.get_best_method` should be used instead.
