@@ -22,9 +22,9 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import DeviceError, QuantumFunctionError, math
+from pennylane import QuantumFunctionError, math
 from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
-from pennylane.ops.op_math import Prod, Sum, sum
+from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -113,7 +113,7 @@ def compare_and_expand_mat(mat1, mat2):
 class TestInitialization:
     """Test the initialization."""
 
-    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, sum])
+    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_sum_op(self, id, sum_method):
         """Test the initialization of a Sum operator."""
@@ -129,7 +129,7 @@ class TestInitialization:
         assert sum_op.parameters == [[], [0.23]]
         assert sum_op.num_params == 1
 
-    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, sum])
+    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     def test_init_sum_op_with_sum_summands(self, sum_method):
         """Test the initialization of a Sum operator which contains a summand that is another
         Sum operator."""
@@ -435,7 +435,7 @@ class TestMatrix:
     @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
     def test_sparse_matrix(self, op1, mat1, op2, mat2):
         """Test that the sparse matrix of a Prod op is defined and correct."""
-        sum_op = sum(op1(wires=0), op2(wires=1))
+        sum_op = qml.sum(op1(wires=0), op2(wires=1))
         true_mat = math.kron(mat1, np.eye(2)) + math.kron(np.eye(2), mat2)
         sum_mat = sum_op.sparse_matrix().todense()
 
@@ -448,7 +448,7 @@ class TestMatrix:
         with wire order and correct."""
         true_mat = math.kron(mat2, np.eye(4)) + math.kron(np.eye(4), mat1)
 
-        sum_op = sum(op1(wires=2), op2(wires=0))
+        sum_op = qml.sum(op1(wires=2), op2(wires=0))
         sum_mat = sum_op.sparse_matrix(wire_order=[0, 1, 2]).todense()
 
         assert np.allclose(true_mat, sum_mat)
@@ -463,7 +463,7 @@ class TestMatrix:
             def sparse_matrix(self, wire_order=None):
                 raise qml.operation.SparseMatrixUndefinedError
 
-        sum_op = sum(qml.PauliX(wires=0), DummyOp(wires=1))
+        sum_op = qml.sum(qml.PauliX(wires=0), DummyOp(wires=1))
 
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             sum_op.sparse_matrix()
@@ -472,7 +472,7 @@ class TestMatrix:
 class TestProperties:
     """Test class properties."""
 
-    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, sum])
+    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
     def test_is_hermitian(self, ops_lst, sum_method):
         """Test is_hermitian property updates correctly."""
@@ -484,7 +484,7 @@ class TestProperties:
 
         assert sum_op.is_hermitian == true_hermitian_state
 
-    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, sum])
+    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_catagory(self, ops_lst, sum_method):
         """Test queue_catagory property is always None."""  # currently not supporting queuing Sum
@@ -671,7 +671,7 @@ class TestSimplify:
 
     def test_simplify_grouping(self):
         """Test that the simplify method groups equal terms."""
-        sum_op = sum(
+        sum_op = qml.sum(
             qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1)),
             qml.prod(qml.RX(1.0, 0), qml.PauliX(0), qml.PauliZ(1)),
             qml.adjoint(qml.sum(qml.RY(1, 0), qml.PauliZ(1))),
@@ -679,7 +679,7 @@ class TestSimplify:
             qml.adjoint(qml.PauliZ(1)),
         )
         mod_angle = -1 % (4 * np.pi)
-        final_op = sum(
+        final_op = qml.sum(
             qml.s_prod(2, qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1))),
             qml.s_prod(2, qml.RY(mod_angle, 0)),
             qml.s_prod(2, qml.PauliZ(1)),
@@ -826,7 +826,7 @@ class TestWrapperFunc:
         op_id = "sum_op"
         do_queue = False
 
-        sum_func_op = sum(*summands, id=op_id, do_queue=do_queue)
+        sum_func_op = qml.sum(*summands, id=op_id, do_queue=do_queue)
         sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
 
         assert sum_class_op.operands == sum_func_op.operands
@@ -837,14 +837,14 @@ class TestWrapperFunc:
 
     def test_lazy_mode(self):
         """Test that by default, the operator is simply wrapped in `Sum`, even if a simplification exists."""
-        op = sum(qml.S(0), Sum(qml.S(1), qml.T(1)))
+        op = qml.sum(qml.S(0), Sum(qml.S(1), qml.T(1)))
 
         assert isinstance(op, Sum)
         assert len(op) == 2
 
     def test_non_lazy_mode(self):
         """Test the lazy=False keyword."""
-        op = sum(qml.S(0), Sum(qml.S(1), qml.T(1)), lazy=False)
+        op = qml.sum(qml.S(0), Sum(qml.S(1), qml.T(1)), lazy=False)
 
         assert isinstance(op, Sum)
         assert len(op) == 3
@@ -853,8 +853,8 @@ class TestWrapperFunc:
         """Test that if a simpification is accomplished, the metadata for the original op
         and the new simplified op is updated."""
         with qml.queuing.AnnotatedQueue() as q:
-            sum1 = sum(qml.S(1), qml.T(1))
-            sum2 = sum(qml.S(0), sum1, lazy=False)
+            sum1 = qml.sum(qml.S(1), qml.T(1))
+            sum2 = qml.sum(qml.S(0), sum1, lazy=False)
 
         assert len(q) == 1
         assert q.queue[0] is sum2
