@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.wires import Wires
+from pennylane.wires import WireError
 
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
@@ -51,11 +51,11 @@ def test_labelling_matrix_cache(op, mat, base):
     assert op.label() == base
 
     cache = {"matrices": []}
-    assert op.label(cache=cache) == base + "(M0)"
+    assert op.label(cache=cache) == f"{base}(M0)"
     assert qml.math.allclose(cache["matrices"][0], mat)
 
     cache = {"matrices": [0, mat, 0]}
-    assert op.label(cache=cache) == base + "(M1)"
+    assert op.label(cache=cache) == f"{base}(M1)"
     assert len(cache["matrices"]) == 3
 
 
@@ -93,3 +93,40 @@ class TestDecomposition:
 
         op = qml.QubitStateVector(U, wires=wires)
         assert op.batch_size == 3
+
+
+class TestStateVector:
+    """Test the state_vector() method of various state-prep operations."""
+
+    @pytest.mark.parametrize(
+        "num_wires,wire_order,one_position",
+        [
+            (2, None, 1),
+            (2, [1, 2], 1),
+            (3, [0, 1, 2], 1),
+            (3, ["a", 1, 2], 1),
+            (3, [1, 2, 0], 2),
+            (3, [1, 2, "a"], 2),
+        ],
+    )
+    def test_BasisState_state_vector(self, num_wires, wire_order, one_position):
+        """Tests that BasisState state_vector returns kets as expected."""
+        basis_op = qml.BasisState([0, 1], wires=[1, 2])
+        ket = basis_op.state_vector(wire_order=wire_order)
+        assert ket[one_position] == 1
+        ket[one_position] = 0  # everything else should be zero, as we assert below
+        assert np.allclose(np.zeros(2**num_wires), ket)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_BasisState_state_vector_preserves_parameter_type(self, interface):
+        """Tests that given an array of some type, the resulting state_vector is also that type."""
+        basis_op = qml.BasisState(qml.math.array([0, 1], like=interface), wires=[1, 2])
+        assert qml.math.get_interface(basis_op.state_vector()) == interface
+        assert qml.math.get_interface(basis_op.state_vector(wire_order=[0, 1, 2])) == interface
+
+    def test_BasisState_state_vector_bad_wire_order(self):
+        """Tests that the provided wire_order must contain the wires in the operation."""
+        basis_op = qml.BasisState([0, 1], wires=[0, 1])
+        with pytest.raises(WireError, match="wire_order must contain all BasisState wires"):
+            basis_op.state_vector(wire_order=[1, 2])
