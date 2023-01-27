@@ -32,10 +32,11 @@ from pennylane.ops.qubit import Hamiltonian
 from pennylane.wires import Wires
 
 from .sprod import SProd
+from .sum import Sum
 from .symbolicop import SymbolicOp
 
 
-def exp(op, coeff=1, id=None):
+def exp(op, coeff=1, k=1, id=None):
     """Take the exponential of an Operator times a coefficient.
 
     Args:
@@ -83,7 +84,7 @@ def exp(op, coeff=1, id=None):
     tensor(20.08553692, requires_grad=True)
 
     """
-    return Exp(op, coeff, id=id)
+    return Exp(op, coeff, k=k, id=id)
 
 
 class Exp(SymbolicOp, Operation):
@@ -134,11 +135,13 @@ class Exp(SymbolicOp, Operation):
 
     control_wires = Wires([])
 
-    def __init__(self, base=None, coeff=1, do_queue=True, id=None):
+    # pylint: disable=too-many-arguments
+    def __init__(self, base=None, coeff=1, k=1, do_queue=True, id=None):
         super().__init__(base, do_queue=do_queue, id=id)
         self._name = "Exp"
         self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
+        self.k = k
 
     def __repr__(self):
         return (
@@ -209,7 +212,7 @@ class Exp(SymbolicOp, Operation):
             list[PauliRot]: decomposition of the operator
         """
         base = self.base
-        coeff = self.coeff
+        coeff = self.coeff / self.k  # divide by trotter number
         if isinstance(base, SProd):
             coeff *= base.scalar
             base = base.base
@@ -221,15 +224,33 @@ class Exp(SymbolicOp, Operation):
                 return [getattr(qml, f"R{pauli_word}")(phi=coeff, wires=base.wires)]
             return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
+        op_list = []
         if isinstance(base, Hamiltonian):
             coeffs, ops = base.terms()
-            op_list = []
             for c, o in zip(coeffs, ops):
                 c *= coeff
-                if qml.pauli.is_pauli_word(o) and math.real(c) == 0:
+                if math.real(c) == 0:
                     pauli_word = qml.pauli.pauli_word_to_string(o)
                     c = 2j * c  # need to cancel the coefficients added by PauliRot
                     op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=o.wires))
+                else:
+                    op_list.append(qml.exp(op=o, coeff=c))
+
+        elif isinstance(base, Sum):
+            for op in base.operands:
+                c = coeff
+                if isinstance(op, SProd):
+                    c *= op.scalar
+                    op = op.base
+                if qml.pauli.is_pauli_word(op) and math.real(c) == 0:
+                    pauli_word = qml.pauli.pauli_word_to_string(op)
+                    c = 2j * c  # need to cancel the coefficients added by PauliRot
+                    op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=op.wires))
+                else:
+                    op_list.append(qml.exp(op=op, coeff=c))
+
+        op_list *= self.k  # apply operators K times (where K is the trotter number)
+        return op_list
 
     def matrix(self, wire_order=None):
 
