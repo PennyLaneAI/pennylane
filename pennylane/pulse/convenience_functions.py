@@ -22,6 +22,7 @@ try:
 except ImportError:
     has_jax = False
 
+
 # pylint: disable=unused-argument
 def constant(scalar, time):
     """Parametrized function that is constant in time and returns the given ``scalar``.
@@ -49,11 +50,14 @@ def constant(scalar, time):
 
     We can differentiate the parametrized hamiltonian with respect to the constant parameter:
 
-    >>> dev = qml.device("default.qubit", wires=1)
-    >>> @qml.qnode(dev, interface="jax")
-    ... def circuit(params):
-    ...     qml.evolve(H)(params, t=2)
-    ...     return qml.expval(qml.PauliZ(0))
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=1)
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(H)(params, t=2)
+            return qml.expval(qml.PauliZ(0))
+
     >>> params = jnp.array([5.0])
     >>> circuit(params)
     Array(0.40808904, dtype=float32)
@@ -79,14 +83,15 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
     **Example**
 
-    The ``rect`` function can be used to create a parametrized hamiltonian
+    The ``rect`` function can be used to create a :class:`.ParametrizedHamiltonian`
 
-    >>> def f1(p, t):
-    ...     return jnp.polyval(p, t)
-    >>> windows = [(1, 7), (9, 14)]
-    >>> H = qml.pulse.rect(f1, windows) * qml.PauliX(0)
+    .. code-block:: python
+        def f1(p, t):
+            return jnp.polyval(p, t)
+        windows = [(1, 7), (9, 14)]
+        H = qml.pulse.rect(f1, windows) * qml.PauliX(0)
 
-    When calling the parametrized hamiltonian, ``rect`` will evaluate the given function only
+    When calling the :class:`.ParametrizedHamiltonian`, ``rect`` will evaluate the given function only
     inside the time windows
 
     >>> params = [jnp.ones(4)]
@@ -225,11 +230,12 @@ def pwc_from_function(timespan, num_bins):
 
     The same effect can be achieved by decorating the smooth function:
 
-    >>> @pwc_from_function(timespan, num_bins)
-    ... def fn(params, t):
-    ...      return params[0] * t + params[1]
-    >>> fn([2, 4], 3)
-    DeviceArray(10.666666, dtype=float32)
+    .. code-block:: python
+    @pwc_from_function(timespan, num_bins)
+    def fn(params, t):
+         return params[0] * t + params[1]
+    fn([2, 4], 3)
+    >>> DeviceArray(10.666666, dtype=float32)
 
     """
     if not has_jax:
