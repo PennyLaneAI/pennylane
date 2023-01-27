@@ -372,6 +372,7 @@
   [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
 
 * `BasisState` now implements the `StatePrep` interface.
+  [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
 
 <h3>Breaking changes</h3>
 
