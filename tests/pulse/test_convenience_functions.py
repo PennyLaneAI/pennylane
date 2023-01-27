@@ -27,8 +27,6 @@ from pennylane.pulse import ParametrizedHamiltonian
 def test_error_raised_if_jax_not_installed():
     """Test that an error is raised if a convenience function is called without jax installed"""
     with pytest.raises(ImportError, match="Module jax is required"):
-        qml.pulse.constant(windows=[(2, 8)])
-    with pytest.raises(ImportError, match="Module jax is required"):
         qml.pulse.rect(x=10, windows=[(2, 8)])
 
 
@@ -149,9 +147,8 @@ class TestIntegration:
             return p * t
 
         windows1 = [(0, 0.5), (1, 1.5)]
-        windows2 = [(0.5, 1)]
 
-        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant(windows2)]
+        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant]
         ops = [qml.PauliX(0), qml.PauliY(1)]
         H = qml.ops.dot(coeffs, ops)
 
@@ -177,9 +174,8 @@ class TestIntegration:
             return p * t
 
         windows1 = [(0, 0.5), (1, 1.5)]
-        windows2 = [(0.5, 1)]
 
-        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant(windows2)]
+        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant]
         ops = [qml.PauliX(0), qml.PauliY(1)]
         H = qml.ops.dot(coeffs, ops)
 
