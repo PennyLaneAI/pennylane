@@ -14,14 +14,12 @@ import pytest
 import numpy as np
 import pennylane as qml
 import pennylane.tape
-from pennylane import numpy as pnp
 
-# Defines the device used for all tests
 
 dev = qml.device("default.qubit", wires=[0, 1, 2, 3, "Hadamard", "Target"])
+"""Defines the device used for all tests"""
 
-# Defines circuits to be used in queueing/output tests
-
+"""Defines circuits to be used in queueing/output tests"""
 with pennylane.tape.QuantumTape() as tape1:
     qml.PauliX(0)
     H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
@@ -122,7 +120,7 @@ class TestSignExpand:
             qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
-            tapes, fn = qml.transforms.sign_expand(tape)
+            qml.transforms.sign_expand(tape)
 
     def test_hamiltonian_error_not_jointly_measurable(self):
         """Test if hamiltonians that are not jointly measurable throw an error"""
@@ -132,7 +130,7 @@ class TestSignExpand:
             qml.expval(H_mult)
 
         with pytest.raises(ValueError, match=r"Passed hamiltonian"):
-            tapes, fn = qml.transforms.sign_expand(tape)
+            qml.transforms.sign_expand(tape)
 
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES_var, OUTPUTS_var))
     def test_hamiltonians_vars(self, tape, output):
