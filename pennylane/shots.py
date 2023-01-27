@@ -14,7 +14,7 @@
 
 from collections import namedtuple
 from collections.abc import Sequence
-from functools import singledispatchmethod
+from typing import List
 import numpy as np
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
@@ -25,16 +25,29 @@ class ShotAPI:
 
     # pylint:disable=too-few-public-methods
 
-    total_shots, shot_vector, shot_list = 0, [], []
+    total_shots: int = 0
+    """The total number of shots to be executed."""
 
-    @singledispatchmethod
+    shot_vector: List[ShotTuple] = []
+    """The list of ShotTuples to be executed. Each element is of the form (shots, copies)."""
+
+    shot_list: List[int] = []
+    """The sequence of shot counts to be executed."""
+
+    _frozen = False
+    _SHOT_ERROR = (
+        "Shots must be a single non-negative integer or a sequence of non-negative integers."
+    )
+
     def __init__(self, shots):
-        if shots is not None:
-            raise ValueError(
-                "Shots must be a single non-negative integer or a sequence of non-negative integers."
-            )
+        if isinstance(shots, int):
+            self.__int_init__(shots)
+        elif isinstance(shots, Sequence):
+            self.__list_init__(shots)
+        elif shots is not None:
+            raise ValueError(self._SHOT_ERROR)
+        self._frozen = True
 
-    @__init__.register
     def __int_init__(self, shots: int):
         if shots < 1:
             raise ValueError(f"The specified number of shots needs to be at least 1. Got {shots}.")
@@ -42,7 +55,6 @@ class ShotAPI:
         self.shot_list = [shots]
         self.shot_vector = [ShotTuple(shots, 1)]
 
-    @__init__.register
     def __list_init__(self, shots: Sequence):
         """Process the shot sequence, to determine the total
         number of shots and the shot vector.
@@ -72,10 +84,8 @@ class ShotAPI:
         sequence is returned, where tuples indicate the number of times a shot
         integer is repeated.
         """
-        if not all(isinstance(shot, int) for shot in shots):
-            raise ValueError(
-                "Shots must be a single non-negative integer or a sequence of non-negative integers."
-            )
+        if not all(isinstance(shot, int) and shot > 0 for shot in shots):
+            raise ValueError(self._SHOT_ERROR)
 
         self.shot_list = shots
         if len(set(shots)) == 1:
@@ -87,6 +97,13 @@ class ShotAPI:
             split_at_repeated = np.split(shots, np.diff(shots).nonzero()[0] + 1)
             self.shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
             self.total_shots = int(np.sum(np.prod(self.shot_vector, axis=1)))
+
+    def __setattr__(self, name, value):
+        if self._frozen:
+            raise AttributeError(
+                "ShotAPI is an immutable class. Consider creating a new instance if you need different shot values."
+            )
+        return super().__setattr__(name, value)
 
     def has_partitioned_shots(self):
         """Checks if the device was instructed to perform executions with partitioned shots.

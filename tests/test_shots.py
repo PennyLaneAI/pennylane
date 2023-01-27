@@ -54,7 +54,7 @@ class TestShotAPI:
         assert shots.shot_vector == expected
         assert shots.total_shots == sum(shot_list)
 
-    @pytest.mark.parametrize("shot_arg", ["123", [1.1, 2], [1, (4, 2)], 1.5])
+    @pytest.mark.parametrize("shot_arg", ["123", [1.1, 2], [-1, 2], [1, (4, 2)], 1.5])
     def test_other_construction_fails(self, shot_arg):
         """Tests that all other values for shots is not allowed."""
         with pytest.raises(
@@ -68,6 +68,12 @@ class TestShotAPI:
             ValueError, match="The specified number of shots needs to be at least 1. Got 0."
         ):
             _ = ShotAPI(0)
+
+    def test_ShotAPI_frozen_after_init(self):
+        """Tests that ShotAPI instances are frozen after creation."""
+        shots = ShotAPI(10)
+        with pytest.raises(AttributeError, match="ShotAPI is an immutable class"):
+            shots.total_shots = 20
 
     @pytest.mark.parametrize("shots,expected", [(100, False), ([1, 2], True), [[100], False]])
     def test_has_partitioned_shots(self, shots, expected):
