@@ -27,8 +27,6 @@ from pennylane.pulse import ParametrizedHamiltonian
 def test_error_raised_if_jax_not_installed():
     """Test that an error is raised if a convenience function is called without jax installed"""
     with pytest.raises(ImportError, match="Module jax is required"):
-        qml.pulse.constant(windows=[(2, 8)])
-    with pytest.raises(ImportError, match="Module jax is required"):
         qml.pulse.rect(x=10, windows=[(2, 8)])
 
 
@@ -36,60 +34,32 @@ def test_error_raised_if_jax_not_installed():
 class TestConstant:
     """Unit tests for the ``constant`` function."""
 
-    def test_constant_returns_callable(self):
+    def test_constant_signature(self):
         """Test that the ``constant`` convenience function returns a callable with two arguments
         corresponding to the trainable parameters and time."""
-        c = qml.pulse.constant(windows=[0, 10])  # constant function from 0 to 10
-        argspec = inspect.getfullargspec(c)
+        argspec = inspect.getfullargspec(qml.pulse.constant)
 
-        assert callable(c)
-        assert argspec.args == ["p", "t"]
+        assert callable(qml.pulse.constant)
+        assert argspec.args == ["scalar", "time"]
 
-    def test_constant_returns_correct_value_single_window(self):
+    def test_constant_returns_correct_value(self):
         """Test that the ``constant`` function returns the input parameter only when t is inside
         the window."""
-        c = qml.pulse.constant(windows=[(4, 8)])
-
         times = np.arange(0, 10, step=1e-2)
+        scalar = 1.23
         for t in times:
-            if 4 <= t <= 8:
-                assert c(p=1, t=t) == 1
-            else:
-                assert c(p=1, t=t) == 0
-
-    def test_constant_returns_correct_value_multiple_windows(self):
-        """Test that the ``constant`` function returns the input parameter only when t is inside
-        the window."""
-        c = qml.pulse.constant(windows=[(4, 8), (0, 1), (9, 10)])
-
-        times = np.arange(0, 10, step=1e-2)
-        for t in times:
-            if 4 <= t <= 8 or 0 <= t <= 1 or 9 <= t <= 10:
-                assert c(p=1, t=t) == 1
-            else:
-                assert c(p=1, t=t) == 0
-
-    def test_constant_returns_correct_value_no_windows(self):
-        """Test that the ``constant`` function always returns the input parameter when no windows
-        are specified"""
-        c = qml.pulse.constant()
-
-        times = np.arange(0, 10, step=1e-2)
-        for t in times:
-            assert c(p=0.5, t=t) == 0.5
+            assert qml.pulse.constant(scalar, time=t) == scalar
 
     def test_constant_is_jittable(self):
         """Test that the callable returned by the ``constant`` function is jittable."""
         import jax
 
-        c = jax.jit(qml.pulse.constant(windows=[(4, 8), (0, 1), (9, 10)]))
+        c = jax.jit(qml.pulse.constant)
 
+        scalar = 1.23
         times = np.arange(0, 10, step=1e-2)
         for t in times:
-            if 4 <= t <= 8 or 0 <= t <= 1 or 9 <= t <= 10:
-                assert c(p=1, t=t) == 1
-            else:
-                assert c(p=1, t=t) == 0
+            assert c(scalar, time=t) == scalar
 
 
 @pytest.mark.jax
@@ -177,17 +147,14 @@ class TestIntegration:
             return p * t
 
         windows1 = [(0, 0.5), (1, 1.5)]
-        windows2 = [(0.5, 1)]
 
-        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant(windows2)]
+        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant]
         ops = [qml.PauliX(0), qml.PauliY(1)]
         H = qml.ops.dot(coeffs, ops)
 
         assert isinstance(H, ParametrizedHamiltonian)
-        # assert that at t=2 both functions are 0
-        assert qml.math.allequal(qml.matrix(H(params=[1, 2], t=2)), 0)
-        # assert that at t=0.3 only the first coefficient is non-zero
-        true_mat = qml.matrix(f1(1, 0.3) * qml.PauliX(0), wire_order=[0, 1])
+        # assert that at t=0.3 both coefficients are non-zero
+        true_mat = qml.matrix(f1(1, 0.3) * qml.PauliX(0) + 2 * qml.PauliY(1), wire_order=[0, 1])
         assert qml.math.allclose(qml.matrix(H(params=[1, 2], t=0.3)), true_mat)
         # assert that at t=0.7 only the second coefficient is non-zero
         true_mat = qml.matrix(2 * qml.PauliY(1), wire_order=[0, 1])
@@ -205,9 +172,8 @@ class TestIntegration:
             return p * t
 
         windows1 = [(0, 0.5), (1, 1.5)]
-        windows2 = [(0.5, 1)]
 
-        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant(windows2)]
+        coeffs = [qml.pulse.rect(f1, windows1), qml.pulse.constant]
         ops = [qml.PauliX(0), qml.PauliY(1)]
         H = qml.ops.dot(coeffs, ops)
 
