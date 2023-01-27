@@ -78,4 +78,4 @@ class TestShotAPI:
     @pytest.mark.parametrize("shots,expected", [(100, False), ([1, 2], True), [[100], False]])
     def test_has_partitioned_shots(self, shots, expected):
         """Tests the has_partitioned_shots method."""
-        assert ShotAPI(shots).has_partitioned_shots() is expected
+        assert ShotAPI(shots).has_partitioned_shots is expected
