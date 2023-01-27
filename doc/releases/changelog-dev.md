@@ -63,7 +63,7 @@
 
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
   
- * Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
+ * Added `qml.transforms.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
   a single-qubit operation and the control wires.
   [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
 
