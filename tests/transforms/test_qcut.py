@@ -4053,7 +4053,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="torch")
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.543, wires=1)

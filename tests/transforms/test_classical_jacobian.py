@@ -119,19 +119,23 @@ class_jacs = [
     tuple(np.eye(len(x) + len(w)).reshape((2, len(x), len(x) + len(w))).transpose([0, 2, 1])),
 ]
 
+interfaces = ["auto", "autograd"]
+
 
 @pytest.mark.autograd
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, all_args, class_jacs))
-def test_autograd_without_argnum(circuit, args, expected_jac, diff_method):
+@pytest.mark.parametrize("interface", interfaces)
+def test_autograd_without_argnum(circuit, args, expected_jac, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and Autograd."""
     dev = qml.device("default.qubit", wires=2)
-    qnode = qml.QNode(circuit, dev, interface="autograd", diff_method=diff_method)
+    qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
     arg_shapes = [qml.math.shape(arg) for arg in args]
     if len(args) == 1:
         # For a single argument, the Jacobian is unpacked
+        print(jac)
         assert np.allclose(jac, expected_jac[0])
     else:
         assert len(jac) == len(expected_jac)

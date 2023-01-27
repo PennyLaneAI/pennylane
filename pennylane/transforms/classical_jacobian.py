@@ -148,58 +148,72 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
         return qml.math.stack(tape.get_parameters(trainable_only=trainable_only))
 
-    if qnode.interface == "autograd":
+    wrapper_argnum = argnum if argnum is not None else None
 
-        return qml.jacobian(classical_preprocessing, argnum=argnum)
+    def qnode_wrapper(*args, **kwargs):
 
-    if qnode.interface == "torch":
-        import torch
+        if qnode.interface == "auto":
+            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
-            jac = torch.autograd.functional.jacobian(classical_preprocessing, args)
+        if qnode.interface == "autograd":
+            return qml.jacobian(classical_preprocessing, argnum=wrapper_argnum)(*args, **kwargs)
 
-            torch_argnum = argnum if argnum is not None else qml.math.get_trainable_indices(args)
-            if np.isscalar(torch_argnum):
-                jac = jac[torch_argnum]
-            else:
-                jac = tuple((jac[idx] for idx in torch_argnum))
-            return jac
+        if qnode.interface == "torch":
+            import torch
 
-        return _jacobian
+            def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
+                jac = torch.autograd.functional.jacobian(classical_preprocessing, args)
 
-    if qnode.interface == "jax":
-        import jax
+                torch_argnum = (
+                    wrapper_argnum
+                    if wrapper_argnum is not None
+                    else qml.math.get_trainable_indices(args)
+                )
+                if np.isscalar(torch_argnum):
+                    jac = jac[torch_argnum]
+                else:
+                    jac = tuple((jac[idx] for idx in torch_argnum))
+                return jac
 
-        argnum = 0 if argnum is None else argnum
+            return _jacobian(*args, **kwargs)
 
-        def _jacobian(*args, **kwargs):
-            if trainable_only:
-                _argnum = list(range(len(args)))
-                full_jac = jax.jacobian(classical_preprocessing, argnums=_argnum)(*args, **kwargs)
-                if np.isscalar(argnum):
-                    return full_jac[argnum]
+        if qnode.interface == "jax":
+            import jax
 
-                return tuple(full_jac[i] for i in argnum)
+            argnum = 0 if wrapper_argnum is None else wrapper_argnum
 
-            return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
+            def _jacobian(*args, **kwargs):
+                if trainable_only:
+                    _argnum = list(range(len(args)))
+                    full_jac = jax.jacobian(classical_preprocessing, argnums=_argnum)(
+                        *args, **kwargs
+                    )
+                    if np.isscalar(argnum):
+                        return full_jac[argnum]
 
-        return _jacobian
+                    return tuple(full_jac[i] for i in argnum)
 
-    if qnode.interface == "tf":
-        import tensorflow as tf
+                return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
 
-        def _jacobian(*args, **kwargs):
-            if np.isscalar(argnum):
-                sub_args = args[argnum]
-            elif argnum is None:
-                sub_args = args
-            else:
-                sub_args = tuple((args[i] for i in argnum))
+            return _jacobian(*args, **kwargs)
 
-            with tf.GradientTape() as tape:
-                gate_params = classical_preprocessing(*args, **kwargs)
+        if qnode.interface == "tf":
+            import tensorflow as tf
 
-            jac = tape.jacobian(gate_params, sub_args)
-            return jac
+            def _jacobian(*args, **kwargs):
+                if np.isscalar(wrapper_argnum):
+                    sub_args = args[wrapper_argnum]
+                elif wrapper_argnum is None:
+                    sub_args = args
+                else:
+                    sub_args = tuple((args[i] for i in wrapper_argnum))
 
-        return _jacobian
+                with tf.GradientTape() as tape:
+                    gate_params = classical_preprocessing(*args, **kwargs)
+
+                jac = tape.jacobian(gate_params, sub_args)
+                return jac
+
+            return _jacobian(*args, **kwargs)
+
+    return qnode_wrapper

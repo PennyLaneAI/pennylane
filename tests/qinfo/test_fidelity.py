@@ -740,7 +740,7 @@ class TestFidelityQnode:
         fid_grad = tape.gradient(entropy, [param1, params2])
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
 
-    interfaces = ["auto", "tf"]
+    interfaces = ["auto", "jax"]
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
