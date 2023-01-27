@@ -86,6 +86,7 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     The ``rect`` function can be used to create a :class:`.ParametrizedHamiltonian`
 
     .. code-block:: python
+
         def f1(p, t):
             return jnp.polyval(p, t)
         windows = [(1, 7), (9, 14)]
@@ -154,7 +155,7 @@ def pwc(timespan):
     **Example**
 
     >>> timespan = (1, 3)
-    >>> f1 = pwc(timespan)
+    >>> f1 = qml.pulse.pwc(timespan)
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed an array of parameters and
     a time, it will assign the array as the constants in the piecewise function, and select the constant corresponding
@@ -217,7 +218,7 @@ def pwc_from_function(timespan, num_bins):
         timespan = 10
         num_bins = 10
 
-        binned_function = pwc_from_function(timespan, num_bins)(f0)
+        binned_function = qml.pulse.pwc_from_function(timespan, num_bins)(smooth_function)
 
     >>> binned_function([2, 4], 3), smooth_function([2, 4], 3)  # t = 3
     (DeviceArray(10.666666, dtype=float32), DeviceArray(10, dtype=int32))
@@ -231,6 +232,8 @@ def pwc_from_function(timespan, num_bins):
     The same effect can be achieved by decorating the smooth function:
 
     .. code-block:: python
+
+        from pennylane.pulse.convenience_functions import pwc_from_function
 
         @pwc_from_function(timespan, num_bins)
         def fn(params, t):

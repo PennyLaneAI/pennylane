@@ -47,42 +47,19 @@ class ParametrizedHamiltonian:
     A ``ParametrizedHamiltonian`` is a callable with the fixed signature ``H(params, t)``,
     with ``params`` being an iterable where each element corresponds to the parameters of each
     scalar-valued function of the hamiltonian. Calling the ``ParametrizedHamiltonian`` returns an
-    ``Operator`` representing an instance of the Hamiltonian with the specified parameter values.
-
-    .. note::
-
-        The parameters used in the ``ParametrizedHamiltonian`` call should have the same order
-        as the functions used to define this Hamiltonian. Additionally, the terms defined with
-        fixed coefficients should come before parametrized terms to prevent discrepancy in the
-        wire order.For example, if we build a ``ParametrizedHamiltonian`` that contains two
-        functions:
-
-        >>> import jax.numpy as jnp
-        >>> def f1(p, t):
-        ...     return p * t
-        >>> def f2(p, t):
-        ...     return p * jnp.sin(t)
-        >>> coeffs = [2, f1, f2]
-        >>> ops = [qml.PauliZ(0), qml.PauliX(0), qml.PauliY(2)]
-        >>> H = qml.dot(coeffs, ops)
-
-        And we call it using the following parameters:
-
-        >>> params = [4, 5]
-        >>> H(params, t=0.5)
-        (2*(PauliZ(wires=[1]))) + ((2.0*(PauliX(wires=[0]))) + (2.397127628326416*(PauliY(wires=[2]))))
-
-        Internally we are computing ``f1(4, 0.5)`` and ``f2(5, 0.5)``.
+    :class:`~.Operator` representing an instance of the Hamiltonian with the specified parameter values.
 
     **Example:**
 
-    A ``ParametrizedHamiltonian`` can be created using :func:`~.functions.dot`, by passing a list of coefficients
+    A ``ParametrizedHamiltonian`` can be created using :func:`~.functions.dot.dot`, by passing a list of coefficients
     (scalars or functions), as well as a list of corresponding observables. Each coefficient function must
-    take two arguments, the first one being the trainable parameters and the second one being time.
+    take two arguments, the first one being the trainable parameters and the second one being time. The resulting
+    object can be passed parameters, and will return an :class:`~.Operator` representing the ``ParametrizedHamiltonian``
+    with the specified parameters.
 
     .. code-block:: python3
 
-        coeffs = [2, lambda v, t: v[0] * jnp.sin(v[1] * t)]
+        coeffs = [2, lambda p, t: p[0] * jnp.sin(p[1] * t)]
         observables =  [qml.PauliX(0), qml.PauliY(1)]
         H = qml.dot(coeffs, observables)
 
@@ -107,18 +84,39 @@ class ParametrizedHamiltonian:
 
         H = 2 * qml.PauliX(0) + f1 * qml.PauliY(0) + f2 * qml.PauliZ(0)
 
+        # Here [1.2, 2.3] is passed to f1, and 4.5 is passed to f2
+        # both receive t=0.5.
+        >>> H([[1.2, 2.3], 4.5], 0.5)
+        (2*(PauliX(wires=[0]))) + ((2.864642381668091*(PauliY(wires=[0]))) + (3.9491214752197266*(PauliZ(wires=[0]))))
 
-    The resulting object can be passed parameters, and will return an ``Operator`` representing the
-    ``ParametrizedHamiltonian`` with the specified parameters:
+    .. note::
 
-    >>> H([[1.2, 2.3], 4.5], 0.5)
-    (2*(PauliX(wires=[0]))) + ((2.864642381668091*(PauliY(wires=[0]))) + (3.9491214752197266*(PauliZ(wires=[0]))))
+        The parameters used in the ``ParametrizedHamiltonian`` call should have the same order
+        as the functions used to define this Hamiltonian. Additionally, the terms defined with
+        fixed coefficients should come before parametrized terms to prevent discrepancy in the
+        wire order.For example, if we build a ``ParametrizedHamiltonian`` that contains two
+        functions:
 
-    Here [1.2, 2.3] is passed to f1, and 4.5 is passed to f2, while both receive t=0.5.
+        >>> import jax.numpy as jnp
+        >>> def f1(p, t):
+        ...     return p * t
+        >>> def f2(p, t):
+        ...     return p * jnp.sin(t)
+        >>> coeffs = [2, f1, f2]
+        >>> ops = [qml.PauliZ(0), qml.PauliX(0), qml.PauliY(2)]
+        >>> H = qml.dot(coeffs, ops)
+
+        And we call it using the following parameters:
+
+        >>> params = [4, 5]
+        >>> H(params, t=0.5)
+        (2*(PauliZ(wires=[0]))) + ((2.0*(PauliX(wires=[0]))) + (2.397127628326416*(PauliY(wires=[2]))))
+
+        Internally we are computing ``f1(4, 0.5)`` and ``f2(5, 0.5)``.
 
     We can also access the fixed and parametrized terms of the ``ParametrizedHamiltonian``.
-    The fixed term is an ``Operator``, while the parametrized term must be initialized with concrete
-    parameters to obtain an ``Operator``:
+    The fixed term is an :class:`~.Operator`, while the parametrized term must be initialized with concrete
+    parameters to obtain an :class:`~.Operator`:
 
     >>> H.H_fixed()
     2*(PauliX(wires=[0]))

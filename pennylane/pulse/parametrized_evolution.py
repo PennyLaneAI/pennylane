@@ -87,9 +87,12 @@ class ParametrizedEvolution(Operation):
 
     .. code-block:: python
 
+        from jax import numpy as jnp
+
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         coeffs = [lambda p, t: p for _ in range(3)]
         H1 = qml.dot(coeffs, ops)  # time-independent parametrized Hamiltonian
+
         ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
         coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
         H2 = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
@@ -102,8 +105,8 @@ class ParametrizedEvolution(Operation):
         when creating a :class:`~.ParametrizedEvolution` from the :class:`~.ParametrizedHamiltonian`.
 
     A :class:`~.ParametrizedEvolution` can be defined by passing a :class:`~.ParametrizedHamiltonian` to
-     :func:`~.functions.evolve`. The parameters for the Hamiltonian and ODE can then be specified by calling
-     the :class:`~.ParametrizedEvolution`.
+    :func:`~.functions.evolve`. The parameters for the Hamiltonian and ODE can then be specified by calling
+    the :class:`~.ParametrizedEvolution`.
 
     >>> ev = qml.evolve(H1)(params=[1., 2., 3.], t=[4, 10], mxstep=1, atol=1e-6)
 
@@ -142,6 +145,7 @@ class ParametrizedEvolution(Operation):
     ``ParametrizedEvolution`` operator:
 
     .. code-block:: python
+
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H1 + H2)(params, t=[0, 10])
