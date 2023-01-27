@@ -36,60 +36,32 @@ def test_error_raised_if_jax_not_installed():
 class TestConstant:
     """Unit tests for the ``constant`` function."""
 
-    def test_constant_returns_callable(self):
+    def test_constant_signature(self):
         """Test that the ``constant`` convenience function returns a callable with two arguments
         corresponding to the trainable parameters and time."""
-        c = qml.pulse.constant(windows=[0, 10])  # constant function from 0 to 10
-        argspec = inspect.getfullargspec(c)
+        argspec = inspect.getfullargspec(qml.pulse.constant)
 
-        assert callable(c)
-        assert argspec.args == ["p", "t"]
+        assert callable(qml.pulse.constant)
+        assert argspec.args == ["scalar", "time"]
 
-    def test_constant_returns_correct_value_single_window(self):
+    def test_constant_returns_correct_value(self):
         """Test that the ``constant`` function returns the input parameter only when t is inside
         the window."""
-        c = qml.pulse.constant(windows=[(4, 8)])
-
         times = np.arange(0, 10, step=1e-2)
+        scalar = 1.23
         for t in times:
-            if 4 <= t <= 8:
-                assert c(p=1, t=t) == 1
-            else:
-                assert c(p=1, t=t) == 0
-
-    def test_constant_returns_correct_value_multiple_windows(self):
-        """Test that the ``constant`` function returns the input parameter only when t is inside
-        the window."""
-        c = qml.pulse.constant(windows=[(4, 8), (0, 1), (9, 10)])
-
-        times = np.arange(0, 10, step=1e-2)
-        for t in times:
-            if 4 <= t <= 8 or 0 <= t <= 1 or 9 <= t <= 10:
-                assert c(p=1, t=t) == 1
-            else:
-                assert c(p=1, t=t) == 0
-
-    def test_constant_returns_correct_value_no_windows(self):
-        """Test that the ``constant`` function always returns the input parameter when no windows
-        are specified"""
-        c = qml.pulse.constant()
-
-        times = np.arange(0, 10, step=1e-2)
-        for t in times:
-            assert c(p=0.5, t=t) == 0.5
+            assert qml.pulse.constant(scalar, time=t) == scalar
 
     def test_constant_is_jittable(self):
         """Test that the callable returned by the ``constant`` function is jittable."""
         import jax
 
-        c = jax.jit(qml.pulse.constant(windows=[(4, 8), (0, 1), (9, 10)]))
+        c = jax.jit(qml.pulse.constant)
 
+        scalar = 1.23
         times = np.arange(0, 10, step=1e-2)
         for t in times:
-            if 4 <= t <= 8 or 0 <= t <= 1 or 9 <= t <= 10:
-                assert c(p=1, t=t) == 1
-            else:
-                assert c(p=1, t=t) == 0
+            assert c(scalar, time=t) == scalar
 
 
 @pytest.mark.jax
