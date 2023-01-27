@@ -132,3 +132,11 @@ class TestStateVector:
         basis_op = qml.BasisState([0, 1], wires=[0, 1])
         with pytest.raises(WireError, match="wire_order must contain all BasisState wires"):
             basis_op.state_vector(wire_order=[1, 2])
+
+    def test_BasisState_explicitly_checks_0_1(self):
+        """Tests that BasisState gives a clear error if a value other than 0 or 1 is given."""
+        op = qml.BasisState([2, 1], wires=[0, 1])
+        with pytest.raises(
+            ValueError, match="BasisState parameter must consist of 0 or 1 integers."
+        ):
+            _ = op.state_vector()
