@@ -374,6 +374,10 @@ class TestGroupingUtils:
             (PauliZ("a") @ PauliY("b") @ PauliZ("d"), {"a": 0, "b": 1, "c": 2, "d": 3}, "ZYIZ"),
             (PauliZ("a") @ PauliY("b") @ PauliZ("d"), None, "ZYZ"),
             (PauliX("a") @ PauliY("b") @ PauliZ("d"), {"d": 0, "c": 1, "b": 2, "a": 3}, "ZIYX"),
+            (4.5 * PauliX(0), {0: 0}, "X"),
+            (qml.prod(PauliX(0), PauliY(1)), {0: 0, 1: 1}, "XY"),
+            (PauliX(0) @ PauliZ(0), {0: 0}, "X"),  # second operator is ignored!!
+            (3 * PauliZ(0) @ PauliY(3), {0: 0, 3: 1}, "ZY"),
         ],
     )
     def test_pauli_word_to_string(self, pauli_word, wire_map, expected_string):

@@ -28,8 +28,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Tensor
-from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod
-from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, Prod, SProd
 from pennylane.tape import OperationRecorder
 from pennylane.wires import Wires
 
@@ -49,13 +48,20 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
         in the Pauli word as keys, and unique integer labels as their values.
     """
     wire_labels = Wires.all_wires([pauli_word_1.wires, pauli_word_2.wires]).labels
-    wire_map = {label: i for i, label in enumerate(wire_labels)}
-    return wire_map
+    return {label: i for i, label in enumerate(wire_labels)}
 
 
 def is_pauli_word(observable):
     """
     Checks if an observable instance consists only of Pauli and Identity Operators.
+
+    A Pauli word can be either:
+
+    * A single pauli operator (see :class:`~.PauliX for an example).
+    * A :class:`Tensor` instance containing Pauli operators.
+    * A :class:`Prod` instance containing Pauli operators.
+    * A :class:`SProd` instance containing a Pauli operator.
+    * A :class:`Hamiltonian` instance with only one term.
 
     .. Warning::
 
@@ -66,7 +72,7 @@ def is_pauli_word(observable):
 
 
     Args:
-        observable (~.Observable): the operator to be examined
+        observable (~.Operator): the operator to be examined
 
     Returns:
         bool: true if the input observable is a Pauli word, false otherwise.
@@ -79,6 +85,8 @@ def is_pauli_word(observable):
     True
     >>> is_pauli_word(qml.PauliZ(0) @ qml.Hadamard(1))
     False
+    >>> is_pauli_word(4 * qml.PauliX(0) @ qml.PauliZ(0))
+    True
     """
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
@@ -89,6 +97,9 @@ def is_pauli_word(observable):
 
     if isinstance(observable, Prod):
         return all(is_pauli_word(op) for op in observable)
+
+    if isinstance(observable, SProd):
+        return is_pauli_word(observable.base)
 
     return observable.name in pauli_word_names
 
@@ -360,11 +371,26 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
 
 
 def pauli_word_to_string(pauli_word, wire_map=None):
-    """Convert a Pauli word from a tensor to a string.
+    """Convert a Pauli word to a string.
+
+    A Pauli word can be either:
+
+    * A single pauli operator (see :class:`~.PauliX for an example).
+    * A :class:`Tensor` instance containing Pauli operators.
+    * A :class:`Prod` instance containing Pauli operators.
+    * A :class:`SProd` instance containing a Pauli operator.
+    * A :class:`Hamiltonian` instance with only one term.
 
     Given a Pauli in observable form, convert it into string of
     characters from ``['I', 'X', 'Y', 'Z']``. This representation is required for
     functions such as :class:`.PauliRot`.
+
+    .. warning::
+
+        This method ignores any potential coefficient multiplying the Pauli word:
+
+        >>> qml.pauli.pauli_word_to_string(3 * qml.PauliX(0) @ qml.PauliY(1))
+        'XY'
 
     Args:
         pauli_word (Observable): an observable, either a :class:`~.Tensor` instance or
@@ -389,6 +415,13 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     if not is_pauli_word(pauli_word):
         raise TypeError(f"Expected Pauli word observables, instead got {pauli_word}")
+    if isinstance(pauli_word, Hamiltonian):
+        # hamiltonian contains only one term
+        pauli_word = pauli_word.ops[0]
+    elif isinstance(pauli_word, Prod):
+        pauli_word = Tensor(*pauli_word.operands)
+    elif isinstance(pauli_word, SProd):
+        pauli_word = pauli_word.base
 
     character_map = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
