@@ -90,7 +90,7 @@ class TestInitialization:
     def test_H_fixed(self):
         """Test that H_fixed() is an Operator of the expected form"""
         H_fixed = test_example.H_fixed()
-        op = qml.op_sum(qml.s_prod(1, qml.PauliX(0)), qml.s_prod(2, qml.PauliY(1)))
+        op = qml.sum(qml.s_prod(1, qml.PauliX(0)), qml.s_prod(2, qml.PauliY(1)))
         assert qml.equal(H_fixed, op)
 
     def test_H_parametrized(self):
@@ -166,10 +166,8 @@ class TestCall:
 
         H_fixed = op[0]
         H_parametrized = op[1]
-        expected_H_fixed = qml.op_sum(
-            qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
-        )
-        expected_H_parametrized = qml.op_sum(
+        expected_H_fixed = qml.sum(qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2)))
+        expected_H_parametrized = qml.sum(
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
@@ -337,10 +335,8 @@ class TestInterfaces:
 
         H_fixed = op[0]
         H_parametrized = op[1]
-        expected_H_fixed = qml.op_sum(
-            qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
-        )
-        expected_H_parametrized = qml.op_sum(
+        expected_H_fixed = qml.sum(qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2)))
+        expected_H_parametrized = qml.sum(
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
@@ -361,10 +357,8 @@ class TestInterfaces:
 
         H_fixed = op[0]
         H_parametrized = op[1]
-        expected_H_fixed = qml.op_sum(
-            qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
-        )
-        expected_H_parametrized = qml.op_sum(
+        expected_H_fixed = qml.sum(qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2)))
+        expected_H_parametrized = qml.sum(
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
@@ -385,10 +379,8 @@ class TestInterfaces:
 
         H_fixed = op[0]
         H_parametrized = op[1]
-        expected_H_fixed = qml.op_sum(
-            qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
-        )
-        expected_H_parametrized = qml.op_sum(
+        expected_H_fixed = qml.sum(qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2)))
+        expected_H_parametrized = qml.sum(
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 

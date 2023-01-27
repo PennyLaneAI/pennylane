@@ -20,7 +20,7 @@ import numpy as np
 from scipy import sparse
 from pennylane import math, wires
 from pennylane.operation import Tensor
-from pennylane.ops import s_prod, op_sum, prod, Identity, PauliX, PauliY, PauliZ, Hamiltonian
+from pennylane.ops import s_prod, sum, prod, Identity, PauliX, PauliY, PauliZ, Hamiltonian
 
 
 I = "I"
@@ -369,7 +369,7 @@ class PauliSentence(dict):
         for pw, coeff in self.items():
             pw_op = pw.operation(wire_order=list(self.wires))
             summands.append(pw_op if coeff == 1 else s_prod(coeff, pw_op))
-        return summands[0] if len(summands) == 1 else op_sum(*summands)
+        return summands[0] if len(summands) == 1 else sum(*summands)
 
     def hamiltonian(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""

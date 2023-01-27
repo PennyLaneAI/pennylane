@@ -331,8 +331,8 @@ class TestSimplify:
 
     def test_simplify_adj_of_sums(self):
         """Test that the simplify methods converts an adjoint of sums to a sum of adjoints."""
-        adj_op = Adjoint(qml.op_sum(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
-        sum_op = qml.op_sum(
+        adj_op = Adjoint(qml.sum(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
+        sum_op = qml.sum(
             qml.RX(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RZ(4 * np.pi - 1, 0)
         )
         simplified_op = adj_op.simplify()

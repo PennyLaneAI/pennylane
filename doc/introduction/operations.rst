@@ -52,7 +52,7 @@ Operator to Operator functions
     ~pennylane.ctrl
     ~pennylane.cond
     ~pennylane.exp
-    ~pennylane.op_sum
+    ~pennylane.sum
     ~pennylane.pow
     ~pennylane.prod
     ~pennylane.s_prod
@@ -64,7 +64,7 @@ Operator to Operator functions
 These operator functions act on operators to produce new operators.
 
 >>> op = qml.prod(qml.PauliX(0), qml.PauliZ(1))
->>> op = qml.op_sum(qml.Hadamard(0), op)
+>>> op = qml.sum(qml.Hadamard(0), op)
 >>> op = qml.s_prod(1.2, op)
 >>> op
 1.2*(Hadamard(wires=[0]) + (PauliX(wires=[0]) @ PauliZ(wires=[1])))
