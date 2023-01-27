@@ -38,6 +38,39 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     Raises:
         ValueError: if `target_operation` is not a single-qubit operation
 
+    **Example**
+
+    .. code-block:: python
+
+        # We can create a controlled operation using `qml.ctrl`, or by creating the
+        # decomposed controlled version of using `qml.ctrl_decomp_zyz`.
+        op = qml.RX(0.123, wires=2)
+        ctrl_op = qml.ctrl(op, [0, 1])
+        ctrl_decomp = qml.ops.ctrl_decomp_zyz(op, [0, 1])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def expected_circuit():
+            for i in range(3):
+                qml.Hadamard(i)
+            qml.apply(ctrl_op)
+            return qml.probs()
+
+        @qml.qnode(dev)
+        def decomp_circuit():
+            for i in range(3):
+                qml.Hadamard(i)
+            for op in ctrl_decomp:
+                qml.apply(op)
+            return qml.probs()
+
+    Measurements on both circuits will give us the same results:
+
+    >>> expected_circuit()
+    tensor([0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125], requires_grad=True)
+    >>> decomp_circuit()
+    tensor([0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125], requires_grad=True)
     """
     # TODO: Add support for general unitaries, not just SU(2) matrices
     if len(target_operation.wires) != 1:
