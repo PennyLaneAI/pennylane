@@ -23,15 +23,15 @@ from scipy.sparse.linalg import expm as sparse_expm
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import (
-    DecompositionUndefinedError,
     GeneratorUndefinedError,
     Operation,
     OperatorPropertyUndefined,
-    Tensor,
     expand_matrix,
 )
+from pennylane.ops.qubit import Hamiltonian
 from pennylane.wires import Wires
 
+from .sprod import SProd
 from .symbolicop import SymbolicOp
 
 
@@ -191,19 +191,6 @@ class Exp(SymbolicOp, Operation):
             return "_ops"
         return None
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
-    @property
-    def has_decomposition(self):
-        if isinstance(self.base, Tensor):
-            all_wires = [obs.wires for obs in self.base.obs]
-            if len(all_wires) != len(set(all_wires)):
-                raise NotImplementedError(
-                    "Unable to determine if the exponential has a decomposition "
-                    "when the base operator is a Tensor object with overlapping wires. "
-                    f"Received base {self.base}."
-                )
-        return math.real(self.coeff) == 0 and qml.pauli.is_pauli_word(self.base)
-
     @property
     def inverse(self):
         """Setting inverse is not defined for Exp, so the inverse is always False"""
@@ -221,11 +208,28 @@ class Exp(SymbolicOp, Operation):
         Returns:
             list[PauliRot]: decomposition of the operator
         """
-        if not self.has_decomposition:
-            raise DecompositionUndefinedError
-        new_coeff = math.real(2j * self.coeff)
-        string_base = qml.pauli.pauli_word_to_string(self.base)
-        return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
+        base = self.base
+        coeff = self.coeff
+        if isinstance(base, SProd):
+            coeff *= base.scalar
+            base = base.base
+
+        if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
+            pauli_word = qml.pauli.pauli_word_to_string(base)
+            coeff = 2j * coeff  # need to cancel the coefficients added by PauliRot
+            if len(pauli_word) == 1 and pauli_word != "I":
+                return [getattr(qml, f"R{pauli_word}")(phi=coeff, wires=base.wires)]
+            return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
+
+        if isinstance(base, Hamiltonian):
+            coeffs, ops = base.terms()
+            op_list = []
+            for c, o in zip(coeffs, ops):
+                c *= coeff
+                if qml.pauli.is_pauli_word(o) and math.real(c) == 0:
+                    pauli_word = qml.pauli.pauli_word_to_string(o)
+                    c = 2j * c  # need to cancel the coefficients added by PauliRot
+                    op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=o.wires))
 
     def matrix(self, wire_order=None):
 
