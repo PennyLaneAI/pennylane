@@ -24,7 +24,7 @@ from pennylane.pauli.pauli_arithmetic import PauliSentence
 
 def test_dot_qnode_collection_raises_warning():
     """Test that a deprecation warning is raised when using qml.dot for a QNodeCollection."""
-    with pytest.warns(UserWarning, match="The dot function is deprecated"):
+    with pytest.warns(UserWarning, match="is deprecated"):
         qml.dot([], QNodeCollection())
 
 
