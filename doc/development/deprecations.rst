@@ -89,6 +89,16 @@ Pending deprecations
   - Deprecated in v0.28
   - Will be removed in v0.29
 
+* The ``collections`` module has been deprecated.
+
+  - Deprecated in v0.29
+  - Will be removed in v0.31
+
+* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
+
+  - Deprecated in v0.29.
+  - Will be removed in v0.31.
+
 Completed deprecation cycles
 ----------------------------
 
