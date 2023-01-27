@@ -221,18 +221,18 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(params):
             qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def jitted_circuit(params):
             qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def true_circuit(params):
             true_mat = reduce(lambda x, y: y @ x, generator(params))
             qml.QubitUnitary(U=true_mat, wires=[0, 1])

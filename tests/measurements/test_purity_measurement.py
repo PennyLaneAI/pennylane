@@ -149,14 +149,15 @@ class TestPurity:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
-    def test_IsingXX_qnode_purity_jax(self, device, param, wires, is_partial):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_IsingXX_qnode_purity_jax(self, device, param, wires, is_partial, interface):
         """Test purity for a QNode with jax interface."""
 
         import jax.numpy as jnp
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
@@ -170,14 +171,17 @@ class TestPurity:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_purity_grad_jax(self, device, param, wires, is_partial, diff_method):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_IsingXX_qnode_purity_grad_jax(
+        self, device, param, wires, is_partial, diff_method, interface
+    ):
         """Test purity for a QNode gradient with Jax."""
 
         import jax
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
@@ -191,7 +195,8 @@ class TestPurity:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
-    def test_IsingXX_qnode_purity_jax_jit(self, device, param, wires, is_partial):
+    @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+    def test_IsingXX_qnode_purity_jax_jit(self, device, param, wires, is_partial, interface):
         """Test purity for a QNode with jax interface."""
 
         import jax
@@ -199,7 +204,7 @@ class TestPurity:
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax-jit")
+        @qml.qnode(dev, interface=interface)
         def circuit(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
@@ -213,14 +218,17 @@ class TestPurity:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_purity_grad_jax_jit(self, device, param, wires, is_partial, diff_method):
+    @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+    def test_IsingXX_qnode_purity_grad_jax_jit(
+        self, device, param, wires, is_partial, diff_method, interface
+    ):
         """Test purity for a QNode gradient with Jax."""
 
         import jax
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax-jit", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
@@ -234,14 +242,15 @@ class TestPurity:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
-    def test_IsingXX_qnode_purity_torch(self, device, param, wires, is_partial):
+    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    def test_IsingXX_qnode_purity_torch(self, device, param, wires, is_partial, interface):
         """Tests purity for a qnode"""
 
         import torch
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
@@ -255,14 +264,17 @@ class TestPurity:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_purity_grad_torch(self, device, param, wires, is_partial, diff_method):
+    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    def test_IsingXX_qnode_purity_grad_torch(
+        self, device, param, wires, is_partial, diff_method, interface
+    ):
         """Test purity for a QNode gradient with torch."""
 
         import torch
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
@@ -280,14 +292,15 @@ class TestPurity:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
-    def test_IsingXX_qnode_purity_tf(self, device, param, wires, is_partial):
+    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    def test_IsingXX_qnode_purity_tf(self, device, param, wires, is_partial, interface):
         """Tests purity for a qnode"""
 
         import tensorflow as tf
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)
@@ -301,14 +314,17 @@ class TestPurity:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_purity_grad_tf(self, device, param, wires, is_partial, diff_method):
+    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    def test_IsingXX_qnode_purity_grad_tf(
+        self, device, param, wires, is_partial, diff_method, interface
+    ):
         """Test purity for a QNode gradient with tf."""
 
         import tensorflow as tf
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.purity(wires=wires)

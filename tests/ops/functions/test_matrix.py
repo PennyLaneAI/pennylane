@@ -554,7 +554,7 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=3)
 
         @qml.matrix
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(theta):
             qml.RZ(theta[0], wires=0)
             qml.RZ(theta[1], wires=1)

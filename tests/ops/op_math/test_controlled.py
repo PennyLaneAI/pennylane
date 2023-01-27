@@ -922,7 +922,7 @@ class TestDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
@@ -938,7 +938,7 @@ class TestDifferentiation:
         assert np.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
@@ -969,7 +969,7 @@ class TestDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
@@ -1583,7 +1583,7 @@ class TestCtrlTransformDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
@@ -1599,7 +1599,7 @@ class TestCtrlTransformDifferentiation:
         assert np.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
@@ -1630,7 +1630,7 @@ class TestCtrlTransformDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])

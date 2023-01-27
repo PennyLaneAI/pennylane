@@ -52,6 +52,9 @@ it can now be used like any other PyTorch function:
 >>> circuit(phi, theta)
 tensor([0.8776, 0.6880], dtype=torch.float64)
 
+The interface can also be automatically determined when the ``QNode`` is called. You do not need to pass the interface
+if you provide parameters, but it comes with a small overhead.
+
 PyTorch-capable QNodes can also be created using the
 :ref:`QNode class constructor <intro_vcirc_qnode>`:
 

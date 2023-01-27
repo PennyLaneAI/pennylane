@@ -75,6 +75,9 @@ as input, and returning ``jax.Array`` objects. It can now be used like any other
 >>> circuit1(phi, theta)
 Array([0.8776, 0.6880], dtype=float64)
 
+The interface can also be automatically determined when the ``QNode`` is called. You do not need to pass the interface
+if you provide parameters, but it comes with a small overhead.
+
 Quantum gradients using JAX
 ---------------------------
 

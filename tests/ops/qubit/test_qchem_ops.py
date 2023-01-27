@@ -347,7 +347,7 @@ class TestSingleExcitation:
 
         dev = qml.device("default.qubit.tf", wires=2)
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             excitation(phi, wires=[0, 1])
@@ -378,7 +378,7 @@ class TestSingleExcitation:
 
         dev = qml.device("default.qubit.jax", wires=2)
 
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             excitation(phi, wires=[0, 1])
@@ -673,7 +673,7 @@ class TestDoubleExcitation:
 
         dev = qml.device("default.qubit.tf", wires=4)
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -705,7 +705,7 @@ class TestDoubleExcitation:
 
         dev = qml.device("default.qubit.jax", wires=4)
 
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -975,12 +975,8 @@ class TestOrbitalRotation:
 
         dev = qml.device("default.qubit.autograd", wires=4)
 
-        circuit_0 = qml.QNode(
-            self.grad_circuit_0, dev, interface="autograd", diff_method=diff_method
-        )
-        circuit_1 = qml.QNode(
-            self.grad_circuit_1, dev, interface="autograd", diff_method=diff_method
-        )
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, diff_method=diff_method)
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         assert np.allclose(qml.grad(total)(phi), self.expected_grad_fn(phi))
@@ -999,8 +995,8 @@ class TestOrbitalRotation:
 
         dev = qml.device("default.qubit.tf", wires=4)
 
-        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="tf", diff_method=diff_method)
-        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="tf", diff_method=diff_method)
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, diff_method=diff_method)
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         phi_t = tf.Variable(phi, dtype=tf.float64)
@@ -1025,8 +1021,8 @@ class TestOrbitalRotation:
 
         dev = qml.device("default.qubit.jax", wires=4)
 
-        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="jax", diff_method=diff_method)
-        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="jax", diff_method=diff_method)
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, diff_method=diff_method)
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         phi_j = jax.numpy.array(phi)
@@ -1047,8 +1043,8 @@ class TestOrbitalRotation:
 
         dev = qml.device("default.qubit.torch", wires=4)
 
-        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="torch", diff_method=diff_method)
-        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="torch", diff_method=diff_method)
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, diff_method=diff_method)
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         phi_t = torch.tensor(phi, dtype=torch.complex128, requires_grad=True)
@@ -1213,7 +1209,7 @@ class TestFermionicSWAP:
 
         dev = qml.device("default.qubit.tf", wires=2)
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.FermionicSWAP(phi, wires=[0, 1])
@@ -1244,7 +1240,7 @@ class TestFermionicSWAP:
 
         dev = qml.device("default.qubit.jax", wires=2)
 
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.FermionicSWAP(phi, wires=[0, 1])

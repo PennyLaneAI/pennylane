@@ -177,7 +177,7 @@ class TestSpsaGradient:
         parameters"""
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -195,7 +195,7 @@ class TestSpsaGradient:
         parameters"""
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -213,7 +213,7 @@ class TestSpsaGradient:
         parameters"""
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -231,7 +231,7 @@ class TestSpsaGradient:
         parameters"""
         dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)

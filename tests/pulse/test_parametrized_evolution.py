@@ -210,18 +210,18 @@ class TestIntegration:
 
         t = 4
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def jitted_circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def true_circuit(params):
             true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
             QubitUnitary(U=true_mat, wires=[0, 1])
@@ -257,18 +257,18 @@ class TestIntegration:
             for ti in times:
                 yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def jitted_circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def true_circuit(params):
             true_mat = reduce(lambda x, y: y @ x, generator(params))
             QubitUnitary(U=true_mat, wires=[0, 1])
@@ -311,14 +311,14 @@ class TestIntegration:
         dev = qml.device("default.qubit", wires=3)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit1(params):
             qml.evolve(H1)(params[0], t=2)
             qml.evolve(H2)(params[1], t=2)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit2(params):
             qml.evolve(H1 + H2)(params, t=2)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))

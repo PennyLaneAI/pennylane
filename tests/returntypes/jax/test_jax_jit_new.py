@@ -83,7 +83,7 @@ class TestJaxExecuteUnitTests:
             match="jax not found. Please install the latest version "
             "of jax to enable the 'jax' interface",
         ):
-            qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift, interface="jax-jit")
+            qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift)
 
     def test_jacobian_options(self, mocker, tol):
         """Test setting jacobian options"""
@@ -106,7 +106,6 @@ class TestJaxExecuteUnitTests:
                 device,
                 gradient_fn=param_shift,
                 gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
-                interface="jax-jit",
             )[0]
 
         res = jax.grad(cost)(a, device=dev)
@@ -134,7 +133,6 @@ class TestJaxExecuteUnitTests:
                 device,
                 gradient_fn=param_shift,
                 mode="forward",
-                interface="jax-jit",
             )[0]
 
         with pytest.raises(
@@ -183,7 +181,6 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 dev,
                 gradient_fn="device",
-                interface="jax-jit",
                 gradient_kwargs={
                     "method": "adjoint_jacobian",
                     "use_device_state": True,
@@ -216,7 +213,6 @@ class TestJaxExecuteUnitTests:
                 dev,
                 gradient_fn="device",
                 mode="backward",
-                interface="jax-jit",
                 gradient_kwargs={"method": "adjoint_jacobian"},
             )[0]
 
@@ -252,7 +248,6 @@ class TestCaching:
                 dev,
                 gradient_fn=param_shift,
                 cachesize=cachesize,
-                interface="jax-jit",
             )[0]
 
         params = jax.numpy.array([0.1, 0.2])
@@ -281,7 +276,6 @@ class TestCaching:
                 dev,
                 gradient_fn=param_shift,
                 cache=cache,
-                interface="jax-jit",
             )[0]
 
         custom_cache = {}
@@ -319,7 +313,6 @@ class TestCaching:
                 dev,
                 gradient_fn=param_shift,
                 cache=cache,
-                interface="jax-jit",
             )
             return res[0]
 
@@ -347,7 +340,6 @@ class TestCaching:
                 dev,
                 gradient_fn=param_shift,
                 cache=cache,
-                interface="jax-jit",
             )[0]
 
         # Without caching, 5 evaluations are required to compute
@@ -397,7 +389,6 @@ class TestCaching:
                 gradient_fn="device",
                 cache=cache,
                 mode="backward",
-                interface="jax-jit",
                 gradient_kwargs={"method": "adjoint_jacobian"},
             )[0]
 
@@ -454,7 +445,7 @@ class TestJaxExecuteIntegration:
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
 
-            return execute([tape1, tape2], dev, interface="jax-jit", **execute_kwargs)
+            return execute([tape1, tape2], dev, **execute_kwargs)
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
@@ -476,7 +467,7 @@ class TestJaxExecuteIntegration:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            return execute([tape], dev, interface="jax-jit", **execute_kwargs)[0]
+            return execute([tape], dev, **execute_kwargs)[0]
 
         res = jax.jit(jax.grad(cost))(a)
         assert res.shape == ()
@@ -522,7 +513,7 @@ class TestJaxExecuteIntegration:
             # required_length) and the tape produces incorrect results.
             tape._update()
             tape.set_parameters([a, b])
-            return execute([tape], dev, interface="jax-jit", **execute_kwargs)[0]
+            return execute([tape], dev, **execute_kwargs)[0]
 
         jac_fn = jax.jit(jax.grad(cost))
         jac = jac_fn(a, b)
@@ -556,9 +547,7 @@ class TestJaxExecuteIntegration:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute(
-                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
-            )[0]
+            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         cost = jax.jit(cost)
@@ -582,7 +571,7 @@ class TestJaxExecuteIntegration:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            return execute([tape], device, interface="jax-jit", **execute_kwargs)[0]
+            return execute([tape], device, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         res = jax.jit(jax.grad(cost, argnums=(0, 1, 2)), static_argnums=3)(a, b, c, device=dev)
@@ -612,9 +601,7 @@ class TestJaxExecuteIntegration:
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
 
-            result = execute(
-                tapes=[tape1, tape2], device=dev, interface="jax-jit", **execute_kwargs
-            )
+            result = execute(tapes=[tape1, tape2], device=dev, **execute_kwargs)
             return result[0] + result[1] - 7 * result[1]
 
         res = jax.jit(jax.grad(cost_fn))(params)
@@ -642,7 +629,7 @@ class TestJaxExecuteIntegration:
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
 
-            return execute(tapes=[tape1, tape2], device=dev, interface="jax-jit", **execute_kwargs)
+            return execute(tapes=[tape1, tape2], device=dev, **execute_kwargs)
 
         res = jax.jit(cost_fn)(params)
         assert isinstance(res, list)
@@ -664,7 +651,7 @@ class TestJaxExecuteIntegration:
             tape = qml.tape.QuantumScript.from_queue(q)
 
             tape.trainable_params = [0]
-            return execute([tape], device, interface="jax-jit", **execute_kwargs)[0]
+            return execute([tape], device, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         res = jax.jit(cost, static_argnums=2)(a, U, device=dev)
@@ -694,7 +681,7 @@ class TestJaxExecuteIntegration:
                 [qml.RX(a, wires=0), U3(*p, wires=0)], [qml.expval(qml.PauliX(0))]
             )
             qscript = qscript.expand(stop_at=lambda obj: device.supports_operation(obj.name))
-            return execute([qscript], device, interface="jax-jit", **execute_kwargs)[0]
+            return execute([qscript], device, **execute_kwargs)[0]
 
         a = jax.numpy.array(0.1)
         p = jax.numpy.array([0.1, 0.2, 0.3])
@@ -735,7 +722,7 @@ class TestJaxExecuteIntegration:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = execute([tape], dev, cache=cache, interface="jax-jit", **execute_kwargs)
+            res = execute([tape], dev, cache=cache, **execute_kwargs)
             return res[0]
 
         res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)
@@ -774,9 +761,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute(
-                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
-            )
+            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)
             return res[0]
 
         res = jax.jit(cost)(params, cache=None)
@@ -803,9 +788,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute(
-                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
-            )
+            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)
             return res[0]
 
         res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)
@@ -850,9 +833,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute(
-                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
-            )[0]
+            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         res = jax.jit(cost, static_argnums=1)(params, cache=None)
@@ -886,9 +867,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute(
-                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
-            )[0]
+            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
         res = jax.jit(cost, static_argnums=1)(params, cache=None)
@@ -909,9 +888,7 @@ class TestVectorValuedJIT:
 
             tape = qml.tape.QuantumScript.from_queue(q)
 
-            res = qml.interfaces.execute(
-                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
-            )[0]
+            res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res[0] + res[1]
 
         res = jax.jit(jax.grad(cost), static_argnums=1)(params, cache=None)
