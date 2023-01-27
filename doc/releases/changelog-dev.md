@@ -291,7 +291,10 @@
   >>> f1(3, 5)
   DeviceArray(0., dtype=float32)
   ```
-  
+
+* Introduce the `ShotAPI` class to encapsulate shot-related information.
+  [(#3682)](https://github.com/PennyLaneAI/pennylane/pull/3682)
+
 <h3>Improvements</h3>
 
 * `qml.purity` is added as a measurement process for purity
